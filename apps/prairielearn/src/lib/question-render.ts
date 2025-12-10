@@ -823,9 +823,9 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       const group_info = await run(async () => {
-        if (!assessment_instance?.group_id || !group_config) return null;
+        if (!assessment_instance?.team_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance.group_id, group_config);
+        return await getGroupInfo(assessment_instance.team_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({
@@ -856,14 +856,14 @@ export async function renderPanelsForSubmission({
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.group_id && group_config?.has_roles) {
+      if (assessment_instance?.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
-          assessment_instance.group_id,
+          assessment_instance.team_id,
           user.user_id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user.user_id))
+          (await getUserRoles(assessment_instance.team_id, user.user_id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

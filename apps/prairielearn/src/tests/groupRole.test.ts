@@ -134,13 +134,13 @@ async function verifyRoleAssignmentsInDatabase(
   const expected = roleAssignments
     .map(({ roleId, groupUserId }) => ({
       user_id: groupUserId.toString(),
-      group_role_id: roleId.toString(),
+      team_role_id: roleId.toString(),
     }))
-    .sort((a, b) => +a.user_id - +b.user_id || +a.group_role_id - +b.group_role_id);
+    .sort((a, b) => +a.user_id - +b.user_id || +a.team_role_id - +b.team_role_id);
   const result = await sqldb.queryRows(
     sql.select_group_user_roles,
     { assessment_id: assessmentId },
-    GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+    GroupUserRoleSchema.pick({ user_id: true, team_role_id: true }),
   );
   assert.sameDeepMembers(result, expected);
 }
@@ -984,7 +984,7 @@ describe(
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
           { assessment_id: locals.assessment_id },
-          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+          GroupUserRoleSchema.pick({ user_id: true, team_role_id: true }),
         );
         assert.lengthOf(result, 4);
 
@@ -995,15 +995,15 @@ describe(
 
         const secondUserRole = secondUserRoles[0];
         assert.isTrue(
-          secondUserRole.group_role_id === locals.recorder.id ||
-            secondUserRole.group_role_id === locals.contributor.id,
+          secondUserRole.team_role_id === locals.recorder.id ||
+            secondUserRole.team_role_id === locals.contributor.id,
         );
 
         const roleUpdates =
           secondUserRole.user_id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
         const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
-          group_role_id: roleId,
+          team_role_id: roleId,
         }));
 
         assert.sameDeepMembers(expected, result);
@@ -1120,7 +1120,7 @@ describe(
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
           { assessment_id: locals.assessment_id },
-          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+          GroupUserRoleSchema.pick({ user_id: true, team_role_id: true }),
         );
         assert.lengthOf(result, 3);
 
@@ -1133,7 +1133,7 @@ describe(
         const roleUpdates = firstUserRoleUpdates.length === 2 ? roleUpdates1 : roleUpdates2;
         const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
-          group_role_id: roleId,
+          team_role_id: roleId,
         }));
 
         assert.sameDeepMembers(expected, result);
@@ -1751,24 +1751,24 @@ describe('Test group role reassignments with role of minimum > 1', function () {
         const result = await sqldb.queryRows(
           sql.select_group_user_roles,
           { assessment_id: assessmentId },
-          GroupUserRoleSchema.pick({ user_id: true, group_role_id: true }),
+          GroupUserRoleSchema.pick({ user_id: true, team_role_id: true }),
         );
 
         // Ensure that there are two recorder assignments, one manager, and one reflector, and no contributors
         assert.lengthOf(
-          result.filter(({ group_role_id }) => group_role_id === locals.manager.id),
+          result.filter(({ team_role_id }) => team_role_id === locals.manager.id),
           1,
         );
         assert.lengthOf(
-          result.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
+          result.filter(({ team_role_id }) => team_role_id === locals.recorder.id),
           2,
         );
         assert.lengthOf(
-          result.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
+          result.filter(({ team_role_id }) => team_role_id === locals.reflector.id),
           1,
         );
         assert.lengthOf(
-          result.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
+          result.filter(({ team_role_id }) => team_role_id === locals.contributor.id),
           0,
         );
       },
@@ -1867,16 +1867,16 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.recorder.id,
+          team_role_id: locals.recorder.id,
         },
       ];
       locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
-        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
           .length,
       }));
       locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -1893,11 +1893,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const expected = [
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.recorder.id,
+          team_role_id: locals.recorder.id,
         },
       ];
       assert.sameDeepMembers(result, expected);
@@ -1913,16 +1913,16 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
+          team_role_id: locals.contributor.id,
         },
       ];
       locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
-        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
           .length,
       }));
       locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -1938,7 +1938,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const expected = [
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
       ];
       assert.sameDeepMembers(result, expected);
@@ -1954,24 +1954,24 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.reflector.id,
+          team_role_id: locals.reflector.id,
         },
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
+          team_role_id: locals.contributor.id,
         },
         {
           user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.contributor.id,
+          team_role_id: locals.contributor.id,
         },
       ];
       locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
-        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
           .length,
       }));
       locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -1988,21 +1988,21 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const expected1 = [
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.reflector.id,
+          team_role_id: locals.reflector.id,
         },
       ];
       const expected2 = [
         {
           user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.reflector.id,
+          team_role_id: locals.reflector.id,
         },
       ];
 
@@ -2013,7 +2013,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
-        secondUserRoleAssignment.group_role_id === locals.manager.id ? expected1 : expected2;
+        secondUserRoleAssignment.team_role_id === locals.manager.id ? expected1 : expected2;
       assert.sameDeepMembers(result, expected);
     },
   );
@@ -2027,28 +2027,28 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       const roleAssignments = [
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.manager.id,
+          team_role_id: locals.manager.id,
         },
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.recorder.id,
+          team_role_id: locals.recorder.id,
         },
         {
           user_id: locals.studentUsers[0].user_id,
-          group_role_id: locals.reflector.id,
+          team_role_id: locals.reflector.id,
         },
         {
           user_id: locals.studentUsers[1].user_id,
-          group_role_id: locals.contributor.id,
+          team_role_id: locals.contributor.id,
         },
         {
           user_id: locals.studentUsers[2].user_id,
-          group_role_id: locals.contributor.id,
+          team_role_id: locals.contributor.id,
         },
       ];
       locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
         ...role,
-        count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+        count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
           .length,
       }));
       locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -2063,21 +2063,21 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
 
       // Ensure that there is a single role assignment for manager, recorder, and reflector each
       assert.lengthOf(
-        result.filter(({ group_role_id }) => group_role_id === locals.manager.id),
+        result.filter(({ team_role_id }) => team_role_id === locals.manager.id),
         1,
       );
       assert.lengthOf(
-        result.filter(({ group_role_id }) => group_role_id === locals.recorder.id),
+        result.filter(({ team_role_id }) => team_role_id === locals.recorder.id),
         1,
       );
       assert.lengthOf(
-        result.filter(({ group_role_id }) => group_role_id === locals.reflector.id),
+        result.filter(({ team_role_id }) => team_role_id === locals.reflector.id),
         1,
       );
 
       // Ensure that there are no contributors
       assert.lengthOf(
-        result.filter(({ group_role_id }) => group_role_id === locals.contributor.id),
+        result.filter(({ team_role_id }) => team_role_id === locals.contributor.id),
         0,
       );
     },
@@ -2090,16 +2090,16 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     const roleAssignments = [
       {
         user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
+        team_role_id: locals.manager.id,
       },
       {
         user_id: locals.studentUsers[1].user_id,
-        group_role_id: locals.contributor.id,
+        team_role_id: locals.contributor.id,
       },
     ];
     locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
-      count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+      count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
         .length,
     }));
     locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -2115,7 +2115,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     const expected = [
       {
         user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
+        team_role_id: locals.manager.id,
       },
     ];
     assert.sameDeepMembers(result, expected);
@@ -2128,12 +2128,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     const roleAssignments = [
       {
         user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
+        team_role_id: locals.manager.id,
       },
     ];
     locals.groupInfo.rolesInfo!.groupRoles = locals.groupRoles.map((role) => ({
       ...role,
-      count: roleAssignments.filter((roleAssignment) => roleAssignment.group_role_id === role.id)
+      count: roleAssignments.filter((roleAssignment) => roleAssignment.team_role_id === role.id)
         .length,
     }));
     locals.groupInfo.rolesInfo!.roleAssignments = { key: roleAssignments } as unknown as Record<
@@ -2149,7 +2149,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     const expected = [
       {
         user_id: locals.studentUsers[0].user_id,
-        group_role_id: locals.manager.id,
+        team_role_id: locals.manager.id,
       },
     ];
     assert.sameDeepMembers(result, expected);

@@ -82,7 +82,7 @@ function getPermission(
   return permissions.find(
     (permission) =>
       permission.assessment_question_id === assessmentQuestion.id &&
-      permission.group_role_id === groupRole.id,
+      permission.team_role_id === groupRole.id,
   );
 }
 
@@ -1091,11 +1091,8 @@ describe('Assessment syncing', () => {
       'assessment_question_role_permissions',
       AssessmentQuestionRolePermissionSchema,
     );
-    assert.equal(syncedPermissions.filter((p) => p.group_role_id === foundRecorder.id).length, 2);
-    assert.equal(
-      syncedPermissions.filter((p) => p.group_role_id === foundContributor.id).length,
-      2,
-    );
+    assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundRecorder.id).length, 2);
+    assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundContributor.id).length, 2);
 
     // Remove the "Contributor" group role and re-sync
     groupAssessment.groupRoles = [
@@ -1131,12 +1128,9 @@ describe('Assessment syncing', () => {
       'assessment_question_role_permissions',
       AssessmentQuestionRolePermissionSchema,
     );
+    assert.equal(newSyncedPermissions.filter((p) => p.team_role_id === foundRecorder.id).length, 2);
     assert.equal(
-      newSyncedPermissions.filter((p) => p.group_role_id === foundRecorder.id).length,
-      2,
-    );
-    assert.equal(
-      newSyncedPermissions.filter((p) => p.group_role_id === foundContributor.id).length,
+      newSyncedPermissions.filter((p) => p.team_role_id === foundContributor.id).length,
       0,
     );
   });
@@ -1408,7 +1402,7 @@ describe('Assessment syncing', () => {
     const firstQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
         p.assessment_question_id === firstAssessmentQuestion.id &&
-        p.group_role_id === foundContributor.id,
+        p.team_role_id === foundContributor.id,
     );
     assert.isDefined(firstQuestionContributorPermission);
     assert.isFalse(firstQuestionContributorPermission.can_view);
@@ -1418,7 +1412,7 @@ describe('Assessment syncing', () => {
     const secondQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
         p.assessment_question_id === secondAssessmentQuestion.id &&
-        p.group_role_id === foundContributor.id,
+        p.team_role_id === foundContributor.id,
     );
     assert.isDefined(secondQuestionContributorPermission);
     assert.isTrue(secondQuestionContributorPermission.can_view);
@@ -1492,7 +1486,7 @@ describe('Assessment syncing', () => {
     const firstQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === firstAssessmentQuestion.id &&
-        p.group_role_id === firstGroupRole.id
+        p.team_role_id === firstGroupRole.id
       );
     });
     assert.ok(firstQuestionPermission);
@@ -1500,7 +1494,7 @@ describe('Assessment syncing', () => {
     const secondQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === secondAssessmentQuestion.id &&
-        p.group_role_id === secondGroupRole.id
+        p.team_role_id === secondGroupRole.id
       );
     });
     assert.ok(secondQuestionPermission);

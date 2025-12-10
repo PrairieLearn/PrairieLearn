@@ -11,7 +11,7 @@ import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  SprocGroupInfoSchema,
+  SprocTeamInfoSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../../../lib/db-types.js';
@@ -83,9 +83,9 @@ export const AssessmentInstanceDataSchema = z.array(
     open: AssessmentInstanceSchema.shape.open,
     modified_at: z.string(),
     // Left join group_info sproc
-    group_id: AssessmentInstanceSchema.shape.group_id.nullable(),
-    group_name: SprocGroupInfoSchema.shape.name.nullable(),
-    group_uids: SprocGroupInfoSchema.shape.uid_list.nullable(),
+    group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
+    group_name: SprocTeamInfoSchema.shape.name.nullable(),
+    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
     time_remaining: z.string(),
     start_date: z.string().nullable(),
     duration_seconds: z.number(),

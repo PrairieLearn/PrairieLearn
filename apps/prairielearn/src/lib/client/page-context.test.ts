@@ -197,7 +197,7 @@ const STAFF_ASSESSMENT = {
   duration_stat_median: '00:30:00',
   duration_stat_min: '00:10:00',
   duration_stat_thresholds: [],
-  group_work: false,
+  team_work: false,
   honor_code: null,
   id: '1',
   json_allow_real_time_grading: true,

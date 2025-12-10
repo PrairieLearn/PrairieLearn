@@ -141,7 +141,7 @@ function getFilenames(locals: UntypedResLocals) {
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
   };
-  if (locals.assessment.group_work) {
+  if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
     filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
     filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
@@ -298,14 +298,14 @@ async function sendInstancesCsv(
   res: Response,
   req: Request,
   columns: Columns,
-  options: { only_highest: boolean; group_work?: true },
+  options: { only_highest: boolean; team_work?: true },
 ) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
       assessment_id: res.locals.assessment.id,
       highest_score: options.only_highest,
-      group_work: options.group_work,
+      team_work: options.team_work,
     },
     z.unknown(),
   );
@@ -387,12 +387,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        group_work: res.locals.assessment.group_work,
+        team_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        group_work: res.locals.assessment.group_work,
+        team_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -434,7 +434,7 @@ router.get(
       );
 
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
+      identityColumn = (res.locals.assessment.team_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
@@ -482,7 +482,7 @@ router.get(
       );
 
       let submissionColumn = identityColumn;
-      if (res.locals.assessment.group_work) {
+      if (res.locals.assessment.team_work) {
         submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
       }
       const columns = submissionColumn.concat([
@@ -571,22 +571,22 @@ router.get(
     } else if (req.params.filename === filenames.scoresGroupCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: true,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.scoresGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: false,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: true,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: false,
-        group_work: true,
+        team_work: true,
       });
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

@@ -874,8 +874,8 @@ export function AssessmentQuestionTable({
           filenameBase: `manual_grading_${questionQid}`,
           mapRowToData: (row) => ({
             Instance: row.instance_question.id,
-            [assessment.group_work ? 'Group Name' : 'Name']: row.user_or_group_name || '',
-            [assessment.group_work ? 'UIDs' : 'UID']: row.uid || '',
+            [assessment.team_work ? 'Group Name' : 'Name']: row.user_or_group_name || '',
+            [assessment.team_work ? 'UIDs' : 'UID']: row.uid || '',
             'Grading Status': row.instance_question.requires_manual_grading
               ? 'Requires grading'
               : 'Graded',

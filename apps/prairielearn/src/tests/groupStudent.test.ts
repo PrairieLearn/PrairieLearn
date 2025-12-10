@@ -469,7 +469,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.assessment_instance_id = result.id;
       locals.assessmentInstanceURL =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(result.group_id, '1');
+      assert.equal(result.team_id, '1');
     });
   });
 

@@ -38,7 +38,7 @@ const RoleAssignmentSchema = z.object({
   user_id: z.string(),
   uid: z.string(),
   role_name: z.string(),
-  group_role_id: z.string(),
+  team_role_id: z.string(),
 });
 export type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
@@ -65,7 +65,7 @@ export interface GroupInfo {
   rolesInfo?: RolesInfo;
 }
 
-type GroupRoleAssignment = Pick<GroupUserRole, 'group_role_id' | 'user_id'>;
+type GroupRoleAssignment = Pick<GroupUserRole, 'team_role_id' | 'user_id'>;
 
 const GroupForUpdateSchema = GroupSchema.extend({
   cur_size: z.number(),
@@ -306,7 +306,7 @@ export async function addUserToGroup({
     await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
       user_id: user.user_id,
-      group_config_id: group.group_config_id,
+      group_config_id: group.team_config_id,
       assessment_id: assessment.id,
       authn_user_id,
       group_role_id: groupRoleId,
@@ -512,7 +512,7 @@ export function getGroupRoleReassignmentsAfterLeave(
   const leavingUserRoleIds = new Set(
     groupRoleAssignments
       .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-      .map(({ group_role_id }) => group_role_id),
+      .map(({ team_role_id }) => team_role_id),
   );
 
   const roleIdsToReassign =
@@ -528,7 +528,7 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get group user to group role assignments, excluding the leaving user
   const groupRoleAssignmentUpdates = groupRoleAssignments
     .filter(({ user_id }) => !idsEqual(user_id, leavingUserId))
-    .map(({ user_id, group_role_id }) => ({ user_id, group_role_id }));
+    .map(({ user_id, team_role_id }) => ({ user_id, team_role_id }));
 
   for (const roleId of roleIdsToReassign) {
     // First, try to give the role to a user with no roles
@@ -540,20 +540,20 @@ export function getGroupRoleReassignmentsAfterLeave(
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: userIdWithNoRoles,
-        group_role_id: roleId,
+        team_role_id: roleId,
       });
       continue;
     }
 
     // Next, try to find a user with a non-required role and replace that role
-    const idxToUpdate = groupRoleAssignmentUpdates.findIndex(({ group_role_id }) => {
+    const idxToUpdate = groupRoleAssignmentUpdates.findIndex(({ team_role_id }) => {
       const roleMin =
-        groupInfo.rolesInfo?.groupRoles.find((role) => idsEqual(role.id, group_role_id))?.minimum ??
+        groupInfo.rolesInfo?.groupRoles.find((role) => idsEqual(role.id, team_role_id))?.minimum ??
         0;
       return roleMin === 0;
     });
     if (idxToUpdate !== -1) {
-      groupRoleAssignmentUpdates[idxToUpdate].group_role_id = roleId;
+      groupRoleAssignmentUpdates[idxToUpdate].team_role_id = roleId;
       continue;
     }
 
@@ -562,13 +562,13 @@ export function getGroupRoleReassignmentsAfterLeave(
       (m) =>
         !idsEqual(m.user_id, leavingUserId) &&
         !groupRoleAssignmentUpdates.some(
-          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.user_id),
+          (u) => idsEqual(u.team_role_id, roleId) && idsEqual(u.user_id, m.user_id),
         ),
     )?.user_id;
     if (assigneeUserId !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: assigneeUserId,
-        group_role_id: roleId,
+        team_role_id: roleId,
       });
       continue;
     }
@@ -640,7 +640,7 @@ export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): 
       .map((role) => role.id) ?? [];
   const assignerUsers = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {})
     .flat()
-    .filter((assignment) => assignerRoles.some((id) => idsEqual(id, assignment.group_role_id)))
+    .filter((assignment) => assignerRoles.some((id) => idsEqual(id, assignment.team_role_id)))
     .map((assignment) => assignment.user_id);
   if (assignerUsers.length === 0) {
     // If none of the current users in the group has an assigner role, allow any
@@ -682,9 +682,9 @@ export async function updateGroupRoles(
         throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
-        group_id: groupId,
+        group_id: groupId, // SQL parameter name
         user_id: userId,
-        group_role_id: roleId,
+        team_role_id: roleId, // JSON key name for SQL
       };
     });
 
@@ -694,7 +694,7 @@ export async function updateGroupRoles(
         .filter((role) => role.can_assign_roles)
         .map((role) => role.id) ?? [];
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
-      assignerRoleIds.includes(roleAssignment.group_role_id),
+      assignerRoleIds.includes(roleAssignment.team_role_id as string),
     );
     if (!assignerRoleFound) {
       if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
@@ -702,9 +702,9 @@ export async function updateGroupRoles(
         userId = groupInfo.groupMembers[0].user_id;
       }
       roleAssignments.push({
-        group_id: groupId,
+        group_id: groupId, // SQL parameter name
         user_id: userId,
-        group_role_id: assignerRoleIds[0],
+        team_role_id: assignerRoleIds[0], // JSON key name for SQL
       });
     }
 
