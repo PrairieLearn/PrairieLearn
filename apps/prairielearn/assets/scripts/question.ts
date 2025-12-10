@@ -20,13 +20,16 @@ import { mathjaxTypeset } from './lib/mathjax.js';
 // used on the AI question generation draft editor page.
 observe('.question-container', {
   constructor: HTMLDivElement,
-  // TODO: do we need to clean up anything on removal for long-lived pages?
   initialize(container) {
     // TODO: is this the correct sequencing of MathJax?
     void mathjaxTypeset([container]);
 
+    // Track resources that need cleanup
+    let socket: Socket | null = null;
+    const countdownAbortController = new AbortController();
+
     if (container.dataset.gradingMethod === 'External') {
-      externalGradingLiveUpdate();
+      socket = externalGradingLiveUpdate();
     }
 
     const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
@@ -58,22 +61,50 @@ observe('.question-container', {
       expandButtonContainer?.classList.add('d-flex');
     }
 
-    setupDynamicObjects();
+    setupDynamicObjects(countdownAbortController.signal);
     disableOnSubmit();
 
-    $<HTMLDivElement>('.js-submission-body.render-pending').on('show.bs.collapse', (e) => {
-      loadPendingSubmissionPanel(e.currentTarget, false);
+    // Set up observer for pending submission panels within this container
+    const submissionPanelObserver = observe('.js-submission-body.render-pending', {
+      constructor: HTMLDivElement,
+      add(panel) {
+        // Only observe panels that are descendants of this container
+        if (!container.contains(panel)) return;
+
+        panel.addEventListener('show.bs.collapse', function (this: HTMLDivElement) {
+          loadPendingSubmissionPanel(this, false);
+        });
+      },
     });
 
     const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
     copyContentModal(copyQuestionForm);
+
+    // Return cleanup function
+    return {
+      remove() {
+        // Close socket connection if exists
+        socket?.close();
+
+        // Abort countdown timers
+        countdownAbortController.abort();
+
+        // Stop observing submission panels
+        submissionPanelObserver.abort();
+
+        // Note: DOM event listeners on child elements of the container are
+        // automatically garbage collected when the container is removed from the DOM.
+        // confirmOnUnload and copyContentModal add listeners to window/form which
+        // will be cleaned up on page unload, so we don't manually clean them up here.
+      },
+    };
   },
 });
 
-function externalGradingLiveUpdate() {
+function externalGradingLiveUpdate(): Socket | null {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
 
-  if (!questionContainer) return;
+  if (!questionContainer) return null;
 
   const { variantId, variantToken } = questionContainer.dataset;
 
@@ -93,7 +124,7 @@ function externalGradingLiveUpdate() {
   }
 
   // If everything has been graded or was canceled, don't even open a socket
-  if (!gradingPending) return;
+  if (!gradingPending) return null;
 
   // By this point, it's safe to open a socket
   const socket = io('/external-grading');
@@ -105,6 +136,8 @@ function externalGradingLiveUpdate() {
   );
 
   socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
+
+  return socket;
 }
 
 function handleStatusChange(socket: Socket, msg: StatusMessage) {
@@ -292,7 +325,7 @@ function updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'
   display.innerHTML = label;
 }
 
-function setupDynamicObjects() {
+function setupDynamicObjects(signal?: AbortSignal): void {
   // Install on page load and reinstall on websocket re-render
   document.querySelectorAll('a.disable-on-click').forEach((link) => {
     link.addEventListener('click', () => {
@@ -310,6 +343,7 @@ function setupDynamicObjects() {
       progressSelector: '#submission-suspended-progress',
       initialServerRemainingMS: countdownData.serverRemainingMS,
       initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
+      signal,
       onTimerOut: () => {
         document.querySelectorAll<HTMLButtonElement>('.question-grade').forEach((gradeButton) => {
           gradeButton.disabled = false;

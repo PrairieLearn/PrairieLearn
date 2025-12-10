@@ -46,11 +46,12 @@ export function setupCountdown(options: {
   initialServerRemainingMS: number;
   initialServerTimeLimitMS: number;
   serverUpdateURL?: string;
+  signal?: AbortSignal;
   onTimerOut?: () => void;
   onRemainingTime?: Record<number, () => void>;
   onServerUpdateFail?: (remainingMS: number) => void;
   getBackgroundColor?: (remainingSec: number) => string;
-}) {
+}): void {
   const countdownDisplay = document.querySelector<HTMLElement>(options.displaySelector);
   const countdownProgress = document.querySelector<HTMLElement>(options.progressSelector);
 
@@ -61,7 +62,8 @@ export function setupCountdown(options: {
   let lastRemainingMS: number = options.initialServerRemainingMS;
   let clientStart: number;
   let updateServerIfExpired = true;
-  let nextCountdownDisplay: ReturnType<typeof setTimeout> | null = null;
+  let nextCountdownDisplayTimeoutId: ReturnType<typeof setTimeout> | null = null;
+  let serverUpdateIntervalId: ReturnType<typeof setInterval> | null = null;
 
   countdownProgress.classList.add('progress');
   countdownProgress.innerHTML = '<div class="progress-bar progress-bar-primary"></div>';
@@ -73,8 +75,14 @@ export function setupCountdown(options: {
   });
 
   if (options.serverUpdateURL) {
-    window.setInterval(updateServerRemainingMS, 60000);
+    serverUpdateIntervalId = setInterval(updateServerRemainingMS, 60000);
   }
+
+  // Clean up intervals/timeouts when aborted
+  options.signal?.addEventListener('abort', () => {
+    clearInterval(serverUpdateIntervalId ?? undefined);
+    clearTimeout(nextCountdownDisplayTimeoutId ?? undefined);
+  });
 
   function handleServerResponseRemainingMS(data: any) {
     serverRemainingMS = data.serverRemainingMS;
@@ -131,9 +139,9 @@ export function setupCountdown(options: {
       }
       lastRemainingMS = remainingMS;
       // cancel any existing scheduled call to displayCountdown
-      if (nextCountdownDisplay != null) clearTimeout(nextCountdownDisplay);
+      if (nextCountdownDisplayTimeoutId != null) clearTimeout(nextCountdownDisplayTimeoutId);
       // reschedule for the next half-second time
-      nextCountdownDisplay = setTimeout(displayCountdown, (remainingMS - 500) % 1000);
+      nextCountdownDisplayTimeoutId = setTimeout(displayCountdown, (remainingMS - 500) % 1000);
     } else if (options.serverUpdateURL && updateServerIfExpired) {
       // If the timer runs out, trigger a new server update to confirm before closing
       updateServerRemainingMS();
