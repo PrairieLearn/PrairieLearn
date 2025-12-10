@@ -31,13 +31,13 @@ export function InstructorAiGenerateDraftEditor({
 }) {
   const chatCsrfToken = generateCsrfToken({
     url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
-    authn_user_id: resLocals.authn_user?.user_id ?? '',
+    authnUserId: resLocals.authn_user?.user_id ?? '',
   });
 
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
-    authn_user_id: resLocals.authn_user?.user_id ?? '',
+    authnUserId: resLocals.authn_user?.user_id ?? '',
   });
 
   return PageLayout({

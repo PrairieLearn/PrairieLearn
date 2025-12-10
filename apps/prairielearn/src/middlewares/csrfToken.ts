@@ -27,12 +27,18 @@ export default asyncHandler(async (req, res, next) => {
   next();
 });
 
-export function generateCsrfToken({
-  url,
-  authn_user_id,
-}: {
-  url: string;
-  authn_user_id: string;
-}): string {
-  return generateSignedToken({ url, authn_user_id: authn_user_id.toString() }, config.secretKey);
+/**
+ * Generates a CSRF token for the given URL and authentication user ID.
+ * This is useful for interacting with routes which only have a POST handler,
+ * e.g. `instructorCopyPublicCourseInstance.ts`.
+ */
+export function generateCsrfToken({ url, authnUserId }: { url: string; authnUserId: string }) {
+  return generateSignedToken(
+    {
+      // We don't want to include the query params in the CSRF token checks.
+      url: url.split('?')[0],
+      authn_user_id: authnUserId,
+    },
+    config.secretKey,
+  );
 }
