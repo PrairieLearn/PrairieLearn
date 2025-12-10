@@ -273,7 +273,7 @@ export async function uploadSubmissions(
                 question_id: question.id,
                 // For group work, arbitrarily use the first user's ID as the authn_user_id.
                 // This value doesn't really matter, especially in dev mode.
-                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
                 group_id: entity.type === 'group' ? entity.group_id : null,
                 seed: row.Seed,
