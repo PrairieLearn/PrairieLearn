@@ -155,7 +155,7 @@ export function CourseRequestsTable({
                                 <th>Status</th>
                                 <th></th>
                               </thead>
-                              ${row.jobs.toReversed().map((job) => {
+                              ${[...row.jobs].reverse().map((job) => {
                                 return html`
                                   <tr>
                                     <td>${job.number}</td>

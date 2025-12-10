@@ -37,7 +37,7 @@ import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.j
 
 import { CourseInstancePublishing } from './components/CourseInstancePublishing.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
+import { CourseInstancePublishingExtensionRowSchema } from './instructorInstanceAdminPublishing.types.js';
 import { plainDateTimeStringToDate } from './utils/dateUtils.js';
 
 const router = Router();
@@ -61,7 +61,7 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance({
   return await queryRows(
     sql.select_publishing_extensions_with_users_by_course_instance,
     { course_instance_id: courseInstance.id },
-    CourseInstancePublishingExtensionWithUsersSchema,
+    CourseInstancePublishingExtensionRowSchema,
   );
 }
 
@@ -191,7 +191,7 @@ router.get(
               canEdit={hasCourseInstancePermissionEdit && origHash !== null}
               csrfToken={csrfToken}
               origHash={origHash}
-              publishingExtensions={publishingExtensions}
+              extensions={publishingExtensions}
               isDevMode={config.devMode}
             />
           </Hydrate>

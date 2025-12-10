@@ -289,9 +289,7 @@ function EditQuestionPointsScoreForm({
             value={value}
             aria-label={findLabel(field)}
             required
-            onChange={(e) => {
-              setValue((e.target as HTMLInputElement).value);
-            }}
+            onChange={(e) => setValue(e.currentTarget.value)}
           />
           <span class="input-group-text">
             {field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}

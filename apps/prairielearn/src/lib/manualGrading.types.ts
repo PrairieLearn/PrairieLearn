@@ -1,12 +1,12 @@
 import { z } from 'zod';
 
+import { StaffRubricItemSchema, StaffRubricSchema } from './client/safe-db-types.js';
 import {
   IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
   type RubricItem,
   RubricItemSchema,
-  RubricSchema,
 } from './db-types.js';
 
 export const AppliedRubricItemSchema = z.object({
@@ -17,9 +17,20 @@ export const AppliedRubricItemSchema = z.object({
 });
 export type AppliedRubricItem = z.infer<typeof AppliedRubricItemSchema>;
 
-export const RubricDataSchema = RubricSchema.extend({
+export const RenderedRubricItemSchema = z.object({
+  rubric_item: RubricItemSchema,
+  num_submissions: z.number(),
+  description_rendered: z.string().optional(),
+  explanation_rendered: z.string().optional(),
+  grader_note_rendered: z.string().optional(),
+});
+export type RenderedRubricItem = z.infer<typeof RenderedRubricItemSchema>;
+
+export const RubricDataSchema = z.object({
+  rubric: StaffRubricSchema,
   rubric_items: z.array(
-    RubricItemSchema.extend({
+    z.object({
+      rubric_item: StaffRubricItemSchema,
       num_submissions: z.number(),
       description_rendered: z.string().optional(),
       explanation_rendered: z.string().optional(),

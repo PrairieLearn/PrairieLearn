@@ -129,7 +129,9 @@ WITH
   rubric_items_data AS (
     SELECT
       JSONB_AGG(
-        TO_JSONB(ri) || JSONB_BUILD_OBJECT(
+        JSONB_BUILD_OBJECT(
+          'rubric_item',
+          to_jsonb(ri),
           'num_submissions',
           COALESCE(scpri.num_submissions, 0)
         )
@@ -145,7 +147,7 @@ WITH
       AND ri.deleted_at IS NULL
   )
 SELECT
-  r.*,
+  to_jsonb(r.*) AS rubric,
   rid.items_data AS rubric_items
 FROM
   rubrics r

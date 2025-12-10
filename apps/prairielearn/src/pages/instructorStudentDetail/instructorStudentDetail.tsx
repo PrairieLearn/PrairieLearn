@@ -171,8 +171,8 @@ router.post(
         break;
       }
       case 'cancel_invitation': {
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(400, 'Enrollment is not invited');
+        if (!['invited', 'rejected'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
         }
         await deleteEnrollment({
           enrollment,

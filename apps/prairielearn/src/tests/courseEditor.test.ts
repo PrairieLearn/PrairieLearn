@@ -16,11 +16,11 @@ import { getCourseInstanceSettingsUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
-import { generateCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

@@ -94,12 +94,10 @@ export function NumericInputColumnFilter<TData, TValue>({
             disabled={emptyOnly}
             aria-describedby={`${columnId}-filter-description`}
             onInput={(e) => {
-              if (e.target instanceof HTMLInputElement) {
-                column.setFilterValue({
-                  filterValue: e.target.value,
-                  emptyOnly: false,
-                });
-              }
+              column.setFilterValue({
+                filterValue: e.currentTarget.value,
+                emptyOnly: false,
+              });
             }}
             onClick={(e) => e.stopPropagation()}
           />
@@ -121,13 +119,11 @@ export function NumericInputColumnFilter<TData, TValue>({
               checked={emptyOnly}
               id={`${columnId}-empty-filter`}
               onChange={(e) => {
-                if (e.target instanceof HTMLInputElement) {
-                  column.setFilterValue(
-                    e.target.checked
-                      ? { filterValue: '', emptyOnly: true }
-                      : { filterValue: '', emptyOnly: false },
-                  );
-                }
+                column.setFilterValue(
+                  e.currentTarget.checked
+                    ? { filterValue: '', emptyOnly: true }
+                    : { filterValue: '', emptyOnly: false },
+                );
               }}
             />
             <label class="form-check-label" for={`${columnId}-empty-filter`}>

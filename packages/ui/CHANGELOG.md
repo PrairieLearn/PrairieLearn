@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.7.2
+
+### Patch Changes
+
+- 7ba5db4: Use `currentTarget` instead of `target` in event handlers
+
 ## 1.7.1
 
 ### Patch Changes

@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useFormContext } from 'react-hook-form';
 
+import { type PublishingStatus, computeStatus } from '../lib/publishing.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
@@ -10,30 +11,6 @@ import {
 } from '../pages/instructorInstanceAdminPublishing/utils/dateUtils.js';
 
 import { FriendlyDate } from './FriendlyDate.js';
-
-type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
-
-/** Helper to compute status from dates and current time. */
-function computeStatus(startDate: Date | null, endDate: Date | null): PublishingStatus {
-  if (!startDate && !endDate) {
-    return 'unpublished';
-  }
-
-  const now = nowRoundedToSeconds();
-
-  if (startDate && endDate) {
-    if (endDate <= now) {
-      return 'unpublished';
-    }
-    if (startDate > now) {
-      return 'publish_scheduled';
-    }
-    return 'published';
-  }
-
-  // Should not happen in valid states, but default to unpublished
-  return 'unpublished';
-}
 
 function normalizeDateTimeLocal(value: string): string {
   // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.

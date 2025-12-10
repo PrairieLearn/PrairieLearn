@@ -1,6 +1,6 @@
 import { Modal } from 'react-bootstrap';
 
-import { type AuthnProvider } from '../../../lib/db-types.js';
+import type { StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
 
 export function AddInstitutionModal({
@@ -12,7 +12,7 @@ export function AddInstitutionModal({
 }: {
   show: boolean;
   availableTimezones: Timezone[];
-  supportedAuthenticationProviders: AuthnProvider[];
+  supportedAuthenticationProviders: StaffAuthnProvider[];
   csrfToken: string;
   onClose: () => void;
 }) {

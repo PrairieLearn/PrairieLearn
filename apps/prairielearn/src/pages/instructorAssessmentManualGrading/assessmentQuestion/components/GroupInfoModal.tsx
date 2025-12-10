@@ -170,9 +170,7 @@ export function GroupInfoModal({
                     id="grouping-application-select"
                     class="form-select w-auto flex-shrink-0"
                     value={closedSubmissionsOnly ? 'true' : 'false'}
-                    onChange={(e) =>
-                      setClosedSubmissionsOnly((e.target as HTMLSelectElement).value === 'true')
-                    }
+                    onChange={(e) => setClosedSubmissionsOnly(e.currentTarget.value === 'true')}
                   >
                     <option value="true">Only group closed submissions</option>
                     <option value="false">Group open & closed submissions</option>

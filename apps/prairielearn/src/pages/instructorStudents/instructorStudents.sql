@@ -8,4 +8,4 @@ FROM
 WHERE
   e.course_instance_id = $course_instance_id
 ORDER BY
-  u.uid ASC;
+  COALESCE(u.uid, e.pending_uid) ASC;

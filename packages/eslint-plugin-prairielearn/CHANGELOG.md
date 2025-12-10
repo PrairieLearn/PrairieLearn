@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.3.0
+
+### Minor Changes
+
+- 2aa898c: Add new `safe-db-types` rule
+
 ## 2.2.7
 
 ### Patch Changes

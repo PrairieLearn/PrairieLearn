@@ -2,7 +2,11 @@ import { html, unsafeHtml } from '@prairielearn/html';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
 import type { AssessmentQuestion, RubricGradingItem, RubricItem } from '../../../lib/db-types.js';
-import { type RubricData, type RubricGradingData } from '../../../lib/manualGrading.types.js';
+import {
+  type RenderedRubricItem,
+  type RubricData,
+  type RubricGradingData,
+} from '../../../lib/manualGrading.types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function RubricInputSection({
@@ -137,11 +141,11 @@ function RubricItems({
       ? rubric_items.map((item) =>
           RubricItem({
             item,
-            item_grading: rubric_grading_items?.[item.id],
+            item_grading: rubric_grading_items?.[item.rubric_item.id],
             assessment_question,
             disable,
             ai_checked: ai_selected_rubric_item_ids_set
-              ? ai_selected_rubric_item_ids_set.has(item.id)
+              ? ai_selected_rubric_item_ids_set.has(item.rubric_item.id)
               : undefined,
           }),
         )
@@ -156,7 +160,7 @@ function RubricItem({
   disable,
   ai_checked,
 }: {
-  item: RubricData['rubric_items'][0];
+  item: RenderedRubricItem;
   item_grading: RubricGradingItem | undefined | null;
   assessment_question: AssessmentQuestion;
   disable: boolean;
@@ -172,7 +176,7 @@ function RubricItem({
                 style="margin-left: 3px; margin-right: 8px;"
                 name="rubric_item_selected_ai"
                 class="js-selectable-rubric-item"
-                value="${item.id}"
+                value="${item.rubric_item.id}"
                 ${ai_checked ? 'checked' : ''}
                 disabled
                 data-bs-toggle="tooltip"
@@ -185,24 +189,25 @@ function RubricItem({
           type="checkbox"
           name="rubric_item_selected_manual"
           class="js-selectable-rubric-item me-2"
-          value="${item.id}"
+          value="${item.rubric_item.id}"
           ${item_grading?.score ? 'checked' : ''}
           ${disable ? 'disabled' : ''}
-          data-rubric-item-points="${item.points}"
-          data-key-binding="${item.key_binding}"
+          data-rubric-item-points="${item.rubric_item.points}"
+          data-key-binding="${item.rubric_item.key_binding}"
         />
-        <span class="badge text-bg-info">${item.key_binding}</span>
-        <span class="float-end text-${item.points >= 0 ? 'success' : 'danger'}">
+        <span class="badge text-bg-info">${item.rubric_item.key_binding}</span>
+        <span class="float-end text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong>
             <span class="js-manual-grading-points" data-testid="rubric-item-points">
-              [${(item.points >= 0 ? '+' : '') + Math.round(item.points * 100) / 100}]
+              [${(item.rubric_item.points >= 0 ? '+' : '') +
+              Math.round(item.rubric_item.points * 100) / 100}]
             </span>
             ${assessment_question.max_points
               ? html`
                   <span class="js-manual-grading-percentage">
-                    [${(item.points >= 0 ? '+' : '') +
+                    [${(item.rubric_item.points >= 0 ? '+' : '') +
                     Math.round(
-                      (item.points * 10000) /
+                      (item.rubric_item.points * 10000) /
                         (assessment_question.max_manual_points || assessment_question.max_points),
                     ) /
                       100}%]
