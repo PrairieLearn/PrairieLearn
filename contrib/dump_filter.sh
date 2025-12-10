@@ -155,7 +155,7 @@ psql --dbname=${TMP_DB} --command="DELETE FROM course_instances WHERE short_name
 # Deleting all users except ones used by other retained tables...
 psql --dbname=${TMP_DB} --file=- << EOF
 delete from users
-where user_id not in (
+where id not in (
     select distinct user_id
     from (
         (select user_id from enrollments)
