@@ -4,7 +4,7 @@ WITH
     SELECT DISTINCT
       ON (
         CASE
-          WHEN $group_work THEN ai.group_id
+          WHEN $group_work THEN ai.team_id
           ELSE u.user_id
         END,
         CASE
@@ -64,7 +64,7 @@ WITH
       a.id = $assessment_id
     ORDER BY
       CASE
-        WHEN $group_work THEN ai.group_id
+        WHEN $group_work THEN ai.team_id
         ELSE u.user_id
       END,
       CASE
@@ -124,7 +124,7 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
   LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+    g.id = ai.team_id
     AND g.group_config_id = gc.id
   )
   LEFT JOIN users AS u ON (u.user_id = ai.user_id)
@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.group_name,
+      ai.team_name,
       ai.uid_list
     FROM
       submissions AS s
@@ -320,7 +320,7 @@ WITH
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
       LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
       LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
+        g.id = ai.team_id
         AND g.group_config_id = gc.id
       )
       LEFT JOIN users AS u ON (u.user_id = ai.user_id)

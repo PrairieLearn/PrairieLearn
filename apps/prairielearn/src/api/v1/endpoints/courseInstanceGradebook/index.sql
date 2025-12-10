@@ -20,7 +20,7 @@ WITH
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
-      ai.group_id,
+      ai.team_id,
       ai.assessment_id,
       ai.score_perc,
       ai.max_points,

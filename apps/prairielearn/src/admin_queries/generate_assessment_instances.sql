@@ -48,7 +48,7 @@ FROM
 WHERE
   a.id = $assessment_id
   -- This query only works for assessments with group work enabled
-  AND a.group_work = TRUE
+  AND a.team_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
   u.user_id;

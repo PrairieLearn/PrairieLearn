@@ -124,7 +124,7 @@ ORDER BY
 SELECT
   (
     CASE
-      WHEN ai.group_id IS NOT NULL THEN EXISTS (
+      WHEN ai.team_id IS NOT NULL THEN EXISTS (
         SELECT
           1
         FROM

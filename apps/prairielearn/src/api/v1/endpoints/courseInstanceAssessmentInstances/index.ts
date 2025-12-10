@@ -62,7 +62,7 @@ export const SubmissionDataSchema = z.array(
     user_name: UserSchema.shape.name.nullable(),
     user_role: SprocUsersGetDisplayedRoleSchema,
 
-    // left join group_info sproc
+    // left join team_info sproc
     group_id: SprocTeamInfoSchema.shape.id.nullable(),
     group_name: SprocTeamInfoSchema.shape.name.nullable(),
     group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),

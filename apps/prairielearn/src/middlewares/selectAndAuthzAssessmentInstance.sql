@@ -71,7 +71,7 @@ FROM
     $authz_data,
     $req_date,
     ci.display_timezone,
-    a.group_work
+    a.team_work
   ) AS aai ON TRUE
   CROSS JOIN file_list AS fl
 WHERE

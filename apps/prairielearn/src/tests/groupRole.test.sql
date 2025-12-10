@@ -8,7 +8,7 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work IS TRUE
+  AND a.team_work IS TRUE
   AND gc.has_roles IS TRUE;
 
 -- BLOCK select_group_work_assessment_without_roles
@@ -22,7 +22,7 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work IS TRUE
+  AND a.team_work IS TRUE
   AND gc.has_roles IS FALSE;
 
 -- BLOCK select_assessment_group_roles
@@ -40,7 +40,7 @@ SELECT
 FROM
   group_configs AS gc
   JOIN groups AS g ON g.group_config_id = gc.id
-  JOIN group_user_roles AS gur ON gur.group_id = g.id
+  JOIN group_user_roles AS gur ON gur.team_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
 ORDER BY

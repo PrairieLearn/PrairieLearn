@@ -1483,7 +1483,7 @@ WITH
     FROM
       relevant_assessment_instances AS ai
     GROUP BY
-      coalesce(ai.user_id, - ai.group_id)
+      coalesce(ai.user_id, - ai.team_id)
   ),
   question_stats_by_user_or_group AS (
     SELECT
@@ -1788,7 +1788,7 @@ SELECT
   ci.course_id,
   a.course_instance_id,
   ai.user_id,
-  ai.group_id,
+  ai.team_id,
   'assessment_instances',
   ai.id,
   'delete',

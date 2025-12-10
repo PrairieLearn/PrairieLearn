@@ -40,7 +40,7 @@ SELECT
   COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
   assessment_groups AS ag
-  LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)
+  LEFT JOIN assessment_group_users AS agu ON (agu.team_id = ag.id)
 ORDER BY
   ag.id;
 

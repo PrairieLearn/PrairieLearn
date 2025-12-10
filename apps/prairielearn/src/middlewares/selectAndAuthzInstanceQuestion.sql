@@ -119,7 +119,7 @@ FROM
     $authz_data,
     $req_date,
     ci.display_timezone,
-    a.group_work
+    a.team_work
   ) AS aai ON TRUE
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   CROSS JOIN file_list AS fl

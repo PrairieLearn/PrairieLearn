@@ -7,7 +7,7 @@ WITH
       a.number AS assessment_number,
       a.order_by AS assessment_order_by,
       a.title,
-      a.group_work,
+      a.team_work,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -80,7 +80,7 @@ WITH
       a.number AS assessment_number,
       a.order_by AS assessment_order_by,
       a.title,
-      a.group_work,
+      a.team_work,
       aset.id AS assessment_set_id,
       aset.name AS assessment_set_name,
       aset.heading AS assessment_set_heading,
@@ -116,7 +116,7 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       -- We use a subquery to find assessment instances by either user_id or
       -- group_id. We use to do this with AND (ai.user_id = $user_id OR
-      -- ai.group_id = gu.group_id) but this was triggering a bad query plan for
+      -- ai.team_id = gu.team_id) but this was triggering a bad query plan for
       -- some course instances. Having separate SELECTs for user_id and group_id
       -- allows the query planner to utilize the two separate indexes we have
       -- for user_id and group_id.
@@ -135,7 +135,7 @@ WITH
           assessment_instances AS ai2
         WHERE
           ai2.assessment_id = a.id
-          AND ai2.group_id = gu.group_id
+          AND ai2.team_id = gu.team_id
       ) AS ai ON (TRUE)
       LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
       LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
