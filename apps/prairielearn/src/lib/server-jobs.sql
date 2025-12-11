@@ -1,12 +1,12 @@
 -- BLOCK insert_job_sequence
 WITH
-  max_over_job_sequences_with_same_course AS (
+  lock_acquired AS (
+    -- Use an advisory lock to prevent race conditions when computing the next
+    -- job sequence number. We use the course_id as the lock key, with a fixed
+    -- namespace (1) to avoid collisions with other advisory locks. For NULL
+    -- course_id, we use 0 as the key.
     SELECT
-      coalesce(max(js.number) + 1, 1) AS new_number
-    FROM
-      job_sequences AS js
-    WHERE
-      js.course_id IS NOT DISTINCT FROM $course_id
+      pg_advisory_xact_lock(1, coalesce($course_id::integer, 0))
   ),
   new_job_sequence AS (
     INSERT INTO
@@ -27,14 +27,17 @@ WITH
       $course_instance_id,
       $course_request_id,
       $assessment_id,
-      new_number,
+      coalesce(max(js.number) + 1, 1),
       $user_id,
       $authn_user_id,
       $type,
       $description,
       FALSE
     FROM
-      max_over_job_sequences_with_same_course
+      lock_acquired,
+      job_sequences AS js
+    WHERE
+      js.course_id IS NOT DISTINCT FROM $course_id
     RETURNING
       id
   ),
