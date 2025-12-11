@@ -5,12 +5,15 @@ import { downloadAsJSON } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
-import type { AssessmentQuestion, RubricItem } from '../lib/db-types.js';
-import type { RubricData } from '../lib/manualGrading.types.js';
+import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
+import type { RubricItem } from '../lib/db-types.js';
+import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
 
-type RubricItemData = Partial<
-  RubricItem & { num_submissions: number; disagreement_count: number | null }
->;
+type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
+  rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number'> & { id?: string };
+  disagreement_count: number | null;
+  num_submissions: number | null;
+};
 
 /**
  * Explicitly declaring these functions from the window of the instance question page
@@ -30,22 +33,22 @@ export function RubricSettings({
   aiGradingStats,
   context,
 }: {
-  assessmentQuestion: AssessmentQuestion;
+  assessmentQuestion: StaffAssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
   aiGradingStats: AiGradingGeneralStats | null;
   context: Record<string, any>;
 }) {
   const showAiGradingStats = Boolean(aiGradingStats);
-  const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
   const rubricItemsWithDisagreementCount = aiGradingStats?.rubric_stats ?? {};
-  const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
-    ...itemA,
-    disagreement_count:
-      itemA.id in rubricItemsWithDisagreementCount
-        ? rubricItemsWithDisagreementCount[itemA.id]
-        : null,
-  }));
+  const rubricItemDataMerged =
+    rubricData?.rubric_items.map((item) => ({
+      ...item,
+      disagreement_count:
+        item.rubric_item.id in rubricItemsWithDisagreementCount
+          ? rubricItemsWithDisagreementCount[item.rubric_item.id]
+          : null,
+    })) ?? [];
   const { variant_params, variant_true_answer, submission_submitted_answer } = context;
   const groups = {
     params: variant_params,
@@ -59,34 +62,38 @@ export function RubricSettings({
   // Define states
   const [rubricItems, setRubricItems] = useState<RubricItemData[]>(rubricItemDataMerged);
   const [replaceAutoPoints, setReplaceAutoPoints] = useState<boolean>(
-    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+    rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const [startingPoints, setStartingPoints] = useState<number>(rubricData?.starting_points ?? 0);
-  const [minPoints, setMinPoints] = useState<number>(rubricData?.min_points ?? 0);
-  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(rubricData?.max_extra_points ?? 0);
+  const [startingPoints, setStartingPoints] = useState<number>(
+    rubricData?.rubric.starting_points ?? 0,
+  );
+  const [minPoints, setMinPoints] = useState<number>(rubricData?.rubric.min_points ?? 0);
+  const [maxExtraPoints, setMaxExtraPoints] = useState<number>(
+    rubricData?.rubric.max_extra_points ?? 0,
+  );
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
   const rubricFile = useRef<HTMLInputElement>(null);
-  const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData));
-  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.modified_at ?? null);
+  const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
+  const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
   const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
   const defaultReplaceAutoPoints = useRef<boolean>(
-    rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points,
+    rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const defaultStartingPoints = useRef<number>(rubricData?.starting_points ?? 0);
-  const defaultMinPoints = useRef<number>(rubricData?.min_points ?? 0);
-  const defaultMaxExtraPoints = useRef<number>(rubricData?.max_extra_points ?? 0);
+  const defaultStartingPoints = useRef<number>(rubricData?.rubric.starting_points ?? 0);
+  const defaultMinPoints = useRef<number>(rubricData?.rubric.min_points ?? 0);
+  const defaultMaxExtraPoints = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
-      .map((item) => (item.points ? Number(item.points) : 0))
+      .map((item) => item.rubric_item.points)
       .reduce<
         [number, number]
       >(([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]), [startingPoints, startingPoints]);
@@ -120,8 +127,17 @@ export function RubricSettings({
       ...prev,
       // Only initialize these parameters to be consistent with current new row behavior
       {
-        points: 1,
-        always_show_to_students: true,
+        rubric_item: {
+          always_show_to_students: true,
+          deleted_at: null,
+          description: '',
+          explanation: null,
+          grader_note: null,
+          key_binding: null,
+          points: 1,
+        },
+        num_submissions: null,
+        disagreement_count: null,
       },
     ]);
   };
@@ -168,7 +184,13 @@ export function RubricSettings({
   const updateRubricItem = (idx: number, patch: Partial<RubricItem>) => {
     setRubricItems((prev) => {
       const next = prev.slice();
-      next[idx] = { ...next[idx], ...patch };
+      next[idx] = {
+        ...next[idx],
+        rubric_item: {
+          ...next[idx].rubric_item,
+          ...patch,
+        },
+      };
       return next;
     });
   };
@@ -193,11 +215,11 @@ export function RubricSettings({
       max_auto_points: assessmentQuestion.max_auto_points,
       rubric_items: rubricItems.map((it, idx) => ({
         order: idx,
-        points: it.points ? Number(it.points) : null,
-        description: it.description,
-        explanation: it.explanation ?? '',
-        grader_note: it.grader_note ?? '',
-        always_show_to_students: it.always_show_to_students,
+        points: it.rubric_item.points,
+        description: it.rubric_item.description,
+        explanation: it.rubric_item.explanation ?? '',
+        grader_note: it.rubric_item.grader_note ?? '',
+        always_show_to_students: it.rubric_item.always_show_to_students,
       })),
     };
 
@@ -332,13 +354,13 @@ export function RubricSettings({
       min_points: minPoints,
       max_extra_points: maxExtraPoints,
       rubric_items: rubricItems.map((it, idx) => ({
-        id: it.id,
+        id: it.rubric_item.id,
         order: idx,
-        points: it.points,
-        description: it.description,
-        explanation: it.explanation,
-        grader_note: it.grader_note,
-        always_show_to_students: it.always_show_to_students,
+        points: it.rubric_item.points,
+        description: it.rubric_item.description,
+        explanation: it.rubric_item.explanation,
+        grader_note: it.rubric_item.grader_note,
+        always_show_to_students: it.rubric_item.always_show_to_students,
       })),
       tag_for_manual_grading: tagForGrading,
     };
@@ -417,24 +439,25 @@ export function RubricSettings({
       // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
       // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
       const rubricData = data.rubric_data as RubricData | null;
+      const rubric = rubricData?.rubric ?? null;
       const rubricItemsWithSelectionCount = rubricData?.rubric_items ?? [];
       const rubricItemsWithDisagreementCount = data.aiGradingStats?.rubric_stats ?? {};
-      const rubricItemDataMerged = rubricItemsWithSelectionCount.map((itemA) => ({
-        ...itemA,
+      const rubricItemDataMerged = rubricItemsWithSelectionCount.map((item) => ({
+        ...item,
         disagreement_count:
-          itemA.id in rubricItemsWithDisagreementCount
-            ? rubricItemsWithDisagreementCount[itemA.id]
+          item.rubric_item.id in rubricItemsWithDisagreementCount
+            ? rubricItemsWithDisagreementCount[item.rubric_item.id]
             : null,
       }));
 
       defaultRubricItems.current = rubricItemDataMerged;
       defaultReplaceAutoPoints.current =
-        rubricData?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPoints.current = rubricData?.starting_points ?? 0;
-      defaultMinPoints.current = rubricData?.min_points ?? 0;
-      defaultMaxExtraPoints.current = rubricData?.max_extra_points ?? 0;
-      setWasUsingRubric(Boolean(rubricData));
-      setModifiedAt(rubricData ? new Date(rubricData.modified_at) : null);
+        rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+      defaultStartingPoints.current = rubric?.starting_points ?? 0;
+      defaultMinPoints.current = rubric?.min_points ?? 0;
+      defaultMaxExtraPoints.current = rubric?.max_extra_points ?? 0;
+      setWasUsingRubric(Boolean(rubric));
+      setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
     } else {
       window.location.replace(res.url);
@@ -590,7 +613,7 @@ export function RubricSettings({
                   class="form-control"
                   type="number"
                   value={minPoints}
-                  onInput={(e: any) => setMinPoints(Number(e.target.value))}
+                  onInput={(e) => setMinPoints(Number(e.currentTarget.value))}
                 />
               </label>
             </div>
@@ -610,7 +633,7 @@ export function RubricSettings({
                   class="form-control"
                   type="number"
                   value={maxExtraPoints}
-                  onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
+                  onInput={(e) => setMaxExtraPoints(Number(e.currentTarget.value))}
                 />
               </label>
             </div>
@@ -635,7 +658,7 @@ export function RubricSettings({
               {rubricItems.length > 0 ? (
                 rubricItems.map((it, idx) => (
                   <RubricRow
-                    key={it.id ?? `row-${idx}`}
+                    key={it.rubric_item.id ?? `row-${idx}`}
                     item={it}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
@@ -831,7 +854,7 @@ export function RubricSettings({
   );
 }
 
-export function RubricRow({
+function RubricRow({
   item,
   showAiGradingStats,
   submissionCount,
@@ -884,29 +907,37 @@ export function RubricRow({
         >
           <i class="fas fa-trash text-danger" />
         </button>
-        {item.id && (
+        {item.rubric_item.id && (
           <>
-            <input type="hidden" name={`rubric_item[${item.id}][id]`} value={item.id} />
-            <input type="hidden" name={`rubric_item[${item.id}][points]`} value={item.points} />
             <input
               type="hidden"
-              name={`rubric_item[${item.id}][description]`}
-              value={item.description}
+              name={`rubric_item[${item.rubric_item.id}][id]`}
+              value={item.rubric_item.id}
             />
             <input
               type="hidden"
-              name={`rubric_item[${item.id}][explanation]`}
-              value={b64EncodeUnicode(item.explanation ?? '')}
+              name={`rubric_item[${item.rubric_item.id}][points]`}
+              value={item.rubric_item.points}
             />
             <input
               type="hidden"
-              name={`rubric_item[${item.id}][grader_note]`}
-              value={b64EncodeUnicode(item.grader_note ?? '')}
+              name={`rubric_item[${item.rubric_item.id}][description]`}
+              value={item.rubric_item.description}
             />
             <input
               type="hidden"
-              name={`rubric_item[${item.id}][always_show_to_students]`}
-              value={item.always_show_to_students ? 'true' : 'false'}
+              name={`rubric_item[${item.rubric_item.id}][explanation]`}
+              value={b64EncodeUnicode(item.rubric_item.explanation ?? '')}
+            />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.rubric_item.id}][grader_note]`}
+              value={b64EncodeUnicode(item.rubric_item.grader_note ?? '')}
+            />
+            <input
+              type="hidden"
+              name={`rubric_item[${item.rubric_item.id}][always_show_to_students]`}
+              value={item.rubric_item.always_show_to_students ? 'true' : 'false'}
             />
           </>
         )}
@@ -918,10 +949,10 @@ export function RubricRow({
           class="form-control"
           style="width:5rem"
           step="any"
-          value={item.points}
+          value={item.rubric_item.points}
           aria-label="Points"
           required
-          onInput={(e: any) => updateRubricItem({ points: e.target.value })}
+          onInput={(e) => updateRubricItem({ points: Number(e.currentTarget.value) })}
         />
       </td>
 
@@ -931,10 +962,10 @@ export function RubricRow({
           class="form-control"
           maxLength={100}
           style="min-width:15rem"
-          value={item.description}
+          value={item.rubric_item.description}
           aria-label="Description"
           required
-          onInput={(e: any) => updateRubricItem({ description: e.target.value })}
+          onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
         />
       </td>
 
@@ -948,22 +979,22 @@ export function RubricRow({
            * However, this method will not work well with "Discard changes".
            * Ditto for grader note below.
            */
-          value={item.explanation ?? ''}
+          value={item.rubric_item.explanation ?? ''}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
-          onInput={(e: any) => updateRubricItem({ explanation: e.target.value })}
+          onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
         />
       </td>
 
       <td class="align-middle">
         <textarea
           class="form-control"
-          value={item.grader_note ?? ''}
+          value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
-          onInput={(e: any) => updateRubricItem({ grader_note: e.target.value })}
+          onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
         />
       </td>
 
@@ -973,7 +1004,7 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              checked={item.always_show_to_students}
+              checked={item.rubric_item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
             Always
@@ -984,7 +1015,7 @@ export function RubricRow({
             <input
               type="radio"
               class="form-check-input"
-              checked={!item.always_show_to_students}
+              checked={!item.rubric_item.always_show_to_students}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
             If selected

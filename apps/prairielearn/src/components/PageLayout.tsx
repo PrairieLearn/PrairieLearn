@@ -1,12 +1,16 @@
 import clsx from 'clsx';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
+import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 import type { VNode } from '@prairielearn/preact-cjs';
+import { run } from '@prairielearn/run';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { assertNever } from '../lib/types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -14,6 +18,7 @@ import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
 import { SideNav } from './SideNav.js';
+import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
   content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
@@ -22,6 +27,134 @@ function asHtmlSafe(
     return content;
   }
   return renderHtml(content);
+}
+
+function SyncErrorsAndWarningsForContext({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  const { course, urlPrefix, authz_data: authzData } = resLocals;
+
+  if (!course || !urlPrefix || !authzData) return null;
+
+  // The file editor renders its own SyncErrorsAndWarnings component with different wording.
+  if (navContext.subPage === 'file_edit') return null;
+
+  switch (navContext.page) {
+    case 'course_admin': {
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={course.sync_errors}
+          syncWarnings={course.sync_warnings}
+          fileEditUrl={`${urlPrefix}/course_admin/file_edit/infoCourse.json`}
+          context="course"
+        />
+      );
+    }
+    case 'instance_admin': {
+      const { course_instance: courseInstance, course } = resLocals;
+      if (!courseInstance || !course) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={courseInstance.sync_errors}
+          syncWarnings={courseInstance.sync_warnings}
+          fileEditUrl={`${urlPrefix}/instance_admin/file_edit/courseInstances/${courseInstance.short_name}/infoCourseInstance.json`}
+          context="course instance"
+        />
+      );
+    }
+    case 'assessment': {
+      const { assessment, course_instance: courseInstance } = resLocals;
+      if (!assessment || !courseInstance) return null;
+
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={assessment.sync_errors}
+          syncWarnings={assessment.sync_warnings}
+          fileEditUrl={`${urlPrefix}/assessment/${assessment.id}/file_edit/courseInstances/${courseInstance.short_name}/assessments/${assessment.tid}/infoAssessment.json`}
+          context="assessment"
+        />
+      );
+    }
+    case 'question':
+    case 'public_question': {
+      const { question } = resLocals;
+      if (!question) return null;
+      return (
+        <SyncErrorsAndWarnings
+          authzData={authzData}
+          exampleCourse={course.example_course}
+          syncErrors={question.sync_errors}
+          syncWarnings={question.sync_warnings}
+          fileEditUrl={`${urlPrefix}/question/${question.id}/file_edit/questions/${question.qid}/info.json`}
+          context="question"
+        />
+      );
+    }
+    default:
+      return null;
+  }
+}
+
+function UnpublishedBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (!navContext.page) return null;
+  if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
+  if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
+
+  const { course_instance: courseInstance, urlPrefix } = resLocals;
+
+  if (!courseInstance || !urlPrefix) return null;
+
+  // Only show banner if modern publishing is enabled
+  if (!courseInstance.modern_publishing) return null;
+
+  // Check if the course instance is unpublished
+  const status = computeStatus(
+    courseInstance.publishing_start_date,
+    courseInstance.publishing_end_date,
+  );
+
+  if (status !== 'unpublished' && status !== 'publish_scheduled') return null;
+
+  const message = run(() => {
+    switch (status) {
+      case 'unpublished':
+        if (courseInstance.publishing_end_date) {
+          return `This course instance is no longer accessible to students because it was unpublished at ${formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+        }
+        return 'This course instance is not accessible to students because it is unpublished.';
+      case 'publish_scheduled':
+        return `This course instance will be accessible to students after the scheduled publish date of ${formatDateFriendly(courseInstance.publishing_start_date, courseInstance.display_timezone, { timeFirst: true })}.`;
+      default:
+        assertNever(status);
+    }
+  });
+
+  return (
+    <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+      {message}{' '}
+      <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+        Configure publishing settings
+      </a>
+    </div>
+  );
 }
 
 export function PageLayout({
@@ -200,6 +333,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${resLocals.assessment && resLocals.course_instance && sideNavEnabled
                 ? AssessmentNavigation({
                     courseInstanceId: resLocals.course_instance.id,
@@ -230,6 +366,9 @@ export function PageLayout({
                   resolvedOptions.fullHeight && 'h-100',
                 )}"
               >
+                ${renderHtml(
+                  <SyncErrorsAndWarningsForContext navContext={navContext} resLocals={resLocals} />,
+                )}
                 ${contentString}
               </main>
               ${postContentString}
