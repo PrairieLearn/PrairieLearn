@@ -68,16 +68,19 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
-        uid: 'nonexistent@example.com',
+        uids: 'nonexistent@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
+    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should return error when user is an instructor', async () => {
@@ -108,18 +111,22 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
-        uid: 'another_instructor@example.com',
+        uids: 'another_instructor@example.com',
       }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'The user is an instructor');
+    assert.equal(data.counts.success, 0);
+    assert.equal(data.counts.instructor, 1);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
-  test.sequential('should successfully invite a blocked user', async () => {
+  test.sequential('should return error when trying to invite a blocked user', async () => {
     const blockedStudent = await callRow(
       'users_select_or_insert',
       [
@@ -151,16 +158,19 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
-        uid: 'blocked_student@example.com',
+        uids: 'blocked_student@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
+    assert.equal(data.counts.success, 0);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 1);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
   test.sequential('should successfully invite a new student', async () => {
@@ -178,85 +188,32 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
-        uid: 'new_student@example.com',
+        uids: 'new_student@example.com',
       }),
     });
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.isObject(data.data);
-    assert.equal(data.data.status, 'invited');
-    assert.equal(data.data.pending_uid, 'new_student@example.com');
+    assert.equal(data.counts.success, 1);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 
-  test.sequential('should return error when user is already enrolled', async () => {
-    const enrolledStudent = await callRow(
-      'users_select_or_insert',
-      [
-        'enrolled_student@example.com',
-        'Enrolled Student',
-        'enrolled1',
-        'enrolled_student@example.com',
-        'dev',
-      ],
-      SprocUsersSelectOrInsertSchema,
-    );
-
-    await queryRow(
-      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-       VALUES ($user_id, $course_instance_id, 'joined', NOW())
-       RETURNING *`,
-      {
-        user_id: enrolledStudent.user_id,
-        course_instance_id: '1',
-      },
-      EnrollmentSchema,
-    );
-
-    const response = await fetch(studentsUrl, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/x-www-form-urlencoded',
-        Accept: 'application/json',
-        cookie: instructorHeaders.cookie,
-      },
-      body: new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid: 'enrolled_student@example.com',
-      }),
-    });
-
-    assert.equal(response.status, 400);
-    const data = await response.json();
-    assert.equal(data.error, 'The user is already enrolled');
-  });
-
-  test.sequential('should return error when user has an existing invitation', async () => {
-    // Create a student user
+  test.sequential('should successfully invite multiple students', async () => {
     await callRow(
       'users_select_or_insert',
-      [
-        'previously_invited_student@example.com',
-        'Previously Invited Student',
-        'invited1',
-        'previously_invited_student@example.com',
-        'dev',
-      ],
+      ['bulk_student1@example.com', 'Bulk Student 1', 'bulk1', 'bulk_student1@example.com', 'dev'],
       SprocUsersSelectOrInsertSchema,
     );
 
-    await queryRow(
-      `INSERT INTO enrollments (course_instance_id, status, pending_uid)
-       VALUES ($course_instance_id, 'invited', $pending_uid)
-       RETURNING *`,
-      {
-        course_instance_id: '1',
-        pending_uid: 'previously_invited_student@example.com',
-      },
-      EnrollmentSchema,
+    await callRow(
+      'users_select_or_insert',
+      ['bulk_student2@example.com', 'Bulk Student 2', 'bulk2', 'bulk_student2@example.com', 'dev'],
+      SprocUsersSelectOrInsertSchema,
     );
 
     const response = await fetch(studentsUrl, {
@@ -267,14 +224,18 @@ describe('Instructor Students - Invite by UID', () => {
         cookie: instructorHeaders.cookie,
       },
       body: new URLSearchParams({
-        __action: 'invite_by_uid',
+        __action: 'invite_uids',
         __csrf_token: csrfToken,
-        uid: 'previously_invited_student@example.com',
+        uids: 'bulk_student1@example.com,bulk_student2@example.com',
       }),
     });
 
-    assert.equal(response.status, 400);
+    assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.error, 'The user has an existing invitation');
+    assert.equal(data.counts.success, 2);
+    assert.equal(data.counts.instructor, 0);
+    assert.equal(data.counts.alreadyEnrolled, 0);
+    assert.equal(data.counts.alreadyBlocked, 0);
+    assert.equal(data.counts.alreadyInvited, 0);
   });
 });

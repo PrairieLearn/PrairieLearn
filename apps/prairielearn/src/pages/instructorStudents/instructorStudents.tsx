@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -92,54 +92,85 @@ router.post(
 
     const { course_instance: courseInstance } = pageContext;
 
+    const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
+
     const BodySchema = z.object({
-      uid: z.string().min(1),
-      __action: z.literal('invite_by_uid'),
+      uids: z.preprocess(
+        (val) =>
+          typeof val === 'string'
+            ? [
+                ...new Set(
+                  val
+                    .split(/[\n,\s]+/)
+                    .map((s) => s.trim())
+                    .filter((s) => s.length > 0),
+                ),
+              ]
+            : val,
+        EmailsSchema,
+      ),
+      __action: z.literal('invite_uids'),
     });
     const body = BodySchema.parse(req.body);
 
-    const user = await selectOptionalUserByUid(body.uid);
+    // Process all invitations in a single transaction
+    const counts = {
+      success: 0,
+      instructor: 0,
+      alreadyEnrolled: 0,
+      alreadyBlocked: 0,
+      alreadyInvited: 0,
+    };
+    await runInTransactionAsync(async () => {
+      const enrollments = body.uids.map(async (uid) => {
+        const user = await selectOptionalUserByUid(uid);
+        if (user) {
+          // Check if user is an instructor
+          const isInstructor = await callRow(
+            'users_is_instructor_in_course_instance',
+            [user.user_id, courseInstance.id],
+            z.boolean(),
+          );
+          if (isInstructor) {
+            counts.instructor++;
+            return;
+          }
+        }
 
-    if (user) {
-      const isInstructor = await callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, courseInstance.id],
-        z.boolean(),
-      );
+        const existingEnrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Viewer'],
+          authzData: res.locals.authz_data,
+        });
 
-      if (isInstructor) {
-        throw new HttpStatusError(400, 'The user is an instructor');
-      }
-    }
+        if (existingEnrollment) {
+          if (existingEnrollment.status === 'joined') {
+            counts.alreadyEnrolled++;
+            return;
+          }
+          if (existingEnrollment.status === 'invited') {
+            counts.alreadyInvited++;
+            return;
+          }
+          if (existingEnrollment.status === 'blocked') {
+            counts.alreadyBlocked++;
+            return;
+          }
+        }
 
-    // Try to find an existing enrollment so we can error gracefully.
-    const existingEnrollment = await selectOptionalEnrollmentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Viewer'],
-      authzData: res.locals.authz_data,
+        await inviteStudentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Editor'],
+          authzData: res.locals.authz_data,
+        });
+        counts.success++;
+      });
+      return Promise.all(enrollments);
     });
 
-    if (existingEnrollment) {
-      if (existingEnrollment.status === 'joined') {
-        throw new HttpStatusError(400, 'The user is already enrolled');
-      }
-
-      if (existingEnrollment.status === 'invited') {
-        throw new HttpStatusError(400, 'The user has an existing invitation');
-      }
-    }
-
-    const enrollment = await inviteStudentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Editor'],
-      authzData: res.locals.authz_data,
-    });
-
-    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
-
-    res.json({ data: staffEnrollment });
+    res.json({ counts });
   }),
 );
 
