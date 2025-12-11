@@ -29,7 +29,7 @@ RUN apt-get update \
 # Install uv and Python
 RUN curl -LO https://astral.sh/uv/install.sh \
     && env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
-    && uv python install python3.12
+    && UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.12
 
 COPY requirements.txt /requirements.txt
 RUN uv pip install --system --break-system-packages -r /requirements.txt
