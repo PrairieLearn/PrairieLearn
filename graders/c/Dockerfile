@@ -11,6 +11,9 @@ ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONPATH=/cgrader/:/grade/serverFilesCourse
 ENV C_INCLUDE_PATH=/cgrader
 
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/cgrader/.venv/bin:$PATH"
+
 # - Ensure that all `uv` commands compile Python source files to bytecode.
 # - Ensure that all `uv` commands do not use any caching.
 ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
@@ -28,11 +31,11 @@ RUN apt-get update \
 
 # Install uv and Python
 RUN curl -LO https://astral.sh/uv/install.sh \
-    && env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
-    && UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.12
+    && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
+    && uv venv --python-preference managed --python 3.12 /cgrader/.venv
 
 COPY requirements.txt /requirements.txt
-RUN uv pip install --system --break-system-packages -r /requirements.txt
+RUN uv pip install --python /cgrader/.venv -r /requirements.txt
 
 COPY cgrader /cgrader
 
