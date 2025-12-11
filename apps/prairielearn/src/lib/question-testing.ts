@@ -372,14 +372,23 @@ async function runTest({
   authn_user_id,
   variant_seed,
 }: {
+  /** The server job to run within. */
   logger: ServerJob;
+  /** Whether to display test data details. */
   showDetails: boolean;
+  /** The question for the variant. */
   question: Question;
+  /** The course instance for the variant. */
   course_instance: CourseInstance | null;
+  /** The course for the variant. */
   course: Course;
+  /** The type of test to run. */
   test_type: TestType;
+  /** The current effective user. */
   user_id: string;
+  /** The currently authenticated user. */
   authn_user_id: string;
+  /** Optional seed for the variant. */
   variant_seed?: string;
 }): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
@@ -453,12 +462,19 @@ export async function startTestQuestion({
   authn_user_id,
   variantSeedPrefix,
 }: {
+  /** The number of times to test, will run each possible test ('correct', 'incorrect', 'invalid') this many times. */
   count: number;
+  /** Whether to display test data details. */
   showDetails: boolean;
+  /** The question for the variant. */
   question: Question;
+  /** The course instance for the variant; may be null for instructor questions. */
   course_instance: CourseInstance | null;
+  /** The course for the variant. */
   course: Course;
+  /** The current effective user. */
   user_id: string;
+  /** The currently authenticated user. */
   authn_user_id: string;
   /**
    * Optional prefix for variant seeds. When provided, seeds will be generated
