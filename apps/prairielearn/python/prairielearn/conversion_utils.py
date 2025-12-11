@@ -190,7 +190,7 @@ def to_json(
         elif np.iscomplexobj(v):
             return {
                 "_type": "complex_ndarray",
-                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
+                "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
