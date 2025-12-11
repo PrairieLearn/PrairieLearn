@@ -353,7 +353,7 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
-For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](assessment/regrading.md).
 
 ## When I open some CSV downloads, some data is in the wrong columns
 

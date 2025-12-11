@@ -281,7 +281,7 @@ The above `allowAccess` directive means that this assessment is available under 
 
 ### Exam with remote students example
 
-**See [Remote Exams](../remoteExams.md) for more detailed examples.**
+**See [Remote Exams](remoteExams.md) for more detailed examples.**
 
 ```json
 {
