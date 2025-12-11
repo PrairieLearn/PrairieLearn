@@ -16,6 +16,12 @@ import { features } from '../../lib/features/index.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import {
+  addEnrollmentToStudentGroup,
+  removeEnrollmentFromStudentGroup,
+  selectStudentGroupById,
+  selectStudentGroupsByCourseInstance,
+} from '../../models/student-group.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -92,54 +98,104 @@ router.post(
 
     const { course_instance: courseInstance } = pageContext;
 
-    const BodySchema = z.object({
-      uid: z.string().min(1),
-      __action: z.literal('invite_by_uid'),
-    });
-    const body = BodySchema.parse(req.body);
+    if (req.body.__action === 'invite_by_uid') {
+      const BodySchema = z.object({
+        uid: z.string().min(1),
+        __action: z.literal('invite_by_uid'),
+      });
+      const body = BodySchema.parse(req.body);
 
-    const user = await selectOptionalUserByUid(body.uid);
+      const user = await selectOptionalUserByUid(body.uid);
 
-    if (user) {
-      const isInstructor = await callRow(
-        'users_is_instructor_in_course_instance',
-        [user.user_id, courseInstance.id],
-        z.boolean(),
-      );
+      if (user) {
+        const isInstructor = await callRow(
+          'users_is_instructor_in_course_instance',
+          [user.user_id, courseInstance.id],
+          z.boolean(),
+        );
 
-      if (isInstructor) {
-        throw new HttpStatusError(400, 'The user is an instructor');
+        if (isInstructor) {
+          throw new HttpStatusError(400, 'The user is an instructor');
+        }
       }
+
+      // Try to find an existing enrollment so we can error gracefully.
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData: res.locals.authz_data,
+      });
+
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'joined') {
+          throw new HttpStatusError(400, 'The user is already enrolled');
+        }
+
+        if (existingEnrollment.status === 'invited') {
+          throw new HttpStatusError(400, 'The user has an existing invitation');
+        }
+      }
+
+      const enrollment = await inviteStudentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Editor'],
+        authzData: res.locals.authz_data,
+      });
+
+      const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+
+      res.json({ data: staffEnrollment });
+    } else if (req.body.__action === 'batch_add_to_group') {
+      const BodySchema = z.object({
+        __action: z.literal('batch_add_to_group'),
+        enrollment_ids: z.array(z.string()),
+        student_group_id: z.string(),
+      });
+      const body = BodySchema.parse(req.body);
+
+      // Verify the group belongs to this course instance
+      const group = await selectStudentGroupById(body.student_group_id);
+      if (group.course_instance_id !== courseInstance.id) {
+        throw new HttpStatusError(403, 'Group does not belong to this course instance');
+      }
+
+      // Add each enrollment to the group
+      for (const enrollmentId of body.enrollment_ids) {
+        await addEnrollmentToStudentGroup({
+          enrollment_id: enrollmentId,
+          student_group_id: body.student_group_id,
+        });
+      }
+
+      res.json({ success: true });
+    } else if (req.body.__action === 'batch_remove_from_group') {
+      const BodySchema = z.object({
+        __action: z.literal('batch_remove_from_group'),
+        enrollment_ids: z.array(z.string()),
+        student_group_id: z.string(),
+      });
+      const body = BodySchema.parse(req.body);
+
+      // Verify the group belongs to this course instance
+      const group = await selectStudentGroupById(body.student_group_id);
+      if (group.course_instance_id !== courseInstance.id) {
+        throw new HttpStatusError(403, 'Group does not belong to this course instance');
+      }
+
+      // Remove each enrollment from the group
+      for (const enrollmentId of body.enrollment_ids) {
+        await removeEnrollmentFromStudentGroup({
+          enrollment_id: enrollmentId,
+          student_group_id: body.student_group_id,
+        });
+      }
+
+      res.json({ success: true });
+    } else {
+      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
-
-    // Try to find an existing enrollment so we can error gracefully.
-    const existingEnrollment = await selectOptionalEnrollmentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Viewer'],
-      authzData: res.locals.authz_data,
-    });
-
-    if (existingEnrollment) {
-      if (existingEnrollment.status === 'joined') {
-        throw new HttpStatusError(400, 'The user is already enrolled');
-      }
-
-      if (existingEnrollment.status === 'invited') {
-        throw new HttpStatusError(400, 'The user has an existing invitation');
-      }
-    }
-
-    const enrollment = await inviteStudentByUid({
-      courseInstance,
-      uid: body.uid,
-      requiredRole: ['Student Data Editor'],
-      authzData: res.locals.authz_data,
-    });
-
-    const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
-
-    res.json({ data: staffEnrollment });
   }),
 );
 
@@ -189,11 +245,17 @@ router.get(
         course_instance_id: courseInstance.id,
       })) && authz_data.is_administrator;
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const [students, allStudentGroups] = await Promise.all([
+      queryRows(
+        sql.select_users_and_enrollments_for_course_instance,
+        { course_instance_id: courseInstance.id },
+        StudentRowSchema,
+      ),
+      selectStudentGroupsByCourseInstance(courseInstance.id),
+    ]);
+
+    // Transform student groups to match the expected format
+    const studentGroups = allStudentGroups.map((g) => ({ id: g.id, name: g.name }));
 
     res.send(
       PageLayout({
@@ -215,6 +277,7 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentGroups={studentGroups}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
