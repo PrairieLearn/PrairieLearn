@@ -273,7 +273,7 @@ function StudentGroupsCard({
                       </td>
                       <td>
                         {group.student_count > 0 ? (
-                          <a href={`${studentsPageUrl}?student_group_id=${group.id}`}>
+                          <a href={`${studentsPageUrl}?student_groups=${group.id}`}>
                             {group.student_count} student{group.student_count !== 1 ? 's' : ''}
                           </a>
                         ) : (

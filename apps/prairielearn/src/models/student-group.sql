@@ -27,7 +27,7 @@ WHERE
   AND deleted_at IS NULL;
 
 -- BLOCK update_student_group_name
-UPDATE instance_groups
+UPDATE student_groups
 SET
   name = $name
 WHERE
@@ -86,7 +86,7 @@ FROM
   student_groups AS sg
   JOIN student_group_enrollments sge ON sg.id = sge.student_group_id
 WHERE
-  eig.enrollment_id = $enrollment_id
+  sge.enrollment_id = $enrollment_id
   AND sg.deleted_at IS NULL
 ORDER BY
   sg.name;

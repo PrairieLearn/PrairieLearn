@@ -18,9 +18,10 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import {
   addEnrollmentToStudentGroup,
+  createStudentGroupAndAddEnrollments,
   removeEnrollmentFromStudentGroup,
-  selectStudentGroupById,
   selectStudentGroupsByCourseInstance,
+  verifyGroupBelongsToCourseInstance,
 } from '../../models/student-group.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
@@ -156,10 +157,7 @@ router.post(
       const body = BodySchema.parse(req.body);
 
       // Verify the group belongs to this course instance
-      const group = await selectStudentGroupById(body.student_group_id);
-      if (group.course_instance_id !== courseInstance.id) {
-        throw new HttpStatusError(403, 'Group does not belong to this course instance');
-      }
+      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
 
       // Add each enrollment to the group
       for (const enrollmentId of body.enrollment_ids) {
@@ -170,6 +168,28 @@ router.post(
       }
 
       res.json({ success: true });
+    } else if (req.body.__action === 'create_group_and_add_students') {
+      const BodySchema = z.object({
+        __action: z.literal('create_group_and_add_students'),
+        enrollment_ids: z.array(z.string()),
+        name: z.string().min(1, 'Group name is required').max(255),
+      });
+      const body = BodySchema.parse(req.body);
+
+      try {
+        await createStudentGroupAndAddEnrollments({
+          course_instance_id: courseInstance.id,
+          name: body.name,
+          enrollment_ids: body.enrollment_ids,
+        });
+        res.json({ success: true });
+      } catch (err: any) {
+        if (err instanceof HttpStatusError && err.status === 400) {
+          res.status(400).json({ error: err.message });
+        } else {
+          throw err;
+        }
+      }
     } else if (req.body.__action === 'batch_remove_from_group') {
       const BodySchema = z.object({
         __action: z.literal('batch_remove_from_group'),
@@ -179,10 +199,7 @@ router.post(
       const body = BodySchema.parse(req.body);
 
       // Verify the group belongs to this course instance
-      const group = await selectStudentGroupById(body.student_group_id);
-      if (group.course_instance_id !== courseInstance.id) {
-        throw new HttpStatusError(403, 'Group does not belong to this course instance');
-      }
+      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
 
       // Remove each enrollment from the group
       for (const enrollmentId of body.enrollment_ids) {

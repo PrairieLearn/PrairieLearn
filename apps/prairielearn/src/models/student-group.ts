@@ -1,3 +1,4 @@
+import { HttpStatusError } from '@prairielearn/error';
 import {
   execute,
   loadSqlEquiv,
@@ -125,4 +126,70 @@ export async function selectStudentGroupsForEnrollment(
     { enrollment_id },
     StudentGroupSchema,
   );
+}
+
+/**
+ * Verifies that a student group belongs to the given course instance.
+ * Throws HttpStatusError(403) if the group doesn't belong to the course instance.
+ * Returns the group if valid.
+ */
+export async function verifyGroupBelongsToCourseInstance(
+  group_id: string,
+  course_instance_id: string,
+): Promise<StudentGroup> {
+  const group = await selectStudentGroupById(group_id);
+  if (group.course_instance_id !== course_instance_id) {
+    throw new HttpStatusError(403, 'Group does not belong to this course instance');
+  }
+  return group;
+}
+
+/**
+ * Creates a student group with error handling for duplicate names.
+ * Throws a user-friendly error if a group with the same name already exists.
+ */
+export async function createStudentGroupWithErrorHandling({
+  course_instance_id,
+  name,
+}: {
+  course_instance_id: string;
+  name: string;
+}): Promise<StudentGroup> {
+  try {
+    return await createStudentGroup({ course_instance_id, name });
+  } catch (err: any) {
+    if (err.constraint === 'student_groups_course_instance_id_name_key') {
+      throw new HttpStatusError(400, 'A group with this name already exists');
+    }
+    throw err;
+  }
+}
+
+/**
+ * Creates a new student group and adds the specified enrollments to it.
+ * Returns the created group.
+ */
+export async function createStudentGroupAndAddEnrollments({
+  course_instance_id,
+  name,
+  enrollment_ids,
+}: {
+  course_instance_id: string;
+  name: string;
+  enrollment_ids: string[];
+}): Promise<StudentGroup> {
+  const group = await createStudentGroupWithErrorHandling({
+    course_instance_id,
+    name,
+  });
+
+  // Add all enrollments to the group
+  for (const enrollmentId of enrollment_ids) {
+    await addEnrollmentToStudentGroup({
+      enrollment_id: enrollmentId,
+      student_group_id: group.id,
+    });
+  }
+
+  return group;
 }

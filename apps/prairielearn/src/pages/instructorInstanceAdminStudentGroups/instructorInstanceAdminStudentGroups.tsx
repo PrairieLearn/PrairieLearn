@@ -10,10 +10,10 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import {
-  createStudentGroup,
+  createStudentGroupWithErrorHandling,
   deleteStudentGroup,
   renameStudentGroup,
-  selectStudentGroupById,
+  verifyGroupBelongsToCourseInstance,
 } from '../../models/student-group.js';
 
 import { InstructorInstanceAdminStudentGroups } from './instructorInstanceAdminStudentGroups.html.js';
@@ -33,13 +33,14 @@ async function getStudentGroupsWithCounts(courseInstanceId: string) {
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const { course_instance: courseInstance, authz_data, __csrf_token } = extractPageContext(
-      res.locals,
-      {
-        pageType: 'courseInstance',
-        accessType: 'instructor',
-      },
-    );
+    const {
+      course_instance: courseInstance,
+      authz_data,
+      __csrf_token,
+    } = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
 
     const groups = await getStudentGroupsWithCounts(courseInstance.id);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
@@ -105,14 +106,14 @@ router.post(
         .parse(req.body);
 
       try {
-        await createStudentGroup({
+        await createStudentGroupWithErrorHandling({
           course_instance_id: courseInstance.id,
           name,
         });
         res.json({ success: true });
       } catch (err: any) {
-        if (err.constraint === 'student_groups_course_instance_id_name_key') {
-          res.status(400).json({ error: 'A group with this name already exists' });
+        if (err instanceof error.HttpStatusError && err.status === 400) {
+          res.status(400).json({ error: err.message });
         } else {
           throw err;
         }
@@ -125,10 +126,7 @@ router.post(
         })
         .parse(req.body);
 
-      const group = await selectStudentGroupById(group_id);
-      if (group.course_instance_id !== courseInstance.id) {
-        throw new error.HttpStatusError(403, 'Group does not belong to this course instance');
-      }
+      await verifyGroupBelongsToCourseInstance(group_id, courseInstance.id);
 
       try {
         await renameStudentGroup({ id: group_id, name });
@@ -147,10 +145,7 @@ router.post(
         })
         .parse(req.body);
 
-      const group = await selectStudentGroupById(group_id);
-      if (group.course_instance_id !== courseInstance.id) {
-        throw new error.HttpStatusError(403, 'Group does not belong to this course instance');
-      }
+      await verifyGroupBelongsToCourseInstance(group_id, courseInstance.id);
 
       await deleteStudentGroup(group_id);
       res.json({ success: true });
