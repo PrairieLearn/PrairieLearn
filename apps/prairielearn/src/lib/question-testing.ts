@@ -276,6 +276,7 @@ async function testVariant(
  * @param test_type - The type of test to run.
  * @param authn_user_id - The currently authenticated user.
  * @param user_id - The current effective user.
+ * @param variant_seed - Optional seed for the variant.
  */
 async function testQuestion(
   question: Question,
@@ -284,6 +285,7 @@ async function testQuestion(
   test_type: TestType,
   authn_user_id: string,
   user_id: string,
+  variant_seed?: string,
 ): Promise<TestQuestionResults> {
   let generateDuration;
   let renderDuration;
@@ -295,7 +297,7 @@ async function testQuestion(
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
-  const options = {};
+  const options = { variant_seed };
   const require_open = true;
   const client_fingerprint_id = null;
   const generateStart = Date.now();
@@ -358,25 +360,28 @@ async function testQuestion(
 /**
  * Internal worker for _testQuestion(). Do not call directly.
  * Runs a single test.
- * @param logger - The server job to run within.
- * @param showDetails - Whether to display test data details.
- * @param question - The question for the variant.
- * @param course_instance - The course instance for the variant.
- * @param course - The course for the variant.
- * @param test_type - The type of test to run.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
  */
-async function runTest(
-  logger: ServerJob,
-  showDetails: boolean,
-  question: Question,
-  course_instance: CourseInstance | null,
-  course: Course,
-  test_type: TestType,
-  user_id: string,
-  authn_user_id: string,
-): Promise<{ success: boolean; stats: TestResultStats }> {
+async function runTest({
+  logger,
+  showDetails,
+  question,
+  course_instance,
+  course,
+  test_type,
+  user_id,
+  authn_user_id,
+  variant_seed,
+}: {
+  logger: ServerJob;
+  showDetails: boolean;
+  question: Question;
+  course_instance: CourseInstance | null;
+  course: Course;
+  test_type: TestType;
+  user_id: string;
+  authn_user_id: string;
+  variant_seed?: string;
+}): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
   const { variant, expected_submission, test_submission, stats } = await testQuestion(
     question,
@@ -385,6 +390,7 @@ async function runTest(
     test_type,
     authn_user_id,
     user_id,
+    variant_seed,
   );
 
   if (showDetails) {
@@ -435,24 +441,32 @@ async function runTest(
 /**
  * Start a job sequence to test a question.
  *
- * @param count - The number of times to test, will run each possible test ('correct, 'incorrect,' invalid') this many times.
- * @param showDetails - Whether to display test data details.
- * @param question - The question for the variant.
- * @param course_instance - The course instance for the variant; may be null for instructor questions
- * @param course - The course for the variant.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
  * @returns The job sequence ID.
  */
-export async function startTestQuestion(
-  count: number,
-  showDetails: boolean,
-  question: Question,
-  course_instance: CourseInstance | null,
-  course: Course,
-  user_id: string,
-  authn_user_id: string,
-): Promise<string> {
+export async function startTestQuestion({
+  count,
+  showDetails,
+  question,
+  course_instance,
+  course,
+  user_id,
+  authn_user_id,
+  variantSeedPrefix,
+}: {
+  count: number;
+  showDetails: boolean;
+  question: Question;
+  course_instance: CourseInstance | null;
+  course: Course;
+  user_id: string;
+  authn_user_id: string;
+  /**
+   * Optional prefix for variant seeds. When provided, seeds will be generated
+   * deterministically as `{prefix}-{iteration}` for each test iteration. This
+   * ensures reproducible tests while still testing different variants.
+   */
+  variantSeedPrefix?: string;
+}): Promise<string> {
   let success = true;
 
   const serverJob = await createServerJob({
@@ -469,17 +483,20 @@ export async function startTestQuestion(
     for (const iter of Array.from({ length: count * TEST_TYPES.length }).keys()) {
       const type = TEST_TYPES[iter % TEST_TYPES.length];
       const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
+      // Generate a deterministic seed if a prefix was provided, otherwise let the system generate a random one
+      const variant_seed = variantSeedPrefix ? `${variantSeedPrefix}-${iter}` : undefined;
       job.verbose(`Test ${testIterationIndex}, type ${type}`);
-      const result = await runTest(
-        job,
+      const result = await runTest({
+        logger: job,
         showDetails,
         question,
         course_instance,
         course,
-        type,
+        test_type: type,
         user_id,
         authn_user_id,
-      );
+        variant_seed,
+      });
       success = success && result.success;
       stats.push(result.stats);
     }
