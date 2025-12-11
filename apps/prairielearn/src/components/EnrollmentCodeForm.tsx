@@ -354,7 +354,13 @@ export function EnrollmentCodeForm({
   }
 
   return (
-    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={onHide} onExited={handleReset}>
+    <Modal
+      key={show ? 'open' : 'closed'}
+      show={show}
+      size="md"
+      onHide={onHide}
+      onExited={handleReset}
+    >
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>

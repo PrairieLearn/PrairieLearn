@@ -715,7 +715,12 @@ export function RubricSettings({
             <i class="fas fa-upload" />
             Import rubric
           </button>
-          <Modal show={showImportModal} size="lg" onHide={handleImportModalClose} onExited={resetImportModal}>
+          <Modal
+            show={showImportModal}
+            size="lg"
+            onHide={handleImportModalClose}
+            onExited={resetImportModal}
+          >
             <Modal.Header closeButton>
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
