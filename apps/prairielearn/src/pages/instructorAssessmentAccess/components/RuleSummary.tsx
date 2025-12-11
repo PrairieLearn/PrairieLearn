@@ -171,8 +171,8 @@ export function generateRuleSummary(
   const lines: string[] = [];
 
   // Targets (only for overrides)
-  if (!isMainRule && rule.targets && rule.targets.length > 0) {
-    lines.push(`Groups: ${rule.targets.join(', ')}`);
+  if (!isMainRule && rule.groups && rule.groups.length > 0) {
+    lines.push(`Groups: ${rule.groups.join(', ')}`);
   }
 
   // Enabled/disabled status
@@ -227,7 +227,7 @@ interface RuleSummaryCardProps {
   isMainRule: boolean;
   title: string;
   onEdit: () => void;
-  onEditTargets?: () => void;
+  onEditStudentGroups?: () => void;
   onRemove?: () => void;
 }
 
@@ -237,7 +237,7 @@ export function RuleSummaryCard({
   title,
   onRemove,
   onEdit,
-  onEditTargets,
+  onEditStudentGroups,
 }: RuleSummaryCardProps) {
   const summaryLines = generateRuleSummary(rule, isMainRule);
   const dateTableRows = generateDateTableRows(rule);
@@ -255,9 +255,9 @@ export function RuleSummaryCard({
           )}
         </div>
         <div class="d-flex gap-2">
-          {onEditTargets && (
-            <Button variant="outline-secondary" size="sm" onClick={onEditTargets}>
-              <i class="fa fa-users me-1" /> Targets
+          {onEditStudentGroups && (
+            <Button variant="outline-secondary" size="sm" onClick={onEditStudentGroups}>
+              <i class="fa fa-users me-1" /> Groups
             </Button>
           )}
           <Button variant="outline-primary" size="sm" onClick={onEdit}>

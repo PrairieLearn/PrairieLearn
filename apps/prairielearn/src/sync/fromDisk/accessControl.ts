@@ -52,9 +52,9 @@ export async function syncAccessControl(
 
     // Validate group targets
     const invalidGroups: string[] = [];
-    (rule.targets ?? []).forEach((target) => {
-      if (!validGroupIds.has(target)) {
-        invalidGroups.push(target);
+    (rule.groups ?? []).forEach((group) => {
+      if (!validGroupIds.has(group)) {
+        invalidGroups.push(group);
       }
     });
 

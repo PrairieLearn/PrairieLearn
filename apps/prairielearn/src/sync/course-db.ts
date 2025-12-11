@@ -1625,20 +1625,20 @@ export function validateAccessControlArray({
     };
   });
 
-  // count assignment-level rules (rules with no targets or empty targets array)
+  // count assignment-level rules (rules with no groups or empty groups array)
   const assignmentLevelRules = accessControlJsonArray.filter(
-    (rule) => !rule.targets || rule.targets.length === 0,
+    (rule) => !rule.groups || rule.groups.length === 0,
   );
 
   // require exactly one assignment-level rule, add error to all rules if this check fails
   if (assignmentLevelRules.length === 0) {
     const errorMessage =
-      'No assignment-level rule found. Exactly one assignment-level rule (without targets) is required per assessment.';
+      'No assignment-level rule found. Exactly one assignment-level rule (without groups) is required per assessment.';
     results.forEach((result) => {
       result.errors.push(errorMessage);
     });
   } else if (assignmentLevelRules.length > 1) {
-    const errorMessage = `Found ${assignmentLevelRules.length} assignment-level rules (rules without targets). Exactly one assignment-level rule is required per assessment.`;
+    const errorMessage = `Found ${assignmentLevelRules.length} assignment-level rules (rules without groups). Exactly one assignment-level rule is required per assessment.`;
     results.forEach((result) => {
       result.errors.push(errorMessage);
     });
@@ -1646,12 +1646,12 @@ export function validateAccessControlArray({
 
   // check that only assignment-level rule specifies prairieTestControl
   accessControlJsonArray.forEach((rule, index) => {
-    const isAssignmentLevel = !rule.targets || rule.targets.length === 0;
+    const isAssignmentLevel = !rule.groups || rule.groups.length === 0;
     const hasPrairieTestControl = rule.prairieTestControl !== undefined;
 
     if (!isAssignmentLevel && hasPrairieTestControl) {
       results[index].errors.push(
-        'Only the assignment-level rule (without targets) is allowed to specify prairieTestControl.',
+        'Only the assignment-level rule (without groups) is allowed to specify prairieTestControl.',
       );
     }
   });
@@ -1730,7 +1730,7 @@ export function validateAccessControl({
 
   // validate assignment-level constraints: no null enabled fields allowed
   const validateAssignmentLevelConstraints = (data: AccessControlJson, errors: string[]) => {
-    const isAssignmentLevel = !data.targets || data.targets.length === 0;
+    const isAssignmentLevel = !data.groups || data.groups.length === 0;
 
     if (isAssignmentLevel) {
       for (const enabledFieldPath of assignmentLevelEnabledFields) {

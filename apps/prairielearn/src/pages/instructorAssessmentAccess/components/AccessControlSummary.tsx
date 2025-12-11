@@ -11,7 +11,7 @@ interface AccessControlSummaryProps {
   onNavigate: (view: AccessControlView) => void;
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
-  onEditGroups: (index: number) => void;
+  onEditStudentGroups: (index: number) => void;
 }
 
 export function AccessControlSummary({
@@ -21,7 +21,7 @@ export function AccessControlSummary({
   onNavigate,
   onAddOverride,
   onRemoveOverride,
-  onEditTargets,
+  onEditStudentGroups,
 }: AccessControlSummaryProps) {
   return (
     <div>
@@ -60,7 +60,7 @@ export function AccessControlSummary({
               isMainRule={false}
               title={getOverrideName(index)}
               onEdit={() => onNavigate({ type: 'edit-override', index })}
-              onEditTargets={() => onEditTargets(index)}
+              onEditStudentGroups={() => onEditStudentGroups(index)}
               onRemove={() => onRemoveOverride(index)}
             />
           ))

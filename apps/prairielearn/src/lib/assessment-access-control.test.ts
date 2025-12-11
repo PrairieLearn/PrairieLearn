@@ -285,12 +285,12 @@ describe('getAccessControlForAssessment', () => {
       // Second rule should be group-level (order 2)
       assert.equal(result[1].dateControl?.durationMinutes, 90);
       assert.isArray(result[1].groups);
-      assert.include(result[1].groups, 'Test Group');
+      assert.include(result[1].groups!, 'Test Group');
     });
   });
 
-  describe('Group targets', () => {
-    it('returns group names in targets array', async () => {
+  describe('Student groups', () => {
+    it('returns group names in groups array', async () => {
       const courseData = util.getCourseData();
       const groupUuid1 = crypto.randomUUID();
       const groupUuid2 = crypto.randomUUID();
@@ -321,15 +321,15 @@ describe('getAccessControlForAssessment', () => {
       const result = await getAccessControlForAssessment(assessment.id);
       assert.lengthOf(result, 2);
 
-      // Group rule should have target names
-      const targets = result[1].groups;
-      assert.isArray(targets);
-      assert.lengthOf(targets, 2);
-      assert.include(targets!, 'Section A');
-      assert.include(targets!, 'Section B');
+      // Group rule should have group names
+      const groups = result[1].groups;
+      assert.isArray(groups);
+      assert.lengthOf(groups!, 2);
+      assert.include(groups!, 'Section A');
+      assert.include(groups!, 'Section B');
     });
 
-    it('returns undefined for empty targets (assignment-level rule)', async () => {
+    it('returns undefined for empty groups (assignment-level rule)', async () => {
       const courseData = util.getCourseData();
       const rule = makeAccessControlRule({
         dateControl: { durationMinutes: 60 },
@@ -344,7 +344,7 @@ describe('getAccessControlForAssessment', () => {
       const result = await getAccessControlForAssessment(assessment.id);
       assert.lengthOf(result, 1);
 
-      // Assignment-level rules should have undefined targets
+      // Assignment-level rules should have undefined groups
       assert.isUndefined(result[0].groups);
     });
   });

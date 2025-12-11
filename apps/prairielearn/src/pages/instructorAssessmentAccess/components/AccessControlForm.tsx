@@ -42,7 +42,7 @@ export function AccessControlForm({
     show: false,
     overrideIndex: null,
   });
-  const [targetsModalState, setTargetsModalState] = useState<{
+  const [studentGroupsModalState, setStudentGroupsModalState] = useState<{
     show: boolean;
     overrideIndex: number | null;
   }>({
@@ -124,11 +124,11 @@ export function AccessControlForm({
     const override = watchedData.overrides[index] as
       | AccessControlFormData['overrides'][number]
       | undefined;
-    const targetCount = override?.targets?.length ?? 0;
-    if (targetCount === 0) {
-      return `Override ${index + 1} (no targets)`;
+    const groupCount = override?.groups?.length ?? 0;
+    if (groupCount === 0) {
+      return `Override ${index + 1} (no groups)`;
     }
-    return `Override ${index + 1} (${targetCount} target${targetCount === 1 ? '' : 's'})`;
+    return `Override ${index + 1} (${groupCount} group${groupCount === 1 ? '' : 's'})`;
   };
 
   // Render the appropriate content based on current view
@@ -143,7 +143,9 @@ export function AccessControlForm({
             onNavigate={setCurrentView}
             onAddOverride={addOverride}
             onRemoveOverride={handleDeleteClick}
-            onEditTargets={(index) => setTargetsModalState({ show: true, overrideIndex: index })}
+            onEditStudentGroups={(index) =>
+              setStudentGroupsModalState({ show: true, overrideIndex: index })
+            }
           />
         );
 
@@ -172,7 +174,7 @@ export function AccessControlForm({
         // Use optional chaining and default to show the form if the override exists
         const override = watchedData.overrides.at(index);
         const isEnabled = override?.enabled ?? false;
-        const targetsList = override?.targets ?? [];
+        const studentGroupsList = override?.groups ?? [];
 
         return (
           <div>
@@ -191,13 +193,13 @@ export function AccessControlForm({
                   {isEnabled ? 'Enabled' : 'Disabled'}
                 </Button>
 
-                {/* Configure targets button */}
+                {/* Configure student groups button */}
                 <Button
                   variant="outline-secondary"
                   size="sm"
-                  onClick={() => setTargetsModalState({ show: true, overrideIndex: index })}
+                  onClick={() => setStudentGroupsModalState({ show: true, overrideIndex: index })}
                 >
-                  <i class="fa fa-users me-1" /> Configure targets
+                  <i class="fa fa-users me-1" /> Configure student groups
                 </Button>
 
                 {/* Delete button */}
@@ -209,9 +211,9 @@ export function AccessControlForm({
 
             {/* "Applies to" text */}
             <p class="text-muted small mb-3">
-              {targetsList.length > 0
-                ? `This override applies to ${targetsList.join(', ')}`
-                : 'This override has no targets configured'}
+              {studentGroupsList.length > 0
+                ? `This override applies to ${studentGroupsList.join(', ')}`
+                : 'This override has no groups configured'}
             </p>
 
             <OverrideRuleContent control={control} index={index} setValue={setValue} />
@@ -252,23 +254,23 @@ export function AccessControlForm({
 
       {/* Targets configuration modal */}
       <Modal
-        show={targetsModalState.show}
-        onHide={() => setTargetsModalState({ show: false, overrideIndex: null })}
+        show={studentGroupsModalState.show}
+        onHide={() => setStudentGroupsModalState({ show: false, overrideIndex: null })}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Configure targets</Modal.Title>
+          <Modal.Title>Configure student groups</Modal.Title>
         </Modal.Header>
         <Modal.Body>
-          {targetsModalState.overrideIndex !== null && (
+          {studentGroupsModalState.overrideIndex !== null && (
             <Form.Group>
-              <Form.Label>Target groups</Form.Label>
+              <Form.Label>Student groups</Form.Label>
               <Form.Control
                 type="text"
                 placeholder="Enter target identifiers separated by commas"
-                {...control.register(`overrides.${targetsModalState.overrideIndex}.targets`)}
+                {...control.register(`overrides.${studentGroupsModalState.overrideIndex}.groups`)}
               />
               <Form.Text class="text-muted">
-                Comma-separated list of target identifiers (e.g., sectionA, sectionB).
+                Comma-separated list of student group names (e.g., sectionA, sectionB).
               </Form.Text>
             </Form.Group>
           )}
@@ -276,7 +278,7 @@ export function AccessControlForm({
         <Modal.Footer>
           <Button
             variant="secondary"
-            onClick={() => setTargetsModalState({ show: false, overrideIndex: null })}
+            onClick={() => setStudentGroupsModalState({ show: false, overrideIndex: null })}
           >
             Close
           </Button>

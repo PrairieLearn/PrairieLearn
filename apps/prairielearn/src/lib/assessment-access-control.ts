@@ -35,7 +35,7 @@ function transformToJson(row: AccessControlWithChildren): AccessControlJson {
     enabled: row.enabled,
     blockAccess: row.block_access,
     listBeforeRelease: row.list_before_release,
-    groups: row.targets.length > 0 ? row.targets : undefined,
+    groups: row.groups.length > 0 ? row.groups : undefined,
 
     dateControl: {
       enabled: row.date_control_overridden === null ? undefined : !row.date_control_overridden,
