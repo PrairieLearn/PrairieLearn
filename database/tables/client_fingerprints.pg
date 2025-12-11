@@ -12,7 +12,7 @@ indexes
     client_fingerprints_user_id_user_session_id_ip_address_user_key: UNIQUE NULLS NOT DISTINCT (user_id, user_session_id, ip_address, user_agent, accept_language) USING btree (user_id, user_session_id, ip_address, user_agent, accept_language) NULLS NOT DISTINCT
 
 foreign-key constraints
-    client_fingerprints_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id)
+    client_fingerprints_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id)
     client_fingerprints_user_session_id_fkey: FOREIGN KEY (user_session_id) REFERENCES user_sessions(id)
 
 referenced by

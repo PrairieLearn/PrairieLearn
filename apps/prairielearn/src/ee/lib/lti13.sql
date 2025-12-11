@@ -125,7 +125,7 @@ SELECT DISTINCT
   to_jsonb(u) || jsonb_build_object('lti13_sub', lu.sub) AS user
 FROM
   course_assessment_instances AS cai
-  JOIN users AS u ON (u.user_id = cai.user_id)
+  JOIN users AS u ON (u.id = cai.user_id)
   LEFT JOIN lti13_users AS lu ON (lu.user_id = cai.user_id)
 ORDER BY
   cai.user_id ASC,

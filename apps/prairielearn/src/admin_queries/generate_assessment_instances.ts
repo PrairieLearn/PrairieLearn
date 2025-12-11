@@ -33,7 +33,7 @@ export const specs: AdministratorQuerySpecs = {
 const sql = loadSqlEquiv(import.meta.url);
 
 const UserRowSchema = z.object({
-  user_id: UserSchema.shape.user_id,
+  id: UserSchema.shape.id,
   uid: UserSchema.shape.uid,
   name: UserSchema.shape.name,
   course_id: CourseSchema.shape.id,
@@ -74,8 +74,8 @@ export default async function ({
       assessment: assessment.title,
       assessment_instance_id: await makeAssessmentInstance({
         assessment,
-        user_id: user.user_id,
-        authn_user_id: user.user_id,
+        user_id: user.id,
+        authn_user_id: user.id,
         mode,
         date: new Date(),
         time_limit_min: null,

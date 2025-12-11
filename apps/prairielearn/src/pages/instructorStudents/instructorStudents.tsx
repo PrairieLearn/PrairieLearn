@@ -103,7 +103,7 @@ router.post(
     if (user) {
       const isInstructor = await callRow(
         'users_is_instructor_in_course_instance',
-        [user.user_id, courseInstance.id],
+        [user.id, courseInstance.id],
         z.boolean(),
       );
 

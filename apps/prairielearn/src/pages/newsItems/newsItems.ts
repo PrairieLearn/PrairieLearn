@@ -14,13 +14,13 @@ router.get(
   '/',
   asyncHandler(async (req, res) => {
     const userIsInstructor = await userIsInstructorInAnyCourse({
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
     });
 
     const newsItems = await queryRows(
       sql.select_news_items,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         course_instance_id: res.locals.course_instance?.id,
         course_id: res.locals.course?.id,
         all_items: userIsInstructor,

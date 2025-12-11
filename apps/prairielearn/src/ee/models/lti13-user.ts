@@ -42,7 +42,7 @@ export async function selectLti13InstanceIdentitiesForCourseInstance({
     sql.select_lti13_instance_identities_for_course_instance,
     {
       course_instance_id: course_instance.id,
-      user_id: user.user_id,
+      user_id: user.id,
     },
     z.object({
       lti13_instance: Lti13InstanceSchema,

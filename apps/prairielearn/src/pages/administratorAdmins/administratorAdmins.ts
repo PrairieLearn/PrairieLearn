@@ -27,7 +27,7 @@ router.post(
     if (req.body.__action === 'administrators_insert_by_user_uid') {
       const administrator = await sqldb.queryOptionalRow(
         sql.insert_admin_by_user_uid,
-        { uid: req.body.uid, authn_user_id: res.locals.authn_user.user_id },
+        { uid: req.body.uid, authn_user_id: res.locals.authn_user.id },
         AdministratorSchema,
       );
       if (administrator == null) {
@@ -37,7 +37,7 @@ router.post(
     } else if (req.body.__action === 'administrators_delete_by_user_id') {
       await sqldb.queryRow(
         sql.delete_admin_by_user_id,
-        { user_id: req.body.user_id, authn_user_id: res.locals.authn_user.user_id },
+        { user_id: req.body.user_id, authn_user_id: res.locals.authn_user.id },
         AdministratorSchema,
       );
       res.redirect(req.originalUrl);

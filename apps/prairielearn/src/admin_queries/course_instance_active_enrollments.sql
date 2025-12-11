@@ -6,7 +6,7 @@ WITH
     -- looking at whole terms.
     SELECT
       ci.id AS course_instance_id,
-      u.user_id,
+      u.id,
       (i.id = u.institution_id) AS is_institution_user,
       count(*) AS instance_question_count
     FROM
@@ -16,7 +16,7 @@ WITH
       JOIN assessments AS a ON (a.course_instance_id = ci.id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
-      JOIN users AS u ON (u.user_id = iq.authn_user_id)
+      JOIN users AS u ON (u.id = iq.authn_user_id)
     WHERE
       i.short_name = $institution_short_name
       AND ai.modified_at BETWEEN $start_date AND $end_date
@@ -24,7 +24,7 @@ WITH
       AND iq.modified_at BETWEEN $start_date AND $end_date
     GROUP BY
       ci.id,
-      u.user_id,
+      u.id,
       i.id,
       u.institution_id
   ),

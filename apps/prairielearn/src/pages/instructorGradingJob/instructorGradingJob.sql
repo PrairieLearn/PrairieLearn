@@ -18,7 +18,7 @@ FROM
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
-  LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+  LEFT JOIN users AS u ON (u.id = s.auth_user_id)
 WHERE
   gj.id = $job_id
   AND gj.grading_method = 'External'

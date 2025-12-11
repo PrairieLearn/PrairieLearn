@@ -2,7 +2,7 @@
 WITH
   setup_users AS (
     INSERT INTO
-      users (user_id, uid)
+      users (id, uid)
     VALUES
       (1000, 'student@example.com')
   ),

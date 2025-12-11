@@ -82,7 +82,7 @@ router.post(
           CourseSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'pl_courses',
           action: 'update',
           institution_id: req.params.institution_id,

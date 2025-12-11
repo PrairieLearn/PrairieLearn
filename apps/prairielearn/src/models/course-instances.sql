@@ -103,7 +103,7 @@ SELECT
 FROM
   course_instance_permissions AS cip
   JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
-  JOIN users AS u ON (u.user_id = cp.user_id)
+  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;

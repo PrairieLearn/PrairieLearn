@@ -146,7 +146,7 @@ export async function checkPotentialEnterpriseEnrollment({
   const planGrants = await getPlanGrantsForContext({
     institution_id: institution.id,
     course_instance_id: courseInstance.id,
-    user_id: authzData.user.user_id,
+    user_id: authzData.user.id,
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
   if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {

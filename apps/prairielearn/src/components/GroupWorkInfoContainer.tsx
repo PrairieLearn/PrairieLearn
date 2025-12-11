@@ -187,8 +187,8 @@ function GroupRoleTable({
                               >
                                 <input
                                   type="checkbox"
-                                  id="user_role_${role.id}-${user.user_id}"
-                                  name="user_role_${role.id}-${user.user_id}"
+                                  id="user_role_${role.id}-${user.id}"
+                                  name="user_role_${role.id}-${user.id}"
                                   ${rolesInfo.disabledRoles.includes(role.role_name) ||
                                   !userCanAssignRoles
                                     ? 'disabled'

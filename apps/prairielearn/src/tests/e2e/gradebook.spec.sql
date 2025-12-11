@@ -21,7 +21,7 @@ ON CONFLICT (uid) DO UPDATE
 SET
   name = EXCLUDED.name
 RETURNING
-  user_id;
+  id;
 
 -- BLOCK insert_enrollment
 INSERT INTO

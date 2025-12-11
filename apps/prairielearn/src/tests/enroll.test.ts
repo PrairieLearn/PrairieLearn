@@ -212,7 +212,7 @@ describe('Self-enrollment settings transitions', () => {
     await withUser(studentUser, async () => {
       // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -225,7 +225,7 @@ describe('Self-enrollment settings transitions', () => {
 
       // Check that user is now enrolled
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -253,7 +253,7 @@ describe('Self-enrollment settings transitions', () => {
     await withUser(studentUser, async () => {
       // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -266,7 +266,7 @@ describe('Self-enrollment settings transitions', () => {
 
       // Check that user is now enrolled
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -315,7 +315,7 @@ describe('Self-enrollment settings transitions', () => {
       assert.equal(response.status, 200);
 
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: invitedUser.user_id,
+        userId: invitedUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -396,7 +396,7 @@ describe('Self-enrollment settings transitions', () => {
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
        VALUES ($user_id, $course_instance_id, 'blocked', $first_joined_at)`,
       {
-        user_id: blockedUser.user_id,
+        user_id: blockedUser.id,
         course_instance_id: '1',
         first_joined_at: new Date(),
       },
@@ -408,7 +408,7 @@ describe('Self-enrollment settings transitions', () => {
       assert.equal(response.status, 403);
 
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: blockedUser.user_id,
+        userId: blockedUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -451,7 +451,7 @@ describe('Self-enrollment settings transitions', () => {
 
       // Check that user is still not enrolled
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: rejectedUser.user_id,
+        userId: rejectedUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -484,7 +484,7 @@ describe('Self-enrollment settings transitions', () => {
 
       // Check that user is still not enrolled
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -524,7 +524,7 @@ describe('Self-enrollment settings transitions', () => {
 
       // Check that user is now enrolled
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: studentUser.user_id,
+        userId: studentUser.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -575,9 +575,9 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to match course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '1',
-      user_id: sameInstitutionUser.user_id,
+      user_id: sameInstitutionUser.id,
     });
 
     // Use withUser helper to perform actions as the same institution user
@@ -585,7 +585,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: sameInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: sameInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNull(initialEnrollment);
@@ -597,7 +597,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is now enrolled
       const finalEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: sameInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: sameInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNotNull(finalEnrollment);
@@ -642,7 +642,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNull(initialEnrollment);
@@ -656,7 +656,7 @@ describe('Self-enrollment institution restriction transitions', () => {
         // Check that user is still not enrolled.
         const finalEnrollment = await queryOptionalRow(
           'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
           EnrollmentSchema,
         );
         assert.isNull(finalEnrollment);
@@ -671,7 +671,7 @@ describe('Self-enrollment institution restriction transitions', () => {
         // Check that user is now enrolled.
         const finalEnrollment = await queryOptionalRow(
           'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.user_id, course_instance_id: '1' },
+          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
           EnrollmentSchema,
         );
         assert.isOk(finalEnrollment);
@@ -703,9 +703,9 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to be different from course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '2',
-      user_id: differentInstitutionUser.user_id,
+      user_id: differentInstitutionUser.id,
     });
 
     // Use withUser helper to perform actions as the different institution user
@@ -713,7 +713,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: differentInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: differentInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNull(initialEnrollment);
@@ -725,7 +725,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is now enrolled
       const finalEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: differentInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: differentInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNotNull(finalEnrollment);
@@ -756,9 +756,9 @@ describe('Self-enrollment institution restriction transitions', () => {
     });
 
     // Update user's institution to be different from course institution
-    await execute('UPDATE users SET institution_id = $institution_id WHERE user_id = $user_id', {
+    await execute('UPDATE users SET institution_id = $institution_id WHERE id = $user_id', {
       institution_id: '2',
-      user_id: differentInstitutionUser.user_id,
+      user_id: differentInstitutionUser.id,
     });
 
     // Create an invited enrollment for the user
@@ -791,7 +791,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       // Check that user is now enrolled (invited enrollment should be converted to joined)
       const finalEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-        { user_id: differentInstitutionUser.user_id, course_instance_id: '1' },
+        { user_id: differentInstitutionUser.id, course_instance_id: '1' },
         EnrollmentSchema,
       );
       assert.isNotNull(finalEnrollment);

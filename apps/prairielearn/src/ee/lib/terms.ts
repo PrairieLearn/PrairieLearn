@@ -32,7 +32,7 @@ export async function shouldRedirectToTermsPage(user: User, ip: string | undefin
   const { mode } = await ipToMode({
     ip,
     date: new Date(),
-    authn_user_id: user.user_id,
+    authn_user_id: user.id,
   });
   return mode === 'Public';
 }

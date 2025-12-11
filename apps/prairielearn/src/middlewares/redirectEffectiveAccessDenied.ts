@@ -51,11 +51,11 @@ export function getRedirectForEffectiveAccessDenied(res: Response): string | nul
   if (!res.locals.pl_requested_data_changed) return null;
 
   // skip if we don't have user data
-  if (res.locals.authn_user?.user_id == null) return null;
-  if (res.locals.user?.user_id == null) return null;
+  if (res.locals.authn_user?.id == null) return null;
+  if (res.locals.user?.id == null) return null;
 
   // we are only interested in cases where we are emulating a different user
-  if (idsEqual(res.locals.authn_user.user_id, res.locals.user.user_id)) return null;
+  if (idsEqual(res.locals.authn_user.id, res.locals.user.id)) return null;
 
   // check that we have a urlPrefix
   if (res.locals.urlPrefix == null) return null;

@@ -31,7 +31,7 @@ BEGIN
             (authz_data->>'mode_reason')::enum_mode_reason,
             (authz_data->>'course_role')::enum_course_role,
             (authz_data->>'course_instance_role')::enum_course_instance_role,
-            (authz_data->'user'->>'user_id')::bigint,
+            (authz_data->'user'->>'id')::bigint,
             authz_data->'user'->>'uid',
             req_date,
             display_timezone

@@ -62,7 +62,7 @@ export async function updateCourseRequest(req: Request, res: Response) {
 
   await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action,
   });
   res.redirect(req.originalUrl);
@@ -71,7 +71,7 @@ export async function updateCourseRequest(req: Request, res: Response) {
 export async function createCourseFromRequest(req: Request, res: Response) {
   await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action: 'creating',
   });
 

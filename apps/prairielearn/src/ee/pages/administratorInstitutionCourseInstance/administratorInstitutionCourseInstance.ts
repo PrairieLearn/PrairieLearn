@@ -88,7 +88,7 @@ router.post(
       await reconcilePlanGrantsForCourseInstance(
         course_instance.id,
         desiredPlans,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);

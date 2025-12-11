@@ -20,9 +20,9 @@ export function enrichSentryEventMiddleware(req: Request, res: Response, next: N
         event.tags.error_id = res.locals.error_id;
       }
 
-      if (res.locals.authn_user?.user_id) {
+      if (res.locals.authn_user?.id) {
         event.user = {
-          id: res.locals.authn_user.user_id.toString(),
+          id: res.locals.authn_user.id.toString(),
           // To comply with GDPR and other data protection laws, you can
           // configure Sentry to not store IP addresses. Sentry will then
           // only use the IP address to compute a country code and
