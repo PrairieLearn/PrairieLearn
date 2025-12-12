@@ -38,7 +38,7 @@ router.post('/', async (req, res) => {
         issuer: 'PrairieLearn',
         subject: 'terminate',
       });
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Error decoding PrairieLearn-Signature header', err);
       res.status(403).send(`Invalid PrairieLearn-Signature header: ${err.message}`);
       return;
@@ -62,7 +62,7 @@ router.post('/', async (req, res) => {
     });
 
     res.status(200).send('Terminating');
-  } catch (err) {
+  } catch (err: any) {
     logger.error('Error in terminate webhook', err);
     res.status(500).send(err.message);
   }

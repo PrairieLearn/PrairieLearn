@@ -8,7 +8,6 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
@@ -101,18 +100,16 @@ router.post(
 
     const user = await selectOptionalUserByUid(body.uid);
 
-    if (user == null) {
-      throw new HttpStatusError(400, 'User not found');
-    }
+    if (user) {
+      const isInstructor = await callRow(
+        'users_is_instructor_in_course_instance',
+        [user.user_id, courseInstance.id],
+        z.boolean(),
+      );
 
-    const isInstructor = await callRow(
-      'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
-      z.boolean(),
-    );
-
-    if (isInstructor) {
-      throw new HttpStatusError(400, 'The user is an instructor');
+      if (isInstructor) {
+        throw new HttpStatusError(400, 'The user is an instructor');
+      }
     }
 
     // Try to find an existing enrollment so we can error gracefully.
@@ -157,12 +154,17 @@ router.get(
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
-    const { authz_data, urlPrefix, __csrf_token: csrfToken } = pageContext;
-    const { course_instance: courseInstance, course, institution } = pageContext;
+    const {
+      authz_data,
+      __csrf_token: csrfToken,
+      course_instance: courseInstance,
+      course,
+      institution,
+    } = pageContext;
 
     const search = getUrl(req).search;
 
-    if (!pageContext.authz_data.has_course_instance_permission_view) {
+    if (!authz_data.has_course_instance_permission_view) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
@@ -207,30 +209,19 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={{
-                has_course_instance_permission_edit:
-                  authz_data.has_course_instance_permission_edit ?? false,
-              }}
+          <Hydrate fullHeight>
+            <InstructorStudents
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              isDevMode={config.devMode}
+              authzData={authz_data}
+              students={students}
+              search={search}
+              timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
-              urlPrefix={urlPrefix}
+              csrfToken={csrfToken}
             />
-            <Hydrate fullHeight>
-              <InstructorStudents
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
-                isDevMode={config.devMode}
-                authzData={authz_data}
-                students={students}
-                search={search}
-                timezone={course.display_timezone}
-                courseInstance={courseInstance}
-                course={course}
-                csrfToken={csrfToken}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

@@ -509,7 +509,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).toReversed();
+    const reverseFolders = idSplit.slice(0, -1).reverse();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -883,6 +883,7 @@ export class CourseInstanceCopyEditor extends Editor {
   private from_course: Course | StaffCourse;
   private from_path: string;
   private is_transfer: boolean;
+  private metadataOverrides?: Record<string, any>;
 
   public readonly uuid: string;
 
@@ -891,6 +892,7 @@ export class CourseInstanceCopyEditor extends Editor {
       from_course: Course | StaffCourse;
       from_path: string;
       course_instance: CourseInstance;
+      metadataOverrides?: Record<string, any>;
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -902,6 +904,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_course = params.from_course;
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
+    this.metadataOverrides = params.metadataOverrides;
 
     this.uuid = crypto.randomUUID();
   }
@@ -925,6 +928,7 @@ export class CourseInstanceCopyEditor extends Editor {
       'infoCourseInstance.json',
     );
 
+    // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
@@ -946,7 +950,13 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    infoJson.allowAccess = undefined;
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -960,12 +970,6 @@ export class CourseInstanceCopyEditor extends Editor {
         path.join(this.course.path, 'questions'),
         'info.json',
       );
-
-      // Clear access rules to avoid leaking student PII or unexpectedly
-      // making the copied course instance available to users.
-      // Note: this means that copied course instances will be switched to the modern publishing
-      // system.
-      infoJson.allowAccess = undefined;
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
@@ -1053,6 +1057,10 @@ export class CourseInstanceCopyEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson.shareSourcePublicly;
+
+    if (this.metadataOverrides) {
+      infoJson = { ...infoJson, ...this.metadataOverrides };
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -2183,7 +2191,7 @@ export class FileUploadEditor extends Editor {
     let contents;
     try {
       contents = await fs.readFile(this.filePath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
         return true;

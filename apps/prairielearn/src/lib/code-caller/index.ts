@@ -210,7 +210,7 @@ export async function withCodeCaller<T>(
       // no error logged here, everything is still ok
       needsFullRestart = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     restartErr = err;
     debug(`returnPythonCaller(): restart errored: ${err}`);
     logger.error('Error restarting pythonCaller', err);

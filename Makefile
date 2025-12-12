@@ -5,10 +5,9 @@ build:
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 
-# We use the system Python due to this bug: https://github.com/astral-sh/python-build-standalone/issues/758
 venv-setup:
 	@[ -f .venv/bin/python3 ] || \
-		uv venv --python-preference only-system --python 3.10 --seed .venv || \
+		uv venv --python-preference only-managed --python 3.10 --seed .venv || \
 		python3 -m venv --upgrade-deps .venv
 
 # Note the `--compile-bytecode` flag, which is needed to ensure fast

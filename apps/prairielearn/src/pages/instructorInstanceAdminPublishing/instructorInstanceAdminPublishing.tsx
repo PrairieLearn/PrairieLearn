@@ -13,7 +13,6 @@ import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/po
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -38,7 +37,7 @@ import { type CourseInstanceJsonInput } from '../../schemas/infoCourseInstance.j
 
 import { CourseInstancePublishing } from './components/CourseInstancePublishing.js';
 import { LegacyAccessRuleCard } from './components/LegacyAccessRuleCard.js';
-import { CourseInstancePublishingExtensionWithUsersSchema } from './instructorInstanceAdminPublishing.types.js';
+import { CourseInstancePublishingExtensionRowSchema } from './instructorInstanceAdminPublishing.types.js';
 import { plainDateTimeStringToDate } from './utils/dateUtils.js';
 
 const router = Router();
@@ -62,7 +61,7 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance({
   return await queryRows(
     sql.select_publishing_extensions_with_users_by_course_instance,
     { course_instance_id: courseInstance.id },
-    CourseInstancePublishingExtensionWithUsersSchema,
+    CourseInstancePublishingExtensionRowSchema,
   );
 }
 
@@ -185,35 +184,24 @@ router.get(
           page: 'instance_admin',
           subPage: 'publishing',
         },
-        content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              courseInstance={res.locals.course_instance}
-              course={res.locals.course}
-              urlPrefix={res.locals.urlPrefix}
+        content: courseInstance.modern_publishing ? (
+          <Hydrate>
+            <CourseInstancePublishing
+              courseInstance={courseInstance}
+              canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+              csrfToken={csrfToken}
+              origHash={origHash}
+              extensions={publishingExtensions}
+              isDevMode={config.devMode}
             />
-
-            {courseInstance.modern_publishing ? (
-              <Hydrate>
-                <CourseInstancePublishing
-                  courseInstance={courseInstance}
-                  canEdit={hasCourseInstancePermissionEdit && origHash !== null}
-                  csrfToken={csrfToken}
-                  origHash={origHash}
-                  publishingExtensions={publishingExtensions}
-                  isDevMode={config.devMode}
-                />
-              </Hydrate>
-            ) : (
-              <LegacyAccessRuleCard
-                accessRules={accessRules}
-                showComments={showComments}
-                courseInstance={courseInstance}
-                hasCourseInstancePermissionView={hasCourseInstancePermissionView}
-              />
-            )}
-          </>
+          </Hydrate>
+        ) : (
+          <LegacyAccessRuleCard
+            accessRules={accessRules}
+            showComments={showComments}
+            courseInstance={courseInstance}
+            hasCourseInstancePermissionView={hasCourseInstancePermissionView}
+          />
         ),
       }),
     );
@@ -263,8 +251,15 @@ router.post(
 
       const parsedBody = z
         .object({
-          start_date: z.string(),
-          end_date: z.string(),
+          // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
+          // We would normally solve this on the client side, but this page does a HTML POST, so transformations
+          // done via react-hook-form don't work.
+
+          // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+          // https://issues.chromium.org/issues/41159420
+
+          start_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
+          end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         })
         .parse(req.body);
 

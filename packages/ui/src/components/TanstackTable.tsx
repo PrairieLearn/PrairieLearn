@@ -284,16 +284,17 @@ export function TanstackTable<RowDataModel>({
             role="grid"
           >
             <thead
+              class="position-sticky top-0 w-100 border-top"
               style={{
                 display: 'grid',
-                position: 'sticky',
-                top: 0,
                 zIndex: 1,
+                borderBottom: 'var(--bs-border-width) solid black',
               }}
             >
               <tr
                 key={leafHeaderGroup.id}
-                style={{ display: 'flex', width: `${table.getTotalSize()}px` }}
+                class="d-flex w-100"
+                style={{ minWidth: `${table.getTotalSize()}px` }}
               >
                 {/* Left pinned columns */}
                 {leftPinnedHeaders.map((header) => {
@@ -335,13 +336,21 @@ export function TanstackTable<RowDataModel>({
                 {virtualPaddingRight ? (
                   <th style={{ display: 'flex', width: virtualPaddingRight }} />
                 ) : null}
+
+                {/* Filler to span remaining width */}
+                <th
+                  tabIndex={-1}
+                  class="d-flex flex-grow-1 p-0"
+                  style={{ minWidth: 0 }}
+                  aria-hidden="true"
+                />
               </tr>
             </thead>
             <tbody
+              class="position-relative w-100"
               style={{
                 display: 'grid',
                 height: `${rowVirtualizer.getTotalSize()}px`,
-                position: 'relative',
               }}
             >
               {virtualRows.map((virtualRow) => {
@@ -357,11 +366,10 @@ export function TanstackTable<RowDataModel>({
                     key={row.id}
                     ref={(node) => rowVirtualizer.measureElement(node)}
                     data-index={virtualRow.index}
+                    class="d-flex position-absolute w-100"
                     style={{
-                      display: 'flex',
-                      position: 'absolute',
                       transform: `translateY(${virtualRow.start}px)`,
-                      width: `${table.getTotalSize()}px`,
+                      minWidth: `${table.getTotalSize()}px`,
                     }}
                   >
                     {leftPinnedCells.map((cell) => {
@@ -414,6 +422,14 @@ export function TanstackTable<RowDataModel>({
                     {virtualPaddingRight ? (
                       <td style={{ display: 'flex', width: virtualPaddingRight }} />
                     ) : null}
+
+                    {/* Filler to span remaining width */}
+                    <td
+                      tabIndex={-1}
+                      class="d-flex flex-grow-1 p-0"
+                      style={{ minWidth: 0 }}
+                      aria-hidden="true"
+                    />
                   </tr>
                 );
               })}
@@ -570,8 +586,7 @@ export function TanstackTableCard<RowDataModel>({
             value={inputValue}
             autoComplete="off"
             onInput={(e) => {
-              if (!(e.target instanceof HTMLInputElement)) return;
-              const value = e.target.value;
+              const value = e.currentTarget.value;
               setInputValue(value);
               debouncedSetFilter(value);
             }}

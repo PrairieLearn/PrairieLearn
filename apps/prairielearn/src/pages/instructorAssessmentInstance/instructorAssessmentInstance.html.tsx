@@ -2,7 +2,6 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
@@ -10,7 +9,6 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
@@ -117,15 +115,6 @@ export function InstructorAssessmentInstance({
         csrfToken: resLocals.__csrf_token,
       })}
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>
