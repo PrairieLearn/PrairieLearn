@@ -9,10 +9,10 @@ import {
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import { computeStatus } from '../../lib/publishing.js';
 
 import { EmptyStateCards } from './components/EmptyStateCards.js';
 import { StudentCoursesCard } from './components/StudentCoursesCard.js';
-import { computeStatus } from '../../lib/publishing.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,

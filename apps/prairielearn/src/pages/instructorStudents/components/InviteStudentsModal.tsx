@@ -4,9 +4,9 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import type { InviteResult } from '../instructorStudents.shared.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
+import type { InviteResult } from '../instructorStudents.shared.js';
 
 interface InviteStudentForm {
   uids: string;

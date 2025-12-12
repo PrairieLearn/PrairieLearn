@@ -16,6 +16,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
@@ -29,7 +30,6 @@ import {
   StudentHomePageCourseSchema,
   StudentHomePageCourseWithExtensionSchema,
 } from './home.html.js';
-import { computeStatus } from '../../lib/publishing.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
