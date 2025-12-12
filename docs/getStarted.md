@@ -284,8 +284,6 @@ When using "Student view without access restrictions", you have access to all as
 
 Learn more:
 
-- [Quick reference guide about question structure and PrairieLearn elements](https://web.archive.org/web/20230630091003/https://coatless.github.io/pl-cheatsheets/pdfs/prairielearn-authoring-cheatsheet.pdf)
-
 - [Different ways to set up an assessment](assessment/overview.md)
 
 - [Detailed list of PrairieLearn elements](./elements/index.md)
