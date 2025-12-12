@@ -526,6 +526,7 @@ function StudentsCard({
       />
       <InviteStudentsModal
         show={showInvite}
+        courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
       />
