@@ -23,7 +23,7 @@ Some questions may require additional customization of existing images, such as 
 
    ```dockerfile
    FROM prairielearn/workspace-vscode-python
-   RUN uv pip install datascience
+   RUN pip install datascience
    ```
 
 5. In a terminal, change to the directory that contains the `Dockerfile` above and build the new image (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
