@@ -31,14 +31,13 @@ export function InviteStudentModal({
     defaultValues: { uid: '' },
   });
 
-  const onClose = () => {
+  const resetModalState = () => {
     reset();
     clearErrors();
-    onHide();
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onClose}>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
         <Modal.Title>Invite student</Modal.Title>
       </Modal.Header>
@@ -105,7 +104,7 @@ export function InviteStudentModal({
           {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onClose}>
+          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
             Cancel
           </button>
           <button type="submit" class="btn btn-primary" disabled={isSubmitting || isValidating}>
