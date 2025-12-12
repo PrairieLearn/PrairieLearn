@@ -1,6 +1,6 @@
 import { useRef, useState } from 'preact/hooks';
 
-import { type Question } from '../../../../lib/db-types.js';
+import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
@@ -20,7 +20,7 @@ export function AiQuestionGenerationEditor({
   variantUrl,
   variantCsrfToken,
 }: {
-  question: Question;
+  question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;

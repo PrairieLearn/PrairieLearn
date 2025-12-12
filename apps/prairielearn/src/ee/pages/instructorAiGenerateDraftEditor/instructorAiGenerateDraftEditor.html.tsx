@@ -7,6 +7,7 @@ import {
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
+import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -70,7 +71,7 @@ export function InstructorAiGenerateDraftEditor({
     content: (
       <Hydrate class="app-content-container">
         <AiQuestionGenerationEditor
-          question={question}
+          question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
