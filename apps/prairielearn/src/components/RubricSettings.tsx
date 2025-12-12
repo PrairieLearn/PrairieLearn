@@ -245,7 +245,7 @@ export function RubricSettings({
     setImportModalWarning(null);
   };
 
-  const handleImportModalClose = () => {
+  const closeImportModal = () => {
     setShowImportModal(false);
   };
 
@@ -311,7 +311,7 @@ export function RubricSettings({
         });
       }
       setRubricItems(scaledRubricItems);
-      handleImportModalClose();
+      closeImportModal();
     } catch {
       setImportModalWarning('Error reading file content.');
     }
@@ -718,7 +718,7 @@ export function RubricSettings({
           <Modal
             show={showImportModal}
             size="lg"
-            onHide={handleImportModalClose}
+            onHide={closeImportModal}
             onExited={resetImportModal}
           >
             <Modal.Header closeButton>
@@ -754,7 +754,7 @@ export function RubricSettings({
               )}
             </Modal.Body>
             <Modal.Footer>
-              <button type="button" class="btn btn-secondary" onClick={handleImportModalClose}>
+              <button type="button" class="btn btn-secondary" onClick={closeImportModal}>
                 Cancel
               </button>
               <button

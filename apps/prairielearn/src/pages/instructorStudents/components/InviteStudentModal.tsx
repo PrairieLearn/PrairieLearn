@@ -31,13 +31,13 @@ export function InviteStudentModal({
     defaultValues: { uid: '' },
   });
 
-  const handleReset = () => {
+  const resetModalState = () => {
     reset();
     clearErrors();
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onHide} onExited={handleReset}>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
         <Modal.Title>Invite student</Modal.Title>
       </Modal.Header>

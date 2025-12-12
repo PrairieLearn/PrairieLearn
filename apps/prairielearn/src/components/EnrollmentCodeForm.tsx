@@ -64,7 +64,7 @@ export function EnrollmentCodeForm({
 
   const watchedValues = watch();
   // Handle modal close - reset form and clear errors on exit
-  const handleReset = () => {
+  const resetModalState = () => {
     reset();
     clearErrors();
   };
@@ -359,7 +359,7 @@ export function EnrollmentCodeForm({
       show={show}
       size="md"
       onHide={onHide}
-      onExited={handleReset}
+      onExited={resetModalState}
     >
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
