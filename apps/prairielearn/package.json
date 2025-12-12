@@ -17,10 +17,10 @@
     "test:e2e": "playwright test"
   },
   "dependencies": {
-    "@ai-sdk/anthropic": "^2.0.54",
-    "@ai-sdk/google": "^2.0.45",
-    "@ai-sdk/openai": "^2.0.80",
-    "@ai-sdk/react": "^2.0.109",
+    "@ai-sdk/anthropic": "^2.0.56",
+    "@ai-sdk/google": "^2.0.46",
+    "@ai-sdk/openai": "^2.0.85",
+    "@ai-sdk/react": "^2.0.114",
     "@aws-sdk/client-auto-scaling": "^3.940.0",
     "@aws-sdk/client-cloudwatch": "^3.940.0",
     "@aws-sdk/client-ec2": "^3.940.0",
@@ -110,7 +110,7 @@
     "@web3-storage/parse-link-header": "^3.1.0",
     "ace-builds": "^1.43.4",
     "ace-code": "^1.43.4",
-    "ai": "^5.0.104",
+    "ai": "^5.0.112",
     "ajv": "^8.17.1",
     "ansi_up": "^6.0.6",
     "archiver": "^7.0.1",
