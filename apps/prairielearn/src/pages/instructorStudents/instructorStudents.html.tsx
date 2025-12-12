@@ -4,6 +4,7 @@ import {
   type ColumnPinningState,
   type ColumnSizingState,
   type Header,
+  type RowSelectionState,
   type SortingState,
   type Updater,
   createColumnHelper,
@@ -14,13 +15,14 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton, Form } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { run } from '@prairielearn/run';
 import {
   CategoricalColumnFilter,
+  MultiSelectColumnFilter,
   NuqsAdapter,
   OverlayTrigger,
   TanstackTableCard,
@@ -28,6 +30,7 @@ import {
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsSortingState,
+  useShiftClickCheckbox,
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
@@ -43,19 +46,54 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { StudentGroupRowSchema } from '../instructorInstanceAdminStudentGroups/instructorInstanceAdminStudentGroups.types.js';
 
 import { InviteStudentModal } from './components/InviteStudentModal.js';
-import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
+import {
+  STATUS_VALUES,
+  type StudentGroupInfo,
+  type StudentRow,
+  StudentRowSchema,
+} from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
 const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
-const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
+const DEFAULT_PINNING: ColumnPinningState = { left: ['select', 'user_uid'], right: [] };
 
 const DEFAULT_ENROLLMENT_STATUS_FILTER: EnumEnrollmentStatus[] = [];
 
 const columnHelper = createColumnHelper<StudentRow>();
+
+// Predefined color palette for student group chips
+const STUDENT_GROUP_COLORS = [
+  'blue2',
+  'green2',
+  'purple2',
+  'orange2',
+  'turquoise2',
+  'pink2',
+  'yellow2',
+  'red2',
+] as const;
+
+/**
+ * Assigns a color to a student group based on its ID.
+ * This ensures consistent coloring across renders.
+ */
+function getStudentGroupColor(groupId: string): string {
+  // Convert the ID string to a number for consistent hashing
+  // Use a simple hash to distribute colors evenly
+  let hash = 0;
+  for (let i = 0; i < groupId.length; i++) {
+    const char = groupId.charCodeAt(i);
+    hash = (hash << 5) - hash + char;
+    hash &= hash; // Convert to 32-bit integer
+  }
+  const colorIndex = Math.abs(hash) % STUDENT_GROUP_COLORS.length;
+  return STUDENT_GROUP_COLORS[colorIndex];
+}
 
 async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
@@ -154,15 +192,18 @@ interface StudentsCardProps {
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
+  studentGroups: StudentGroupInfo[];
   timezone: string;
 }
 
 type ColumnId =
+  | 'select'
   | 'user_uid'
   | 'user_name'
   | 'enrollment_status'
   | 'user_email'
-  | 'enrollment_first_joined_at';
+  | 'enrollment_first_joined_at'
+  | 'student_groups';
 
 function StudentsCard({
   authzData,
@@ -170,6 +211,7 @@ function StudentsCard({
   courseInstance,
   enrollmentManagementEnabled,
   students: initialStudents,
+  studentGroups: initialStudentGroups,
   timezone,
   csrfToken,
 }: StudentsCardProps) {
@@ -190,7 +232,36 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
+  const [studentGroupsFilter, setStudentGroupsFilter] = useQueryState(
+    'student_groups',
+    parseAsArrayOf(parseAsString).withDefault([]),
+  );
   const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
+  const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
+  const [newGroupName, setNewGroupName] = useState('');
+  const [addToGroupDropdownOpen, setAddToGroupDropdownOpen] = useState(false);
+
+  const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
+
+  // Fetch student groups for batch actions
+  const { data: studentGroups = initialStudentGroups } = useQuery<StudentGroupInfo[]>({
+    queryKey: ['student-groups', courseInstance.id],
+    queryFn: async () => {
+      const res = await fetch(
+        `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/student_groups/data.json`,
+        {
+          headers: { Accept: 'application/json' },
+        },
+      );
+      if (!res.ok) throw new Error('Failed to fetch student groups');
+      const data = await res.json();
+      const groups = z.array(StudentGroupRowSchema).parse(data);
+      // Transform StudentGroupRow[] to StudentGroupInfo[] (drop student_count)
+      return groups.map((g) => ({ id: g.id, name: g.name }));
+    },
+    staleTime: Infinity,
+    initialData: initialStudentGroups,
+  });
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
@@ -199,18 +270,24 @@ function StudentsCard({
         id: 'enrollment_status',
         value: enrollmentStatusFilter,
       },
+      {
+        id: 'student_groups',
+        value: studentGroupsFilter,
+      },
     ];
-  }, [enrollmentStatusFilter]);
+  }, [enrollmentStatusFilter, studentGroupsFilter]);
 
   const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
+      select: undefined,
       user_uid: undefined,
       user_name: undefined,
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
       enrollment_first_joined_at: undefined,
+      student_groups: setStudentGroupsFilter,
     };
-  }, [setEnrollmentStatusFilter]);
+  }, [setEnrollmentStatusFilter, setStudentGroupsFilter]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -280,8 +357,126 @@ function StudentsCard({
     },
   });
 
+  // Batch action mutations
+  const batchAddToGroupMutation = useMutation({
+    mutationFn: async ({
+      enrollmentIds,
+      studentGroupId,
+    }: {
+      enrollmentIds: string[];
+      studentGroupId: string;
+    }) => {
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body: JSON.stringify({
+          __action: 'batch_add_to_group',
+          __csrf_token: csrfToken,
+          enrollment_ids: enrollmentIds,
+          student_group_id: studentGroupId,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? 'Failed to add to group');
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      setRowSelection({});
+    },
+  });
+
+  const batchRemoveFromGroupMutation = useMutation({
+    mutationFn: async ({
+      enrollmentIds,
+      studentGroupId,
+    }: {
+      enrollmentIds: string[];
+      studentGroupId: string;
+    }) => {
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body: JSON.stringify({
+          __action: 'batch_remove_from_group',
+          __csrf_token: csrfToken,
+          enrollment_ids: enrollmentIds,
+          student_group_id: studentGroupId,
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? 'Failed to remove from group');
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      setRowSelection({});
+    },
+  });
+
+  const createGroupAndAddMutation = useMutation({
+    mutationFn: async ({ enrollmentIds, name }: { enrollmentIds: string[]; name: string }) => {
+      const res = await fetch(window.location.href, {
+        method: 'POST',
+        body: JSON.stringify({
+          __action: 'create_group_and_add_students',
+          __csrf_token: csrfToken,
+          enrollment_ids: enrollmentIds,
+          name: name.trim(),
+        }),
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
+      if (!res.ok) {
+        const json = await res.json();
+        throw new Error(json.error ?? 'Failed to create group and add students');
+      }
+      return res.json();
+    },
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+      setNewGroupName('');
+      setRowSelection({});
+      setAddToGroupDropdownOpen(false);
+    },
+  });
+
   const columns = useMemo(
     () => [
+      columnHelper.display({
+        id: 'select',
+        header: ({ table }) => (
+          <input
+            type="checkbox"
+            checked={table.getIsAllRowsSelected()}
+            indeterminate={table.getIsSomeRowsSelected()}
+            autocomplete="off"
+            onChange={table.getToggleAllRowsSelectedHandler()}
+          />
+        ),
+        cell: ({ row, table }) => {
+          return <input type="checkbox" {...createCheckboxProps(row, table)} />;
+        },
+        size: 40,
+        minSize: 40,
+        maxSize: 40,
+        enableSorting: false,
+        enableHiding: false,
+        enablePinning: true,
+      }),
       columnHelper.accessor((row) => row.user?.uid ?? row.enrollment.pending_uid, {
         id: 'user_uid',
         header: 'UID',
@@ -352,11 +547,55 @@ function StudentsCard({
           );
         },
       }),
+      columnHelper.accessor((row) => row.student_groups, {
+        id: 'student_groups',
+        meta: {
+          label: 'Student Groups',
+        },
+        header: () => {
+          const studentGroupsUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/student_groups`;
+          return (
+            <a
+              href={studentGroupsUrl}
+              class="text-decoration-none d-inline-flex align-items-center gap-1"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <span>Groups</span>
+              <i class="fas fa-users" />
+            </a>
+          );
+        },
+        cell: (info) => {
+          const groups = info.getValue();
+          if (groups.length === 0) return '—';
+          return (
+            <div class="d-flex flex-wrap gap-1">
+              {groups.map((group) => {
+                const color = getStudentGroupColor(group.id);
+                return (
+                  <span key={group.id} class={`badge color-${color}`}>
+                    {group.name}
+                  </span>
+                );
+              })}
+            </div>
+          );
+        },
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const studentGroupIds = new Set(
+            row.getValue<StudentRow['student_groups']>(columnId).map((g) => g.id),
+          );
+          return filterValues.some((filterId) => studentGroupIds.has(filterId));
+        },
+      }),
     ],
-    [timezone, courseInstance.id],
+    [timezone, courseInstance.id, createCheckboxProps],
   );
 
-  const allColumnIds = columns.map((col) => col.id).filter((id) => typeof id === 'string');
+  const allColumnIds = columns
+    .map((col) => col.id)
+    .filter((id): id is string => typeof id === 'string' && id !== 'select');
   const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -368,6 +607,7 @@ function StudentsCard({
     columns,
     columnResizeMode: 'onChange',
     getRowId: (row) => row.enrollment.id,
+    enableRowSelection: true,
     state: {
       sorting,
       columnFilters,
@@ -375,6 +615,7 @@ function StudentsCard({
       columnSizing,
       columnVisibility,
       columnPinning,
+      rowSelection,
     },
     initialState: {
       columnPinning: DEFAULT_PINNING,
@@ -386,6 +627,7 @@ function StudentsCard({
     onColumnSizingChange: setColumnSizing,
     onColumnVisibilityChange: setColumnVisibility,
     onColumnPinningChange: setColumnPinning,
+    onRowSelectionChange: setRowSelection,
     getCoreRowModel: getCoreRowModel(),
     getSortedRowModel: getSortedRowModel(),
     getFilteredRowModel: getFilteredRowModel(),
@@ -398,6 +640,39 @@ function StudentsCard({
       enablePinning: true,
     },
   });
+
+  // Calculate selected enrollment IDs and common groups for batch actions
+  const selectedRows = table.getSelectedRowModel().rows;
+  const selectedEnrollmentIds = selectedRows.map((row) => row.original.enrollment.id);
+
+  // Find groups that ALL selected students share (for "remove from group" option)
+  const commonGroups = useMemo(() => {
+    if (selectedRows.length === 0) return [];
+    const groupSets = selectedRows.map(
+      (row) => new Set(row.original.student_groups.map((g) => g.id)),
+    );
+    const firstSet = groupSets[0];
+    const commonGroupIds = new Set(
+      [...firstSet].filter((id) => groupSets.every((set) => set.has(id))),
+    );
+    return studentGroups.filter((g) => commonGroupIds.has(g.id));
+  }, [selectedRows, studentGroups]);
+
+  // Find groups that ALL selected students are already in (to exclude from "add to group")
+  const groupsAllSelectedStudentsAreIn = useMemo(() => {
+    if (selectedRows.length === 0) return new Set<string>();
+    const groupSets = selectedRows.map(
+      (row) => new Set(row.original.student_groups.map((g) => g.id)),
+    );
+    const firstSet = groupSets[0];
+    const commonGroupIds = [...firstSet].filter((id) => groupSets.every((set) => set.has(id)));
+    return new Set(commonGroupIds);
+  }, [selectedRows]);
+
+  // Groups available for "add to group" (exclude groups all students are already in)
+  const availableGroupsForAdd = useMemo(() => {
+    return studentGroups.filter((g) => !groupsAllSelectedStudentsAreIn.has(g.id));
+  }, [studentGroups, groupsAllSelectedStudentsAreIn]);
 
   return (
     <>
@@ -432,6 +707,114 @@ function StudentsCard({
         }}
         headerButtons={
           <>
+            {authzData.has_course_instance_permission_edit && (
+              <>
+                {(availableGroupsForAdd.length > 0 || selectedEnrollmentIds.length > 0) && (
+                  <DropdownButton
+                    title="Add to group"
+                    size="sm"
+                    variant="light"
+                    show={addToGroupDropdownOpen}
+                    disabled={
+                      selectedEnrollmentIds.length === 0 ||
+                      (batchAddToGroupMutation.isPending && createGroupAndAddMutation.isPending)
+                    }
+                    as={ButtonGroup}
+                    onToggle={(isOpen) => setAddToGroupDropdownOpen(isOpen)}
+                  >
+                    {availableGroupsForAdd.map((group) => (
+                      <Dropdown.Item
+                        key={group.id}
+                        onClick={() =>
+                          batchAddToGroupMutation.mutate({
+                            enrollmentIds: selectedEnrollmentIds,
+                            studentGroupId: group.id,
+                          })
+                        }
+                      >
+                        {group.name}
+                      </Dropdown.Item>
+                    ))}
+                    {availableGroupsForAdd.length > 0 && selectedEnrollmentIds.length > 0 && (
+                      <Dropdown.Divider />
+                    )}
+                    {selectedEnrollmentIds.length > 0 && (
+                      <Dropdown.Item
+                        as="div"
+                        class="p-2 bg-transparent"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <div class="d-flex gap-2 align-items-center">
+                          <Form.Control
+                            type="text"
+                            size="sm"
+                            placeholder="New group name"
+                            value={newGroupName}
+                            disabled={createGroupAndAddMutation.isPending}
+                            onChange={(e) => setNewGroupName((e.target as HTMLInputElement).value)}
+                            onKeyDown={(e) => {
+                              if (
+                                e.key === 'Enter' &&
+                                newGroupName.trim() &&
+                                !createGroupAndAddMutation.isPending
+                              ) {
+                                e.preventDefault();
+                                createGroupAndAddMutation.mutate({
+                                  enrollmentIds: selectedEnrollmentIds,
+                                  name: newGroupName,
+                                });
+                              }
+                            }}
+                            onClick={(e) => e.stopPropagation()}
+                          />
+                          <Button
+                            size="sm"
+                            variant="primary"
+                            disabled={!newGroupName.trim() || createGroupAndAddMutation.isPending}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              if (newGroupName.trim()) {
+                                createGroupAndAddMutation.mutate({
+                                  enrollmentIds: selectedEnrollmentIds,
+                                  name: newGroupName,
+                                });
+                              }
+                            }}
+                          >
+                            <i class="bi bi-plus" />
+                          </Button>
+                        </div>
+                      </Dropdown.Item>
+                    )}
+                  </DropdownButton>
+                )}
+                {commonGroups.length > 0 && (
+                  <DropdownButton
+                    as={ButtonGroup}
+                    title="Remove from group"
+                    size="sm"
+                    variant="light"
+                    disabled={
+                      selectedEnrollmentIds.length === 0 || batchRemoveFromGroupMutation.isPending
+                    }
+                  >
+                    {commonGroups.map((group) => (
+                      <Dropdown.Item
+                        key={group.id}
+                        onClick={() =>
+                          batchRemoveFromGroupMutation.mutate({
+                            enrollmentIds: selectedEnrollmentIds,
+                            studentGroupId: group.id,
+                          })
+                        }
+                      >
+                        {group.name}
+                      </Dropdown.Item>
+                    ))}
+                  </DropdownButton>
+                )}
+              </>
+            )}
             {enrollmentManagementEnabled && courseInstance.modern_publishing && (
               <>
                 <Button
@@ -466,6 +849,24 @@ function StudentsCard({
                 )}
               />
             ),
+            student_groups: ({
+              header,
+            }: {
+              header: Header<StudentRow, StudentRow['student_groups']>;
+            }) => {
+              const groupIds = studentGroups.map((g) => g.id);
+              return (
+                <MultiSelectColumnFilter
+                  column={header.column as any}
+                  allColumnValues={groupIds as any}
+                  renderValueLabel={({ value }) => {
+                    const group = studentGroups.find((g) => g.id === String(value));
+                    if (!group) return <span>{String(value)}</span>;
+                    return <span>{group.name}</span>;
+                  }}
+                />
+              );
+            },
           },
           emptyState: (
             <TanstackTableEmptyState iconName="bi-person-exclamation">
@@ -503,6 +904,7 @@ export const InstructorStudents = ({
   authzData,
   search,
   students,
+  studentGroups,
   timezone,
   courseInstance,
   course,
@@ -525,6 +927,7 @@ export const InstructorStudents = ({
           courseInstance={courseInstance}
           enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
+          studentGroups={studentGroups}
           timezone={timezone}
           csrfToken={csrfToken}
         />

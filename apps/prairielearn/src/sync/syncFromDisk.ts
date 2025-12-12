@@ -11,6 +11,9 @@ import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
 import * as courseDB from './course-db.js';
+// @ts-expect-error - unused import
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
+import * as syncAccessControl from './fromDisk/accessControl.js';
 import * as syncAssessmentModules from './fromDisk/assessmentModules.js';
 import * as syncAssessmentSets from './fromDisk/assessmentSets.js';
 import * as syncAssessments from './fromDisk/assessments.js';
