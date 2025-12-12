@@ -509,7 +509,6 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    // eslint-disable-next-line unicorn/no-array-reverse
     const reverseFolders = idSplit.slice(0, -1).reverse();
     debug('Checking folders', reverseFolders);
 

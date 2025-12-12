@@ -172,8 +172,8 @@ export function InstructorEffectiveUser({
                   id="changeEffectiveCourseRole"
                   name="pl_requested_course_role"
                 >
-                  ${courseRoles.available_course_roles
-                    .toReversed()
+                  ${[...courseRoles.available_course_roles]
+                    .reverse()
                     .map((available_course_role) =>
                       available_course_role === authz_data.course_role
                         ? html`
@@ -229,8 +229,8 @@ export function InstructorEffectiveUser({
                         id="changeEffectiveCourseInstanceRole"
                         name="pl_requested_course_instance_role"
                       >
-                        ${courseRoles.available_course_instance_roles
-                          .toReversed()
+                        ${[...courseRoles.available_course_instance_roles]
+                          .reverse()
                           .map((available_course_instance_role) =>
                             available_course_instance_role === authz_data.course_instance_role
                               ? html`
