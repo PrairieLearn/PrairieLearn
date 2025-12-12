@@ -242,7 +242,7 @@ A reference Python implementation for this can be seen in `PrairieLearn/graders/
 
 ## Writing questions
 
-To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl-file-editor>` gives students an in-browser editor that they can use to write code. `<pl-file-upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`. For questions using workspaces, [the `gradedFiles` option](https://prairielearn.readthedocs.io/en/latest/workspaces/#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
+To enable students to submit files, you can use one of PrairieLearn's file elements. `<pl-file-editor>` gives students an in-browser editor that they can use to write code. `<pl-file-upload>` allows students to upload files from their own computer. For examples of both style of question, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`. For questions using workspaces, [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
 
 If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. We expect files to be present in a `_files` array on the `submitted_answers` dict. They should be represented as objects containing the `name` of the file and base-64 encoded `contents`. Here's an example of a well-formed `_files` array:
 
