@@ -585,7 +585,7 @@ export async function editQuestionWithAgent({
       onFinish: async ({ responseMessage }) => {
         finalMessage = responseMessage;
       },
-      onError(error: any) {
+      onError(error) {
         // `onError` is sometimes called with non-Error values, e.g. strings.
         // We don't care about logging those.
         if (error instanceof Error) {
