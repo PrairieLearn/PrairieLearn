@@ -20,6 +20,7 @@
     "@ai-sdk/anthropic": "^2.0.56",
     "@ai-sdk/google": "^2.0.46",
     "@ai-sdk/openai": "^2.0.85",
+    "@ai-sdk/provider": "^2.0.0",
     "@ai-sdk/react": "^2.0.114",
     "@aws-sdk/client-auto-scaling": "^3.940.0",
     "@aws-sdk/client-cloudwatch": "^3.940.0",

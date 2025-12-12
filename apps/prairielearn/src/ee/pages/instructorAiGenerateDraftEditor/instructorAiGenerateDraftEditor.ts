@@ -149,23 +149,34 @@ router.get(
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question.id);
 
-    const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
-      return {
-        id: message.id,
-        role: message.role,
-        parts: message.parts,
-        metadata: {
-          job_sequence_id: message.job_sequence_id,
-          status: message.status,
-        },
-      };
-    });
+    const initialMessages = messages
+      .filter((message) => {
+        // We need to filter out any empty messages, as they'll fail validation by
+        // `validateUIMessages()`.
+        return message.parts.length > 0;
+      })
+      .map((message): QuestionGenerationUIMessage => {
+        return {
+          id: message.id,
+          role: message.role,
+          parts: message.parts,
+          metadata: {
+            job_sequence_id: message.job_sequence_id,
+            status: message.status,
+          },
+        };
+      });
 
+    // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
+    //
     // TODO: we're currently lying to the compiler here. We should be passing schemas
     // for our metadata and tools.
-    const validatedInitialMessages = await validateUIMessages<QuestionGenerationUIMessage>({
-      messages: initialMessages,
-    });
+    const validatedInitialMessages =
+      initialMessages.length > 0
+        ? await validateUIMessages<QuestionGenerationUIMessage>({
+            messages: initialMessages,
+          })
+        : [];
 
     const courseFilesClient = getCourseFilesClient();
     const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({

@@ -3,6 +3,7 @@ import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
+import { getErrorMessage } from '@ai-sdk/provider';
 import {
   Experimental_Agent as Agent,
   type InferUITools,
@@ -585,9 +586,16 @@ export async function editQuestionWithAgent({
         finalMessage = responseMessage;
       },
       onError(error: any) {
-        job.error(error.message);
+        // `onError` is sometimes called with non-Error values, e.g. strings.
+        // We don't care about logging those.
+        if (error instanceof Error) {
+          job.error(error.message);
+        }
+
         // TODO: need to find some sensible way to handle errors here.
-        return error.message;
+        // Note: the return value of `onError` MUST be a string. If it is not,
+        // things downstream will break.
+        return getErrorMessage(error);
       },
     });
 

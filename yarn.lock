@@ -132,7 +132,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/provider@npm:2.0.0":
+"@ai-sdk/provider@npm:2.0.0, @ai-sdk/provider@npm:^2.0.0":
   version: 2.0.0
   resolution: "@ai-sdk/provider@npm:2.0.0"
   dependencies:
@@ -4458,6 +4458,7 @@ __metadata:
     "@ai-sdk/anthropic": "npm:^2.0.56"
     "@ai-sdk/google": "npm:^2.0.46"
     "@ai-sdk/openai": "npm:^2.0.85"
+    "@ai-sdk/provider": "npm:^2.0.0"
     "@ai-sdk/react": "npm:^2.0.114"
     "@aws-sdk/client-auto-scaling": "npm:^3.940.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.940.0"
