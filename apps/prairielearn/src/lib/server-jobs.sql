@@ -1,17 +1,17 @@
+-- BLOCK course_advisory_lock
+-- Use an advisory lock to prevent race conditions when computing the next
+-- job sequence number. We use the course_id as the lock key, with a fixed
+-- namespace (1) to avoid collisions with other advisory locks. For NULL
+-- course_id, we use 0 as the key.
+--
+-- Note that the two-argument form here uses integers, not bigints, so this
+-- will cause problems if we ever have course IDs outside the range of an
+-- integer. In practice, this is highly unlikely to be a problem.
+SELECT
+  pg_advisory_xact_lock(1, coalesce($course_id::integer, 0));
+
 -- BLOCK insert_job_sequence
 WITH
-  lock_acquired AS (
-    -- Use an advisory lock to prevent race conditions when computing the next
-    -- job sequence number. We use the course_id as the lock key, with a fixed
-    -- namespace (1) to avoid collisions with other advisory locks. For NULL
-    -- course_id, we use 0 as the key.
-    --
-    -- Note that the two-argument form here uses integers, not bigints, so this
-    -- will cause problems if we ever have course IDs outside the range of an
-    -- integer. In practice, this is highly unlikely to be a problem.
-    SELECT
-      pg_advisory_xact_lock(1, coalesce($course_id::integer, 0))
-  ),
   new_job_sequence AS (
     INSERT INTO
       job_sequences (
@@ -38,7 +38,6 @@ WITH
       $description,
       FALSE
     FROM
-      lock_acquired,
       job_sequences AS js
     WHERE
       js.course_id IS NOT DISTINCT FROM $course_id
