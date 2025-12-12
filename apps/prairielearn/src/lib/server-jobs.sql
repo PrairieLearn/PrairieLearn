@@ -38,7 +38,6 @@ WITH
       $description,
       FALSE
     FROM
-      lock_acquired,
       job_sequences AS js
     WHERE
       js.course_id IS NOT DISTINCT FROM $course_id
