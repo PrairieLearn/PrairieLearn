@@ -9,7 +9,6 @@ columns
     date: timestamp with time zone default CURRENT_TIMESTAMP
     duration: interval default '00:00:00'::interval
     first_duration: interval
-    group_id: bigint
     id: bigint not null default nextval('variants_id_seq'::regclass)
     instance_question_id: bigint
     modified_at: timestamp with time zone not null default CURRENT_TIMESTAMP
@@ -19,6 +18,7 @@ columns
     options: jsonb
     params: jsonb
     question_id: bigint not null
+    team_id: bigint
     true_answer: jsonb
     user_id: bigint
     variant_seed: text not null
@@ -30,7 +30,7 @@ indexes
     variants_workspace_id_key: USING btree (workspace_id)
 
 check constraints
-    user_group_xor: CHECK (user_id IS NOT NULL AND group_id IS NULL OR group_id IS NOT NULL AND user_id IS NULL)
+    user_team_xor: CHECK (user_id IS NOT NULL AND team_id IS NULL OR team_id IS NOT NULL AND user_id IS NULL)
 
 foreign-key constraints
     variants_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
@@ -38,9 +38,9 @@ foreign-key constraints
     variants_client_fingerprint_id_fkey: FOREIGN KEY (client_fingerprint_id) REFERENCES client_fingerprints(id) ON UPDATE CASCADE ON DELETE SET NULL
     variants_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    variants_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     variants_workspace_id_fkey: FOREIGN KEY (workspace_id) REFERENCES workspaces(id) ON UPDATE CASCADE ON DELETE CASCADE
 

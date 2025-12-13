@@ -1,0 +1,27 @@
+columns
+    assessment_id: bigint
+    course_instance_id: bigint not null
+    date: timestamp with time zone default CURRENT_TIMESTAMP
+    deleted_at: timestamp with time zone
+    has_roles: boolean not null default false
+    id: bigint not null default nextval('team_configs_id_seq'::regclass)
+    maximum: integer
+    minimum: integer
+    name: text
+    student_authz_choose_name: boolean not null default true
+    student_authz_create: boolean default false
+    student_authz_join: boolean default false
+    student_authz_leave: boolean default false
+
+indexes
+    team_configs_pkey: PRIMARY KEY (id) USING btree (id)
+    team_configs_assessment_id_key: UNIQUE USING btree (assessment_id)
+    team_configs_course_instance_id_key: USING btree (course_instance_id)
+
+foreign-key constraints
+    team_configs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_configs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    team_users: FOREIGN KEY (team_config_id) REFERENCES team_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
+    teams: FOREIGN KEY (team_config_id) REFERENCES team_configs(id) ON UPDATE CASCADE ON DELETE SET NULL

@@ -12,7 +12,7 @@ SELECT
   minimum,
   maximum
 FROM
-  group_configs
+  team_configs
 WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;

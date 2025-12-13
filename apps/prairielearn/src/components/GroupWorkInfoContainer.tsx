@@ -196,7 +196,7 @@ function GroupRoleTable({
                                   ${
                                     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                                     rolesInfo.roleAssignments[user.uid]?.some((a) =>
-                                      idsEqual(a.group_role_id, role.id),
+                                      idsEqual(a.team_role_id, role.id),
                                     )
                                       ? 'checked'
                                       : ''

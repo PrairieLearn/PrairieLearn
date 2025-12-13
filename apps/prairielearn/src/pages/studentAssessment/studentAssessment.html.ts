@@ -41,7 +41,7 @@ export function StudentAssessment({
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
           <h1>${assessment_set.abbreviation}${assessment.number}: ${assessment.title}</h1>
-          ${assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+          ${assessment.team_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">
@@ -68,7 +68,7 @@ export function StudentAssessment({
                 </p>
               `
             : ''}
-          ${assessment.group_work
+          ${assessment.team_work
             ? StudentGroupControls({ groupConfig, groupInfo, userCanAssignRoles, resLocals })
             : StartAssessmentForm({
                 assessment,
@@ -100,7 +100,7 @@ function StartAssessmentForm({
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
       ? HonorPledge({
           user,
-          groupWork: !!assessment.group_work,
+          groupWork: !!assessment.team_work,
           customHonorCode,
         })
       : ''}

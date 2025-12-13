@@ -197,7 +197,7 @@ export function StudentAssessmentInstance({
             ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
             ${resLocals.assessment.title}
           </h1>
-          ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+          ${resLocals.assessment.team_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">

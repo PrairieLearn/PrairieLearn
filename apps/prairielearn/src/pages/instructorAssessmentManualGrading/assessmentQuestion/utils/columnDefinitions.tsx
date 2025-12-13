@@ -208,13 +208,13 @@ export function createColumns({
 
     columnHelper.accessor('user_or_group_name', {
       id: 'user_or_group_name',
-      header: assessment.group_work ? 'Group name' : 'Name',
+      header: assessment.team_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),
 
     columnHelper.accessor('uid', {
       id: 'uid',
-      header: assessment.group_work ? 'UIDs' : 'UID',
+      header: assessment.team_work ? 'UIDs' : 'UID',
       cell: (info) => {
         const uid = info.getValue();
         const enrollmentId = info.row.original.enrollment_id;

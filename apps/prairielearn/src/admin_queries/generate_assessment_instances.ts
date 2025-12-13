@@ -63,10 +63,10 @@ export default async function ({
     const assessment = await selectOptionalAssessmentById(assessment_id);
     if (!assessment) return { rows: [], columns };
 
-    const users = assessment.group_work
+    const users = assessment.team_work
       ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
       : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-    if (assessment.group_work) columns.splice(0, 0, 'group_name');
+    if (assessment.team_work) columns.splice(0, 0, 'group_name');
 
     const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
       ...user,
