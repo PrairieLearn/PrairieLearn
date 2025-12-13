@@ -11,6 +11,7 @@ import {
   getCourseInstanceEditErrorUrl,
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
+import { SHORT_NAME_REGEX } from '../../../lib/short-name.js';
 
 interface CopyFormValues extends PublishingFormValues {
   short_name: string;
@@ -153,7 +154,7 @@ export function CopyCourseInstanceModal({
                 {...register('short_name', {
                   required: 'Short name is required',
                   pattern: {
-                    value: /^[-A-Za-z0-9_/]+$/,
+                    value: SHORT_NAME_REGEX,
                     message: 'Use only letters, numbers, dashes, and underscores, with no spaces',
                   },
                 })}

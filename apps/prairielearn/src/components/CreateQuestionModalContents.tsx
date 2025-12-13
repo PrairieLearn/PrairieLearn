@@ -1,6 +1,8 @@
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'preact/hooks';
 
+import { isValidShortName } from '../lib/short-name.js';
+
 interface SelectableCardProps {
   id: string;
   title: string;
@@ -162,6 +164,16 @@ export function CreateQuestionModalContents({
   const selectedTemplate = filteredTemplateQuestions.find(({ qid }) => qid === selectedTemplateQid);
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
+  const validateQid = (input: HTMLInputElement) => {
+    if (!isValidShortName(input.value)) {
+      input.setCustomValidity(
+        'Use only letters, numbers, dashes, and underscores, with no spaces.',
+      );
+    } else {
+      input.setCustomValidity('');
+    }
+  };
+
   // Build start from options based on available templates
   const startFromOptions = [
     {
@@ -213,9 +225,9 @@ export function CreateQuestionModalContents({
           class="form-control"
           id="qid"
           name="qid"
-          pattern="[\-A-Za-z0-9_\/]+"
           aria-describedby="qid_help"
           required
+          onChange={(e) => validateQid(e.target as HTMLInputElement)}
         />
         <small id="qid_help" class="form-text text-muted">
           A short unique identifier for this question, such as "add-vectors" or "find-derivative".
