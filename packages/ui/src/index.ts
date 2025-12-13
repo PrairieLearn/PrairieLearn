@@ -7,7 +7,10 @@ export {
   TanstackTableEmptyState,
 } from './components/TanstackTable.js';
 export { ColumnManager } from './components/ColumnManager.js';
-export { TanstackTableDownloadButton } from './components/TanstackTableDownloadButton.js';
+export {
+  TanstackTableDownloadButton,
+  type TanstackTableCsvCell,
+} from './components/TanstackTableDownloadButton.js';
 export { CategoricalColumnFilter } from './components/CategoricalColumnFilter.js';
 export { MultiSelectColumnFilter } from './components/MultiSelectColumnFilter.js';
 export {
