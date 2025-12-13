@@ -182,7 +182,7 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+    if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
@@ -190,7 +190,7 @@ def to_json(
         elif np.iscomplexobj(v):
             return {
                 "_type": "complex_ndarray",
-                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
+                "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):

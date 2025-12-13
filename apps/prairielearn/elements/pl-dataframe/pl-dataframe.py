@@ -152,9 +152,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             assert_never(display_language)
 
-        descriptors = frame.agg([get_dtype_function]).set_axis(
-            ["dtype"], axis="index", copy=False
-        )
+        descriptors = frame.agg([get_dtype_function]).set_axis(["dtype"], axis="index")
         other = descriptors.style.map(lambda v: "font-weight: bold;")
         frame_style.set_table_styles([
             {"selector": ".foot_row0", "props": "border-top: 1px solid black;"}
