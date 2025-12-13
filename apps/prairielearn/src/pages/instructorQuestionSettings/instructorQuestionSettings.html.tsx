@@ -15,6 +15,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
+  type Author,
   IdSchema,
   type Question,
   type Tag,
@@ -55,6 +56,7 @@ export function InstructorQuestionSettings({
   questionGHLink,
   questionTags,
   qids,
+  authors,
   assessmentsWithQuestion,
   sharingEnabled,
   sharingSetsIn,
@@ -71,6 +73,7 @@ export function InstructorQuestionSettings({
   questionGHLink: string | null;
   questionTags: Tag[];
   qids: string[];
+  authors: Author[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
   sharingSetsIn: SharingSetRow[] | undefined;
@@ -85,6 +88,20 @@ export function InstructorQuestionSettings({
   // in the context of a course instance.
   const shouldShowAssessmentsList = !!resLocals.course_instance;
   const questionTagNames = new Set(questionTags.map((tag) => tag.name));
+  const authorsData = authors.map((author) => {
+    const parsedORCIDId = author.orcid?.match(/.{1,4}/g)?.join('-') ?? '';
+    return {
+      author_name: author.author_name,
+      email: author.email,
+      id: author.id,
+      orcid: parsedORCIDId,
+      origin_course: author.origin_course,
+    };
+  });
+  const isShared = resLocals.course.sharing_name != null;
+  const sharingName = resLocals.course.sharing_name;
+  const userName = resLocals.user.name;
+  const userEmail = resLocals.user.email;
 
   return PageLayout({
     resLocals,
@@ -243,6 +260,167 @@ export function InstructorQuestionSettings({
                     : ''}
                 </tbody>
               </table>
+            </div>
+            <div class="mb-3">
+              <label id="authors-table-label" for="authors-table">Author Information</label>
+              <table id="authors-table" class="table" aria-label="Author information">
+                <thead class="border-top">
+                  <tr>
+                    <th class="text-center">Name</th>
+                    <th class="text-center">Email</th>
+                    <th class="text-center">
+                      ORCID identifier
+                      <i
+                        class="bi bi-question-circle-fill"
+                        data-bs-toggle="popover"
+                        data-bs-trigger="hover"
+                        data-bs-delay='{"hide": 2000}'
+                        data-bs-content="A valid ORCID identifier that uniquely 
+                        identifies an author. See the official website 
+                        (https://orcid.org) for info on how to create or look 
+                        up an identifier"
+                      ></i>
+                    </th>
+                    <th class="text-center">
+                      Origin course
+                      <i
+                        class="bi bi-question-circle-fill"
+                        data-bs-toggle="popover"
+                        data-bs-trigger="hover"
+                        data-bs-delay='{"hide": 2000}'
+                        data-bs-content="PrairieLearn provides a way for 
+                          questions from one course to be used in assessments 
+                          in other courses.  For more information, visit 
+                          https://prairielearn.readthedocs.io/en/latest/contentSharing/"
+                      ></i>
+                      ${isShared
+                        ? html`<input
+                            class="invisible"
+                            type="hidden"
+                            id="${'author_origin_course_sharing_name'}"
+                            value="${sharingName}"
+                          />`
+                        : null}
+                    </th>
+                    ${canEdit ? html`<th class="text-center"></th>` : null}
+                  </tr>
+                </thead>
+                <tbody id="author-table-body">
+                  ${authorsData.length === 0 && !canEdit
+                    ? html`<tr>
+                        <td colspan="4" class="text-center"><small>No authors</small></td>
+                      </tr>`
+                    : null}
+                  ${authorsData.map((author, index) => {
+                    return html`
+                      <tr class="author-row" id="${'author_row_' + index}">
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="Name must either be empty, or be between 3 and 255 characters."
+                                class="form-control"
+                                id="${'author_name_' + index}"
+                                name="${'author_name_' + index}"
+                                value="${author.author_name}"
+                                aria-describedby="${'author_name_help_' + index}"
+                              />`
+                            : html` <small class="text-center">${author.author_name}</small> `}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="email"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="Email must either be empty or a valid email."
+                                class="form-control"
+                                id="${'author_email_' + index}"
+                                name="${'author_email_' + index}"
+                                value="${author.email}"
+                              />`
+                            : html`<small class="text-center">${author.email}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${canEdit
+                            ? html`<input
+                                type="text"
+                                data-bs-toggle="popover"
+                                data-bs-trigger="focus"
+                                data-bs-content="ORCID must either be empty or a valid ORCID."
+                                pattern="^$|^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9]{3}[0-9X]$"
+                                class="form-control author_orcid"
+                                id="${'author_orcid_' + index}"
+                                name="${'author_orcid_' + index}"
+                                value="${author.orcid}"
+                              />`
+                            : html`<small class="text-center">${author.orcid}</small>`}
+                        </td>
+                        <td class="text-center align-middle">
+                          ${!canEdit
+                            ? html`<small class="text-center">${author.origin_course}</small>`
+                            : isShared
+                              ? html`<input
+                                    type="text"
+                                    data-bs-toggle="popover"
+                                    data-bs-trigger="focus"
+                                    data-bs-content="Origin course must either be empty or a valid course sharing name."
+                                    class="form-control"
+                                    id="${'author_origin_course_' + index}"
+                                    name="${'author_origin_course_' + index}"
+                                    value="${author.origin_course}"
+                                    placeholder="Sharing name"
+                                  />
+                                  <small
+                                    class="text-primary"
+                                    role="button"
+                                    id="${'author_origin_course_insert_' + index}"
+                                    >Insert current course</small
+                                  > `
+                              : html`<input
+                                  type="text"
+                                  data-bs-toggle="popover"
+                                  data-bs-trigger="focus"
+                                  data-bs-content="Origin course must either be empty or a valid course sharing name."
+                                  class="form-control"
+                                  id="${'author_origin_course_' + index}"
+                                  name="${'author_origin_course_' + index}"
+                                  value="${author.origin_course}"
+                                  placeholder="Sharing name"
+                                />`}
+                        </td>
+                        ${canEdit
+                          ? html`<td class="text-center align-middle align-items-center">
+                              <i
+                                type="button"
+                                id="${'remove_author_' + index}"
+                                class="bi bi-trash-fill text-danger align-middle remove_author_button"
+                              ></i>
+                            </td>`
+                          : null}
+                      </tr>
+                    `;
+                  })}
+                </tbody>
+              </table>
+              ${canEdit
+                ? html`
+                    <button id="add-author-button" class="btn btn-primary mb-2" type="button">
+                      <i class="bi bi-plus"></i>Add author
+                    </button>
+                    <button id="add-me-button" class="btn btn-primary mb-2" type="button">
+                      <i class="bi bi-plus"></i>Add me
+                    </button>
+                    <small class="ps-1 text-muted"
+                      >Each author must have one of email, ORCID identifier, and origin
+                      course.</small
+                    >
+                    <input class="invisible" type="hidden" id="add-me-name" value="${userName}" />
+                    <input class="invisible" type="hidden" id="add-me-email" value="${userEmail}" />
+                  `
+                : null}
             </div>
             <div class="mb-3">
               <label class="form-label" for="grading_method">Grading method</label>
