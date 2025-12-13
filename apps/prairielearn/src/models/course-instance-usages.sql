@@ -21,7 +21,7 @@ FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -66,7 +66,7 @@ FROM
   JOIN submissions AS s ON (s.id = gj.submission_id)
   JOIN variants AS v ON (v.id = s.variant_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
@@ -113,7 +113,7 @@ SELECT
 FROM
   ai_question_generation_prompts AS p
   JOIN questions AS q ON (q.id = p.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   p.id = $prompt_id

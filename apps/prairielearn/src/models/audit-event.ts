@@ -193,7 +193,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_id:
       course_id !== undefined
         ? course_id
-        : ((table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id),
+        : ((table_name === 'courses' ? row_id : null) ?? inferred_course_id),
     course_instance_id:
       course_instance_id !== undefined
         ? course_instance_id

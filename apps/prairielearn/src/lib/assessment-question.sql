@@ -71,7 +71,7 @@ FROM
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN issue_count AS ic ON (ic.question_id = q.id)
-  LEFT JOIN pl_courses AS c ON (q.course_id = c.id)
+  LEFT JOIN courses AS c ON (q.course_id = c.id)
 WHERE
   a.id = $assessment_id
   AND aq.deleted_at IS NULL

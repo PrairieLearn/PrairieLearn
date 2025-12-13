@@ -19,7 +19,7 @@ echo "Reading data from DB ${TEMPLATE_DB} and using temporary DB ${TMP_DB}"
 
 # list of tables to be included in the filtered output
 OUTPUT_TABLE_LIST="\
-          'pl_courses', \
+          'courses', \
           'users', \
           'course_permissions', \
           'administrators', \
@@ -90,7 +90,7 @@ select ai.*
 from assessment_instances as ai
 join assessments as a on (a.id = ai.assessment_id)
 join course_instances as ci on (ci.id = a.course_instance_id)
-join pl_courses as c on (c.id = ci.course_id)
+join courses as c on (c.id = ci.course_id)
 join enrollments as e on (e.user_id = ai.user_id and e.course_instance_id = ci.id)
 where c.short_name = '${COURSE_SHORT_NAME}'
 and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
@@ -104,7 +104,7 @@ from instance_questions as iq
 join assessment_instances as ai on (ai.id = iq.assessment_instance_id)
 join assessments as a on (a.id = ai.assessment_id)
 join course_instances as ci on (ci.id = a.course_instance_id)
-join pl_courses as c on (c.id = ci.course_id)
+join courses as c on (c.id = ci.course_id)
 join enrollments as e on (e.user_id = ai.user_id and e.course_instance_id = ci.id)
 where c.short_name = '${COURSE_SHORT_NAME}'
 and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
@@ -119,7 +119,7 @@ join instance_questions as iq on (iq.id = v.instance_question_id)
 join assessment_instances as ai on (ai.id = iq.assessment_instance_id)
 join assessments as a on (a.id = ai.assessment_id)
 join course_instances as ci on (ci.id = a.course_instance_id)
-join pl_courses as c on (c.id = ci.course_id)
+join courses as c on (c.id = ci.course_id)
 join enrollments as e on (e.user_id = ai.user_id and e.course_instance_id = ci.id)
 where c.short_name = '${COURSE_SHORT_NAME}'
 and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
@@ -135,7 +135,7 @@ join instance_questions as iq on (iq.id = v.instance_question_id)
 join assessment_instances as ai on (ai.id = iq.assessment_instance_id)
 join assessments as a on (a.id = ai.assessment_id)
 join course_instances as ci on (ci.id = a.course_instance_id)
-join pl_courses as c on (c.id = ci.course_id)
+join courses as c on (c.id = ci.course_id)
 join enrollments as e on (e.user_id = ai.user_id and e.course_instance_id = ci.id)
 where c.short_name = '${COURSE_SHORT_NAME}'
 and ci.short_name = '${COURSE_INSTANCE_SHORT_NAME}';
@@ -149,7 +149,7 @@ psql --dbname=${TMP_DB} --command="TRUNCATE submissions, variants, instance_ques
 # do the actual filtering
 
 # Deleting all courses except the one we want...
-psql --dbname=${TMP_DB} --command="DELETE FROM pl_courses WHERE short_name != '${COURSE_SHORT_NAME}';"
+psql --dbname=${TMP_DB} --command="DELETE FROM courses WHERE short_name != '${COURSE_SHORT_NAME}';"
 # Deleting all courses_instances except the one we want...
 psql --dbname=${TMP_DB} --command="DELETE FROM course_instances WHERE short_name != '${COURSE_INSTANCE_SHORT_NAME}';"
 # Deleting all users except ones used by other retained tables...

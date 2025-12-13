@@ -3,7 +3,7 @@ direction: up
 # Node styles
 users.style.fill: "#ffe4e1"
 administrators.style.fill: "#ffe4e1"
-pl_courses: "pl_courses*" {
+courses: "courses*" {
   style.fill: "#ffe4e1"
 }
 course_permissions.style.fill: "#ffe4e1"
@@ -52,28 +52,28 @@ assessment_view_logs.style.fill: white
 # Connections
 administrators -> users
 course_permissions -> users
-course_permissions -> pl_courses
+course_permissions -> courses
 
-courses -> pl_courses
+courses -> courses
 exams -> courses
 reservations -> users
 reservations -> exams
 
 assessment_access_rules -> assessments
-course_instances -> pl_courses
+course_instances -> courses
 course_instance_access_rules -> course_instances
-questions -> pl_courses
+questions -> courses
 questions -> topics
 question_tags -> questions
 question_tags -> tags
-tags -> pl_courses
+tags -> courses
 assessments -> course_instances
 assessments -> assessment_sets
 assessment_questions -> assessments
 assessment_questions -> alternative_groups
 assessment_questions -> questions
-assessment_sets -> pl_courses
-topics -> pl_courses
+assessment_sets -> courses
+topics -> courses
 zones -> assessments
 alternative_groups -> zones
 
@@ -92,7 +92,7 @@ variants -> instance_questions: {
   style.stroke-dash: 5
 }
 submissions -> variants
-job_sequences -> pl_courses
+job_sequences -> courses
 job_sequences -> users
 jobs -> job_sequences
 

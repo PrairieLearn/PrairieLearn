@@ -183,7 +183,7 @@ WITH
       pl_c.short_name AS course_short_name
     FROM
       course_instances AS ci
-      JOIN pl_courses AS pl_c ON (pl_c.id = ci.course_id)
+      JOIN courses AS pl_c ON (pl_c.id = ci.course_id)
     WHERE
       ci.id = $course_instance_id
   )
