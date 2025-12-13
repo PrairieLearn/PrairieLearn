@@ -509,7 +509,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).toReversed();
+    const reverseFolders = idSplit.slice(0, -1).reverse();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -2191,7 +2191,7 @@ export class FileUploadEditor extends Editor {
     let contents;
     try {
       contents = await fs.readFile(this.filePath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
         return true;

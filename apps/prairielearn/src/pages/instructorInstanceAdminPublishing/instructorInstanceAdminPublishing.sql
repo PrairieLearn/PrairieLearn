@@ -10,7 +10,7 @@ ORDER BY
 
 -- BLOCK select_publishing_extensions_with_users_by_course_instance
 SELECT
-  ci_extensions.*,
+  to_jsonb(ci_extensions.*) AS course_instance_publishing_extension,
   COALESCE(
     json_agg(
       json_build_object(

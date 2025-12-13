@@ -1,5 +1,21 @@
 # @prairielearn/ui
 
+## 1.8.0
+
+### Minor Changes
+
+- e279b47: Add `useModalState` hook
+
+### Patch Changes
+
+- 230c3a3: Replace usage of `findLastIndex` with ponyfill
+
+## 1.7.2
+
+### Patch Changes
+
+- 7ba5db4: Use `currentTarget` instead of `target` in event handlers
+
 ## 1.7.1
 
 ### Patch Changes

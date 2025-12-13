@@ -26,6 +26,7 @@ import {
   AssessmentSetSchema as RawAssessmentSetSchema,
   AuditEventSchema as RawAuditEventSchema,
   AuthnProviderSchema as RawAuthnProviderSchema,
+  CourseInstancePublishingExtensionSchema as RawCourseInstancePublishingExtensionSchema,
   CourseInstanceSchema as RawCourseInstanceSchema,
   CourseSchema as RawCourseSchema,
   EnrollmentSchema as RawEnrollmentSchema,
@@ -33,6 +34,8 @@ import {
   InstanceQuestionSchema as RawInstanceQuestionSchema,
   InstitutionSchema as RawInstitutionSchema,
   QuestionSchema as RawQuestionSchema,
+  RubricItemSchema as RawRubricItemSchema,
+  RubricSchema as RawRubricSchema,
   TagSchema as RawTagSchema,
   TopicSchema as RawTopicSchema,
   UserSchema as RawUserSchema,
@@ -172,6 +175,14 @@ export type StaffAssessmentQuestion = z.infer<typeof StaffAssessmentQuestionSche
 /** Audit Events */
 export const StaffAuditEventSchema = RawAuditEventSchema.brand<'StaffAuditEvent'>();
 export type StaffAuditEvent = z.infer<typeof StaffAuditEventSchema>;
+
+/** Authn Providers */
+export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
+  id: true,
+  name: true,
+});
+export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
+export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
 
 /** Courses */
 export const RawAdminCourseSchema = RawCourseSchema;
@@ -335,13 +346,12 @@ export const RawStaffInstitutionSchema = RawInstitutionSchema.pick({
 export const StaffInstitutionSchema = RawStaffInstitutionSchema.brand<'StaffInstitution'>();
 export type StaffInstitution = z.infer<typeof StaffInstitutionSchema>;
 
-/** AuthnProviders */
-export const RawStaffAuthnProviderSchema = RawAuthnProviderSchema.pick({
-  id: true,
-  name: true,
-});
-export const StaffAuthnProviderSchema = RawStaffAuthnProviderSchema.brand<'StaffAuthnProvider'>();
-export type StaffAuthnProvider = z.infer<typeof StaffAuthnProviderSchema>;
+/** Publishing Extensions */
+export const StaffCourseInstancePublishingExtensionSchema =
+  RawCourseInstancePublishingExtensionSchema.brand<'StaffCourseInstancePublishingExtension'>();
+export type StaffCourseInstancePublishingExtension = z.infer<
+  typeof StaffCourseInstancePublishingExtensionSchema
+>;
 
 /** Questions */
 export const RawStaffQuestionSchema = RawQuestionSchema;
@@ -390,3 +400,9 @@ export type StudentUser = z.infer<typeof StudentUserSchema>;
 /** Zones */
 export const StaffZoneSchema = RawZoneSchema.brand<'StaffZone'>();
 export type StaffZone = z.infer<typeof StaffZoneSchema>;
+
+export const StaffRubricSchema = RawRubricSchema.brand<'StaffRubric'>();
+export type StaffRubric = z.infer<typeof StaffRubricSchema>;
+
+export const StaffRubricItemSchema = RawRubricItemSchema.brand<'StaffRubricItem'>();
+export type StaffRubricItem = z.infer<typeof StaffRubricItemSchema>;

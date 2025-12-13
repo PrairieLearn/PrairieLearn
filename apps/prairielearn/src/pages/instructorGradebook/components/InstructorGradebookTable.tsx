@@ -49,7 +49,7 @@ import {
 
 import { EditScoreButton } from './EditScoreModal.js';
 
-const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
+const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
