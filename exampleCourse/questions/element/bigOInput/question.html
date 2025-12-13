@@ -36,9 +36,10 @@
 
 <pl-card header="An example with linear complexity.">
     <pl-question-panel>
-        <p>Submit $O(n)$. Here, we've set <code>display="block"</code> to widen the input box.</p>
+        <p>Submit $O(n)$. Here, we've set <code>display="block"</code> to widen the input box. The attribute
+            <code>initial-value</code> pre-fills the input with a starting expression when the question first renders.</p>
     </pl-question-panel>
-    <pl-big-o-input answers-name="q3" variable="n" correct-answer="n" display="block"></pl-big-o-input>
+    <pl-big-o-input answers-name="q3" variable="n" correct-answer="n" display="block" initial-value="n"></pl-big-o-input>
     <br><br>
     <pl-big-o-input answers-name="s3" variable="n" correct-answer="n" type="theta" display="block"></pl-big-o-input>
     <br><br>
