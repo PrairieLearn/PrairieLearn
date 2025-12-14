@@ -48,7 +48,7 @@ WITH
     INSERT INTO
       administrators (user_id)
     SELECT
-      user_id
+      id
     FROM
       users
     WHERE
