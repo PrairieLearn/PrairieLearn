@@ -26,8 +26,9 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface TestResultStats {
   generateDuration: number;
-  renderDuration: number;
+  initialRenderDuration: number;
   gradeDuration?: number;
+  finalRenderDuration?: number;
 }
 
 interface TestQuestionResults {
@@ -288,8 +289,9 @@ async function testQuestion(
   variant_seed?: string,
 ): Promise<TestQuestionResults> {
   let generateDuration;
-  let renderDuration;
+  let initialRenderDuration;
   let gradeDuration;
+  let finalRenderDuration;
 
   let variant;
   let expected_submission: Submission | null = null;
@@ -319,10 +321,11 @@ async function testQuestion(
     generateDuration = generateEnd - generateStart;
   }
 
-  const renderStart = Date.now();
+  const user = await selectUserById(user_id);
+  const authn_user = await selectUserById(authn_user_id);
+
+  const initialRenderStart = Date.now();
   try {
-    const user = await selectUserById(user_id);
-    const authn_user = await selectUserById(authn_user_id);
     await getAndRenderVariant(variant.id, null, {
       question,
       course: variant_course,
@@ -332,8 +335,8 @@ async function testQuestion(
       is_administrator: false,
     });
   } finally {
-    const renderEnd = Date.now();
-    renderDuration = renderEnd - renderStart;
+    const initialRenderEnd = Date.now();
+    initialRenderDuration = initialRenderEnd - initialRenderStart;
   }
 
   if (!variant.broken_at) {
@@ -351,9 +354,25 @@ async function testQuestion(
       const gradeEnd = Date.now();
       gradeDuration = gradeEnd - gradeStart;
     }
+
+    // Render once more to make sure we can render the various panels with the submitted data.
+    const finalRenderStart = Date.now();
+    try {
+      await getAndRenderVariant(variant.id, null, {
+        question,
+        course: variant_course,
+        urlPrefix: `/pl/course/${variant_course.id}`,
+        user,
+        authn_user,
+        is_administrator: false,
+      });
+    } finally {
+      const finalRenderEnd = Date.now();
+      finalRenderDuration = finalRenderEnd - finalRenderStart;
+    }
   }
 
-  const stats = { generateDuration, renderDuration, gradeDuration };
+  const stats = { generateDuration, initialRenderDuration, gradeDuration, finalRenderDuration };
   return { variant, expected_submission, test_submission, stats };
 }
 
@@ -541,8 +560,9 @@ export async function startTestQuestion({
     }
 
     printStats('Generate/prepare:', 'generateDuration');
-    printStats('Render:          ', 'renderDuration');
+    printStats('Initial render:  ', 'initialRenderDuration');
     printStats('Parse/grade:     ', 'gradeDuration');
+    printStats('Final render:    ', 'finalRenderDuration');
 
     if (!success) {
       throw new Error('Some tests failed. See the "Issues" page for details.');
