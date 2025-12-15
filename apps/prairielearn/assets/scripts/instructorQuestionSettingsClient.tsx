@@ -237,7 +237,7 @@ const constructNewRow = (
     originCourseSharingNameInput != null
       ? '<small id="author_origin_course_insert_' +
         index +
-        '" class="text-primary" role="button">Insert current course</small></td>'
+        '" class="text-primary" role="button">Insert current course</small>'
       : '';
   const newHTML =
     '<td class="align-middle"><input type="text" class="form-control" id="author_name_' +
@@ -261,6 +261,7 @@ const constructNewRow = (
     index +
     '"/>' +
     sharingCourseLink +
+    '</td>' +
     '<td class="text-center align-middle align-items-center">' +
     '<i type="button" class="bi bi-trash-fill text-danger align-middle remove_author_button" id="remove_author_' +
     index +
@@ -306,12 +307,19 @@ const validateAllRows = (saveButton: HTMLButtonElement | null) => {
     indices.push(Number(element.id.slice(finalUnderscore + 1)));
   }
 
+  let allValid = true;
   for (let i = 0; i < indices.length; i++) {
     const index = indices[i];
     const rowIsValid = validateAuthorRowsValid(index);
     if (!rowIsValid) {
-      saveButton?.setAttribute('disabled', 'true');
+      allValid = false;
+      break;
     }
+  }
+  if (allValid) {
+    saveButton?.removeAttribute('disabled');
+  } else {
+    saveButton?.setAttribute('disabled', 'true');
   }
 };
 
@@ -357,10 +365,11 @@ const validateNameInput = (
     const rowIsValid = validateAuthorRowsValid(index);
     if (!rowIsValid || !validName) {
       saveButton?.setAttribute('disabled', 'true');
+    } else {
+      // Re-check all rows before enabling
+      validateAllRows(saveButton);
     }
   });
-
-  return;
 };
 
 const validateEmailInput = (
@@ -380,9 +389,11 @@ const validateEmailInput = (
     const rowIsValid = validateAuthorRowsValid(index);
     if (!rowIsValid || !validEmail) {
       saveButton?.setAttribute('disabled', 'true');
+    } else {
+      // Re-check all rows before enabling
+      validateAllRows(saveButton);
     }
   });
-  return;
 };
 
 function addORCIDInputListener(
@@ -402,6 +413,9 @@ function addORCIDInputListener(
     const rowIsValid = validateAuthorRowsValid(index);
     if (!rowIsValid || !validOrcidID) {
       saveButton?.setAttribute('disabled', 'true');
+    } else {
+      // Re-check all rows before enabling
+      validateAllRows(saveButton);
     }
   });
 }
@@ -423,14 +437,16 @@ const insertSharingCourseName = (
   const originCourseSharingNameInput = document.querySelector<HTMLInputElement>(
     '#author_origin_course_sharing_name',
   );
-  originCourseInsertText?.addEventListener('blur', () => {
+  originCourseInsertText?.addEventListener('click', () => {
     if (originCourseInput != null && originCourseSharingNameInput != null) {
       originCourseInput.value = originCourseSharingNameInput.value;
     }
     const rowIsValid = validateAuthorRowsValid(index);
     if (!rowIsValid) {
       saveButton?.setAttribute('disabled', 'true');
+    } else {
+      // Re-check all rows before enabling
+      validateAllRows(saveButton);
     }
-    return;
   });
 };

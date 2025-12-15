@@ -417,8 +417,8 @@ export function InstructorQuestionSettings({
                       >Each author must have one of email, ORCID identifier, and origin
                       course.</small
                     >
-                    <input class="invisible" type="hidden" id="add-me-name" value="${userName}" />
-                    <input class="invisible" type="hidden" id="add-me-email" value="${userEmail}" />
+                    <input type="hidden" id="add-me-name" value="${userName}" />
+                    <input type="hidden" id="add-me-email" value="${userEmail}" />
                   `
                 : null}
             </div>

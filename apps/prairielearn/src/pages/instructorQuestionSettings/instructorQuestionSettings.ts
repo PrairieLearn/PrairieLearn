@@ -367,6 +367,10 @@ router.post(
             'Every author must have one of: email, orcid, origin course',
           );
         }
+        // Ensure name is provided (matches client-side requirement)
+        if (name === undefined || name.trim() === '') {
+          throw new error.HttpStatusError(400, 'Every author must have a name');
+        }
         if (name !== undefined && name !== '') {
           const nameValid = isValidAuthorName(name);
           if (!nameValid) {
@@ -391,10 +395,7 @@ router.post(
         if (originCourse !== undefined && originCourse !== '') {
           newAuthor.originCourse = originCourse;
         }
-        // Only write author if at least one of the fields is nonnull
-        if (email !== undefined || orcid !== undefined || originCourse !== undefined) {
-          authors.push(newAuthor);
-        }
+        authors.push(newAuthor);
       }
       questionInfo.authors = authors;
 
