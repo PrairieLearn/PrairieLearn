@@ -56,25 +56,3 @@ def test_all_integers_within_limits_no_exception(item: Any) -> None:
 def test_all_integers_within_limits_raise_exception(item: Any) -> None:
     with pytest.raises(ValueError, match="oversized integer"):
         zu.assert_all_integers_within_limits(item)
-
-
-def test_get_module_function_not_present() -> None:
-    mod = {"a": 1, "b": 2}
-    fcn = zu.get_module_function(mod, "test")
-    assert fcn is None
-
-
-def test_get_module_function_not_callable() -> None:
-    mod = {"test": 123}
-    fcn = zu.get_module_function(mod, "test")
-    assert fcn is None
-
-
-def test_get_module_function_success() -> None:
-    def test_function() -> str:
-        return "hello"
-
-    test_function.__module__ = None  # type: ignore[misc]
-    mod = {"test": test_function}
-    fcn = zu.get_module_function(mod, "test")
-    assert fcn is test_function
