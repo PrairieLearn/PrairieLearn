@@ -315,9 +315,9 @@ export function InstructorQuestionSettings({
                   </tr>
                 </thead>
                 <tbody id="author-table-body">
-                  ${authorsData.length === 0 && !canEdit
+                  ${authorsData.length === 0
                     ? html`<tr>
-                        <td colspan="4" class="text-center"><small>No authors</small></td>
+                        <td colspan="5" class="text-center"><small>No authors</small></td>
                       </tr>`
                     : null}
                   ${authorsData.map((author, index) => {

@@ -1,3 +1,4 @@
+import { z } from 'zod';
 export function isValidOrcid(orcid: string): boolean {
   // Drop any dashes
   const digits = orcid.replaceAll('-', '');
@@ -26,11 +27,7 @@ export function isValidEmail(emailValue: string): boolean {
   if (emailValue === '') {
     return true;
   }
-  return (
-    String(emailValue)
-      .toLowerCase()
-      .match(/^([A-Z0-9_+-]+\.?)*[A-Z0-9_+-]@([A-Z0-9][A-Z0-9-]*\.)+[A-Z]{2,}$/i) != null
-  );
+  return z.string().email().safeParse(emailValue).success;
 }
 
 export function isValidAuthorName(nameValue: string): boolean {
