@@ -207,7 +207,7 @@ function AssessmentUploadCard({
   `;
 }
 
-function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork?: boolean }) {
+function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork: boolean }) {
   return html`
     <p>
       Upload a CSV file in the format of the
@@ -233,7 +233,7 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!
   `;
 }
 
-function CsvHelpAssessmentInstanceScores({ groupWork }: { groupWork?: boolean }) {
+function CsvHelpAssessmentInstanceScores({ groupWork }: { groupWork: boolean }) {
   return html`
     <p>Upload a CSV file like this:</p>
     <pre class="ms-4">
