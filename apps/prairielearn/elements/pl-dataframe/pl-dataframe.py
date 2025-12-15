@@ -152,7 +152,13 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             assert_never(display_language)
 
-        descriptors = frame.agg([get_dtype_function]).set_axis(["dtype"], axis="index")
+        descriptors = frame.agg([get_dtype_function]).set_axis(
+            ["dtype"],
+            axis="index",
+            # The Pandas type stubs removed this option, but it is still valid.
+            # TODO: Remove after upgrading to Pandas 3.0, where this becomes the default.
+            copy=False,  # type: ignore
+        )
         other = descriptors.style.map(lambda v: "font-weight: bold;")
         frame_style.set_table_styles([
             {"selector": ".foot_row0", "props": "border-top: 1px solid black;"}
