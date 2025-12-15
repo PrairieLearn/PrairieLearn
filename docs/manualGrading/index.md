@@ -64,7 +64,7 @@ The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded
 
 After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
 
-The submission associated to each row in the CSV file is identified through one of the following methods (in order of precedence):
+The submission associated with each row in the CSV file is identified through one of the following methods (in order of precedence):
 
 1. If the row includes a `submission_id` column that is not left blank, this is used to identify the submission to be updated. In this case, the `uid`, `group_name` and `qid` columns, if they are provided, are used for verification only, and any mismatches are listed in the upload output as errors.
 2. If the `submission_id` column is left blank or not present, the submission is identified by matching the `uid` (or `group_name` for group assessments), `instance`, and `qid` columns. In this case, all of these columns must be provided.
