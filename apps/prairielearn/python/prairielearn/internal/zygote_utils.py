@@ -53,7 +53,7 @@ def get_module_function(mod: dict[str, Any], fcn: str) -> Any:
         return None
 
     # Special case: some people like to put `from sympy import *` in their Python
-    # files. This make's SymPy's `test` function available in the module namespace,
+    # files. This makes SymPy's `test` function available in the module namespace,
     # which interferes with our usage of a `test(...)` function to test questions.
     #
     # Here, we check whether the `test` function in the module actually comes from the
