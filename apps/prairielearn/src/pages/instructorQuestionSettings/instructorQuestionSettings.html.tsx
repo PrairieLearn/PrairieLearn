@@ -7,7 +7,6 @@ import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -133,14 +132,6 @@ export function InstructorQuestionSettings({
       />
     `,
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"

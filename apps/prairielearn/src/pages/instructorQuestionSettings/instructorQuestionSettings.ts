@@ -11,7 +11,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { generateSignedToken } from '@prairielearn/signed-token';
 import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
@@ -19,7 +18,6 @@ import {
 } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { AuthorSchema, EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
@@ -43,6 +41,7 @@ import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
@@ -97,34 +96,36 @@ router.post(
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
-      const count = 1;
-      const showDetails = true;
-      const jobSequenceId = await startTestQuestion(
-        count,
-        showDetails,
-        res.locals.question,
-        res.locals.course_instance,
-        res.locals.course,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      const jobSequenceId = await startTestQuestion({
+        count: 1,
+        showDetails: true,
+        question: res.locals.question,
+        course_instance: res.locals.course_instance,
+        course: res.locals.course,
+        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.user_id,
+        // Optional variant seed prefix for deterministic testing.
+        // Not exposed in UI - for internal use with automated testing scripts.
+        variantSeedPrefix: req.body.variant_seed_prefix,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
       if (res.locals.question.grading_method !== 'External') {
-        const count = 100;
-        const showDetails = false;
-        const jobSequenceId = await startTestQuestion(
-          count,
-          showDetails,
-          res.locals.question,
-          res.locals.course_instance,
-          res.locals.course,
-          res.locals.user.user_id,
-          res.locals.authn_user.user_id,
-        );
+        const jobSequenceId = await startTestQuestion({
+          count: 100,
+          showDetails: false,
+          question: res.locals.question,
+          course_instance: res.locals.course_instance,
+          course: res.locals.course,
+          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.user_id,
+          // Optional variant seed prefix for deterministic testing.
+          // Not exposed in UI - for internal use with automated testing scripts.
+          variantSeedPrefix: req.body.variant_seed_prefix,
+        });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
         throw new Error('Not supported for externally-graded questions');
@@ -513,10 +514,10 @@ router.get(
 
     // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
     // here because this form will actually post to a different route, not `req.originalUrl`.
-    const questionTestCsrfToken = generateSignedToken(
-      { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-      config.secretKey,
-    );
+    const questionTestCsrfToken = generateCsrfToken({
+      url: questionTestPath,
+      authnUserId: res.locals.authn_user.user_id,
+    });
 
     const questionGHLink = courseRepoContentUrl(
       res.locals.course,

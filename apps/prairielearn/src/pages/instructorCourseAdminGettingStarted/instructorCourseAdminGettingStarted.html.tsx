@@ -1,8 +1,6 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -22,13 +20,6 @@ export function InstructorCourseAdminGettingStarted({
       subPage: 'getting_started',
     },
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Getting started checklist</h1>

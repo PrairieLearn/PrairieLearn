@@ -1,19 +1,19 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
+import { useModalState } from '@prairielearn/ui';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import {
-  type CourseInstancePublishingExtensionWithUsers,
-  CourseInstancePublishingExtensionWithUsersSchema,
+  type CourseInstancePublishingExtensionRow,
+  CourseInstancePublishingExtensionRowSchema,
 } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
-import { ExtensionDeleteModal, type ExtensionDeleteModalState } from './ExtensionDeleteModal.js';
-import { ExtensionModifyModal, type ExtensionModifyModalState } from './ExtensionModifyModal.js';
+import { ExtensionDeleteModal, type ExtensionDeleteModalData } from './ExtensionDeleteModal.js';
+import { ExtensionModifyModal, type ExtensionModifyModalData } from './ExtensionModifyModal.js';
 import { ExtensionTableRow } from './ExtensionTableRow.js';
 
 export function PublishingExtensions({
@@ -23,13 +23,13 @@ export function PublishingExtensions({
   csrfToken,
 }: {
   courseInstance: StaffCourseInstance;
-  initialExtensions: CourseInstancePublishingExtensionWithUsers[];
+  initialExtensions: CourseInstancePublishingExtensionRow[];
   canEdit: boolean;
   csrfToken: string;
 }) {
   const queryClient = useQueryClient();
 
-  const extensionsQuery = useQuery<CourseInstancePublishingExtensionWithUsers[]>({
+  const extensionsQuery = useQuery<CourseInstancePublishingExtensionRow[]>({
     queryKey: ['extensions'],
     queryFn: async () => {
       const res = await fetch(window.location.pathname + '/extension/data.json');
@@ -37,7 +37,7 @@ export function PublishingExtensions({
       if (!res.ok) {
         throw new Error(data.message);
       }
-      const parsedData = z.array(CourseInstancePublishingExtensionWithUsersSchema).safeParse(data);
+      const parsedData = z.array(CourseInstancePublishingExtensionRowSchema).safeParse(data);
       if (!parsedData.success) throw new Error('Failed to parse extensions');
       return parsedData.data;
     },
@@ -49,11 +49,9 @@ export function PublishingExtensions({
   const hasExtensionsWithoutPublishDate =
     extensionsQuery.data.length > 0 && !courseInstance.publishing_end_date;
 
-  // State for editing/adding extensions
-  const [modifyModalState, setModifyModalState] = useState<ExtensionModifyModalState>(null);
-
   // State for deleting extensions
-  const [deleteModalState, setDeleteModalState] = useState<ExtensionDeleteModalState>(null);
+  const modifyModalState = useModalState<ExtensionModifyModalData>(null);
+  const deleteModalState = useModalState<ExtensionDeleteModalData>(null);
 
   const currentInstanceEndDate = courseInstance.publishing_end_date
     ? formatDateFriendly(courseInstance.publishing_end_date, courseInstance.display_timezone)
@@ -75,7 +73,7 @@ export function PublishingExtensions({
               type="button"
               class="btn btn-outline-primary btn-sm text-nowrap"
               onClick={() =>
-                setModifyModalState({
+                modifyModalState.showWithData({
                   type: 'add',
                   endDate: courseInstance.publishing_end_date
                     ? dateToPlainDateTime(
@@ -86,7 +84,7 @@ export function PublishingExtensions({
                 })
               }
             >
-              Add Extension
+              Add extension
             </button>
           )}
         </div>
@@ -117,7 +115,7 @@ export function PublishingExtensions({
           <table class="table table-striped">
             <thead>
               <tr>
-                <th class="col-1">Extension Name</th>
+                <th class="col-1">Extension name</th>
                 <th class="col-1">End date</th>
                 <th class="col-3">Students</th>
                 <th class="col-1">Actions</th>
@@ -126,19 +124,19 @@ export function PublishingExtensions({
             <tbody>
               {extensionsQuery.data.map((extension) => (
                 <ExtensionTableRow
-                  key={extension.id}
+                  key={extension.course_instance_publishing_extension.id}
                   extension={extension}
                   courseInstance={courseInstance}
                   canEdit={canEdit}
                   onEdit={() =>
-                    setModifyModalState({
+                    modifyModalState.showWithData({
                       type: 'edit',
                       endDate: dateToPlainDateTime(
-                        extension.end_date,
+                        extension.course_instance_publishing_extension.end_date,
                         courseInstance.display_timezone,
                       ).toString(),
-                      extensionId: extension.id,
-                      name: extension.name ?? '',
+                      extensionId: extension.course_instance_publishing_extension.id,
+                      name: extension.course_instance_publishing_extension.name ?? '',
                       uids: extension.user_data
                         .map((u) => u.uid)
                         .sort()
@@ -146,9 +144,9 @@ export function PublishingExtensions({
                     })
                   }
                   onDelete={() =>
-                    setDeleteModalState({
-                      extensionId: extension.id,
-                      extensionName: extension.name,
+                    deleteModalState.showWithData({
+                      extensionId: extension.course_instance_publishing_extension.id,
+                      extensionName: extension.course_instance_publishing_extension.name,
                       userData: extension.user_data,
                     })
                   }
@@ -160,25 +158,23 @@ export function PublishingExtensions({
       )}
 
       <ExtensionModifyModal
-        modalState={modifyModalState}
+        {...modifyModalState}
         currentUnpublishText={currentInstanceEndDate}
         courseInstanceEndDate={courseInstance.publishing_end_date}
         courseInstanceTimezone={courseInstance.display_timezone}
         csrfToken={csrfToken}
-        onHide={() => setModifyModalState(null)}
         onSuccess={() => {
           void queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          setModifyModalState(null);
+          modifyModalState.hide();
         }}
       />
 
       <ExtensionDeleteModal
-        modalState={deleteModalState}
+        {...deleteModalState}
         csrfToken={csrfToken}
-        onHide={() => setDeleteModalState(null)}
         onSuccess={async () => {
           await queryClient.invalidateQueries({ queryKey: ['extensions'] });
-          setDeleteModalState(null);
+          deleteModalState.hide();
         }}
       />
     </>

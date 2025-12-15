@@ -7,7 +7,13 @@ import type { Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
 
@@ -279,23 +285,30 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
  * Creates a job sequence with a single job.
  */
 export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
-  const { job_sequence_id, job_id } = await queryRow(
-    sql.insert_job_sequence,
-    {
-      course_id: options.courseId,
-      course_instance_id: options.courseInstanceId,
-      course_request_id: options.courseRequestId,
-      assessment_id: options.assessmentId,
-      user_id: options.userId,
-      authn_user_id: options.authnUserId,
-      type: options.type,
-      description: options.description,
-    },
-    z.object({
-      job_sequence_id: z.string(),
-      job_id: z.string(),
-    }),
-  );
+  const { job_sequence_id, job_id } = await runInTransactionAsync(async () => {
+    // NOTE: this needs to be a separate statement to ensure that the snapshot
+    // that we end up reading from to get the job sequence number is actually
+    // up to date. We can't just do this in the `insert_job_sequence` block.
+    await execute(sql.course_advisory_lock, { course_id: options.courseId ?? null });
+
+    return await queryRow(
+      sql.insert_job_sequence,
+      {
+        course_id: options.courseId,
+        course_instance_id: options.courseInstanceId,
+        course_request_id: options.courseRequestId,
+        assessment_id: options.assessmentId,
+        user_id: options.userId,
+        authn_user_id: options.authnUserId,
+        type: options.type,
+        description: options.description,
+      },
+      z.object({
+        job_sequence_id: z.string(),
+        job_id: z.string(),
+      }),
+    );
+  });
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   liveJobs[job_id] = serverJob;
