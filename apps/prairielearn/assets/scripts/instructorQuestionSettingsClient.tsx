@@ -265,7 +265,7 @@ const constructNewRow = (
     '<td class="text-center align-middle align-items-center">' +
     '<i type="button" class="bi bi-trash-fill text-danger align-middle remove_author_button" id="remove_author_' +
     index +
-    '"</i>' +
+    '"></i>' +
     '</td>';
   newRow.innerHTML = newHTML;
   table?.append(newRow);
@@ -298,6 +298,12 @@ const addRowValidation = (index: number, saveButton: HTMLButtonElement | null) =
 };
 
 const validateAllRows = (saveButton: HTMLButtonElement | null) => {
+  // Check if any inputs are marked invalid
+  const invalidInputs = table?.querySelectorAll('.is-invalid');
+  if (invalidInputs && invalidInputs.length > 0) {
+    saveButton?.setAttribute('disabled', 'true');
+    return;
+  }
   const table = document.getElementById('author-table-body');
   const rows = table?.getElementsByClassName('author-row') ?? [];
   const indices = [];

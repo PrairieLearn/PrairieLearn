@@ -308,7 +308,9 @@ export function InstructorQuestionSettings({
                 <tbody id="author-table-body">
                   ${authorsData.length === 0
                     ? html`<tr>
-                        <td colspan="5" class="text-center"><small>No authors</small></td>
+                        <td colspan="${canEdit ? '5' : '4'}" class="text-center">
+                          <small>No authors</small>
+                        </td>
                       </tr>`
                     : null}
                   ${authorsData.map((author, index) => {
@@ -414,7 +416,7 @@ export function InstructorQuestionSettings({
                       <i class="bi bi-plus"></i>Add me
                     </button>
                     <small class="ps-1 text-muted"
-                      >Each author must have one of email, ORCID identifier, and origin
+                      >Each author must have one of email, ORCID identifier, or origin
                       course.</small
                     >
                     <input type="hidden" id="add-me-name" value="${userName}" />
