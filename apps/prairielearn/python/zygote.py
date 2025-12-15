@@ -357,11 +357,9 @@ def worker_loop() -> None:
                 exec(code, mod)
                 mod_cache[file_path] = mod
 
-            # check whether we have the desired fcn in the module
-            if fcn in mod:
-                # get the desired function in the loaded module
-                method = mod[fcn]
-
+            # try to load and execute the desired function
+            method = zu.get_module_function(mod, fcn)
+            if method is not None:
                 # check if the desired function is a legacy element function - if
                 # so, we add an argument for element_index
                 arg_names = list(signature(method).parameters.keys())
