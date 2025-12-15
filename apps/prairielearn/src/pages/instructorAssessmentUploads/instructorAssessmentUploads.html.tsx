@@ -247,7 +247,7 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,100</pre
       63.5% and for
       ${groupWork ? html`group <code>group2</code>` : html`<code>student2@example.com</code>`} to
       100%. The <code>instance</code> column indicates which assessment instance to modify, and
-      should be <code>1</code> if there is only a single instance per student.
+      should be <code>1</code> if there is only a single instance per ${groupWork ? 'group' : 'student'}.
     </p>
     <p>
       Alternatively, the total assessment points can be changed with a CSV containing a
