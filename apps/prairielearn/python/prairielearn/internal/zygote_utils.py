@@ -46,9 +46,6 @@ def assert_all_integers_within_limits(item: Any) -> None:
 
 
 def get_module_function(mod: dict[str, Any], fcn: str) -> Any:
-    if fcn == "test":
-        print("function", fcn, "module", mod[fcn].__module__)
-
     if fcn not in mod:
         return None
 
