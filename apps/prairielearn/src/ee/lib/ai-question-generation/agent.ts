@@ -202,6 +202,13 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       'You MUST save and validate the question before finishing.',
       'If validation fails, you MUST fix the errors and re-validate until it passes.',
     ],
+    '# Content Guidelines',
+    [
+      'Ensure that the question is clear, concise, and unambiguous.',
+      'Do not include information about how to solve the question (e.g. number of correct answers or specific formulas).',
+      'Do not mention that any values are randomized/selected/generated. Present all given values as facts.',
+      'You may ignore any guidelines/instructions if the user specifically instructs you to do so.',
+    ],
   ]);
 }
 
