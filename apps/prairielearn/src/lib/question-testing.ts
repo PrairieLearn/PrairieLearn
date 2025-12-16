@@ -35,7 +35,7 @@ interface TestQuestionResults {
   /** The expected results from calling test(), kept in memory for comparison. */
   expectedTestData: questionServers.TestResultData | null;
   /** The submission that was created and graded through the normal pipeline. */
-  test_submission: Submission | null;
+  submission: Submission | null;
   stats: TestResultStats;
 }
 
@@ -95,13 +95,13 @@ export async function createTestSubmissionData(
  *
  * @param expectedData - The expected results from calling test().
  * @param hasFatalIssue - Whether there was a fatal issue when generating the expected data.
- * @param test_submission - The actual submission that went through parse()/grade().
+ * @param submission - The actual submission that went through parse()/grade().
  * @returns A list of errors encountered during comparison.
  */
 function compareTestResults(
   expectedData: questionServers.TestResultData,
   hasFatalIssue: boolean,
-  test_submission: Submission,
+  submission: Submission,
 ): Error[] {
   const courseIssues: Error[] = [];
 
@@ -117,22 +117,22 @@ function compareTestResults(
     courseIssues.push(new Error('test() returned a fatal issue, skipping comparison'));
     return courseIssues;
   }
-  if (test_submission.broken) {
-    courseIssues.push(new Error('test_submission is broken, skipping comparison'));
+  if (submission.broken) {
+    courseIssues.push(new Error('submission is broken, skipping comparison'));
     return courseIssues;
   }
-  checkEqual('gradable', expectedData.gradable, test_submission.gradable);
+  checkEqual('gradable', expectedData.gradable, submission.gradable);
   checkEqual(
     'format_errors keys',
     // We sort the keys to ensure that the comparison is order-independent.
     Object.keys(expectedData.format_errors).sort(),
-    Object.keys(test_submission.format_errors ?? {}).sort(),
+    Object.keys(submission.format_errors ?? {}).sort(),
   );
-  if (!test_submission.gradable || !expectedData.gradable) {
+  if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expectedData.partial_scores, test_submission.partial_scores);
-  checkEqual('score', expectedData.score, test_submission.score);
+  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+  checkEqual('score', expectedData.score, submission.score);
   return courseIssues;
 }
 
@@ -159,7 +159,7 @@ async function testVariant(
 ): Promise<{
   expectedTestData: questionServers.TestResultData;
   hasFatalIssue: boolean;
-  test_submission: Submission;
+  submission: Submission;
 }> {
   // Step 1: Call test() to get expected results - don't insert anything to the database
   const { data: expectedTestData, hasFatalIssue } = await createTestSubmissionData(
@@ -178,7 +178,7 @@ async function testVariant(
     auth_user_id: authn_user_id,
     submitted_answer: expectedTestData.raw_submitted_answer,
   };
-  const { submission_id: test_submission_id, variant: updated_variant } = await saveSubmission(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
     submission_data,
     variant,
     question,
@@ -186,7 +186,7 @@ async function testVariant(
   );
   await gradeVariant({
     variant: updated_variant,
-    check_submission_id: test_submission_id,
+    check_submission_id: submission_id,
     question,
     variant_course: course,
     user_id,
@@ -194,17 +194,17 @@ async function testVariant(
     ignoreGradeRateLimit: true,
     ignoreRealTimeGradingDisabled: true,
   });
-  const test_submission = await selectSubmission(test_submission_id);
+  const submission = await selectSubmission(submission_id);
 
   // Step 3: Compare expected results with actual submission
-  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, test_submission);
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
     question,
     course,
     expectedTestData,
-    test_submission,
+    submission,
   };
   await writeCourseIssues(
     courseIssues,
@@ -214,7 +214,7 @@ async function testVariant(
     studentMessage,
     courseData,
   );
-  return { expectedTestData, hasFatalIssue, test_submission };
+  return { expectedTestData, hasFatalIssue, submission };
 }
 
 /**
@@ -244,7 +244,7 @@ async function testQuestion(
 
   let variant;
   let expectedTestData: questionServers.TestResultData | null = null;
-  let test_submission: Submission | null = null;
+  let submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
@@ -291,7 +291,7 @@ async function testQuestion(
   if (!variant.broken_at) {
     const gradeStart = Date.now();
     try {
-      ({ expectedTestData, test_submission } = await testVariant(
+      ({ expectedTestData, submission } = await testVariant(
         variant,
         question,
         variant_course,
@@ -322,7 +322,7 @@ async function testQuestion(
   }
 
   const stats = { generateDuration, initialRenderDuration, gradeDuration, finalRenderDuration };
-  return { variant, expectedTestData, test_submission, stats };
+  return { variant, expectedTestData, submission, stats };
 }
 
 /**
@@ -360,7 +360,7 @@ async function runTest({
   variant_seed?: string;
 }): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
-  const { variant, expectedTestData, test_submission, stats } = await testQuestion(
+  const { variant, expectedTestData, submission, stats } = await testQuestion(
     question,
     course_instance,
     course,
@@ -399,10 +399,9 @@ async function runTest({
           jsonStringifySafe(_.pick(expectedTestData, expectedDataKeys), null, '    '),
       );
     }
-    if (test_submission) {
+    if (submission) {
       logger.verbose(
-        'test_submission:\n' +
-          jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
+        'submission:\n' + jsonStringifySafe(_.pick(submission, submissionKeys), null, '    '),
       );
     }
   }
