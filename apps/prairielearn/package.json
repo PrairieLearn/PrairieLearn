@@ -318,11 +318,11 @@
   "nodemonConfig": {
     "ignore": [
       "assets/*",
-      "elements/**/*.js",
+      "elements/*",
       "dist/*",
       "public/*"
     ],
-    "ext": "js,jsx,ts,tsx,json,sql",
+    "ext": "js,jsx,ts,tsx,json,sql,py",
     "delay": 100
   }
 }
