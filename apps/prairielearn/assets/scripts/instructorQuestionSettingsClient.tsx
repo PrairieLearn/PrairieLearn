@@ -298,13 +298,18 @@ const addRowValidation = (index: number, saveButton: HTMLButtonElement | null) =
 };
 
 const validateAllRows = (saveButton: HTMLButtonElement | null) => {
+  const table = document.getElementById('author-table-body');
+  if (!table) {
+    // No author table; nothing to validate.
+    saveButton?.removeAttribute('disabled');
+    return;
+  }
   // Check if any inputs are marked invalid
   const invalidInputs = table?.querySelectorAll('.is-invalid');
   if (invalidInputs && invalidInputs.length > 0) {
     saveButton?.setAttribute('disabled', 'true');
     return;
   }
-  const table = document.getElementById('author-table-body');
   const rows = table?.getElementsByClassName('author-row') ?? [];
   const indices = [];
   for (let i = 0; i < rows.length; i++) {
