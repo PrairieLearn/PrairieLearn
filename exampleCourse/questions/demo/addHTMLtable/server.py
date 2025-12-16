@@ -1,5 +1,8 @@
 import io
 
+import pandas as pd
+import prairielearn as pl
+
 
 def generate(data):
     name_list = ["Carla", "Manoel", "Sam", "Laura", "Amanda"]
@@ -37,3 +40,6 @@ def generate(data):
     mytable3 = output.getvalue()
     output.close()
     data["params"]["mytable3"] = mytable3
+
+    dataframe = pd.DataFrame(data["params"]["table_data"])
+    data["params"]["dataframe"] = pl.to_json(dataframe)
