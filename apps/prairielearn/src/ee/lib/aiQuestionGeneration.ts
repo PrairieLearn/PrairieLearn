@@ -46,10 +46,7 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-// We're still using `4o` for question generation as it seems to have better
-// cost/performance characteristics. We'll revisit moving to a newer model in
-// the future.
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5-2025-08-07' satisfies OpenAIModelId;
+export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5.2-2025-12-11' satisfies OpenAIModelId;
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
