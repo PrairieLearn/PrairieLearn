@@ -4546,8 +4546,8 @@ __metadata:
     "@tiptap/pm": "npm:^3.11.1"
     "@tiptap/react": "npm:^3.11.1"
     "@tiptap/y-tiptap": "npm:^3.0.1"
-    "@trpc/client": "npm:^11.7.2"
-    "@trpc/server": "npm:^11.7.2"
+    "@trpc/client": "npm:^11.8.0"
+    "@trpc/server": "npm:^11.8.0"
     "@types/archiver": "npm:^7.0.0"
     "@types/async": "npm:^3.2.25"
     "@types/blocked": "npm:^1.3.5"
@@ -6530,22 +6530,22 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@trpc/client@npm:^11.7.2":
-  version: 11.7.2
-  resolution: "@trpc/client@npm:11.7.2"
+"@trpc/client@npm:^11.8.0":
+  version: 11.8.0
+  resolution: "@trpc/client@npm:11.8.0"
   peerDependencies:
-    "@trpc/server": 11.7.2
+    "@trpc/server": 11.8.0
     typescript: ">=5.7.2"
-  checksum: 10c0/d0ef2edf4e471bec9d0a45c58e23dd1d25a5b56b277f6022e7b138abae06d09e71ac7c4ff9307882fd05e60886a27d810c5cac4e39a0fa401d17bddc4fbb6aec
+  checksum: 10c0/16aac15859058b25f266fbdc1754e83e409d3adbfb101d430c510f3776947d4dca1aeea11f784e4b9d1affac56fdec119c7c2d85f0d4a2f815f5ec3a2104cd04
   languageName: node
   linkType: hard
 
-"@trpc/server@npm:^11.7.2":
-  version: 11.7.2
-  resolution: "@trpc/server@npm:11.7.2"
+"@trpc/server@npm:^11.8.0":
+  version: 11.8.0
+  resolution: "@trpc/server@npm:11.8.0"
   peerDependencies:
     typescript: ">=5.7.2"
-  checksum: 10c0/e30ceca2e1d5e5689110fbbf12c1fd2f8f603814823a94a5c255912acf36b452ee918e2b5623710baefb03cc7f011ad4128007c02554d0e5b910d785daeca321
+  checksum: 10c0/1be1e13aab5a6a85cec868fcd303277bbfb64e69ad95fb7f340513a2b7eb7689909e7c9ea8ad8c3b72c5c687ab2da0c5f96daf67d781cb3a8d9283ae6095c451
   languageName: node
   linkType: hard
 
