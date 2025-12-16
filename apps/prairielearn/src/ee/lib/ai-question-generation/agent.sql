@@ -28,6 +28,14 @@ VALUES
 RETURNING
   *;
 
+-- BLOCK select_message_status
+SELECT
+  status
+FROM
+  ai_question_generation_messages
+WHERE
+  id = $id;
+
 -- BLOCK finalize_assistant_message
 UPDATE ai_question_generation_messages
 SET

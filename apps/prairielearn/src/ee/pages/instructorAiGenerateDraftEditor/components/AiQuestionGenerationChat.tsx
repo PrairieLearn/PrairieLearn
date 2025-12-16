@@ -398,6 +398,12 @@ function Messages({
     return (
       <div key={message.id} class="d-flex flex-column gap-2 mb-3">
         <MessageParts parts={message.parts} />
+        {message.metadata?.status === 'canceled' && (
+          <div class="small text-muted fst-italic">
+            <i class="bi bi-stop-circle me-1" aria-hidden="true" />
+            Generation was stopped
+          </div>
+        )}
         {isLastMessage && (
           <Show when={showSpinner}>
             <ProgressStatus state="streaming" statusText="Working..." />
@@ -460,18 +466,20 @@ function useShowSpinner({
 }
 
 export function AiQuestionGenerationChat({
+  chatCsrfToken,
+  cancelCsrfToken,
   initialMessages,
   questionId,
   showJobLogsLink,
   urlPrefix,
-  csrfToken,
   loadNewVariant,
 }: {
+  chatCsrfToken: string;
+  cancelCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
-  csrfToken: string;
   loadNewVariant: () => void;
 }) {
   const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
@@ -482,7 +490,7 @@ export function AiQuestionGenerationChat({
     resume: true,
     transport: new DefaultChatTransport({
       api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
-      headers: { 'X-CSRF-Token': csrfToken },
+      headers: { 'X-CSRF-Token': chatCsrfToken },
       prepareReconnectToStreamRequest: ({ id }) => {
         return {
           api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
@@ -623,13 +631,20 @@ export function AiQuestionGenerationChat({
             </div>
           )}
           <PromptInput
+            disabled={status !== 'ready' && status !== 'error'}
+            isGenerating={status === 'streaming' || status === 'submitted'}
+            loadNewVariantAfterChanges={loadNewVariantAfterChanges}
             sendMessage={(message: { text: string }) => {
               void sendMessage(message);
               void stickToBottom.scrollToBottom();
             }}
-            disabled={status !== 'ready' && status !== 'error'}
-            loadNewVariantAfterChanges={loadNewVariantAfterChanges}
             setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
+            onStop={async () => {
+              await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`, {
+                method: 'POST',
+                headers: { 'X-CSRF-Token': cancelCsrfToken },
+              });
+            }}
           />
         </div>
         <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />

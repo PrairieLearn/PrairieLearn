@@ -35,6 +35,11 @@ export function InstructorAiGenerateDraftEditor({
     authnUserId: resLocals.authn_user?.user_id ?? '',
   });
 
+  const cancelCsrfToken = generateCsrfToken({
+    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat/cancel`,
+    authnUserId: resLocals.authn_user?.user_id ?? '',
+  });
+
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
@@ -71,13 +76,14 @@ export function InstructorAiGenerateDraftEditor({
     content: (
       <Hydrate class="app-content-container">
         <AiQuestionGenerationEditor
+          chatCsrfToken={chatCsrfToken}
+          cancelCsrfToken={cancelCsrfToken}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           urlPrefix={resLocals.urlPrefix}
           csrfToken={resLocals.__csrf_token}
-          chatCsrfToken={chatCsrfToken}
           questionContainerHtml={questionContainerHtml}
           showJobLogsLink={resLocals.is_administrator}
           variantUrl={variantUrl}

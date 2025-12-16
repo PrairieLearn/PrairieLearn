@@ -20,7 +20,7 @@ import {
 import klaw from 'klaw';
 import z from 'zod';
 
-import { execute, loadSql, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { execute, loadSql, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import { emptyUsage, formatPrompt, mergeUsage } from '../../../lib/ai.js';
@@ -31,6 +31,7 @@ import {
   AiQuestionGenerationMessageSchema,
   type Course,
   type EnumAiQuestionGenerationMessageStatus,
+  EnumAiQuestionGenerationMessageStatusSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';
@@ -222,6 +223,7 @@ export async function createQuestionGenerationAgent({
   question,
   isExistingQuestion,
   hasCoursePermissionEdit,
+  messageId,
 }: {
   model: LanguageModel;
   course: Course;
@@ -230,6 +232,7 @@ export async function createQuestionGenerationAgent({
   question: Question;
   isExistingQuestion: boolean;
   hasCoursePermissionEdit: boolean;
+  messageId: string;
 }) {
   const files: Record<string, string> = {};
 
@@ -292,12 +295,32 @@ export async function createQuestionGenerationAgent({
 
   const systemPrompt = makeSystemPrompt({ isExistingQuestion });
 
+  // Track whether the agent was canceled. This is set by the `stopWhen` check
+  // and read by the `messageMetadata` callback to emit the correct status.
+  const cancellationState = { wasCanceled: false };
+
+  // Create a cancellation check function that queries the database
+  const checkCancellation = async () => {
+    const status = await queryOptionalRow(
+      sql.select_message_status,
+      { id: messageId },
+      EnumAiQuestionGenerationMessageStatusSchema,
+    );
+    if (status === 'canceled') {
+      cancellationState.wasCanceled = true;
+      return true;
+    }
+    return false;
+  };
+
   const agent = new Agent({
     model,
     system: systemPrompt,
     stopWhen: [
       // Cap to 20 steps to avoid runaways.
       stepCountIs(20),
+      // Check for user-initiated cancellation before each step.
+      checkCancellation,
     ],
     prepareStep: async ({ steps }) => {
       const didListExamples = steps
@@ -426,7 +449,7 @@ export async function createQuestionGenerationAgent({
     },
   });
 
-  return { agent };
+  return { agent, cancellationState };
 }
 
 export async function editQuestionWithAgent({
@@ -519,7 +542,7 @@ export async function editQuestionWithAgent({
   await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
   serverJob.executeInBackground(async (job) => {
-    const { agent } = await createQuestionGenerationAgent({
+    const { agent, cancellationState } = await createQuestionGenerationAgent({
       model,
       course,
       question,
@@ -527,6 +550,7 @@ export async function editQuestionWithAgent({
       authnUser,
       isExistingQuestion,
       hasCoursePermissionEdit,
+      messageId: messageRow.id,
     });
 
     const args = run(() => {
@@ -578,7 +602,7 @@ export async function editQuestionWithAgent({
           // TODO: we could also capture token usage here if we wanted.
           return {
             job_sequence_id: serverJob.jobSequenceId,
-            status: 'completed',
+            status: cancellationState.wasCanceled ? 'canceled' : 'completed',
           };
         }
       },
@@ -610,7 +634,7 @@ export async function editQuestionWithAgent({
 
     await execute(sql.finalize_assistant_message, {
       id: messageRow.id,
-      status: 'completed',
+      status: cancellationState.wasCanceled ? 'canceled' : 'completed',
       parts: JSON.stringify(finalMessage?.parts ?? []),
       usage_input_tokens: totalUsage.inputTokens,
       usage_output_tokens: totalUsage.outputTokens,

@@ -3,11 +3,15 @@ import { useState } from 'preact/hooks';
 export function PromptInput({
   sendMessage,
   disabled,
+  isGenerating,
+  onStop,
   loadNewVariantAfterChanges,
   setLoadNewVariantAfterChanges,
 }: {
   sendMessage: (message: { text: string }) => void;
   disabled: boolean;
+  isGenerating: boolean;
+  onStop: () => void;
   loadNewVariantAfterChanges?: boolean;
   setLoadNewVariantAfterChanges?: (value: boolean) => void;
 }) {
@@ -17,6 +21,11 @@ export function PromptInput({
     <form
       onSubmit={(e) => {
         e.preventDefault();
+
+        // Forbid sending a new message while generation is in progress. The user
+        // must hit "stop" first to stop generation.
+        if (isGenerating) return;
+
         const trimmedInput = input.trim();
         if (trimmedInput) {
           sendMessage({ text: trimmedInput });
@@ -53,14 +62,26 @@ export function PromptInput({
           </label>
         </div>
 
-        <button
-          type="submit"
-          class="btn btn-primary btn-sm"
-          disabled={disabled || input.trim().length === 0}
-          aria-label="Send prompt"
-        >
-          <i class="bi bi-send-fill" />
-        </button>
+        {isGenerating ? (
+          <button
+            type="button"
+            aria-label="Stop generation"
+            class="btn btn-outline-danger btn-sm"
+            onClick={onStop}
+          >
+            <i class="bi bi-stop-fill me-1" />
+            Stop
+          </button>
+        ) : (
+          <button
+            type="submit"
+            class="btn btn-primary btn-sm"
+            disabled={disabled || input.trim().length === 0}
+            aria-label="Send prompt"
+          >
+            <i class="bi bi-send-fill" />
+          </button>
+        )}
       </div>
       <div class="text-muted small text-center mt-1">
         AI can make mistakes. Review the generated question.

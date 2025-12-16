@@ -297,6 +297,19 @@ router.post(
 );
 
 router.post(
+  '/chat/cancel',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    assertCanCreateQuestion(res.locals);
+
+    await execute(sql.cancel_latest_streaming_message, {
+      question_id: res.locals.question.id,
+    });
+
+    res.status(200).json({ success: true });
+  }),
+);
+
+router.post(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'save_question') {

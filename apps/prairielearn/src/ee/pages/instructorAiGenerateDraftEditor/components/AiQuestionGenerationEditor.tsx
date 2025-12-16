@@ -8,25 +8,27 @@ import { FinalizeModal } from './FinalizeModal.js';
 import { type NewVariantHandle, QuestionAndFilePreview } from './QuestionAndFilePreview.js';
 
 export function AiQuestionGenerationEditor({
+  chatCsrfToken,
+  cancelCsrfToken,
   question,
   initialMessages,
   questionFiles,
   richTextEditorEnabled,
   urlPrefix,
   csrfToken,
-  chatCsrfToken,
   questionContainerHtml,
   showJobLogsLink,
   variantUrl,
   variantCsrfToken,
 }: {
+  chatCsrfToken: string;
+  cancelCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
   urlPrefix: string;
   csrfToken: string;
-  chatCsrfToken: string;
   questionContainerHtml: string;
   showJobLogsLink: boolean;
   variantUrl: string;
@@ -44,11 +46,12 @@ export function AiQuestionGenerationEditor({
         </a>
       </div>
       <AiQuestionGenerationChat
+        chatCsrfToken={chatCsrfToken}
+        cancelCsrfToken={cancelCsrfToken}
         initialMessages={initialMessages}
         questionId={question.id}
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
-        csrfToken={chatCsrfToken}
         loadNewVariant={() => newVariantRef.current?.newVariant()}
       />
 
