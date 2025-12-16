@@ -576,8 +576,14 @@ export async function editQuestionWithAgent({
             }),
           };
         });
-        const modelMessages = convertToModelMessages(filteredMessages);
-        return { messages: modelMessages };
+
+        // Naive context management: keep the first message and the last 10 messages.
+        const trimmedMessages = [
+          filteredMessages[0],
+          ...filteredMessages.slice(Math.max(filteredMessages.length - 10, 1)),
+        ];
+
+        return { messages: convertToModelMessages(trimmedMessages) };
       } else if (prompt) {
         return { prompt };
       } else {
