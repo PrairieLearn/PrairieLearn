@@ -33,7 +33,6 @@ from inspect import signature
 from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
-from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -178,6 +177,12 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
 
 
 def worker_loop() -> None:
+
+    # The prairielearn.internal module is only needed in the worker process.
+    # Because it makes use of threading, we only import it after forking to
+    # avoid warnings about inheriting threads from the parent process.
+    from prairielearn.internal import question_phases
+
     # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
