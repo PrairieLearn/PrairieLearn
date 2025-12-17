@@ -434,7 +434,7 @@ export async function aiGrade({
               gradingJobId: grading_job_id,
               authnUserId: authn_user_id,
               model: model_id,
-              usage: response.usage
+              usage: response.usage,
             });
           });
         } else {
@@ -465,7 +465,7 @@ export async function aiGrade({
               },
               IdSchema,
             );
-            
+
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
@@ -480,7 +480,7 @@ export async function aiGrade({
               gradingJobId: grading_job_id,
               authnUserId: authn_user_id,
               model: model_id,
-              usage: response.usage
+              usage: response.usage,
             });
           });
         }

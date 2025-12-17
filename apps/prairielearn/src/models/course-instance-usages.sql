@@ -126,8 +126,7 @@ ON CONFLICT (
 ) DO UPDATE
 SET
   cost_ai_question_generation = course_instance_usages.cost_ai_question_generation + EXCLUDED.cost_ai_question_generation
-
--- BLOCK update_course_instance_usages_for_ai_grading
+  -- BLOCK update_course_instance_usages_for_ai_grading
 INSERT INTO
   course_instance_usages (
     type,
@@ -164,5 +163,3 @@ ON CONFLICT (
 ) DO UPDATE
 SET
   cost_ai_grading = course_instance_usages.cost_ai_grading + EXCLUDED.cost_ai_grading;
-
-

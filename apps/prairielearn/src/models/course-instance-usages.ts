@@ -94,7 +94,6 @@ export async function updateCourseInstanceUsagesForAiQuestionGeneration({
   });
 }
 
-
 /**
  * Update the course instance usages for an AI grading prompt.
  *
