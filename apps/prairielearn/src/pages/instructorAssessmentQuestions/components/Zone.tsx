@@ -1,6 +1,5 @@
 import { ZoneHeader } from '../../../components/AssessmentQuestions.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,
@@ -8,18 +7,12 @@ import type {
 } from '../../../schemas/index.js';
 
 import { AlternativeGroup } from './AlternativeGroup.js';
+import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
 
 export function Zone({
   zone,
   zoneNumber,
-  nTableCols,
-  questionMap,
-  editMode,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  canEdit,
-  showAdvanceScorePercCol,
-  assessmentType,
+  AssessmentState,
   handleAddQuestion,
   handleEditQuestion,
   handleDeleteQuestion,
@@ -28,14 +21,8 @@ export function Zone({
 }: {
   zone: ZoneAssessmentJson;
   zoneNumber: number;
-  nTableCols: number;
+  AssessmentState: AssessmentState;
   questionMap: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
   handleAddQuestion: (zoneNumber: number) => void;
   handleEditQuestion: ({
     question,
@@ -43,14 +30,12 @@ export function Zone({
     zoneNumber,
     alternativeGroupNumber,
     alternativeNumber,
-    handleAddQuestion,
   }: {
     question: ZoneQuestionJson | QuestionAlternativeJson;
     alternativeGroup?: ZoneQuestionJson;
     zoneNumber: number;
     alternativeGroupNumber: number;
     alternativeNumber?: number;
-    handleAddQuestion: (zoneNumber: number) => void;
   }) => void;
   handleDeleteQuestion: (
     zoneNumber: number,
@@ -61,6 +46,7 @@ export function Zone({
   handleResetButtonClick: (questionId: string) => void;
   getNextQuestionNumber: () => number;
 }) {
+  const { nTableCols, editMode } = AssessmentState;
   return (
     <>
       <ZoneHeader
@@ -75,15 +61,8 @@ export function Zone({
           key={alternativeGroup.id}
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={index + 1}
-          nTableCols={nTableCols}
+          AssessmentState={AssessmentState}
           zoneNumber={zoneNumber}
-          questionMap={questionMap}
-          editMode={editMode}
-          urlPrefix={urlPrefix}
-          hasCoursePermissionPreview={hasCoursePermissionPreview}
-          canEdit={canEdit}
-          showAdvanceScorePercCol={showAdvanceScorePercCol}
-          assessmentType={assessmentType}
           handleEditQuestion={handleEditQuestion}
           handleDeleteQuestion={handleDeleteQuestion}
           handleResetButtonClick={handleResetButtonClick}

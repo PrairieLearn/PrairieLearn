@@ -77,7 +77,7 @@ export function ZoneHeader({
           </div>
           {editMode && (
             <button
-              class="btn btn-sm btn-primary-outline"
+              class="btn btn-sm btn-primary"
               type="button"
               onClick={() => handleAddQuestion?.(zoneNumber)}
             >

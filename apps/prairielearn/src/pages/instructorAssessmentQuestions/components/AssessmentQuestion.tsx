@@ -13,6 +13,8 @@ import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-questio
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/index.js';
 
+import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
+
 function Title({
   questionRow,
   hasCoursePermissionPreview,
@@ -80,13 +82,7 @@ export function AssessmentQuestion({
   zoneNumber,
   alternativeGroupNumber,
   alternativeNumber,
-  questionMap,
-  editMode,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  canEdit,
-  showAdvanceScorePercCol,
-  assessmentType,
+  AssessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
@@ -96,17 +92,10 @@ export function AssessmentQuestion({
   id?: string;
   alternative?: QuestionAlternativeJson;
   alternativeGroup: ZoneQuestionJson;
-  nTableCols: number;
+  AssessmentState: AssessmentState;
   zoneNumber: number;
   alternativeGroupNumber: number;
   alternativeNumber?: number;
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview?: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
   handleEditQuestion: ({
     question,
     alternativeGroup,
@@ -132,6 +121,15 @@ export function AssessmentQuestion({
 }) {
   const question = alternative ?? alternativeGroup;
   const questionId = alternative?.id ?? id;
+  const {
+    questionMap,
+    editMode,
+    urlPrefix,
+    hasCoursePermissionPreview,
+    canEdit,
+    showAdvanceScorePercCol,
+    assessmentType,
+  } = AssessmentState;
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const questionData = questionMap[questionId];
@@ -191,7 +189,7 @@ export function AssessmentQuestion({
         <td>
           <Title
             questionRow={questionData}
-            hasCoursePermissionPreview={hasCoursePermissionPreview ?? false}
+            hasCoursePermissionPreview={hasCoursePermissionPreview}
             urlPrefix={urlPrefix}
             questionNumber={questionNumber}
             alternativeNumber={alternativeNumber ? alternativeNumber + 1 : 1}

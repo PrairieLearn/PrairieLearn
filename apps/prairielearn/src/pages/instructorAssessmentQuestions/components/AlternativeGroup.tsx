@@ -3,24 +3,16 @@ import { Fragment } from 'preact/jsx-runtime';
 import { run } from '@prairielearn/run';
 
 import { AlternativeGroupHeader } from '../../../components/AssessmentQuestions.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/index.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
+import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
 
 export function AlternativeGroup({
   alternativeGroup,
   alternativeGroupNumber,
   zoneNumber,
-  nTableCols,
-  questionMap,
-  editMode,
-  urlPrefix,
-  hasCoursePermissionPreview,
-  canEdit,
-  showAdvanceScorePercCol,
-  assessmentType,
+  AssessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
@@ -29,14 +21,7 @@ export function AlternativeGroup({
   alternativeGroup: ZoneQuestionJson;
   alternativeGroupNumber: number;
   zoneNumber: number;
-  nTableCols: number;
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
+  AssessmentState: AssessmentState;
   handleEditQuestion: ({
     question,
     alternativeGroup,
@@ -64,13 +49,13 @@ export function AlternativeGroup({
   const currentQuestionNumber = getNextQuestionNumber();
   return (
     <Fragment>
-      {hasAlternatives ? (
+      {hasAlternatives && (
         <AlternativeGroupHeader
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={currentQuestionNumber}
-          nTableCols={nTableCols}
+          nTableCols={AssessmentState.nTableCols}
         />
-      ) : null}
+      )}
       {run(() => {
         if (!hasAlternatives) {
           return (
@@ -79,14 +64,7 @@ export function AlternativeGroup({
               alternativeGroup={alternativeGroup}
               zoneNumber={zoneNumber}
               alternativeGroupNumber={alternativeGroupNumber}
-              nTableCols={nTableCols}
-              questionMap={questionMap}
-              editMode={editMode}
-              urlPrefix={urlPrefix}
-              hasCoursePermissionPreview={hasCoursePermissionPreview}
-              canEdit={canEdit}
-              showAdvanceScorePercCol={showAdvanceScorePercCol}
-              assessmentType={assessmentType}
+              AssessmentState={AssessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
@@ -102,16 +80,9 @@ export function AlternativeGroup({
               alternative={alternative}
               alternativeGroup={alternativeGroup}
               zoneNumber={zoneNumber}
-              nTableCols={nTableCols}
               alternativeGroupNumber={alternativeGroupNumber}
               alternativeNumber={alternativeNumber}
-              questionMap={questionMap}
-              editMode={editMode}
-              urlPrefix={urlPrefix}
-              hasCoursePermissionPreview={hasCoursePermissionPreview}
-              canEdit={canEdit}
-              showAdvanceScorePercCol={showAdvanceScorePercCol}
-              assessmentType={assessmentType}
+              AssessmentState={AssessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}

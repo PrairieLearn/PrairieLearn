@@ -1,8 +1,10 @@
 import clsx from 'clsx';
 import { Modal } from 'react-bootstrap';
+import { useForm } from 'react-hook-form';
 
-import { useMemo, useState } from '@prairielearn/preact-cjs/hooks';
+import { useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
 
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
 
 export type EditQuestionModalState =
@@ -11,6 +13,7 @@ export type EditQuestionModalState =
       type: 'create';
       question: ZoneQuestionJson | QuestionAlternativeJson;
       alternativeGroup?: ZoneQuestionJson;
+      mappedQids: string[];
     }
   | {
       type: 'edit';
@@ -19,37 +22,17 @@ export type EditQuestionModalState =
     };
 
 /**
- * Parse auto points from string to array
- */
-function parseAutoPointsForSave(
-  value: string,
-  assessmentType: 'Homework' | 'Exam',
-): number | number[] {
-  if (assessmentType === 'Exam') {
-    // For exams, parse string as array
-    const trimmed = value.trim();
-    if (trimmed === '') return [];
-    return trimmed
-      .split(',')
-      .map((v) => Number(v.trim()))
-      .filter((v) => !Number.isNaN(v));
-  }
-  return Number(value);
-}
-
-/**
  * Helper function to check if a value on an alternative question is inherited from the parent group.
  */
 function isInherited(
   fieldName: keyof ZoneQuestionJson | keyof QuestionAlternativeJson,
   isAlternative: boolean,
-  localQuestion: ZoneQuestionJson | QuestionAlternativeJson,
+  question: ZoneQuestionJson | QuestionAlternativeJson,
   alternativeGroup?: ZoneQuestionJson,
 ): boolean {
   if (!isAlternative || !alternativeGroup) return false;
   return (
-    (!(fieldName in localQuestion) ||
-      localQuestion[fieldName as keyof typeof localQuestion] === undefined) &&
+    (!(fieldName in question) || question[fieldName as keyof typeof question] === undefined) &&
     fieldName in alternativeGroup &&
     alternativeGroup[fieldName as keyof typeof alternativeGroup] !== undefined
   );
@@ -60,30 +43,31 @@ export function EditQuestionModal({
   onHide,
   handleUpdateQuestion,
   assessmentType,
-  qidValidationError,
 }: {
   editQuestionModalState: EditQuestionModalState;
   onHide: () => void;
-  handleUpdateQuestion: (updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson) => void;
+  handleUpdateQuestion: (
+    updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson,
+    newQuestionData?: StaffAssessmentQuestionRow,
+  ) => void;
   assessmentType: 'Homework' | 'Exam';
-  qidValidationError?: string;
 }) {
   const { type } = editQuestionModalState;
   const question = type !== 'closed' ? editQuestionModalState.question : null;
   const alternativeGroup = type !== 'closed' ? editQuestionModalState.alternativeGroup : undefined;
+  const mappedQids = type === 'create' ? editQuestionModalState.mappedQids : [];
   const isAlternative = !!alternativeGroup;
   const [isPointsInherited, setIsPointsInherited] = useState(false);
   const [isMaxPointsInherited, setIsMaxPointsInherited] = useState(false);
-  const [autoPointsDisplayValue, setAutoPointsDisplayValue] = useState<string | number | number[]>(
+  const autoPointsDisplayValue =
     question?.points ??
-      question?.autoPoints ??
-      alternativeGroup?.points ??
-      alternativeGroup?.autoPoints ??
-      '',
-  );
-  const [manualPointsDisplayValue, setManualPointsDisplayValue] = useState<string | number>(
-    question?.manualPoints ?? alternativeGroup?.manualPoints ?? '',
-  );
+    question?.autoPoints ??
+    alternativeGroup?.points ??
+    alternativeGroup?.autoPoints ??
+    undefined;
+
+  const manualPointsDisplayValue = question?.manualPoints ?? alternativeGroup?.manualPoints ?? null;
+  const newQuestionData = useRef<StaffAssessmentQuestionRow | undefined>(undefined);
 
   // Determine which property was originally set for points (points vs autoPoints)
   // Check own values first, then inherited values
@@ -103,8 +87,6 @@ export function EditQuestionModal({
     return 'autoPoints';
   }, [question, alternativeGroup, isAlternative]);
 
-  // Determine which max property was originally set for auto grading (maxPoints vs maxAutoPoints)
-  // Prefer matching the points property (points → maxPoints, autoPoints → maxAutoPoints)
   const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
     // Check own question first
     if (question?.maxAutoPoints !== undefined) return 'maxAutoPoints';
@@ -121,350 +103,312 @@ export function EditQuestionModal({
         return 'maxPoints';
       }
     }
-    // Default: match the points property
     return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
   }, [question, alternativeGroup, isAlternative, originalPointsProperty]);
 
-  const [localQuestion, setLocalQuestion] = useState<
-    ZoneQuestionJson | QuestionAlternativeJson | null
-  >(() => (type !== 'closed' ? structuredClone(question) : null));
+  const maxAutoPointsDisplayValue =
+    question?.[originalMaxProperty] ?? alternativeGroup?.[originalMaxProperty] ?? null;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<ZoneQuestionJson | QuestionAlternativeJson>({
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    defaultValues: question!,
+  });
 
   if (type === 'closed') return null;
-  if (!localQuestion) return null;
-
-  const maxAutoPointsDisplayValue =
-    localQuestion[originalMaxProperty] ?? alternativeGroup?.[originalMaxProperty] ?? '';
+  if (!question) return null;
 
   return (
     <Modal show={true} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>{type === 'create' ? 'Add question' : 'Edit question'}</Modal.Title>
       </Modal.Header>
-      <Modal.Body>
-        <div class="mb-3">
-          <label for="qidInput">QID</label>
-          <div class="input-group">
+      <form
+        onSubmit={handleSubmit((data) => {
+          handleUpdateQuestion(data, newQuestionData.current);
+        })}
+      >
+        <Modal.Body>
+          <div class="mb-3">
+            <label for="qidInput">QID</label>
             <input
               type="text"
-              class={clsx('form-control', qidValidationError && 'is-invalid')}
+              class={clsx('form-control', errors.id && 'is-invalid')}
               id="qidInput"
-              name="qid"
-              aria-describedby="qidHelp qidError"
-              value={localQuestion.id ?? ''}
-              onChange={(e) => {
-                const newId = (e.target as HTMLInputElement).value;
-                setLocalQuestion((prev) => ({ ...prev, id: newId }));
-              }}
+              disabled={type !== 'create'}
+              aria-invalid={errors.id ? 'true' : 'false'}
+              {...register('id', {
+                required: 'QID is required',
+                validate: async (qid) => {
+                  if (!qid) return 'QID is required';
+                  if (qid !== question.id) {
+                    if (mappedQids.includes(qid)) {
+                      return 'QID already exists in the assessment';
+                    }
+                    const params = new URLSearchParams({ qid });
+                    const res = await fetch(
+                      `${window.location.pathname}/question.json?${params.toString()}`,
+                      {
+                        method: 'GET',
+                      },
+                    );
+                    if (!res.ok) {
+                      throw new Error('Failed to save question');
+                    }
+                    const questionData = await res.json();
+                    if (questionData === null) {
+                      return 'Question not found';
+                    }
+                    newQuestionData.current = questionData;
+                  }
+                },
+              })}
             />
+            {errors.id && <div class="invalid-feedback">{errors.id.message}</div>}
+            <small id="qidHelp" class="form-text text-muted">
+              The unique identifier for the question.
+            </small>
           </div>
-          {qidValidationError && (
-            <div id="qidError" class="invalid-feedback d-block">
-              {qidValidationError}
-            </div>
-          )}
-          <small id="qidHelp" class="form-text text-muted">
-            The unique identifier for the question.
-          </small>
-        </div>
-        {assessmentType === 'Homework' ? (
-          <>
-            <div class="mb-3">
-              <label for="autoPointsInput">Auto Points</label>
-              <input
-                type="number"
-                class="form-control"
-                id="autoPointsInput"
-                name="autoPoints"
-                value={autoPointsDisplayValue.toString()}
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  if (value === '') {
-                    // Clear the value to inherit from group
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.points;
-                      delete updated.autoPoints;
-                      return updated;
-                    });
-                    setAutoPointsDisplayValue('');
-                  } else {
-                    const numValue = Number(value);
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.points;
-                      delete updated.autoPoints;
-                      updated[originalPointsProperty] = numValue;
-                      return updated;
-                    });
-                    setAutoPointsDisplayValue(numValue);
-                  }
-                }}
-              />
-              <small id="autoPointsHelp" class="form-text text-muted">
-                The amount of points each attempt at the question is worth.
-                {isPointsInherited ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-            <div class="mb-3">
-              <label for="maxAutoPointsInput">Max Auto Points</label>
-              <input
-                type="number"
-                class="form-control"
-                id="maxAutoPointsInput"
-                name="maxAutoPoints"
-                value={maxAutoPointsDisplayValue}
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  if (value === '') {
-                    // Clear to inherit
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.maxAutoPoints;
-                      delete updated.maxPoints;
-                      return updated;
-                    });
-                  } else {
-                    const numValue = (e.target as HTMLInputElement).valueAsNumber;
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      // Clear all max properties to avoid conflicts
-                      delete updated.maxPoints;
-                      delete updated.maxAutoPoints;
-                      // Use the original property (conversion will happen on save)
-                      updated[originalMaxProperty] = numValue;
-                      return updated;
-                    });
-                  }
-                }}
-              />
-              <small id="maxPointsHelp" class="form-text text-muted">
-                The maximum number of points that can be awarded for the question.
-                {isMaxPointsInherited ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-            <div class="mb-3">
-              <label for="manualPointsInput">Manual Points</label>
-              <input
-                type="number"
-                class="form-control"
-                id="manualPointsInput"
-                name="manualPoints"
-                value={
-                  localQuestion.manualPoints !== undefined
-                    ? localQuestion.manualPoints
-                    : isAlternative && alternativeGroup.manualPoints !== undefined
-                      ? alternativeGroup.manualPoints
-                      : ''
-                }
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  if (value === '') {
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.manualPoints;
-                      return updated;
-                    });
-                  } else {
-                    const numValue = (e.target as HTMLInputElement).valueAsNumber;
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      return {
-                        ...prev,
-                        manualPoints: numValue,
-                      };
-                    });
-                  }
-                }}
-              />
-              <small id="manualPointsHelp" class="form-text text-muted">
-                The amount of points possible from manual grading.
-                {isInherited('manualPoints', isAlternative, localQuestion, alternativeGroup) ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-            <div class="mb-3">
-              <label for="triesPerVariantInput">Tries Per Variant</label>
-              <input
-                type="number"
-                class="form-control"
-                id="triesPerVariantInput"
-                name="triesPerVariant"
-                step="1"
-                value={
-                  localQuestion.triesPerVariant !== undefined
-                    ? localQuestion.triesPerVariant
-                    : isAlternative && alternativeGroup.triesPerVariant !== undefined
-                      ? alternativeGroup.triesPerVariant
-                      : ''
-                }
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  if (value === '') {
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.triesPerVariant;
-                      return updated;
-                    });
-                  } else {
-                    const numValue = (e.target as HTMLInputElement).valueAsNumber;
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      return { ...prev, triesPerVariant: numValue };
-                    });
-                  }
-                }}
-              />
-              <small id="triesPerVariantHelp" class="form-text text-muted">
-                This is the number of attempts a student has to answer the question before getting a
-                new variant.
-                {isInherited('triesPerVariant', isAlternative, localQuestion, alternativeGroup) ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-          </>
-        ) : (
-          <>
-            <div class="mb-3">
-              <label for="autoPoints">Points List</label>
-              <input
-                type="text"
-                class="form-control points-list"
-                id="autoPointsInput"
-                name="autoPoints"
-                value={autoPointsDisplayValue.toString()}
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  setLocalQuestion((prev) => {
-                    if (!prev) return null;
-                    const updated = { ...prev };
-                    // Clear conflicting properties
-                    delete updated.points;
-                    delete updated.autoPoints;
-
-                    // For exams with manual points, we must use 'autoPoints' not 'points'
-                    // because 'points' and 'manualPoints' cannot coexist
-                    const propertyToUse =
-                      updated.manualPoints !== undefined ? 'autoPoints' : originalPointsProperty;
-
-                    // Store as string while editing (will be converted to array on save)
-                    // Type assertion needed because we temporarily store as string
-                    updated[propertyToUse] = value as any;
-                    return updated;
-                  });
-                  setAutoPointsDisplayValue(value);
-                }}
-              />
-              <small id="autoPointsHelp" class="form-text text-muted">
-                This is a list of points that each attempt at the question is worth. Enter values
-                separated by commas.
-                {isPointsInherited ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-            <div class="mb-3">
-              <label for="manualPoints">Manual Points</label>
-              <input
-                type="number"
-                class="form-control"
-                id="manualPointsInput"
-                name="manualPoints"
-                value={manualPointsDisplayValue.toString()}
-                onChange={(e) => {
-                  const value = (e.target as HTMLInputElement).value;
-                  if (value === '') {
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      delete updated.manualPoints;
-                      return updated;
-                    });
-                    setManualPointsDisplayValue('');
-                  } else {
-                    const numValue = (e.target as HTMLInputElement).valueAsNumber;
-                    setLocalQuestion((prev) => {
-                      if (!prev) return null;
-                      const updated = { ...prev };
-                      if (updated.points !== undefined) {
-                        updated.autoPoints = updated.points;
-                        delete updated.points;
+          {assessmentType === 'Homework' ? (
+            <>
+              <div class="mb-3">
+                <label for="autoPointsInput">Auto Points</label>
+                <input
+                  type="number"
+                  class={clsx('form-control', errors.autoPoints && 'is-invalid')}
+                  id="autoPointsInput"
+                  step="any"
+                  aria-invalid={errors.autoPoints ? 'true' : 'false'}
+                  {...register(originalPointsProperty, {
+                    value: autoPointsDisplayValue,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                    validate: (value, { manualPoints }) => {
+                      if (!manualPoints && value === undefined) {
+                        return 'At least one of auto points or manual points must be set.';
                       }
-                      updated.manualPoints = numValue;
-                      return updated;
-                    });
-                    setManualPointsDisplayValue(numValue);
-                  }
-                }}
-              />
-              <small id="manualPointsHelp" class="form-text text-muted">
-                The amount of points possible from manual grading.
-                {isInherited('manualPoints', isAlternative, localQuestion, alternativeGroup) ? (
-                  <>
-                    {' '}
-                    <em>(Inherited from alternative group)</em>
-                  </>
-                ) : null}
-              </small>
-            </div>
-          </>
-        )}
-      </Modal.Body>
-      <Modal.Footer>
-        <button type="button" class="btn btn-secondary" onClick={onHide}>
-          Close
-        </button>
-        <button
-          type="button"
-          class="btn btn-primary"
-          onClick={() => {
-            const questionToSave = { ...localQuestion };
-
-            // For exam assessments, convert string points back to number array
-            if (assessmentType === 'Exam') {
-              const pointsValue = questionToSave.points ?? questionToSave.autoPoints;
-              if (pointsValue !== undefined && typeof pointsValue === 'string') {
-                const parsedValue = parseAutoPointsForSave(pointsValue, assessmentType);
-                if (questionToSave.points !== undefined) {
-                  questionToSave.points = parsedValue;
-                } else {
-                  questionToSave.autoPoints = parsedValue;
-                }
-              }
-            }
-
-            handleUpdateQuestion(questionToSave);
-          }}
-        >
-          {type === 'create' ? 'Add question' : 'Update question'}
-        </button>
-      </Modal.Footer>
+                    },
+                  })}
+                />
+                {errors[originalPointsProperty] && (
+                  <div class="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                )}
+                <small id="autoPointsHelp" class="form-text text-muted">
+                  The amount of points each attempt at the question is worth.
+                  {isInherited(
+                    originalPointsProperty,
+                    isAlternative,
+                    question,
+                    alternativeGroup,
+                  ) ? (
+                    <>
+                      {' '}
+                      <em>(Inherited from alternative group)</em>
+                    </>
+                  ) : null}
+                </small>
+              </div>
+              <div class="mb-3">
+                <label for="maxAutoPointsInput">Max Auto Points</label>
+                <input
+                  type="number"
+                  class="form-control"
+                  id="maxAutoPointsInput"
+                  {...register(originalMaxProperty, {
+                    value: maxAutoPointsDisplayValue ?? undefined,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                  })}
+                />
+                <small id="maxPointsHelp" class="form-text text-muted">
+                  The maximum number of points that can be awarded for the question.
+                  {isInherited(originalMaxProperty, isAlternative, question, alternativeGroup) ? (
+                    <>
+                      {' '}
+                      <em>(Inherited from alternative group)</em>
+                    </>
+                  ) : null}
+                </small>
+              </div>
+              <div class="mb-3">
+                <label for="manualPointsInput">Manual Points</label>
+                <input
+                  type="number"
+                  class={clsx('form-control', errors.manualPoints && 'is-invalid')}
+                  aria-invalid={errors.manualPoints ? 'true' : 'false'}
+                  id="manualPointsInput"
+                  {...register('manualPoints', {
+                    value: manualPointsDisplayValue ?? undefined,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                    validate: (value, { autoPoints, points }) => {
+                      if (!points && !autoPoints && value === undefined) {
+                        return 'At least one of auto points or manual points must be set.';
+                      }
+                    },
+                  })}
+                />
+                {errors.manualPoints && (
+                  <div class="invalid-feedback">{errors.manualPoints.message}</div>
+                )}
+                <small id="manualPointsHelp" class="form-text text-muted">
+                  The amount of points possible from manual grading.
+                  {isInherited('manualPoints', isAlternative, question, alternativeGroup) ? (
+                    <>
+                      {' '}
+                      <em>(Inherited from alternative group)</em>
+                    </>
+                  ) : null}
+                </small>
+              </div>
+              <div class="mb-3">
+                <label for="triesPerVariantInput">Tries Per Variant</label>
+                <input
+                  type="number"
+                  class={clsx('form-control', errors.triesPerVariant && 'is-invalid')}
+                  aria-invalid={errors.triesPerVariant ? 'true' : 'false'}
+                  id="triesPerVariantInput"
+                  {...register('triesPerVariant', {
+                    value: Number(question.triesPerVariant ?? 1),
+                    setValueAs: (value) => {
+                      if (value === '') {
+                        return 1;
+                      }
+                      return Number(value);
+                    },
+                    validate: (triesPerVariant) => {
+                      if (!Number.isInteger(triesPerVariant)) {
+                        return 'Tries per variant must be an integer';
+                      }
+                      if (triesPerVariant !== undefined && triesPerVariant < 1) {
+                        return 'Tries per variant must be at least 1.';
+                      }
+                    },
+                  })}
+                />
+                {errors.triesPerVariant && (
+                  <div class="invalid-feedback">{errors.triesPerVariant.message}</div>
+                )}
+                <small id="triesPerVariantHelp" class="form-text text-muted">
+                  This is the number of attempts a student has to answer the question before getting
+                  a new variant.
+                </small>
+              </div>
+            </>
+          ) : (
+            <>
+              <div class="mb-3">
+                <label for="autoPoints">Points List</label>
+                <input
+                  type="text"
+                  class={clsx(
+                    'form-control points-list',
+                    errors[originalPointsProperty] && 'is-invalid',
+                  )}
+                  aria-invalid={errors[originalPointsProperty] ? 'true' : 'false'}
+                  id="autoPointsInput"
+                  // pattern="^[0-9, ]*$"
+                  // value={autoPointsDisplayValue}
+                  {...register(originalPointsProperty, {
+                    value: autoPointsDisplayValue,
+                    pattern: {
+                      value: /^[0-9, ]*$/,
+                      message: 'Points must be a number or a comma-separated list of numbers.',
+                    },
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      if (!Number.isNaN(Number(value))) {
+                        return Number(value);
+                      }
+                      if (value.includes(',')) {
+                        return value
+                          .split(',')
+                          .map((v) => Number(v.trim()))
+                          .filter((v) => !Number.isNaN(v));
+                      }
+                      return value;
+                    },
+                    validate: (value, { manualPoints }) => {
+                      if (value === undefined && manualPoints === undefined) {
+                        return 'At least one of auto points or manual points must be set.';
+                      }
+                    },
+                  })}
+                />
+                {errors[originalPointsProperty] && (
+                  <div class="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                )}
+                <small id="autoPointsHelp" class="form-text text-muted">
+                  This is a list of points that each attempt at the question is worth. Enter values
+                  separated by commas.
+                  {isInherited(
+                    originalPointsProperty,
+                    isAlternative,
+                    question,
+                    alternativeGroup,
+                  ) ? (
+                    <>
+                      {' '}
+                      <em>(Inherited from alternative group)</em>
+                    </>
+                  ) : null}
+                </small>
+              </div>
+              <div class="mb-3">
+                <label for="manualPoints">Manual Points</label>
+                <input
+                  type="number"
+                  class={clsx('form-control', errors.manualPoints && 'is-invalid')}
+                  aria-invalid={errors.manualPoints ? 'true' : 'false'}
+                  id="manualPointsInput"
+                  {...register('manualPoints', {
+                    value: manualPointsDisplayValue ?? undefined,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                    validate: (value, { autoPoints, points }) => {
+                      if (points === undefined && autoPoints === undefined && value === undefined) {
+                        return 'At least one of auto points or manual points must be set.';
+                      }
+                    },
+                  })}
+                />
+                {errors.manualPoints && (
+                  <div class="invalid-feedback">{errors.manualPoints.message}</div>
+                )}
+                <small id="manualPointsHelp" class="form-text text-muted">
+                  The amount of points possible from manual grading.
+                  {isInherited('manualPoints', isAlternative, question, alternativeGroup) ? (
+                    <>
+                      {' '}
+                      <em>(Inherited from alternative group)</em>
+                    </>
+                  ) : null}
+                </small>
+              </div>
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button type="button" class="btn btn-secondary" onClick={onHide}>
+            Close
+          </button>
+          <button type="submit" class="btn btn-primary">
+            {type === 'create' ? 'Add question' : 'Update question'}
+          </button>
+        </Modal.Footer>
+      </form>
     </Modal>
   );
 }
