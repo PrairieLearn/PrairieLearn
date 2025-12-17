@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -88,14 +86,6 @@ export function InstructorInstanceAdminLti({
       </script>
     `,
     content: html`
-      ${renderHtml(
-        <CourseInstanceSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>LTI configuration</h1>

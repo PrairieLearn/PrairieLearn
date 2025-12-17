@@ -101,8 +101,8 @@
     "@tiptap/pm": "^3.11.1",
     "@tiptap/react": "^3.11.1",
     "@tiptap/y-tiptap": "^3.0.1",
-    "@trpc/client": "^11.7.2",
-    "@trpc/server": "^11.7.2",
+    "@trpc/client": "^11.8.0",
+    "@trpc/server": "^11.8.0",
     "@types/d3": "^7.4.3",
     "@viz-js/viz": "^3.21.0",
     "@web3-storage/parse-link-header": "^3.1.0",
@@ -318,11 +318,11 @@
   "nodemonConfig": {
     "ignore": [
       "assets/*",
-      "elements/**/*.js",
+      "elements/*",
       "dist/*",
       "public/*"
     ],
-    "ext": "js,jsx,ts,tsx,json,sql",
+    "ext": "js,jsx,ts,tsx,json,sql,py",
     "delay": 100
   }
 }

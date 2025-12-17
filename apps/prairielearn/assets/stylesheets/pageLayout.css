@@ -107,7 +107,7 @@ body:has(div.app-main-container) {
 .side-nav-header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: end;
   text-transform: uppercase;
   font-weight: bold;
   border-bottom: 1px solid var(--bs-body-color);
@@ -132,8 +132,8 @@ body:has(div.app-main-container) {
 #side-nav-toggler {
   background-color: transparent;
   border: none;
-  padding: 0.5rem 0.75rem;
-  border-radius: 0.375rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
 }
 
 #side-nav-toggler:hover {

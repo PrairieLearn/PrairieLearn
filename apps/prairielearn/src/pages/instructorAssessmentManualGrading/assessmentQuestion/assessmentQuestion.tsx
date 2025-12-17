@@ -8,7 +8,6 @@ import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
   calculateAiGradingStats,
   fillInstanceQuestionColumnEntries,
@@ -108,13 +107,6 @@ router.get(
         },
         content: (
           <>
-            <AssessmentSyncErrorsAndWarnings
-              authzData={authz_data}
-              assessment={assessment}
-              courseInstance={course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
             <AssessmentOpenInstancesAlert
               numOpenInstances={num_open_instances}
               assessmentId={assessment.id}
