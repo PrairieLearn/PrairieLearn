@@ -12,6 +12,22 @@ export { DateFromISOString, IdSchema, IntervalSchema };
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['system', 'user', 'assistant']);
+export type EnumAiQuestionGenerationMessageRole = z.infer<
+  typeof EnumAiQuestionGenerationMessageRoleSchema
+>;
+
+export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
+  'pending',
+  'streaming',
+  'completed',
+  'errored',
+  'canceled',
+]);
+export type EnumAiQuestionGenerationMessageStatus = z.infer<
+  typeof EnumAiQuestionGenerationMessageStatusSchema
+>;
+
 export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
 export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
 
@@ -246,6 +262,21 @@ export const AiGradingJobSchema = z.object({
   prompt_tokens: z.number(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
+
+export const AiQuestionGenerationMessageSchema = z.object({
+  created_at: DateFromISOString,
+  id: IdSchema,
+  job_sequence_id: IdSchema.nullable(),
+  parts: z.array(z.any()),
+  question_id: IdSchema,
+  role: EnumAiQuestionGenerationMessageRoleSchema,
+  status: EnumAiQuestionGenerationMessageStatusSchema,
+  updated_at: DateFromISOString,
+  usage_input_tokens: z.number(),
+  usage_output_tokens: z.number(),
+  usage_total_tokens: z.number(),
+});
+export type AiQuestionGenerationMessage = z.infer<typeof AiQuestionGenerationMessageSchema>;
 
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
@@ -1558,6 +1589,7 @@ export const TableNames = [
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
+  'ai_question_generation_messages',
   'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',

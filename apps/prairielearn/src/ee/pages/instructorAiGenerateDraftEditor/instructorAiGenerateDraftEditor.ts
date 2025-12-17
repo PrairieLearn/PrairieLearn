@@ -1,17 +1,21 @@
-import { createOpenAI } from '@ai-sdk/openai';
-import { type Response, Router } from 'express';
+import { Readable } from 'node:stream';
+
+import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
+import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
-  AiQuestionGenerationPromptSchema,
+  AiQuestionGenerationMessageSchema,
   type Course,
+  type EnumAiQuestionGenerationMessageStatus,
   IdSchema,
   type Question,
   type User,
@@ -26,60 +30,18 @@ import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
-  QUESTION_GENERATION_OPENAI_MODEL,
-  addCompletionCostToIntervalUsage,
-  approximatePromptCost,
-  getIntervalUsage,
-  regenerateQuestion,
-} from '../../lib/aiQuestionGeneration.js';
-import {
-  GenerationFailure,
-  RateLimitExceeded,
-} from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
+  type QuestionGenerationUIMessage,
+  editQuestionWithAgent,
+  getAgenticModel,
+} from '../../lib/ai-question-generation/agent.js';
+import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-generation/redis.js';
+import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
+import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';
 
 import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
-
-async function saveGeneratedQuestion(
-  res: Response,
-  htmlFileContents: string | undefined,
-  pythonFileContents: string | undefined,
-  title?: string,
-  qid?: string,
-): Promise<{ question_id: string; qid: string }> {
-  const files: {
-    'question.html'?: string;
-    'server.py'?: string;
-  } = {};
-
-  if (htmlFileContents) {
-    files['question.html'] = htmlFileContents;
-  }
-
-  if (pythonFileContents) {
-    files['server.py'] = pythonFileContents;
-  }
-
-  const client = getCourseFilesClient();
-
-  const result = await client.createQuestion.mutate({
-    course_id: res.locals.course.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
-    has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-    qid,
-    title,
-    files,
-  });
-
-  if (result.status === 'error') {
-    throw new HttpRedirect(res.locals.urlPrefix + '/edit_error/' + result.job_sequence_id);
-  }
-
-  return { question_id: result.question_id, qid: result.question_qid };
-}
 
 async function saveRevisedQuestion({
   course,
@@ -165,13 +127,7 @@ router.use(
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
-    next();
-  }),
-);
 
-router.get(
-  '/',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
     res.locals.question = await selectQuestionById(req.params.question_id);
 
     // Ensure the question belongs to this course and that it's a draft question.
@@ -184,25 +140,49 @@ router.get(
 
     assertCanCreateQuestion(res.locals);
 
-    const prompts = await queryRows(
-      sql.select_ai_question_generation_prompts,
-      {
-        question_id: req.params.question_id,
-        course_id: res.locals.course.id,
-      },
-      AiQuestionGenerationPromptSchema,
-    );
+    next();
+  }),
+);
 
-    if (prompts.length === 0) {
-      // This is probably a draft question that was created on a different server
-      // and thus doesn't have any prompt history. We currently rely on the prompt
-      // history to know which HTML and Python to display and adjust, so we can't
-      // render this page.
-      //
-      // TODO: We should pull the HTML and Python off disk instead of relying on
-      // the prompt history.
-      throw new error.HttpStatusError(404, 'No prompt history found');
-    }
+router.get(
+  '/',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const messages = await selectAiQuestionGenerationMessages(res.locals.question.id);
+
+    const initialMessages = messages
+      .filter((message) => {
+        // We need to filter out any empty messages, as they'll fail validation by
+        // `validateUIMessages()`.
+        return message.parts.length > 0;
+      })
+      .map((message): QuestionGenerationUIMessage => {
+        return {
+          id: message.id,
+          role: message.role,
+          parts: message.parts,
+          metadata: {
+            job_sequence_id: message.job_sequence_id,
+            status: message.status,
+          },
+        };
+      });
+
+    // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
+    //
+    // TODO: we're currently lying to the compiler here. We should be passing schemas
+    // for our metadata and tools.
+    const validatedInitialMessages =
+      initialMessages.length > 0
+        ? await validateUIMessages<QuestionGenerationUIMessage>({
+            messages: initialMessages,
+          })
+        : [];
+
+    const courseFilesClient = getCourseFilesClient();
+    const { files: questionFiles } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: res.locals.question.id,
+    });
 
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
@@ -213,26 +193,66 @@ router.get(
       urlOverrides: {
         // By default, this would be the URL to the instructor question preview page.
         // We need to redirect to this same page instead.
-        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`,
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
       },
     });
     await logPageView('instructorQuestionPreview', req, res);
 
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
+
     res.send(
       InstructorAiGenerateDraftEditor({
         resLocals: res.locals,
-        prompts,
         question: res.locals.question,
+        messages: validatedInitialMessages,
+        questionFiles,
         richTextEditorEnabled,
-        variantId: typeof req.query.variant_id === 'string' ? req.query.variant_id : undefined,
+        questionContainerHtml: questionContainerHtml.toString(),
       }),
     );
   }),
 );
 
+router.get(
+  '/chat/stream',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const latestMessage = await queryOptionalRow(
+      sql.select_latest_ai_question_generation_message,
+      { question_id: res.locals.question.id },
+      AiQuestionGenerationMessageSchema,
+    );
+
+    const finishedStatuses: EnumAiQuestionGenerationMessageStatus[] = [
+      'completed',
+      'errored',
+      'canceled',
+    ] as const;
+    if (!latestMessage || finishedStatuses.includes(latestMessage.status)) {
+      res.status(204).send();
+      return;
+    }
+
+    const streamContext = await getAiQuestionGenerationStreamContext();
+
+    const stream = await streamContext.resumeExistingStream(latestMessage.id);
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
+
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as any).pipe(res);
+  }),
+);
+
 router.post(
-  '/',
-  asyncHandler(async (req, res) => {
+  '/chat',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -240,137 +260,85 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const question = await selectQuestionById(req.params.question_id);
-
-    // Ensure the question belongs to this course and that it's a draft question.
-    if (!idsEqual(question.course_id, res.locals.course.id) || !question.draft || !question.qid) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
-    }
-
     assertCanCreateQuestion(res.locals);
 
-    const openai = createOpenAI({
-      apiKey: config.aiQuestionGenerationOpenAiApiKey,
-      organization: config.aiQuestionGenerationOpenAiOrganization,
+    const intervalCost = await getIntervalUsage({
+      userId: res.locals.authn_user.user_id,
     });
 
-    if (req.body.__action === 'regenerate_question') {
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        {
-          question_id: req.params.question_id,
-          course_id: res.locals.course.id,
-        },
-        AiQuestionGenerationPromptSchema,
-      );
+    if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
+      res.status(429).send();
+      return;
+    }
 
-      if (prompts.length === 0) {
-        throw new error.HttpStatusError(403, 'Prompt history not found.');
-      }
+    const { message } = await editQuestionWithAgent({
+      model: getAgenticModel(),
+      course: res.locals.course,
+      question: res.locals.question,
+      user: res.locals.user,
+      authnUser: res.locals.authn_user,
+      hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
+      messages: req.body.messages,
+    });
 
-      const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-      });
+    const streamContext = await getAiQuestionGenerationStreamContext();
 
-      const approxPromptCost = approximatePromptCost({
-        model: QUESTION_GENERATION_OPENAI_MODEL,
-        prompt: req.body.prompt,
-      });
+    const stream = await streamContext.resumeExistingStream(message.id);
+    if (!stream) {
+      res.status(204).send();
+      return;
+    }
 
-      if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
-        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+    Object.entries(UI_MESSAGE_STREAM_HEADERS).forEach(([key, value]) => {
+      res.setHeader(key, value);
+    });
+    Readable.fromWeb(stream as any).pipe(res);
+  }),
+);
 
-        res.send(
-          RateLimitExceeded({
-            // If the user has more than the threshold of 100 tokens,
-            // they can shorten their message to avoid reaching the rate limit.
-            canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
-          }),
-        );
-        return;
-      }
+router.post(
+  '/chat/cancel',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    assertCanCreateQuestion(res.locals);
 
-      const result = await regenerateQuestion({
-        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
-        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
-        originalPrompt: prompts[0]?.user_prompt,
-        revisionPrompt: req.body.prompt,
-        originalHTML: prompts[prompts.length - 1].html || '',
-        originalPython: prompts[prompts.length - 1].python || '',
-        questionQid: question.qid,
-        userId: res.locals.authn_user.user_id,
-        hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
-      });
+    await execute(sql.cancel_latest_streaming_message, {
+      question_id: res.locals.question.id,
+    });
 
-      await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-        usage: result.usage,
-        intervalCost,
-      });
+    res.status(200).json({ success: true });
+  }),
+);
 
-      if (result.htmlResult) {
-        res.set({
-          'HX-Redirect': `${res.locals.urlPrefix}/ai_generate_editor/${question.id}`,
-        });
-        res.send();
-      } else {
-        res.send(
-          GenerationFailure({
-            urlPrefix: res.locals.urlPrefix,
-            jobSequenceId: result.jobSequenceId,
-          }),
-        );
-      }
-    } else if (req.body.__action === 'save_question') {
-      const prompts = await queryRows(
-        sql.select_ai_question_generation_prompts,
-        {
-          question_id: question.id,
-          course_id: res.locals.course.id,
-        },
-        AiQuestionGenerationPromptSchema,
-      );
-
-      if (prompts.length === 0) {
-        throw new error.HttpStatusError(403, 'Prompt history not found.');
-      }
-
-      // TODO: any membership checks needed here?
-      const { question_id, qid } = await saveGeneratedQuestion(
-        res,
-        prompts[prompts.length - 1].html || undefined,
-        prompts[prompts.length - 1].python || undefined,
-        req.body.title,
-        req.body.qid,
-      );
-
+router.post(
+  '/',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    if (req.body.__action === 'save_question') {
       const client = getCourseFilesClient();
 
-      const result = await client.batchDeleteQuestions.mutate({
+      // TODO: this needs to handle updating the question title as well.
+      const result = await client.renameQuestion.mutate({
         course_id: res.locals.course.id,
         user_id: res.locals.user.user_id,
         authn_user_id: res.locals.authn_user.user_id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
-        question_ids: [question.id],
+        question_id: res.locals.question.id,
+        qid: req.body.qid,
       });
 
       if (result.status === 'error') {
-        throw new error.HttpStatusError(
-          500,
-          'Draft deletion failed, but question creation succeeded.',
-        );
+        throw new Error('Renaming question failed.');
       }
 
-      flash('success', `Your question is ready for use as ${qid}.`);
+      // Re-fetch the question in case the QID was changed to avoid conflicts.
+      const updatedQuestion = await selectQuestionById(res.locals.question.id);
 
-      res.redirect(res.locals.urlPrefix + '/question/' + question_id + '/preview');
+      flash('success', `Your question is ready for use as ${updatedQuestion.qid}.`);
+
+      res.redirect(res.locals.urlPrefix + '/question/' + res.locals.question.id + '/preview');
     } else if (req.body.__action === 'submit_manual_revision') {
       await saveRevisedQuestion({
         course: res.locals.course,
-        question,
+        question: res.locals.question,
         user: res.locals.user,
         authn_user: res.locals.authn_user,
         authz_data: res.locals.authz_data,
@@ -381,37 +349,66 @@ router.post(
         promptType: 'manual_change',
       });
 
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
-    } else if (req.body.__action === 'revert_edit_version') {
-      const prompt = await queryRow(
-        sql.select_ai_question_generation_prompt_by_id_and_question,
-        { prompt_id: req.body.unsafe_prompt_id, question_id: req.params.question_id },
-        AiQuestionGenerationPromptSchema,
-      );
-
-      await saveRevisedQuestion({
-        course: res.locals.course,
-        question,
-        user: res.locals.user,
-        authn_user: res.locals.authn_user,
-        authz_data: res.locals.authz_data,
-        urlPrefix: res.locals.urlPrefix,
-        html: prompt.html ?? '',
-        python: prompt.python ?? undefined,
-        prompt: 'Manually revert question to earlier revision.',
-        promptType: 'manual_revert',
-      });
-
-      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}`);
+      res.redirect(`${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`);
     } else if (req.body.__action === 'grade' || req.body.__action === 'save') {
-      res.locals.question = question;
       const variantId = await processSubmission(req, res);
       res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${req.params.question_id}?variant_id=${variantId}`,
+        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}?variant_id=${variantId}`,
       );
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
+  }),
+);
+
+router.get(
+  '/variant',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
+
+    // Render the preview.
+    await getAndRenderVariant(variant_id, null, res.locals, {
+      urlOverrides: {
+        // By default, this would be the URL to the instructor question preview page.
+        // We need to redirect to this same page instead.
+        newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+      },
+    });
+    await logPageView('instructorQuestionPreview', req, res);
+
+    const questionContainerHtml = QuestionContainer({
+      resLocals: res.locals,
+      questionContext: 'instructor',
+    });
+
+    res.send(questionContainerHtml.toString());
+  }),
+);
+
+router.post(
+  '/variant',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      const variantId = await processSubmission(req, res);
+      res.redirect(
+        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/variant?variant_id=${variantId}`,
+      );
+    } else {
+      throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
+  }),
+);
+
+router.get(
+  '/files',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const courseFilesClient = getCourseFilesClient();
+    const { files } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: res.locals.question.id,
+    });
+
+    res.json({ files });
   }),
 );
 

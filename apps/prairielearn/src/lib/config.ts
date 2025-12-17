@@ -601,6 +601,7 @@ export const ConfigSchema = z.object({
       'gpt-5-mini-2025-08-07': TokenPricingSchema,
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5.1-2025-11-13': TokenPricingSchema,
+      'gpt-5.2-2025-12-11': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
@@ -614,6 +615,7 @@ export const ConfigSchema = z.object({
       'gpt-5-mini-2025-08-07': { input: 0.25, cachedInput: 0.025, output: 2 },
       'gpt-5-2025-08-07': { input: 1.25, cachedInput: 0.125, output: 10 },
       'gpt-5.1-2025-11-13': { input: 1.25, cachedInput: 0.125, output: 10 },
+      'gpt-5.2-2025-12-11': { input: 1.75, cachedInput: 0.175, output: 14 },
 
       // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing

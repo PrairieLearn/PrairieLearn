@@ -1348,6 +1348,7 @@
         "gpt-5-mini-2025-08-07",
         "gpt-5-2025-08-07",
         "gpt-5.1-2025-11-13",
+        "gpt-5.2-2025-12-11",
         "gemini-2.5-flash",
         "gemini-3-pro-preview",
         "claude-opus-4-5",
@@ -1381,6 +1382,9 @@
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gpt-5.1-2025-11-13": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gpt-5.2-2025-12-11": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gemini-2.5-flash": {
@@ -1419,6 +1423,11 @@
           "input": 1.25,
           "cachedInput": 0.125,
           "output": 10
+        },
+        "gpt-5.2-2025-12-11": {
+          "input": 1.75,
+          "cachedInput": 0.175,
+          "output": 14
         },
         "gemini-2.5-flash": {
           "input": 0.3,
