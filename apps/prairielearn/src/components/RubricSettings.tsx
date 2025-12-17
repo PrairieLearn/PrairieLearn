@@ -73,7 +73,7 @@ export function RubricSettings({
   );
   const [tagForGrading, setTagForGrading] = useState<boolean>(false);
   const [graderGuidelines, setGraderGuidelines] = useState<string>(
-    rubricData?.grader_guidelines ?? '',
+    rubricData?.rubric.grader_guidelines ?? '',
   );
 
   const [draggedIdx, setDraggedIdx] = useState<number | null>(null);
@@ -90,10 +90,10 @@ export function RubricSettings({
   const defaultReplaceAutoPoints = useRef<boolean>(
     rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const defaultStartingPoints = useRef<number>(rubricData?.starting_points ?? 0);
-  const defaultMinPoints = useRef<number>(rubricData?.min_points ?? 0);
-  const defaultMaxExtraPoints = useRef<number>(rubricData?.max_extra_points ?? 0);
-  const defaultGraderGuidelines = useRef<string>(rubricData?.grader_guidelines ?? '');
+  const defaultStartingPoints = useRef<number>(rubricData?.rubric.starting_points ?? 0);
+  const defaultMinPoints = useRef<number>(rubricData?.rubric.min_points ?? 0);
+  const defaultMaxExtraPoints = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
+  const defaultGraderGuidelines = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -320,7 +320,7 @@ export function RubricSettings({
       setRubricItems(scaledRubricItems);
 
       setGraderGuidelines(parsedData.grader_guidelines ?? '');
-      
+
       closeImportModal();
     } catch {
       setImportModalWarning('Error reading file content.');
@@ -463,7 +463,7 @@ export function RubricSettings({
 
       defaultRubricItems.current = rubricItemDataMerged;
       defaultReplaceAutoPoints.current =
-      rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
+        rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
       defaultStartingPoints.current = rubric?.starting_points ?? 0;
       defaultMinPoints.current = rubric?.min_points ?? 0;
       defaultMaxExtraPoints.current = rubric?.max_extra_points ?? 0;

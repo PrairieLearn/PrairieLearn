@@ -78,7 +78,7 @@ export function GradingPanel({
     ? [...instanceQuestionGroups, emptyGroup]
     : [emptyGroup];
 
-  const graderGuidelines = resLocals.rubric_data?.grader_guidelines;
+  const graderGuidelines = resLocals.rubric_data?.rubric.grader_guidelines;
 
   return html`
     <form
