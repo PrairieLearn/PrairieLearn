@@ -1,7 +1,7 @@
 import { observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
-import { decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
+import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
 import type {
   StatusMessage,
@@ -15,102 +15,100 @@ import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
 import { mathjaxTypeset } from './lib/mathjax.js';
 
-// We use `selector-observer` here to handle the case of updating the page's
-// contents without reloading the whole page. At the time of writing, this was
-// used on the AI question generation draft editor page.
-observe('.question-container', {
-  constructor: HTMLDivElement,
-  initialize(container) {
-    // TODO: is this the correct sequencing of MathJax?
-    void mathjaxTypeset([container]);
+onDocumentReady(() => {
+  // We use `selector-observer` here to handle the case of updating the page's
+  // contents without reloading the whole page. At the time of writing, this was
+  // used on the AI question generation draft editor page.
+  observe('.question-container', {
+    constructor: HTMLDivElement,
+    initialize(container) {
+      // TODO: is this the correct sequencing of MathJax?
+      void mathjaxTypeset([container]);
 
-    // Track resources that need cleanup
-    let socket: Socket | null = null;
-    const countdownAbortController = new AbortController();
+      // Track resources that need cleanup
+      let socket: Socket | null = null;
+      const countdownAbortController = new AbortController();
 
-    if (container.dataset.gradingMethod === 'External') {
-      socket = externalGradingLiveUpdate();
-    }
+      if (container.dataset.gradingMethod === 'External') {
+        socket = externalGradingLiveUpdate(container);
+      }
 
-    const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
-    if (questionForm) {
-      confirmOnUnload(questionForm);
-    }
+      const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
+      if (questionForm) {
+        confirmOnUnload(questionForm);
+      }
 
-    const markdownBody = container.querySelector<HTMLDivElement>('.markdown-body');
-    const revealFade = container.querySelector<HTMLDivElement>('.reveal-fade');
-    const expandButtonContainer = container.querySelector('.js-expand-button-container');
-    const expandButton = expandButtonContainer?.querySelector('button');
+      const markdownBody = container.querySelector<HTMLDivElement>('.markdown-body');
+      const revealFade = container.querySelector<HTMLDivElement>('.reveal-fade');
+      const expandButtonContainer = container.querySelector('.js-expand-button-container');
+      const expandButton = expandButtonContainer?.querySelector('button');
 
-    let readMeExpanded = false;
+      let readMeExpanded = false;
 
-    function toggleExpandReadMe() {
-      if (!markdownBody || !expandButton) return;
-      readMeExpanded = !readMeExpanded;
-      expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
-      revealFade?.classList.toggle('d-none');
-      markdownBody.classList.toggle('max-height');
-    }
+      function toggleExpandReadMe() {
+        if (!markdownBody || !expandButton) return;
+        readMeExpanded = !readMeExpanded;
+        expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
+        revealFade?.classList.toggle('d-none');
+        markdownBody.classList.toggle('max-height');
+      }
 
-    expandButton?.addEventListener('click', toggleExpandReadMe);
+      expandButton?.addEventListener('click', toggleExpandReadMe);
 
-    if (markdownBody && markdownBody.scrollHeight > 150) {
-      markdownBody.classList.add('max-height');
-      revealFade?.classList.remove('d-none');
-      expandButtonContainer?.classList.remove('d-none');
-      expandButtonContainer?.classList.add('d-flex');
-    }
+      if (markdownBody && markdownBody.scrollHeight > 150) {
+        markdownBody.classList.add('max-height');
+        revealFade?.classList.remove('d-none');
+        expandButtonContainer?.classList.remove('d-none');
+        expandButtonContainer?.classList.add('d-flex');
+      }
 
-    setupDynamicObjects(countdownAbortController.signal);
-    disableOnSubmit();
+      setupDynamicObjects(countdownAbortController.signal);
+      disableOnSubmit();
 
-    // Set up observer for pending submission panels within this container
-    const submissionPanelObserver = observe('.js-submission-body.render-pending', {
-      constructor: HTMLDivElement,
-      add(panel) {
-        // Only observe panels that are descendants of this container
-        if (!container.contains(panel)) return;
+      // Set up observer for pending submission panels within this container
+      const submissionPanelObserver = observe('.js-submission-body.render-pending', {
+        constructor: HTMLDivElement,
+        add(panel) {
+          // Only observe panels that are descendants of this container
+          if (!container.contains(panel)) return;
 
-        panel.addEventListener('show.bs.collapse', function (this: HTMLDivElement) {
-          loadPendingSubmissionPanel(this, false);
-        });
-      },
-    });
+          panel.addEventListener('show.bs.collapse', function (this: HTMLDivElement) {
+            loadPendingSubmissionPanel(this, false);
+          });
+        },
+      });
 
-    const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-    copyContentModal(copyQuestionForm);
+      const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
+      copyContentModal(copyQuestionForm);
 
-    // Return cleanup function
-    return {
-      remove() {
-        // Close socket connection if exists
-        socket?.close();
+      // Return cleanup function
+      return {
+        remove() {
+          // Close socket connection if exists
+          socket?.close();
 
-        // Abort countdown timers
-        countdownAbortController.abort();
+          // Abort countdown timers
+          countdownAbortController.abort();
 
-        // Stop observing submission panels
-        submissionPanelObserver.abort();
+          // Stop observing submission panels
+          submissionPanelObserver.abort();
 
-        // Note: DOM event listeners on child elements of the container are
-        // automatically garbage collected when the container is removed from the DOM.
-        // confirmOnUnload and copyContentModal add listeners to window/form which
-        // will be cleaned up on page unload, so we don't manually clean them up here.
-      },
-    };
-  },
+          // Note: DOM event listeners on child elements of the container are
+          // automatically garbage collected when the container is removed from the DOM.
+          // confirmOnUnload and copyContentModal add listeners to window/form which
+          // will be cleaned up on page unload, so we don't manually clean them up here.
+        },
+      };
+    },
+  });
 });
 
-function externalGradingLiveUpdate(): Socket | null {
-  const questionContainer = document.querySelector<HTMLElement>('.question-container');
-
-  if (!questionContainer) return null;
-
-  const { variantId, variantToken } = questionContainer.dataset;
+function externalGradingLiveUpdate(container: HTMLElement): Socket | null {
+  const { variantId, variantToken } = container.dataset;
 
   // Render initial grading states into the DOM
   let gradingPending = false;
-  for (const elem of document.querySelectorAll<HTMLElement>('[id^=submission-]')) {
+  for (const elem of container.querySelectorAll<HTMLElement>('[id^=submission-]')) {
     // Ensure that this is a valid submission element
     if (!/^submission-\d+$/.test(elem.id)) continue;
 
