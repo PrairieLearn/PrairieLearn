@@ -306,8 +306,10 @@ export function RubricSettings({
       const scaledRubricItems: RubricItemData[] = [];
       for (const rubricItem of rubricItems) {
         scaledRubricItems.push({
-          ...rubricItem,
-          points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+          rubric_item: {
+            ...rubricItem,
+            points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+          }
         });
       }
       setRubricItems(scaledRubricItems);
