@@ -23,11 +23,17 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // Set form state on submit, since in this case the "unsaved" data is being saved
   form.addEventListener('submit', () => saveQuestionFormData(form));
 
-  // Create a global function to be called by elements that initialize after
-  // page load, e.g., via async loading. This global function is called with the
-  // form set here, to avoid requiring those elements to find the form again.
-  // This assumes that this function is only used once per page load.
-  (window as any).saveQuestionFormData = () => saveQuestionFormData(form);
+  // For elements that have a deferred initialization of their input fields
+  // (such as lazy loading or async modules), we need to observe changes to
+  // those fields and save the form data once they are initialized. Only the
+  // first change is considered initialization.
+  form.querySelectorAll<HTMLInputElement>('[data-deferred-init]').forEach((input) => {
+    const observer = new MutationObserver(() => {
+      saveQuestionFormData(form);
+      observer.disconnect();
+    });
+    observer.observe(input, { attributes: true, attributeFilter: ['value'] });
+  });
 
   // Check form state on unload
   window.addEventListener('beforeunload', (event) => {
