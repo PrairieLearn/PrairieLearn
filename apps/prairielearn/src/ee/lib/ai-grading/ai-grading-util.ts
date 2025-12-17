@@ -129,7 +129,7 @@ export async function generatePrompt({
       },
       ...graderGuidelinesMessages,
       {
-        role: grader_guidelines ? systemRoleAfterUserMessage : 'system',
+        role: systemRoleAfterUserMessage,
         content: 'Here are the rubric items:',
       },
       {
