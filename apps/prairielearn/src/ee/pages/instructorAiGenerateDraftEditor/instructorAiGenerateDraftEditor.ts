@@ -399,4 +399,17 @@ router.post(
   }),
 );
 
+router.get(
+  '/files',
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const courseFilesClient = getCourseFilesClient();
+    const { files } = await courseFilesClient.getQuestionFiles.query({
+      course_id: res.locals.course.id,
+      question_id: res.locals.question.id,
+    });
+
+    res.json({ files });
+  }),
+);
+
 export default router;

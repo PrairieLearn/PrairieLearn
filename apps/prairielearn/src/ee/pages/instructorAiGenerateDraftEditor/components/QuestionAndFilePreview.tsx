@@ -167,6 +167,7 @@ export function QuestionAndFilePreview({
   variantUrl,
   variantCsrfToken,
   newVariantRef,
+  isGenerating,
 }: {
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
@@ -175,6 +176,7 @@ export function QuestionAndFilePreview({
   variantUrl: string;
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
+  isGenerating: boolean;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
 
@@ -196,6 +198,7 @@ export function QuestionAndFilePreview({
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
           csrfToken={csrfToken}
+          isGenerating={isGenerating}
         />
       </div>
       <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
@@ -203,6 +206,7 @@ export function QuestionAndFilePreview({
           <RichTextEditor
             htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
             csrfToken={csrfToken}
+            isGenerating={isGenerating}
           />
         )}
       </div>

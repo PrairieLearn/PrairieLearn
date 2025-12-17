@@ -7,10 +7,12 @@ export function QuestionCodeEditors({
   htmlContents,
   pythonContents,
   csrfToken,
+  isGenerating,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
   csrfToken: string;
+  isGenerating: boolean;
 }) {
   const htmlEditorRef = useRef<HTMLDivElement>(null);
   const pythonEditorRef = useRef<HTMLDivElement>(null);
@@ -75,28 +77,58 @@ export function QuestionCodeEditors({
     htmlEditor.getSession().on('change', handleHtmlChange);
     pythonEditor.getSession().on('change', handlePythonChange);
 
+    // Reset state to match new content. This is necessary because setValue()
+    // is called before the change handlers are attached, so the handlers don't
+    // run and the state remains stale from previous content.
+    //
+    // TODO: can we do this in a wey that keeps the linter happy?
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setHtmlValue(htmlContents ?? '');
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setPythonValue(pythonContents ?? '');
+    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect, react-you-might-not-need-an-effect/no-adjust-state-on-prop-change
+    setHasChanges(false);
+
     return () => {
       htmlEditor.destroy();
       pythonEditor.destroy();
     };
   }, [htmlContents, pythonContents]);
 
+  // Set read-only mode when generating
+  // TODO: If the user has unsaved changes when generation starts, we should
+  // warn them or offer to save first. Currently, their changes will be
+  // silently discarded when the new content is loaded.
+  useEffect(() => {
+    htmlEditorInstanceRef.current?.setReadOnly(isGenerating);
+    pythonEditorInstanceRef.current?.setReadOnly(isGenerating);
+  }, [isGenerating]);
+
   return (
     <div class="editor-panes p-2 gap-2">
       {/* TODO: Move this to a more sensible location */}
       <div class="editor-pane-status">
-        <div class="d-flex flex-row align-items-center justify-content-between ps-2">
-          <span>{hasChanges ? 'Unsaved changes.' : 'No unsaved changes.'}</span>
-          <form method="post">
-            <input type="hidden" name="__action" value="submit_manual_revision" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <button type="submit" class="btn btn-sm btn-primary" disabled={!hasChanges}>
-              Save edits
-            </button>
-            <input type="hidden" name="html" value={b64EncodeUnicode(htmlValue)} />
-            <input type="hidden" name="python" value={b64EncodeUnicode(pythonValue)} />
-          </form>
-        </div>
+        {isGenerating ? (
+          <div class="alert alert-info mb-0 py-2 d-flex align-items-center" role="alert">
+            <div class="spinner-border spinner-border-sm me-2" role="status">
+              <span class="visually-hidden">Loading...</span>
+            </div>
+            Editors are read-only while generation is in progress
+          </div>
+        ) : (
+          <div class="d-flex flex-row align-items-center justify-content-between ps-2">
+            <span>{hasChanges ? 'Unsaved changes.' : 'No unsaved changes.'}</span>
+            <form method="post">
+              <input type="hidden" name="__action" value="submit_manual_revision" />
+              <input type="hidden" name="__csrf_token" value={csrfToken} />
+              <button type="submit" class="btn btn-sm btn-primary" disabled={!hasChanges}>
+                Save edits
+              </button>
+              <input type="hidden" name="html" value={b64EncodeUnicode(htmlValue)} />
+              <input type="hidden" name="python" value={b64EncodeUnicode(pythonValue)} />
+            </form>
+          </div>
+        )}
       </div>
       <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
         <div class="py-2 px-3 font-monospace bg-light">question.html</div>

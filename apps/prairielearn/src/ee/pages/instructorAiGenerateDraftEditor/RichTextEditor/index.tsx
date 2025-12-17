@@ -19,7 +19,7 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useState } from 'preact/compat';
+import { useEffect, useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
 import { Card, Form } from 'react-bootstrap';
@@ -48,13 +48,16 @@ function formatHtmlWithPrettier(html: string): Promise<string> {
  * @param params
  * @param params.htmlContents - The initial HTML contents of the editor.
  * @param params.csrfToken
+ * @param params.isGenerating - Whether AI generation is in progress
  */
 const RichTextEditor = ({
   csrfToken: _csrfToken,
   htmlContents,
+  isGenerating,
 }: {
   htmlContents: string | null;
   csrfToken: string;
+  isGenerating: boolean;
 }) => {
   const editor = useEditor({
     parseOptions: {
@@ -121,6 +124,11 @@ const RichTextEditor = ({
   const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
 
+  // Set read-only mode when generating
+  useEffect(() => {
+    editor?.setEditable(!isGenerating);
+  }, [editor, isGenerating]);
+
   if (htmlContents === null) {
     return null;
   }
@@ -145,6 +153,14 @@ const RichTextEditor = ({
           </div>
         </Card.Header>
         <Card.Body>
+          {isGenerating && (
+            <div class="alert alert-info mb-3 py-2 d-flex align-items-center" role="alert">
+              <div class="spinner-border spinner-border-sm me-2" role="status">
+                <span class="visually-hidden">Loading...</span>
+              </div>
+              Editor is read-only while generation is in progress
+            </div>
+          )}
           <div class="d-flex align-items-center gap-2 mb-2" />
           <div class="mb-3" />
           <EditorContent editor={editor} class="border" />

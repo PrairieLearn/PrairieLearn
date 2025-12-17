@@ -473,6 +473,8 @@ export function AiQuestionGenerationChat({
   showJobLogsLink,
   urlPrefix,
   loadNewVariant,
+  onGeneratingChange,
+  onGenerationComplete,
 }: {
   chatCsrfToken: string;
   cancelCsrfToken: string;
@@ -481,8 +483,11 @@ export function AiQuestionGenerationChat({
   showJobLogsLink: boolean;
   urlPrefix: string;
   loadNewVariant: () => void;
+  onGeneratingChange?: (isGenerating: boolean) => void;
+  onGenerationComplete?: () => void;
 }) {
   const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
+  const prevIsGeneratingRef = useRef<boolean | null>(null);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
     id: questionId,
@@ -529,6 +534,35 @@ export function AiQuestionGenerationChat({
       console.error('Chat error:', error);
     },
   });
+
+  const isGenerating = status === 'streaming' || status === 'submitted';
+
+  // Notify parent of generation state changes.
+  // We need to use an effect here because `useChat` doesn't provide callbacks for
+  // status changes, only for message completion. The parent needs to know about
+  // the generating state to control read-only mode on editors.
+  useEffect(() => {
+    // Skip initial render
+    if (prevIsGeneratingRef.current === null) {
+      prevIsGeneratingRef.current = isGenerating;
+      // If we're already generating on mount (e.g., resuming a stream), notify parent
+      if (isGenerating) {
+        onGeneratingChange?.(true);
+      }
+      return;
+    }
+
+    if (prevIsGeneratingRef.current !== isGenerating) {
+      prevIsGeneratingRef.current = isGenerating;
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      onGeneratingChange?.(isGenerating);
+
+      // If generation just finished, call the completion callback
+      if (!isGenerating) {
+        onGenerationComplete?.();
+      }
+    }
+  }, [isGenerating, onGeneratingChange, onGenerationComplete]);
 
   const showSpinner = useShowSpinner({ status, messages });
 
@@ -632,7 +666,7 @@ export function AiQuestionGenerationChat({
           )}
           <PromptInput
             disabled={status !== 'ready' && status !== 'error'}
-            isGenerating={status === 'streaming' || status === 'submitted'}
+            isGenerating={isGenerating}
             loadNewVariantAfterChanges={loadNewVariantAfterChanges}
             sendMessage={(message: { text: string }) => {
               void sendMessage(message);

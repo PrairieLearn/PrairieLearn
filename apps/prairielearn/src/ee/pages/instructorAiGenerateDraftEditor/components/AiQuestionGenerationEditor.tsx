@@ -1,4 +1,4 @@
-import { useRef, useState } from 'preact/hooks';
+import { useCallback, useRef, useState } from 'preact/hooks';
 
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
@@ -12,7 +12,7 @@ export function AiQuestionGenerationEditor({
   cancelCsrfToken,
   question,
   initialMessages,
-  questionFiles,
+  questionFiles: initialQuestionFiles,
   richTextEditorEnabled,
   urlPrefix,
   csrfToken,
@@ -35,7 +35,23 @@ export function AiQuestionGenerationEditor({
   variantCsrfToken: string;
 }) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [questionFiles, setQuestionFiles] = useState(initialQuestionFiles);
   const newVariantRef = useRef<NewVariantHandle>(null);
+
+  const refreshFiles = useCallback(async () => {
+    try {
+      const response = await fetch(`${urlPrefix}/ai_generate_editor/${question.id}/files`);
+      if (!response.ok) {
+        console.error('Failed to fetch files:', response.status);
+        return;
+      }
+      const data = await response.json();
+      setQuestionFiles(data.files);
+    } catch (err) {
+      console.error('Error refreshing files:', err);
+    }
+  }, [urlPrefix, question.id]);
 
   return (
     <div class="app-content">
@@ -53,6 +69,8 @@ export function AiQuestionGenerationEditor({
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
         loadNewVariant={() => newVariantRef.current?.newVariant()}
+        onGeneratingChange={setIsGenerating}
+        onGenerationComplete={refreshFiles}
       />
 
       <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
@@ -86,6 +104,7 @@ export function AiQuestionGenerationEditor({
             class="btn btn-sm btn-primary"
             data-bs-toggle="tooltip"
             data-bs-title="Finalize a question to use it on assessments and make manual edits"
+            disabled={isGenerating}
             onClick={() => setShowFinalizeModal(true)}
           >
             <i class="fa fa-check" aria-hidden="true" />
@@ -102,6 +121,7 @@ export function AiQuestionGenerationEditor({
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
+          isGenerating={isGenerating}
         />
       </div>
       <FinalizeModal
