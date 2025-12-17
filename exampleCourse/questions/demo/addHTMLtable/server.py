@@ -10,12 +10,14 @@ def generate(data):
     name_greek_list = ["$\\gamma$", "$\\mu$", "$\\sigma$", "$\\lambda$", "$\\alpha$"]
 
     # Generate content for rendering in mustache
-    data["params"]["table_data"] = [
+    table_data = [
         {"name": name, "age": age, "id": name_greek}
         for name, age, name_greek in zip(
             name_list, age_list, name_greek_list, strict=True
         )
     ]
+
+    data["params"]["table_data"] = table_data
 
     # Generate complete html string
     mytable = '<table style="width:30%"><thead><tr><th> Name </th> <th> Age </th> <th> Id </th></tr></thead><tbody>'
@@ -41,5 +43,5 @@ def generate(data):
     output.close()
     data["params"]["mytable3"] = mytable3
 
-    dataframe = pd.DataFrame(data["params"]["table_data"])
+    dataframe = pd.DataFrame(table_data)
     data["params"]["dataframe"] = pl.to_json(dataframe)
