@@ -23,7 +23,6 @@ onDocumentReady(() => {
     constructor: HTMLDivElement,
     initialize(container) {
       const controller = new QuestionContainerController(container);
-      controller.initialize();
       return { remove: () => controller.cleanup() };
     },
   });
@@ -34,13 +33,7 @@ class QuestionContainerController {
   private abortController = new AbortController();
   private submissionPanelObserver: Observer | null = null;
 
-  constructor(private container: HTMLElement) {}
-
-  private get signal(): AbortSignal {
-    return this.abortController.signal;
-  }
-
-  initialize(): void {
+  constructor(private container: HTMLElement) {
     // TODO: is this the correct sequencing of MathJax?
     void mathjaxTypeset([this.container]);
 
@@ -61,6 +54,10 @@ class QuestionContainerController {
     const copyQuestionForm =
       this.container.querySelector<HTMLFormElement>('.js-copy-question-form');
     copyContentModal(copyQuestionForm);
+  }
+
+  private get signal(): AbortSignal {
+    return this.abortController.signal;
   }
 
   cleanup(): void {
