@@ -256,11 +256,18 @@ class QuestionContainerController {
 
     if (msg.submissionPanel) {
       const submissionPanelSelector = `#submission-${submissionId}`;
+      const submissionPanelElement = this.container.querySelector(submissionPanelSelector);
       // Using jQuery here because msg.submissionPanel may contain scripts
       // that must be executed. Typical vanilla JS alternatives don't support
       // this kind of script.
-      $(submissionPanelSelector).replaceWith(msg.submissionPanel);
-      void mathjaxTypeset([this.container.querySelector(submissionPanelSelector)!]);
+      if (submissionPanelElement) {
+        $(submissionPanelElement).replaceWith(msg.submissionPanel);
+        const updatedSubmissionPanelElement =
+          this.container.querySelector(submissionPanelSelector);
+        if (updatedSubmissionPanelElement) {
+          void mathjaxTypeset([updatedSubmissionPanelElement]);
+        }
+      }
     }
 
     if (msg.questionScorePanel) {
