@@ -19,10 +19,6 @@ onDocumentReady(() => {
   // We use `selector-observer` here to handle the case of updating the page's
   // contents without reloading the whole page. At the time of writing, this was
   // used on the AI question generation draft editor page.
-  //
-  // Note: we currently only support a single question container on a page at a time.
-  // If we ever need to support multiple containers, we'll need to stop using IDs for
-  // elements like `#submission-suspended-data` and `#submission-suspended-display`.
   observe('.question-container', {
     constructor: HTMLDivElement,
     initialize(container) {
@@ -31,7 +27,7 @@ onDocumentReady(() => {
     },
   });
 
-  // Disable links after click to prevent double-clicks
+  // Disable links after click to prevent double-clicks.
   observe('.question-container a.disable-on-click', {
     constructor: HTMLAnchorElement,
     add(link) {
@@ -39,7 +35,11 @@ onDocumentReady(() => {
     },
   });
 
-  // Set up countdown timer for grade rate limiting
+  // Set up countdown timer for grade rate limiting.
+  //
+  // Note: we currently only support a single question container on a page at a time.
+  // If we ever need to support multiple containers, we'll need to stop using IDs for
+  // elements like `#submission-suspended-data` and `#submission-suspended-display`.
   observe('#submission-suspended-data', {
     constructor: HTMLElement,
     initialize(element) {
@@ -309,8 +309,7 @@ class QuestionContainerController {
       // this kind of script.
       if (submissionPanelElement) {
         $(submissionPanelElement).replaceWith(msg.submissionPanel);
-        const updatedSubmissionPanelElement =
-          this.container.querySelector(submissionPanelSelector);
+        const updatedSubmissionPanelElement = this.container.querySelector(submissionPanelSelector);
         if (updatedSubmissionPanelElement) {
           void mathjaxTypeset([updatedSubmissionPanelElement]);
         }
