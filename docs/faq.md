@@ -397,3 +397,13 @@ There are a few possible ways to address these cases:
 - Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found, the row can be identified with other columns such as the `submission_id`.
 
 One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/configuration.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.
+
+## I have a custom element or inputs in my question. Students always see a warning when leaving the page, even when they have not made any changes. How can I fix this?
+
+This happens because PrairieLearn tracks changes to all input elements included in the question form, and shows a warning if any of them have changed when the student tries to leave the page. This tracking is based on the values of these input elements when the question is first loaded. If you have custom elements or inputs that are modified by JavaScript code lazily (e.g., using async scripts or timeouts), PrairieLearn may not be able to capture their initial values correctly, leading to false positives when checking for changes.
+
+There are two ways to address this issue:
+
+- If you do not want PrairieLearn to track changes to specific input elements, you can add the `data-skip-unload-check="true"` attribute to those elements. This will exclude them from the change tracking mechanism. Note that, in these cases, students will not be warned about unsaved changes to these elements.
+
+- If you want PrairieLearn to defer the initial value capture until after your custom code has run, you can add the `data-deferred-init="true"` attribute to specific input elements. This will tell PrairieLearn to wait until the value of these inputs has been set by your code for the first time before capturing their initial values. For this functionality to work, your code must ensure that the input values are set within a reasonable time after the question is loaded, and that they are always updated exactly once before the student starts interacting with the question.
