@@ -19,11 +19,59 @@ onDocumentReady(() => {
   // We use `selector-observer` here to handle the case of updating the page's
   // contents without reloading the whole page. At the time of writing, this was
   // used on the AI question generation draft editor page.
+  //
+  // Note: we currently only support a single question container on a page at a time.
+  // If we ever need to support multiple containers, we'll need to stop using IDs for
+  // elements like `#submission-suspended-data` and `#submission-suspended-display`.
   observe('.question-container', {
     constructor: HTMLDivElement,
     initialize(container) {
       const controller = new QuestionContainerController(container);
       return { remove: () => controller.cleanup() };
+    },
+  });
+
+  // Disable links after click to prevent double-clicks
+  observe('.question-container a.disable-on-click', {
+    constructor: HTMLAnchorElement,
+    add(link) {
+      link.addEventListener('click', () => link.classList.add('disabled'));
+    },
+  });
+
+  // Set up countdown timer for grade rate limiting
+  observe('#submission-suspended-data', {
+    constructor: HTMLElement,
+    initialize(element) {
+      const container = element.closest('.question-container');
+      const abortController = new AbortController();
+
+      const countdownData = decodeData<{
+        serverTimeLimitMS: number;
+        serverRemainingMS: number;
+      }>('submission-suspended-data');
+
+      setupCountdown({
+        displaySelector: '#submission-suspended-display',
+        progressSelector: '#submission-suspended-progress',
+        initialServerRemainingMS: countdownData.serverRemainingMS,
+        initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
+        signal: abortController.signal,
+        onTimerOut: () => {
+          container
+            ?.querySelectorAll<HTMLButtonElement>('.question-grade')
+            .forEach((gradeButton) => {
+              gradeButton.disabled = false;
+            });
+          container
+            ?.querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
+            .forEach((elem) => {
+              elem.style.display = 'none';
+            });
+        },
+      });
+
+      return { remove: () => abortController.abort() };
     },
   });
 });
@@ -47,7 +95,6 @@ class QuestionContainerController {
     }
 
     this.initializeReadmeExpansion();
-    this.setupDynamicObjects();
     this.setupDisableOnSubmit();
     this.initializeSubmissionPanelObserver();
 
@@ -314,8 +361,6 @@ class QuestionContainerController {
         questionNavNextButton.outerHTML = msg.questionNavNextButton;
       }
     }
-
-    this.setupDynamicObjects();
   }
 
   private updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'>): void {
@@ -341,41 +386,6 @@ class QuestionContainerController {
         break;
     }
     display.innerHTML = label;
-  }
-
-  private setupDynamicObjects(): void {
-    // Install on page load and reinstall on websocket re-render
-    this.container.querySelectorAll('a.disable-on-click').forEach((link) => {
-      link.addEventListener('click', () => {
-        link.classList.add('disabled');
-      });
-    });
-
-    if (this.container.querySelector('#submission-suspended-data')) {
-      const countdownData = decodeData<{
-        serverTimeLimitMS: number;
-        serverRemainingMS: number;
-      }>('submission-suspended-data');
-      setupCountdown({
-        displaySelector: '#submission-suspended-display',
-        progressSelector: '#submission-suspended-progress',
-        initialServerRemainingMS: countdownData.serverRemainingMS,
-        initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
-        signal: this.signal,
-        onTimerOut: () => {
-          this.container
-            .querySelectorAll<HTMLButtonElement>('.question-grade')
-            .forEach((gradeButton) => {
-              gradeButton.disabled = false;
-            });
-          this.container
-            .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
-            .forEach((elem) => {
-              elem.style.display = 'none';
-            });
-        },
-      });
-    }
   }
 
   private loadPendingSubmissionPanel(panel: HTMLDivElement, includeScorePanels: boolean): void {
