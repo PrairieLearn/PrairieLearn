@@ -1,4 +1,4 @@
-import { observe } from 'selector-observer';
+import { type Observer, observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
@@ -22,384 +22,407 @@ onDocumentReady(() => {
   observe('.question-container', {
     constructor: HTMLDivElement,
     initialize(container) {
-      // TODO: is this the correct sequencing of MathJax?
-      void mathjaxTypeset([container]);
-
-      // Track resources that need cleanup
-      let socket: Socket | null = null;
-      const countdownAbortController = new AbortController();
-
-      if (container.dataset.gradingMethod === 'External') {
-        socket = externalGradingLiveUpdate(container);
-      }
-
-      const questionForm = container.querySelector<HTMLFormElement>('form.question-form');
-      if (questionForm) {
-        confirmOnUnload(questionForm);
-      }
-
-      const markdownBody = container.querySelector<HTMLDivElement>('.markdown-body');
-      const revealFade = container.querySelector<HTMLDivElement>('.reveal-fade');
-      const expandButtonContainer = container.querySelector('.js-expand-button-container');
-      const expandButton = expandButtonContainer?.querySelector('button');
-
-      let readMeExpanded = false;
-
-      function toggleExpandReadMe() {
-        if (!markdownBody || !expandButton) return;
-        readMeExpanded = !readMeExpanded;
-        expandButton.textContent = readMeExpanded ? 'Collapse' : 'Expand';
-        revealFade?.classList.toggle('d-none');
-        markdownBody.classList.toggle('max-height');
-      }
-
-      expandButton?.addEventListener('click', toggleExpandReadMe);
-
-      if (markdownBody && markdownBody.scrollHeight > 150) {
-        markdownBody.classList.add('max-height');
-        revealFade?.classList.remove('d-none');
-        expandButtonContainer?.classList.remove('d-none');
-        expandButtonContainer?.classList.add('d-flex');
-      }
-
-      setupDynamicObjects(countdownAbortController.signal);
-      disableOnSubmit();
-
-      // Set up observer for pending submission panels within this container
-      const submissionPanelObserver = observe('.js-submission-body.render-pending', {
-        constructor: HTMLDivElement,
-        add(panel) {
-          // Only observe panels that are descendants of this container
-          if (!container.contains(panel)) return;
-
-          panel.addEventListener('show.bs.collapse', function (this: HTMLDivElement) {
-            loadPendingSubmissionPanel(this, false);
-          });
-        },
-      });
-
-      const copyQuestionForm = document.querySelector<HTMLFormElement>('.js-copy-question-form');
-      copyContentModal(copyQuestionForm);
-
-      // Return cleanup function
-      return {
-        remove() {
-          // Close socket connection if exists
-          socket?.close();
-
-          // Abort countdown timers
-          countdownAbortController.abort();
-
-          // Stop observing submission panels
-          submissionPanelObserver.abort();
-
-          // Note: DOM event listeners on child elements of the container are
-          // automatically garbage collected when the container is removed from the DOM.
-          // confirmOnUnload and copyContentModal add listeners to window/form which
-          // will be cleaned up on page unload, so we don't manually clean them up here.
-        },
-      };
+      const controller = new QuestionContainerController(container);
+      controller.initialize();
+      return { remove: () => controller.cleanup() };
     },
   });
 });
 
-function externalGradingLiveUpdate(container: HTMLElement): Socket | null {
-  const { variantId, variantToken } = container.dataset;
+class QuestionContainerController {
+  private socket: Socket | null = null;
+  private abortController = new AbortController();
+  private submissionPanelObserver: Observer | null = null;
 
-  // Render initial grading states into the DOM
-  let gradingPending = false;
-  for (const elem of container.querySelectorAll<HTMLElement>('[id^=submission-]')) {
-    // Ensure that this is a valid submission element
-    if (!/^submission-\d+$/.test(elem.id)) continue;
+  constructor(private container: HTMLElement) {}
 
-    const status = elem.dataset.gradingJobStatus as GradingJobStatus;
-    const submissionId = elem.id.replace('submission-', '');
-    updateStatus({ id: submissionId, grading_job_status: status });
-    // Grading is not pending if it's done, or it's save-only, or has been canceled
-    if (status !== 'graded' && status !== 'none' && status !== 'canceled') {
-      gradingPending = true;
-    }
+  private get signal(): AbortSignal {
+    return this.abortController.signal;
   }
 
-  // If everything has been graded or was canceled, don't even open a socket
-  if (!gradingPending) return null;
+  initialize(): void {
+    // TODO: is this the correct sequencing of MathJax?
+    void mathjaxTypeset([this.container]);
 
-  // By this point, it's safe to open a socket
-  const socket = io('/external-grading');
-
-  socket.emit(
-    'init',
-    { variant_id: variantId, variant_token: variantToken },
-    (msg: StatusMessage) => handleStatusChange(socket, msg),
-  );
-
-  socket.on('change:status', (msg: StatusMessage) => handleStatusChange(socket, msg));
-
-  return socket;
-}
-
-function handleStatusChange(socket: Socket, msg: StatusMessage) {
-  msg.submissions.forEach((submission) => {
-    // Always update results
-    updateStatus(submission);
-
-    if (submission.grading_job_status === 'graded') {
-      const element = document.getElementById('submission-' + submission.id);
-
-      if (!element) return;
-
-      // Check if this state is reflected in the DOM; it's possible this is
-      // just a message from the initial data sync and that we already have
-      // results in the DOM.
-      const status = element.dataset.gradingJobStatus;
-      const gradingJobId = element.dataset.gradingJobId;
-
-      // Ignore jobs that we already have results for, but allow results
-      // from more recent grading jobs to replace the existing ones.
-      if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
-        // Let's get results for this job!
-        fetchResults(submission.id);
-
-        // We don't need the socket anymore.
-        socket.close();
-      }
-    }
-  });
-}
-
-function fetchResults(submissionId: string) {
-  window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
-
-  const submissionPanel = document.getElementById(`submission-${submissionId}`);
-  if (!submissionPanel) return;
-
-  const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
-  if (!submissionBody) return;
-
-  loadPendingSubmissionPanel(submissionBody, true);
-}
-
-function updateDynamicPanels(msg: SubmissionPanels, submissionId: string) {
-  if (msg.extraHeadersHtml) {
-    const parser = new DOMParser();
-    const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
-
-    const newImportMap = headers.querySelector<HTMLScriptElement>('script[type="importmap"]');
-    if (newImportMap != null) {
-      const currentImportMap = document.head.querySelector<HTMLScriptElement>(
-        'script[type="importmap"]',
-      );
-      if (!currentImportMap) {
-        document.head.append(newImportMap);
-      } else {
-        // This case is not currently possible with existing importmap
-        // functionality. Once an existing importmap has been created, the
-        // importmap cannot be modified. Once this functionality exists this
-        // code can be modified to update the importmap.
-        // https://html.spec.whatwg.org/multipage/webappapis.html#import-map-processing-model
-        const newImportMapJson = JSON.parse(newImportMap.textContent || '{}');
-        const currentImportMapJson = JSON.parse(currentImportMap.textContent || '{}');
-        const newImportMapKeys = Object.keys(newImportMapJson.imports || {}).filter(
-          (key) => !(key in currentImportMapJson.imports),
-        );
-        if (newImportMapKeys.length > 0) {
-          console.warn(
-            'Cannot update importmap. New importmap has imports not in current importmap:',
-            newImportMapKeys,
-          );
-        }
-      }
+    if (this.container.dataset.gradingMethod === 'External') {
+      this.initializeExternalGrading();
     }
 
-    const currentLinks = new Set(
-      Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
-        (link) => link.href,
-      ),
-    );
-    headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
-      if (!currentLinks.has(header.href)) {
-        document.head.append(header);
-      }
+    const questionForm = this.container.querySelector<HTMLFormElement>('form.question-form');
+    if (questionForm) {
+      confirmOnUnload(questionForm);
+    }
+
+    this.initializeReadmeExpansion();
+    this.setupDynamicObjects();
+    this.setupDisableOnSubmit();
+    this.initializeSubmissionPanelObserver();
+
+    const copyQuestionForm =
+      this.container.querySelector<HTMLFormElement>('.js-copy-question-form');
+    copyContentModal(copyQuestionForm);
+  }
+
+  cleanup(): void {
+    this.socket?.close();
+    this.abortController.abort();
+    this.submissionPanelObserver?.abort();
+    // Note: DOM event listeners on child elements of the container are
+    // automatically garbage collected when the container is removed from the DOM.
+    // confirmOnUnload and copyContentModal add listeners to window/form which
+    // will be cleaned up on page unload, so we don't manually clean them up here.
+  }
+
+  private initializeReadmeExpansion(): void {
+    const markdownBody = this.container.querySelector<HTMLDivElement>('.markdown-body');
+    const revealFade = this.container.querySelector<HTMLDivElement>('.reveal-fade');
+    const expandButtonContainer = this.container.querySelector('.js-expand-button-container');
+    const expandButton = expandButtonContainer?.querySelector('button');
+
+    if (!markdownBody || !expandButton) return;
+
+    let expanded = false;
+
+    expandButton.addEventListener('click', () => {
+      expanded = !expanded;
+      expandButton.textContent = expanded ? 'Collapse' : 'Expand';
+      revealFade?.classList.toggle('d-none');
+      markdownBody.classList.toggle('max-height');
     });
 
-    const currentScripts = new Set(
-      Array.from(
-        document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
-      ).map((script) => script.src),
-    );
-    headers
-      .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
-      .forEach((header) => {
-        if (!currentScripts.has(header.src)) {
-          document.head.append(header);
-        }
-      });
-  }
-
-  if (msg.answerPanel) {
-    const answerContainer = document.querySelector('.answer-body');
-    if (answerContainer) {
-      // Using jQuery here because msg.answerPanel may contain scripts that
-      // must be executed. Typical vanilla JS alternatives don't support
-      // this kind of script.
-      $(answerContainer).html(msg.answerPanel);
-      void mathjaxTypeset([answerContainer]);
-      answerContainer.closest('.grading-block')?.classList.remove('d-none');
+    if (markdownBody.scrollHeight > 150) {
+      markdownBody.classList.add('max-height');
+      revealFade?.classList.remove('d-none');
+      expandButtonContainer?.classList.remove('d-none');
+      expandButtonContainer?.classList.add('d-flex');
     }
   }
 
-  if (msg.submissionPanel) {
-    const submissionPanelSelector = `#submission-${submissionId}`;
-    // Using jQuery here because msg.submissionPanel may contain scripts
-    // that must be executed. Typical vanilla JS alternatives don't support
-    // this kind of script.
-    $(submissionPanelSelector).replaceWith(msg.submissionPanel);
-    void mathjaxTypeset([document.querySelector(submissionPanelSelector)!]);
-  }
+  private initializeSubmissionPanelObserver(): void {
+    this.submissionPanelObserver = observe('.js-submission-body.render-pending', {
+      constructor: HTMLDivElement,
+      add: (panel) => {
+        // Only observe panels that are descendants of this container
+        if (!this.container.contains(panel)) return;
 
-  if (msg.questionScorePanel) {
-    const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
-
-    // We might be getting new markup for just the content, or legacy markup
-    // for the whole panel.
-    //
-    // TODO: switch back to using a specific ID once we drop the legacy markup.
-    // Using a specific ID ensures we can find things easily via grep.
-    const targetElement = document.getElementById(parsedHTML.id);
-    targetElement?.replaceWith(parsedHTML);
-  }
-
-  if (msg.assessmentScorePanel) {
-    const assessmentScorePanel = document.getElementById('assessment-score-panel');
-    if (assessmentScorePanel) {
-      assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
-    }
-  }
-
-  if (msg.questionPanelFooter) {
-    const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
-
-    // We might be getting new markup for just the content, or legacy markup
-    // for the whole panel.
-    //
-    // TODO: switch back to using a specific ID once we drop the legacy markup.
-    // Using a specific ID ensures we can find things easily via grep.
-    const targetElement = document.getElementById(parsedHTML.id);
-    targetElement?.replaceWith(parsedHTML);
-  }
-
-  if (msg.questionNavNextButton) {
-    const questionNavNextButton = document.getElementById('question-nav-next');
-    if (questionNavNextButton) {
-      questionNavNextButton.outerHTML = msg.questionNavNextButton;
-    }
-  }
-
-  setupDynamicObjects();
-}
-
-function updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'>) {
-  const display = document.getElementById('grading-status-' + submission.id);
-  if (!display) return;
-  let label;
-  const spinner = '<i class="fa fa-sync fa-spin"></i>';
-  switch (submission.grading_job_status) {
-    case 'requested':
-      label = 'Grading requested ' + spinner;
-      break;
-    case 'queued':
-      label = 'Queued for grading ' + spinner;
-      break;
-    case 'grading':
-      label = 'Grading in progress ' + spinner;
-      break;
-    case 'graded':
-      label = 'Graded!';
-      break;
-    default:
-      label = 'UNKNOWN STATUS';
-      break;
-  }
-  display.innerHTML = label;
-}
-
-function setupDynamicObjects(signal?: AbortSignal): void {
-  // Install on page load and reinstall on websocket re-render
-  document.querySelectorAll('a.disable-on-click').forEach((link) => {
-    link.addEventListener('click', () => {
-      link.classList.add('disabled');
-    });
-  });
-
-  if (document.getElementById('submission-suspended-data')) {
-    const countdownData = decodeData<{
-      serverTimeLimitMS: number;
-      serverRemainingMS: number;
-    }>('submission-suspended-data');
-    setupCountdown({
-      displaySelector: '#submission-suspended-display',
-      progressSelector: '#submission-suspended-progress',
-      initialServerRemainingMS: countdownData.serverRemainingMS,
-      initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
-      signal,
-      onTimerOut: () => {
-        document.querySelectorAll<HTMLButtonElement>('.question-grade').forEach((gradeButton) => {
-          gradeButton.disabled = false;
+        panel.addEventListener('show.bs.collapse', () => {
+          this.loadPendingSubmissionPanel(panel, false);
         });
-        document
-          .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
-          .forEach((elem) => {
-            elem.style.display = 'none';
-          });
       },
     });
   }
-}
 
-function loadPendingSubmissionPanel(panel: HTMLDivElement, includeScorePanels: boolean) {
-  const { submissionId, dynamicRenderUrl } = panel.dataset;
-  if (submissionId == null || dynamicRenderUrl == null) return;
+  private initializeExternalGrading(): void {
+    const { variantId, variantToken } = this.container.dataset;
 
-  const url = new URL(dynamicRenderUrl, window.location.origin);
+    // Render initial grading states into the DOM
+    let gradingPending = false;
+    for (const elem of this.container.querySelectorAll<HTMLElement>('[id^=submission-]')) {
+      // Ensure that this is a valid submission element
+      if (!/^submission-\d+$/.test(elem.id)) continue;
 
-  if (includeScorePanels) {
-    url.searchParams.set('render_score_panels', 'true');
+      const status = elem.dataset.gradingJobStatus as GradingJobStatus;
+      const submissionId = elem.id.replace('submission-', '');
+      this.updateStatus({ id: submissionId, grading_job_status: status });
+      // Grading is not pending if it's done, or it's save-only, or has been canceled
+      if (status !== 'graded' && status !== 'none' && status !== 'canceled') {
+        gradingPending = true;
+      }
+    }
+
+    // If everything has been graded or was canceled, don't even open a socket
+    if (!gradingPending) return;
+
+    // By this point, it's safe to open a socket
+    this.socket = io('/external-grading');
+
+    this.socket.emit(
+      'init',
+      { variant_id: variantId, variant_token: variantToken },
+      (msg: StatusMessage) => this.handleStatusChange(msg),
+    );
+
+    this.socket.on('change:status', (msg: StatusMessage) => this.handleStatusChange(msg));
   }
 
-  fetch(url)
-    .then(async (response) => {
-      // If the response is not a 200, delegate to the error handler (catch block)
-      if (!response.ok) throw new Error('Failed to fetch submission');
-      const msg = await response.json();
-      updateDynamicPanels(msg, submissionId);
-    })
-    .catch(() => {
-      panel.innerHTML = '<div class="card-body submission-body">Error retrieving submission</div>';
+  private handleStatusChange(msg: StatusMessage): void {
+    msg.submissions.forEach((submission) => {
+      // Always update results
+      this.updateStatus(submission);
+
+      if (submission.grading_job_status === 'graded') {
+        const element = this.container.querySelector<HTMLElement>('#submission-' + submission.id);
+
+        if (!element) return;
+
+        // Check if this state is reflected in the DOM; it's possible this is
+        // just a message from the initial data sync and that we already have
+        // results in the DOM.
+        const status = element.dataset.gradingJobStatus;
+        const gradingJobId = element.dataset.gradingJobId;
+
+        // Ignore jobs that we already have results for, but allow results
+        // from more recent grading jobs to replace the existing ones.
+        if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
+          // Let's get results for this job!
+          this.fetchResults(submission.id);
+
+          // We don't need the socket anymore.
+          this.socket?.close();
+        }
+      }
     });
-}
+  }
 
-function disableOnSubmit() {
-  const form = document.querySelector<HTMLFormElement>('form.question-form');
+  private fetchResults(submissionId: string): void {
+    window.bootstrap.Modal.getInstance(`#submissionInfoModal-${submissionId}`)?.hide();
 
-  if (!form) return;
+    const submissionPanel = this.container.querySelector<HTMLElement>(
+      `#submission-${submissionId}`,
+    );
+    if (!submissionPanel) return;
 
-  form.addEventListener('submit', () => {
-    if (!form.dataset.submitted) {
-      form.dataset.submitted = 'true';
+    const submissionBody = submissionPanel.querySelector<HTMLDivElement>('.js-submission-body');
+    if (!submissionBody) return;
 
-      // Since `.disabled` buttons don't POST, clone and hide as workaround
-      form.querySelectorAll<HTMLButtonElement>('.disable-on-submit').forEach((element) => {
-        // Create disabled clone of button
-        const clonedElement = element.cloneNode(true) as HTMLButtonElement;
-        clonedElement.id = '';
-        clonedElement.disabled = true;
+    this.loadPendingSubmissionPanel(submissionBody, true);
+  }
 
-        // Add it to the same position
-        element.parentNode?.insertBefore(clonedElement, element);
+  private updateDynamicPanels(msg: SubmissionPanels, submissionId: string): void {
+    if (msg.extraHeadersHtml) {
+      const parser = new DOMParser();
+      const headers = parser.parseFromString(msg.extraHeadersHtml, 'text/html');
 
-        // Hide actual submit button
-        element.style.display = 'none';
+      const newImportMap = headers.querySelector<HTMLScriptElement>('script[type="importmap"]');
+      if (newImportMap != null) {
+        const currentImportMap = document.head.querySelector<HTMLScriptElement>(
+          'script[type="importmap"]',
+        );
+        if (!currentImportMap) {
+          document.head.append(newImportMap);
+        } else {
+          // This case is not currently possible with existing importmap
+          // functionality. Once an existing importmap has been created, the
+          // importmap cannot be modified. Once this functionality exists this
+          // code can be modified to update the importmap.
+          // https://html.spec.whatwg.org/multipage/webappapis.html#import-map-processing-model
+          const newImportMapJson = JSON.parse(newImportMap.textContent || '{}');
+          const currentImportMapJson = JSON.parse(currentImportMap.textContent || '{}');
+          const newImportMapKeys = Object.keys(newImportMapJson.imports || {}).filter(
+            (key) => !(key in currentImportMapJson.imports),
+          );
+          if (newImportMapKeys.length > 0) {
+            console.warn(
+              'Cannot update importmap. New importmap has imports not in current importmap:',
+              newImportMapKeys,
+            );
+          }
+        }
+      }
+
+      const currentLinks = new Set(
+        Array.from(document.head.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]')).map(
+          (link) => link.href,
+        ),
+      );
+      headers.querySelectorAll<HTMLLinkElement>('link[rel="stylesheet"]').forEach((header) => {
+        if (!currentLinks.has(header.href)) {
+          document.head.append(header);
+        }
+      });
+
+      const currentScripts = new Set(
+        Array.from(
+          document.head.querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]'),
+        ).map((script) => script.src),
+      );
+      headers
+        .querySelectorAll<HTMLScriptElement>('script[type="text/javascript"]')
+        .forEach((header) => {
+          if (!currentScripts.has(header.src)) {
+            document.head.append(header);
+          }
+        });
+    }
+
+    if (msg.answerPanel) {
+      const answerContainer = this.container.querySelector('.answer-body');
+      if (answerContainer) {
+        // Using jQuery here because msg.answerPanel may contain scripts that
+        // must be executed. Typical vanilla JS alternatives don't support
+        // this kind of script.
+        $(answerContainer).html(msg.answerPanel);
+        void mathjaxTypeset([answerContainer]);
+        answerContainer.closest('.grading-block')?.classList.remove('d-none');
+      }
+    }
+
+    if (msg.submissionPanel) {
+      const submissionPanelSelector = `#submission-${submissionId}`;
+      // Using jQuery here because msg.submissionPanel may contain scripts
+      // that must be executed. Typical vanilla JS alternatives don't support
+      // this kind of script.
+      $(submissionPanelSelector).replaceWith(msg.submissionPanel);
+      void mathjaxTypeset([this.container.querySelector(submissionPanelSelector)!]);
+    }
+
+    if (msg.questionScorePanel) {
+      const parsedHTML = parseHTMLElement(document, msg.questionScorePanel);
+
+      // We might be getting new markup for just the content, or legacy markup
+      // for the whole panel.
+      //
+      // TODO: switch back to using a specific ID once we drop the legacy markup.
+      // Using a specific ID ensures we can find things easily via grep.
+      //
+      // Note: we use `document` and not `this.container` here because the question
+      // score panel is outside the question container.
+      const targetElement = document.getElementById(parsedHTML.id);
+      targetElement?.replaceWith(parsedHTML);
+    }
+
+    if (msg.assessmentScorePanel) {
+      // Note: we use `document` and not `this.container` here because the assessment
+      // score panel is outside the question container.
+      const assessmentScorePanel = document.getElementById('assessment-score-panel');
+      if (assessmentScorePanel) {
+        assessmentScorePanel.outerHTML = msg.assessmentScorePanel;
+      }
+    }
+
+    if (msg.questionPanelFooter) {
+      const parsedHTML = parseHTMLElement(document, msg.questionPanelFooter);
+
+      // We might be getting new markup for just the content, or legacy markup
+      // for the whole panel.
+      //
+      // TODO: switch back to using a specific ID once we drop the legacy markup.
+      // Using a specific ID ensures we can find things easily via grep.
+      const targetElement = this.container.querySelector(`#${parsedHTML.id}`);
+      targetElement?.replaceWith(parsedHTML);
+    }
+
+    if (msg.questionNavNextButton) {
+      // Note: we use `document` and not `this.container` here because this button
+      // is outside the question container.
+      const questionNavNextButton = document.getElementById('question-nav-next');
+      if (questionNavNextButton) {
+        questionNavNextButton.outerHTML = msg.questionNavNextButton;
+      }
+    }
+
+    this.setupDynamicObjects();
+  }
+
+  private updateStatus(submission: Omit<StatusMessageSubmission, 'grading_job_id'>): void {
+    const display = this.container.querySelector('#grading-status-' + submission.id);
+    if (!display) return;
+    let label;
+    const spinner = '<i class="fa fa-sync fa-spin"></i>';
+    switch (submission.grading_job_status) {
+      case 'requested':
+        label = 'Grading requested ' + spinner;
+        break;
+      case 'queued':
+        label = 'Queued for grading ' + spinner;
+        break;
+      case 'grading':
+        label = 'Grading in progress ' + spinner;
+        break;
+      case 'graded':
+        label = 'Graded!';
+        break;
+      default:
+        label = 'UNKNOWN STATUS';
+        break;
+    }
+    display.innerHTML = label;
+  }
+
+  private setupDynamicObjects(): void {
+    // Install on page load and reinstall on websocket re-render
+    this.container.querySelectorAll('a.disable-on-click').forEach((link) => {
+      link.addEventListener('click', () => {
+        link.classList.add('disabled');
+      });
+    });
+
+    if (this.container.querySelector('#submission-suspended-data')) {
+      const countdownData = decodeData<{
+        serverTimeLimitMS: number;
+        serverRemainingMS: number;
+      }>('submission-suspended-data');
+      setupCountdown({
+        displaySelector: '#submission-suspended-display',
+        progressSelector: '#submission-suspended-progress',
+        initialServerRemainingMS: countdownData.serverRemainingMS,
+        initialServerTimeLimitMS: countdownData.serverTimeLimitMS,
+        signal: this.signal,
+        onTimerOut: () => {
+          this.container
+            .querySelectorAll<HTMLButtonElement>('.question-grade')
+            .forEach((gradeButton) => {
+              gradeButton.disabled = false;
+            });
+          this.container
+            .querySelectorAll<HTMLElement>('.submission-suspended-msg, .grade-rate-limit-popover')
+            .forEach((elem) => {
+              elem.style.display = 'none';
+            });
+        },
       });
     }
-  });
+  }
+
+  private loadPendingSubmissionPanel(panel: HTMLDivElement, includeScorePanels: boolean): void {
+    const { submissionId, dynamicRenderUrl } = panel.dataset;
+    if (submissionId == null || dynamicRenderUrl == null) return;
+
+    const url = new URL(dynamicRenderUrl, window.location.origin);
+
+    if (includeScorePanels) {
+      url.searchParams.set('render_score_panels', 'true');
+    }
+
+    fetch(url, { signal: this.signal })
+      .then(async (response) => {
+        // If the response is not a 200, delegate to the error handler (catch block)
+        if (!response.ok) throw new Error('Failed to fetch submission');
+        const msg = await response.json();
+        this.updateDynamicPanels(msg, submissionId);
+      })
+      .catch((err) => {
+        // Don't show error if the request was aborted
+        if (err.name === 'AbortError') return;
+
+        panel.innerHTML =
+          '<div class="card-body submission-body">Error retrieving submission</div>';
+      });
+  }
+
+  private setupDisableOnSubmit(): void {
+    const form = this.container.querySelector<HTMLFormElement>('form.question-form');
+
+    if (!form) return;
+
+    form.addEventListener('submit', () => {
+      if (!form.dataset.submitted) {
+        form.dataset.submitted = 'true';
+
+        // Since `.disabled` buttons don't POST, clone and hide as workaround
+        form.querySelectorAll<HTMLButtonElement>('.disable-on-submit').forEach((element) => {
+          // Create disabled clone of button
+          const clonedElement = element.cloneNode(true) as HTMLButtonElement;
+          clonedElement.id = '';
+          clonedElement.disabled = true;
+
+          // Add it to the same position
+          element.parentNode?.insertBefore(clonedElement, element);
+
+          // Hide actual submit button
+          element.style.display = 'none';
+        });
+      }
+    });
+  }
 }

@@ -163,8 +163,8 @@ export function QuestionContainer({
               : ''}
           `
         : ''}
+      ${CopyQuestionModal({ resLocals, questionCopyTargets })}
     </div>
-    ${CopyQuestionModal({ resLocals, questionCopyTargets })}
   `;
 }
 
