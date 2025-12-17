@@ -91,8 +91,16 @@ export async function initializeExcalidraw(uuid, name, metadata) {
 
   const rootElement = document.getElementById(`excalidraw-${uuid}`);
 
+  let firstUpdateOfHiddenInput = true;
   const hiddenInput = document.getElementById(`excalidraw-input-${uuid}`);
-  const setHiddenInput = (value) => (hiddenInput.value = value);
+  const setHiddenInput = (value) => {
+    hiddenInput.value = value;
+    if (firstUpdateOfHiddenInput) {
+      firstUpdateOfHiddenInput = false;
+      // Call the global function to save form data, so that unloading the page does not cause a warning if there is initial data.
+      window.saveQuestionFormData?.();
+    }
+  };
 
   if (metadata.initial_content) {
     metadata.scene = await ExcalidrawLib.loadFromBlob(new Blob([metadata.initial_content]));

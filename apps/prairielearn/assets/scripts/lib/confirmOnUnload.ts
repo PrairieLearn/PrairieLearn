@@ -23,6 +23,12 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // Set form state on submit, since in this case the "unsaved" data is being saved
   form.addEventListener('submit', () => saveQuestionFormData(form));
 
+  // Create a global function to be called by elements that initialize after
+  // page load, e.g., via async loading. This global function is called with the
+  // form set here, to avoid requiring those elements to find the form again.
+  // This assumes that this function is only used once per page load.
+  (window as any).saveQuestionFormData = () => saveQuestionFormData(form);
+
   // Check form state on unload
   window.addEventListener('beforeunload', (event) => {
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
