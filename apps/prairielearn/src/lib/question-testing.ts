@@ -4,7 +4,6 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { insertGradingJob, updateGradingJobAfterGrading } from '../models/grading-job.js';
 import { selectUserById } from '../models/user.js';
 import * as questionServers from '../question-servers/index.js';
 
@@ -16,7 +15,7 @@ import {
   SubmissionSchema,
   type Variant,
 } from './db-types.js';
-import { gradeVariant, insertSubmission, saveSubmission } from './grading.js';
+import { gradeVariant, saveSubmission } from './grading.js';
 import { writeCourseIssues } from './issues.js';
 import { getAndRenderVariant } from './question-render.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
@@ -26,14 +25,17 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface TestResultStats {
   generateDuration: number;
-  renderDuration: number;
+  initialRenderDuration: number;
   gradeDuration?: number;
+  finalRenderDuration?: number;
 }
 
 interface TestQuestionResults {
   variant: Variant;
-  expected_submission: Submission | null;
-  test_submission: Submission | null;
+  /** The expected results from calling test(), kept in memory for comparison. */
+  expectedTestData: questionServers.TestResultData | null;
+  /** The submission that was created and graded through the normal pipeline. */
+  submission: Submission | null;
   stats: TestResultStats;
 }
 
@@ -89,80 +91,18 @@ export async function createTestSubmissionData(
 }
 
 /**
- * Internal worker for testVariant(). Do not call directly.
- * @param variant - The variant to submit to.
- * @param question - The question for the variant.
- * @param variant_course - The course for the variant.
- * @param test_type - The type of test to run.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
- * @returns The submission ID.
- */
-async function createTestSubmission(
-  variant: Variant,
-  question: Question,
-  variant_course: Course,
-  test_type: TestType,
-  user_id: string,
-  authn_user_id: string,
-): Promise<string> {
-  const { data, hasFatalIssue } = await createTestSubmissionData(
-    variant,
-    question,
-    variant_course,
-    test_type,
-    user_id,
-    authn_user_id,
-  );
-
-  // We discard the returned updated variant here. We don't need it later in
-  // this function, and the caller of this function will re-select the variant
-  // before grading the submission.
-  const { submission_id } = await insertSubmission({
-    submitted_answer: {},
-    raw_submitted_answer: data.raw_submitted_answer,
-    format_errors: data.format_errors,
-    gradable: data.gradable,
-    broken: hasFatalIssue,
-    // The `test` phase is not allowed to mutate `params` and `true_answers`, so
-    // we just pick the original `params` and `true_answer` so we can use our
-    // standard `insertSubmission`.
-    params: variant.params,
-    true_answer: variant.true_answer,
-    feedback: null,
-    credit: null,
-    mode: null,
-    variant_id: variant.id,
-    user_id,
-    auth_user_id: authn_user_id,
-    client_fingerprint_id: null,
-  });
-
-  const grading_job = await insertGradingJob({ submission_id, authn_user_id });
-
-  await updateGradingJobAfterGrading({
-    grading_job_id: grading_job.id,
-    submitted_answer: {},
-    format_errors: data.format_errors,
-    gradable: data.gradable,
-    broken: hasFatalIssue,
-    params: data.params,
-    true_answer: data.true_answer,
-    feedback: {},
-    partial_scores: data.partial_scores,
-    score: data.score,
-  });
-
-  return submission_id;
-}
-
-/**
- * Internal worker for testVariant(). Do not call directly.
- * @param expected_submission - Generated reference submission data.
- * @param test_submission - Computed submission to be tested.
+ * Compares expected test data from test() with the actual graded submission.
+ *
+ * @param expectedData - The expected results from calling test().
+ * @param hasFatalIssue - Whether there was a fatal issue when generating the expected data.
+ * @param submission - The actual submission that went through parse()/grade().
  * @returns A list of errors encountered during comparison.
  */
-function compareSubmissions(expected_submission: Submission, test_submission: Submission): Error[] {
+function compareTestResults(
+  expectedData: questionServers.TestResultData,
+  hasFatalIssue: boolean,
+  submission: Submission,
+): Error[] {
   const courseIssues: Error[] = [];
 
   const checkEqual = (name: string, var1: any, var2: any) => {
@@ -173,31 +113,35 @@ function compareSubmissions(expected_submission: Submission, test_submission: Su
     }
   };
 
-  if (expected_submission.broken) {
-    courseIssues.push(new Error('expected_submission is broken, skipping tests'));
+  if (hasFatalIssue) {
+    courseIssues.push(new Error('test() returned a fatal issue, skipping comparison'));
     return courseIssues;
   }
-  if (test_submission.broken) {
-    courseIssues.push(new Error('test_submission is broken, skipping tests'));
+  if (submission.broken) {
+    courseIssues.push(new Error('submission is broken, skipping comparison'));
     return courseIssues;
   }
-  checkEqual('gradable', expected_submission.gradable, test_submission.gradable);
+  checkEqual('gradable', expectedData.gradable, submission.gradable);
   checkEqual(
     'format_errors keys',
-    Object.keys(expected_submission.format_errors ?? {}),
-    Object.keys(test_submission.format_errors ?? {}),
+    // We sort the keys to ensure that the comparison is order-independent.
+    Object.keys(expectedData.format_errors).sort(),
+    Object.keys(submission.format_errors ?? {}).sort(),
   );
-  if (!test_submission.gradable || !expected_submission.gradable) {
+  if (!submission.gradable || !expectedData.gradable) {
     return courseIssues;
   }
-  checkEqual('partial_scores', expected_submission.partial_scores, test_submission.partial_scores);
-  checkEqual('score', expected_submission.score, test_submission.score);
+  checkEqual('partial_scores', expectedData.partial_scores, submission.partial_scores);
+  checkEqual('score', expectedData.score, submission.score);
   return courseIssues;
 }
 
 /**
  * Internal worker for _testQuestion(). Do not call directly.
- * Tests a question variant. Issues will be inserted into the issues table.
+ * Tests a question variant by calling test() to get expected results, then
+ * submitting through the normal parse()/grade() pipeline and comparing.
+ * Issues will be inserted into the issues table.
+ *
  * @param variant - The variant to submit to.
  * @param question - The question for the variant.
  * @param course - The course for the variant.
@@ -212,8 +156,13 @@ async function testVariant(
   test_type: TestType,
   user_id: string,
   authn_user_id: string,
-): Promise<{ expected_submission: Submission; test_submission: Submission }> {
-  const expected_submission_id = await createTestSubmission(
+): Promise<{
+  expectedTestData: questionServers.TestResultData;
+  hasFatalIssue: boolean;
+  submission: Submission;
+}> {
+  // Step 1: Call test() to get expected results - don't insert anything to the database
+  const { data: expectedTestData, hasFatalIssue } = await createTestSubmissionData(
     variant,
     question,
     course,
@@ -221,15 +170,15 @@ async function testVariant(
     user_id,
     authn_user_id,
   );
-  const expected_submission = await selectSubmission(expected_submission_id);
 
+  // Step 2: Submit the raw answer through the normal parse()/grade() pipeline
   const submission_data = {
     variant_id: variant.id,
     user_id,
     auth_user_id: authn_user_id,
-    submitted_answer: expected_submission.raw_submitted_answer || {},
+    submitted_answer: expectedTestData.raw_submitted_answer,
   };
-  const { submission_id: test_submission_id, variant: updated_variant } = await saveSubmission(
+  const { submission_id, variant: updated_variant } = await saveSubmission(
     submission_data,
     variant,
     question,
@@ -237,7 +186,7 @@ async function testVariant(
   );
   await gradeVariant({
     variant: updated_variant,
-    check_submission_id: test_submission_id,
+    check_submission_id: submission_id,
     question,
     variant_course: course,
     user_id,
@@ -245,16 +194,17 @@ async function testVariant(
     ignoreGradeRateLimit: true,
     ignoreRealTimeGradingDisabled: true,
   });
-  const test_submission = await selectSubmission(test_submission_id);
+  const submission = await selectSubmission(submission_id);
 
-  const courseIssues = compareSubmissions(expected_submission, test_submission);
+  // Step 3: Compare expected results with actual submission
+  const courseIssues = compareTestResults(expectedTestData, hasFatalIssue, submission);
   const studentMessage = 'Question test failure';
   const courseData = {
     variant: updated_variant,
     question,
     course,
-    expected_submission,
-    test_submission,
+    expectedTestData,
+    submission,
   };
   await writeCourseIssues(
     courseIssues,
@@ -264,7 +214,7 @@ async function testVariant(
     studentMessage,
     courseData,
   );
-  return { expected_submission, test_submission };
+  return { expectedTestData, hasFatalIssue, submission };
 }
 
 /**
@@ -288,12 +238,13 @@ async function testQuestion(
   variant_seed?: string,
 ): Promise<TestQuestionResults> {
   let generateDuration;
-  let renderDuration;
+  let initialRenderDuration;
   let gradeDuration;
+  let finalRenderDuration;
 
   let variant;
-  let expected_submission: Submission | null = null;
-  let test_submission: Submission | null = null;
+  let expectedTestData: questionServers.TestResultData | null = null;
+  let submission: Submission | null = null;
 
   const question_course = await getQuestionCourse(question, variant_course);
   const instance_question_id = null;
@@ -319,10 +270,11 @@ async function testQuestion(
     generateDuration = generateEnd - generateStart;
   }
 
-  const renderStart = Date.now();
+  const user = await selectUserById(user_id);
+  const authn_user = await selectUserById(authn_user_id);
+
+  const initialRenderStart = Date.now();
   try {
-    const user = await selectUserById(user_id);
-    const authn_user = await selectUserById(authn_user_id);
     await getAndRenderVariant(variant.id, null, {
       question,
       course: variant_course,
@@ -332,14 +284,14 @@ async function testQuestion(
       is_administrator: false,
     });
   } finally {
-    const renderEnd = Date.now();
-    renderDuration = renderEnd - renderStart;
+    const initialRenderEnd = Date.now();
+    initialRenderDuration = initialRenderEnd - initialRenderStart;
   }
 
   if (!variant.broken_at) {
     const gradeStart = Date.now();
     try {
-      ({ expected_submission, test_submission } = await testVariant(
+      ({ expectedTestData, submission } = await testVariant(
         variant,
         question,
         variant_course,
@@ -351,10 +303,26 @@ async function testQuestion(
       const gradeEnd = Date.now();
       gradeDuration = gradeEnd - gradeStart;
     }
+
+    // Render once more to make sure we can render the various panels with the submitted data.
+    const finalRenderStart = Date.now();
+    try {
+      await getAndRenderVariant(variant.id, null, {
+        question,
+        course: variant_course,
+        urlPrefix: `/pl/course/${variant_course.id}`,
+        user,
+        authn_user,
+        is_administrator: false,
+      });
+    } finally {
+      const finalRenderEnd = Date.now();
+      finalRenderDuration = finalRenderEnd - finalRenderStart;
+    }
   }
 
-  const stats = { generateDuration, renderDuration, gradeDuration };
-  return { variant, expected_submission, test_submission, stats };
+  const stats = { generateDuration, initialRenderDuration, gradeDuration, finalRenderDuration };
+  return { variant, expectedTestData, submission, stats };
 }
 
 /**
@@ -392,7 +360,7 @@ async function runTest({
   variant_seed?: string;
 }): Promise<{ success: boolean; stats: TestResultStats }> {
   logger.verbose('Testing ' + question.qid);
-  const { variant, expected_submission, test_submission, stats } = await testQuestion(
+  const { variant, expectedTestData, submission, stats } = await testQuestion(
     question,
     course_instance,
     course,
@@ -404,6 +372,13 @@ async function runTest({
 
   if (showDetails) {
     const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
+    const expectedDataKeys = [
+      'format_errors',
+      'gradable',
+      'partial_scores',
+      'raw_submitted_answer',
+      'score',
+    ];
     const submissionKeys = [
       'broken',
       'correct',
@@ -418,16 +393,15 @@ async function runTest({
       'true_answer',
     ];
     logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
-    if (expected_submission) {
+    if (expectedTestData) {
       logger.verbose(
-        'expected_submission:\n' +
-          jsonStringifySafe(_.pick(expected_submission, submissionKeys), null, '    '),
+        'expectedTestData:\n' +
+          jsonStringifySafe(_.pick(expectedTestData, expectedDataKeys), null, '    '),
       );
     }
-    if (test_submission) {
+    if (submission) {
       logger.verbose(
-        'test_submission:\n' +
-          jsonStringifySafe(_.pick(test_submission, submissionKeys), null, '    '),
+        'submission:\n' + jsonStringifySafe(_.pick(submission, submissionKeys), null, '    '),
       );
     }
   }
@@ -541,8 +515,9 @@ export async function startTestQuestion({
     }
 
     printStats('Generate/prepare:', 'generateDuration');
-    printStats('Render:          ', 'renderDuration');
+    printStats('Initial render:  ', 'initialRenderDuration');
     printStats('Parse/grade:     ', 'gradeDuration');
+    printStats('Final render:    ', 'finalRenderDuration');
 
     if (!success) {
       throw new Error('Some tests failed. See the "Issues" page for details.');
