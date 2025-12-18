@@ -629,11 +629,13 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 }
 
 let aiGradingCache: Cache | undefined;
-export function getAiGradingCache() {
+export async function getAiGradingCache() {
   // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
+  console.log('Getting AI grading cache');
   if (aiGradingCache) return aiGradingCache;
+  console.log('Not found, creating new cache.')
   aiGradingCache = new Cache();
-  aiGradingCache.init({
+  await aiGradingCache.init({
     type: config.nonVolatileCacheType,
     keyPrefix: config.cacheKeyPrefix,
     redisUrl: config.nonVolatileRedisUrl,
@@ -654,43 +656,44 @@ function getIntervalUsageKey(authnUserId: string) {
  * Retrieve the user's AI grading usage in the last hour interval, in US dollars
  */
 export async function getIntervalUsage({
-  aiGradingCache,
   authnUserId,
 }: {
-  aiGradingCache: Cache;
   authnUserId: string;
-}) {
-  return (await aiGradingCache.get<number>(getIntervalUsageKey(authnUserId))) ?? 0;
+}) {  
+  const cache = await getAiGradingCache();
+  console.log(`Key: ${getIntervalUsageKey(authnUserId)} | `, await cache.get<number>(getIntervalUsageKey(authnUserId)));
+  return (await cache.get<number>(getIntervalUsageKey(authnUserId))) ?? 0;
 }
 
 /**
  * Add the cost of an AI grading to the usage of the user for the current interval.
  */
 export async function addAiGradingCostToIntervalUsage({
-  aiGradingCache,
   authnUserId,
   model,
   usage,
   intervalCost
 }: {
-  aiGradingCache: Cache;
   authnUserId: string;
   model: keyof (typeof config)['costPerMillionTokens'];
   usage: LanguageModelUsage;
   intervalCost: number;
 }) {
+  const cache = await getAiGradingCache();
+  
   // Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS is the number of milliseconds since the beginning of the interval.
   const timeRemainingInInterval = AI_GRADING_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
 
   console.log('Add cost:', calculateResponseCost({ model, usage }));
+  console.log({
+    key: getIntervalUsageKey(authnUserId),
+    cost: intervalCost + calculateResponseCost({ model, usage }),
+    timeRemainingInInterval,
+  });
 
-  const updatedIntervalCost = intervalCost + calculateResponseCost({ model, usage });
-
-  aiGradingCache.set(
+  cache.set(
     getIntervalUsageKey(authnUserId),
-    updatedIntervalCost,
+    intervalCost + calculateResponseCost({ model, usage }),
     timeRemainingInInterval,
   );
-
-  return updatedIntervalCost;
 }

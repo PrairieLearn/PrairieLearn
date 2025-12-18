@@ -36,7 +36,6 @@ import {
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
-  getAiGradingCache,
   getIntervalUsage,
   insertAiGradingJob,
   parseAiRubricItems,
@@ -45,15 +44,13 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
+  selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const aiGradingCache = getAiGradingCache();
-
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 3;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 2;
 
 /**
  * Grade instance questions using AI.
@@ -214,11 +211,7 @@ export async function aiGrade({
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
-    let intervalCost = await getIntervalUsage({
-      aiGradingCache,
-      authnUserId: authn_user_id
-    });
-
+    let rateLimitExceeded = false;
     /**
      * Grade an individual instance question.
      *
@@ -232,6 +225,24 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ): Promise<boolean> => {
+      if (rateLimitExceeded) {
+        logger.error(`Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`);
+        return false;
+      }
+
+      let intervalCost = await getIntervalUsage({
+        authnUserId: authn_user_id
+      });
+
+      console.log('intervalCost', intervalCost);
+
+      if (intervalCost > config.aiGradingRateLimitDollars) {
+        logger.error("You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.");
+        logger.error(`Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`);
+        rateLimitExceeded = true;
+        return false;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -478,8 +489,10 @@ export async function aiGrade({
           });
         }
 
-        intervalCost = await addAiGradingCostToIntervalUsage({
-          aiGradingCache,
+        let intervalCost = await getIntervalUsage({
+          authnUserId: authn_user_id
+        });
+        await addAiGradingCostToIntervalUsage({
           authnUserId: authn_user_id,
           model: model_id,
           usage: response.usage,
@@ -584,8 +597,10 @@ export async function aiGrade({
           });
         }
 
-        intervalCost = await addAiGradingCostToIntervalUsage({
-          aiGradingCache,
+        let intervalCost = await getIntervalUsage({
+          authnUserId: authn_user_id
+        });
+        await addAiGradingCostToIntervalUsage({
           authnUserId: authn_user_id,
           model: model_id,
           usage: response.usage,
@@ -597,8 +612,6 @@ export async function aiGrade({
 
       return true;
     };
-
-    let rateLimitExceeded = false;
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -623,10 +636,6 @@ export async function aiGrade({
         };
 
         try {
-          if (intervalCost > config.aiGradingRateLimitDollars) {
-            logger.error("You've reached the hourly usage cap for AI grading. Please try again later. Ongoing grading jobs will continue to completion.");
-            return false;
-          }
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err: any) {
           logger.error(err);
