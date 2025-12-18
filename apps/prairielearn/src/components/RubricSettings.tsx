@@ -16,7 +16,7 @@ type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'
   num_submissions: number | null;
 };
 
-export const ExportedRubricItemSchema = z.object({
+const ExportedRubricItemSchema = z.object({
   order: z.number(),
   points: z.number(),
   description: z.string(),
@@ -25,7 +25,7 @@ export const ExportedRubricItemSchema = z.object({
   always_show_to_students: z.boolean(),
 });
 
-export const ExportedRubricDataSchema = z.object({
+const ExportedRubricDataSchema = z.object({
   max_extra_points: z.number(),
   min_points: z.number(),
   replace_auto_points: z.boolean(),
