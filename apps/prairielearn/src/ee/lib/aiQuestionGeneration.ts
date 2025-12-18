@@ -288,16 +288,15 @@ export function approximatePromptCost({
   return approxInputTokenCost + approxOutputTokenCost;
 }
 
+const AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
+
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
 function getIntervalUsageKey(userId: number) {
-  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
+  const intervalStart = Date.now() - (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
   return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
 }
-
-// 1 hour in milliseconds
-const intervalLengthMs = 3600 * 1000;
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
@@ -326,8 +325,8 @@ export async function addCompletionCostToIntervalUsage({
     usage,
   });
 
-  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
+  // Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS is the number of milliseconds since the beginning of the interval.
+  const timeRemainingInInterval = AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
 
   cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
 }

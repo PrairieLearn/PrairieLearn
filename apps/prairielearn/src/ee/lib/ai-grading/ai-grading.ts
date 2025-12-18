@@ -32,9 +32,12 @@ import * as questionServers from '../../../question-servers/index.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  addAiGradingCostToIntervalUsage,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
+  getAiGradingCache,
+  getIntervalUsage,
   insertAiGradingJob,
   parseAiRubricItems,
   selectClosestSubmissionInfo,
@@ -48,7 +51,9 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const aiGradingCache = getAiGradingCache();
+
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 3;
 
 /**
  * Grade instance questions using AI.
@@ -208,6 +213,11 @@ export async function aiGrade({
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
+
+    let intervalCost = await getIntervalUsage({
+      aiGradingCache,
+      authnUserId: authn_user_id
+    });
 
     /**
      * Grade an individual instance question.
@@ -468,6 +478,14 @@ export async function aiGrade({
           });
         }
 
+        intervalCost = await addAiGradingCostToIntervalUsage({
+          aiGradingCache,
+          authnUserId: authn_user_id,
+          model: model_id,
+          usage: response.usage,
+          intervalCost
+        });
+
         logger.info('AI rubric items:');
 
         for (const item of appliedRubricDescription) {
@@ -566,11 +584,21 @@ export async function aiGrade({
           });
         }
 
+        intervalCost = await addAiGradingCostToIntervalUsage({
+          aiGradingCache,
+          authnUserId: authn_user_id,
+          model: model_id,
+          usage: response.usage,
+          intervalCost
+        });
+
         logger.info(`AI score: ${response.object.score}`);
       }
 
       return true;
     };
+
+    let rateLimitExceeded = false;
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -595,6 +623,10 @@ export async function aiGrade({
         };
 
         try {
+          if (intervalCost > config.aiGradingRateLimitDollars) {
+            logger.error("You've reached the hourly usage cap for AI grading. Please try again later. Ongoing grading jobs will continue to completion.");
+            return false;
+          }
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err: any) {
           logger.error(err);

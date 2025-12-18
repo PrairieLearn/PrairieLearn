@@ -1279,6 +1279,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
