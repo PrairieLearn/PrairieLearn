@@ -50,7 +50,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 2;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 
 /**
  * Grade instance questions using AI.
