@@ -176,7 +176,6 @@ onDocumentReady(() => {
   addAuthorButton?.addEventListener('click', () => {
     const index = nextAuthorIndex++;
     constructNewRow(index, table, questionSettingsForm, saveButton);
-    addRowValidation(index, saveButton);
   });
 
   const addMeButton = document.querySelector<HTMLButtonElement>('#add-me-button');
@@ -190,7 +189,6 @@ onDocumentReady(() => {
     nameInput?.setAttribute('value', addMeUserName?.value ?? '');
     const emailInput = document.querySelector<HTMLInputElement>('#author_email_' + index);
     emailInput?.setAttribute('value', addMeUserEmail?.value ?? '');
-    addRowValidation(index, saveButton);
   });
 
   const rows = table?.getElementsByClassName('author-row');
