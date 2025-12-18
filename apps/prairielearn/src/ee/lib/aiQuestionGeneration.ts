@@ -326,7 +326,9 @@ export async function addCompletionCostToIntervalUsage({
   });
 
   // Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval = AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
+  const timeRemainingInInterval =
+    AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS -
+    (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
 
   cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
 }
