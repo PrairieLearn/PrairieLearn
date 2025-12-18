@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
+import { z } from 'zod';
 
 import { downloadAsJSON } from '@prairielearn/browser-utils';
 
@@ -8,7 +9,6 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
-import {z} from "zod";
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
   rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number'> & { id?: string };
@@ -288,7 +288,7 @@ export function RubricSettings({
       let parsedData;
       try {
         parsedData = ExportedRubricDataSchema.parse(JSON.parse(fileContent));
-      } catch (e) {
+      } catch {
         setImportModalWarning('Error parsing JSON file, please check the file format.');
         return;
       }
@@ -321,10 +321,6 @@ export function RubricSettings({
       setStartingPoints(roundPoints((parsedData.starting_points || 0) * scaleFactor));
 
       const rubricItems = parsedData.rubric_items;
-      if (!rubricItems || !Array.isArray(rubricItems)) {
-        setImportModalWarning('Invalid rubric data format. Expected rubric_items to be an array.');
-        return;
-      }
 
       const scaledRubricItems: RubricItemData[] = [];
       for (const rubricItem of rubricItems) {
@@ -336,7 +332,7 @@ export function RubricSettings({
             explanation: rubricItem.explanation || null,
             grader_note: rubricItem.grader_note || null,
             key_binding: null,
-            points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+            points: roundPoints(rubricItem.points * scaleFactor),
           },
           num_submissions: null,
           disagreement_count: null,
