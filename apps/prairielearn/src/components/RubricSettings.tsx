@@ -8,12 +8,35 @@ import { b64EncodeUnicode } from '../lib/base64-util.js';
 import type { StaffAssessmentQuestion } from '../lib/client/safe-db-types.js';
 import type { RubricItem } from '../lib/db-types.js';
 import type { RenderedRubricItem, RubricData } from '../lib/manualGrading.types.js';
+import {z} from "zod";
 
 type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'> & {
   rubric_item: Omit<RubricItem, 'rubric_id' | 'id' | 'number'> & { id?: string };
   disagreement_count: number | null;
   num_submissions: number | null;
 };
+
+export const ExportedRubricItemSchema = z.object({
+  order: z.number(),
+  points: z.number(),
+  description: z.string(),
+  explanation: z.string(),
+  grader_note: z.string(),
+  always_show_to_students: z.boolean(),
+});
+
+export const ExportedRubricDataSchema = z.object({
+  max_extra_points: z.number(),
+  min_points: z.number(),
+  replace_auto_points: z.boolean(),
+  starting_points: z.number(),
+  max_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_auto_points: z.number().nullable(),
+  rubric_items: z.array(ExportedRubricItemSchema),
+});
+
+type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
 /**
  * Explicitly declaring these functions from the window of the instance question page
@@ -205,7 +228,7 @@ export function RubricSettings({
   };
 
   const exportRubric = () => {
-    const rubricData = {
+    const rubricData: ExportedRubricData = {
       max_extra_points: maxExtraPoints,
       min_points: minPoints,
       replace_auto_points: replaceAutoPoints,
@@ -264,8 +287,8 @@ export function RubricSettings({
       }
       let parsedData;
       try {
-        parsedData = JSON.parse(fileContent);
-      } catch {
+        parsedData = ExportedRubricDataSchema.parse(JSON.parse(fileContent));
+      } catch (e) {
         setImportModalWarning('Error parsing JSON file, please check the file format.');
         return;
       }
@@ -306,8 +329,17 @@ export function RubricSettings({
       const scaledRubricItems: RubricItemData[] = [];
       for (const rubricItem of rubricItems) {
         scaledRubricItems.push({
-          ...rubricItem,
-          points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+          rubric_item: {
+            always_show_to_students: rubricItem.always_show_to_students,
+            deleted_at: null,
+            description: rubricItem.description,
+            explanation: rubricItem.explanation || null,
+            grader_note: rubricItem.grader_note || null,
+            key_binding: null,
+            points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+          },
+          num_submissions: null,
+          disagreement_count: null,
         });
       }
       setRubricItems(scaledRubricItems);
