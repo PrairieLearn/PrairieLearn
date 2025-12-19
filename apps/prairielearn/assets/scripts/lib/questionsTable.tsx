@@ -9,7 +9,6 @@ import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
-import { encodeQueryParams } from '../../../src/lib/uri-util.shared.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
