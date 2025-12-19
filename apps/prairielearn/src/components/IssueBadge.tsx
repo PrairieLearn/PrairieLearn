@@ -2,6 +2,8 @@ import clsx from 'clsx';
 
 import { renderHtml } from '@prairielearn/preact';
 
+import { encodeQueryParams } from '../lib/uri-util.shared.js';
+
 export function IssueBadge({
   count,
   suppressLink,
@@ -33,13 +35,7 @@ export function IssueBadge({
     return <span class={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}>{count}</span>;
   }
 
-  let query = 'is%3Aopen';
-  if (issueQid) {
-    query += `+qid%3A${encodeURIComponent(issueQid)}`;
-  }
-  if (issueAid) {
-    query += `+assessment%3A${encodeURIComponent(issueAid)}`;
-  }
+  const query = encodeQueryParams({ is: 'open', qid: issueQid, assessment: issueAid });
 
   return (
     <a

@@ -8,6 +8,7 @@ import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
 import { TopicBadgeHtml } from '../../../src/components/TopicBadge.js';
 import { type Topic } from '../../../src/lib/db-types.js';
+import { encodeQueryParams } from '../../../src/lib/uri-util.shared.js';
 import { type QuestionsPageData } from '../../../src/models/questions.js';
 
 import { type ExtendedBootstrapTableOptions } from './bootstrapTable.js';
@@ -100,9 +101,10 @@ onDocumentReady(() => {
     if (question.open_issue_count > 0) {
       text += html`<a
         class="badge rounded-pill text-bg-danger ms-1"
-        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
+        href="${urlPrefix}/course_admin/issues?q=${encodeQueryParams({
+          is: 'open',
+          qid: question.qid,
+        })}"
         >${question.open_issue_count}</a
       >`.toString();
     }

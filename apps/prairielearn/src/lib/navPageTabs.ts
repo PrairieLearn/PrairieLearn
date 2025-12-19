@@ -3,6 +3,8 @@ import SearchString from 'search-string';
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
+import { encodeQueryParams } from './uri-util.shared.js';
+
 /**
  * Retrieves horizontal navigation tab info for ContextNavigation.
  * @returns Navigation page tabs and their configurations
@@ -212,12 +214,8 @@ export function getNavPageTabs() {
       },
       {
         activeSubPage: 'issues',
-        urlSuffix: ({ question }) => {
-          const searchString = SearchString.parse('is:open');
-          // Add question ID to the search string, escaping as necessary
-          searchString.addEntry('qid', question.qid, false);
-          return `/course_admin/issues?q=${encodeURIComponent(searchString.toString())}`;
-        },
+        urlSuffix: ({ question }) =>
+          `/course_admin/issues?q=${encodeQueryParams({ is: 'open', qid: question.qid })}`,
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>
