@@ -12,7 +12,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { updateCourseRepo } from '../models/update-course-repo.js';
+import { updateCourseRepo } from './helperCourseRepo.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';

@@ -6,7 +6,7 @@ import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
-import { updateCourseRepo } from '../models/update-course-repo.js';
+import { updateCourseRepo } from './helperCourseRepo.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
