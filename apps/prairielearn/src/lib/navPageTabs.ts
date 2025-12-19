@@ -1,5 +1,3 @@
-import SearchString from 'search-string';
-
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
