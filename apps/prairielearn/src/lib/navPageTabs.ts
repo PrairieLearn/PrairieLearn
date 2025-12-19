@@ -1,3 +1,5 @@
+import SearchString from 'search-string';
+
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
@@ -210,8 +212,12 @@ export function getNavPageTabs() {
       },
       {
         activeSubPage: 'issues',
-        urlSuffix: ({ question }) =>
-          `/course_admin/issues?q=is%3Aopen+qid%3A%22${encodeURIComponent(question.qid)}%22`,
+        urlSuffix: ({ question }) => {
+          const searchString = SearchString.parse('is:open');
+          // Add question ID to the search string, escaping as necessary
+          searchString.addEntry('qid', question.qid, false);
+          return `/course_admin/issues?q=${encodeURIComponent(searchString.toString())}`;
+        },
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>
