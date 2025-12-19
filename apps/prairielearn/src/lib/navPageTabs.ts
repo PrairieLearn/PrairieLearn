@@ -211,7 +211,7 @@ export function getNavPageTabs() {
       {
         activeSubPage: 'issues',
         urlSuffix: ({ question }) =>
-          `/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}`,
+          `/course_admin/issues?q=is%3Aopen+qid%3A%22${encodeURIComponent(question.qid)}%22`,
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>
