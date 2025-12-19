@@ -449,7 +449,7 @@ router.post(
 
       const correctedRotations = await async.mapLimit(
         allInstanceQuestions,
-        20,
+        5,
         async (instanceQuestion: InstanceQuestion) => {
           const {finalImageBase64, finalOrientation, rotationHistory} = await aiCorrectRotation({
             course: res.locals.course,

@@ -713,7 +713,7 @@ export async function aiCorrectRotation({
   let finalImageBase64 = null;
 
   const OrientationSchema = z.enum([
-    'Upright (0 degrees)', 'Upside-down (180 degrees)' , 'Rotated Counterclockwise 90 degrees' , 'Rotated Clockwise 90 degrees', '45 degrees clockwise', '45 degrees counterclockwise'
+    'Upright (0 degrees)', 'Upside-down (180 degrees)' , 'Rotated Counterclockwise 90 degrees' , 'Rotated Clockwise 90 degrees'
   ])
 
   type Orientation = z.infer<typeof OrientationSchema>;
@@ -749,8 +749,6 @@ export async function aiCorrectRotation({
             content: formatPrompt([
                 'Describe the orientation of the handwriting as upright, upside-down, rotated counterclockwise 90 degrees, or rotated clockwise 90 degrees.',
                 'Upright (0 degrees): The handwriting is in a standard reading position already.',
-                '45 degrees clockwise: Tops of the letters point toward the top-right corner.',
-                '45 degrees counterclockwise: Tops of the letters point toward the top-left corner.',
                 'Upside-down (180 degrees clockwise): The handwriting is completely upside down.',
                 'Rotated Clockwise 90 degrees: The page is on its side, with the top of the text pointing left.',
                 'Rotated Counterclockwise 90 degrees: The page is on its side, with the top of the text pointing right.',
@@ -812,12 +810,6 @@ export async function aiCorrectRotation({
     switch (orientation) {
         case 'Upright (0 degrees)':
             angle = 0;
-            break;
-        case '45 degrees clockwise':
-            angle = -45;
-            break;
-        case '45 degrees counterclockwise':
-            angle = 45;
             break;
         case 'Upside-down (180 degrees)':
             angle = 180;
