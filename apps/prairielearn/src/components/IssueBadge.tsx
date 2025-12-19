@@ -35,10 +35,10 @@ export function IssueBadge({
 
   let query = 'is%3Aopen';
   if (issueQid) {
-    query += `+qid%3A${encodeURIComponent(issueQid)}`;
+    query += `+qid%3A%22${encodeURIComponent(issueQid)}%22`;
   }
   if (issueAid) {
-    query += `+assessment%3A${encodeURIComponent(issueAid)}`;
+    query += `+assessment%3A%22${encodeURIComponent(issueAid)}%22`;
   }
 
   return (
