@@ -206,10 +206,7 @@ export function InstructorAssessmentQuestionsTable({
     setShowResetModal(true);
   };
 
-  if (!assessment.type) {
-    throw new Error('Assessment type is required');
-  }
-  const assessmentType: EnumAssessmentType = assessment.type;
+  const assessmentType: EnumAssessmentType = assessment.type!;
 
   const handleEditQuestion = ({
     question,
