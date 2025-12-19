@@ -2,9 +2,10 @@ import { Router } from 'express';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
+import * as async from 'async';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -19,9 +20,10 @@ import {
 } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
   deleteAiGradingJobs,
+  selectInstanceQuestionsForAssessmentQuestion,
   setAiGradingMode,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
-import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
+import { aiCorrectRotation, aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
   deleteAiInstanceQuestionGroups,
   selectAssessmentQuestionHasInstanceQuestionGroups,
@@ -41,6 +43,7 @@ import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
+import type { InstanceQuestion } from '../../../lib/db-types.js';
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 
@@ -430,6 +433,54 @@ router.post(
       });
 
       res.json({ job_sequence_id });
+    } else if (req.body.__action === 'correct_rotations') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
+        assessment_question_id: res.locals.assessment_question.id
+      });     
+
+      const model_id = req.body.model_id as AiGradingModelId | undefined;
+      if (!model_id) {
+        throw new error.HttpStatusError(400, 'No AI grading model specified');
+      }
+
+      const correctedRotations = await async.mapLimit(
+        allInstanceQuestions,
+        20,
+        async (instanceQuestion: InstanceQuestion) => {
+          const {finalImageBase64, finalOrientation, rotationHistory} = await aiCorrectRotation({
+            course: res.locals.course,
+            course_instance_id: res.locals.course_instance.id,
+            question: res.locals.question,
+            assessment_question: res.locals.assessment_question,
+            instance_question: instanceQuestion,
+            urlPrefix: res.locals.urlPrefix,
+            model_id
+          });
+
+          const instanceQuestionUserEmail = await queryRow(
+            sql.select_instance_question_user_email,
+            {
+              instance_question_id: instanceQuestion.id,
+            },
+            z.string()
+          );
+
+          return {
+            instance_question_id: instanceQuestion.id,
+            email: instanceQuestionUserEmail,
+            finalImageBase64,
+            finalOrientation,
+            rotationHistory 
+          };
+        }
+      );
+
+      // Return the rotations as a JSON file download
+      res.json({ corrected_rotations: correctedRotations });
     } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
@@ -510,7 +561,7 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
-  }),
+  })
 );
 
 export default router;

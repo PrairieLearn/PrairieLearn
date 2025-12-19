@@ -753,6 +753,17 @@ export function AssessmentQuestionTable({
                         });
                       }}
                     />
+                    <AiGradingOption
+                      text="Correct rotations"
+                      numToGrade={aiGradingCounts.all}
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
+                        batchActionMutation.mutate({
+                          action: 'correct_rotations',
+                          modelId,
+                        });
+                      }}
+                    />
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
                       Delete all AI grading results

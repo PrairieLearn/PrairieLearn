@@ -2,6 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
+import { downloadAsJSON } from '@prairielearn/browser-utils';
 
 export type BatchActionData =
   | { assigned_grader: string | null }
@@ -27,7 +28,8 @@ export type BatchActionParams =
         | 'ai_grade_assessment_graded'
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
-        | 'ai_instance_question_group_assessment_ungrouped';
+        | 'ai_instance_question_group_assessment_ungrouped'
+        | 'correct_rotations';
       modelId: AiGradingModelId;
     };
 
@@ -94,6 +96,15 @@ export function useManualGradingActions({
       if (!response.ok) {
         throw new Error(data.error);
       }
+
+
+      console.log('data', data);
+
+      if (data.corrected_rotations) {
+        downloadAsJSON(data.corrected_rotations, 'corrected_rotations.json');
+        return null;
+      }
+
 
       return data;
     },

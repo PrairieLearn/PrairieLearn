@@ -28,3 +28,15 @@ export const AI_GRADING_MODEL_PROVIDERS = {
  * Users without the ai-grading-model-selection feature flag enabled must use the default model.
  */
 export const DEFAULT_AI_GRADING_MODEL = 'gpt-5-mini-2025-08-07' as const;
+
+/**
+ * Models supporting system messages after the first user message.
+ * As of November 2025,
+ * - OpenAI GPT 5-mini and GPT 5.1 support this.
+ * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
+ */
+export const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
+  'gpt-5-mini-2025-08-07',
+  'gpt-5.1-2025-11-13',
+]);

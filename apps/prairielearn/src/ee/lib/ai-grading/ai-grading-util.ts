@@ -44,7 +44,7 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
-import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG, type AiGradingModelId } from './ai-grading-models.shared.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -60,18 +60,6 @@ export const GradedExampleSchema = z.object({
   manual_rubric_grading_id: z.string().nullable(),
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
-
-/**
- * Models supporting system messages after the first user message.
- * As of November 2025,
- * - OpenAI GPT 5-mini and GPT 5.1 support this.
- * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
- * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
- */
-const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
-  'gpt-5-mini-2025-08-07',
-  'gpt-5.1-2025-11-13',
-]);
 
 export async function generatePrompt({
   questionPrompt,
