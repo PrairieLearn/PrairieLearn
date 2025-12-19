@@ -96,8 +96,8 @@ onDocumentReady(() => {
 
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
-        ${prefix}${question.qid}
-      </a>
+        ${prefix}${question.qid}</a
+      >
     `.toString();
     if (question.open_issue_count > 0) {
       text += IssueBadgeHtml({
