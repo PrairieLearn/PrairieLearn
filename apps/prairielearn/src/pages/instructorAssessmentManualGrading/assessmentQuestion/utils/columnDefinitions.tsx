@@ -30,6 +30,7 @@ interface CreateColumnsParams {
 
 export type ColumnId =
   | 'select'
+  | 'ai_grading_status'
   | 'index'
   | 'instance_question_group_name'
   | 'user_or_group_name'
@@ -94,6 +95,114 @@ export function createColumns({
       ),
       cell: ({ row, table }) => {
         return <input type="checkbox" {...createCheckboxProps(row, table)} />;
+      },
+      size: 40,
+      minSize: 40,
+      maxSize: 40,
+      enableSorting: false,
+      enableHiding: false,
+      enablePinning: false,
+      enableResizing: false,
+    }),
+
+    // AI Grading Status Column
+    columnHelper.display({
+      id: 'ai_grading_status',
+      header: () => (
+        <i class="bi bi-stars" aria-label="AI grading status" title="AI grading status" />
+      ),
+      cell: (info) => {
+        const index = info.row.index;
+        const rowId = info.row.original.instance_question.id;
+
+        // Mock AI grading status for demo (first 15 instances)
+        let aiGradingStatus: 'success' | 'in-progress' | 'queued' | 'failed' | null = null;
+        if (index < 15) {
+          if (index < 3) aiGradingStatus = 'in-progress';
+          else if (index < 7) aiGradingStatus = 'queued';
+          else if (index < 11) aiGradingStatus = 'success';
+          else aiGradingStatus = 'failed';
+        }
+
+        if (!aiGradingStatus) return null;
+
+        if (aiGradingStatus === 'success') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading completed successfully',
+                props: { id: `ai-status-${rowId}-success-tooltip` },
+              }}
+            >
+              <span role="status" aria-label="AI grading completed successfully">
+                <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
+              </span>
+            </OverlayTrigger>
+          );
+        }
+
+        if (aiGradingStatus === 'in-progress') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading in progress',
+                props: { id: `ai-status-${rowId}-progress-tooltip` },
+              }}
+            >
+              <span role="status" aria-label="AI grading in progress">
+                <span
+                  class="d-inline-block text-primary"
+                  style={{
+                    width: '0.75rem',
+                    height: '0.75rem',
+                    borderRadius: '50%',
+                    backgroundColor: 'currentColor',
+                    animation: 'pulse-opacity 2s ease-in-out infinite',
+                  }}
+                  aria-hidden="true"
+                />
+                <style>{`
+                  @keyframes pulse-opacity {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                  }
+                `}</style>
+              </span>
+            </OverlayTrigger>
+          );
+        }
+
+        if (aiGradingStatus === 'queued') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading queued',
+                props: { id: `ai-status-${rowId}-queued-tooltip` },
+              }}
+            >
+              <span role="status" aria-label="AI grading queued">
+                <i class="bi bi-hourglass-split text-secondary" aria-hidden="true" />
+              </span>
+            </OverlayTrigger>
+          );
+        }
+
+        if (aiGradingStatus === 'failed') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading failed',
+                props: { id: `ai-status-${rowId}-failed-tooltip` },
+              }}
+            >
+              <span role="status" aria-label="AI grading failed">
+                <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+              </span>
+            </OverlayTrigger>
+          );
+        }
+
+        return null;
       },
       size: 40,
       minSize: 40,
@@ -229,7 +338,106 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
-      cell: (info) => (info.getValue() ? 'Requires grading' : 'Graded'),
+      cell: (info) => {
+        const index = info.row.index;
+        const rowId = info.row.original.instance_question.id;
+        const requiresGrading = info.getValue();
+        
+        // Mock AI grading status for demo (first 15 instances)
+        let aiGradingStatus: 'success' | 'in-progress' | 'queued' | 'failed' | null = null;
+        if (index < 15) {
+          if (index < 3) aiGradingStatus = 'in-progress';
+          else if (index < 7) aiGradingStatus = 'queued';
+          else if (index < 11) aiGradingStatus = 'success';
+          else aiGradingStatus = 'failed';
+        }
+        
+        // If there's AI grading status, show that instead
+        if (aiGradingStatus) {
+          if (aiGradingStatus === 'success') {
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'AI grading completed successfully',
+                  props: { id: `ai-status-${rowId}-success-tooltip` },
+                }}
+              >
+                <span class="d-flex align-items-center gap-2">
+                  <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
+                  <span>Graded</span>
+                </span>
+              </OverlayTrigger>
+            );
+          }
+          
+          if (aiGradingStatus === 'in-progress') {
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'AI grading in progress',
+                  props: { id: `ai-status-${rowId}-progress-tooltip` },
+                }}
+              >
+                <span class="d-flex align-items-center gap-2">
+                  <span
+                    class="d-inline-block text-secondary"
+                    style={{
+                      width: '0.75rem',
+                      height: '0.75rem',
+                      borderRadius: '50%',
+                      backgroundColor: 'currentColor',
+                      animation: 'pulse-opacity 2s ease-in-out infinite',
+                    }}
+                    aria-hidden="true"
+                  />
+                  <style>{`
+                    @keyframes pulse-opacity {
+                      0%, 100% { opacity: 1; }
+                      50% { opacity: 0.3; }
+                    }
+                  `}</style>
+                  <span>AI grading...</span>
+                </span>
+              </OverlayTrigger>
+            );
+          }
+          
+          if (aiGradingStatus === 'queued') {
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'AI grading queued',
+                  props: { id: `ai-status-${rowId}-queued-tooltip` },
+                }}
+              >
+                <span class="d-flex align-items-center gap-2">
+                  <i class="bi bi-clock text-secondary" aria-hidden="true" />
+                  <span>Queued</span>
+                </span>
+              </OverlayTrigger>
+            );
+          }
+          
+          if (aiGradingStatus === 'failed') {
+            return (
+              <OverlayTrigger
+                tooltip={{
+                  body: 'AI grading failed',
+                  props: { id: `ai-status-${rowId}-failed-tooltip` },
+                }}
+              >
+                <span class="d-flex align-items-center gap-2">
+                  <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+                  <span>Failed</span>
+                </span>
+              </OverlayTrigger>
+            );
+          }
+        }
+        
+        // Default to the original behavior
+        return requiresGrading ? 'Requires grading' : 'Graded';
+      },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const requiresGrading = getValue(columnId);

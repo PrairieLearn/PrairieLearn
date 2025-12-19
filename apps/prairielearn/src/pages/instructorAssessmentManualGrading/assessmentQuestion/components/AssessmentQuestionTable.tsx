@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Modal, ProgressBar } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -617,6 +617,26 @@ export function AssessmentQuestionTable({
             question_qid: questionQid,
           }}
         />
+      </div>
+      <div class="mb-3">
+        <Alert variant="info" class="mb-0">
+          <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2">
+              <i class="bi bi-stars fs-5" aria-hidden="true" />
+              <strong class="text-nowrap">AI grading in progress</strong>
+            </div>
+            <div class="flex-grow-1">
+              <ProgressBar now={37.5} striped animated variant="primary" />
+            </div>
+            <div class="text-muted small text-nowrap">
+              45/120 submissions graded
+            </div>
+            <Button variant="danger" size="sm">
+              <i class="bi bi-x-circle me-1" aria-hidden="true" />
+              Cancel
+            </Button>
+          </div>
+        </Alert>
       </div>
       {batchActionMutation.isError && (
         <Alert
