@@ -358,12 +358,20 @@ export function InstructorAssessmentQuestionsTable({
         // If only one alternative remains, convert it back to a regular question
         if (alternativeGroup.alternatives?.length === 1) {
           const remainingAlternative = alternativeGroup.alternatives[0];
+          const { alternatives: _alternatives, ...alternativeGroupWithoutAlternatives } =
+            alternativeGroup;
           // Merge the remaining alternative's properties into the question
           zone.questions[alternativeGroupNumber - 1] = {
-            ...alternativeGroup,
+            ...alternativeGroupWithoutAlternatives,
             ...remainingAlternative,
-            alternatives: undefined,
           };
+          setQuestionMap((prev) => ({
+            ...prev,
+            [remainingAlternative.id]: {
+              ...questionMap[remainingAlternative.id],
+              alternative_group_size: 1,
+            },
+          }));
         }
       } else {
         zone.questions.splice(alternativeGroupNumber - 1, 1);
@@ -384,6 +392,7 @@ export function InstructorAssessmentQuestionsTable({
   );
   const baseCols = showAdvanceScorePercCol ? 11 : 10;
   const nTableCols = baseCols + (editMode ? 2 : 0);
+
   return (
     <>
       <div class="card mb-4">

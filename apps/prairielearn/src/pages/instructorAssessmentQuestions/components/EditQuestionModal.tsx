@@ -2,7 +2,7 @@ import clsx from 'clsx';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import { useMemo, useRef, useState } from '@prairielearn/preact-cjs/hooks';
+import { useMemo, useRef } from '@prairielearn/preact-cjs/hooks';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
@@ -38,6 +38,18 @@ function isInherited(
   );
 }
 
+/**
+ * Helper function to compare two values, including arrays.
+ */
+function valuesAreEqual(a: any, b: any): boolean {
+  if (a === b) return true;
+  if (Array.isArray(a) && Array.isArray(b)) {
+    if (a.length !== b.length) return false;
+    return a.every((val, idx) => val === b[idx]);
+  }
+  return false;
+}
+
 export function EditQuestionModal({
   editQuestionModalState,
   onHide,
@@ -57,14 +69,6 @@ export function EditQuestionModal({
   const alternativeGroup = type !== 'closed' ? editQuestionModalState.alternativeGroup : undefined;
   const mappedQids = type === 'create' ? editQuestionModalState.mappedQids : [];
   const isAlternative = !!alternativeGroup;
-  const [isPointsInherited, setIsPointsInherited] = useState(false);
-  const [isMaxPointsInherited, setIsMaxPointsInherited] = useState(false);
-  const autoPointsDisplayValue =
-    question?.points ??
-    question?.autoPoints ??
-    alternativeGroup?.points ??
-    alternativeGroup?.autoPoints ??
-    undefined;
 
   const manualPointsDisplayValue = question?.manualPoints ?? alternativeGroup?.manualPoints ?? null;
   const newQuestionData = useRef<StaffAssessmentQuestionRow | undefined>(undefined);
@@ -76,11 +80,9 @@ export function EditQuestionModal({
     if (question?.autoPoints !== undefined) return 'autoPoints';
     if (isAlternative) {
       if (alternativeGroup.points !== undefined) {
-        setIsPointsInherited(true);
         return 'points';
       }
       if (alternativeGroup.autoPoints !== undefined) {
-        setIsPointsInherited(true);
         return 'autoPoints';
       }
     }
@@ -95,19 +97,53 @@ export function EditQuestionModal({
     // Check inherited from alternative group
     if (isAlternative) {
       if (alternativeGroup.maxAutoPoints !== undefined) {
-        setIsMaxPointsInherited(true);
         return 'maxAutoPoints';
       }
       if (alternativeGroup.maxPoints !== undefined) {
-        setIsMaxPointsInherited(true);
         return 'maxPoints';
       }
     }
     return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
   }, [question, alternativeGroup, isAlternative, originalPointsProperty]);
 
-  const maxAutoPointsDisplayValue =
-    question?.[originalMaxProperty] ?? alternativeGroup?.[originalMaxProperty] ?? null;
+  const isPointsInherited = useMemo(
+    () => isInherited('points', isAlternative, question!, alternativeGroup),
+    [isAlternative, question, alternativeGroup],
+  );
+  const isMaxPointsInherited = useMemo(
+    () => isInherited(originalMaxProperty, isAlternative, question!, alternativeGroup),
+    [originalMaxProperty, isAlternative, question, alternativeGroup],
+  );
+  const autoPointsDisplayValue = isPointsInherited
+    ? alternativeGroup?.[originalPointsProperty]
+    : (question?.[originalPointsProperty] ?? undefined);
+
+  const maxAutoPointsDisplayValue = isMaxPointsInherited
+    ? alternativeGroup?.[originalMaxProperty]
+    : (question?.[originalMaxProperty] ?? null);
+
+  // Track the original inherited values so we can detect if they were modified
+  const originalInheritedValues = useMemo(() => {
+    return {
+      [originalPointsProperty]: isPointsInherited
+        ? alternativeGroup?.[originalPointsProperty]
+        : undefined,
+      [originalMaxProperty]: isMaxPointsInherited
+        ? alternativeGroup?.[originalMaxProperty]
+        : undefined,
+      manualPoints: isInherited('manualPoints', isAlternative, question!, alternativeGroup)
+        ? alternativeGroup?.manualPoints
+        : undefined,
+    };
+  }, [
+    originalPointsProperty,
+    originalMaxProperty,
+    isPointsInherited,
+    isMaxPointsInherited,
+    isAlternative,
+    question,
+    alternativeGroup,
+  ]);
 
   const {
     register,
@@ -129,7 +165,40 @@ export function EditQuestionModal({
       </Modal.Header>
       <form
         onSubmit={handleSubmit((data) => {
-          handleUpdateQuestion(data, newQuestionData.current);
+          // Filter out inherited values that were not modified
+          const filteredData = { ...data };
+
+          // Check if auto/points field was inherited and unchanged
+          if (
+            originalInheritedValues[originalPointsProperty] !== undefined &&
+            valuesAreEqual(
+              filteredData[originalPointsProperty],
+              originalInheritedValues[originalPointsProperty],
+            )
+          ) {
+            delete filteredData[originalPointsProperty];
+          }
+
+          // Check if max points field was inherited and unchanged
+          if (
+            originalInheritedValues[originalMaxProperty] !== undefined &&
+            valuesAreEqual(
+              filteredData[originalMaxProperty],
+              originalInheritedValues[originalMaxProperty],
+            )
+          ) {
+            delete filteredData[originalMaxProperty];
+          }
+
+          // Check if manual points was inherited and unchanged
+          if (
+            originalInheritedValues.manualPoints !== undefined &&
+            valuesAreEqual(filteredData.manualPoints, originalInheritedValues.manualPoints)
+          ) {
+            delete filteredData.manualPoints;
+          }
+
+          handleUpdateQuestion(filteredData, newQuestionData.current);
         })}
       >
         <Modal.Body>
@@ -184,7 +253,7 @@ export function EditQuestionModal({
                   step="any"
                   aria-invalid={errors.autoPoints ? 'true' : 'false'}
                   {...register(originalPointsProperty, {
-                    value: autoPointsDisplayValue,
+                    value: autoPointsDisplayValue ?? undefined,
                     setValueAs: (value) => {
                       if (value === '') return undefined;
                       return Number(value);
@@ -317,8 +386,6 @@ export function EditQuestionModal({
                   )}
                   aria-invalid={errors[originalPointsProperty] ? 'true' : 'false'}
                   id="autoPointsInput"
-                  // pattern="^[0-9, ]*$"
-                  // value={autoPointsDisplayValue}
                   {...register(originalPointsProperty, {
                     value: autoPointsDisplayValue,
                     pattern: {

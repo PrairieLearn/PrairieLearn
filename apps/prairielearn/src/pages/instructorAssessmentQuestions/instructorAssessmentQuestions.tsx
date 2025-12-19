@@ -178,9 +178,11 @@ export function filterZones(zones: SaveQuestionsZones, assessmentInfo) {
 
           return filteredAlternative;
         });
+        filteredQuestion.id = undefined;
       } else {
         // This is a single question
         filteredQuestion.id = question.id;
+        filteredQuestion.alternatives = undefined;
       }
 
       // Overwrite known question fields
@@ -324,7 +326,7 @@ router.get(
                 assessment={pageContext.assessment}
                 assessmentSetName={pageContext.assessment_set.name}
                 hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                canEdit={canEdit}
+                canEdit={canEdit ?? false}
                 csrfToken={res.locals.__csrf_token}
                 origHash={origHash}
                 editorEnabled={editorEnabled}
