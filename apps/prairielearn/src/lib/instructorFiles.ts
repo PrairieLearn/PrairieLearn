@@ -35,6 +35,7 @@ export interface InstructorFilePaths {
 
 function getContextPaths(
   locals: UntypedResLocals,
+  navPage: 'course_admin' | 'instance_admin' | 'assessment' | 'question' | 'public_question',
 ): Pick<
   InstructorFilePaths,
   | 'rootPath'
@@ -46,56 +47,63 @@ function getContextPaths(
   | 'urlPrefix'
 > {
   const coursePath: string = locals.course.path;
-  if (locals.navPage === 'course_admin') {
-    const rootPath = coursePath;
-    return {
-      rootPath,
-      invalidRootPaths: [
-        path.join(rootPath, '.git'),
-        path.join(rootPath, 'questions'),
-        path.join(rootPath, 'courseInstances'),
-      ],
-      cannotMove: [path.join(rootPath, 'infoCourse.json')],
-      clientDir: path.join(rootPath, 'clientFilesCourse'),
-      serverDir: path.join(rootPath, 'serverFilesCourse'),
-      urlPrefix: `${locals.urlPrefix}/course_admin`,
-    };
-  } else if (locals.navPage === 'instance_admin') {
-    const rootPath = path.join(coursePath, 'courseInstances', locals.course_instance.short_name);
-    return {
-      rootPath,
-      invalidRootPaths: [path.join(rootPath, 'assessments')],
-      cannotMove: [path.join(rootPath, 'infoCourseInstance.json')],
-      clientDir: path.join(rootPath, 'clientFilesCourseInstance'),
-      urlPrefix: `${locals.urlPrefix}/instance_admin`,
-    };
-  } else if (locals.navPage === 'assessment') {
-    const rootPath = path.join(
-      coursePath,
-      'courseInstances',
-      locals.course_instance.short_name,
-      'assessments',
-      locals.assessment.tid,
-    );
-    return {
-      rootPath,
-      invalidRootPaths: [],
-      cannotMove: [path.join(rootPath, 'infoAssessment.json')],
-      clientDir: path.join(rootPath, 'clientFilesAssessment'),
-      urlPrefix: `${locals.urlPrefix}/assessment/${locals.assessment.id}`,
-    };
-  } else if (locals.navPage === 'question' || locals.navPage === 'public_question') {
-    const rootPath = path.join(coursePath, 'questions', locals.question.qid);
-    return {
-      rootPath,
-      invalidRootPaths: [],
-      cannotMove: [path.join(rootPath, 'info.json')],
-      clientDir: path.join(rootPath, 'clientFilesQuestion'),
-      testsDir: path.join(rootPath, 'tests'),
-      urlPrefix: `${locals.urlPrefix}/question/${locals.question.id}`,
-    };
-  } else {
-    throw new Error(`Invalid navPage: ${locals.navPage}`);
+  switch (navPage) {
+    case 'course_admin': {
+      const rootPath = coursePath;
+      return {
+        rootPath,
+        invalidRootPaths: [
+          path.join(rootPath, '.git'),
+          path.join(rootPath, 'questions'),
+          path.join(rootPath, 'courseInstances'),
+        ],
+        cannotMove: [path.join(rootPath, 'infoCourse.json')],
+        clientDir: path.join(rootPath, 'clientFilesCourse'),
+        serverDir: path.join(rootPath, 'serverFilesCourse'),
+        urlPrefix: `${locals.urlPrefix}/course_admin`,
+      };
+    }
+    case 'instance_admin': {
+      const rootPath = path.join(coursePath, 'courseInstances', locals.course_instance.short_name);
+      return {
+        rootPath,
+        invalidRootPaths: [path.join(rootPath, 'assessments')],
+        cannotMove: [path.join(rootPath, 'infoCourseInstance.json')],
+        clientDir: path.join(rootPath, 'clientFilesCourseInstance'),
+        urlPrefix: `${locals.urlPrefix}/instance_admin`,
+      };
+    }
+    case 'assessment': {
+      const rootPath = path.join(
+        coursePath,
+        'courseInstances',
+        locals.course_instance.short_name,
+        'assessments',
+        locals.assessment.tid,
+      );
+      return {
+        rootPath,
+        invalidRootPaths: [],
+        cannotMove: [path.join(rootPath, 'infoAssessment.json')],
+        clientDir: path.join(rootPath, 'clientFilesAssessment'),
+        urlPrefix: `${locals.urlPrefix}/assessment/${locals.assessment.id}`,
+      };
+    }
+    case 'question':
+    case 'public_question': {
+      const rootPath = path.join(coursePath, 'questions', locals.question.qid);
+      return {
+        rootPath,
+        invalidRootPaths: [],
+        cannotMove: [path.join(rootPath, 'info.json')],
+        clientDir: path.join(rootPath, 'clientFilesQuestion'),
+        testsDir: path.join(rootPath, 'tests'),
+        urlPrefix: `${locals.urlPrefix}/question/${locals.question.id}`,
+      };
+    }
+    default: {
+      throw new Error(`Invalid navPage: ${locals.navPage}`);
+    }
   }
 }
 
@@ -107,6 +115,7 @@ function getContextPaths(
 export function getPaths(
   requestedPath: string | undefined,
   locals: UntypedResLocals,
+  navPage: 'course_admin' | 'instance_admin' | 'assessment' | 'question' | 'public_question',
 ): InstructorFilePaths {
   const coursePath: string = locals.course.path;
   const courseId: string = locals.course.id;
@@ -114,7 +123,7 @@ export function getPaths(
     locals.authz_data.has_course_permission_edit && !locals.course.example_course;
 
   const { rootPath, invalidRootPaths, cannotMove, clientDir, serverDir, testsDir, urlPrefix } =
-    getContextPaths(locals);
+    getContextPaths(locals, navPage);
 
   let workingPath = rootPath;
   if (requestedPath) {

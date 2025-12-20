@@ -176,7 +176,7 @@ router.post(
         );
       }
 
-      const paths = getPaths(undefined, res.locals);
+      const paths = getPaths(undefined, res.locals, 'question');
 
       const questionInfo = JSON.parse(await fs.readFile(infoPath, 'utf8'));
 
