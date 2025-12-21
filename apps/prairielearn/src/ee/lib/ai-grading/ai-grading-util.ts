@@ -1,9 +1,11 @@
-import type {
-  EmbeddingModel,
-  GenerateObjectResult,
-  GenerateTextResult,
-  ModelMessage,
-  UserContent,
+import {
+  generateObject,
+  type EmbeddingModel,
+  type GenerateObjectResult,
+  type GenerateTextResult,
+  type LanguageModel,
+  type ModelMessage,
+  type UserContent,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
@@ -90,7 +92,7 @@ export async function generatePrompt({
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
   model_id: AiGradingModelId;
-}): Promise<{input: ModelMessage[], images: string[]}> {
+}): Promise<{input: ModelMessage[], submissionImages: {[key: string]: string}}> {
   const input: ModelMessage[] = [];
 
   const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
@@ -233,7 +235,7 @@ export async function generatePrompt({
 
   const {
     submissionMessage, 
-    images
+    submissionImages
   } = generateSubmissionMessage({
     submission_text,
     submitted_answer,
@@ -253,7 +255,7 @@ export async function generatePrompt({
 
   return {
     input,
-    images
+    submissionImages
   };
 }
 
@@ -270,12 +272,17 @@ async function rotateBase64Image(
   return rotatedImageBuffer.toString('base64');
 }
 
-export async function generateImageOrientationPrompt({
-  image
+/** 
+ * Automatically rotates a provided image to the upright orientation using an AI model.
+ * */
+export async function correctHandwritingOrientation({
+  image,
+  model
 }: {
   /** The original base64-encoded image submission. */
   image: string;
-}): Promise<ModelMessage[]> {
+  model: LanguageModel;
+}): Promise<string> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
   const rotated270 = await rotateBase64Image(image, 270);
@@ -319,7 +326,20 @@ export async function generateImageOrientationPrompt({
     });
   }
 
-  return input;
+  const RotationCorrectionSchema = z.object({
+    upright_image: z.enum(['1', '2', '3', '4']).describe(
+      'The number corresponding to the image that is closest to being upright.'
+    )
+  });
+
+  const response = await generateObject({
+    model,
+    schema: RotationCorrectionSchema,
+    messages: input,
+  });
+
+  const uprightImage = parseInt(response.object.upright_image);
+  return images[uprightImage - 1];
 }
 
 /**
@@ -344,7 +364,7 @@ export function generateSubmissionMessage({
   submitted_answer: Record<string, any> | null;
 }): {
   submissionMessage: ModelMessage;
-  images: string[];
+  submissionImages: {[key: string]: string};
 } {
   const content: UserContent = [];
 
@@ -354,8 +374,7 @@ export function generateSubmissionMessage({
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
-  // We extract these for image rotation correction.
-  let images: string[] = [];
+  let submissionImages: {[key: string]: string} = {};
 
   $submission_html
     .root()
@@ -409,7 +428,7 @@ export function generateSubmissionMessage({
               },
             },
           });
-          images.push(fileData.contents);
+          submissionImages[fileName] = fileData.contents;
         } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
@@ -436,7 +455,7 @@ export function generateSubmissionMessage({
       role: 'user',
       content,
     },
-    images
+    submissionImages
   };
 }
 
