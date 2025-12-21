@@ -384,11 +384,18 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
+        const OrientationSchema = z.enum([
+          'Upright (0 degrees)', 'Upside-down (180 degrees)' , 'Rotated Counterclockwise 90 degrees' , 'Rotated Clockwise 90 degrees'
+        ])
+
         const RubricImageGradingResultSchema = RubricGradingResultSchema.extend({
-          handwriting_upright: z.boolean().describe([
-            'Describe the orientation of the handwriting as upright or not upright.',
-            'Upright (0 degrees): The handwriting is in a standard reading position.',
-            'Only use the student\'s handwriting to determine orientation. Do not use the background or the page.',
+          handwriting_orientation: OrientationSchema.describe([
+            'Describe the orientation of the handwriting as upright, upside-down, rotated counterclockwise 90 degrees, or rotated clockwise 90 degrees.',
+            'Upright (0 degrees): The handwriting is in a standard reading position already.',
+            'Upside-down (180 degrees clockwise): The handwriting is completely upside down.',
+            'Rotated Clockwise 90 degrees: The page is on its side, with the top of the text pointing left.',
+            'Rotated Counterclockwise 90 degrees: The page is on its side, with the top of the text pointing right.',
+            "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
           ].join(' ')),
         })
         
@@ -409,7 +416,7 @@ export async function aiGrade({
               z.string(),
             )
             if (gradingResponse.object)
-            instanceQuestionUpright[uid] = gradingResponse.object.handwriting_upright;
+            instanceQuestionUpright[uid] = gradingResponse.object.handwriting_orientation === 'Upright (0 degrees)';
             return gradingResponse;
           } else {
             return await generateObject({
