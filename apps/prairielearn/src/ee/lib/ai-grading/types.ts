@@ -42,4 +42,9 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
+  /** 
+   * If the LLM determined the handwriting was upright.
+   * If null, the submission did not include images.
+   */
+  handwritingUpright: boolean | null;
 }

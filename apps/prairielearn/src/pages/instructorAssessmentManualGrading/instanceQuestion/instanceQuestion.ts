@@ -207,9 +207,22 @@ router.get(
           return null;
         });
 
+        const handwritingUpright = run(() => {
+          const completion = ai_grading_job_data.completion;
+          if (!completion) return null;
+
+          if (completion.output_parsed) {
+            // The handwriting_upright field is in the output only if the submission included images.
+            return completion?.output_parsed?.handwriting_upright ?? null;
+          }
+
+          return null;
+        })
+
         aiGradingInfo = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
+          handwritingUpright,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
         };

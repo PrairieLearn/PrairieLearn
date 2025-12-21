@@ -48,7 +48,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 10;
 
 /**
  * Grade instance questions using AI.
@@ -208,6 +208,10 @@ export async function aiGrade({
       }
     });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
+
+    let instanceQuestionUpright: {
+      [key: string]: boolean;
+    } = {};
 
     /**
      * Grade an individual instance question.
@@ -380,13 +384,43 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const response = await generateObject({
-          model,
-          schema: RubricGradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
+        const RubricImageGradingResultSchema = RubricGradingResultSchema.extend({
+          handwriting_upright: z.boolean().describe([
+            'Describe the orientation of the handwriting as upright or not upright.',
+            'Upright (0 degrees): The handwriting is in a standard reading position.',
+            'Only use the student\'s handwriting to determine orientation. Do not use the background or the page.',
+          ].join(' ')),
+        })
+        
+        const response = await run(async () => {
+          if (hasImage) {
+            const gradingResponse = await generateObject({
+              model,
+              schema: RubricImageGradingResultSchema,
+              messages: input,
+              providerOptions: {
+                openai: openaiProviderOptions,
+              },
+            });
+            
+            const uid = await queryRow(
+              sql.select_uid_for_instance_question,
+              { instance_question_id: instance_question.id },
+              z.string(),
+            )
+            if (gradingResponse.object)
+            instanceQuestionUpright[uid] = gradingResponse.object.handwriting_upright;
+            return gradingResponse;
+          } else {
+            return await generateObject({
+              model,
+              schema: RubricGradingResultSchema,
+              messages: input,
+              providerOptions: {
+                openai: openaiProviderOptions,
+              },
+            });
+          }
         });
 
         logResponseUsage({ response, logger });
@@ -615,6 +649,8 @@ export async function aiGrade({
         }
       },
     );
+
+    job.info(`Upright detections:\n${JSON.stringify(instanceQuestionUpright, null, 2)}`);
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

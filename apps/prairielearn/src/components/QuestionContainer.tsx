@@ -197,7 +197,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({ explanation, handwritingUpright }: { explanation: string; handwritingUpright: boolean | null }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -220,9 +220,12 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
+          ${handwritingUpright !== null ? (
+            html`<pre>Detected upright handwriting: ${handwritingUpright ? 'true' : 'false'}</pre>`
+          ) : ''}
           <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+${explanation}
+          </pre>
         </div>
       </div>
     </div>
