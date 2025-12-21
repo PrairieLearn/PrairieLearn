@@ -45,6 +45,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import sharp from 'sharp';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -89,7 +90,7 @@ export async function generatePrompt({
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
   model_id: AiGradingModelId;
-}): Promise<ModelMessage[]> {
+}): Promise<{input: ModelMessage[], images: string[]}> {
   const input: ModelMessage[] = [];
 
   const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
@@ -230,20 +231,93 @@ export async function generatePrompt({
     }
   }
 
+  const {
+    submissionMessage, 
+    images
+  } = generateSubmissionMessage({
+    submission_text,
+    submitted_answer,
+  });
+
   input.push(
     {
       role: systemRoleAfterUserMessage,
       content: 'The student made the following submission:',
     },
-    generateSubmissionMessage({
-      submission_text,
-      submitted_answer,
-    }),
+    submissionMessage,
     {
       role: systemRoleAfterUserMessage,
       content: 'Please grade the submission according to the above instructions.',
     },
   );
+
+  return {
+    input,
+    images
+  };
+}
+
+async function rotateBase64Image(
+  base64Image: string, 
+  /** Clockwise */
+  angle: 90 | 180 | 270
+): Promise<string> {
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+  const rotatedImageBuffer = await sharp(imageBuffer)
+      .rotate(angle)
+      .toBuffer();
+  return rotatedImageBuffer.toString('base64');
+}
+
+export async function generateImageOrientationPrompt({
+  image
+}: {
+  /** The original base64-encoded image submission. */
+  image: string;
+}): Promise<ModelMessage[]> {
+  const rotated90 = await rotateBase64Image(image, 90);
+  const rotated180 = await rotateBase64Image(image, 180);
+  const rotated270 = await rotateBase64Image(image, 270);
+
+  const input: ModelMessage[] = [];
+
+  input.push({
+    role: 'system',
+    content: formatPrompt([
+      'Of the four images provided, select the one that is closest to being upright.',
+      'Upright (0 degrees): The handwriting is in a standard reading position already.',
+      "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+    ])
+  });
+
+  const images = [
+    image,
+    rotated90,
+    rotated180,
+    rotated270,
+  ];
+
+  for (let i = 1; i <= 4; i++) {
+    input.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `${i}:` 
+        },
+        {
+          type: 'image',
+          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          providerOptions: {
+            openai: {
+              imageDetail: 'auto',
+            },
+          },
+        },
+      ]
+    });
+  }
 
   return input;
 }
@@ -268,7 +342,10 @@ export function generateSubmissionMessage({
 }: {
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-}): ModelMessage {
+}): {
+  submissionMessage: ModelMessage;
+  images: string[];
+} {
   const content: UserContent = [];
 
   // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
@@ -276,6 +353,9 @@ export function generateSubmissionMessage({
 
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
+
+  // We extract these for image rotation correction.
+  let images: string[] = [];
 
   $submission_html
     .root()
@@ -329,6 +409,7 @@ export function generateSubmissionMessage({
               },
             },
           });
+          images.push(fileData.contents);
         } else {
           // If the submitted answer doesn't contain the image, the student likely
           // didn't capture an image.
@@ -351,8 +432,11 @@ export function generateSubmissionMessage({
   }
 
   return {
-    role: 'user',
-    content,
+    submissionMessage: {
+      role: 'user',
+      content,
+    },
+    images
   };
 }
 

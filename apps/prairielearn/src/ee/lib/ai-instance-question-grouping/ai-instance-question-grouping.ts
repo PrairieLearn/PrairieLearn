@@ -75,7 +75,7 @@ async function aiEvaluateStudentResponse({
   const answer_text = render_submission_results.data.answerHtml;
   const submission_text = render_submission_results.data.submissionHtmls[0];
 
-  const submissionMessage = generateSubmissionMessage({
+  const { submissionMessage } = generateSubmissionMessage({
     submission_text,
     submitted_answer: submission.submitted_answer,
   });

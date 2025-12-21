@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { generateObject, type ModelMessage } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -11,7 +11,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { logResponseUsage } from '../../../lib/ai.js';
+import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -27,12 +27,15 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import sharp from "sharp";
+
 import * as questionServers from '../../../question-servers/index.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  generateImageOrientationPrompt,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -48,7 +51,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 10;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 
 /**
  * Grade instance questions using AI.
@@ -213,6 +216,10 @@ export async function aiGrade({
       [key: string]: boolean;
     } = {};
 
+    let correctedOrientation: {
+      [key: string]: string;
+    } = {};
+
     /**
      * Grade an individual instance question.
      *
@@ -327,16 +334,6 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
-      const input = await generatePrompt({
-        questionPrompt,
-        questionAnswer,
-        submission_text,
-        submitted_answer: submission.submitted_answer,
-        example_submissions,
-        rubric_items,
-        model_id,
-      });
-
       // If the submission contains images, prompt the model to transcribe any relevant information
       // out of the image.
       const explanationDescription = run(() => {
@@ -365,6 +362,16 @@ export async function aiGrade({
         promptCacheKey: `assessment_question_${assessment_question.id}`,
         safetyIdentifier: `course_${course.id}`,
       };
+
+      const { input, images } = await generatePrompt({
+        questionPrompt,
+        questionAnswer,
+        submission_text,
+        submitted_answer: submission.submitted_answer,
+        example_submissions,
+        rubric_items,
+        model_id,
+      });
 
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
@@ -399,7 +406,7 @@ export async function aiGrade({
           ].join(' ')),
         })
         
-        const response = await run(async () => {
+        const {response, handwritingOrientation} = await run(async () => {
           if (hasImage) {
             const gradingResponse = await generateObject({
               model,
@@ -417,18 +424,55 @@ export async function aiGrade({
             )
             if (gradingResponse.object)
             instanceQuestionUpright[uid] = gradingResponse.object.handwriting_orientation === 'Upright (0 degrees)';
-            return gradingResponse;
+            return {response: gradingResponse, handwritingOrientation: gradingResponse.object.handwriting_orientation};
           } else {
-            return await generateObject({
+            return {response: (await generateObject({
               model,
               schema: RubricGradingResultSchema,
               messages: input,
               providerOptions: {
                 openai: openaiProviderOptions,
               },
-            });
+            })), handwritingOrientation: null};
           }
         });
+
+        const uid = await queryRow(
+          sql.select_uid_for_instance_question,
+          { instance_question_id: instance_question.id },
+          z.string(),
+        )
+
+        if (handwritingOrientation && handwritingOrientation !== 'Upright (0 degrees)') {
+          // Determine the correct rotation.
+          // Re-grade the submission with the upright image.
+
+          // TODO: Handle multiple submitted images.
+          const originalBase64 = images[0];
+          const rotationCorrectionInput = await generateImageOrientationPrompt({image: originalBase64});
+
+
+          const RotationCorrectionSchema = z.object({
+            corrected_image: z.enum(['1', '2', '3', '4']).describe(
+              'The number corresponding to the image that is closest to being upright.'
+            )
+          });
+
+          const response = await generateObject({
+            model,
+            schema: RotationCorrectionSchema,
+            messages: rotationCorrectionInput,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          correctedOrientation[uid] = response.object.corrected_image;
+        } else {
+          correctedOrientation[uid] = '1'
+        }
+
+
 
         logResponseUsage({ response, logger });
 
@@ -658,6 +702,7 @@ export async function aiGrade({
     );
 
     job.info(`Upright detections:\n${JSON.stringify(instanceQuestionUpright, null, 2)}`);
+    job.info(`Corrected orientations:\n${JSON.stringify(correctedOrientation, null, 2)}`);
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 
