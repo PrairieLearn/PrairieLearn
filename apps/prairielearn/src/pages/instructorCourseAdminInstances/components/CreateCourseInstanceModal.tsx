@@ -132,17 +132,15 @@ export function CreateCourseInstanceModal({
                   required: 'Long name is required',
                 })}
               />
+              <small id="create-long-name-help" class="form-text text-muted">
+                The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined to
+                the course name, e.g. &quot;
+                {course.short_name} Fall 2025&quot;.
+              </small>
               {errors.long_name && (
                 <div class="text-danger small mt-1" id="create-long-name-error">
                   {errors.long_name.message}
                 </div>
-              )}
-              {!errors.long_name && (
-                <small id="create-long-name-help" class="form-text text-muted">
-                  The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined
-                  to the course name, e.g. &quot;
-                  {course.short_name} Fall 2025&quot;.
-                </small>
               )}
             </div>
 
