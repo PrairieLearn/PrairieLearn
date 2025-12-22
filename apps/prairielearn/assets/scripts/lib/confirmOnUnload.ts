@@ -27,6 +27,15 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // (such as lazy loading or async modules), we need to observe changes to
   // those fields and save the form data once they are initialized. Only the
   // first change is considered initialization.
+  //
+  // Note that we observe changes to the `value` DOM attribute, not the `value`
+  // property (which is what determines the form value). Direct changes to the
+  // property are not observable via MutationObserver, however modern browsers
+  // will reflect property changes to the attribute in many cases, including the
+  // common case of `<input type="hidden">` elements used for deferred
+  // initialization. Custom elements also have the option of using
+  // `setAttribute` to set the `value` attribute when they initialize their
+  // inputs if their specific use-case requires it.
   form.querySelectorAll<HTMLInputElement>('[data-deferred-init]').forEach((input) => {
     const observer = new MutationObserver(() => {
       saveQuestionFormData(form);
