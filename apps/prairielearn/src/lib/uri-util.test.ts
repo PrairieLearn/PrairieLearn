@@ -1,7 +1,7 @@
 import { assert, describe, it } from 'vitest';
 
 import { encodePath as encodePathNormalized } from './uri-util.js';
-import { encodePathNoNormalize, encodeQueryParams } from './uri-util.shared.js';
+import { encodePathNoNormalize, encodeSearchString } from './uri-util.shared.js';
 
 function encodePath(originalPath: string): string {
   const client = encodePathNoNormalize(originalPath);
@@ -52,28 +52,28 @@ describe('uri-util', () => {
     });
   });
 
-  describe('encodeQueryParams', () => {
+  describe('encodeSearchString', () => {
     it('encodes alphanumeric and slashes in qid/aid', () => {
       const params = { qid: 'abc123/def456', aid: 'A1/B2/C3' };
-      const result = encodeQueryParams(params);
+      const result = encodeSearchString(params);
       assert.equal(decodeURIComponent(result), 'qid:abc123/def456 aid:A1/B2/C3');
     });
 
     it('encodes qid/aid with quotes', () => {
       const params = { qid: 'abc"def', aid: 'A1"B2' };
-      const result = encodeQueryParams(params);
+      const result = encodeSearchString(params);
       assert.equal(decodeURIComponent(result), 'qid:abc\\"def aid:A1\\"B2');
     });
 
     it('encodes qid/aid with spaces', () => {
       const params = { qid: 'abc def', aid: 'A1 B2' };
-      const result = encodeQueryParams(params);
+      const result = encodeSearchString(params);
       assert.equal(decodeURIComponent(result), 'qid:"abc def" aid:"A1 B2"');
     });
 
     it('encodes qid/aid with commas', () => {
       const params = { qid: 'abc,def', aid: 'A1,B2' };
-      const result = encodeQueryParams(params);
+      const result = encodeSearchString(params);
       assert.equal(decodeURIComponent(result), 'qid:"abc,def" aid:"A1,B2"');
     });
   });

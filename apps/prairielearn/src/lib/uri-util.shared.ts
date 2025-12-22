@@ -17,11 +17,11 @@ export function encodePathNoNormalize(originalPath: string): string {
 }
 
 /**
- * Encodes a set of query parameters into a URI component string to be used with search query strings.
- * @param entries Record of query parameter names and values
+ * Encodes a set of search string entries into a URI component string to be used as a search string query param.
+ * @param entries Record of search parameter names and values
  * @returns Encoded query parameter string
  */
-export function encodeQueryParams(entries: Record<string, string | null | undefined>): string {
+export function encodeSearchString(entries: Record<string, string | null | undefined>): string {
   const searchString = SearchString.parse('');
   for (const [entryName, entryValue] of Object.entries(entries)) {
     // Add the new entry to the search string, escaping as necessary
