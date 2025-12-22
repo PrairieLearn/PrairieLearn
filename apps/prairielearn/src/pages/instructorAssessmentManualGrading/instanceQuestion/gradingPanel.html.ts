@@ -34,6 +34,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
+  assigned_to_me
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
@@ -49,6 +50,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
+  assigned_to_me?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -63,6 +65,7 @@ export function GradingPanel({
   skip_text = skip_text || 'Next';
 
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
+  const showAssignedToMeButton = !disable && context === 'main';
 
   const emptyGroup = {
     assessment_question_id: resLocals.assessment_question.id,
@@ -252,30 +255,58 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
-          <div class="form-check">
-            ${showSkipGradedSubmissionsButton
-              ? html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="checkbox"
-                    class="form-check-input"
-                    name="skip_graded_submissions"
-                    value="true"
-                    ${skip_graded_submissions ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="skip_graded_submissions">
-                    Skip graded submissions
-                  </label>
-                `
-              : html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="hidden"
-                    name="skip_graded_submissions"
-                    value="${skip_graded_submissions ? 'true' : 'false'}"
-                  />
-                `}
+          <div>
+            <div class="form-check">
+              ${showSkipGradedSubmissionsButton
+                ? html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="skip_graded_submissions"
+                      value="true"
+                      ${skip_graded_submissions ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="skip_graded_submissions">
+                      Skip graded submissions
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="hidden"
+                      name="skip_graded_submissions"
+                      value="${skip_graded_submissions ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
+            
+            <div class="form-check">
+              ${showAssignedToMeButton
+                ? html`
+                    <input
+                      id="assigned_to_me"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="assigned_to_me"
+                      value="true"
+                      ${assigned_to_me ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="assigned_to_me">
+                      Assigned to me
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="assigned_to_me"
+                      type="hidden"
+                      name="assigned_to_me"
+                      value="${assigned_to_me ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
           </div>
+          
           <span class="ms-auto">
             ${!disable
               ? html`

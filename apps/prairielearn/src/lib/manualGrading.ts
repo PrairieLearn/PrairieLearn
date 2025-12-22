@@ -58,6 +58,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
+  assigned_to_me,
   use_instance_question_groups,
 }: {
   urlPrefix: string;
@@ -66,6 +67,7 @@ export async function nextInstanceQuestionUrl({
   user_id: string;
   prior_instance_question_id: string | null;
   skip_graded_submissions: boolean;
+  assigned_to_me: boolean;
   use_instance_question_groups: boolean;
 }): Promise<string> {
   const prior_instance_question_group_id = await run(async () => {
@@ -97,6 +99,7 @@ export async function nextInstanceQuestionUrl({
       prior_instance_question_id,
       prior_instance_question_group_id,
       skip_graded_submissions,
+      assigned_to_me,
       use_instance_question_groups,
     },
     IdSchema.nullable(),
@@ -126,6 +129,7 @@ export async function nextInstanceQuestionUrl({
         prior_instance_question_id: null,
         prior_instance_question_group_id: next_instance_question_group_id,
         skip_graded_submissions,
+        assigned_to_me,
         use_instance_question_groups,
       },
       IdSchema,

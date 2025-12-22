@@ -67,8 +67,9 @@ WITH
         OR iq.requires_manual_grading
       )
       AND (
-        iq.assigned_grader = $user_id
-        OR iq.assigned_grader IS NULL
+        NOT ($assigned_to_me) OR
+        (iq.assigned_grader = $user_id
+        OR iq.assigned_grader IS NULL)
       )
       AND EXISTS (
         SELECT
