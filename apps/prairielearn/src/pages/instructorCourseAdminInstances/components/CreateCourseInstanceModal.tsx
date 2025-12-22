@@ -126,12 +126,16 @@ export function CreateCourseInstanceModal({
                 type="text"
                 class="form-control"
                 aria-describedby="create-long-name-help"
+                aria-invalid={!!errors.long_name}
+                aria-errormessage={errors.long_name ? 'create-long-name-error' : undefined}
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
               />
               {errors.long_name && (
-                <div class="text-danger small mt-1">{errors.long_name.message}</div>
+                <div class="text-danger small mt-1" id="create-long-name-error">
+                  {errors.long_name.message}
+                </div>
               )}
               {!errors.long_name && (
                 <small id="create-long-name-help" class="form-text text-muted">
@@ -151,6 +155,8 @@ export function CreateCourseInstanceModal({
                 type="text"
                 class="form-control font-monospace"
                 aria-describedby="create-short-name-help"
+                aria-invalid={!!errors.short_name}
+                aria-errormessage={errors.short_name ? 'create-short-name-error' : undefined}
                 {...register('short_name', {
                   required: 'Short name is required',
                   pattern: {
@@ -159,15 +165,15 @@ export function CreateCourseInstanceModal({
                   },
                 })}
               />
+              <small id="create-short-name-help" class="form-text text-muted">
+                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
+                and headers where a short description is required. Use only letters, numbers,
+                dashes, and underscores, with no spaces.
+              </small>
               {errors.short_name && (
-                <div class="text-danger small mt-1">{errors.short_name.message}</div>
-              )}
-              {!errors.short_name && (
-                <small id="create-short-name-help" class="form-text text-muted">
-                  A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                  and headers where a short description is required. Use only letters, numbers,
-                  dashes, and underscores, with no spaces.
-                </small>
+                <div class="text-danger small mt-1" id="create-short-name-error">
+                  {errors.short_name.message}
+                </div>
               )}
             </div>
 

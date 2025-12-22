@@ -354,6 +354,10 @@ export function CourseInstancePublishingForm({
                       id="start-date-reusable"
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.start_date}
+                      aria-errormessage={
+                        errors.start_date ? 'start-date-reusable-error' : undefined
+                      }
                       {...register('start_date', {
                         validate: validateStartDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -363,7 +367,9 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
-                    <div class="text-danger small mt-1">{errors.start_date.message}</div>
+                    <div class="text-danger small mt-1" id="start-date-reusable-error">
+                      {errors.start_date.message}
+                    </div>
                   )}
                 </div>
 
@@ -390,6 +396,8 @@ export function CourseInstancePublishingForm({
                       id="end-date-reusable"
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? 'end-date-reusable-error' : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -398,7 +406,9 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div class="text-danger small mt-1" id="end-date-reusable-error">
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>
@@ -478,6 +488,8 @@ export function CourseInstancePublishingForm({
                       id="end-date-reusable"
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? 'end-date-reusable-error' : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -486,7 +498,9 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div class="text-danger small mt-1" id="end-date-reusable-error">
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>

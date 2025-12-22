@@ -133,13 +133,17 @@ export function CopyCourseInstanceModal({
                 type="text"
                 class="form-control"
                 aria-describedby="copy-long-name-help"
+                aria-invalid={!!errors.long_name}
+                aria-errormessage={errors.long_name ? 'copy-long-name-error' : undefined}
                 placeholder={courseInstance.long_name ?? undefined}
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
               />
               {errors.long_name && (
-                <div class="text-danger small mt-1">{errors.long_name.message}</div>
+                <div class="text-danger small mt-1" id="copy-long-name-error">
+                  {errors.long_name.message}
+                </div>
               )}
               {!errors.long_name && (
                 <small id="copy-long-name-help" class="form-text text-muted">
@@ -159,6 +163,8 @@ export function CopyCourseInstanceModal({
                 type="text"
                 class="form-control font-monospace"
                 aria-describedby="copy-short-name-help"
+                aria-invalid={!!errors.short_name}
+                aria-errormessage={errors.short_name ? 'copy-short-name-error' : undefined}
                 placeholder={courseInstance.short_name}
                 {...register('short_name', {
                   required: 'Short name is required',
@@ -168,15 +174,15 @@ export function CopyCourseInstanceModal({
                   },
                 })}
               />
+              <small id="copy-short-name-help" class="form-text text-muted">
+                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
+                and headers where a short description is required. Use only letters, numbers,
+                dashes, and underscores, with no spaces.
+              </small>
               {errors.short_name && (
-                <div class="text-danger small mt-1">{errors.short_name.message}</div>
-              )}
-              {!errors.short_name && (
-                <small id="copy-short-name-help" class="form-text text-muted">
-                  A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                  and headers where a short description is required. Use only letters, numbers,
-                  dashes, and underscores, with no spaces.
-                </small>
+                <div class="text-danger small mt-1" id="copy-short-name-error">
+                  {errors.short_name.message}
+                </div>
               )}
             </div>
 
