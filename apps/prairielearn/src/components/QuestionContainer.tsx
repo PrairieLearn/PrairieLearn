@@ -237,7 +237,7 @@ function AIGradingExplanation({
           ${rotationCorrectionDegrees
             ? html`
                 <pre>
-All images were upright: false. 
+All images were upright: false.
 Clockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}</pre
                 >
               `

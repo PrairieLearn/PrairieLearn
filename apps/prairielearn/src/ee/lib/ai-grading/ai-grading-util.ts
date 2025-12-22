@@ -382,6 +382,9 @@ export function generateSubmissionMessage({
   };
 }
 
+/**
+ * Returns the submitted base64-encoded image for each pl-image-capture element in the student's submission.
+ */
 export function extractSubmissionImages({
   submission_text,
   submitted_answer,
@@ -749,7 +752,7 @@ async function rotateBase64Image(
 }
 
 /**
- * Corrects the provided image into an upright orientation using the provided LLM.
+ * Reorients a base64-encoded image to be upright using an AI language model.
  * Designed specifically for images of handwritten student submissions.
  *
  * @param params
@@ -822,6 +825,16 @@ export async function correctImageOrientation({
   };
 }
 
+/**
+ * Reorients all submitted images to be upright using the provided LLM.
+ *
+ * @param param
+ * @param param.submittedAnswer - The student's submitted answer object.
+ * @param param.submittedImages - A mapping from filenames to base64-encoded images.
+ * @param param.model - The language model to use for determining the correct orientations.
+ *
+ * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
+ */
 export async function correctImagesOrientation({
   submittedAnswer,
   /** The key is the filename, and the value is the base64-encoded image */

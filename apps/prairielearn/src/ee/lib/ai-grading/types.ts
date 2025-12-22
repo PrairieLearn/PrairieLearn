@@ -42,7 +42,7 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
-  /** Rotation correction degrees for each image. */
+  /** Stringified JSON of rotation degrees for each image, by filename. */
   rotationCorrectionDegrees: string | null;
 }
 
@@ -54,9 +54,6 @@ export const AIGradingOrientationSchema = z.enum([
 ]);
 
 export const HandwritingOrientationsSchema = z.object({
-  // The LLM isn't aware of an identifier (e.g. filename) for each submitted image,
-  // so we classify orientations of all the images without a strict ordering or mapping.
-  // If the LLM detects that one submission isn't upright, all images will be rotation corrected.
   handwriting_orientations: z
     .array(AIGradingOrientationSchema)
     .describe(

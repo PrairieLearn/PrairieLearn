@@ -438,13 +438,11 @@ export async function aiGrade({
             // All images are upright, no rotation correction needed.
             return { response: initialResponse, rotationCorrectionApplied: false };
           }
+          // Otherwise, correct all image orientations.
 
-          // The LLM isn't aware of an identifier (e.g. filename) for each submitted image,
-          // so we don't know which images need rotation correction.
-          //
-          // We know that at least one image needs rotation correction,
-          // so we run rotation correction on all images. If an image is already upright,
-          // the rotation correction process will leave it unchanged.
+          // Note: The LLM isn't aware of an identifier (e.g. filename) for each submitted image,
+          // so we assume all images might need correction. If an image is already upright, the
+          // correction process will keep the image the same.
 
           const { updatedSubmittedAnswer, rotationCorrectionResponses, rotationCorrectionDegrees } =
             await correctImagesOrientation({
@@ -459,6 +457,7 @@ export async function aiGrade({
             questionAnswer,
             submission_text,
             submitted_answer: updatedSubmittedAnswer,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
             example_submissions,
             rubric_items,
             model_id,
@@ -686,6 +685,7 @@ export async function aiGrade({
             questionAnswer,
             submission_text,
             submitted_answer: updatedSubmittedAnswer,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
             example_submissions,
             rubric_items,
             model_id,
