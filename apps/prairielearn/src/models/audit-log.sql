@@ -6,7 +6,7 @@ INSERT INTO
     column_name,
     course_id,
     course_instance_id,
-    group_id,
+    team_id,
     institution_id,
     new_state,
     old_state,

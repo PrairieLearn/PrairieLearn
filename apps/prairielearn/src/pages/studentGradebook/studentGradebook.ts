@@ -35,7 +35,7 @@ function mapRow(
   return {
     assessment_id: raw.assessment.id,
     assessment_instance_id: raw.assessment_instance.id,
-    assessment_group_work: raw.assessment.group_work ?? false,
+    assessment_group_work: raw.assessment.team_work ?? false,
     title: computeTitle(raw),
     assessment_set_heading: raw.assessment_set.heading,
     assessment_set_color: raw.assessment_set.color,

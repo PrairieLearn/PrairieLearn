@@ -7,24 +7,24 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work IS TRUE;
+  AND a.team_work IS TRUE;
 
 -- BLOCK select_group_config
 SELECT
   minimum,
   maximum
 FROM
-  group_configs
+  team_configs
 WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
 -- BLOCK select_all_user_in_group
 SELECT
-  group_id,
+  team_id,
   user_id
 FROM
-  group_users;
+  team_users;
 
 -- BLOCK select_all_assessment_instance
 SELECT

@@ -5,7 +5,6 @@ columns
     course_id: bigint
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
-    group_id: bigint
     id: bigint not null default nextval('audit_logs_id_seq'::regclass)
     institution_id: bigint
     new_state: jsonb
@@ -13,6 +12,7 @@ columns
     parameters: jsonb
     row_id: bigint
     table_name: text
+    team_id: bigint
     user_id: bigint
 
 indexes

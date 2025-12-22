@@ -1,0 +1,15 @@
+columns
+    id: bigint not null default nextval('team_user_roles_id_seq'::regclass)
+    team_id: bigint not null
+    team_role_id: bigint not null
+    user_id: bigint not null
+
+indexes
+    team_user_roles_pkey: PRIMARY KEY (id) USING btree (id)
+    team_user_roles_team_id_user_id_team_role_id_key: UNIQUE USING btree (team_id, user_id, team_role_id)
+
+foreign-key constraints
+    team_user_roles_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_user_roles_team_id_user_id_fkey: FOREIGN KEY (team_id, user_id) REFERENCES team_users(team_id, user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_user_roles_team_role_id_fkey: FOREIGN KEY (team_role_id) REFERENCES team_roles(id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_user_roles_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
