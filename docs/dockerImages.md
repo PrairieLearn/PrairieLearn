@@ -53,7 +53,7 @@ However, for more complex images or more elaborate changes to existing custom im
 
 By default, a local installation of PrairieLearn will pull the latest version of the grader/workspace image every time it is used. However, it is possible to change PrairieLearn's configuration to use the local version of an image. This can be done by creating a `config.json` file in any directory of your choice with the following content:
 
-```json
+```json title="config.json"
 {
   "externalGradingPullImagesFromDockerHub": false,
   "workspacePullImagesFromDockerHub": false

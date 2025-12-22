@@ -59,3 +59,41 @@ For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, yo
   "serverCanonicalHost": "http://192.168.1.60:3000"
 }
 ```
+
+## Workspaces and external graders
+
+You should set the workspace host home directory root and home directory root in your `config.json`.
+
+```json title="config.json"
+{
+  "workspaceHostHomeDirRoot": "/tmp/workspace",
+  "workspaceHomeDirRoot": "/tmp/workspace"
+}
+```
+
+If you are running workspaces natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "localhost"
+}
+```
+
+When testing [docker images](../dockerImages.md) locally, you may want to force PrairieLearn to use the local version of an image.
+
+```json title="config.json"
+{
+  "workspacePullImagesFromDockerHub": false,
+  "externalGradingPullImagesFromDockerHub": false
+}
+```
+
+## Enterprise
+
+Some features of PrairieLearn are only available in the Enterprise Edition.
+
+```json title="config.json"
+{
+  "isEnterprise": true
+}
+```
