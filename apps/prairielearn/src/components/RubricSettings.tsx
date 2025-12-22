@@ -33,6 +33,7 @@ const ExportedRubricDataSchema = z.object({
   max_points: z.number().nullable(),
   max_manual_points: z.number().nullable(),
   max_auto_points: z.number().nullable(),
+  grader_guidelines: z.string().optional(),
   rubric_items: z.array(ExportedRubricItemSchema),
 });
 
@@ -345,9 +346,10 @@ export function RubricSettings({
           disagreement_count: null,
         });
       }
-      setRubricItems(scaledRubricItems);
 
       setGraderGuidelines(parsedData.grader_guidelines ?? '');
+      setRubricItems(scaledRubricItems);
+
 
       closeImportModal();
     } catch {
