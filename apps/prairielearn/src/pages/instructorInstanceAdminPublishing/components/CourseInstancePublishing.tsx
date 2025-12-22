@@ -1,34 +1,35 @@
 import { QueryClient } from '@tanstack/react-query';
+import { useState } from 'preact/compat';
 import { FormProvider, useForm } from 'react-hook-form';
-
-import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
-import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
 import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
-} from './CourseInstancePublishingForm.js';
-import { PublishingExtensions } from './PublishingExtensions.js';
+} from '../../../components/CourseInstancePublishingForm.js';
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
+import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
+import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
-const queryClient = new QueryClient();
+import { PublishingExtensions } from './PublishingExtensions.js';
 
 export function CourseInstancePublishing({
   courseInstance,
   canEdit,
   csrfToken,
   origHash,
-  publishingExtensions,
+  extensions,
   isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
   csrfToken: string;
   origHash: string | null;
-  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
+  extensions: CourseInstancePublishingExtensionRow[];
   isDevMode: boolean;
 }) {
+  const [queryClient] = useState(() => new QueryClient());
+
   const originalStartDate = courseInstance.publishing_start_date;
   const originalEndDate = courseInstance.publishing_end_date;
 
@@ -81,7 +82,7 @@ export function CourseInstancePublishing({
 
           <FormProvider {...methods}>
             <CourseInstancePublishingForm
-              courseInstance={courseInstance}
+              displayTimezone={courseInstance.display_timezone}
               canEdit={canEdit}
               originalStartDate={courseInstance.publishing_start_date}
               originalEndDate={courseInstance.publishing_end_date}
@@ -95,7 +96,7 @@ export function CourseInstancePublishing({
             <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
               <PublishingExtensions
                 courseInstance={courseInstance}
-                initialExtensions={publishingExtensions}
+                initialExtensions={extensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
               />

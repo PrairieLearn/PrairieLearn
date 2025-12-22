@@ -12,14 +12,15 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
+import { getCourseInstanceSettingsUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
-import { generateCsrfToken } from './utils/csrf.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -52,6 +53,7 @@ const newAssessmentUrl = `${courseInstanceUrl}/assessment/2`;
 const newAssessmentSettingsUrl = `${newAssessmentUrl}/settings`;
 
 interface EditData {
+  isJSON?: boolean;
   url?: string;
   formSelector: string;
   button?: string;
@@ -62,6 +64,15 @@ interface EditData {
   dynamicPostInfo?: (form: cheerio.Cheerio<any>) => {
     csrfToken: string | undefined;
     url: string | undefined;
+  };
+}
+
+function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
+  const csrfToken = page.find('#test_csrf_token').text();
+
+  return {
+    csrfToken,
+    url: undefined,
   };
 }
 
@@ -251,12 +262,15 @@ const testEditData: EditData[] = [
   },
   {
     url: courseInstancesUrl,
-    formSelector: '#createCourseInstanceModal',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_course_instance',
-    info: 'courseInstances/New_1/infoCourseInstance.json',
+    info: 'courseInstances/New/infoCourseInstance.json',
     data: {
       short_name: 'New',
       long_name: 'New',
+      start_date: '',
+      end_date: '',
     },
     files: new Set([
       'README.md',
@@ -266,7 +280,7 @@ const testEditData: EditData[] = [
       'questions/test/question/info.json',
       'questions/test/question/question.html',
       'questions/test/question/server.py',
-      'courseInstances/New_1/infoCourseInstance.json',
+      'courseInstances/New/infoCourseInstance.json',
     ]),
   },
   {
@@ -285,8 +299,16 @@ const testEditData: EditData[] = [
   },
   {
     url: `${courseInstanceUrl}/instance_admin/settings`,
-    formSelector: 'form[name="copy-course-instance-form"]',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'copy_course_instance',
+    data: {
+      short_name: 'Fa18_copy1',
+      long_name: 'Fall 2018 (Copy 1)',
+      start_date: '',
+      end_date: '',
+    },
+    isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
     files: new Set([
       'README.md',
@@ -315,7 +337,7 @@ const testEditData: EditData[] = [
   },
 ];
 
-function getPostInfoFromCopyOption(form) {
+function getPostInfoFromCopyOption(form: cheerio.Cheerio<any>) {
   const option = form.find('select[name="to_course_id"] option[value="1"]');
   return { csrfToken: option.attr('data-csrf-token'), url: option.attr('data-copy-url') };
 }
@@ -364,6 +386,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -388,6 +412,8 @@ const publicCopyTestData: EditData[] = [
     action: 'copy_course_instance',
     data: {
       course_instance_id: 2,
+      start_date: '',
+      end_date: '',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -551,12 +577,27 @@ function testEdit(params: EditData) {
       };
       const res = await fetch(url, {
         method: 'POST',
-        body: new URLSearchParams(urlParams),
+        body: params.isJSON ? JSON.stringify(urlParams) : new URLSearchParams(urlParams),
+        headers: params.isJSON
+          ? { 'Content-Type': 'application/json', Accept: 'application/json' }
+          : { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
 
-      assert.isOk(res.ok);
-      currentUrl = res.url;
-      currentPage$ = cheerio.load(await res.text());
+      const text = await res.text();
+      if (!params.isJSON) {
+        currentUrl = res.url;
+        currentPage$ = cheerio.load(text);
+      } else {
+        // This is a hack to get the CSRF token for the next test since copy_course_instance returns an id.
+        assert.equal(params.action, 'copy_course_instance');
+        const body = JSON.parse(text);
+        const courseInstanceId = body.course_instance_id;
+        const settingsUrl = getCourseInstanceSettingsUrl(courseInstanceId);
+        const settingsRes = await fetch(siteUrl + settingsUrl);
+        assert.isOk(settingsRes.ok);
+        currentUrl = settingsRes.url;
+        currentPage$ = cheerio.load(await settingsRes.text());
+      }
     });
   });
 

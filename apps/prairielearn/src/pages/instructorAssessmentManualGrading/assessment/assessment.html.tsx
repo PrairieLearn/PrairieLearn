@@ -6,10 +6,10 @@ import { renderHtml } from '@prairielearn/preact';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -38,7 +38,7 @@ export function ManualGradingAssessment({
   num_open_instances,
   adminFeaturesEnabled,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
@@ -65,13 +65,6 @@ export function ManualGradingAssessment({
     `,
     content: (
       <>
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />
         <AssessmentOpenInstancesAlert
           numOpenInstances={num_open_instances}
           assessmentId={resLocals.assessment.id}
@@ -177,7 +170,7 @@ function AssessmentQuestionRow({
   resLocals,
   question,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   question: ManualGradingQuestion;
 }) {
   const showGradingButton =

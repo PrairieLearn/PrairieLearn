@@ -13,12 +13,10 @@ import {
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import { selectInstanceQuestionGroups } from '../ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
-import {
-  selectInstanceQuestionsForAssessmentQuestion,
-  selectRubricForGrading,
-} from './ai-grading-util.js';
+import { selectInstanceQuestionsForAssessmentQuestion } from './ai-grading-util.js';
 import type { AiGradingGeneralStats, WithAIGradingStats } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -74,7 +72,7 @@ export async function fillInstanceQuestionColumnEntries<
     await selectInstanceQuestionGroups({
       assessmentQuestionId: assessment_question.id,
     })
-  ).reduce((acc, curr) => {
+  ).reduce<Record<string, string>>((acc, curr) => {
     acc[curr.id] = curr.instance_question_group_name;
     return acc;
   }, {});
@@ -125,7 +123,8 @@ export async function fillInstanceQuestionColumnEntries<
       const manualItems = manualGradingJob.rubric_items;
       const aiItems = aiGradingJob.rubric_items;
 
-      const allRubricItems = await selectRubricForGrading(assessment_question.id);
+      const { rubric_items: allRubricItems } = await selectCompleteRubric(assessment_question.id);
+
       const tpItems = manualItems
         .filter((item) => rubricListIncludes(aiItems, item))
         .map((item) => ({ ...item, true_positive: true }));
@@ -164,7 +163,8 @@ export async function calculateAiGradingStats(
   const instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
     assessment_question_id: assessment_question.id,
   });
-  const rubric_items = await selectRubricForGrading(assessment_question.id);
+
+  const { rubric_items } = await selectCompleteRubric(assessment_question.id);
 
   const gradingJobMapping = await selectGradingJobsInfo(instance_questions);
 

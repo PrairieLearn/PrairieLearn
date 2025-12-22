@@ -1,19 +1,36 @@
 <pl-question-panel>
 
-    <p> This question demos multiple ways of generating HTML tables from data in <code class="user-output">server.py</code>. </p>
+    <p> This question demos multiple ways of generating HTML tables from data in <code>server.py</code>. </p>
     
-    <pl-card header="Example Table 1:">
+    <pl-card header="Example Table 1: Use mustache loops">
+      <table style="width:30%">
+        <thead>
+          <tr><th>Name</th><th>Age</th><th>Id</th></tr>
+        </thead>
+        <tbody>
+          {{#params.table_data}}
+          <tr><td>{{name}}</td><td>{{age}}</td><td>{{id}}</td></tr>
+          {{/params.table_data}}
+        </tbody>
+      </table>
+    </pl-card>
+
+    <pl-card header="Example Table 2: Generate HTML in server.py">
         {{{params.mytable}}}
     </pl-card>
     
-    <pl-card header="Example Table 2: Adding table properties">
+    <pl-card header="Example Table 3: Adding table properties">
         <table style="width:30%" border="black">
             {{{params.mytable2}}}
         </table>
     </pl-card>
     
-    <pl-card header="Example Table 3: Getting a table from console output">
+    <pl-card header="Example Table 4: Getting a table from console output">
         <pre>{{params.mytable3}}</pre>
+    </pl-card>
+    
+    <pl-card header="Example Table 5: Using pl-dataframe">
+        <pl-dataframe params-name="dataframe" show-python="false" show-index="false" show-dimensions="false"></pl-dataframe>
     </pl-card>
     
 </pl-question-panel>

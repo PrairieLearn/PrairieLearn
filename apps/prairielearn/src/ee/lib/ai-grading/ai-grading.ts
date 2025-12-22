@@ -27,14 +27,12 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  AI_GRADING_ANTHROPIC_MODEL,
-  AI_GRADING_GOOGLE_MODEL,
-  AI_GRADING_OPENAI_MODEL,
-  type AiGradingProvider,
   containsImageCapture,
   generatePrompt,
   generateSubmissionEmbedding,
@@ -45,7 +43,6 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -70,7 +67,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
-  provider,
+  model_id,
 }: {
   question: Question;
   course: Course;
@@ -86,13 +83,14 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
-  provider: AiGradingProvider;
+  model_id: AiGradingModelId;
 }): Promise<string> {
+  const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {
     if (provider === 'openai') {
       // If an OpenAI API Key and Organization are not provided, throw an error
       if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-        throw new error.HttpStatusError(403, 'Not implemented (OpenAI API key not available)');
+        throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
       }
       const openai = createOpenAI({
         apiKey: config.aiGradingOpenAiApiKey,
@@ -100,12 +98,12 @@ export async function aiGrade({
       });
       return {
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
-        model: openai(AI_GRADING_OPENAI_MODEL),
+        model: openai(model_id),
       };
     } else if (provider === 'google') {
       // If a Google API Key is not provided, throw an error
       if (!config.aiGradingGoogleApiKey) {
-        throw new error.HttpStatusError(403, 'Not implemented (Google API key not available)');
+        throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
       }
       const google = createGoogleGenerativeAI({
         apiKey: config.aiGradingGoogleApiKey,
@@ -115,12 +113,15 @@ export async function aiGrade({
         // We did not add it yet since Gemini models will be primarily tested
         // with image submissions, which we do not support for RAG.
         embeddingModel: null,
-        model: google(AI_GRADING_GOOGLE_MODEL),
+        model: google(model_id),
       };
     } else {
       // If an Anthropic API Key is not provided, throw an error
       if (!config.aiGradingAnthropicApiKey) {
-        throw new error.HttpStatusError(403, 'Not implemented (Anthropic API key not available)');
+        throw new error.HttpStatusError(
+          403,
+          'Model not available (Anthropic API key not provided)',
+        );
       }
       const anthropic = createAnthropic({
         apiKey: config.aiGradingAnthropicApiKey,
@@ -130,7 +131,7 @@ export async function aiGrade({
         // We did not add it yet since Claude models will be primarily tested
         // with image submissions, which we do not support for RAG.
         embeddingModel: null,
-        model: anthropic(AI_GRADING_ANTHROPIC_MODEL),
+        model: anthropic(model_id),
       };
     }
   });
@@ -155,7 +156,7 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
-    job.info(`Using model provider ${provider} for AI grading.`);
+    job.info(`Using model ${model_id} for AI grading.`);
 
     job.info('Checking for embeddings for all submissions.');
     let newEmbeddingsCount = 0;
@@ -186,9 +187,7 @@ export async function aiGrade({
       }
       job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
     } else {
-      job.info(
-        `Skip embedding generation; RAG is not supported for model provider ${provider} yet.`,
-      );
+      job.info(`Skip embedding generation; RAG is not supported for model provider ${provider}.`);
     }
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
@@ -285,7 +284,7 @@ export async function aiGrade({
 
       const example_submissions = await run(async () => {
         if (provider !== 'openai') {
-          // For now, we are implementing RAG support only for OpenAI models.
+          // We are implementing RAG support only for OpenAI models.
           return [];
         }
 
@@ -322,7 +321,7 @@ export async function aiGrade({
       }
       logger.info(gradedExampleInfo);
 
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
@@ -331,7 +330,8 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
-        provider,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
+        model_id,
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information
@@ -422,6 +422,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -459,6 +460,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -527,6 +529,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -555,6 +558,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -593,7 +597,7 @@ export async function aiGrade({
 
         try {
           return await gradeInstanceQuestion(instance_question, logger);
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
           return false;
         } finally {

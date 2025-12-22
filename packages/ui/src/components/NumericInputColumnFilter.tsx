@@ -1,3 +1,4 @@
+import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -11,30 +12,28 @@ export type NumericColumnFilterValue =
       emptyOnly: true;
     };
 
-interface NumericInputColumnFilterProps {
-  columnId: string;
-  columnLabel: string;
-  value: NumericColumnFilterValue;
-  onChange: (value: NumericColumnFilterValue) => void;
-}
-
 /**
  * A component that allows the user to filter a numeric column using comparison operators.
  * Supports syntax like: <1, >0, <=5, >=10, =5, or just 5 (implicit equals)
- * State is managed by the parent component.
  *
  * @param params
- * @param params.columnId - The ID of the column
- * @param params.columnLabel - The label of the column, e.g. "Manual Points"
- * @param params.value - The current filter state (contains filterValue and emptyOnly)
- * @param params.onChange - Callback when the filter state changes
+ * @param params.column - The TanStack Table column object
  */
-export function NumericInputColumnFilter({
-  columnId,
-  columnLabel,
-  value,
-  onChange,
-}: NumericInputColumnFilterProps) {
+export function NumericInputColumnFilter<TData, TValue>({
+  column,
+}: {
+  column: Column<TData, TValue>;
+}) {
+  const columnId = column.id;
+  const value = (column.getFilterValue() as NumericColumnFilterValue | undefined) ?? {
+    filterValue: '',
+    emptyOnly: false,
+  };
+
+  const label =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
   const filterValue = value.filterValue;
   const emptyOnly = value.emptyOnly;
   const hasActiveFilter = filterValue.trim().length > 0 || emptyOnly;
@@ -49,8 +48,8 @@ export function NumericInputColumnFilter({
           hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
         )}
         id={`filter-${columnId}`}
-        aria-label={`Filter ${columnLabel.toLowerCase()}`}
-        title={`Filter ${columnLabel.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        title={`Filter ${label.toLowerCase()}`}
       >
         <i
           class={clsx(
@@ -71,7 +70,7 @@ export function NumericInputColumnFilter({
         <div class="p-3" style={{ minWidth: '240px' }}>
           <div class="d-flex align-items-center justify-content-between mb-2">
             <label class="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
-              {columnLabel}
+              {label}
             </label>
             <button
               type="button"
@@ -80,7 +79,7 @@ export function NumericInputColumnFilter({
                 !hasActiveFilter && 'invisible',
               )}
               onClick={() => {
-                onChange({ filterValue: '', emptyOnly: false });
+                column.setFilterValue({ filterValue: '', emptyOnly: false });
               }}
             >
               Clear
@@ -95,12 +94,10 @@ export function NumericInputColumnFilter({
             disabled={emptyOnly}
             aria-describedby={`${columnId}-filter-description`}
             onInput={(e) => {
-              if (e.target instanceof HTMLInputElement) {
-                onChange({
-                  filterValue: e.target.value,
-                  emptyOnly: false,
-                });
-              }
+              column.setFilterValue({
+                filterValue: e.currentTarget.value,
+                emptyOnly: false,
+              });
             }}
             onClick={(e) => e.stopPropagation()}
           />
@@ -122,13 +119,11 @@ export function NumericInputColumnFilter({
               checked={emptyOnly}
               id={`${columnId}-empty-filter`}
               onChange={(e) => {
-                if (e.target instanceof HTMLInputElement) {
-                  onChange(
-                    e.target.checked
-                      ? { filterValue: '', emptyOnly: true }
-                      : { filterValue: '', emptyOnly: false },
-                  );
-                }
+                column.setFilterValue(
+                  e.currentTarget.checked
+                    ? { filterValue: '', emptyOnly: true }
+                    : { filterValue: '', emptyOnly: false },
+                );
               }}
             />
             <label class="form-check-label" for={`${columnId}-empty-filter`}>

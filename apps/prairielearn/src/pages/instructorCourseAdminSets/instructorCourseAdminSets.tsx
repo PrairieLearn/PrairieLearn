@@ -11,8 +11,11 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+<<<<<<< HEAD
 import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
+=======
+>>>>>>> master
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
 import { AssessmentSetSchema } from '../../lib/db-types.js';
@@ -57,21 +60,14 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              course={pageContext.course}
-              urlPrefix={pageContext.urlPrefix}
+          <Hydrate>
+            <AssessmentSetsTable
+              assessmentSets={assessmentSets}
+              allowEdit={allowEdit}
+              origHash={origHash}
+              csrfToken={pageContext.__csrf_token}
             />
-            <Hydrate>
-              <AssessmentSetsTable
-                assessmentSets={assessmentSets}
-                allowEdit={allowEdit}
-                origHash={origHash}
-                csrfToken={pageContext.__csrf_token}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

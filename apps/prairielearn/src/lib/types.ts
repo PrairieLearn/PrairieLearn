@@ -81,3 +81,38 @@ export function withBrand<B extends Brand<any, any>>(
 export type Prettify<T> = {
   [K in keyof T]: T[K];
 } & {};
+
+// All keys from any member of union T
+type UnionKeys<T> = T extends any ? keyof T : never;
+
+// Keys that exist in ALL members of union T
+type KeysInAllMembers<T> = {
+  [K in UnionKeys<T>]: [T] extends [Record<K, any>] ? K : never;
+}[UnionKeys<T>];
+
+// Keys that exist in SOME but not ALL members
+type KeysInSomeMembers<T> = Exclude<UnionKeys<T>, KeysInAllMembers<T>>;
+
+// Value type for key K across all members that have it
+type UnionPropValue<T, K extends PropertyKey> = T extends any
+  ? K extends keyof T
+    ? T[K]
+    : never
+  : never;
+
+/**
+ * Merges a union of object types into a single object type.
+ * Keys present in all members become required, keys present in some become optional.
+ *
+ * ```ts
+ * type A = { id: string; name: string };
+ * type B = { id: string; age: number };
+ * type Merged = MergeUnion<A | B>;
+ * // Merged is { id: string } & { name?: string; age?: number }
+ * ```
+ */
+export type MergeUnion<T> = {
+  [K in KeysInAllMembers<T>]: UnionPropValue<T, K>;
+} & {
+  [K in KeysInSomeMembers<T>]?: UnionPropValue<T, K>;
+};

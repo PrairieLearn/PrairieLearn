@@ -13,11 +13,13 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
-import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
-  type AiGradingProvider,
-  deleteAiGradingJobs,
-} from '../../../ee/lib/ai-grading/ai-grading-util.js';
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
+import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { type Assessment } from '../../../lib/db-types.js';
@@ -47,7 +49,9 @@ router.get(
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance: res.locals.course_instance,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      requiredRole: ['Student Data Viewer'],
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -80,7 +84,9 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance: res.locals.course_instance,
+            courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requiredRole: ['Student Data Editor'],
           })
         ).map((user) => user.user_id),
       );
@@ -129,9 +135,26 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const provider = req.body.provider as AiGradingProvider | undefined;
-      if (!provider) {
-        throw new HttpStatusError(400, 'No AI grading provider specified');
+      const model_id = req.body.model_id as AiGradingModelId | undefined;
+
+      if (!model_id) {
+        throw new HttpStatusError(400, 'No AI grading model specified');
+      }
+
+      const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+        'ai-grading-model-selection',
+        res.locals,
+      );
+
+      if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
+        throw new HttpStatusError(
+          403,
+          `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+        );
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+        throw new HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
       const assessment = res.locals.assessment as Assessment;
@@ -161,7 +184,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           authn_user_id: res.locals.authn_user.user_id,
           user_id: res.locals.user.user_id,
-          provider,
+          model_id,
           mode: 'all',
         });
       }

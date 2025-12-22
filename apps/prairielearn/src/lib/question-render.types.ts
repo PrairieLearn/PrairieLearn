@@ -24,7 +24,7 @@ export const IssueRenderDataSchema = IssueSchema.extend({
   user_email: z.string().nullable(),
 });
 
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
+export type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 export interface QuestionUrls {
   questionUrl: string;

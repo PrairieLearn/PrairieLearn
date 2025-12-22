@@ -2,7 +2,8 @@ import DragHandle from '@tiptap/extension-drag-handle-react';
 import { NodeSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
 import { useState } from 'preact/compat';
-import { OverlayTrigger, Popover } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { panelMeta } from '../extensions/pl-panel.js';
 
@@ -53,10 +54,10 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
         placement="right"
         trigger="click"
         show={showMenu}
-        overlay={
-          <Popover>
-            <Popover.Header as="h3">Visibility</Popover.Header>
-            <Popover.Body>
+        popover={{
+          header: <h3>Visibility</h3>,
+          body: (
+            <>
               {/* TODO: Potentially improve the styling of this. */}
               <div class="d-flex flex-column gap-2">
                 {Object.entries(panelMeta).map(([tag, meta]) => (
@@ -92,9 +93,9 @@ export function DragHandleMenu({ editor }: { editor: Editor | null }) {
                   Always
                 </button>
               </div>
-            </Popover.Body>
-          </Popover>
-        }
+            </>
+          ),
+        }}
         rootClose
         onToggle={(next) => setShowMenu(next)}
       >
