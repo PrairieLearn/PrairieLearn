@@ -8,6 +8,9 @@ ARG CACHEBUST=2025-12-15-14-21-51
 # installed, as a separate step below.
 SHELL ["/bin/bash", "-lc"]
 
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/home/coder/.venv/bin:$PATH"
+
 # - Ensure that all `uv` commands compile Python source files to bytecode.
 # - Ensure that all `uv` commands do not use any caching.
 ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
