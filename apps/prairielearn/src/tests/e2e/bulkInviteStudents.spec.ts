@@ -1,10 +1,15 @@
 import type { Page } from '@playwright/test';
 
-import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
-
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { features } from '../../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import {
+  selectCourseInstanceById,
+  updateCourseInstanceModernPublishing,
+} from '../../models/course-instances.js';
+import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
 import { syncCourse } from '../helperCourse.js';
+import { getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -24,8 +29,6 @@ async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
   }
 }
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
 interface TestUser {
   uid: string;
   name: string;
@@ -42,30 +45,45 @@ const INVITED_STUDENT: TestUser = { uid: 'invited_student@test.com', name: 'Invi
  * Creates test users and sets up the database for testing bulk invitations.
  */
 async function createTestData() {
+  const courseInstance = await selectCourseInstanceById('1');
+
   // Enable modern publishing for the course instance
-  await sqldb.execute(sql.enable_modern_publishing, {});
+  await updateCourseInstanceModernPublishing({
+    courseInstanceId: courseInstance.id,
+    modernPublishing: true,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+  });
 
   // Enable the enrollment-management feature flag
-  await sqldb.execute(sql.enable_enrollment_management_feature, {});
-
-  // Make the dev user an administrator (required for enrollment management)
-  await sqldb.execute(sql.set_dev_user_as_admin, {});
+  await features.enable('enrollment-management', { institution_id: '1' });
 
   // Create valid students (not enrolled)
   for (const student of [VALID_STUDENT, VALID_STUDENT_2, VALID_STUDENT_3]) {
-    await sqldb.executeRow(sql.insert_or_update_user, { uid: student.uid, name: student.name });
+    await getOrCreateUser({ uid: student.uid, name: student.name, uin: null });
   }
 
   // Create an already enrolled student
-  const enrolledUserId = await sqldb.queryRow(
-    sql.insert_or_update_user,
-    { uid: ENROLLED_STUDENT.uid, name: ENROLLED_STUDENT.name },
-    IdSchema,
-  );
-  await sqldb.execute(sql.insert_joined_enrollment, { user_id: enrolledUserId });
+  const enrolledUser = await getOrCreateUser({
+    uid: ENROLLED_STUDENT.uid,
+    name: ENROLLED_STUDENT.name,
+    uin: null,
+  });
+  await ensureUncheckedEnrollment({
+    userId: enrolledUser.user_id,
+    courseInstance,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+    actionDetail: 'implicit_joined',
+  });
 
-  // Create a student with a pending invitation (no user_id needed - uses pending_uid)
-  await sqldb.execute(sql.insert_invited_enrollment, { pending_uid: INVITED_STUDENT.uid });
+  // Create a student with a pending invitation
+  await inviteStudentByUid({
+    uid: INVITED_STUDENT.uid,
+    courseInstance,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+  });
 }
 
 test.describe('Bulk invite students', () => {
@@ -123,10 +141,7 @@ test.describe('Bulk invite students', () => {
 
   test('invites valid students and shows skip info for invalid ones', async ({ page }) => {
     // Create a fresh valid student for this test
-    await sqldb.executeRow(sql.insert_or_update_user, {
-      uid: 'fresh_student@test.com',
-      name: 'Fresh Student',
-    });
+    await getOrCreateUser({ uid: 'fresh_student@test.com', name: 'Fresh Student', uin: null });
 
     await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
 
