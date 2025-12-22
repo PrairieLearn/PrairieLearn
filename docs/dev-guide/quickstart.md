@@ -46,6 +46,22 @@ sudo make dev
     }
     ```
 
+    You may need to change `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` to 1001 on macOS to avoid permissions errors.
+
+    If you don't do this, you will see errors like:
+
+    ```
+    chown: changing ownership of '/home/coder/workspace': Permission denied
+    chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
+    ```
+
+    ```json title="config.json"
+    {
+        "workspaceJobsDirectoryOwnerUid": 1001,
+        "workspaceJobsDirectoryOwnerGid": 1001
+    }
+    ```
+
     Also check that `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` are set to the correct values in your `config.json`. Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
 
     You can list the active hosts with:

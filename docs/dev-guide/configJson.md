@@ -79,6 +79,15 @@ If you are running workspaces natively on Mac OS, you may need to change `"works
 }
 ```
 
+Certain images detect if you are running as root and try to chown the workspace files to the user 1001 before stepping down to the user 1001 (`pl-gosu-helper.sh`). On macOS, this will fail because bind mounts cannot be chown'd (FUSE-based filesystems). To fix this, you can set `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` to 1001 in your `config.json`.
+
+```json title="config.json"
+{
+  "workspaceJobsDirectoryOwnerUid": 1001,
+  "workspaceJobsDirectoryOwnerGid": 1001
+}
+```
+
 When testing [docker images](../dockerImages.md) locally, you may want to force PrairieLearn to use the local version of an image.
 
 ```json title="config.json"
