@@ -20,6 +20,25 @@ export default (function (err, req, res, _next) {
   err.status ??= 500;
   res.status(err.status);
 
+  // TODO: finish this up.
+  if (req.header('X-TRPC') === 'true') {
+    res.json({
+      error: {
+        message: err.message,
+        // TODO: pick actual correct value
+        code: -32003,
+        data: {
+          // TODO: pick actual correct value
+          code: 'FORBIDDEN',
+          httpStatus: err.status,
+          // TODO: should this be sent in production?
+          stack: err.stack,
+        },
+      },
+    });
+    return;
+  }
+
   const referrer = req.get('Referrer') || null;
 
   logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {

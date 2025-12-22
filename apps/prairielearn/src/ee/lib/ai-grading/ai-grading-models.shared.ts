@@ -9,9 +9,11 @@ export const AI_GRADING_MODELS = [
   { provider: 'anthropic', modelId: 'claude-opus-4-5', name: 'Anthropic Claude Opus 4.5' },
 ] as const;
 
-export const AI_GRADING_MODEL_IDS = AI_GRADING_MODELS.map((model) => model.modelId);
+export type AiGradingModelId = (typeof AI_GRADING_MODELS)[number]['modelId'];
 
-export type AiGradingModelId = (typeof AI_GRADING_MODEL_IDS)[number];
+export const AI_GRADING_MODEL_IDS: AiGradingModelId[] = AI_GRADING_MODELS.map(
+  (model) => model.modelId,
+);
 
 export const AI_GRADING_MODEL_PROVIDERS = {
   'gpt-5-mini-2025-08-07': 'openai',

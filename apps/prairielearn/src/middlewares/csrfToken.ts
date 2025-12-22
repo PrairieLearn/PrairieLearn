@@ -14,7 +14,8 @@ export default asyncHandler(async (req, res, next) => {
 
   res.locals.__csrf_token = generateSignedToken(tokenData, config.secretKey);
 
-  if (req.method === 'POST') {
+  // TODO: checking for TRPC this way is WILDLY insecure. Do not ship this.
+  if (req.method === 'POST' && !req.url.includes('/trpc///')) {
     // NOTE: If you are trying to debug a "CSRF Fail" in a form with file
     // upload, you may have forgotten to special-case the file upload path.
     // Search for "upload.single('file')" in server.js, for example.
