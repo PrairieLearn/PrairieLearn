@@ -1,10 +1,10 @@
 import stripAnsi from 'strip-ansi';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { callRow, execute, queryRow } from '@prairielearn/postgres';
+import { execute, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
-import { EnrollmentSchema, SprocUsersSelectOrInsertSchema } from '../../lib/db-types.js';
+import { EnrollmentSchema } from '../../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import {
@@ -14,6 +14,7 @@ import {
 import { fetchCheerio } from '../../tests/helperClient.js';
 import * as helperCourse from '../../tests/helperCourse.js';
 import * as helperServer from '../../tests/helperServer.js';
+import { getOrCreateUser } from '../../tests/utils/auth.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
@@ -32,11 +33,12 @@ describe('Instructor Students - Invite by UID', () => {
 
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$' WHERE id = 1");
 
-    await callRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Test Instructor', 'instructor1', 'instructor@example.com', 'dev'],
-      SprocUsersSelectOrInsertSchema,
-    );
+    await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Test Instructor',
+      uin: 'instructor1',
+      email: 'instructor@example.com',
+    });
 
     const instructor = await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -97,17 +99,12 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should skip when user is an instructor', async () => {
-    await callRow(
-      'users_select_or_insert',
-      [
-        'another_instructor@example.com',
-        'Another Instructor',
-        'instructor2',
-        'another_instructor@example.com',
-        'dev',
-      ],
-      SprocUsersSelectOrInsertSchema,
-    );
+    await getOrCreateUser({
+      uid: 'another_instructor@example.com',
+      name: 'Another Instructor',
+      uin: 'instructor2',
+      email: 'another_instructor@example.com',
+    });
 
     await insertCoursePermissionsByUserUid({
       course_id: '1',
@@ -151,17 +148,12 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should skip when trying to invite a blocked user', async () => {
-    const blockedStudent = await callRow(
-      'users_select_or_insert',
-      [
-        'blocked_student@example.com',
-        'Blocked Student',
-        'blocked1',
-        'blocked_student@example.com',
-        'dev',
-      ],
-      SprocUsersSelectOrInsertSchema,
-    );
+    const blockedStudent = await getOrCreateUser({
+      uid: 'blocked_student@example.com',
+      name: 'Blocked Student',
+      uin: 'blocked1',
+      email: 'blocked_student@example.com',
+    });
 
     await queryRow(
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
@@ -209,11 +201,12 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should successfully invite a new student', async () => {
-    await callRow(
-      'users_select_or_insert',
-      ['new_student@example.com', 'New Student', 'new1', 'new_student@example.com', 'dev'],
-      SprocUsersSelectOrInsertSchema,
-    );
+    await getOrCreateUser({
+      uid: 'new_student@example.com',
+      name: 'New Student',
+      uin: 'new1',
+      email: 'new_student@example.com',
+    });
 
     const response = await fetch(studentsUrl, {
       method: 'POST',
@@ -249,17 +242,19 @@ describe('Instructor Students - Invite by UID', () => {
   });
 
   test.sequential('should successfully invite multiple students', async () => {
-    await callRow(
-      'users_select_or_insert',
-      ['bulk_student1@example.com', 'Bulk Student 1', 'bulk1', 'bulk_student1@example.com', 'dev'],
-      SprocUsersSelectOrInsertSchema,
-    );
+    await getOrCreateUser({
+      uid: 'bulk_student1@example.com',
+      name: 'Bulk Student 1',
+      uin: 'bulk1',
+      email: 'bulk_student1@example.com',
+    });
 
-    await callRow(
-      'users_select_or_insert',
-      ['bulk_student2@example.com', 'Bulk Student 2', 'bulk2', 'bulk_student2@example.com', 'dev'],
-      SprocUsersSelectOrInsertSchema,
-    );
+    await getOrCreateUser({
+      uid: 'bulk_student2@example.com',
+      name: 'Bulk Student 2',
+      uin: 'bulk2',
+      email: 'bulk_student2@example.com',
+    });
 
     const response = await fetch(studentsUrl, {
       method: 'POST',

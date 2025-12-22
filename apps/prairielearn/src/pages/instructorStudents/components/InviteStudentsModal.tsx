@@ -4,6 +4,8 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { parseUidsString } from '../../../lib/user.js';
+
 interface InviteStudentForm {
   uids: string;
 }
@@ -29,28 +31,16 @@ export function InviteStudentsModal({
     defaultValues: { uids: '' },
   });
 
-  const parseUids = (value: string): string[] => {
-    return [
-      ...new Set(
-        value
-          .split(/[\n,\s]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid.length > 0),
-      ),
-    ];
-  };
-
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUids(value);
-
+    const uids = parseUidsString(value, null);
     if (uids.length === 0) {
       return 'At least one UID is required';
     }
 
-    const invalidEmails = uids.filter((uid) => !z.string().email().safeParse(uid).success);
+    const invalidUids = uids.filter((uid) => !z.string().email().safeParse(uid).success);
 
-    if (invalidEmails.length > 0) {
-      return `The following UIDs were invalid: "${invalidEmails.join('", "')}"`;
+    if (invalidUids.length > 0) {
+      return `The following UIDs were invalid: "${invalidUids.join('", "')}"`;
     }
 
     return true;
@@ -67,7 +57,7 @@ export function InviteStudentsModal({
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {
-    const uids = parseUids(data.uids);
+    const uids = parseUidsString(data.uids, null);
     saveMutation.mutate(uids);
   };
 
@@ -100,9 +90,10 @@ export function InviteStudentsModal({
               id="invite-uids"
               class={clsx('form-control', errors.uids && 'is-invalid')}
               rows={5}
-              placeholder="One UID per line, or comma/space separated"
-              aria-invalid={errors.uids ? 'true' : 'false'}
+              placeholder="student@example.com"
+              aria-invalid={!!errors.uids}
               aria-errormessage={errors.uids ? 'invite-uids-error' : undefined}
+              aria-describedby="invite-uids-help"
               {...register('uids', {
                 validate: validateUidsFormat,
               })}
@@ -112,6 +103,9 @@ export function InviteStudentsModal({
                 {errors.uids.message}
               </div>
             )}
+            <div class="form-text" id="invite-uids-help">
+              One UID per line, or comma/space separated.
+            </div>
           </div>
         </Modal.Body>
         <Modal.Footer>
@@ -119,10 +113,7 @@ export function InviteStudentsModal({
             type="button"
             class="btn btn-secondary"
             disabled={saveMutation.isPending}
-            onClick={() => {
-              onExited();
-              onHide();
-            }}
+            onClick={onHide}
           >
             Cancel
           </button>

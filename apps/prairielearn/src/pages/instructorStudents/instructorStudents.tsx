@@ -15,6 +15,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getUrl } from '../../lib/url.js';
+import { parseUidsString } from '../../lib/user.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -97,22 +98,10 @@ router.post(
       user: { user_id: userId },
     } = res.locals;
 
-    const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
-
     const BodySchema = z.object({
       uids: z.preprocess(
-        (val) =>
-          typeof val === 'string'
-            ? [
-                ...new Set(
-                  val
-                    .split(/[\n,\s]+/)
-                    .map((s) => s.trim())
-                    .filter((s) => s.length > 0),
-                ),
-              ]
-            : val,
-        EmailsSchema,
+        (val) => (typeof val === 'string' ? parseUidsString(val, null) : val),
+        z.array(z.string().trim().email()).min(1, 'At least one UID is required'),
       ),
       __action: z.literal('invite_uids'),
     });
