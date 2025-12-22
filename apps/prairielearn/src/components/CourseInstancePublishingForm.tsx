@@ -367,7 +367,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
-                    <div class="invalid-feedback" id="start-date-reusable-error">
+                    <div class="form-text text-danger" id="start-date-reusable-error">
                       {errors.start_date.message}
                     </div>
                   )}
@@ -406,7 +406,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="invalid-feedback" id="end-date-reusable-error">
+                    <div class="form-text text-danger" id="end-date-reusable-error">
                       {errors.end_date.message}
                     </div>
                   )}
@@ -498,7 +498,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="invalid-feedback" id="end-date-reusable-error">
+                    <div class="form-text text-danger" id="end-date-reusable-error">
                       {errors.end_date.message}
                     </div>
                   )}

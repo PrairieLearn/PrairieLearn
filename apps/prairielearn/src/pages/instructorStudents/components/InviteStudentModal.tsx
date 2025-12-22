@@ -78,6 +78,7 @@ export function InviteStudentModal({
               type="email"
               placeholder="Enter UID"
               aria-invalid={errors.uid ? 'true' : 'false'}
+              aria-errormessage={errors.uid ? 'invite-uid-error' : undefined}
               {...register('uid', {
                 validate: async (uid) => {
                   if (!uid) return 'UID is required';
@@ -103,7 +104,11 @@ export function InviteStudentModal({
                 },
               })}
             />
-            {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
+            {errors.uid?.message && (
+              <div class="form-text text-danger" id="invite-uid-error">
+                {errors.uid.message}
+              </div>
+            )}
           </div>
         </Modal.Body>
         <Modal.Footer>

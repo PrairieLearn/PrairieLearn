@@ -250,7 +250,7 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.end_date && (
-              <div class="invalid-feedback">{String(errors.end_date.message)}</div>
+              <div class="form-text text-danger">{String(errors.end_date.message)}</div>
             )}
             <small class="text-muted">Current course end date: {currentUnpublishText}</small>
           </div>
@@ -273,7 +273,7 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div class="invalid-feedback">{String(errors.uids.message)}</div>
+              <div class="form-text text-danger">{String(errors.uids.message)}</div>
             )}
           </div>
         </Modal.Body>
