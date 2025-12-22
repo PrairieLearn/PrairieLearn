@@ -84,34 +84,36 @@ router.post(
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
-      const count = 1;
-      const showDetails = true;
-      const jobSequenceId = await startTestQuestion(
-        count,
-        showDetails,
-        res.locals.question,
-        res.locals.course_instance,
-        res.locals.course,
-        res.locals.user.id,
-        res.locals.authn_user.id,
-      );
+      const jobSequenceId = await startTestQuestion({
+        count: 1,
+        showDetails: true,
+        question: res.locals.question,
+        course_instance: res.locals.course_instance,
+        course: res.locals.course,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        // Optional variant seed prefix for deterministic testing.
+        // Not exposed in UI - for internal use with automated testing scripts.
+        variantSeedPrefix: req.body.variant_seed_prefix,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
       if (res.locals.question.grading_method !== 'External') {
-        const count = 100;
-        const showDetails = false;
-        const jobSequenceId = await startTestQuestion(
-          count,
-          showDetails,
-          res.locals.question,
-          res.locals.course_instance,
-          res.locals.course,
-          res.locals.user.id,
-          res.locals.authn_user.id,
-        );
+        const jobSequenceId = await startTestQuestion({
+          count: 100,
+          showDetails: false,
+          question: res.locals.question,
+          course_instance: res.locals.course_instance,
+          course: res.locals.course,
+          user_id: res.locals.user.id,
+          authn_user_id: res.locals.authn_user.id,
+          // Optional variant seed prefix for deterministic testing.
+          // Not exposed in UI - for internal use with automated testing scripts.
+          variantSeedPrefix: req.body.variant_seed_prefix,
+        });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
         throw new Error('Not supported for externally-graded questions');
