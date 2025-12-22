@@ -130,3 +130,6 @@ isolate-*-v8.log
 
 ## ESLint cache
 .eslintcache
+
+## Agent skills (git repos with sparse checkout)
+.agentskills/*/.git/

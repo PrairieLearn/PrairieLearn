@@ -5,7 +5,7 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 !!! tip "Summary"
 
     ```sh
-    git clone https://github.com/PrairieLearn/PrairieLearn.git
+    git clone --recurse-submodules https://github.com/PrairieLearn/PrairieLearn.git
     cd PrairieLearn
     docker run -it --rm -p 3000:3000 \
       -e DEV=true -v .:/PrairieLearn \
@@ -15,10 +15,17 @@ This page describes the procedure to run PrairieLearn within Docker, but using a
 
 First install the Docker version of PrairieLearn as described in the [installation documentation](../installing.md).
 
-Then, clone PrairieLearn from the main repository:
+Then, clone PrairieLearn from the main repository with submodules:
 
 ```sh
-git clone https://github.com/PrairieLearn/PrairieLearn.git
+git clone --recurse-submodules https://github.com/PrairieLearn/PrairieLearn.git
+```
+
+If you've already cloned the repository without submodules, you can initialize them with:
+
+```sh
+cd PrairieLearn
+git submodule update --init --recursive
 ```
 
 To run without spawning a shell in the container, run:

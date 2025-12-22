@@ -117,11 +117,17 @@ Most of these prerequisites can be installed using the package manager of your O
 
         See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
 
-- Clone the latest code:
+- Clone the latest code with submodules:
 
   ```sh
-  git clone https://github.com/PrairieLearn/PrairieLearn.git
+  git clone --recurse-submodules https://github.com/PrairieLearn/PrairieLearn.git
   cd PrairieLearn
+  ```
+
+  If you've already cloned the repository without submodules, you can initialize them with:
+
+  ```sh
+  git submodule update --init --recursive
   ```
 
 - Set up a Python virtual environment in the root of the cloned repository:
