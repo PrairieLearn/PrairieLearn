@@ -90,6 +90,16 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
+  
+    const ongoingJobSequenceIds = await queryRows(
+      sql.select_ongoing_job_sequence_ids_for_assessment_question,
+      {
+        assessment_question_id: res.locals.assessment_question.id,
+      },
+      z.string()
+    )
+
+    console.log('ongoingJobSequenceIds', ongoingJobSequenceIds);
 
     const {
       authz_data,
@@ -157,6 +167,7 @@ router.get(
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
+                ongoingJobSequenceIds={ongoingJobSequenceIds}
               />
             </Hydrate>
           </>

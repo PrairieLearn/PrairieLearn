@@ -101,3 +101,16 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
+
+-- BLOCK select_ongoing_job_sequence_ids_for_assessment_question
+SELECT
+  DISTINCT js.id AS job_sequence_id
+FROM
+  job_sequences AS js
+  JOIN ai_grading_jobs AS agj ON agj.job_sequence_id = js.id
+  JOIN grading_jobs AS gj ON gj.id = agj.grading_job_id
+  JOIN submissions AS s ON s.id = gj.submission_id
+  JOIN variants AS v ON v.id = s.variant_id
+  JOIN instance_questions AS iq ON iq.id = v.instance_question_id
+WHERE iq.assessment_question_id = $assessment_question_id
+  AND js.status = 'Running';

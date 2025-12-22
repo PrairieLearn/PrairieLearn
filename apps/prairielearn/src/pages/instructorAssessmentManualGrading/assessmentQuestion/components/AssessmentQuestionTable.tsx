@@ -13,7 +13,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'preact/compat';
-import { Alert, Button, Dropdown, Modal, ProgressBar } from 'react-bootstrap';
+import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -53,6 +53,7 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
+import { ServerJobProgressBar, useJobSequenceProgress } from '../../../../components/ServerJobProgressBar.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
@@ -81,6 +82,7 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  ongoingJobSequenceIds: string[];
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -160,6 +162,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
+  ongoingJobSequenceIds,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -602,6 +605,8 @@ export function AssessmentQuestionTable({
     allAiAgreementItems,
   });
 
+  const jobSequenceProgress = useJobSequenceProgress(ongoingJobSequenceIds);
+
   return (
     <>
       <div class="mb-3">
@@ -619,24 +624,13 @@ export function AssessmentQuestionTable({
         />
       </div>
       <div class="mb-3">
-        <Alert variant="info" class="mb-0">
-          <div class="d-flex align-items-center gap-3">
-            <div class="d-flex align-items-center gap-2">
-              <i class="bi bi-stars fs-5" aria-hidden="true" />
-              <strong class="text-nowrap">AI grading in progress</strong>
-            </div>
-            <div class="flex-grow-1">
-              <ProgressBar now={37.5} striped animated variant="primary" />
-            </div>
-            <div class="text-muted small text-nowrap">
-              45/120 submissions graded
-            </div>
-            <Button variant="danger" size="sm">
-              <i class="bi bi-x-circle me-1" aria-hidden="true" />
-              Cancel
-            </Button>
-          </div>
-        </Alert>
+        <ServerJobProgressBar
+          text="AI grading in progress"
+          icon="bi-stars"
+          numCompleted={jobSequenceProgress.numCompleted}
+          numTotal={jobSequenceProgress.numTotal}
+          itemNames='submissions graded'
+        />
       </div>
       {batchActionMutation.isError && (
         <Alert

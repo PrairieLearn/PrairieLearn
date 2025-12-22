@@ -13,6 +13,7 @@ import { checkVariantToken } from './checkVariantToken.js';
 import { GradingJobSchema, IdSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
+import { ensureProps } from './ensureProps.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -97,17 +98,4 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
     logger.error('Error selecting submission for grading job', err);
     Sentry.captureException(err);
   }
-}
-
-function ensureProps(data: Record<string, any>, props: string[]): boolean {
-  for (const prop of props) {
-    if (!Object.hasOwn(data, prop)) {
-      logger.error(`socket.io external grader connected without ${prop}`);
-      Sentry.captureException(
-        new Error(`socket.io external grader connected without property ${prop}`),
-      );
-      return false;
-    }
-  }
-  return true;
 }

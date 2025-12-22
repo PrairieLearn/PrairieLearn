@@ -46,6 +46,7 @@ export interface AssessmentQuestionManualGradingProps {
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
+  ongoingJobSequenceIds: string[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -73,6 +74,7 @@ function AssessmentQuestionManualGradingInner({
   numOpenInstances,
   questionTitle,
   questionNumber,
+  ongoingJobSequenceIds
 }: AssessmentQuestionManualGradingInnerProps) {
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
