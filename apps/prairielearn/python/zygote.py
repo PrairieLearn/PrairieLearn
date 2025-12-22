@@ -1,5 +1,3 @@
-# pyright: reportUnusedImport=false
-
 # This program is the glue between python-runner JavaScript code and Python code
 #
 # It will enter an infinite loop waiting for input. For each input, it

@@ -163,9 +163,6 @@ def test_networkx_serialization(
 
     assert type(decoded_json_object) is type(networkx_graph)
 
-    # This check is needed because pyright cannot infer the type of decoded_json_object
-    assert isinstance(decoded_json_object, type(networkx_graph))
-
     assert nx.utils.nodes_equal(networkx_graph.nodes(), decoded_json_object.nodes())
     assert nx.utils.edges_equal(networkx_graph.edges(), decoded_json_object.edges())
 
@@ -250,9 +247,6 @@ def test_numpy_serialization(numpy_object: ArrayLike) -> None:
     decoded_json_object = pl.from_json(json.loads(json_object))
 
     assert type(numpy_object) is type(decoded_json_object)
-
-    # This check is needed because pyright cannot infer the type of decoded_json_object
-    assert isinstance(decoded_json_object, type(numpy_object))
 
     np.testing.assert_array_equal(numpy_object, decoded_json_object, strict=True)
 

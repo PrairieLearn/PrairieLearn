@@ -1,5 +1,4 @@
 # ruff: noqa: ARG001 ANN001
-# pyright: reportUnknownParameterType=none, reportMissingParameterType=none
 import re
 from unittest.mock import mock_open, patch
 
