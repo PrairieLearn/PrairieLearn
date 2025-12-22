@@ -208,3 +208,26 @@ export async function selectCourseInstanceByUuid({
     CourseInstanceSchema,
   );
 }
+
+/**
+ * Updates the modern_publishing setting for a course instance.
+ */
+export async function updateCourseInstanceModernPublishing({
+  courseInstanceId,
+  modernPublishing,
+  authzData,
+  requiredRole,
+}: {
+  courseInstanceId: string;
+  modernPublishing: boolean;
+  authzData: AuthzData;
+  requiredRole: 'System'[];
+}): Promise<CourseInstance> {
+  assertHasRole(authzData, requiredRole);
+
+  return await queryRow(
+    sql.update_course_instance_modern_publishing,
+    { course_instance_id: courseInstanceId, modern_publishing: modernPublishing },
+    CourseInstanceSchema,
+  );
+}

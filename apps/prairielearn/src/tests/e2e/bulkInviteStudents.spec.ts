@@ -1,9 +1,13 @@
 import type { Page } from '@playwright/test';
 
-import * as sqldb from '@prairielearn/postgres';
-
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { features } from '../../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import {
+  selectCourseInstanceById,
+  updateCourseInstanceModernPublishing,
+} from '../../models/course-instances.js';
+import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
 import { syncCourse } from '../helperCourse.js';
 import { getOrCreateUser } from '../utils/auth.js';
 
@@ -25,8 +29,6 @@ async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
   }
 }
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
 interface TestUser {
   uid: string;
   name: string;
@@ -43,8 +45,15 @@ const INVITED_STUDENT: TestUser = { uid: 'invited_student@test.com', name: 'Invi
  * Creates test users and sets up the database for testing bulk invitations.
  */
 async function createTestData() {
+  const courseInstance = await selectCourseInstanceById('1');
+
   // Enable modern publishing for the course instance
-  await sqldb.execute(sql.enable_modern_publishing, {});
+  await updateCourseInstanceModernPublishing({
+    courseInstanceId: courseInstance.id,
+    modernPublishing: true,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+  });
 
   // Enable the enrollment-management feature flag
   await features.enable('enrollment-management', { institution_id: '1' });
@@ -60,10 +69,21 @@ async function createTestData() {
     name: ENROLLED_STUDENT.name,
     uin: null,
   });
-  await sqldb.execute(sql.insert_joined_enrollment, { user_id: enrolledUser.user_id });
+  await ensureUncheckedEnrollment({
+    userId: enrolledUser.user_id,
+    courseInstance,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+    actionDetail: 'implicit_joined',
+  });
 
-  // Create a student with a pending invitation (uses pending_uid)
-  await sqldb.execute(sql.insert_invited_enrollment, { pending_uid: INVITED_STUDENT.uid });
+  // Create a student with a pending invitation
+  await inviteStudentByUid({
+    uid: INVITED_STUDENT.uid,
+    courseInstance,
+    authzData: dangerousFullSystemAuthz(),
+    requiredRole: ['System'],
+  });
 }
 
 test.describe('Bulk invite students', () => {
