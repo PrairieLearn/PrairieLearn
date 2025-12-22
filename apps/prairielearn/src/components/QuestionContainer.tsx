@@ -113,6 +113,7 @@ export function QuestionContainer({
       aiGradingInfo?.explanation
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&

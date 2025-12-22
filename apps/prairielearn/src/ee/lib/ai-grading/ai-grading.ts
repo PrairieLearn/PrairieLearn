@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { createOpenAI, type OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { generateObject, type GenerateObjectResult, type ModelMessage } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -35,6 +35,7 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
   correctHandwritingOrientation,
+  generateHandwritingOrientationPromptAndImages,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -47,6 +48,7 @@ import {
   selectRubricForGrading
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
+import { initial } from 'lodash';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -400,75 +402,126 @@ export async function aiGrade({
           ].join(' ')),
         })
         
-        const response = await run(async () => {
-          if (hasImage) {
-            let gradingResponse = await generateObject({
-              model,
-              schema: RubricImageGradingResultSchema,
-              messages: input,
-              providerOptions: {
-                openai: openaiProviderOptions,
+        const {
+          prompts,
+          responses
+        } = await run(async () => {
+          if (!hasImage) {
+             return {
+              prompts: {
+                aiGrading: input
               },
-            });
-
-            if (
-              submission.submitted_answer && 
-              gradingResponse.object.handwriting_orientations.some((orientation) => orientation !== 'Upright (0 degrees)')
-            ) {
-            // If one image has handwriting that is not upright, the LLM corrects the rotation of all images in the submission.
-              for (const [filename, image] of Object.entries(submissionImages)) {
-                const correctedImage = await correctHandwritingOrientation({
-                  image,
-                  model
-                });
-
-                // Ensure that _files exists
-                submission.submitted_answer._files ??= [];
-
-                // Upsert corrected image into submitted_answer._files
-                const existingIndex = submission.submitted_answer._files.findIndex(
-                  (file: { name: string; contents: string }) => file.name === filename,
-                );
-
-                if (existingIndex !== -1) {
-                  submission.submitted_answer._files[existingIndex].contents = correctedImage;
-                } else {
-                  submission.submitted_answer._files.push({ name: filename, contents: correctedImage });
-                }
+              responses: {
+                initialAiGrading: (await generateObject(
+                  {
+                    model,
+                    schema: RubricGradingResultSchema,
+                    messages: input,
+                    providerOptions: {
+                      openai: openaiProviderOptions,
+                    },
+                  })
+                )
               }
+             }
+          } 
 
-              let { input: newInput } = await generatePrompt({
-                questionPrompt,
-                questionAnswer,
-                submission_text,
-                submitted_answer: submission.submitted_answer,
-                example_submissions,
-                rubric_items,
-                model_id,
-              });
+          const initialAiGrading = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
 
-              input = newInput;
+          let rotationCorrectionInputs: {[key: string]: ModelMessage[]} = {};
+          let rotationCorrectionCompletions: {[key: string]: GenerateObjectResult<any>} = {};
 
-              return await generateObject({
-                model,
-                schema: RubricImageGradingResultSchema,
-                messages: input,
-                providerOptions: {
-                  openai: openaiProviderOptions,
-                },
-              });
-            } else {
-              return gradingResponse;
-            }
-          } else {
-            return await generateObject({
-              model,
-              schema: RubricGradingResultSchema,
-              messages: input,
-              providerOptions: {
-                openai: openaiProviderOptions,
+          if (!submission.submitted_answer || initialAiGrading.object.handwriting_orientations.every((orientation) => orientation === 'Upright (0 degrees)')) {
+            return {
+              prompts: {
+                aiGrading: input
               },
+              responses: {
+                initialAiGrading
+              }
+            }
+          }
+
+          // If one image has handwriting that is not upright, the LLM corrects the rotation of all images in the submission.
+          for (const [filename, image] of Object.entries(submissionImages)) {
+            const {
+              prompt: rotationCorrectionPrompt,
+              images
+            } = await generateHandwritingOrientationPromptAndImages(
+              image
+            );
+
+            const RotationCorrectionSchema = z.object({
+              upright_image: z.enum(['1', '2', '3', '4']).describe(
+                'The number corresponding to the image that is closest to being upright.'
+              )
             });
+
+            const response = await generateObject({
+              model,
+              schema: RotationCorrectionSchema,
+              messages: rotationCorrectionPrompt,
+            });
+
+            rotationCorrectionCompletions[filename] = response;
+
+            const correctedImage = images[parseInt(response.object.upright_image) - 1];
+
+            // Ensure that _files exists
+            submission.submitted_answer._files ??= [];
+
+            // Upsert corrected image into submitted_answer._files
+            const existingIndex = submission.submitted_answer._files.findIndex(
+              (file: { name: string; contents: string }) => file.name === filename,
+            );
+
+            if (existingIndex !== -1) {
+              submission.submitted_answer._files[existingIndex].contents = correctedImage;
+            } else {
+              submission.submitted_answer._files.push({ name: filename, contents: correctedImage });
+            }
+
+            rotationCorrectionInputs[filename] = input;
+          }
+
+          let { input: newInput } = await generatePrompt({
+            questionPrompt,
+            questionAnswer,
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+            example_submissions,
+            rubric_items,
+            model_id,
+          });
+
+          input = newInput;
+
+          const rotationCorrectedAiGrading = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          return {
+            prompts: {
+              aiGrading: input,
+              rotationCorrection: rotationCorrectionInputs
+            },
+            responses: {
+              initialAiGrading,
+              rotationCorrection: rotationCorrectionCompletions,
+              rotationCorrectedAiGrading
+            }
           }
         });
 
@@ -479,7 +532,7 @@ export async function aiGrade({
           ai_rubric_items: response.object.rubric_items,
           rubric_items,
         });
-        if (shouldUpdateScore) {
+        if (shouldUpdateScore) { 
           // Requires grading: update instance question score
           const manual_rubric_data = {
             rubric_id: rubric_items[0].rubric_id,
@@ -505,8 +558,12 @@ export async function aiGrade({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
-              prompt: input,
-              response,
+              prompts: {
+                aiGrading: input
+              },
+              responses: {
+                initialAiGrading: response
+              },
               course_id: course.id,
               course_instance_id: course_instance.id,
             });
@@ -543,8 +600,12 @@ export async function aiGrade({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
-              prompt: input,
-              response,
+              prompts: {
+                aiGrading: input
+              },
+              responses: {
+                initialAiGrading: response
+              },
               course_id: course.id,
               course_instance_id: course_instance.id,
             });
@@ -612,8 +673,12 @@ export async function aiGrade({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
-              prompt: input,
-              response,
+              prompts: {
+                aiGrading: input
+              },
+              responses: {
+                initialAiGrading: response
+              },
               course_id: course.id,
               course_instance_id: course_instance.id,
             });
@@ -641,8 +706,12 @@ export async function aiGrade({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
-              prompt: input,
-              response,
+              prompts: {
+                aiGrading: input
+              },
+              responses: {
+                initialAiGrading: response
+              },
               course_id: course.id,
               course_instance_id: course_instance.id,
             });

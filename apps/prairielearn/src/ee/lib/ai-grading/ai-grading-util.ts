@@ -273,23 +273,21 @@ async function rotateBase64Image(
 }
 
 /** 
- * Automatically rotates a provided image to the upright orientation using an AI model.
+ * Prompt to determine the amount of rotation needed to correct the orientation of a handwritten image.
  * */
-export async function correctHandwritingOrientation({
-  image,
-  model
-}: {
-  /** The original base64-encoded image submission. */
-  image: string;
-  model: LanguageModel;
-}): Promise<string> {
+export async function generateHandwritingOrientationPromptAndImages(
+  image: string
+): Promise<{
+  prompt: ModelMessage[],
+  images: string[]
+}> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
   const rotated270 = await rotateBase64Image(image, 270);
 
-  const input: ModelMessage[] = [];
+  const prompt: ModelMessage[] = [];
 
-  input.push({
+  prompt.push({
     role: 'system',
     content: formatPrompt([
       'Of the four images provided, select the one that is closest to being upright.',
@@ -306,7 +304,7 @@ export async function correctHandwritingOrientation({
   ];
 
   for (let i = 1; i <= 4; i++) {
-    input.push({
+    prompt.push({
       role: 'user',
       content: [
         {
@@ -326,20 +324,10 @@ export async function correctHandwritingOrientation({
     });
   }
 
-  const RotationCorrectionSchema = z.object({
-    upright_image: z.enum(['1', '2', '3', '4']).describe(
-      'The number corresponding to the image that is closest to being upright.'
-    )
-  });
-
-  const response = await generateObject({
-    model,
-    schema: RotationCorrectionSchema,
-    messages: input,
-  });
-
-  const uprightImage = parseInt(response.object.upright_image);
-  return images[uprightImage - 1];
+  return {
+    prompt,
+    images
+  }
 }
 
 /**
@@ -570,28 +558,83 @@ export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
   model_id,
-  prompt,
-  response,
+  prompts,
+  responses,
   course_id,
   course_instance_id,
 }: {
   grading_job_id: string;
   job_sequence_id: string;
   model_id: AiGradingModelId;
-  prompt: ModelMessage[];
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  prompts: {
+    aiGrading: ModelMessage[]; // The final prompt used to AI grade the submission.
+    rotationCorrection?: {
+      [key: string]: ModelMessage[]; // The prompt used for each image filename if rotation correction was performed.
+    }
+  },
+  responses: {
+    initialAiGrading: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+    // Response for each image filename if rotation correction was performed.
+    rotationCorrection?: {[key: string]: GenerateObjectResult<any>};
+    rotationCorrectedAiGrading?: GenerateObjectResult<any>;
+  },
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
+
+  const prompt_tokens = run(() => {
+    let total = 0;
+    total += responses.initialAiGrading.usage.inputTokens ?? 0;
+    if (responses.rotationCorrection) {
+      for (const filename of Object.keys(responses.rotationCorrection)) {
+        total += responses.rotationCorrection[filename].usage.inputTokens ?? 0;
+      }
+    }
+    if (responses.rotationCorrectedAiGrading) {
+      total += responses.rotationCorrectedAiGrading.usage.inputTokens ?? 0;
+    }
+    return total;
+  });
+
+  const completion_tokens = run(() => {
+    let total = 0;
+    total += responses.initialAiGrading.usage.outputTokens ?? 0;
+    if (responses.rotationCorrection) {
+      for (const filename of Object.keys(responses.rotationCorrection)) {
+        total += responses.rotationCorrection[filename].usage.outputTokens ?? 0;
+      }
+    }
+    if (responses.rotationCorrectedAiGrading) {
+      total += responses.rotationCorrectedAiGrading.usage.outputTokens ?? 0;
+    }
+    return total;
+  });
+
+  const cost = run(() => {
+    let total = 0;
+    total += calculateResponseCost({ model: model_id, usage: responses.initialAiGrading.usage });
+    if (responses.rotationCorrection) {
+      for (const filename of Object.keys(responses.rotationCorrection)) {
+        total += calculateResponseCost({ model: model_id, usage: responses.rotationCorrection[filename].usage });
+      }
+    }
+    if (responses.rotationCorrectedAiGrading) {
+      total += calculateResponseCost({ model: model_id, usage: responses.rotationCorrectedAiGrading.usage });
+    }
+    return total;
+  })
+
   await execute(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
-    prompt: JSON.stringify(prompt),
-    completion: response,
+    prompt: JSON.stringify(prompts.aiGrading),
+    completion: responses.rotationCorrectedAiGrading,
+    rotation_correction_prompt: JSON.stringify(prompts.rotationCorrection),
+    rotation_correction_completion: responses.rotationCorrection,
     model: model_id,
-    prompt_tokens: response.usage.inputTokens ?? 0,
-    completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+    prompt_tokens,
+    completion_tokens,
+    cost,
     course_id,
     course_instance_id,
   });
