@@ -49,7 +49,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { RotationCorrectionSchema } from './types.js';
+import { RotationCorrectionSchema, type ClockwiseRotationDegrees } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -536,6 +536,7 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
+    rotation_correction_degrees: null,
     model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
@@ -553,6 +554,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   response,
   rotationErrorResponse,
   rotationCorrectionResponses,
+  rotationCorrectionDegrees,
   course_id,
   course_instance_id,
 }: {
@@ -563,6 +565,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   rotationErrorResponse: GenerateObjectResult<any>;
   rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
+  rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
@@ -576,11 +579,15 @@ export async function insertAiGradingJobWithRotationCorrection({
     cost += calculateResponseCost({ model: model_id, usage: rotationCorrectionResponse.usage });
   }
 
+  console.log('grading job ID', grading_job_id);
+  console.log('rotationCorrectionDegrees', rotationCorrectionDegrees);
+
   await execute(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
+    rotation_correction_degrees: JSON.stringify(rotationCorrectionDegrees),
     model: model_id,
     prompt_tokens,
     completion_tokens,
@@ -749,6 +756,7 @@ export async function correctImageOrientation({
   model: LanguageModel
 }): Promise<{
   correctedImage: string,
+  clockwiseRotation: ClockwiseRotationDegrees,
   response: GenerateObjectResult<any>
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
@@ -772,6 +780,13 @@ export async function correctImageOrientation({
     rotated180,
     rotated270,
   ];
+
+  const rotationCorrectionDegrees = [
+    0,
+    90,
+    180,
+    270
+  ] as ClockwiseRotationDegrees[];
 
   for (let i = 1; i <= 4; i++) {
     prompt.push({
@@ -800,8 +815,11 @@ export async function correctImageOrientation({
     messages: prompt,
   });
 
+  const index = parseInt(response.object.upright_image) - 1;
+
   return {
-    correctedImage: images[parseInt(response.object.upright_image) - 1],
+    correctedImage: images[index],
+    clockwiseRotation: rotationCorrectionDegrees[index],
     response,
   }
 };

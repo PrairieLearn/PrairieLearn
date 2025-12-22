@@ -144,6 +144,7 @@ router.get(
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
           completion: AiGradingJobSchema.shape.completion,
+          rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
         }),
       );
 
@@ -212,6 +213,7 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
+          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees) : null
         };
       }
     }

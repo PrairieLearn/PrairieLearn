@@ -42,6 +42,8 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
+  /** Rotation correction degrees for each image. */
+  rotationCorrectionDegrees: string | null;
 }
 
 export const AIGradingOrientationSchema = z.enum([
@@ -67,3 +69,5 @@ export const RotationCorrectionSchema = z.object({
     'The number corresponding to the image that is closest to being upright.'
   )
 });
+
+export type ClockwiseRotationDegrees = 0 | 90 | 180 | 270;

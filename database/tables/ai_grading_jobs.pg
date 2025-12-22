@@ -1,5 +1,6 @@
 columns
     completion: jsonb not null
+    rotation_correction_degrees: jsonb
     completion_tokens: integer not null
     cost: double precision not null
     course_id: bigint not null

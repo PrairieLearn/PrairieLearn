@@ -58,8 +58,7 @@ export function logResponsesUsage({
       acc.reasoningTokens += usage.reasoningTokens ?? 0;
       acc.totalTokens += usage.totalTokens ?? 0;
       return acc;
-    }
-    , {
+    }, {
       inputTokens: 0,
       cachedInputTokens: 0,
       outputTokens: 0,

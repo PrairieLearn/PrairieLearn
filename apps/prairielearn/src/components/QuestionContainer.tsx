@@ -110,9 +110,10 @@ export function QuestionContainer({
           : ''
       }
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.explanation
+      aiGradingInfo?.explanation || aiGradingInfo?.rotationCorrectionDegrees
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -197,7 +198,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({ explanation, rotationCorrectionDegrees }: { explanation: string | null, rotationCorrectionDegrees: string | null }) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -220,9 +221,17 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+          ${explanation ? html`
+            <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+              ${explanation}
+            </pre>
+          ` : ''}
+          \n
+          ${rotationCorrectionDegrees ? html`
+            <pre>All images were upright: false. \nClockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}</pre>
+          ` : html`
+            <pre>All images were upright: true </pre>
+          `}
         </div>
       </div>
     </div>

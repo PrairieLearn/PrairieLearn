@@ -234,6 +234,7 @@ export type Administrator = z.infer<typeof AdministratorSchema>;
 
 export const AiGradingJobSchema = z.object({
   completion: z.any(),
+  rotation_correction_degrees: z.any().nullable(),
   completion_tokens: z.number(),
   cost: z.number(),
   course_id: IdSchema,

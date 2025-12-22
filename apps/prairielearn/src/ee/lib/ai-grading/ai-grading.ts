@@ -47,7 +47,7 @@ import {
   selectLastVariantAndSubmission,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import { HandwritingOrientationsSchema, type AIGradingLog, type AIGradingLogger } from './types.js';
+import { HandwritingOrientationsSchema, type AIGradingLog, type AIGradingLogger, type ClockwiseRotationDegrees } from './types.js';
 import logResponse from '../../../middlewares/logResponse.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -395,7 +395,8 @@ export async function aiGrade({
           rotationCorrectionApplied,
           response,
           rotationErrorResponse,
-          rotationCorrectionResponses
+          rotationCorrectionResponses,
+          rotationCorrectionDegrees
         } = await run(async () => {
           if (!hasImage || !submission.submitted_answer) {
             return {
@@ -433,10 +434,12 @@ export async function aiGrade({
           // the rotation correction process will leave it unchanged.
           
           let rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
+          let rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
 
           for (const [filename, image] of Object.entries(submittedImages)) {
             const {
               correctedImage,
+              clockwiseRotation,
               response
             } = await correctImageOrientation({
               image,
@@ -451,6 +454,7 @@ export async function aiGrade({
             }
 
             rotationCorrectionResponses[filename] = response;
+            rotationCorrectionDegrees[filename] = clockwiseRotation;
           }
 
           // Regenerate the prompt with the rotation-corrected images.
@@ -478,7 +482,8 @@ export async function aiGrade({
             response: finalResponse,
             rotationCorrectionApplied: true,
             rotationErrorResponse: initialResponse,
-            rotationCorrectionResponses
+            rotationCorrectionResponses,
+            rotationCorrectionDegrees
           };
         }) satisfies {
           rotationCorrectionApplied: false
@@ -488,6 +493,7 @@ export async function aiGrade({
           response: GenerateObjectResult<any>;
           rotationErrorResponse: GenerateObjectResult<any>;
           rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
+          rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
         };
 
         if (rotationCorrectionApplied) {
@@ -526,7 +532,7 @@ export async function aiGrade({
                 feedback: { manual: '' },
               },
               user_id,
-              true, // is_ai_graded
+              true, // is_ai_gradedinsertAiGradingJobWithRotationCorrection
             );
             assert(grading_job_id);
 
@@ -544,8 +550,9 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 rotationErrorResponse,
-                rotationCorrectionResponses
-              })
+                rotationCorrectionResponses,
+                rotationCorrectionDegrees
+              });
             } else {
               await insertAiGradingJob(aiGradingJobParams);
             }
@@ -593,7 +600,8 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 rotationErrorResponse,
-                rotationCorrectionResponses
+                rotationCorrectionResponses,
+                rotationCorrectionDegrees
               });
             } else {
               await insertAiGradingJob(aiGradingJobParams);

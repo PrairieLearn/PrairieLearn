@@ -103,7 +103,8 @@ SELECT
   gj.id,
   gj.manual_rubric_grading_id,
   agj.prompt,
-  agj.completion
+  agj.completion,
+  agj.rotation_correction_degrees
 FROM
   grading_jobs AS gj
   LEFT JOIN ai_grading_jobs AS agj ON (agj.grading_job_id = gj.id)
