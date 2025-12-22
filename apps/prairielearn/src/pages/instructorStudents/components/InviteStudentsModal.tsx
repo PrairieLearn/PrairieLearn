@@ -61,14 +61,13 @@ export function InviteStudentsModal({
     saveMutation.mutate(uids);
   };
 
-  const onExited = () => {
+  const resetModalState = () => {
     reset();
     clearErrors();
-    saveMutation.reset();
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onHide} onExited={onExited}>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
         <Modal.Title>Invite students</Modal.Title>
       </Modal.Header>

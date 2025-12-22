@@ -602,6 +602,7 @@ export const ConfigSchema = z.object({
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
+      'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
@@ -618,6 +619,7 @@ export const ConfigSchema = z.object({
       // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
+      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, output: 3 },
       'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
