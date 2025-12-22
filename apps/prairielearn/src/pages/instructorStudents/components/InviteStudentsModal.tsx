@@ -102,11 +102,16 @@ export function InviteStudentsModal({
               rows={5}
               placeholder="One UID per line, or comma/space separated"
               aria-invalid={errors.uids ? 'true' : 'false'}
+              aria-errormessage={errors.uids ? 'invite-uids-error' : undefined}
               {...register('uids', {
                 validate: validateUidsFormat,
               })}
             />
-            {errors.uids?.message && <div class="invalid-feedback">{errors.uids.message}</div>}
+            {errors.uids?.message && (
+              <div class="invalid-feedback" id="invite-uids-error">
+                {errors.uids.message}
+              </div>
+            )}
           </div>
         </Modal.Body>
         <Modal.Footer>
