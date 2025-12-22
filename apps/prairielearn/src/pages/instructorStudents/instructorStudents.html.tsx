@@ -271,13 +271,7 @@ function StudentsCard({
     });
     const json = await res.json();
     if (!res.ok) {
-      let message = 'Failed to invite';
-      try {
-        if (typeof json?.error === 'string') message = json.error;
-      } catch {
-        // ignore parse errors, and just use the default message
-      }
-      throw new Error(message);
+      throw new Error(json.error);
     }
     const { job_sequence_id } = z
       .object({
@@ -285,7 +279,6 @@ function StudentsCard({
       })
       .parse(json);
 
-    // Redirect to the job sequence page to show progress
     window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
