@@ -400,11 +400,14 @@ const PostBodySchema = z.union([
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+    const body = PostBodySchema.parse(req.body);
+    if (body.__action === 'next_instance_question') {
+      if (!res.locals.authz_data.has_course_instance_permission_view) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+      }
+    } else if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
-
-    const body = PostBodySchema.parse(req.body);
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.assigned_to_me = body.assigned_to_me;
@@ -670,7 +673,6 @@ router.post(
           assessmentQuestionId: res.locals.assessment_question.id,
         });
       });
-
 
       req.session.skip_graded_submissions = body.skip_graded_submissions;
       req.session.assigned_to_me = body.assigned_to_me;

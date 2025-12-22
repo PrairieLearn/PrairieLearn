@@ -198,7 +198,7 @@ export function InstanceQuestion({
             graders,
             lastGrader,
             skipGradedSubmissions,
-            assignedToMe
+            assignedToMe,
           })
         : ''}
       <div class="row">
@@ -224,7 +224,7 @@ export function InstanceQuestion({
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
-                assigned_to_me: assignedToMe
+                assigned_to_me: assignedToMe,
               })}
             </div>
           </div>
@@ -271,7 +271,7 @@ function ConflictGradingJobModal({
   graders,
   lastGrader,
   skipGradedSubmissions,
-  assignedToMe
+  assignedToMe,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData;
@@ -318,7 +318,7 @@ function ConflictGradingJobModal({
                     context: 'existing',
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
-                    assigned_to_me: assignedToMe
+                    assigned_to_me: assignedToMe,
                   })}
                 </div>
               </div>
@@ -346,7 +346,7 @@ function ConflictGradingJobModal({
                     graders,
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
-                    assigned_to_me: assignedToMe
+                    assigned_to_me: assignedToMe,
                   })}
                 </div>
               </div>

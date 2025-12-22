@@ -67,9 +67,11 @@ WITH
         OR iq.requires_manual_grading
       )
       AND (
-        NOT ($assigned_to_me) OR
-        (iq.assigned_grader = $user_id
-        OR iq.assigned_grader IS NULL)
+        NOT ($assigned_to_me)
+        OR (
+          iq.assigned_grader = $user_id
+          OR iq.assigned_grader IS NULL
+        )
       )
       AND EXISTS (
         SELECT
@@ -96,8 +98,14 @@ WHERE
     OR iq_stable_order > prior_iq_stable_order
   )
 ORDER BY
-  -- Choose one assigned to current user if one exists, unassigned if not
-  assigned_grader ASC NULLS LAST,
+  -- If assigned_to_me is true, choose an instance question assigned to current user if one exists, unassigned if not.
+  -- Otherwise, select an instance question without using the grader assignment.
+  CASE
+    WHEN NOT $assigned_to_me THEN 0
+    WHEN assigned_grader = $user_id THEN 1
+    WHEN assigned_grader IS NULL THEN 2
+    ELSE 3
+  END ASC,
   -- Choose question that list after the prior if one exists. Follow the same
   -- default pseudo-random deterministic stable order used in the instance
   -- questions page.

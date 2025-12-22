@@ -34,7 +34,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
-  assigned_to_me
+  assigned_to_me,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
@@ -63,6 +63,13 @@ export function GradingPanel({
 
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
+
+  // Users are only assigned to grade submissions if they have edit permissions.
+  // If the user has no edit permissions (view only), we set assigned_to_me to false so
+  // the next button does not filter by assigned grader.
+  assigned_to_me = !resLocals.authz_data.has_course_instance_permission_edit
+    ? false
+    : assigned_to_me;
 
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
   const showAssignedToMeButton = !disable && context === 'main';
@@ -280,7 +287,7 @@ ${submission.feedback?.manual}</textarea
                     />
                   `}
             </div>
-            
+
             <div class="form-check">
               ${showAssignedToMeButton
                 ? html`
@@ -292,9 +299,7 @@ ${submission.feedback?.manual}</textarea
                       value="true"
                       ${assigned_to_me ? 'checked' : ''}
                     />
-                    <label class="form-check-label" for="assigned_to_me">
-                      Assigned to me
-                    </label>
+                    <label class="form-check-label" for="assigned_to_me"> Assigned to me </label>
                   `
                 : html`
                     <input
@@ -306,7 +311,7 @@ ${submission.feedback?.manual}</textarea
                   `}
             </div>
           </div>
-          
+
           <span class="ms-auto">
             ${!disable
               ? html`

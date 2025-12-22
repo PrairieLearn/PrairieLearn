@@ -49,6 +49,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param options.user_id - The user_id of the current grader. Typically the current effective user.
  * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
  * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
+ * @param options.assigned_to_me - If true, the returned next submission must be assigned to the current grader or unassigned. Otherwise, submissions assigned to any grader may be returned.
  * @param options.use_instance_question_groups - Whether or not to use the instance question groups to determine the next instance question.
  */
 export async function nextInstanceQuestionUrl({
