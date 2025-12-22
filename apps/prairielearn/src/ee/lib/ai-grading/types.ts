@@ -43,3 +43,27 @@ export interface InstanceQuestionAIGradingInfo {
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
 }
+
+export const AIGradingOrientationSchema = z.enum([
+  'Upright (0 degrees)', 'Upside-down (180 degrees)' , 'Rotated Counterclockwise 90 degrees' , 'Rotated Clockwise 90 degrees'
+]);
+
+export const HandwritingOrientationsSchema = z.object({
+  // The LLM isn't aware of an identifier (e.g. filename) for each submitted image, 
+  // so we classify orientations of all the images without a strict ordering or mapping. 
+  // If the LLM detects that one submission isn't upright, all images will be rotation corrected.
+  handwriting_orientations: z.array(AIGradingOrientationSchema).describe([
+    'For each image provided, describe the orientation of its handwriting as upright, upside-down, rotated counterclockwise 90 degrees, or rotated clockwise 90 degrees.',
+    'Upright (0 degrees): The handwriting is in a standard reading position already.',
+    'Upside-down (180 degrees clockwise): The handwriting is completely upside down.',
+    'Rotated Clockwise 90 degrees: The page is on its side, with the top of the text pointing left.',
+    'Rotated Counterclockwise 90 degrees: The page is on its side, with the top of the text pointing right.',
+    "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+  ].join(' ')),
+})
+
+export const RotationCorrectionSchema = z.object({
+  upright_image: z.enum(['1', '2', '3', '4']).describe(
+    'The number corresponding to the image that is closest to being upright.'
+  )
+});

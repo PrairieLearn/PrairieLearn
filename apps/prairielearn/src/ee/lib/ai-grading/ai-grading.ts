@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { generateObject, type GenerateObjectResult } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -11,7 +11,7 @@ import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { logResponseUsage } from '../../../lib/ai.js';
+import { logResponsesUsage, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -33,9 +33,12 @@ import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  correctImageOrientation,
+  extractSubmissionImages,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
+  insertAiGradingJobWithRotationCorrection,
   parseAiRubricItems,
   selectClosestSubmissionInfo,
   selectEmbeddingForSubmission,
@@ -44,7 +47,8 @@ import {
   selectLastVariantAndSubmission,
   selectRubricForGrading,
 } from './ai-grading-util.js';
-import type { AIGradingLog, AIGradingLogger } from './types.js';
+import { HandwritingOrientationsSchema, type AIGradingLog, type AIGradingLogger } from './types.js';
+import logResponse from '../../../middlewares/logResponse.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -323,7 +327,7 @@ export async function aiGrade({
 
       const rubric_items = await selectRubricForGrading(assessment_question.id);
 
-      const input = await generatePrompt({
+      let input = await generatePrompt({
         questionPrompt,
         questionAnswer,
         submission_text,
@@ -332,6 +336,11 @@ export async function aiGrade({
         rubric_items,
         model_id,
       });
+
+      const submittedImages = submission.submitted_answer ? extractSubmissionImages({
+        submission_text,
+        submitted_answer: submission.submitted_answer,
+      }): {};
 
       // If the submission contains images, prompt the model to transcribe any relevant information
       // out of the image.
@@ -380,16 +389,119 @@ export async function aiGrade({
           rubric_items: RubricGradingItemsSchema,
         });
 
-        const response = await generateObject({
-          model,
-          schema: RubricGradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-        });
+        const RubricImageGradingResultSchema = RubricGradingResultSchema.merge(HandwritingOrientationsSchema);
 
-        logResponseUsage({ response, logger });
+        const {
+          rotationCorrectionApplied,
+          response,
+          rotationErrorResponse,
+          rotationCorrectionResponses
+        } = await run(async () => {
+          if (!hasImage || !submission.submitted_answer) {
+            return {
+              response: await generateObject({
+                model,
+                schema: RubricGradingResultSchema,
+                messages: input,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+              rotationCorrectionApplied: false
+            }
+          }
+
+          const initialResponse = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          if (initialResponse.object.handwriting_orientations.every((orientation) => orientation === 'Upright (0 degrees)')) { 
+            // All images are upright, no rotation correction needed.
+            return { response: initialResponse, rotationCorrectionApplied: false };
+          }
+
+          // The LLM isn't aware of an identifier (e.g. filename) for each submitted image, 
+          // so we don't know which images need rotation correction.
+          //
+          // We know that at least one image needs rotation correction,
+          // so we run rotation correction on all images. If an image is already upright,
+          // the rotation correction process will leave it unchanged.
+          
+          let rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
+
+          for (const [filename, image] of Object.entries(submittedImages)) {
+            const {
+              correctedImage,
+              response
+            } = await correctImageOrientation({
+              image,
+              model
+            });
+            const existingIndex = submission.submitted_answer?._files.findIndex(
+              (file: { name: string; contents: string }) => file.name === filename,
+            );
+
+            if (existingIndex !== -1) {
+              submission.submitted_answer._files[existingIndex].contents = correctedImage;
+            }
+
+            rotationCorrectionResponses[filename] = response;
+          }
+
+          // Regenerate the prompt with the rotation-corrected images.
+          input = await generatePrompt({
+            questionPrompt,
+            questionAnswer,
+            submission_text,
+            submitted_answer: submission.submitted_answer,
+            example_submissions,
+            rubric_items,
+            model_id,
+          });
+
+          // Perform grading with the rotation-corrected images.
+          const finalResponse = await generateObject({
+            model,
+            schema: RubricImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          return {
+            response: finalResponse,
+            rotationCorrectionApplied: true,
+            rotationErrorResponse: initialResponse,
+            rotationCorrectionResponses
+          };
+        }) satisfies {
+          rotationCorrectionApplied: false
+          response: GenerateObjectResult<any>;
+        } | {
+          rotationCorrectionApplied: true;
+          response: GenerateObjectResult<any>;
+          rotationErrorResponse: GenerateObjectResult<any>;
+          rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
+        };
+
+        if (rotationCorrectionApplied) {
+          logResponsesUsage({
+            responses: [
+              ...Object.values(rotationCorrectionResponses),
+              rotationErrorResponse,
+              response
+            ],
+            logger
+          });
+        } else {
+          logResponseUsage({ response, logger });
+        }
 
         logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
@@ -418,7 +530,7 @@ export async function aiGrade({
             );
             assert(grading_job_id);
 
-            await insertAiGradingJob({
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
@@ -426,7 +538,17 @@ export async function aiGrade({
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
-            });
+            };
+
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                rotationErrorResponse,
+                rotationCorrectionResponses
+              })
+            } else {
+              await insertAiGradingJob(aiGradingJobParams);
+            }
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -456,7 +578,8 @@ export async function aiGrade({
               },
               IdSchema,
             );
-            await insertAiGradingJob({
+
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
@@ -464,7 +587,17 @@ export async function aiGrade({
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
-            });
+            };
+
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                rotationErrorResponse,
+                rotationCorrectionResponses
+              });
+            } else {
+              await insertAiGradingJob(aiGradingJobParams);
+            }
           });
         }
 

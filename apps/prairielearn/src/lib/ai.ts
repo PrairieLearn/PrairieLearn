@@ -34,6 +34,48 @@ export function logResponseUsage({
 }
 
 /**
+ * Log the total token usage for a list of LLM responses.
+ */
+export function logResponsesUsage({
+  responses,
+  logger,
+}: {
+  responses: (GenerateObjectResult<any> | GenerateTextResult<any, any>)[];
+  logger: { info: (msg: string) => void };
+}) {
+  const {
+    inputTokens, 
+    cachedInputTokens,
+    outputTokens,
+    reasoningTokens,
+    totalTokens
+  } = responses.reduce(
+    (acc, response) => {
+      const usage = response.usage;
+      acc.inputTokens += usage.inputTokens ?? 0;
+      acc.cachedInputTokens += usage.cachedInputTokens ?? 0;
+      acc.outputTokens += usage.outputTokens ?? 0;
+      acc.reasoningTokens += usage.reasoningTokens ?? 0;
+      acc.totalTokens += usage.totalTokens ?? 0;
+      return acc;
+    }
+    , {
+      inputTokens: 0,
+      cachedInputTokens: 0,
+      outputTokens: 0,
+      reasoningTokens: 0,
+      totalTokens: 0,
+    }
+  );
+
+  logger.info(`Input tokens: ${inputTokens ?? 0}`);
+  logger.info(`  Cached input tokens: ${cachedInputTokens ?? 0}`);
+  logger.info(`Output tokens: ${outputTokens ?? 0}`);
+  logger.info(`  Reasoning tokens: ${reasoningTokens ?? 0}`);
+  logger.info(`Total tokens: ${totalTokens ?? 0}`);
+}
+
+/**
  * Compute the cost of an OpenAI response, in US dollars.
  */
 export function calculateResponseCost({
