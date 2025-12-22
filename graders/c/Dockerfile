@@ -11,20 +11,30 @@ ENV PYTHONIOENCODING=UTF-8
 ENV PYTHONPATH=/cgrader/:/grade/serverFilesCourse
 ENV C_INCLUDE_PATH=/cgrader
 
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/cgrader/.venv/bin:$PATH"
+
+# - Ensure that all `uv` commands compile Python source files to bytecode.
+# - Ensure that all `uv` commands do not use any caching.
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+
 RUN apt-get update \
-    && apt-get install -y --no-install-recommends gcc g++ gdb make valgrind check pkg-config clang python3.13 python3-pip \
+    && apt-get install -y --no-install-recommends gcc g++ gdb make valgrind check pkg-config clang curl ca-certificates \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* \
-    && ln -sf /usr/bin/python3.13 /usr/bin/python3 \
     # The clang Python package typically expects to see libclang.so in /usr/lib,
     # which would be the case if we installed libclang-dev, but since that
     # package is too large and mostly unnecessary, we add a symlink to the
     # existing libclang.so.1.
     && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
-    && groupadd sbuser && useradd -g sbuser sbuser
+    && groupadd sbuser && useradd -g sbuser sbuser \
+    # Install uv and Python
+    && curl -LO https://astral.sh/uv/install.sh \
+    && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
+    && uv venv --python-preference managed --python 3.13 /cgrader/.venv
 
 COPY requirements.txt /requirements.txt
-RUN pip3 install --no-cache-dir --break-system-packages -r /requirements.txt
+RUN uv pip install -r /requirements.txt
 
 COPY cgrader /cgrader
 
