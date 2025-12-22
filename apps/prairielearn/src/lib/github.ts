@@ -286,6 +286,7 @@ export async function createCourseRepoJob(
     authnUserId: authn_user.user_id,
     type: 'create_course_repo',
     description: 'Create course repository from request',
+    courseId: null,
     courseRequestId: options.course_request_id,
   });
 

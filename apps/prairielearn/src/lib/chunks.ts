@@ -910,6 +910,7 @@ export async function updateChunksForCourse({
  */
 export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
   const serverJob = await createServerJob({
+    courseId: null,
     userId: authn_user_id,
     authnUserId: authn_user_id,
     type: 'generate_all_chunks',
