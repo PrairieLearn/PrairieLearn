@@ -3,7 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { callRow, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -13,6 +13,7 @@ import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
+import { createServerJob } from '../../lib/server-jobs.js';
 import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
@@ -90,7 +91,10 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
-    const { course_instance: courseInstance } = pageContext;
+    const { course_instance: courseInstance, authz_data: authzData } = pageContext;
+    const {
+      authn_user: { user_id: authnUserId },
+    } = res.locals;
 
     const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
 
@@ -113,16 +117,23 @@ router.post(
     });
     const body = BodySchema.parse(req.body);
 
-    // Process all invitations in a single transaction
-    const counts = {
-      success: 0,
-      instructor: 0,
-      alreadyEnrolled: 0,
-      alreadyBlocked: 0,
-      alreadyInvited: 0,
-    };
-    await runInTransactionAsync(async () => {
-      const enrollments = body.uids.map(async (uid) => {
+    const serverJob = await createServerJob({
+      courseInstanceId: courseInstance.id,
+      type: 'invite_students',
+      description: 'Invite students to course instance',
+      authnUserId,
+    });
+
+    serverJob.executeInBackground(async (job) => {
+      const counts = {
+        success: 0,
+        instructor: 0,
+        alreadyEnrolled: 0,
+        alreadyBlocked: 0,
+        alreadyInvited: 0,
+      };
+
+      for (const uid of body.uids) {
         const user = await selectOptionalUserByUid(uid);
         if (user) {
           // Check if user is an instructor
@@ -132,8 +143,9 @@ router.post(
             z.boolean(),
           );
           if (isInstructor) {
+            job.info(`${uid}: Skipped (instructor)`);
             counts.instructor++;
-            return;
+            continue;
           }
         }
 
@@ -141,21 +153,24 @@ router.post(
           courseInstance,
           uid,
           requiredRole: ['Student Data Viewer'],
-          authzData: res.locals.authz_data,
+          authzData,
         });
 
         if (existingEnrollment) {
           if (existingEnrollment.status === 'joined') {
+            job.info(`${uid}: Skipped (already enrolled)`);
             counts.alreadyEnrolled++;
-            return;
+            continue;
           }
           if (existingEnrollment.status === 'invited') {
+            job.info(`${uid}: Skipped (already invited)`);
             counts.alreadyInvited++;
-            return;
+            continue;
           }
           if (existingEnrollment.status === 'blocked') {
+            job.info(`${uid}: Skipped (blocked)`);
             counts.alreadyBlocked++;
-            return;
+            continue;
           }
         }
 
@@ -163,14 +178,30 @@ router.post(
           courseInstance,
           uid,
           requiredRole: ['Student Data Editor'],
-          authzData: res.locals.authz_data,
+          authzData,
         });
+        job.info(`${uid}: Invited`);
         counts.success++;
-      });
-      return Promise.all(enrollments);
+      }
+
+      // Log summary at the end
+      job.info('\nSummary:');
+      job.info(`  Successfully invited: ${counts.success}`);
+      if (counts.alreadyEnrolled > 0) {
+        job.info(`  Already enrolled (skipped): ${counts.alreadyEnrolled}`);
+      }
+      if (counts.alreadyInvited > 0) {
+        job.info(`  Already invited (skipped): ${counts.alreadyInvited}`);
+      }
+      if (counts.alreadyBlocked > 0) {
+        job.info(`  Blocked (skipped): ${counts.alreadyBlocked}`);
+      }
+      if (counts.instructor > 0) {
+        job.info(`  Instructors (skipped): ${counts.instructor}`);
+      }
     });
 
-    res.json({ counts });
+    res.json({ job_sequence_id: serverJob.jobSequenceId });
   }),
 );
 

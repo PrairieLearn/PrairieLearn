@@ -4,8 +4,6 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import type { InviteResult } from '../instructorStudents.shared.js';
-
 interface InviteStudentForm {
   uids: string;
 }
@@ -17,7 +15,7 @@ export function InviteStudentsModal({
 }: {
   show: boolean;
   onHide: () => void;
-  onSubmit: (uids: string[]) => Promise<InviteResult>;
+  onSubmit: (uids: string[]) => Promise<void>;
 }) {
   const {
     register,
