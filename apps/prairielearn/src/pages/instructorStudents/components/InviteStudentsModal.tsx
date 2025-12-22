@@ -6,7 +6,6 @@ import { z } from 'zod';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
-import type { InviteResult } from '../instructorStudents.shared.js';
 
 interface InviteStudentForm {
   uids: string;
@@ -21,7 +20,7 @@ export function InviteStudentsModal({
   show: boolean;
   courseInstance: StaffCourseInstance;
   onHide: () => void;
-  onSubmit: (uids: string[]) => Promise<InviteResult>;
+  onSubmit: (uids: string[]) => Promise<void>;
 }) {
   const {
     register,

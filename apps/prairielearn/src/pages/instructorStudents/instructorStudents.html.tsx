@@ -1,4 +1,4 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
-import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -35,6 +35,7 @@ import { FriendlyDate } from '../../components/FriendlyDate.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
+  getCourseInstanceJobSequenceUrl,
   getSelfEnrollmentLinkUrl,
   getSelfEnrollmentSettingsUrl,
   getStudentCourseInstanceUrl,
@@ -44,13 +45,7 @@ import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
-import {
-  type InviteResult,
-  InviteResultSchema,
-  STATUS_VALUES,
-  type StudentRow,
-  StudentRowSchema,
-} from './instructorStudents.shared.js';
+import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
@@ -178,8 +173,6 @@ function StudentsCard({
   timezone,
   csrfToken,
 }: StudentsCardProps) {
-  const queryClient = useQueryClient();
-
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -249,9 +242,21 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
-  const [lastInviteResult, setLastInviteResult] = useState<InviteResult | null>(null);
+  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
-  const inviteStudents = async (uids: string[]): Promise<InviteResult> => {
+  const handleCopyEnrollLink = async () => {
+    const selfEnrollmentLink = courseInstance.self_enrollment_use_enrollment_code
+      ? getSelfEnrollmentLinkUrl({
+          courseInstanceId: courseInstance.id,
+          enrollmentCode: courseInstance.enrollment_code,
+        })
+      : getStudentCourseInstanceUrl(courseInstance.id);
+    await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    setCopiedEnrollLink(true);
+    setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const inviteStudents = async (uids: string[]): Promise<void> => {
     const body = new URLSearchParams({
       __action: 'invite_uids',
       __csrf_token: csrfToken,
@@ -266,23 +271,15 @@ function StudentsCard({
     });
     const json = await res.json();
     if (!res.ok) {
-      let message = 'Failed to invite';
-      try {
-        if (typeof json?.error === 'string') message = json.error;
-      } catch {
-        // ignore parse errors, and just use the default message
-      }
-      throw new Error(message);
+      throw new Error(json.error);
     }
-    const result = InviteResultSchema.parse(json);
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
 
-    // Force a refetch of the enrollments query to ensure the new students are included
-    await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-    setShowInvite(false);
-
-    setLastInviteResult(result);
-
-    return result;
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
   const columns = useMemo(
@@ -404,49 +401,8 @@ function StudentsCard({
     },
   });
 
-  const formatInviteResultMessage = ({ counts }: InviteResult): string => {
-    const parts: string[] = [];
-
-    // Invited students
-    const invitedCount = counts.success;
-
-    if (invitedCount > 0) {
-      parts.push(`${invitedCount} student${invitedCount === 1 ? '' : 's'} successfully invited`);
-    }
-
-    // Group skipped by reason
-    const enrolledSkipped = counts.alreadyEnrolled;
-    const blockedSkipped = counts.alreadyBlocked;
-    const invitedSkipped = counts.alreadyInvited;
-    const instructorSkipped = counts.instructor;
-
-    if (enrolledSkipped > 0) {
-      parts.push(`${enrolledSkipped} enrolled student${enrolledSkipped === 1 ? '' : 's'} skipped`);
-    }
-    if (blockedSkipped > 0) {
-      parts.push(`${blockedSkipped} blocked student${blockedSkipped === 1 ? '' : 's'} skipped`);
-    }
-    if (invitedSkipped > 0) {
-      parts.push(`${invitedSkipped} invited student${invitedSkipped === 1 ? '' : 's'} skipped`);
-    }
-    if (instructorSkipped > 0) {
-      parts.push(`${instructorSkipped} instructor${instructorSkipped === 1 ? '' : 's'} skipped`);
-    }
-
-    return parts.join(', ') + '.';
-  };
-
   return (
     <>
-      {lastInviteResult && (
-        <Alert
-          variant={lastInviteResult.counts.success === 0 ? 'warning' : 'success'}
-          dismissible
-          onClose={() => setLastInviteResult(null)}
-        >
-          {formatInviteResultMessage(lastInviteResult)}
-        </Alert>
-      )}
       <TanstackTableCard
         table={table}
         title="Students"
@@ -510,9 +466,32 @@ function StudentsCard({
           },
           emptyState: (
             <TanstackTableEmptyState iconName="bi-person-exclamation">
-              No students found. To enroll students in your course, you can provide them with a link
-              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
-              the{' '}
+              No students found. To enroll students in your course, you can provide them with a{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: 'Copied!',
+                  props: { id: 'empty-state-copy-link-tooltip' },
+                }}
+                show={copiedEnrollLink}
+              >
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 align-baseline"
+                  onClick={handleCopyEnrollLink}
+                >
+                  link to enroll
+                </button>
+              </OverlayTrigger>{' '}
+              (recommended) or{' '}
+              <button
+                type="button"
+                class="btn btn-link p-0 border-0 align-baseline"
+                onClick={() => setShowInvite(true)}
+              >
+                invite
+              </button>{' '}
+              them. You can manage the self-enrollment settings on the{' '}
               <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
               page.
             </TanstackTableEmptyState>

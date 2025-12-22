@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -5,6 +7,22 @@ import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
+
+/**
+ * Waits for the job sequence page to show completion and checks for expected text in the job output.
+ */
+async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
+  // Should be redirected to the job sequence page
+  await expect(page).toHaveURL(/\/jobSequence\//, { timeout: 10000 });
+
+  // Wait for job to complete (status badge shows Success)
+  await expect(page.getByText('Success', { exact: true })).toBeVisible({ timeout: 30000 });
+
+  // Check for expected text in the job output
+  for (const text of expectedTexts) {
+    await expect(page.getByText(text)).toBeVisible();
+  }
+}
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -75,13 +93,11 @@ test.describe('Bulk invite students', () => {
     // Click invite
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show success message
-    await expect(page.getByText('1 student successfully invited')).toBeVisible({
-      timeout: 10000,
-    });
-
-    // Modal should be closed
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    // Check job output shows successful invite
+    await waitForJobAndCheckOutput(page, [
+      `${VALID_STUDENT.uid}: Invited`,
+      'Successfully invited: 1',
+    ]);
   });
 
   test('can invite multiple valid students', async ({ page }) => {
@@ -97,10 +113,12 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show success message for multiple students
-    await expect(page.getByText('2 students successfully invited')).toBeVisible({
-      timeout: 10000,
-    });
+    // Check job output shows successful invites
+    await waitForJobAndCheckOutput(page, [
+      `${VALID_STUDENT_2.uid}: Invited`,
+      `${VALID_STUDENT_3.uid}: Invited`,
+      'Successfully invited: 2',
+    ]);
   });
 
   test('invites valid students and shows skip info for invalid ones', async ({ page }) => {
@@ -115,21 +133,20 @@ test.describe('Bulk invite students', () => {
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
-    // Enter mix of valid and invalid UIDs
+    // Enter mix of valid and already enrolled UIDs
     await page
       .getByRole('textbox', { name: 'UIDs' })
       .fill(`fresh_student@test.com\n${ENROLLED_STUDENT.uid}`);
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    // Should show success message with skip info (no confirmation modal)
-    await expect(page.getByText('1 student successfully invited')).toBeVisible({
-      timeout: 10000,
-    });
-    await expect(page.getByText('1 enrolled student skipped')).toBeVisible();
-
-    // Modal should be closed
-    await expect(page.getByRole('dialog')).not.toBeVisible();
+    // Check job output shows successful invite and skip info
+    await waitForJobAndCheckOutput(page, [
+      'fresh_student@test.com: Invited',
+      `${ENROLLED_STUDENT.uid}: Skipped (already enrolled)`,
+      'Successfully invited: 1',
+      'Already enrolled (skipped): 1',
+    ]);
   });
 
   test('shows error for invalid email format', async ({ page }) => {

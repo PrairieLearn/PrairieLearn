@@ -378,6 +378,7 @@ export async function generateQuestion({
 }> {
   const serverJob = await createServerJob({
     courseId,
+    userId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
     authnUserId,
@@ -797,6 +798,7 @@ export async function regenerateQuestion({
 }> {
   const serverJob = await createServerJob({
     courseId,
+    userId,
     type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
     authnUserId,

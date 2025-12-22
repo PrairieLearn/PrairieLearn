@@ -45,8 +45,8 @@ export async function syncCourse(course: Course) {
     description: 'Sync from disk',
     // Since this is a sync performed by the system, don't associate any user
     // with it.
-    userId: undefined,
-    authnUserId: undefined,
+    userId: null,
+    authnUserId: null,
   });
 
   // We use `executeUnsafe` to ensure that any errors bubble up and mark the
