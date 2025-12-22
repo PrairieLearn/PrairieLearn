@@ -243,7 +243,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-unpublished"
+              id="status-unpublished-reusable"
               value="unpublished"
               checked={selectedStatus === 'unpublished'}
               disabled={!canEdit}
@@ -253,7 +253,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-unpublished">
+            <label class="form-check-label" for="status-unpublished-reusable">
               Unpublished
             </label>
           </div>
@@ -294,7 +294,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-publish-scheduled"
+              id="status-publish-scheduled-reusable"
               value="publish_scheduled"
               checked={selectedStatus === 'publish_scheduled'}
               disabled={!canEdit}
@@ -304,7 +304,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-publish-scheduled">
+            <label class="form-check-label" for="status-publish-scheduled-reusable">
               Scheduled to be published
             </label>
           </div>
@@ -333,7 +333,7 @@ export function CourseInstancePublishingForm({
               <div class="ms-4 mt-2">
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="start_date">
+                    <label class="form-label mb-0" for="start-date-reusable">
                       Start date
                     </label>
                     {canEdit && (
@@ -351,7 +351,7 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.start_date && 'is-invalid')}
-                      id="start_date"
+                      id="start-date-reusable"
                       step="1"
                       disabled={!canEdit}
                       {...register('start_date', {
@@ -369,7 +369,7 @@ export function CourseInstancePublishingForm({
 
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end_date">
+                    <label class="form-label mb-0" for="end-date-reusable">
                       End date
                     </label>
                     {canEdit && (
@@ -387,7 +387,7 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      id="end-date-reusable"
                       step="1"
                       disabled={!canEdit}
                       {...register('end_date', {
@@ -413,7 +413,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-published"
+              id="status-published-reusable"
               value="published"
               checked={selectedStatus === 'published'}
               disabled={!canEdit}
@@ -423,7 +423,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-published">
+            <label class="form-check-label" for="status-published-reusable">
               Published
             </label>
           </div>
@@ -457,7 +457,7 @@ export function CourseInstancePublishingForm({
               <div class="ms-4 mt-2">
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end_date">
+                    <label class="form-label mb-0" for="end-date-reusable">
                       End date
                     </label>
                     {canEdit && (
@@ -475,7 +475,7 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      id="end-date-reusable"
                       step="1"
                       disabled={!canEdit}
                       {...register('end_date', {

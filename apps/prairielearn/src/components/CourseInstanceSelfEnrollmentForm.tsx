@@ -35,10 +35,10 @@ export function CourseInstanceSelfEnrollmentForm() {
         <input
           class="form-check-input"
           type="checkbox"
-          id="self_enrollment_enabled"
+          id="self-enrollment-enabled-reusable"
           {...register('self_enrollment_enabled')}
         />
-        <label class="form-check-label" for="self_enrollment_enabled">
+        <label class="form-check-label" for="self-enrollment-enabled-reusable">
           Allow self-enrollment
         </label>
         <div class="small text-muted">
@@ -50,16 +50,16 @@ export function CourseInstanceSelfEnrollmentForm() {
         <input
           class="form-check-input"
           type="checkbox"
-          id="self_enrollment_use_enrollment_code"
+          id="self-enrollment-use-enrollment-code-reusable"
           disabled={!selfEnrollmentEnabled}
           {...register('self_enrollment_use_enrollment_code')}
         />
         <input
           type="hidden"
-          name="self_enrollment_use_enrollment_code"
+          name="self-enrollment-use-enrollment-code-reusable"
           value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
         />
-        <label class="form-check-label" for="self_enrollment_use_enrollment_code">
+        <label class="form-check-label" for="self-enrollment-use-enrollment-code-reusable">
           Use enrollment code for self-enrollment
         </label>
         <div class="small text-muted">
