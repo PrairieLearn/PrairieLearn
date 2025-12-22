@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -124,7 +125,7 @@ export function CreateCourseInstanceModal({
               <input
                 id="create-long-name"
                 type="text"
-                class="form-control"
+                class={clsx('form-control', errors.long_name && 'is-invalid')}
                 aria-describedby="create-long-name-help"
                 aria-invalid={!!errors.long_name}
                 aria-errormessage={errors.long_name ? 'create-long-name-error' : undefined}
@@ -138,7 +139,7 @@ export function CreateCourseInstanceModal({
                 {course.short_name} Fall 2025&quot;.
               </small>
               {errors.long_name && (
-                <div class="text-danger small mt-1" id="create-long-name-error">
+                <div class="invalid-feedback" id="create-long-name-error">
                   {errors.long_name.message}
                 </div>
               )}
@@ -151,7 +152,7 @@ export function CreateCourseInstanceModal({
               <input
                 id="create-short-name"
                 type="text"
-                class="form-control font-monospace"
+                class={clsx('form-control font-monospace', errors.short_name && 'is-invalid')}
                 aria-describedby="create-short-name-help"
                 aria-invalid={!!errors.short_name}
                 aria-errormessage={errors.short_name ? 'create-short-name-error' : undefined}
@@ -169,7 +170,7 @@ export function CreateCourseInstanceModal({
                 dashes, and underscores, with no spaces.
               </small>
               {errors.short_name && (
-                <div class="text-danger small mt-1" id="create-short-name-error">
+                <div class="invalid-feedback" id="create-short-name-error">
                   {errors.short_name.message}
                 </div>
               )}

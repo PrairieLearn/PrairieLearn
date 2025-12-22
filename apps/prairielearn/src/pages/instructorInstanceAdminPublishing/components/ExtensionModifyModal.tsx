@@ -234,7 +234,7 @@ export function ExtensionModifyModal({
               id="ext-date"
               type="datetime-local"
               step="1"
-              class="form-control"
+              class={clsx('form-control', errors.end_date && 'is-invalid')}
               {...register('end_date', {
                 required: 'End date is required',
                 validate: (value) => {
@@ -250,7 +250,7 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.end_date && (
-              <div class="text-danger small">{String(errors.end_date.message)}</div>
+              <div class="invalid-feedback">{String(errors.end_date.message)}</div>
             )}
             <small class="text-muted">Current course end date: {currentUnpublishText}</small>
           </div>
@@ -265,7 +265,7 @@ export function ExtensionModifyModal({
             </label>
             <textarea
               id="ext-uids"
-              class="form-control"
+              class={clsx('form-control', errors.uids && 'is-invalid')}
               rows={5}
               placeholder="One UID per line, or comma/space separated"
               {...register('uids', {
@@ -273,7 +273,7 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div class="text-danger small">{String(errors.uids.message)}</div>
+              <div class="invalid-feedback">{String(errors.uids.message)}</div>
             )}
           </div>
         </Modal.Body>

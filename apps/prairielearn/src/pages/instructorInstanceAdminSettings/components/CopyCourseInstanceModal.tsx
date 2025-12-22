@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -131,7 +132,7 @@ export function CopyCourseInstanceModal({
               <input
                 id="copy-long-name"
                 type="text"
-                class="form-control"
+                class={clsx('form-control', errors.long_name && 'is-invalid')}
                 aria-describedby="copy-long-name-help"
                 aria-invalid={!!errors.long_name}
                 aria-errormessage={errors.long_name ? 'copy-long-name-error' : undefined}
@@ -146,7 +147,7 @@ export function CopyCourseInstanceModal({
                 {courseShortName} Fall 2025&quot;.
               </small>
               {errors.long_name && (
-                <div class="text-danger small mt-1" id="copy-long-name-error">
+                <div class="invalid-feedback" id="copy-long-name-error">
                   {errors.long_name.message}
                 </div>
               )}
@@ -159,7 +160,7 @@ export function CopyCourseInstanceModal({
               <input
                 id="copy-short-name"
                 type="text"
-                class="form-control font-monospace"
+                class={clsx('form-control font-monospace', errors.short_name && 'is-invalid')}
                 aria-describedby="copy-short-name-help"
                 aria-invalid={!!errors.short_name}
                 aria-errormessage={errors.short_name ? 'copy-short-name-error' : undefined}
@@ -178,7 +179,7 @@ export function CopyCourseInstanceModal({
                 dashes, and underscores, with no spaces.
               </small>
               {errors.short_name && (
-                <div class="text-danger small mt-1" id="copy-short-name-error">
+                <div class="invalid-feedback" id="copy-short-name-error">
                   {errors.short_name.message}
                 </div>
               )}
