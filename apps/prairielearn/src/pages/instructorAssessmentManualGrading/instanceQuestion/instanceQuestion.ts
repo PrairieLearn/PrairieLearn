@@ -306,13 +306,13 @@ router.get(
   typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
       const gradingPanel = GradingPanel({
         ...locals,
         context: 'main',
       }).toString();
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question: res.locals.assessment_question,
-      });
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
       res.json({
         gradingPanel,
@@ -365,6 +365,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
+    grader_guidelines: z.string().nullable(),
     rubric_items: z
       .array(
         z.object({
@@ -611,6 +612,7 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
+          body.grader_guidelines,
           res.locals.authn_user.user_id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');

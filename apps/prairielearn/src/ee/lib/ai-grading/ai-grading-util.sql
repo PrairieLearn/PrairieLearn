@@ -134,18 +134,6 @@ ORDER BY
 LIMIT
   $limit;
 
--- BLOCK select_rubric_for_grading
-SELECT
-  ri.*
-FROM
-  assessment_questions aq
-  JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
-WHERE
-  aq.id = $assessment_question_id
-  AND ri.deleted_at IS NULL
-ORDER BY
-  ri.number;
-
 -- BLOCK select_last_submission_id
 SELECT
   s.id
