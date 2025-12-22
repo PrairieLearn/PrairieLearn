@@ -27,15 +27,14 @@ RUN apt-get update \
     # package is too large and mostly unnecessary, we add a symlink to the
     # existing libclang.so.1.
     && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
-    && groupadd sbuser && useradd -g sbuser sbuser
-
-# Install uv and Python
-RUN curl -LO https://astral.sh/uv/install.sh \
+    && groupadd sbuser && useradd -g sbuser sbuser \
+    # Install uv and Python
+    && curl -LO https://astral.sh/uv/install.sh \
     && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
     && uv venv --python-preference managed --python 3.12 /cgrader/.venv
 
 COPY requirements.txt /requirements.txt
-RUN uv pip install --python /cgrader/.venv -r /requirements.txt
+RUN uv pip install -r /requirements.txt
 
 COPY cgrader /cgrader
 
