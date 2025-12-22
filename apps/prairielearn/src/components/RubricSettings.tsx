@@ -1,5 +1,6 @@
 import { useMemo, useRef, useState } from 'preact/hooks';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
+import { z } from 'zod';
 
 import { downloadAsJSON } from '@prairielearn/browser-utils';
 
@@ -14,6 +15,28 @@ type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'
   disagreement_count: number | null;
   num_submissions: number | null;
 };
+
+const ExportedRubricItemSchema = z.object({
+  order: z.number(),
+  points: z.number(),
+  description: z.string(),
+  explanation: z.string(),
+  grader_note: z.string(),
+  always_show_to_students: z.boolean(),
+});
+
+const ExportedRubricDataSchema = z.object({
+  max_extra_points: z.number(),
+  min_points: z.number(),
+  replace_auto_points: z.boolean(),
+  starting_points: z.number(),
+  max_points: z.number().nullable(),
+  max_manual_points: z.number().nullable(),
+  max_auto_points: z.number().nullable(),
+  rubric_items: z.array(ExportedRubricItemSchema),
+});
+
+type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
 /**
  * Explicitly declaring these functions from the window of the instance question page
@@ -211,7 +234,7 @@ export function RubricSettings({
   };
 
   const exportRubric = () => {
-    const rubricData = {
+    const rubricData: ExportedRubricData = {
       max_extra_points: maxExtraPoints,
       min_points: minPoints,
       replace_auto_points: replaceAutoPoints,
@@ -271,7 +294,7 @@ export function RubricSettings({
       }
       let parsedData;
       try {
-        parsedData = JSON.parse(fileContent);
+        parsedData = ExportedRubricDataSchema.parse(JSON.parse(fileContent));
       } catch {
         setImportModalWarning('Error parsing JSON file, please check the file format.');
         return;
@@ -305,16 +328,21 @@ export function RubricSettings({
       setStartingPoints(roundPoints((parsedData.starting_points || 0) * scaleFactor));
 
       const rubricItems = parsedData.rubric_items;
-      if (!rubricItems || !Array.isArray(rubricItems)) {
-        setImportModalWarning('Invalid rubric data format. Expected rubric_items to be an array.');
-        return;
-      }
 
       const scaledRubricItems: RubricItemData[] = [];
       for (const rubricItem of rubricItems) {
         scaledRubricItems.push({
-          ...rubricItem,
-          points: roundPoints((rubricItem.points ?? 0) * scaleFactor),
+          rubric_item: {
+            always_show_to_students: rubricItem.always_show_to_students,
+            deleted_at: null,
+            description: rubricItem.description,
+            explanation: rubricItem.explanation,
+            grader_note: rubricItem.grader_note,
+            key_binding: null,
+            points: roundPoints(rubricItem.points * scaleFactor),
+          },
+          num_submissions: null,
+          disagreement_count: null,
         });
       }
       setRubricItems(scaledRubricItems);

@@ -95,15 +95,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@ai-sdk/google@npm:^2.0.44":
-  version: 2.0.44
-  resolution: "@ai-sdk/google@npm:2.0.44"
+"@ai-sdk/google@npm:^2.0.49":
+  version: 2.0.49
+  resolution: "@ai-sdk/google@npm:2.0.49"
   dependencies:
     "@ai-sdk/provider": "npm:2.0.0"
-    "@ai-sdk/provider-utils": "npm:3.0.18"
+    "@ai-sdk/provider-utils": "npm:3.0.19"
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
-  checksum: 10c0/4d86a5a40c8c723e25eab4eb96c57576fad6fe428aa0ce432a648da03580e676811311c4dff92a7d4a65f69b952e2e422815b723a1cae3d5e34b1b34980a5dd0
+  checksum: 10c0/f3f8acfcd956edc7d807d22963d5eff0f765418f1f2c7d18615955ccdfcebb4d43cc26ce1f712c6a53572f1d8becc0773311b77b1f1bf1af87d675c5f017d5a4
   languageName: node
   linkType: hard
 
@@ -129,6 +129,19 @@ __metadata:
   peerDependencies:
     zod: ^3.25.76 || ^4.1.8
   checksum: 10c0/209c15b0dceef0ba95a7d3de544be0a417ad4a0bd5143496b3966a35fedf144156d93a42ff8c3d7db56781b9836bafc8c132c98978c49240e55bc1a36e18a67f
+  languageName: node
+  linkType: hard
+
+"@ai-sdk/provider-utils@npm:3.0.19":
+  version: 3.0.19
+  resolution: "@ai-sdk/provider-utils@npm:3.0.19"
+  dependencies:
+    "@ai-sdk/provider": "npm:2.0.0"
+    "@standard-schema/spec": "npm:^1.0.0"
+    eventsource-parser: "npm:^3.0.6"
+  peerDependencies:
+    zod: ^3.25.76 || ^4.1.8
+  checksum: 10c0/e4decb19264067fa1b1642e07d515d25d1509a1a9143f59ccc051e3ca413c9fb1d708e1052a70eaf329ca39ddf6152520cd833dbf8c95d9bf02bbeffae8ea363
   languageName: node
   linkType: hard
 
@@ -4438,7 +4451,7 @@ __metadata:
   resolution: "@prairielearn/prairielearn@workspace:apps/prairielearn"
   dependencies:
     "@ai-sdk/anthropic": "npm:^2.0.50"
-    "@ai-sdk/google": "npm:^2.0.44"
+    "@ai-sdk/google": "npm:^2.0.49"
     "@ai-sdk/openai": "npm:^2.0.75"
     "@aws-sdk/client-auto-scaling": "npm:^3.940.0"
     "@aws-sdk/client-cloudwatch": "npm:^3.940.0"
