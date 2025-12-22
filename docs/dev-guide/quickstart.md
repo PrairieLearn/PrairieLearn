@@ -62,7 +62,7 @@ sudo make dev
     }
     ```
 
-    Also check that `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` are set to the correct values in your `config.json`. Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
+    Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
 
     You can list the active hosts with:
 

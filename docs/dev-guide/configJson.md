@@ -71,6 +71,8 @@ You should set the workspace host home directory root and home directory root in
 }
 ```
 
+### Running workspaces / external graders natively on Mac OS
+
 If you are running workspaces natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
 
 ```json title="config.json"
@@ -87,6 +89,8 @@ Certain images detect if you are running as root and try to chown the workspace 
   "workspaceJobsDirectoryOwnerGid": 1001
 }
 ```
+
+### Testing local docker images
 
 When testing [docker images](../dockerImages.md) locally, you may want to force PrairieLearn to use the local version of an image.
 

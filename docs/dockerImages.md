@@ -73,4 +73,8 @@ docker run -it --rm -p 3000:3000 \
 
     With the configuration above, the local PrairieLearn environment will use the local version of any grader or workspace image when it is needed. This means it is your responsibility to ensure the local version of any image you use is up-to-date, by calling `docker pull IMAGENAME` for any images you are using, including provided and custom images.
 
+!!! note "Testing natively on Mac OS"
+
+    The configuration reference has a section on [running workspaces / external graders natively on Mac OS](./dev-guide/#running-workspaces-external-graders-natively-on-mac-os). You will run into permissions errors if you don't do this. This does not apply to users running PrairieLearn via Docker.
+
 Once the configuration above is set, you can modify the `Dockerfile` and related files, then run step 5 from the list above. You can then test the questions that use your custom image to ensure they work as expected. Once you are satisfied that the questions work as expected, proceed with steps 6-8 above. If you made any changes in your questions to account for the changes in the image, make sure your questions are properly synchronized with the production environment as well.
