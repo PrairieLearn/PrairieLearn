@@ -350,7 +350,6 @@ export function RubricSettings({
       setGraderGuidelines(parsedData.grader_guidelines ?? '');
       setRubricItems(scaledRubricItems);
 
-
       closeImportModal();
     } catch {
       setImportModalWarning('Error reading file content.');
