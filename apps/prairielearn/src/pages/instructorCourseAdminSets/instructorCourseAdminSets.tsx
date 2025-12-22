@@ -4,7 +4,6 @@ import asyncHandler from 'express-async-handler';
 import * as sqldb from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
 
@@ -39,16 +38,7 @@ router.get(
         options: {
           fullWidth: true,
         },
-        content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              course={pageContext.course}
-              urlPrefix={pageContext.urlPrefix}
-            />
-            <AssessmentSetsTable assessmentSets={assessmentSets} />
-          </>
-        ),
+        content: <AssessmentSetsTable assessmentSets={assessmentSets} />,
       }),
     );
   }),

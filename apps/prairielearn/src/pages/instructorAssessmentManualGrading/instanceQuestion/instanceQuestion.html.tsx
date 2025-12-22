@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
@@ -11,12 +10,12 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { RubricSettings } from '../../../components/RubricSettings.js';
-import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import type {
   AiGradingGeneralStats,
   InstanceQuestionAIGradingInfo,
 } from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
+import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
@@ -65,7 +64,7 @@ export function InstanceQuestion({
   const instanceQuestionGroupsExist = instanceQuestionGroups
     ? instanceQuestionGroups.length > 0
     : false;
-  const { __csrf_token, assessment_question, rubric_data } = resLocals;
+  const { __csrf_token, rubric_data } = resLocals;
 
   return PageLayout({
     resLocals: {
@@ -106,18 +105,6 @@ export function InstanceQuestion({
         },
         'instance-question-data',
       )}
-    `,
-    preContent: html`
-      <div class="container-fluid">
-        ${renderHtml(
-          <QuestionSyncErrorsAndWarnings
-            authzData={resLocals.authz_data}
-            question={resLocals.question}
-            course={resLocals.course}
-            urlPrefix={resLocals.urlPrefix}
-          />,
-        )}
-      </div>
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>
@@ -186,7 +173,7 @@ export function InstanceQuestion({
       <div class="mb-3">
         ${hydrateHtml(
           <RubricSettings
-            assessmentQuestion={assessment_question}
+            assessmentQuestion={StaffAssessmentQuestionSchema.parse(resLocals.assessment_question)}
             rubricData={rubric_data}
             csrfToken={__csrf_token}
             aiGradingStats={aiGradingStats}

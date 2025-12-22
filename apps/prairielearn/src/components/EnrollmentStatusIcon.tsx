@@ -1,5 +1,7 @@
 import clsx from 'clsx';
 
+import { OverlayTrigger } from '@prairielearn/ui';
+
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
 import { assertNever } from '../lib/types.js';
 
@@ -86,6 +88,21 @@ export function EnrollmentStatusIcon({
     >
       <i class={clsx('bi', iconClass)} aria-hidden="true" />
       <span class="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
+      {status === 'rejected' && (
+        <OverlayTrigger
+          tooltip={{
+            body: (
+              <div>
+                This student has rejected the invitation to join the course. They can still join
+                while self-enrollment is enabled.
+              </div>
+            ),
+            props: { id: 'rejected-info-tooltip' },
+          }}
+        >
+          <i class="bi bi-info-circle" aria-hidden="true" />
+        </OverlayTrigger>
+      )}
     </span>
   );
 }

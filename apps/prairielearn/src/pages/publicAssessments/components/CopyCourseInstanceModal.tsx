@@ -120,7 +120,7 @@ export function CopyCourseInstanceModal({
                 aria-label="Destination course"
                 value={selectedCourseId}
                 required
-                onChange={(e) => setSelectedCourseId((e.target as HTMLSelectElement).value)}
+                onChange={(e) => setSelectedCourseId(e.currentTarget.value)}
               >
                 {courseInstanceCopyTargets.map((copyTarget) => (
                   <option key={copyTarget.id} value={copyTarget.id}>
