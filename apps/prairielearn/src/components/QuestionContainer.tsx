@@ -6,7 +6,6 @@ import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.j
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
-  AssessmentInstance,
   AssessmentQuestion,
   CourseInstance,
   GroupConfig,
@@ -431,13 +430,9 @@ function QuestionFooter({
   resLocals,
   questionContext,
 }: {
-  resLocals: QuestionFooterResLocals & { assessment_instance?: AssessmentInstance | null };
+  resLocals: QuestionFooterResLocals;
   questionContext: QuestionContext;
 }) {
-  if (!(resLocals.assessment_instance?.open ?? true)) {
-    return '';
-  }
-
   if (resLocals.question.type === 'Freeform') {
     return html`
       <div class="card-footer" id="question-panel-footer">
