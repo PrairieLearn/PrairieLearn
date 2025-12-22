@@ -30,3 +30,5 @@ export {
   parseAsColumnPinningState,
   parseAsNumericFilter,
 } from './components/nuqs.js';
+
+export { useModalState } from './hooks/use-modal-state.js';
