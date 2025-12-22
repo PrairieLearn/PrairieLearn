@@ -22,12 +22,12 @@ import * as socketServer from './socket-server.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 interface CreateServerJobOptions {
-  courseId?: string;
+  courseId: string | null;
   courseInstanceId?: string;
   courseRequestId?: string;
   assessmentId?: string;
-  userId?: string;
-  authnUserId?: string;
+  userId: string | null;
+  authnUserId: string | null;
   type: string;
   description: string;
 }

@@ -91,9 +91,10 @@ router.post(
       throw new HttpStatusError(403, 'Access denied (must be an instructor)');
     }
 
-    const { course_instance: courseInstance, authz_data: authzData } = pageContext;
+    const { course_instance: courseInstance, course, authz_data: authzData } = pageContext;
     const {
       authn_user: { user_id: authnUserId },
+      user: { user_id: userId },
     } = res.locals;
 
     const EmailsSchema = z.array(z.string().trim().email()).min(1, 'At least one UID is required');
@@ -118,9 +119,11 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const serverJob = await createServerJob({
+      courseId: course.id,
       courseInstanceId: courseInstance.id,
       type: 'invite_students',
       description: 'Invite students to course instance',
+      userId,
       authnUserId,
     });
 

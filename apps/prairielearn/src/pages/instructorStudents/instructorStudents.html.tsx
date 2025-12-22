@@ -242,6 +242,19 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
+  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
+
+  const handleCopyEnrollLink = async () => {
+    const selfEnrollmentLink = courseInstance.self_enrollment_use_enrollment_code
+      ? getSelfEnrollmentLinkUrl({
+          courseInstanceId: courseInstance.id,
+          enrollmentCode: courseInstance.enrollment_code,
+        })
+      : getStudentCourseInstanceUrl(courseInstance.id);
+    await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    setCopiedEnrollLink(true);
+    setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
     const body = new URLSearchParams({
@@ -460,9 +473,32 @@ function StudentsCard({
           },
           emptyState: (
             <TanstackTableEmptyState iconName="bi-person-exclamation">
-              No students found. To enroll students in your course, you can provide them with a link
-              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
-              the{' '}
+              No students found. To enroll students in your course, you can provide them with a{' '}
+              <OverlayTrigger
+                placement="top"
+                tooltip={{
+                  body: 'Copied!',
+                  props: { id: 'empty-state-copy-link-tooltip' },
+                }}
+                show={copiedEnrollLink}
+              >
+                <button
+                  type="button"
+                  class="btn btn-link p-0 border-0 align-baseline"
+                  onClick={handleCopyEnrollLink}
+                >
+                  link to enroll
+                </button>
+              </OverlayTrigger>{' '}
+              (recommended) or{' '}
+              <button
+                type="button"
+                class="btn btn-link p-0 border-0 align-baseline"
+                onClick={() => setShowInvite(true)}
+              >
+                invite
+              </button>{' '}
+              them. You can manage the self-enrollment settings on the{' '}
               <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
               page.
             </TanstackTableEmptyState>
