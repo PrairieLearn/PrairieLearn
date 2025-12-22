@@ -35,7 +35,7 @@ export function GradingPanel({
   instanceQuestionGroups,
   skip_graded_submissions,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
   graders?: User[] | null;
   disable?: boolean;
@@ -85,10 +85,10 @@ export function GradingPanel({
       data-max-manual-points="${resLocals.assessment_question.max_manual_points}"
       data-max-points="${resLocals.assessment_question.max_points}"
       data-rubric-active="${!!resLocals.rubric_data}"
-      data-rubric-replace-auto-points="${resLocals.rubric_data?.replace_auto_points}"
-      data-rubric-starting-points="${resLocals.rubric_data?.starting_points}"
-      data-rubric-max-extra-points="${resLocals.rubric_data?.max_extra_points}"
-      data-rubric-min-points="${resLocals.rubric_data?.min_points}"
+      data-rubric-replace-auto-points="${resLocals.rubric_data?.rubric.replace_auto_points}"
+      data-rubric-starting-points="${resLocals.rubric_data?.rubric.starting_points}"
+      data-rubric-max-extra-points="${resLocals.rubric_data?.rubric.max_extra_points}"
+      data-rubric-min-points="${resLocals.rubric_data?.rubric.min_points}"
     >
       <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
       <input
@@ -193,7 +193,7 @@ export function GradingPanel({
           : ''}
         <li class="list-group-item">
           ${ManualPointsSection({ context, disable, manual_points, resLocals })}
-          ${!resLocals.rubric_data?.replace_auto_points ||
+          ${!resLocals.rubric_data?.rubric.replace_auto_points ||
           (!resLocals.assessment_question.max_auto_points && !auto_points)
             ? RubricInputSection({ resLocals, disable, aiGradingInfo })
             : ''}
@@ -205,7 +205,7 @@ export function GradingPanel({
               </li>
               <li class="list-group-item">
                 ${TotalPointsSection({ context, disable, points, resLocals })}
-                ${resLocals.rubric_data?.replace_auto_points
+                ${resLocals.rubric_data?.rubric.replace_auto_points
                   ? RubricInputSection({ resLocals, disable, aiGradingInfo })
                   : ''}
               </li>

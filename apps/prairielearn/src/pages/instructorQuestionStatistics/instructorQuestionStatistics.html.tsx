@@ -1,10 +1,8 @@
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   AssessmentQuestionSchema,
@@ -62,15 +60,6 @@ export function InstructorQuestionStatistics({
     },
     headContent: compiledScriptTag('instructorQuestionStatisticsClient.ts'),
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Detailed assessment statistics for question ${resLocals.question.qid}</h1>

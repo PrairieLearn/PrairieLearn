@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -38,15 +36,6 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Untype
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${DeleteAssessmentInstanceModal({

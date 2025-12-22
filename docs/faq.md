@@ -74,7 +74,7 @@ For example, suppose Fall 2017 is the completed semester, and it is now Spring 2
 First, for the course instance, create a extension for the student:
 
 1. Go to the course instance's **Publishing** page (Admin → Publishing)
-2. Click **Add Extension** to create a new extension
+2. Click **Add extension** to create a new extension
 3. Enter the student's UID and set the new end date to February 28th, 2018.
 4. Save the extension
 

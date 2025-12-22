@@ -27,6 +27,9 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true
   },
+  "[json]": {
+    "files.insertFinalNewline": true
+  },
   "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
   "typescript.tsdk": "node_modules/typescript/lib",
   "json.schemaDownload.enable": true,
@@ -71,11 +74,10 @@
   "python.testing.pytestArgs": ["apps/prairielearn/elements", "apps/prairielearn/python/test"],
   "python.testing.unittestEnabled": false,
   "python.testing.pytestEnabled": true,
-  "[json]": {
-    "files.insertFinalNewline": true
-  },
-  "vitest.maximumConfigs": 100,
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
+  "vitest.maximumConfigs": 100,
+  // This conflicts with the Prettier formatter, so we disable it.
+  "yaml.format.enable": false,
   "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
   "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
   "java.project.sourcePaths": ["graders/java"]

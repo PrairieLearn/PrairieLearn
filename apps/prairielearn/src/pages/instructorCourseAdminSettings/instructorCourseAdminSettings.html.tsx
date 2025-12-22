@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
@@ -37,21 +35,11 @@ export function InstructorCourseAdminSettings({
     },
     headContent: compiledScriptTag('instructorCourseAdminSettingsClient.ts'),
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
-      <div class="card  mb-4">
+      <div class="card mb-4">
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
-          <h1>
-            ${resLocals.has_enhanced_navigation ? 'General course settings' : 'Course Settings'}
-          </h1>
+          <h1>General course settings</h1>
           ${GitHubButtonHtml(courseGHLink)}
         </div>
         <div class="card-body">
