@@ -1,3 +1,4 @@
+import stripAnsi from 'strip-ansi';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { callRow, execute, queryRow } from '@prairielearn/postgres';
@@ -5,6 +6,7 @@ import { callRow, execute, queryRow } from '@prairielearn/postgres';
 import { config } from '../../lib/config.js';
 import { EnrollmentSchema, SprocUsersSelectOrInsertSchema } from '../../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { getJobSequence } from '../../lib/server-jobs.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -76,14 +78,25 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 1);
-    assert.equal(data.counts.instructor, 0);
-    assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 0);
-    assert.equal(data.counts.alreadyInvited, 0);
+    assert.isString(data.job_sequence_id);
+
+    await helperServer.waitForJobSequenceSuccess(data.job_sequence_id);
+
+    const jobSequence = await getJobSequence(data.job_sequence_id, '1');
+    assert.equal(jobSequence.status, 'Success');
+    assert.lengthOf(jobSequence.jobs, 1);
+
+    const job = jobSequence.jobs[0];
+    const output = stripAnsi(job.output ?? '');
+    assert.equal(
+      output,
+      `nonexistent@example.com: Invited
+\nSummary:
+  Successfully invited: 1\n`,
+    );
   });
 
-  test.sequential('should return error when user is an instructor', async () => {
+  test.sequential('should skip when user is an instructor', async () => {
     await callRow(
       'users_select_or_insert',
       [
@@ -119,14 +132,25 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 0);
-    assert.equal(data.counts.instructor, 1);
-    assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 0);
-    assert.equal(data.counts.alreadyInvited, 0);
+    assert.isString(data.job_sequence_id);
+
+    await helperServer.waitForJobSequenceSuccess(data.job_sequence_id);
+
+    const jobSequence = await getJobSequence(data.job_sequence_id, '1');
+    assert.equal(jobSequence.status, 'Success');
+
+    const job = jobSequence.jobs[0];
+    const output = stripAnsi(job.output ?? '');
+    assert.equal(
+      output,
+      `another_instructor@example.com: Skipped (instructor)
+\nSummary:
+  Successfully invited: 0
+  Instructors (skipped): 1\n`,
+    );
   });
 
-  test.sequential('should return error when trying to invite a blocked user', async () => {
+  test.sequential('should skip when trying to invite a blocked user', async () => {
     const blockedStudent = await callRow(
       'users_select_or_insert',
       [
@@ -166,11 +190,22 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 0);
-    assert.equal(data.counts.instructor, 0);
-    assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 1);
-    assert.equal(data.counts.alreadyInvited, 0);
+    assert.isString(data.job_sequence_id);
+
+    await helperServer.waitForJobSequenceSuccess(data.job_sequence_id);
+
+    const jobSequence = await getJobSequence(data.job_sequence_id, '1');
+    assert.equal(jobSequence.status, 'Success');
+
+    const job = jobSequence.jobs[0];
+    const output = stripAnsi(job.output ?? '');
+    assert.equal(
+      output,
+      `blocked_student@example.com: Skipped (blocked)
+\nSummary:
+  Successfully invited: 0
+  Blocked (skipped): 1\n`,
+    );
   });
 
   test.sequential('should successfully invite a new student', async () => {
@@ -196,11 +231,21 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 1);
-    assert.equal(data.counts.instructor, 0);
-    assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 0);
-    assert.equal(data.counts.alreadyInvited, 0);
+    assert.isString(data.job_sequence_id);
+
+    await helperServer.waitForJobSequenceSuccess(data.job_sequence_id);
+
+    const jobSequence = await getJobSequence(data.job_sequence_id, '1');
+    assert.equal(jobSequence.status, 'Success');
+
+    const job = jobSequence.jobs[0];
+    const output = stripAnsi(job.output ?? '');
+    assert.equal(
+      output,
+      `new_student@example.com: Invited
+\nSummary:
+  Successfully invited: 1\n`,
+    );
   });
 
   test.sequential('should successfully invite multiple students', async () => {
@@ -232,10 +277,21 @@ describe('Instructor Students - Invite by UID', () => {
 
     assert.equal(response.status, 200);
     const data = await response.json();
-    assert.equal(data.counts.success, 2);
-    assert.equal(data.counts.instructor, 0);
-    assert.equal(data.counts.alreadyEnrolled, 0);
-    assert.equal(data.counts.alreadyBlocked, 0);
-    assert.equal(data.counts.alreadyInvited, 0);
+    assert.isString(data.job_sequence_id);
+
+    await helperServer.waitForJobSequenceSuccess(data.job_sequence_id);
+
+    const jobSequence = await getJobSequence(data.job_sequence_id, '1');
+    assert.equal(jobSequence.status, 'Success');
+
+    const job = jobSequence.jobs[0];
+    const output = stripAnsi(job.output ?? '');
+    assert.equal(
+      output,
+      `bulk_student1@example.com: Invited
+bulk_student2@example.com: Invited
+\nSummary:
+  Successfully invited: 2\n`,
+    );
   });
 });
