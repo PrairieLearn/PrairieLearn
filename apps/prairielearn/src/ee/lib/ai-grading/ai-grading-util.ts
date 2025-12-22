@@ -1,13 +1,14 @@
 import {
-  generateObject,
   type EmbeddingModel,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModel,
   type ModelMessage,
   type UserContent,
+  generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import sharp from 'sharp';
 import { z } from 'zod';
 
 import {
@@ -20,8 +21,6 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-
-import sharp from 'sharp';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
@@ -49,7 +48,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { RotationCorrectionSchema, type ClockwiseRotationDegrees } from './types.js';
+import { type ClockwiseRotationDegrees, RotationCorrectionSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -391,9 +390,9 @@ export function extractSubmissionImages({
   submitted_answer: Record<string, any>;
 }): Record<string, string> {
   const images: Record<string, string> = {};
-  
+
   const $submission_html = cheerio.load(submission_text);
-  
+
   $submission_html
     .root()
     .find('body')
@@ -424,7 +423,7 @@ export function extractSubmissionImages({
       if (fileData) {
         images[fileData.name] = fileData.contents;
       }
-    })
+    });
 
   return images;
 }
@@ -591,25 +590,24 @@ export async function insertAiGradingJobWithRotationCorrection({
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
-  let prompt_tokens = (rotationErrorResponse.usage.inputTokens ?? 0) + (response.usage.inputTokens ?? 0);
-  let completion_tokens = (rotationErrorResponse.usage.outputTokens ?? 0) + (response.usage.outputTokens ?? 0);
+  let prompt_tokens =
+    (rotationErrorResponse.usage.inputTokens ?? 0) + (response.usage.inputTokens ?? 0);
+  let completion_tokens =
+    (rotationErrorResponse.usage.outputTokens ?? 0) + (response.usage.outputTokens ?? 0);
   let cost = calculateResponseCost({ model: model_id, usage: response.usage });
 
-  for (const [, rotationCorrectionResponse] of Object.entries(rotationCorrectionResponses)) {
+  for (const rotationCorrectionResponse of Object.values(rotationCorrectionResponses)) {
     prompt_tokens += rotationCorrectionResponse.usage.inputTokens ?? 0;
     completion_tokens += rotationCorrectionResponse.usage.outputTokens ?? 0;
     cost += calculateResponseCost({ model: model_id, usage: rotationCorrectionResponse.usage });
   }
-
-  console.log('grading job ID', grading_job_id);
-  console.log('rotationCorrectionDegrees', rotationCorrectionDegrees);
 
   await execute(sql.insert_ai_grading_job, {
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    rotation_correction_degrees: JSON.stringify(rotationCorrectionDegrees),
+    rotation_correction_degrees: rotationCorrectionDegrees,
     model: model_id,
     prompt_tokens,
     completion_tokens,
@@ -741,64 +739,52 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 }
 
 async function rotateBase64Image(
-  base64Image: string, 
-  clockwiseAngle: 90 | 180 | 270
+  base64Image: string,
+  clockwiseRotation: 90 | 180 | 270,
 ): Promise<string> {
-  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, "");
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
   const imageBuffer = Buffer.from(base64Data, 'base64');
-  const rotatedImageBuffer = await sharp(imageBuffer)
-      .rotate(clockwiseAngle)
-      .toBuffer();
+  const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
   return rotatedImageBuffer.toString('base64');
-};
+}
 
-/** 
+/**
  * Corrects the provided image into an upright orientation using the provided LLM.
  * Designed specifically for images of handwritten student submissions.
- * 
+ *
  * @param params
  * @param params.image - The base64-encoded image to correct.
  * @param params.model - The language model to use for determining the correct orientation.
- * */
+ */
 export async function correctImageOrientation({
-  image, 
-  model
+  image,
+  model,
 }: {
-  image: string,
-  model: LanguageModel
+  image: string;
+  model: LanguageModel;
 }): Promise<{
-  correctedImage: string,
-  clockwiseRotation: ClockwiseRotationDegrees,
-  response: GenerateObjectResult<any>
+  correctedImage: string;
+  clockwiseRotation: ClockwiseRotationDegrees;
+  response: GenerateObjectResult<any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
   const rotated180 = await rotateBase64Image(image, 180);
   const rotated270 = await rotateBase64Image(image, 270);
 
-  const prompt: ModelMessage[] = [];
-
-  prompt.push({
-    role: 'system',
-    content: formatPrompt([
-      'Of the four images provided, select the one that is closest to being upright.',
-      'Upright (0 degrees): The handwriting is in a standard reading position already.',
-      "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
-    ])
-  });
-
-  const images = [
-    image,
-    rotated90,
-    rotated180,
-    rotated270,
+  const prompt: ModelMessage[] = [
+    {
+      role: 'system',
+      content: formatPrompt([
+        'Of the four images provided, select the one that is closest to being upright.',
+        'Upright (0 degrees): The handwriting is in a standard reading position already.',
+        "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+      ]),
+    },
   ];
 
-  const rotationCorrectionDegrees = [
-    0,
-    90,
-    180,
-    270
-  ] as ClockwiseRotationDegrees[];
+  const images = [image, rotated90, rotated180, rotated270];
+
+  const rotationCorrectionDegrees = [0, 90, 180, 270] as ClockwiseRotationDegrees[];
 
   for (let i = 1; i <= 4; i++) {
     prompt.push({
@@ -806,7 +792,7 @@ export async function correctImageOrientation({
       content: [
         {
           type: 'text',
-          text: `${i}:` 
+          text: `${i}:`,
         },
         {
           type: 'image',
@@ -817,7 +803,7 @@ export async function correctImageOrientation({
             },
           },
         },
-      ]
+      ],
     });
   }
 
@@ -827,45 +813,41 @@ export async function correctImageOrientation({
     messages: prompt,
   });
 
-  const index = parseInt(response.object.upright_image) - 1;
+  const index = Number.parseInt(response.object.upright_image) - 1;
 
   return {
     correctedImage: images[index],
     clockwiseRotation: rotationCorrectionDegrees[index],
     response,
-  }
-};
+  };
+}
 
 export async function correctImagesOrientation({
-  submitted_answer,
+  submittedAnswer,
   /** The key is the filename, and the value is the base64-encoded image */
   submittedImages,
-  model
+  model,
 }: {
-  submitted_answer: Record<string, any>,
-  submittedImages: Record<string, string>,
-  model: LanguageModel
+  submittedAnswer: Record<string, any>;
+  submittedImages: Record<string, string>;
+  model: LanguageModel;
 }) {
-  let updated_submitted_answer = { ...submitted_answer };
+  const updatedSubmittedAnswer = { ...submittedAnswer };
 
   const rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
   const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
 
   for (const [filename, image] of Object.entries(submittedImages)) {
-    const {
-      correctedImage,
-      clockwiseRotation,
-      response
-    } = await correctImageOrientation({
+    const { correctedImage, clockwiseRotation, response } = await correctImageOrientation({
       image,
-      model
+      model,
     });
-    const existingIndex = submitted_answer?._files.findIndex(
+    const existingIndex = submittedAnswer._files.findIndex(
       (file: { name: string; contents: string }) => file.name === filename,
     );
 
     if (existingIndex !== -1) {
-      updated_submitted_answer._files[existingIndex].contents = correctedImage;
+      updatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
     }
 
     rotationCorrectionResponses[filename] = response;
@@ -873,8 +855,8 @@ export async function correctImagesOrientation({
   }
 
   return {
-    updated_submitted_answer,
+    updatedSubmittedAnswer,
     rotationCorrectionResponses,
-    rotationCorrectionDegrees
-  }
+    rotationCorrectionDegrees,
+  };
 }

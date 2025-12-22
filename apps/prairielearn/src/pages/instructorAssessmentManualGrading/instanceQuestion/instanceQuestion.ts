@@ -213,7 +213,9 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
-          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees) : null
+          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : null,
         };
       }
     }

@@ -67,7 +67,7 @@ VALUES
     $job_sequence_id,
     $prompt::jsonb,
     $completion,
-    $rotation_correction_degrees::jsonb,
+    $rotation_correction_degrees,
     $model,
     $prompt_tokens,
     $completion_tokens,
