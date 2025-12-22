@@ -19,6 +19,7 @@ columns
     open: boolean default true
     points: double precision default 0
     score_perc: double precision default 0
+    score_perc_pending: double precision not null default 0
     team_id: bigint
     user_id: bigint
 
