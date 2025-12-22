@@ -155,7 +155,7 @@ psql --dbname=${TMP_DB} --command="DELETE FROM course_instances WHERE short_name
 # Deleting all users except ones used by other retained tables...
 psql --dbname=${TMP_DB} --file=- << EOF
 delete from users
-where user_id not in (
+where id not in (
     select distinct user_id
     from (
         (select user_id from enrollments)
@@ -192,16 +192,16 @@ psql --dbname=${TMP_DB} --command="drop table ai_tmp, iq_tmp, v_tmp, s_tmp;"
 
 # Anonymizing data...
 
-psql --dbname=${TMP_DB} --command="UPDATE users AS u SET uid = 'user' || u.user_id || '@example.com', name = 'User Name';"
+psql --dbname=${TMP_DB} --command="UPDATE users AS u SET uid = 'user' || u.id || '@example.com', name = 'User Name';"
 
 psql --dbname=${TMP_DB} --command="UPDATE users AS u SET uin = NULL;"
 
 psql --dbname=${TMP_DB} --command="update course_instance_access_rules as ar \
-set uids = (select array_agg('user' || u.user_id || '@example.com') \
+set uids = (select array_agg('user' || u.id || '@example.com') \
 from unnest(ar.uids) as tmp (tmp_uid) join users as u on (u.uid = tmp_uid));"
 
 psql --dbname=${TMP_DB} --command="update assessment_access_rules as ar \
-set uids = (select array_agg('user' || u.user_id || '@example.com') \
+set uids = (select array_agg('user' || u.id || '@example.com') \
 from unnest(ar.uids) as tmp (tmp_uid) join users as u on (u.uid = tmp_uid));"
 
 # dump everything that's left

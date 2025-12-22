@@ -423,7 +423,7 @@ describe('accessibility', () => {
     );
 
     const user_id = await sqldb.queryRow(
-      'SELECT user_id FROM users WHERE uid = $uid',
+      'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
     );

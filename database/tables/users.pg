@@ -1,6 +1,7 @@
 columns
     deleted_at: timestamp with time zone
     email: character varying(255)
+    id: bigint not null default nextval('users_user_id_seq'::regclass)
     institution_id: bigint not null default 1
     lti_context_id: text
     lti_course_instance_id: bigint
@@ -10,10 +11,9 @@ columns
     terms_accepted_at: timestamp with time zone
     uid: text not null
     uin: text
-    user_id: bigint not null default nextval('users_user_id_seq'::regclass)
 
 indexes
-    users_pkey: PRIMARY KEY (user_id) USING btree (user_id)
+    users_pkey: PRIMARY KEY (id) USING btree (id)
     users_uid_key: UNIQUE (uid) USING btree (uid)
     users_uin_institution_id_key: UNIQUE USING btree (uin, institution_id)
     users_institution_id_key: USING btree (institution_id)
@@ -23,60 +23,60 @@ foreign-key constraints
     users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
-    access_tokens: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    administrators: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    ai_question_generation_prompts: FOREIGN KEY (prompting_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    assessment_instances: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    assessment_instances: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    assessment_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    assessment_state_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    audit_events: FOREIGN KEY (agent_authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events: FOREIGN KEY (agent_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events: FOREIGN KEY (subject_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    client_fingerprints: FOREIGN KEY (user_id) REFERENCES users(user_id)
-    course_instance_usages: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_permissions: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_requests: FOREIGN KEY (approved_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_requests: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    current_pages: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    current_pages: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    draft_question_metadata: FOREIGN KEY (created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    draft_question_metadata: FOREIGN KEY (updated_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    enrollments: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    feature_grants: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    file_edits: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    file_transfers: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    files: FOREIGN KEY (created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    files: FOREIGN KEY (deleted_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    files: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    grading_jobs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    grading_jobs: FOREIGN KEY (deleted_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    grading_jobs: FOREIGN KEY (graded_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    grading_jobs: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_user_roles: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    instance_questions: FOREIGN KEY (assigned_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    instance_questions: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    instance_questions: FOREIGN KEY (last_grader) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    institution_administrators: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    issues: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    issues: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    job_sequences: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    job_sequences: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    jobs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    jobs: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    last_accesses: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    lti13_users: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    lti_outcomes: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    news_item_notifications: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    page_view_logs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    page_view_logs: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    plan_grants: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    pt_enrollments: FOREIGN KEY (user_id) REFERENCES users(user_id)
-    query_runs: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    submissions: FOREIGN KEY (auth_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    user_sessions: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    variants: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    variants: FOREIGN KEY (broken_by) REFERENCES users(user_id)
-    variants: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    access_tokens: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    administrators: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_question_generation_prompts: FOREIGN KEY (prompting_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    assessment_instances: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_instances: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    assessment_state_logs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    audit_events: FOREIGN KEY (agent_authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events: FOREIGN KEY (agent_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events: FOREIGN KEY (subject_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    client_fingerprints: FOREIGN KEY (user_id) REFERENCES users(id)
+    course_instance_usages: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_permissions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests: FOREIGN KEY (approved_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    current_pages: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    draft_question_metadata: FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    draft_question_metadata: FOREIGN KEY (updated_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    enrollments: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    feature_grants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_edits: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_transfers: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    files: FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    files: FOREIGN KEY (deleted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    files: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_jobs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_jobs: FOREIGN KEY (deleted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_jobs: FOREIGN KEY (graded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    grading_jobs: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_user_roles: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    group_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions: FOREIGN KEY (assigned_grader) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    instance_questions: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    instance_questions: FOREIGN KEY (last_grader) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    institution_administrators: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    issues: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    issues: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    job_sequences: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    job_sequences: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti13_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti_outcomes: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    news_item_notifications: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    page_view_logs: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    plan_grants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    pt_enrollments: FOREIGN KEY (user_id) REFERENCES users(id)
+    query_runs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    submissions: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    user_sessions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    variants: FOREIGN KEY (broken_by) REFERENCES users(id)
+    variants: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

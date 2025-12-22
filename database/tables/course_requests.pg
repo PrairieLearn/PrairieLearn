@@ -17,8 +17,8 @@ indexes
     course_requests_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
-    course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_requests_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests_approved_by_fkey: FOREIGN KEY (approved_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_requests_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     job_sequences: FOREIGN KEY (course_request_id) REFERENCES course_requests(id) ON UPDATE CASCADE ON DELETE CASCADE

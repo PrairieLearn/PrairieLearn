@@ -172,7 +172,7 @@ SELECT
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
@@ -187,7 +187,7 @@ FROM
       c.example_course IS FALSE
       OR $include_example_course_enrollments
     )
-    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
+    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
   ),
   LATERAL (
     SELECT
@@ -215,7 +215,7 @@ SELECT
   to_jsonb(cie) AS latest_publishing_extension
 FROM
   enrollments AS e
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
@@ -229,7 +229,7 @@ FROM
       c.example_course IS FALSE
       OR $include_example_course_enrollments
     )
-    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
+    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
   )
   LEFT JOIN LATERAL (
     SELECT

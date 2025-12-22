@@ -16,4 +16,4 @@ indexes
 foreign-key constraints
     file_transfers_from_course_id_fkey: FOREIGN KEY (from_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     file_transfers_to_course_id_fkey: FOREIGN KEY (to_course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
-    file_transfers_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_transfers_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

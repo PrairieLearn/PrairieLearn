@@ -21,7 +21,7 @@ SELECT
       )
     FROM
       users AS u
-      JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+      JOIN course_permissions AS cp ON (cp.user_id = u.id)
       AND (cp.course_id = $course_id)
     WHERE
       cp.course_role <= $authn_course_role

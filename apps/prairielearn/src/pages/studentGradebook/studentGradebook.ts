@@ -52,7 +52,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const rawRows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
       auth: 'student',
@@ -77,7 +77,7 @@ router.get(
 
     const rows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       authz_data: res.locals.authz_data,
       req_date: res.locals.req_date,
       auth: 'student',

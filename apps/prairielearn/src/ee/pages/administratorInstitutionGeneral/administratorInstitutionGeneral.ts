@@ -66,7 +66,7 @@ router.post(
           InstitutionSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'institutions',
           action: 'update',
           institution_id: req.params.institution_id,
@@ -87,7 +87,7 @@ router.post(
       await reconcilePlanGrantsForInstitution(
         req.params.institution_id,
         desiredPlans,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);

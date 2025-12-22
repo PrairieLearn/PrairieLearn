@@ -56,7 +56,7 @@ export const SubmissionDataSchema = z.array(
   z.object({
     submission_id: SubmissionSchema.shape.id,
     // left join users table
-    user_id: UserSchema.shape.user_id.nullable(),
+    user_id: UserSchema.shape.id.nullable(),
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),

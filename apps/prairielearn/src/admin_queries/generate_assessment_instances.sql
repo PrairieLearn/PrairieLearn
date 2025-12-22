@@ -1,6 +1,6 @@
 -- BLOCK select_users
 SELECT
-  u.user_id,
+  u.id,
   u.uid,
   u.name,
   c.id AS course_id,
@@ -12,7 +12,7 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN pl_courses AS c ON (c.id = ci.course_id)
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
-  JOIN users AS u ON (u.user_id = e.user_id)
+  JOIN users AS u ON (u.id = e.user_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
@@ -20,7 +20,7 @@ ORDER BY
 
 -- BLOCK select_groups
 SELECT
-  u.user_id,
+  u.id,
   u.uid,
   u.name,
   g.name AS group_name,
@@ -44,11 +44,11 @@ FROM
     LIMIT
       1
   ) AS lgu ON (TRUE)
-  JOIN users AS u ON (u.user_id = lgu.user_id)
+  JOIN users AS u ON (u.id = lgu.user_id)
 WHERE
   a.id = $assessment_id
   -- This query only works for assessments with group work enabled
   AND a.group_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
-  u.user_id;
+  u.id;

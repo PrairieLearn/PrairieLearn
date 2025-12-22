@@ -86,7 +86,7 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -94,7 +94,7 @@ describe('ensureUncheckedEnrollment', () => {
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
     });
@@ -102,7 +102,7 @@ describe('ensureUncheckedEnrollment', () => {
     assert.equal(finalEnrollment.status, 'joined');
     assert.isNotNull(finalEnrollment.first_joined_at);
     assert.isNull(finalEnrollment.pending_uid);
-    assert.equal(finalEnrollment.user_id, user.user_id);
+    assert.equal(finalEnrollment.user_id, user.id);
 
     const invitedEnrollment = await selectOptionalEnrollmentByPendingUid({
       pendingUid: user.uid,
@@ -122,14 +122,14 @@ describe('ensureUncheckedEnrollment', () => {
     });
 
     await createEnrollmentWithStatus({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       status: 'blocked',
       firstJoinedAt: new Date(),
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -141,7 +141,7 @@ describe('ensureUncheckedEnrollment', () => {
     try {
       await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
+        userId: user.id,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
@@ -153,7 +153,7 @@ describe('ensureUncheckedEnrollment', () => {
     }
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -172,7 +172,7 @@ describe('ensureUncheckedEnrollment', () => {
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -181,14 +181,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -208,14 +208,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     const originalJoinedAt = new Date('2023-01-01T00:00:00Z');
     await createEnrollmentWithStatus({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       status: 'joined',
       firstJoinedAt: originalJoinedAt,
     });
 
     const initialEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -226,14 +226,14 @@ describe('ensureUncheckedEnrollment', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const finalEnrollment = await selectOptionalEnrollmentByUserId({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -331,14 +331,14 @@ describe('DB validation of enrollment', () => {
     const validStates = [
       // created_at is null (old enrollments), constraint doesn't apply
       {
-        user_id: user1.user_id,
+        user_id: user1.id,
         status: 'joined',
         created_at: null,
         first_joined_at: null,
         pending_uid: null,
       },
       {
-        user_id: user2.user_id,
+        user_id: user2.id,
         status: 'removed',
         created_at: null,
         first_joined_at: null,
@@ -376,7 +376,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'joined', first_joined_at must not be null
       {
-        user_id: user3.user_id,
+        user_id: user3.id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
@@ -384,7 +384,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'removed', first_joined_at must not be null
       {
-        user_id: user4.user_id,
+        user_id: user4.id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
@@ -392,7 +392,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'blocked', first_joined_at must not be null
       {
-        user_id: user5.user_id,
+        user_id: user5.id,
         status: 'blocked',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
@@ -423,7 +423,7 @@ describe('DB validation of enrollment', () => {
     const invalidStates = [
       // status is 'joined', first_joined_at is null
       {
-        user_id: invalidUser1.user_id,
+        user_id: invalidUser1.id,
         status: 'joined',
         created_at: '2025-01-01',
         first_joined_at: null,
@@ -431,7 +431,7 @@ describe('DB validation of enrollment', () => {
       },
       // status is 'removed', first_joined_at is null
       {
-        user_id: invalidUser2.user_id,
+        user_id: invalidUser2.id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: null,

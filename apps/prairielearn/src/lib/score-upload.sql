@@ -3,7 +3,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  JOIN users AS u ON (u.user_id = ai.user_id)
+  JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = $instance_number
@@ -39,7 +39,7 @@ FROM
     g.id = ai.group_id
     AND g.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
   LEFT JOIN submissions AS s ON (s.variant_id = v.id)
 WHERE

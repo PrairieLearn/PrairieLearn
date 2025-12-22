@@ -23,13 +23,11 @@ WITH
     SELECT
       g.id AS group_id,
       COUNT(u.uid)::integer AS size,
-      jsonb_agg(
-        jsonb_build_object('uid', u.uid, 'user_id', u.user_id)
-      ) AS users
+      jsonb_agg(jsonb_build_object('uid', u.uid, 'id', u.id)) AS users
     FROM
       assessment_groups AS g
       JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = gu.user_id)
+      JOIN users AS u ON (u.id = gu.user_id)
     GROUP BY
       g.id
   )
@@ -53,7 +51,7 @@ FROM
   AND g.group_config_id = $group_config_id
   AND g.deleted_at IS NULL
   RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id -- noqa: CV08
-  JOIN users AS u ON u.user_id = e.user_id
+  JOIN users AS u ON u.id = e.user_id
 WHERE
   g.id IS NULL
   AND e.course_instance_id = $course_instance_id

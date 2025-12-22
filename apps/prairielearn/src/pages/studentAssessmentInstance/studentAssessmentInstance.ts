@@ -37,7 +37,7 @@ router.use(studentAssessmentAccess);
 async function ensureUpToDate(locals: UntypedResLocals) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
-    locals.authn_user.user_id,
+    locals.authn_user.id,
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
@@ -69,8 +69,8 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 }
 
@@ -91,8 +91,8 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 }
 
@@ -120,7 +120,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 }
 
 router.post(
@@ -161,8 +161,8 @@ router.post(
       const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
       await assessment.gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         requireOpen: true,
         close: isFinishing,
         ignoreGradeRateLimit: isFinishing,
@@ -179,11 +179,7 @@ router.post(
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');
       }
-      await leaveGroup(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(
         `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       );
@@ -192,9 +188,9 @@ router.post(
         req.body,
         res.locals.assessment.id,
         res.locals.assessment_instance.group_id,
-        res.locals.user.user_id,
+        res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else {
@@ -262,7 +258,7 @@ router.get(
     const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     if (groupConfig.has_roles) {
@@ -273,7 +269,7 @@ router.get(
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
             res.locals.assessment_instance.group_id,
-            res.locals.authz_data.user.user_id,
+            res.locals.authz_data.user.id,
           );
         }
       }

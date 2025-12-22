@@ -56,7 +56,7 @@ describe('studentCourseInstanceUpgrade', () => {
       // Grant `basic` to student in course instance.
       const user = await getConfiguredUser();
       await reconcilePlanGrantsForCourseInstanceUser(
-        { institution_id: '1', course_instance_id: '1', user_id: user.user_id },
+        { institution_id: '1', course_instance_id: '1', user_id: user.id },
         [{ plan: 'basic', grantType: 'stripe' }],
         '1',
       );
@@ -83,7 +83,7 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
@@ -106,7 +106,7 @@ describe('studentCourseInstanceUpgrade', () => {
     const user = await getOrCreateUser(studentUser);
     const courseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),

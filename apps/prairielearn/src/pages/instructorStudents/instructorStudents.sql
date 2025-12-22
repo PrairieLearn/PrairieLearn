@@ -4,7 +4,7 @@ SELECT
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   e.course_instance_id = $course_instance_id
 ORDER BY

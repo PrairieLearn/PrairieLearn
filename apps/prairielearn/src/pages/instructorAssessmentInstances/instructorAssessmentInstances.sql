@@ -1,10 +1,10 @@
 -- BLOCK select_assessment_instances
 SELECT
   (aset.name || ' ' || a.number) AS assessment_label,
-  u.user_id,
+  u.id AS user_id,
   u.uid,
   u.name,
-  users_get_displayed_role (u.user_id, ci.id) AS role,
+  users_get_displayed_role (u.id, ci.id) AS role,
   gi.id AS group_id,
   gi.name AS group_name,
   gi.uid_list,
@@ -77,7 +77,7 @@ SELECT
   (
     row_number() OVER (
       PARTITION BY
-        u.user_id
+        u.id
       ORDER BY
         score_perc DESC,
         ai.number DESC,
@@ -91,12 +91,12 @@ FROM
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
   LEFT JOIN group_info ($assessment_id) AS gi ON (gi.id = ai.group_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
   u.uid,
-  u.user_id,
+  u.id,
   ai.number,
   ai.id;
 

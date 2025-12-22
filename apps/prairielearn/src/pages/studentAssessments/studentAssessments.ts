@@ -19,7 +19,7 @@ router.get(
       {
         course_instance_id: res.locals.course_instance.id,
         authz_data: res.locals.authz_data,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
         req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },

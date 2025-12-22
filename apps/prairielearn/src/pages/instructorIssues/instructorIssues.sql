@@ -33,7 +33,7 @@ WITH
     FROM
       issues AS i
       LEFT JOIN questions AS q ON (q.id = i.question_id)
-      LEFT JOIN users AS u ON (u.user_id = i.user_id)
+      LEFT JOIN users AS u ON (u.id = i.user_id)
       LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
     WHERE
       i.course_id = $course_id
@@ -113,7 +113,7 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN questions AS q ON (q.id = i.question_id)
-  LEFT JOIN users AS u ON (u.user_id = i.user_id)
+  LEFT JOIN users AS u ON (u.id = i.user_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = i.instance_question_id)
   LEFT JOIN variants AS v ON (v.id = i.variant_id)
 WHERE

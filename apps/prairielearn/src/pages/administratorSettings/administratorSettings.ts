@@ -33,7 +33,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string: string = req.body.course_ids || '';
-      const authn_user_id: string = res.locals.authn_user.user_id;
+      const authn_user_id: string = res.locals.authn_user.id;
 
       let course_ids: string[];
       try {
@@ -62,7 +62,7 @@ router.post(
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(
         openai.textEmbeddingModel('text-embedding-3-small'),
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {

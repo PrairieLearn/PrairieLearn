@@ -34,7 +34,7 @@ const defaultUser: User = {
 };
 
 type MockUser = User & {
-  user_id?: string;
+  id?: string;
   authUid: string;
 };
 
@@ -182,9 +182,9 @@ function checkGradingResults(assigned_grader: MockUser, grader: MockUser): void 
     assert.lengthOf(instanceList, 1);
     assert.equal(instanceList[0].instance_question.id, iqId);
     assert.isNotOk(instanceList[0].instance_question.requires_manual_grading);
-    assert.equal(instanceList[0].instance_question.assigned_grader, assigned_grader.user_id);
+    assert.equal(instanceList[0].instance_question.assigned_grader, assigned_grader.id);
     assert.equal(instanceList[0].assigned_grader_name, assigned_grader.authName);
-    assert.equal(instanceList[0].instance_question.last_grader, grader.user_id);
+    assert.equal(instanceList[0].instance_question.last_grader, grader.id);
     assert.equal(instanceList[0].last_grader_name, grader.authName);
     assert.closeTo(instanceList[0].instance_question.score_perc!, score_percent, 0.01);
     assert.closeTo(instanceList[0].instance_question.points!, score_points, 0.01);
@@ -428,16 +428,16 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
   beforeAll(async () => {
     await Promise.all(
       mockStaff.map(async (staff) => {
-        const { user_id } = await insertCoursePermissionsByUserUid({
+        const { id } = await insertCoursePermissionsByUserUid({
           course_id: '1',
           uid: staff.authUid,
           course_role: 'None',
           authn_user_id: '1',
         });
-        staff.user_id = user_id;
+        staff.id = id;
         await insertCourseInstancePermissions({
           course_id: '1',
-          user_id: staff.user_id,
+          user_id: staff.id,
           course_instance_id: '1',
           course_instance_role: 'Student Data Editor',
           authn_user_id: '1',
@@ -634,7 +634,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           body: JSON.stringify({
             __action: 'batch_action',
             __csrf_token: token,
-            batch_action_data: { assigned_grader: mockStaff[0].user_id },
+            batch_action_data: { assigned_grader: mockStaff[0].id },
             instance_question_id: iqId.toString(),
           }),
         });
@@ -656,7 +656,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           assert.lengthOf(instanceList, 1);
           assert.equal(instanceList[0].instance_question.id, iqId);
           assert.isOk(instanceList[0].instance_question.requires_manual_grading);
-          assert.equal(instanceList[0].instance_question.assigned_grader, mockStaff[0].user_id);
+          assert.equal(instanceList[0].instance_question.assigned_grader, mockStaff[0].id);
           assert.equal(instanceList[0].assigned_grader_name, mockStaff[0].authName);
           assert.isNotOk(instanceList[0].instance_question.last_grader);
           assert.isNotOk(instanceList[0].last_grader_name);
