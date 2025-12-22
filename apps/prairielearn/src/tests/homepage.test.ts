@@ -353,6 +353,66 @@ describe('Homepage enrollment actions', () => {
     });
   });
 
+  it('does not show invited course that is not published', async () => {
+    const user = await getOrCreateUser({
+      uid: 'invited5@example.com',
+      name: 'Invited User 5',
+      uin: 'invited5',
+      email: 'invited5@example.com',
+      institutionId: '1',
+    });
+
+    const futureStart = new Date();
+    futureStart.setFullYear(futureStart.getFullYear() + 1);
+    const futureEnd = new Date();
+    futureEnd.setFullYear(futureEnd.getFullYear() + 2);
+
+    const existingCourseInstance = await selectCourseInstanceById('1');
+    assert.isNotNull(existingCourseInstance);
+    assert.equal(existingCourseInstance.modern_publishing, true);
+    assert.isNotNull(existingCourseInstance.publishing_start_date);
+    assert.isNotNull(existingCourseInstance.publishing_end_date);
+
+    await execute(sql.update_course_instance_publishing, {
+      course_instance_id: '1',
+      publishing_start_date: futureStart,
+      publishing_end_date: futureEnd,
+    });
+
+    try {
+      // Create an invited enrollment
+      await createEnrollmentWithStatus({
+        userId: null,
+        courseInstanceId: '1',
+        status: 'invited',
+        pendingUid: user.uid,
+      });
+
+      await withUser(user, async () => {
+        const response = await fetchCheerio(homeUrl);
+        assert.equal(response.status, 200);
+
+        const studentCoursesTable = response.$(
+          'table[aria-label="Courses with student access"], table[aria-label="Courses"]',
+        );
+
+        const studentRows = studentCoursesTable.find('tr');
+        assert.equal(studentRows.length, 0, 'No course rows should be visible');
+      });
+    } finally {
+      await execute(sql.delete_enrollment_by_course_instance_and_pending_uid, {
+        course_instance_id: '1',
+        pending_uid: user.uid,
+      });
+
+      await execute(sql.update_course_instance_publishing, {
+        course_instance_id: '1',
+        publishing_start_date: existingCourseInstance.publishing_start_date,
+        publishing_end_date: existingCourseInstance.publishing_end_date,
+      });
+    }
+  });
+
   it('handles double unenroll (no-op)', async () => {
     const user = await getOrCreateUser({
       uid: 'joined1@example.com',
