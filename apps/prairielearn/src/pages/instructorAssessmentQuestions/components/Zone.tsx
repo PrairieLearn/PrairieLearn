@@ -1,5 +1,4 @@
 import { ZoneHeader } from '../../../components/AssessmentQuestions.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,
@@ -22,7 +21,6 @@ export function Zone({
   zone: ZoneAssessmentJson;
   zoneNumber: number;
   AssessmentState: AssessmentState;
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
   handleAddQuestion: (zoneNumber: number) => void;
   handleEditQuestion: ({
     question,

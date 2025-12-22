@@ -206,7 +206,7 @@ export function InstructorAssessmentQuestionsTable({
     setShowResetModal(true);
   };
 
-  const assessmentType: EnumAssessmentType = assessment.type!;
+  const assessmentType = assessment.type!;
 
   const handleEditQuestion = ({
     question,
@@ -265,7 +265,7 @@ export function InstructorAssessmentQuestionsTable({
       newQuestionData.alternative_group = {
         ...newQuestionData.alternative_group,
         number: selectedQuestionPosition.alternativeGroupNumber,
-      } as StaffAssessmentQuestionRow['alternative_group'];
+      };
       newQuestionData.alternative_group_size = 1;
       setQuestionMap((prev) => ({
         ...prev,
@@ -286,10 +286,10 @@ export function InstructorAssessmentQuestionsTable({
       }
     } else {
       if (updatedQuestion.points !== undefined && updatedQuestion.autoPoints !== undefined) {
-        delete updatedQuestion.points;
+        updatedQuestion.points = undefined;
         if (updatedQuestion.maxPoints !== undefined) {
           updatedQuestion.maxAutoPoints = updatedQuestion.maxPoints;
-          delete updatedQuestion.maxPoints;
+          updatedQuestion.maxPoints = undefined;
         }
       }
     }
@@ -460,7 +460,6 @@ export function InstructorAssessmentQuestionsTable({
                       showAdvanceScorePercCol,
                       assessmentType,
                     }}
-                    questionMap={questionMap}
                     handleAddQuestion={handleAddQuestion}
                     handleEditQuestion={handleEditQuestion}
                     handleDeleteQuestion={handleDeleteQuestion}
