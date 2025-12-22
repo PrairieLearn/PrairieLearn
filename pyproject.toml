@@ -44,17 +44,18 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "pandas-stubs==2.3.2.250926",
   "pytest-cov==7.0.0",
-  "pytest-repeat==0.9.4",
   "pytest-github-actions-annotate-failures==0.3.0",
+  "pytest-repeat==0.9.4",
   "pytest==8.4.2",
   "ruff==0.14.7",
-  "squawk-cli==2.31.0",
   "sqlfluff==3.5.0",
+  "squawk-cli==2.31.0",
+  "ty==0.0.5",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.11.25",
   "types-Pygments==2.19.0.20251121",
-  "pandas-stubs==2.3.2.250926",
 ]
 
 docs = [
@@ -240,6 +241,25 @@ ignore-one-line-docstrings = true
 exclude = [
   "./exampleCourse/questions/demo/autograder/python/leadingTrailing/tests/trailing_code.py",
   "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
+]
+
+[tool.ty.environment]
+extra-paths = ["./apps/prairielearn/python"]
+
+[tool.ty.src]
+include = [
+  "./apps/prairielearn/elements",
+  "./apps/prairielearn/python",
+  "./exampleCourse/questions/**/server.py",
+  "./contrib/question_converters/canvas",
+  "./graders",
+  "./scripts",
+]
+exclude = [
+  "./apps/prairielearn/elements/pl-drawing",            # requires refactor
+  "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
+  "./apps/prairielearn/elements/pl-threejs",            # deprecated
+  "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 
 [tool.pyright]
