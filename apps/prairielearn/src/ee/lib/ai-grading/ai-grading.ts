@@ -34,6 +34,7 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
   correctImageOrientation,
+  correctImagesOrientation,
   extractSubmissionImages,
   generatePrompt,
   generateSubmissionEmbedding,
@@ -432,37 +433,23 @@ export async function aiGrade({
           // We know that at least one image needs rotation correction,
           // so we run rotation correction on all images. If an image is already upright,
           // the rotation correction process will leave it unchanged.
-          
-          let rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
-          let rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
 
-          for (const [filename, image] of Object.entries(submittedImages)) {
-            const {
-              correctedImage,
-              clockwiseRotation,
-              response
-            } = await correctImageOrientation({
-              image,
-              model
-            });
-            const existingIndex = submission.submitted_answer?._files.findIndex(
-              (file: { name: string; contents: string }) => file.name === filename,
-            );
-
-            if (existingIndex !== -1) {
-              submission.submitted_answer._files[existingIndex].contents = correctedImage;
-            }
-
-            rotationCorrectionResponses[filename] = response;
-            rotationCorrectionDegrees[filename] = clockwiseRotation;
-          }
+          const {
+            updated_submitted_answer,
+            rotationCorrectionResponses,
+            rotationCorrectionDegrees
+          } = await correctImagesOrientation({
+            submitted_answer: submission.submitted_answer,
+            submittedImages,
+            model
+          })
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
             submission_text,
-            submitted_answer: submission.submitted_answer,
+            submitted_answer: updated_submitted_answer,
             example_submissions,
             rubric_items,
             model_id,
@@ -634,16 +621,106 @@ export async function aiGrade({
             ),
         });
 
-        const response = await generateObject({
-          model,
-          schema: GradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-        });
+        const ImageGradingResultSchema = GradingResultSchema.merge(HandwritingOrientationsSchema);
 
-        logResponseUsage({ response, logger });
+
+        const {
+          rotationCorrectionApplied,
+          response,
+          rotationErrorResponse,
+          rotationCorrectionResponses,
+          rotationCorrectionDegrees
+        } = await run(async () => {
+          if (!hasImage || !submission.submitted_answer) {
+            return {
+              response: await generateObject({
+                model,
+                schema: GradingResultSchema,
+                messages: input,
+                providerOptions: {
+                  openai: openaiProviderOptions,
+                },
+              }),
+              rotationCorrectionApplied: false
+            };
+          };
+
+          const initialResponse = await generateObject({
+            model,
+            schema: ImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          if (initialResponse.object.handwriting_orientations.every((orientation) => orientation === 'Upright (0 degrees)')) { 
+            // All images are upright, no rotation correction needed.
+            return { response: initialResponse, rotationCorrectionApplied: false };
+          }
+
+          const {
+            updated_submitted_answer,
+            rotationCorrectionResponses,
+            rotationCorrectionDegrees
+          } = await correctImagesOrientation({
+            submitted_answer: submission.submitted_answer,
+            submittedImages,
+            model
+          })
+
+          // Regenerate the prompt with the rotation-corrected images.
+          input = await generatePrompt({
+            questionPrompt,
+            questionAnswer,
+            submission_text,
+            submitted_answer: updated_submitted_answer,
+            example_submissions,
+            rubric_items,
+            model_id,
+          });
+
+
+          // Perform grading with the rotation-corrected images.
+          const finalResponse = await generateObject({
+            model,
+            schema: ImageGradingResultSchema,
+            messages: input,
+            providerOptions: {
+              openai: openaiProviderOptions,
+            },
+          });
+
+          return {
+            response: finalResponse,
+            rotationCorrectionApplied: true,
+            rotationErrorResponse: initialResponse,
+            rotationCorrectionResponses,
+            rotationCorrectionDegrees
+          };
+        }) satisfies {
+          rotationCorrectionApplied: false
+          response: GenerateObjectResult<any>;
+        } | {
+          rotationCorrectionApplied: true;
+          response: GenerateObjectResult<any>;
+          rotationErrorResponse: GenerateObjectResult<any>;
+          rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
+          rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+        };
+
+        if (rotationCorrectionApplied) {
+          logResponsesUsage({
+            responses: [
+              ...Object.values(rotationCorrectionResponses),
+              rotationErrorResponse,
+              response
+            ],
+            logger
+          });
+        } else {
+          logResponseUsage({ response, logger });
+        }
 
         logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
         const score = response.object.score;
@@ -666,7 +743,7 @@ export async function aiGrade({
             );
             assert(grading_job_id);
 
-            await insertAiGradingJob({
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
@@ -674,7 +751,18 @@ export async function aiGrade({
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
-            });
+            }
+
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                rotationErrorResponse,
+                rotationCorrectionResponses,
+                rotationCorrectionDegrees
+              });
+            } else {
+              await insertAiGradingJob(aiGradingJobParams);
+            };
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -695,15 +783,34 @@ export async function aiGrade({
               },
               IdSchema,
             );
-            await insertAiGradingJob({
+
+            const aiGradingJobParams = {
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
               model_id,
               prompt: input,
               response,
               course_id: course.id,
-              course_instance_id: course_instance.id,
-            });
+              course_instance_id: course_instance.id
+            };
+            if (rotationCorrectionApplied) {
+              await insertAiGradingJobWithRotationCorrection({
+                ...aiGradingJobParams,
+                rotationErrorResponse,
+                rotationCorrectionResponses,
+                rotationCorrectionDegrees
+              });
+            } else {
+              await insertAiGradingJob({
+                grading_job_id,
+                job_sequence_id: serverJob.jobSequenceId,
+                model_id,
+                prompt: input,
+                response,
+                course_id: course.id,
+                course_instance_id: course_instance.id,
+              });
+            }
           });
         }
 

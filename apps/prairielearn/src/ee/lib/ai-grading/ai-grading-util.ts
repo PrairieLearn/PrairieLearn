@@ -823,3 +823,46 @@ export async function correctImageOrientation({
     response,
   }
 };
+
+export async function correctImagesOrientation({
+  submitted_answer,
+  /** The key is the filename, and the value is the base64-encoded image */
+  submittedImages,
+  model
+}: {
+  submitted_answer: Record<string, any>,
+  submittedImages: Record<string, string>,
+  model: LanguageModel
+}) {
+  let updated_submitted_answer = { ...submitted_answer };
+
+  const rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
+  const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
+
+  for (const [filename, image] of Object.entries(submittedImages)) {
+    const {
+      correctedImage,
+      clockwiseRotation,
+      response
+    } = await correctImageOrientation({
+      image,
+      model
+    });
+    const existingIndex = submitted_answer?._files.findIndex(
+      (file: { name: string; contents: string }) => file.name === filename,
+    );
+
+    if (existingIndex !== -1) {
+      updated_submitted_answer._files[existingIndex].contents = correctedImage;
+    }
+
+    rotationCorrectionResponses[filename] = response;
+    rotationCorrectionDegrees[filename] = clockwiseRotation;
+  }
+
+  return {
+    updated_submitted_answer,
+    rotationCorrectionResponses,
+    rotationCorrectionDegrees
+  }
+}
