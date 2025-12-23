@@ -53,6 +53,12 @@ export const AIGradingOrientationSchema = z.enum([
   'Rotated Clockwise 90 degrees',
 ]);
 
+/**
+ * Schema for an LLM to output handwriting orientations.
+ *
+ * Note: We classify each image into one of four orientations because doing so
+ * outperformed simpler boolean classification (upright vs. not upright) in testing.
+ */
 export const HandwritingOrientationsOutputSchema = z.object({
   handwriting_orientations: z
     .array(AIGradingOrientationSchema)

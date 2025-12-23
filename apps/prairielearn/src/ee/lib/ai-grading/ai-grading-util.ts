@@ -572,15 +572,15 @@ export async function insertAiGradingJob({
 }
 
 /**
- * Insert an AI grading job that involved rotation correction of submitted images.
- * This accounts for all responses associated with detecting and correcting rotation errors.
+ * Create an AI grading job that performed rotation correction on its submitted images.
+ * This accounts for all responses associated with detecting and correcting rotation issues.
  *
  * @param params
  * @param params.grading_job_id
  * @param params.job_sequence_id
  * @param params.model_id
  * @param params.prompt
- * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected rotation issues.
+ * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
  * @param params.rotationCorrectionResponses - The responses of the rotation correction LLM calls for each image.
  * @param params.rotationCorrectionDegrees - The amount of clockwise rotation applied to each image.
  * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
@@ -765,7 +765,7 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 
 async function rotateBase64Image(
   base64Image: string,
-  clockwiseRotation: 90 | 180 | 270,
+  clockwiseRotation: ClockwiseRotationDegrees,
 ): Promise<string> {
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
   const imageBuffer = Buffer.from(base64Data, 'base64');
@@ -774,12 +774,15 @@ async function rotateBase64Image(
 }
 
 /**
- * Reorients a base64-encoded image to be upright using an AI language model.
+ * Reorients a base64-encoded image to be upright using an LLM.
  * Designed specifically for images of handwritten student submissions.
+ *
+ * The function rotates the image 0, 90, 180, and 270 degrees, then
+ * prompts the LLM to select which of the four images is closest to being upright.
  *
  * @param params
  * @param params.image - The base64-encoded image to correct.
- * @param params.model - The language model to use for determining the correct orientation.
+ * @param params.model - The LLM to use for determining the correct orientation.
  */
 export async function correctImageOrientation({
   image,
@@ -853,7 +856,7 @@ export async function correctImageOrientation({
  * @param param
  * @param param.submittedAnswer - The student's submitted answer object.
  * @param param.submittedImages - A mapping from filenames to base64-encoded images.
- * @param param.model - The language model to use for determining the correct orientations.
+ * @param param.model - The LLM to use for determining the correct orientations.
  *
  * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
  */
