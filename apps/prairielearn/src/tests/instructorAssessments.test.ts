@@ -8,7 +8,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepo } from './helperCourseRepo.js';
+import { updateCourseRepo } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
@@ -45,7 +45,7 @@ describe('Creating an assessment', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await updateCourseRepo(courseOriginDir);
+    await updateCourseRepo({ courseId: '1', repository: courseOriginDir });
   });
 
   afterAll(helperServer.after);

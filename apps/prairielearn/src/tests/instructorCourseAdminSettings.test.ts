@@ -11,7 +11,7 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectCourseById } from '../models/course.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepo } from './helperCourseRepo.js';
+import { updateCourseRepo } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -49,8 +49,7 @@ describe('Editing course settings', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    // update db with course repo info
-    await updateCourseRepo(courseOriginDir);
+    await updateCourseRepo({ courseId: '1', repository: courseOriginDir });
   });
   afterAll(helperServer.after);
 
