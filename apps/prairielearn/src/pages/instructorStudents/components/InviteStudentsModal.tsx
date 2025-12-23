@@ -50,10 +50,7 @@ export function InviteStudentsModal({
     mutationFn: async (uids: string[]) => {
       return onSubmit(uids);
     },
-    onSuccess: () => {
-      reset();
-      onHide();
-    },
+    onSuccess: onHide,
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {

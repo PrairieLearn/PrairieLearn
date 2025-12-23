@@ -177,16 +177,16 @@ router.post(
       job.info('\nSummary:');
       job.info(`  Successfully invited: ${counts.success}`);
       if (counts.alreadyEnrolled > 0) {
-        job.info(`  Already enrolled (skipped): ${counts.alreadyEnrolled}`);
+        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
       }
       if (counts.alreadyInvited > 0) {
-        job.info(`  Already invited (skipped): ${counts.alreadyInvited}`);
+        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
       }
       if (counts.alreadyBlocked > 0) {
-        job.info(`  Blocked (skipped): ${counts.alreadyBlocked}`);
+        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
       }
       if (counts.instructor > 0) {
-        job.info(`  Instructors (skipped): ${counts.instructor}`);
+        job.info(`  Skipped (instructor): ${counts.instructor}`);
       }
     });
 

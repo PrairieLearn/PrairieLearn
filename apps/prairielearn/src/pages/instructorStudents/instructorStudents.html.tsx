@@ -465,35 +465,49 @@ function StudentsCard({
             ),
           },
           emptyState: (
-            <TanstackTableEmptyState iconName="bi-person-exclamation">
-              No students found. To enroll students in your course, you can provide them with a{' '}
-              <OverlayTrigger
-                placement="top"
-                tooltip={{
-                  body: 'Copied!',
-                  props: { id: 'empty-state-copy-link-tooltip' },
-                }}
-                show={copiedEnrollLink}
-              >
-                <button
-                  type="button"
-                  class="btn btn-link p-0 border-0 align-baseline"
-                  onClick={handleCopyEnrollLink}
-                >
-                  link to enroll
-                </button>
-              </OverlayTrigger>{' '}
-              (recommended) or{' '}
-              <button
-                type="button"
-                class="btn btn-link p-0 border-0 align-baseline"
-                onClick={() => setShowInvite(true)}
-              >
-                invite
-              </button>{' '}
-              them. You can manage the self-enrollment settings on the{' '}
-              <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
-              page.
+            <TanstackTableEmptyState iconName="bi-person-plus">
+              <div class="d-flex flex-column align-items-center gap-3">
+                <div class="text-center">
+                  <h5 class="mb-2">No students enrolled</h5>
+                  <p class="text-muted mb-0">
+                    This course doesn't have any students yet. Invite students to join or share the
+                    enrollment link to get started.
+                  </p>
+                </div>
+                <div class="d-flex gap-2">
+                  <Button variant="dark" onClick={() => setShowInvite(true)}>
+                    <i class="bi bi-person-plus me-2" aria-hidden="true" />
+                    Invite students
+                  </Button>
+                  {courseInstance.self_enrollment_enabled && (
+                    <OverlayTrigger
+                      placement="top"
+                      tooltip={{
+                        body: 'Copied!',
+                        props: { id: 'empty-state-copy-link-tooltip' },
+                      }}
+                      show={copiedEnrollLink}
+                    >
+                      <Button variant="outline-dark" onClick={handleCopyEnrollLink}>
+                        <i class="bi bi-link-45deg me-2" aria-hidden="true" />
+                        Copy enrollment link
+                      </Button>
+                    </OverlayTrigger>
+                  )}
+                </div>
+                {courseInstance.self_enrollment_enabled && (
+                  <code class="bg-light text-muted px-3 py-2 rounded">
+                    {`${window.location.origin}${
+                      courseInstance.self_enrollment_use_enrollment_code
+                        ? getSelfEnrollmentLinkUrl({
+                            courseInstanceId: courseInstance.id,
+                            enrollmentCode: courseInstance.enrollment_code,
+                          })
+                        : getStudentCourseInstanceUrl(courseInstance.id)
+                    }`}
+                  </code>
+                )}
+              </div>
             </TanstackTableEmptyState>
           ),
           noResultsState: (
