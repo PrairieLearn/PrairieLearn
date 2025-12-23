@@ -7,7 +7,6 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
@@ -137,7 +136,7 @@ router.get(
           page: 'home',
         },
         options: {
-          fullHeight: true,
+          showFooter: true,
         },
         content: (
           <Home
@@ -151,7 +150,6 @@ router.get(
             enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
-        postContent: <PageFooter />,
       }),
     );
   }),

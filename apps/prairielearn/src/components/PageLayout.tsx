@@ -17,6 +17,7 @@ import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
+import { PageFooter } from './PageFooter.js';
 import { SideNav } from './SideNav.js';
 import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
@@ -196,6 +197,8 @@ export function PageLayout({
      * will not be persisted to the user's session.
      */
     forcedInitialNavToggleState?: boolean;
+    /** Whether or not to show the branded page footer. */
+    showFooter?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -213,6 +216,7 @@ export function PageLayout({
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
+    showFooter: false,
     ...options,
   };
 
@@ -264,6 +268,10 @@ export function PageLayout({
     }
   }
 
+  if (sideNavEnabled && resolvedOptions.showFooter) {
+    throw new Error('Cannot show the footer when the side nav is enabled.');
+  }
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -277,7 +285,10 @@ export function PageLayout({
         ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
-        class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        class="${clsx(
+          resolvedOptions.fullHeight && 'd-flex flex-column h-100',
+          resolvedOptions.showFooter && 'min-vh-100 d-flex flex-column',
+        )}"
         hx-ext="${resolvedOptions.hxExt}"
         ${unsafeHtml(
           Object.entries(resolvedOptions.dataAttributes)
@@ -297,6 +308,7 @@ export function PageLayout({
             // Not persisted.
             'mobile-collapsed',
             resolvedOptions.fullHeight && 'h-100',
+            resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
           ${resolvedOptions.enableNavbar
@@ -328,10 +340,7 @@ export function PageLayout({
             : ''}
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
-              class="${clsx(
-                sideNavEnabled ? 'app-main-container' : 'h-100 w-100',
-                'd-flex flex-column',
-              )}"
+              class="${clsx(sideNavEnabled ? 'app-main-container' : null, 'd-flex flex-column')}"
             >
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
@@ -375,6 +384,7 @@ export function PageLayout({
             </div>
           </div>
         </div>
+        ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>
     </html>
   `.toString();
