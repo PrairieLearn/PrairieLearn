@@ -16,26 +16,25 @@ ENV PATH="/home/coder/.venv/bin:$PATH"
 ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
 
 USER root
+WORKDIR "/"
 
 RUN apt-get update \
     && apt-get install -y --no-install-recommends gcc libc6-dev graphviz graphviz-dev \
     && apt-get clean \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    # Install uv
+    && curl -LO https://astral.sh/uv/install.sh \
+    && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
 WORKDIR "/home/coder"
 
-# Install Python and required packages via uv.
-# /home/coder/.venv/bin/python3 -> /home/coder/.local/bin/python3 -> /home/coder/.local/share/uv/python/*/bin/python3.10
-COPY requirements.txt /
-RUN curl -LO https://astral.sh/uv/install.sh \
-    && sh install.sh && rm install.sh \
-    && source "$HOME/.local/bin/env" \
-    && uv python install --default 3.12 \
-    && uv venv \
-    && echo "source $HOME/.venv/bin/activate" >> ~/.bashrc && source "$HOME/.venv/bin/activate" \
-    && uv pip install --no-cache-dir -r /requirements.txt
+# Create the virtual environment as the coder user
+RUN uv venv --python-preference managed --python 3.12 /home/coder/.venv
+
+COPY requirements.txt /home/coder/requirements.txt
+RUN uv pip install -r /home/coder/requirements.txt
 
 # After installing Python we install some VS Code extensions.
 USER coder
