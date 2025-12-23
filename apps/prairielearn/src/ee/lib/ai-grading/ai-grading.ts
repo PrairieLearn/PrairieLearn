@@ -10,6 +10,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage, logResponsesUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
@@ -18,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  IdSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';

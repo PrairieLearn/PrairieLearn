@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
@@ -19,7 +20,6 @@ import {
   GroupRoleSchema,
   GroupSchema,
   type GroupUserRole,
-  IdSchema,
   type User,
   UserSchema,
 } from './db-types.js';

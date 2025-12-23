@@ -1,15 +1,14 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { DateFromISOString, IntervalSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
-  DateFromISOString,
   type Group,
   type InstanceQuestion,
-  IntervalSchema,
   type Question,
   type User,
   type Variant,

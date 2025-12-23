@@ -5,9 +5,6 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-// re-export schemas for backwards compatibility
-export { DateFromISOString, IdSchema, IntervalSchema };
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************

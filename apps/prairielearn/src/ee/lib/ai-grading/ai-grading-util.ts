@@ -21,13 +21,13 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
   type Question,

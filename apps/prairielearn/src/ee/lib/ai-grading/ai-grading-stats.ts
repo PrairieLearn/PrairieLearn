@@ -3,13 +3,12 @@ import assert from 'node:assert';
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
-import { DateFromISOString } from '@prairielearn/zod';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import {
   type Assessment,
   type AssessmentQuestion,
-  IdSchema,
   type RubricItem,
   RubricItemSchema,
 } from '../../../lib/db-types.js';
