@@ -143,7 +143,7 @@ describe('Instructor Students - Invite by UID', () => {
       `another_instructor@example.com: Skipped (instructor)
 \nSummary:
   Successfully invited: 0
-  Instructors (skipped): 1\n`,
+  Skipped (instructor): 1\n`,
     );
   });
 
@@ -196,7 +196,7 @@ describe('Instructor Students - Invite by UID', () => {
       `blocked_student@example.com: Skipped (blocked)
 \nSummary:
   Successfully invited: 0
-  Blocked (skipped): 1\n`,
+  Skipped (blocked): 1\n`,
     );
   });
 

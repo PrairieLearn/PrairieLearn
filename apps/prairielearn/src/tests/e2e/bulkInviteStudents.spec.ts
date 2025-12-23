@@ -18,14 +18,15 @@ import { expect, test } from './fixtures.js';
  */
 async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
   // Should be redirected to the job sequence page
-  await expect(page).toHaveURL(/\/jobSequence\//, { timeout: 10000 });
+  await expect(page).toHaveURL(/\/jobSequence\//);
 
   // Wait for job to complete (status badge shows Success)
-  await expect(page.getByText('Success', { exact: true })).toBeVisible({ timeout: 30000 });
+  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
 
-  // Check for expected text in the job output
+  // Check for expected text in the job output (rendered in a <pre> element)
+  const jobOutput = page.locator('pre');
   for (const text of expectedTexts) {
-    await expect(page.getByText(text)).toBeVisible();
+    await expect(jobOutput.getByText(text)).toBeVisible();
   }
 }
 
@@ -174,6 +175,6 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    await expect(page.getByText('invalid', { exact: false })).toBeVisible({ timeout: 10000 });
+    await expect(page.getByText('invalid', { exact: false })).toBeVisible();
   });
 });

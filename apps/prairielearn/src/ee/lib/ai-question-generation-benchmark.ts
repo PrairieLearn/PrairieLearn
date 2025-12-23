@@ -183,10 +183,9 @@ export async function benchmarkAiQuestionGeneration({
   }
 
   const serverJob = await createServerJob({
-    courseId: null,
-    userId: user.user_id,
     type: 'ai_question_generation_benchmark',
     description: 'Benchmark AI question generation',
+    userId: user.user_id,
     authnUserId: user.user_id,
   });
 

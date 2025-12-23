@@ -8,6 +8,7 @@ import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
+import { parseUniqueValuesFromString } from '../../../lib/user.js';
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 export type ExtensionModifyModalData =
@@ -74,14 +75,7 @@ export function ExtensionModifyModal({
   };
 
   const validateEmails = async (value: string) => {
-    const uids = [
-      ...new Set(
-        value
-          .split(/[\n,\s]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid.length > 0),
-      ),
-    ];
+    const uids = parseUniqueValuesFromString(value);
 
     if (uids.length === 0) {
       return 'At least one UID is required';

@@ -16,27 +16,50 @@ import {
 } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import type { JobSequenceResultsData } from '../components/JobSequenceResults.js';
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface CreateServerJobOptions {
-  courseId: string | null;
-  courseInstanceId?: string;
-  courseRequestId?: string;
-  assessmentId?: string;
-  userId: string | null;
-  authnUserId: string | null;
+interface CreateServerJobOptionsBase {
+  /** The type of the job (lowercase, snake_case, no spaces) */
   type: string;
+  /** A description of the job. */
   description: string;
+  /** The effective user ID (res.locals.authz_data.user.user_id) */
+  userId: string | null;
+  /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
+  authnUserId: string | null;
+  /** The course request ID */
+  courseRequestId?: string;
 }
+
+type CreateServerJobOptions =
+  | (CreateServerJobOptionsBase & {
+      courseId?: string;
+      courseInstanceId?: undefined;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when courseInstanceId is provided. */
+      courseId: string;
+      courseInstanceId: string;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when assessmentId is provided. */
+      courseId: string;
+      /** Required when assessmentId is provided. */
+      courseInstanceId: string;
+      assessmentId: string;
+    });
 
 interface ServerJobExecOptions {
   cwd: string;

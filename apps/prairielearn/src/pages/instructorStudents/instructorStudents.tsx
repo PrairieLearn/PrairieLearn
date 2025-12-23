@@ -5,6 +5,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
+import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -15,7 +16,6 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getUrl } from '../../lib/url.js';
-import { parseUidsString } from '../../lib/user.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -99,21 +99,18 @@ router.post(
     } = res.locals;
 
     const BodySchema = z.object({
-      uids: z.preprocess(
-        (val) => (typeof val === 'string' ? parseUidsString(val, null) : val),
-        z.array(z.string().trim().email()).min(1, 'At least one UID is required'),
-      ),
+      uids: UniqueUidsFromStringSchema(1000),
       __action: z.literal('invite_uids'),
     });
     const body = BodySchema.parse(req.body);
 
     const serverJob = await createServerJob({
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
       type: 'invite_students',
       description: 'Invite students to course instance',
       userId,
       authnUserId,
+      courseId: course.id,
+      courseInstanceId: courseInstance.id,
     });
 
     serverJob.executeInBackground(async (job) => {
@@ -180,16 +177,16 @@ router.post(
       job.info('\nSummary:');
       job.info(`  Successfully invited: ${counts.success}`);
       if (counts.alreadyEnrolled > 0) {
-        job.info(`  Already enrolled (skipped): ${counts.alreadyEnrolled}`);
+        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
       }
       if (counts.alreadyInvited > 0) {
-        job.info(`  Already invited (skipped): ${counts.alreadyInvited}`);
+        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
       }
       if (counts.alreadyBlocked > 0) {
-        job.info(`  Blocked (skipped): ${counts.alreadyBlocked}`);
+        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
       }
       if (counts.instructor > 0) {
-        job.info(`  Instructors (skipped): ${counts.instructor}`);
+        job.info(`  Skipped (instructor): ${counts.instructor}`);
       }
     });
 

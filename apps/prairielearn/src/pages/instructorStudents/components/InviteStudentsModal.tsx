@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
-import { parseUidsString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/user.js';
 
 interface InviteStudentForm {
   uids: string;
@@ -36,7 +36,7 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUidsString(value, null);
+    const uids = parseUniqueValuesFromString(value);
     if (uids.length === 0) {
       return 'At least one UID is required';
     }
@@ -54,14 +54,11 @@ export function InviteStudentsModal({
     mutationFn: async (uids: string[]) => {
       return onSubmit(uids);
     },
-    onSuccess: () => {
-      reset();
-      onHide();
-    },
+    onSuccess: onHide,
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {
-    const uids = parseUidsString(data.uids, null);
+    const uids = parseUniqueValuesFromString(data.uids);
     saveMutation.mutate(uids);
   };
 
