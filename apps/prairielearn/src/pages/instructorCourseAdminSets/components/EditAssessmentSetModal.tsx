@@ -2,6 +2,9 @@ import { useState } from 'preact/compat';
 import { Modal } from 'react-bootstrap';
 
 import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
+import clsx from 'clsx';
+import { ColorJsonSchema } from '../../../schemas/index.js';
+import { ColorSwatch } from '../../../components/ColorSwatch.js';
 
 export type EditAssessmentSetsModalState =
   | { type: 'closed' }
@@ -71,6 +74,26 @@ export function EditAssessmentSetsModal({
       <Modal.Body>
         {assessmentSet ? (
           <>
+            <div class="d-flex flex-column align-items-center mb-4">
+              <span class={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="abbreviation">
+                Abbreviation
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="abbreviation"
+                value={assessmentSet.abbreviation}
+                onChange={(e) =>
+                  setAssessmentSet({
+                    ...assessmentSet,
+                    abbreviation: (e.target as HTMLInputElement).value,
+                  })
+                }
+              />
+            </div>
             <div class="mb-3">
               <label class="form-label" for="name">
                 Name
@@ -85,6 +108,49 @@ export function EditAssessmentSetsModal({
                 }
               />
             </div>
+            <div class="mb-3">
+              <label class="form-label" for="heading">
+                Heading
+              </label>
+              <input
+                type="text"
+                class="form-control"
+                id="heading"
+                value={assessmentSet.heading}
+                onChange={(e) =>
+                  setAssessmentSet({
+                    ...assessmentSet,
+                    heading: (e.target as HTMLInputElement).value,
+                  })
+                }
+              />
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="color">
+                Color
+              </label>
+              <div class="d-flex gap-2 align-items-center">
+                <select
+                  class={clsx('form-select', invalidColor && 'is-invalid')}
+                  id="color"
+                  value={assessmentSet.color}
+                  onChange={(e) =>
+                    setAssessmentSet({
+                      ...assessmentSet,
+                      color: e.currentTarget.value,
+                    })
+                  }
+                >
+                  {ColorJsonSchema.options.map((color) => (
+                    <option key={color} value={color}>
+                      {color}
+                    </option>
+                  ))}
+                </select>
+                <ColorSwatch color={assessmentSet.color} />
+              </div>
+              {invalidColor && <div class="invalid-feedback">Assessment set color is required</div>}
+            </div>
           </>
         ) : null}
       </Modal.Body>
@@ -92,7 +158,7 @@ export function EditAssessmentSetsModal({
         <button class="btn btn-secondary" type="button" onClick={onClose}>
           Cancel
         </button>
-        <button class="btn btn-primary" type="submit">
+        <button class="btn btn-primary" type="button" onClick={handleSubmit}>
           Save
         </button>
       </Modal.Footer>

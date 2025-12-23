@@ -7,6 +7,16 @@ import {
   EditAssessmentSetsModal,
   type EditAssessmentSetsModalState,
 } from './EditAssessmentSetModal.js';
+import { ColorJsonSchema } from '../../../schemas/index.js';
+
+const emptyAssessmentSet = {
+  abbreviation: '',
+  color: '',
+  heading: '',
+  implicit: false,
+  json_comment: '',
+  name: '',
+};
 
 export function AssessmentSetsTable({
   assessmentSets,
@@ -23,6 +33,17 @@ export function AssessmentSetsTable({
   const [assessmentSetsState, setAssessmentSetsState] =
     useState<StaffAssessmentSet[]>(assessmentSets);
   const [modalState, setModalState] = useState<EditAssessmentSetsModalState>({ type: 'closed' });
+
+  const handleCreate = () => {
+    setModalState({
+      type: 'create',
+      assessmentSet: {
+        ...(emptyAssessmentSet as StaffAssessmentSet),
+        id: crypto.randomUUID(),
+        color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
+      },
+    });
+  };
 
   const handleEdit = (index: number) => {
     setModalState({
@@ -77,6 +98,7 @@ export function AssessmentSetsTable({
                     value={JSON.stringify(assessmentSetsState)}
                   />
                   <button class="btn btn-sm btn-light mx-1" type="submit">
+                    <i class="fa fa-save" aria-hidden="true" />
                     Save and sync
                   </button>
                   <button
@@ -133,7 +155,7 @@ export function AssessmentSetsTable({
                         </div>
                       </td>
                     )}
-                    <td class="align-middle">{assessmentSet.number}</td>
+                    <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
                       <span class={`badge color-${assessmentSet.color}`}>
                         {assessmentSet.abbreviation}
@@ -147,6 +169,15 @@ export function AssessmentSetsTable({
                   </tr>
                 );
               })}
+              {editMode && allowEdit && (
+                <tr>
+                  <td colSpan={6}>
+                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                      <i class="fa fa-plus" aria-hidden="true" /> New assessment set
+                    </button>
+                  </td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>

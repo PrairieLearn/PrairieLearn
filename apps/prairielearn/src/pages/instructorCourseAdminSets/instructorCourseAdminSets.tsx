@@ -122,7 +122,6 @@ router.post(
             color: assessmentSet.color,
             heading: assessmentSet.heading,
             abbreviation: assessmentSet.abbreviation,
-            implicit: assessmentSet.implicit,
             comment: assessmentSet.json_comment || undefined,
           };
         })
@@ -131,7 +130,7 @@ router.post(
       courseInfo.assessmentSets = propertyValueWithDefault(
         courseInfo.assessmentSets,
         resolveAssessmentSets,
-        (v) => !v || v.length === 0,
+        (v: any) => !v || v.length === 0,
       );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));

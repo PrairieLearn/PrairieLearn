@@ -7,6 +7,7 @@ import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
+import { ColorSwatch } from './ColorSwatch.js';
 
 export type EditTagsTopicsModalState<Entity extends StaffTopic | StaffTag> =
   | { type: 'closed' }
@@ -143,25 +144,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                     </option>
                   ))}
                 </select>
-                <svg
-                  viewBox="0 0 32 32"
-                  // `form-control-color` provides the correct sizing. We override the
-                  // cursor and padding to make it appear just as a plain, non-interactive
-                  // color swatch.
-                  class="form-control-color p-0"
-                  style={{ cursor: 'default' }}
-                  aria-hidden="true"
-                >
-                  <rect
-                    width="32"
-                    height="32"
-                    style={{
-                      fill: `var(--color-${entity.color})`,
-                      rx: 'var(--bs-border-radius)',
-                      ry: 'var(--bs-border-radius)',
-                    }}
-                  />
-                </svg>
+                <ColorSwatch color={entity.color} />
               </div>
               {invalidColor && (
                 <div class="invalid-feedback">
