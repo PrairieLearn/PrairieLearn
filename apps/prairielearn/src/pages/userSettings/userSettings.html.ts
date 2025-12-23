@@ -2,11 +2,12 @@ import { z } from 'zod';
 
 import { compiledScriptTag } from '@prairielearn/compiled-assets';
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { type Purchase } from '../../ee/lib/billing/purchases.js';
-import { IdSchema, type Institution, type User } from '../../lib/db-types.js';
+import { type Institution, type User } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 

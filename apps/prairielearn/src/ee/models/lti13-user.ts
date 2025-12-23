@@ -1,10 +1,10 @@
 import { z } from 'zod';
 
 import { execute, loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type CourseInstance,
-  IdSchema,
   Lti13InstanceSchema,
   type User,
   UserSchema,
