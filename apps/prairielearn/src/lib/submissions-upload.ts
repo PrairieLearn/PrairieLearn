@@ -240,7 +240,7 @@ export async function uploadSubmissions(
               {
                 assessment_id: assessment.id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                team_id: entity.type === 'group' ? entity.team_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -275,7 +275,7 @@ export async function uploadSubmissions(
                 // This value doesn't really matter, especially in dev mode.
                 authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                team_id: entity.type === 'group' ? entity.team_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This
