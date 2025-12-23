@@ -189,6 +189,18 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
+    // Invitations and rejections are only supported for modern publishing courses.
+    if (
+      !courseInstance.modern_publishing &&
+      ['accept_invitation', 'reject_invitation'].includes(body.__action)
+    ) {
+      flash(
+        'error',
+        'Invitations and rejections are only supported for courses using modern publishing.',
+      );
+      return;
+    }
+
     if (
       courseInstance.modern_publishing &&
       computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
