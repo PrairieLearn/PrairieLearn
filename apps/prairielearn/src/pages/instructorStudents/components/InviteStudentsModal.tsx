@@ -32,7 +32,13 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUniqueValuesFromString(value);
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'An error occurred';
+    }
+
     if (uids.length === 0) {
       return 'At least one UID is required';
     }

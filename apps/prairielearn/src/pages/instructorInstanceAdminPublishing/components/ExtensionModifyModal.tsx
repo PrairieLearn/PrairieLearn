@@ -75,7 +75,12 @@ export function ExtensionModifyModal({
   };
 
   const validateEmails = async (value: string) => {
-    const uids = parseUniqueValuesFromString(value);
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'An error occurred';
+    }
 
     if (uids.length === 0) {
       return 'At least one UID is required';
