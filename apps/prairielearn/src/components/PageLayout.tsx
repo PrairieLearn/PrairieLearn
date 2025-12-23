@@ -339,7 +339,14 @@ export function PageLayout({
               `
             : ''}
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
-            <div class="${clsx(sideNavEnabled && 'app-main-container', 'd-flex flex-column')}">
+            <div
+              class="${clsx(
+                sideNavEnabled && 'app-main-container',
+                !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
+                !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
+                'd-flex flex-column',
+              )}"
+            >
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}

@@ -38,8 +38,8 @@ export function Workspace({
     },
     options: {
       fullWidth: true,
-      pageNote,
       fullHeight: true,
+      pageNote,
       dataAttributes: {
         'socket-token': socketToken,
         'workspace-id': workspace_id,
