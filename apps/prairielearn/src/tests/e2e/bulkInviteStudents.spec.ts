@@ -161,7 +161,7 @@ test.describe('Bulk invite students', () => {
       'fresh_student@test.com: Invited',
       `${ENROLLED_STUDENT.uid}: Skipped (already enrolled)`,
       'Successfully invited: 1',
-      'Already enrolled (skipped): 1',
+      'Skipped (already enrolled): 1',
     ]);
   });
 
