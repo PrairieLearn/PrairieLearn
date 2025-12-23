@@ -10,7 +10,7 @@ import { HttpStatusError } from '@prairielearn/error';
  * @param valuesString The string of values to parse.
  * @param limit The maximum number of values to accept without throwing an error.
  */
-export function parseUniqueValuesFromString(valuesString: string, limit = 1000): string[] {
+export function parseUniqueValuesFromString(valuesString: string, limit: number): string[] {
   const values = new Set(
     valuesString
       .split(/[\s,;]+/)

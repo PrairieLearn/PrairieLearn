@@ -21,6 +21,8 @@ interface ExtensionFormValues {
   uids: string;
 }
 
+const MAX_UIDS = 1000;
+
 export function ExtensionModifyModal({
   data,
   currentUnpublishText,
@@ -77,7 +79,7 @@ export function ExtensionModifyModal({
   const validateEmails = async (value: string) => {
     let uids: string[] = [];
     try {
-      uids = parseUniqueValuesFromString(value);
+      uids = parseUniqueValuesFromString(value, MAX_UIDS);
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to parse UIDs';
     }

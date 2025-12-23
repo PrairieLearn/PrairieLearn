@@ -99,6 +99,10 @@ router.post(
       user: { user_id: userId },
     } = res.locals;
 
+    if (!courseInstance.modern_publishing) {
+      throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
+    }
+
     const BodySchema = z.object({
       uids: UniqueUidsFromStringSchema(1000),
       __action: z.literal('invite_uids'),

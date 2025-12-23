@@ -12,6 +12,8 @@ interface InviteStudentForm {
   uids: string;
 }
 
+const MAX_UIDS = 1000;
+
 export function InviteStudentsModal({
   show,
   courseInstance,
@@ -38,7 +40,7 @@ export function InviteStudentsModal({
   const validateUidsFormat = (value: string): string | true => {
     let uids: string[] = [];
     try {
-      uids = parseUniqueValuesFromString(value);
+      uids = parseUniqueValuesFromString(value, MAX_UIDS);
     } catch (error) {
       return error instanceof Error ? error.message : 'An error occurred';
     }
@@ -64,7 +66,7 @@ export function InviteStudentsModal({
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {
-    const uids = parseUniqueValuesFromString(data.uids);
+    const uids = parseUniqueValuesFromString(data.uids, MAX_UIDS);
     saveMutation.mutate(uids);
   };
 
