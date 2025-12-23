@@ -16,8 +16,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { start_date, end_date, course_instance_id } = z
       .object({
-        start_date: DatetimeLocalStringSchema,
-        end_date: DatetimeLocalStringSchema,
+        start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+        end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         course_instance_id: z.string(),
       })
       .parse(req.body);

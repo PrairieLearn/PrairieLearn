@@ -209,7 +209,7 @@ export const ArrayFromCheckboxSchema = z
  * Creates a Zod schema that parses a string of UIDs separated by whitespace,
  * commas, or semicolons into an array of unique, trimmed UIDs.
  *
- * @param limit - The maximum number of UIDs allowed.
+ * @param limit - The maximum number of UIDs allowed. Defaults to 1000.
  * @returns A Zod schema that parses and validates the UID string.
  */
 export function UniqueUidsFromStringSchema(limit = 1000) {
@@ -234,6 +234,14 @@ export function UniqueUidsFromStringSchema(limit = 1000) {
       return z.NEVER;
     }
 
+    if (uids.size === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one UID is required',
+      });
+      return z.NEVER;
+    }
+
     for (const uid of uids) {
       const result = emailSchema.safeParse(uid);
       if (!result.success) {
@@ -241,16 +249,7 @@ export function UniqueUidsFromStringSchema(limit = 1000) {
           code: z.ZodIssueCode.custom,
           message: `Invalid UID format: ${uid}`,
         });
-        return z.NEVER;
       }
-    }
-
-    if (uids.size === 0) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: 'At least one UID is required',
-      });
-      return z.NEVER;
     }
 
     return Array.from(uids);
