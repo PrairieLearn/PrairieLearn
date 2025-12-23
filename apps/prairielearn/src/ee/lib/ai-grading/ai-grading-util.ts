@@ -616,10 +616,15 @@ export async function insertAiGradingJobWithRotationCorrection({
   let completion_tokens =
     (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
     (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
-  let cost = calculateResponseCost({
-    model: model_id,
-    usage: gradingResponseWithRotationCorrection.usage,
-  });
+  let cost =
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationIssue.usage,
+    }) +
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationCorrection.usage,
+    });
 
   for (const rotationCorrectionResponse of Object.values(rotationCorrectionResponses)) {
     prompt_tokens += rotationCorrectionResponse.usage.inputTokens ?? 0;
@@ -870,6 +875,14 @@ export async function correctImagesOrientation({
   submittedImages: Record<string, string>;
   model: LanguageModel;
 }) {
+  if (!submittedAnswer._files) {
+    return {
+      updatedSubmittedAnswer: submittedAnswer,
+      rotationCorrectionResponses: {},
+      rotationCorrectionDegrees: {},
+    };
+  }
+
   const updatedSubmittedAnswer = { ...submittedAnswer };
 
   const rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
@@ -880,6 +893,7 @@ export async function correctImagesOrientation({
       image,
       model,
     });
+
     const existingIndex = submittedAnswer._files.findIndex(
       (file: { name: string; contents: string }) => file.name === filename,
     );
