@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
 import { sendCourseRequestMessage } from '../lib/opsbot.js';
 

@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
@@ -14,7 +15,6 @@ import * as questionServers from '../question-servers/index.js';
 import {
   type Course,
   type CourseInstance,
-  IdSchema,
   type Question,
   type Variant,
   VariantSchema,

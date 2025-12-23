@@ -2,9 +2,10 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { callRow, execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, InstitutionSchema, type User, UserSchema } from '../../lib/db-types.js';
+import { InstitutionSchema, type User, UserSchema } from '../../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
