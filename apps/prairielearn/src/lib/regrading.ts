@@ -59,13 +59,13 @@ export async function regradeAssessmentInstance(
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
   const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.group_name}"`;
   const serverJob = await createServerJob({
+    type: 'regrade_assessment_instance',
+    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: assessmentInstance.course_id,
     courseInstanceId: assessmentInstance.course_instance_id,
     assessmentId: assessmentInstance.assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
   });
 
   // We've now triggered the callback to our caller, but we
@@ -107,13 +107,13 @@ export async function regradeAllAssessmentInstances(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'regrade_assessment',
+    description: 'Regrade ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'regrade_assessment',
-    description: 'Regrade ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {

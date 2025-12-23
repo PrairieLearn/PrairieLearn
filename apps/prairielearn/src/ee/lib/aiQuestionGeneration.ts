@@ -377,10 +377,11 @@ export async function generateQuestion({
   usage: LanguageModelUsage;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
+    userId,
     authnUserId,
+    courseId,
   });
 
   let usage = emptyUsage();
@@ -796,10 +797,11 @@ export async function regenerateQuestion({
   usage: LanguageModelUsage | undefined;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
+    userId,
     authnUserId,
+    courseId,
   });
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
