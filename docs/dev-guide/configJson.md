@@ -92,14 +92,14 @@ Certain images detect if you are running as root and try to chown the workspace 
 
 Many containers can only run as UID 1001 or 0. Make sure you run as root locally!
 
-```
+```sh
 sudo make dev-workspace-host
 sudo make dev
 ```
 
 If you don't both of these commands, you will see errors like:
 
-```
+```text
 chown: changing ownership of '/home/coder/workspace': Permission denied
 chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
 ```
