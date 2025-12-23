@@ -457,18 +457,6 @@ export const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
   /**
-   * In some markets, such as China, the title of all pages needs to be a
-   * specific string in order to comply with local regulations. If this option
-   * is set, it will be used verbatim as the `<title>` of all pages.
-   */
-  titleOverride: z.string().nullable().default(null),
-  /**
-   * Similarly, China also requires us to include a registration number and link
-   * to a specific page on the homepage footer.
-   */
-  homepageFooterText: z.string().nullable().default(null),
-  homepageFooterTextHref: z.string().nullable().default(null),
-  /**
    * HTML that will be displayed in a banner at the top of every page. Useful for
    * announcing maintenance windows, etc.
    */
