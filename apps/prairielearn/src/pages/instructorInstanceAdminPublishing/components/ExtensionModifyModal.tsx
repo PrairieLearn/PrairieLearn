@@ -8,7 +8,7 @@ import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import { parseUniqueValuesFromString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 export type ExtensionModifyModalData =
@@ -79,7 +79,7 @@ export function ExtensionModifyModal({
     try {
       uids = parseUniqueValuesFromString(value);
     } catch (error) {
-      return error instanceof Error ? error.message : 'An error occurred';
+      return error instanceof Error ? error.message : 'Failed to parse UIDs';
     }
 
     if (uids.length === 0) {

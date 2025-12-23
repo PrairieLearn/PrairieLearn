@@ -1,8 +1,8 @@
 import { assert, describe, it } from 'vitest';
 
-import { parseUniqueValuesFromString } from './user.js';
+import { parseUniqueValuesFromString } from './string-util.js';
 
-describe('user utilities', () => {
+describe('string utilities', () => {
   describe('parseUniqueValuesFromString', () => {
     it('handles empty string', () => {
       assert.deepEqual(parseUniqueValuesFromString('', 10), []);

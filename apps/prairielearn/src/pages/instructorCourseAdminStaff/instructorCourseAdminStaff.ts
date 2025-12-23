@@ -7,12 +7,12 @@ import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
-import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   type CourseInstanceAuthz,
@@ -102,7 +102,7 @@ router.post(
     }
 
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
-      const uids = UniqueUidsFromStringSchema(MAX_UIDS).parse(req.body.uid);
+      const uids = parseUniqueValuesFromString(req.body.uid, MAX_UIDS);
 
       // Verify there is at least one UID
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');

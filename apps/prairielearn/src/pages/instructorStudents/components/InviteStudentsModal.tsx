@@ -4,7 +4,7 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { parseUniqueValuesFromString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 
 interface InviteStudentForm {
   uids: string;
