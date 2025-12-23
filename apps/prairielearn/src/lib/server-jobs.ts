@@ -27,7 +27,7 @@ import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface CreateServerJobOptions {
+interface CreateServerJobOptionsBase {
   /** The type of the job (lowercase, snake_case, no spaces) */
   type: string;
   /** A description of the job. */
@@ -36,12 +36,29 @@ interface CreateServerJobOptions {
   userId: string | null;
   /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
   authnUserId: string | null;
-  courseId?: string;
-  /** If provided, courseId should also be provided. */
-  courseInstanceId?: string;
+  /** The course request ID */
   courseRequestId?: string;
-  assessmentId?: string;
 }
+
+type CreateServerJobOptions =
+  | (CreateServerJobOptionsBase & {
+      courseId?: string;
+      courseInstanceId?: undefined;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when courseInstanceId is provided. */
+      courseId: string;
+      courseInstanceId: string;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when assessmentId is provided. */
+      courseId: string;
+      /** Required when assessmentId is provided. */
+      courseInstanceId: string;
+      assessmentId: string;
+    });
 
 interface ServerJobExecOptions {
   cwd: string;
