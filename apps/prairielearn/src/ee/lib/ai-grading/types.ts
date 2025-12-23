@@ -53,7 +53,7 @@ export const AIGradingOrientationSchema = z.enum([
   'Rotated Clockwise 90 degrees',
 ]);
 
-export const HandwritingOrientationsSchema = z.object({
+export const HandwritingOrientationsOutputSchema = z.object({
   handwriting_orientations: z
     .array(AIGradingOrientationSchema)
     .describe(
@@ -68,7 +68,7 @@ export const HandwritingOrientationsSchema = z.object({
     ),
 });
 
-export const RotationCorrectionSchema = z.object({
+export const RotationCorrectionOutputSchema = z.object({
   upright_image: z
     .enum(['1', '2', '3', '4'])
     .describe('The number corresponding to the image that is closest to being upright.'),

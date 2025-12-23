@@ -48,7 +48,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type ClockwiseRotationDegrees, RotationCorrectionSchema } from './types.js';
+import { type ClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -383,7 +383,8 @@ export function generateSubmissionMessage({
 }
 
 /**
- * Returns the submitted base64-encoded image for each pl-image-capture element in the student's submission.
+ * Returns all images the student submitted via pl-image-capture.
+ * Returns a mapping from an image's filename to its base64-encoded contents.
  */
 export function extractSubmissionImages({
   submission_text,
@@ -570,15 +571,31 @@ export async function insertAiGradingJob({
   });
 }
 
+/**
+ * Insert an AI grading job that involved rotation correction of submitted images.
+ * This accounts for all responses associated with detecting and correcting rotation errors.
+ *
+ * @param params
+ * @param params.grading_job_id
+ * @param params.job_sequence_id
+ * @param params.model_id
+ * @param params.prompt
+ * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected rotation issues.
+ * @param params.rotationCorrectionResponses - The responses of the rotation correction LLM calls for each image.
+ * @param params.rotationCorrectionDegrees - The amount of clockwise rotation applied to each image.
+ * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
+ * @param params.course_id
+ * @param params.course_instance_id
+ */
 export async function insertAiGradingJobWithRotationCorrection({
   grading_job_id,
   job_sequence_id,
   model_id,
   prompt,
-  response,
-  rotationErrorResponse,
+  gradingResponseWithRotationIssue,
   rotationCorrectionResponses,
   rotationCorrectionDegrees,
+  gradingResponseWithRotationCorrection,
   course_id,
   course_instance_id,
 }: {
@@ -586,18 +603,23 @@ export async function insertAiGradingJobWithRotationCorrection({
   job_sequence_id: string;
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
-  response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
-  rotationErrorResponse: GenerateObjectResult<any>;
+  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
   rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
   rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
 }): Promise<void> {
   let prompt_tokens =
-    (rotationErrorResponse.usage.inputTokens ?? 0) + (response.usage.inputTokens ?? 0);
+    (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
   let completion_tokens =
-    (rotationErrorResponse.usage.outputTokens ?? 0) + (response.usage.outputTokens ?? 0);
-  let cost = calculateResponseCost({ model: model_id, usage: response.usage });
+    (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
+  let cost = calculateResponseCost({
+    model: model_id,
+    usage: gradingResponseWithRotationCorrection.usage,
+  });
 
   for (const rotationCorrectionResponse of Object.values(rotationCorrectionResponses)) {
     prompt_tokens += rotationCorrectionResponse.usage.inputTokens ?? 0;
@@ -609,7 +631,7 @@ export async function insertAiGradingJobWithRotationCorrection({
     grading_job_id,
     job_sequence_id,
     prompt: JSON.stringify(prompt),
-    completion: response,
+    completion: gradingResponseWithRotationCorrection,
     rotation_correction_degrees: rotationCorrectionDegrees,
     model: model_id,
     prompt_tokens,
@@ -812,7 +834,7 @@ export async function correctImageOrientation({
 
   const response = await generateObject({
     model,
-    schema: RotationCorrectionSchema,
+    schema: RotationCorrectionOutputSchema,
     messages: prompt,
   });
 

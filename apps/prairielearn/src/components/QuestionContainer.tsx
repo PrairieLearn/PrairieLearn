@@ -229,19 +229,22 @@ function AIGradingExplanation({
           ${explanation
             ? html`
                 <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-              ${explanation}
-            </pre
-                >
+${explanation}
+</pre>
               `
             : ''}
           ${rotationCorrectionDegrees
             ? html`
+                <br />
                 <pre>
 All images were upright: false.
-Clockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}</pre
-                >
+Clockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
+</pre>
               `
-            : html` <pre>All images were upright: true </pre> `}
+            : html`
+                <br />
+                <pre>All images were upright: true </pre>
+              `}
         </div>
       </div>
     </div>
