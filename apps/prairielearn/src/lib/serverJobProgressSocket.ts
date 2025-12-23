@@ -40,6 +40,8 @@ export function connection(socket: Socket) {
         const serverJobProgressCache = await getServerJobProgressCache();
         const progress = await serverJobProgressCache.get(`server-job-progress-${msg.job_sequence_id}`);
 
+        console.log('progress', progress);
+
         if (!progress) {
             return callback({
                 job_sequence_id: msg.job_sequence_id,

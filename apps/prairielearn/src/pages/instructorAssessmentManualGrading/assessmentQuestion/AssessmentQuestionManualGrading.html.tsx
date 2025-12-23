@@ -154,6 +154,7 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
+        ongoingJobSequenceIds={ongoingJobSequenceIds}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

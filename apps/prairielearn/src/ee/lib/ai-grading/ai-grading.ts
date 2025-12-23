@@ -85,6 +85,7 @@ export async function aiGrade({
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
 }): Promise<string> {
+
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {
     if (provider === 'openai') {
@@ -149,6 +150,9 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    // wait 1 hour. TODO: Remove this. added this to test the progress indicator w/o burning tokens.
+    await new Promise((resolve) => setTimeout(resolve, 3600 * (1000)));
+    
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
