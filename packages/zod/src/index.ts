@@ -131,6 +131,35 @@ export const DateFromISOString = z
   .transform((s) => new Date(s));
 
 /**
+ * A Zod schema for a datetime-local input value.
+ *
+ * Accepts a string in the format "YYYY-MM-DDTHH:MM" or "YYYY-MM-DDTHH:MM:SS"
+ * as produced by `<input type="datetime-local">` elements.
+ *
+ * Validates the format and returns it as a string.
+ */
+export const DatetimeLocalStringSchema = z
+  .string()
+  .regex(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}(:\d{2})?$/, {
+    message: 'must be a valid datetime-local string (YYYY-MM-DDTHH:MM or YYYY-MM-DDTHH:MM:SS)',
+  })
+  // Append `:00` seconds if omitted (Chrome bug workaround).
+  // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+  // https://issues.chromium.org/issues/41159420
+  .transform((s) => (s.length === 16 ? `${s}:00` : s))
+  .transform((s, ctx) => {
+    const date = new Date(s);
+    if (Number.isNaN(date.getTime())) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'must be a valid date',
+      });
+      return z.NEVER;
+    }
+    return s;
+  });
+
+/**
  * A Zod schema that coerces a non-empty string to an integer or an empty string to null.
  * This is useful for form number inputs that are not required but we do not want to
  * use an empty string to compute values.
@@ -175,3 +204,55 @@ export const ArrayFromCheckboxSchema = z
       return [s];
     }
   });
+
+/**
+ * Creates a Zod schema that parses a string of UIDs separated by whitespace,
+ * commas, or semicolons into an array of unique, trimmed UIDs.
+ *
+ * @param limit - The maximum number of UIDs allowed.
+ * @returns A Zod schema that parses and validates the UID string.
+ */
+export function UniqueUidsFromStringSchema(limit = 1000) {
+  const emailSchema = z.string().email();
+
+  return z.string().transform((uidsString, ctx) => {
+    const uids = new Set(
+      uidsString
+        .split(/[\s,;]+/)
+        .map((uid) => uid.trim())
+        .filter(Boolean),
+    );
+
+    if (uids.size > limit) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.too_big,
+        maximum: limit,
+        type: 'set',
+        inclusive: true,
+        message: `Cannot provide more than ${limit} UIDs at a time`,
+      });
+      return z.NEVER;
+    }
+
+    for (const uid of uids) {
+      const result = emailSchema.safeParse(uid);
+      if (!result.success) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: `Invalid UID format: ${uid}`,
+        });
+        return z.NEVER;
+      }
+    }
+
+    if (uids.size === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: 'At least one UID is required',
+      });
+      return z.NEVER;
+    }
+
+    return Array.from(uids);
+  });
+}

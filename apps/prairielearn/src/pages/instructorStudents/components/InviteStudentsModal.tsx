@@ -4,7 +4,7 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { parseUidsString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/user.js';
 
 interface InviteStudentForm {
   uids: string;
@@ -32,7 +32,7 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUidsString(value, null);
+    const uids = parseUniqueValuesFromString(value);
     if (uids.length === 0) {
       return 'At least one UID is required';
     }
@@ -57,7 +57,7 @@ export function InviteStudentsModal({
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {
-    const uids = parseUidsString(data.uids, null);
+    const uids = parseUniqueValuesFromString(data.uids);
     saveMutation.mutate(uids);
   };
 

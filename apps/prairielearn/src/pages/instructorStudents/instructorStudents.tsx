@@ -5,6 +5,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
+import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -15,7 +16,6 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getUrl } from '../../lib/url.js';
-import { parseUidsString } from '../../lib/user.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -99,10 +99,7 @@ router.post(
     } = res.locals;
 
     const BodySchema = z.object({
-      uids: z.preprocess(
-        (val) => (typeof val === 'string' ? parseUidsString(val, 1000) : val),
-        z.array(z.string().trim().email()).min(1, 'At least one UID is required'),
-      ),
+      uids: UniqueUidsFromStringSchema(1000),
       __action: z.literal('invite_uids'),
     });
     const body = BodySchema.parse(req.body);

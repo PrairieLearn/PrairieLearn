@@ -5,6 +5,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { GroupConfigSchema } from '../../lib/db-types.js';
 import { randomGroups, uploadInstanceGroups } from '../../lib/group-update.js';
@@ -17,7 +18,6 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { parseUidsString } from '../../lib/user.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
@@ -122,7 +122,7 @@ router.post(
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         group_name: req.body.group_name,
-        uids: parseUidsString(req.body.uids, MAX_UIDS),
+        uids: UniqueUidsFromStringSchema(MAX_UIDS).parse(req.body.uids),
         authn_user_id: res.locals.authn_user.user_id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
@@ -135,7 +135,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
-      for (const uid of parseUidsString(req.body.add_member_uids, MAX_UIDS)) {
+      for (const uid of UniqueUidsFromStringSchema(MAX_UIDS).parse(req.body.add_member_uids)) {
         try {
           await addUserToGroup({
             course_instance: res.locals.course_instance,
