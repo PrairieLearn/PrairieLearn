@@ -39,7 +39,6 @@ router.post(
         start_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         course_instance_id: z.string(),
-        // HTML form checkboxes send "on" when checked and are absent (undefined) when unchecked
         self_enrollment_enabled: BooleanFromCheckboxSchema,
         self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
       })
