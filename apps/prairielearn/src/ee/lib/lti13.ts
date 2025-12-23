@@ -16,7 +16,6 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
-
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';

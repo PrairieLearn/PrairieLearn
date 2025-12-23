@@ -7,7 +7,6 @@ import oauthSignature from 'oauth-signature';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-
 import { IdSchema } from '@prairielearn/zod';
 
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';

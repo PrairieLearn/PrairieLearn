@@ -15,7 +15,6 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { withResolvers } from '@prairielearn/utils';
-
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';

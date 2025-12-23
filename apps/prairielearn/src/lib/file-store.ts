@@ -6,7 +6,6 @@ import { type Stream } from 'stream';
 import debugfn from 'debug';
 
 import * as sqldb from '@prairielearn/postgres';
-
 import { IdSchema } from '@prairielearn/zod';
 
 import { getFromS3, uploadToS3 } from './aws.js';

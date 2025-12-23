@@ -1,8 +1,8 @@
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateAssessmentQuestionStatsForAssessment } from '../lib/assessment.js';
-import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 

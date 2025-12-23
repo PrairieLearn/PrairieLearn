@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.js';
@@ -22,8 +23,6 @@ import {
 } from '../components/SubmissionPanel.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
-
-import { IdSchema } from '@prairielearn/zod';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';

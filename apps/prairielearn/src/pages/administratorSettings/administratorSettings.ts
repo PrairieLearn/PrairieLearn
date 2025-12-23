@@ -4,12 +4,12 @@ import asyncHandler from 'express-async-handler';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
 import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '@prairielearn/zod';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';

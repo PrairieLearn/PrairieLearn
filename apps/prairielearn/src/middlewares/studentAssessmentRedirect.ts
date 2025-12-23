@@ -1,7 +1,6 @@
 import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-
 import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);

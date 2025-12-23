@@ -2,8 +2,8 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
-
 import { IdSchema } from '@prairielearn/zod';
+
 import { idsEqual } from '../lib/id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

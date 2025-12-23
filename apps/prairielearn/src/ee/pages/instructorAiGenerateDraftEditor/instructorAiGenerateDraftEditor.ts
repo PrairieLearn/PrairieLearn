@@ -5,7 +5,6 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
-
 import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';

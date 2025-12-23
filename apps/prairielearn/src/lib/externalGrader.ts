@@ -7,14 +7,13 @@ import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
 import {
   selectOptionalGradingJobById,
   updateGradingJobAfterGrading,
 } from '../models/grading-job.js';
-
-import { IdSchema } from '@prairielearn/zod';
 
 import { config } from './config.js';
 import {
