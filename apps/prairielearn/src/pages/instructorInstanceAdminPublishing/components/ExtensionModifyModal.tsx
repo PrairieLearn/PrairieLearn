@@ -8,7 +8,7 @@ import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import { parseUniqueValuesFromString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 export type ExtensionModifyModalData =

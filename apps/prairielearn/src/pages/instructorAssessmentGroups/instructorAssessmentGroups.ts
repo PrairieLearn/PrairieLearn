@@ -17,7 +17,7 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { parseUniqueValuesFromString } from '../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
