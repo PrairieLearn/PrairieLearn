@@ -398,6 +398,19 @@ function StudentsCard({
     },
   });
 
+  const emptyStateText = run(() => {
+    const baseMessage = "This course doesn't have any students yet.";
+    if (!courseInstance.modern_publishing) {
+      // self-enrollment is always enabled for legacy publishing
+      return `${baseMessage} Share the enrollment link to get started.`;
+    }
+
+    if (courseInstance.self_enrollment_enabled) {
+      return `${baseMessage} Share the enrollment link or invite them to get started.`;
+    }
+    return `${baseMessage} Invite them to get started.`;
+  });
+
   return (
     <>
       <TanstackTableCard
@@ -469,39 +482,40 @@ function StudentsCard({
               <div class="d-flex flex-column align-items-center gap-3">
                 <div class="text-center">
                   <h5 class="mb-2">No students enrolled</h5>
-                  <p class="text-muted mb-0">
-                    This course doesn't have any students yet.
-                    {courseInstance.self_enrollment_enabled
-                      ? 'Share the enrollment link or invite them to get started.'
-                      : 'Invite them to get started.'}
+                  <p class="text-muted mb-0" style={{ textWrap: 'balance' }}>
+                    {emptyStateText}
                   </p>
                 </div>
-                <div class="d-flex gap-2">
-                  {courseInstance.self_enrollment_enabled && (
-                    <OverlayTrigger
-                      placement="top"
-                      tooltip={{
-                        body: 'Copied!',
-                        props: { id: 'empty-state-copy-link-tooltip' },
-                      }}
-                      show={copiedEnrollLink}
-                    >
-                      <Button variant="primary" onClick={handleCopyEnrollLink}>
-                        <i class="bi bi-link-45deg me-2" aria-hidden="true" />
-                        Copy enrollment link
-                      </Button>
-                    </OverlayTrigger>
-                  )}
-                  <Button
-                    variant={clsx(
-                      courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary',
+                {(courseInstance.modern_publishing || courseInstance.self_enrollment_enabled) && (
+                  <div class="d-flex gap-2">
+                    {courseInstance.self_enrollment_enabled && (
+                      <OverlayTrigger
+                        placement="top"
+                        tooltip={{
+                          body: 'Copied!',
+                          props: { id: 'empty-state-copy-link-tooltip' },
+                        }}
+                        show={copiedEnrollLink}
+                      >
+                        <Button variant="primary" onClick={handleCopyEnrollLink}>
+                          <i class="bi bi-link-45deg me-2" aria-hidden="true" />
+                          Copy enrollment link
+                        </Button>
+                      </OverlayTrigger>
                     )}
-                    onClick={() => setShowInvite(true)}
-                  >
-                    <i class="bi bi-person-plus me-2" aria-hidden="true" />
-                    Invite students
-                  </Button>
-                </div>
+                    {courseInstance.modern_publishing && (
+                      <Button
+                        variant={clsx(
+                          courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary',
+                        )}
+                        onClick={() => setShowInvite(true)}
+                      >
+                        <i class="bi bi-person-plus me-2" aria-hidden="true" />
+                        Invite students
+                      </Button>
+                    )}
+                  </div>
+                )}
                 {courseInstance.self_enrollment_enabled && (
                   <code class="bg-light text-muted px-3 py-2 rounded">{selfEnrollLink}</code>
                 )}
