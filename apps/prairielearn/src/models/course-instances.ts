@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import {
   type AuthzData,
@@ -14,7 +15,6 @@ import {
   type Course,
   type CourseInstance,
   CourseInstanceSchema,
-  DateFromISOString,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';

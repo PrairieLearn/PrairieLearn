@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
@@ -12,7 +13,6 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Issue,
   IssueSchema,
   QuestionSchema,
