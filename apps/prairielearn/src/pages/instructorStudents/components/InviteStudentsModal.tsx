@@ -10,6 +10,8 @@ interface InviteStudentForm {
   uids: string;
 }
 
+const MAX_UIDS = 1000;
+
 export function InviteStudentsModal({
   show,
   onHide,
@@ -32,7 +34,7 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUniqueValuesFromString(value);
+    const uids = parseUniqueValuesFromString(value, MAX_UIDS);
     if (uids.length === 0) {
       return 'At least one UID is required';
     }
@@ -54,7 +56,7 @@ export function InviteStudentsModal({
   });
 
   const onFormSubmit = async (data: InviteStudentForm) => {
-    const uids = parseUniqueValuesFromString(data.uids);
+    const uids = parseUniqueValuesFromString(data.uids, MAX_UIDS);
     saveMutation.mutate(uids);
   };
 
