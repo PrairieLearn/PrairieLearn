@@ -22,11 +22,12 @@ import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
 
+import { DateFromISOString } from '@prairielearn/zod';
+
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import {
   CourseSchema,
-  DateFromISOString,
   QuestionSchema,
   VariantSchema,
   WorkspaceHostSchema,

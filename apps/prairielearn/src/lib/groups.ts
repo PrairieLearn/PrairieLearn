@@ -9,6 +9,8 @@ import { selectCourseById } from '../models/course.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
 import { selectOptionalUserByUid } from '../models/user.js';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
@@ -19,7 +21,6 @@ import {
   GroupRoleSchema,
   GroupSchema,
   type GroupUserRole,
-  IdSchema,
   type User,
   UserSchema,
 } from './db-types.js';

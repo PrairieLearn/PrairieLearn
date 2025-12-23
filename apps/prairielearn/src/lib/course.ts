@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   getCourseCommitHash,
@@ -15,7 +16,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
-import { IdSchema, type User, UserSchema } from './db-types.js';
+import { type User, UserSchema } from './db-types.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

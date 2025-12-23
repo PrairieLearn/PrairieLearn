@@ -1,9 +1,10 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   AssessmentInstanceSchema,
   GroupSchema,
-  IdSchema,
   SprocUsersGetDisplayedRoleSchema,
   UserSchema,
 } from '../../lib/db-types.js';

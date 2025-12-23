@@ -11,10 +11,11 @@ import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   type Course,
   type CourseInstance,
-  IdSchema,
   type Question,
   type Variant,
   VariantSchema,

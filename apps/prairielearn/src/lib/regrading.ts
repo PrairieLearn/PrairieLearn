@@ -8,16 +8,12 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstance } from './assessment.js';
-import {
-  AssessmentInstanceSchema,
-  AssessmentSchema,
-  IdSchema,
-  QuestionSchema,
-} from './db-types.js';
+import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 

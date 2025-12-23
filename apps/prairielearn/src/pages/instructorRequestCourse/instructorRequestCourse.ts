@@ -11,7 +11,7 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';

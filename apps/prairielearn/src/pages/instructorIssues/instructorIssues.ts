@@ -10,7 +10,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 

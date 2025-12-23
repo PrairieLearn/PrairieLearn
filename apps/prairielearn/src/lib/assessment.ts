@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
@@ -14,8 +15,6 @@ import {
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
-  DateFromISOString,
-  IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';

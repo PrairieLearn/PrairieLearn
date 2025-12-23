@@ -11,13 +11,13 @@ import { insertGradingJob, updateGradingJobAfterGrading } from '../models/gradin
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { IdSchema, IntervalSchema } from '@prairielearn/zod';
+
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
   type Course,
-  IdSchema,
   InstanceQuestionSchema,
-  IntervalSchema,
   type Question,
   QuestionSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,

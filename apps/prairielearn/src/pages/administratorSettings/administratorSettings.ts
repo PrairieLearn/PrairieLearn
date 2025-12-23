@@ -9,7 +9,7 @@ import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-gen
 import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';

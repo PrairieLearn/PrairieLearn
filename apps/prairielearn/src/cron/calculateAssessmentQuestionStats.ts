@@ -2,7 +2,7 @@ import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import { updateAssessmentQuestionStatsForAssessment } from '../lib/assessment.js';
-import { IdSchema } from '../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 

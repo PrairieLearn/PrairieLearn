@@ -14,11 +14,12 @@ import {
   updateGradingJobAfterGrading,
 } from '../models/grading-job.js';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { config } from './config.js';
 import {
   CourseSchema,
   GradingJobSchema,
-  IdSchema,
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,

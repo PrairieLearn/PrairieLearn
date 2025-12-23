@@ -7,10 +7,12 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { checkVariantToken } from './checkVariantToken.js';
-import { GradingJobSchema, IdSchema } from './db-types.js';
+import { GradingJobSchema } from './db-types.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
 

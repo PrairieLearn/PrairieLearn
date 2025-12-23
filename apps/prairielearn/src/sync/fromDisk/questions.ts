@@ -3,7 +3,7 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import {
   type QuestionJson,
   defaultExternalGradingOptions,

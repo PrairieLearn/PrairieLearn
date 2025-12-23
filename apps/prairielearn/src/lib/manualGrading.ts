@@ -12,11 +12,12 @@ import { run } from '@prairielearn/run';
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import {
   type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
-  IdSchema,
   RubricItemSchema,
   RubricSchema,
   SprocAssessmentInstancesGradeSchema,

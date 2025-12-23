@@ -9,7 +9,7 @@ import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgre
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 

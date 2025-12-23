@@ -16,12 +16,13 @@ import {
 } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import type { JobSequenceResultsData } from '../components/JobSequenceResults.js';
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 

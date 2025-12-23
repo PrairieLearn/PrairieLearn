@@ -23,6 +23,8 @@ import {
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import { config } from './config.js';
 import {
@@ -40,7 +42,6 @@ import {
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
-  IdSchema,
   type InstanceQuestion,
   type Question,
   type Submission,

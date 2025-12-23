@@ -7,7 +7,7 @@ import {
   type StaffInstanceQuestionGroup,
   StaffInstanceQuestionSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { IdSchema } from '../../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = z.object({

@@ -20,11 +20,11 @@ import {
   selectInstanceQuestionGroups,
   updateManualInstanceQuestionGroup,
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
+
 import {
   AiGradingJobSchema,
-  DateFromISOString,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
