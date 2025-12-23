@@ -117,7 +117,7 @@ WITH
       -- We use a subquery to find assessment instances by either user_id or
       -- team_id. We use to do this with AND (ai.user_id = $user_id OR
       -- ai.team_id = gu.team_id) but this was triggering a bad query plan for
-      -- some course instances. Having separate SELECTs for user_id and group_id
+      -- some course instances. Having separate SELECTs for user_id and team_id
       -- allows the query planner to utilize the two separate indexes we have
       -- for user_id and team_id.
       LEFT JOIN LATERAL (
