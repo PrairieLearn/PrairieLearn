@@ -46,12 +46,14 @@ type CreateServerJobOptions =
       courseId?: string;
       courseInstanceId?: undefined;
       assessmentId?: undefined;
+      assessmentQuestionId?: undefined;
     })
   | (CreateServerJobOptionsBase & {
       /** Required when courseInstanceId is provided. */
       courseId: string;
       courseInstanceId: string;
       assessmentId?: undefined;
+      assessmentQuestionId?: undefined;
     })
   | (CreateServerJobOptionsBase & {
       /** Required when assessmentId is provided. */
@@ -59,7 +61,17 @@ type CreateServerJobOptions =
       /** Required when assessmentId is provided. */
       courseInstanceId: string;
       assessmentId: string;
-    });
+      assessmentQuestionId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when assessmentQuestionId is provided. */
+      courseId: string;
+      /** Required when assessmentQuestionId is provided. */
+      courseInstanceId: string;
+      /** Required when assessmentQuestionId is provided. */
+      assessmentId: string;
+      assessmentQuestionId: string;
+  })
 
 interface ServerJobExecOptions {
   cwd: string;
@@ -321,6 +333,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
         course_instance_id: options.courseInstanceId,
         course_request_id: options.courseRequestId,
         assessment_id: options.assessmentId,
+        assessment_question_id: options.assessmentQuestionId,
         user_id: options.userId,
         authn_user_id: options.authnUserId,
         type: options.type,

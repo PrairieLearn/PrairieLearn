@@ -45,10 +45,12 @@ import {
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
+import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
+import type { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 2;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
 
 /**
  * Grade instance questions using AI.
@@ -147,18 +149,50 @@ export async function aiGrade({
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
+    assessmentQuestionId: assessment_question.id,
+  });
+
+  const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: assessment_question.id,
+  });
+
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+
+  const instance_questions = all_instance_questions.filter((instance_question) => {
+    switch (mode) {
+      case 'human_graded':
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        return instanceQuestionGradingJobs[instance_question.id]?.some(
+          (job) => job.grading_method === 'Manual',
+        );
+      case 'all':
+        return true;
+      case 'selected':
+        return instance_question_ids?.includes(instance_question.id);
+      default:
+        assertNever(mode);
+    }
+  });
+
+  let item_statuses = instance_questions.reduce((acc, instance_question) => {
+    acc[instance_question.id] = 'pending';
+    return acc;
+  }, {} as {
+    [key: string]: JobItemStatus
+  });
+
+  await emitServerJobProgressUpdate({
+    job_sequence_id: serverJob.jobSequenceId,
+    valid: true,
+    num_complete: 0,
+    num_total: instance_questions.length,
+    item_statuses
   });
 
   serverJob.executeInBackground(async (job) => {
-    // wait 1 hour. TODO: Remove this. added this to test the progress indicator w/o burning tokens.
-    await new Promise((resolve) => setTimeout(resolve, 3600 * (1000)));
-    
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
-    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
-      assessment_question_id: assessment_question.id,
-    });
 
     job.info(`Using model ${model_id} for AI grading.`);
 
@@ -194,23 +228,6 @@ export async function aiGrade({
       job.info(`Skip embedding generation; RAG is not supported for model provider ${provider}.`);
     }
 
-    const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
-
-    const instance_questions = all_instance_questions.filter((instance_question) => {
-      switch (mode) {
-        case 'human_graded':
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          return instanceQuestionGradingJobs[instance_question.id]?.some(
-            (job) => job.grading_method === 'Manual',
-          );
-        case 'all':
-          return true;
-        case 'selected':
-          return instance_question_ids?.includes(instance_question.id);
-        default:
-          assertNever(mode);
-      }
-    });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
     /**
@@ -577,6 +594,8 @@ export async function aiGrade({
       return true;
     };
 
+    let num_complete = 0;
+
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
       instance_questions,
@@ -600,11 +619,30 @@ export async function aiGrade({
         };
 
         try {
-          return await gradeInstanceQuestion(instance_question, logger);
+          item_statuses[instance_question.id] = 'in_progress';
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            valid: true,
+            num_complete,
+            num_total: instance_questions.length,
+            item_statuses
+          });
+          const result = await gradeInstanceQuestion(instance_question, logger);
+          item_statuses[instance_question.id] = result ? 'complete' : 'failed';
+          return result;
         } catch (err: any) {
           logger.error(err);
+          item_statuses[instance_question.id] = 'failed';
           return false;
         } finally {
+          num_complete += 1;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            valid: true,
+            num_complete,
+            num_total: instance_questions.length,
+            item_statuses
+          });
           for (const log of logs) {
             switch (log.messageType) {
               case 'info':

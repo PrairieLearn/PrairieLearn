@@ -64,6 +64,7 @@ import * as externalGrader from './lib/externalGrader.js';
 import * as externalGraderResults from './lib/externalGraderResults.js';
 import * as externalGradingSocket from './lib/externalGradingSocket.js';
 import * as externalImageCaptureSocket from './lib/externalImageCaptureSocket.js';
+import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { features } from './lib/features/index.js';
 import { featuresMiddleware } from './lib/features/middleware.js';
 import { isEnterprise } from './lib/license.js';
@@ -2564,6 +2565,7 @@ if (shouldStartServer) {
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
+    serverJobProgressSocket.init();
 
     workspace.init();
     serverJobs.init();

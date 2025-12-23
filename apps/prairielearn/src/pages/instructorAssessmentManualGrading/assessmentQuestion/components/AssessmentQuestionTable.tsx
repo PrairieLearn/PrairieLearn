@@ -53,7 +53,7 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
-import { ServerJobProgressBar, useJobSequenceProgress } from '../../../../components/ServerJobProgressBar.js';
+import { ServerJobProgressBars, useJobSequenceProgress } from '../../../../components/ServerJobProgressBars.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
@@ -357,6 +357,7 @@ export function AssessmentQuestionTable({
       points: setTotalPointsFilter,
       score_perc: setScoreFilter,
       rubric_grading_item_ids: setRubricItemsFilter,
+      ai_grading_status: undefined,
       uid: undefined,
       user_or_group_name: undefined,
       select: undefined,
@@ -387,12 +388,23 @@ export function AssessmentQuestionTable({
     [columnFilters, columnFilterSetters],
   );
 
+  const jobSequenceProgress = useJobSequenceProgress(ongoingJobSequenceIds);
+
+  // Refetch instance questions whenever job progress updates
+  useEffect(() => {
+    void queryClientInstance.invalidateQueries({
+      queryKey: ['instance-questions'],
+    });
+  }, [jobSequenceProgress.jobsProgress, queryClientInstance]);
+
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
       createColumns({
         aiGradingMode,
         instanceQuestionGroups,
+        displayedStatuses: jobSequenceProgress.displayedStatuses,
         assessment,
         assessmentQuestion,
         hasCourseInstancePermissionEdit,
@@ -413,6 +425,7 @@ export function AssessmentQuestionTable({
     [
       aiGradingMode,
       instanceQuestionGroups,
+      jobSequenceProgress.displayedStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -438,7 +451,8 @@ export function AssessmentQuestionTable({
           return [col.id, false];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-        if (['requires_manual_grading', 'assigned_grader_name', 'score_perc'].includes(col.id!)) {
+
+        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
           return [col.id, !aiGradingMode];
         }
         if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
@@ -474,8 +488,9 @@ export function AssessmentQuestionTable({
   useEffect(() => {
     void setColumnVisibility((prev) => ({
       ...prev,
+      // Always show grading status
+      requires_manual_grading: true,
       // Hide these columns in AI grading mode
-      requires_manual_grading: !aiGradingMode,
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
       // Show these columns in AI grading mode
@@ -488,6 +503,7 @@ export function AssessmentQuestionTable({
     data: instanceQuestionsInfo,
     columns,
     columnResizeMode: 'onChange',
+
     getRowId: (row) => row.instance_question.id,
     state: {
       sorting,
@@ -605,8 +621,6 @@ export function AssessmentQuestionTable({
     allAiAgreementItems,
   });
 
-  const jobSequenceProgress = useJobSequenceProgress(ongoingJobSequenceIds);
-
   return (
     <>
       <div class="mb-3">
@@ -624,12 +638,14 @@ export function AssessmentQuestionTable({
         />
       </div>
       <div class="mb-3">
-        <ServerJobProgressBar
-          text="AI grading in progress"
-          icon="bi-stars"
-          numCompleted={jobSequenceProgress.numCompleted}
-          numTotal={jobSequenceProgress.numTotal}
-          itemNames='submissions graded'
+        <ServerJobProgressBars
+          inProgressText="AI grading in progress"
+          inProgressIcon="bi-stars"
+          completeText="AI grading complete"
+          completeIcon="bi-check-circle-fill"
+          itemNames="submissions graded"
+          jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
+          onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
         />
       </div>
       {batchActionMutation.isError && (

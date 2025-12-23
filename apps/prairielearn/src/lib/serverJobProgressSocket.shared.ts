@@ -4,11 +4,19 @@ export interface StatusMessage {
     job_sequence_id: string;
 }
 
+export const JobItemStatusEnum = z.enum(['pending', 'in_progress', 'complete', 'failed']);
+
+export type JobItemStatus = z.infer<typeof JobItemStatusEnum>;
+
 export const StatusMessageWithProgressSchema = z.object({
     job_sequence_id: z.string(),
+    /** 
+     * True if the progress data was found in the cache, false otherwise.
+     **/
+    valid: z.boolean(),
     num_complete: z.number().int().nonnegative(),
     num_total: z.number().int().nonnegative(),
-    item_statuses: z.record(z.string(), z.enum(['pending', 'in_progress', 'complete', 'failed'])).optional()
+    item_statuses: z.record(z.string(), JobItemStatusEnum).optional()
 })
 
 export type StatusMessageWithProgress = z.infer<typeof StatusMessageWithProgressSchema>;

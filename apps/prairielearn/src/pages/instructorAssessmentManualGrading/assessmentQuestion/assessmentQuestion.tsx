@@ -43,6 +43,7 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
+import { JobSequenceSchema } from '../../../lib/db-types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -91,13 +92,17 @@ router.get(
       res.locals.assessment_question,
     );
   
-    const ongoingJobSequenceIds = await queryRows(
-      sql.select_ongoing_job_sequence_ids_for_assessment_question,
+    const ongoingJobSequences = await queryRows(
+      sql.select_ai_grading_job_sequences_for_assessment_question,
       {
         assessment_question_id: res.locals.assessment_question.id,
       },
-      z.string()
+      JobSequenceSchema,
     )
+
+    console.log('ongoingJobSequences',ongoingJobSequences);
+
+    const ongoingJobSequenceIds = ongoingJobSequences.map(js => js.id);
 
     console.log('ongoingJobSequenceIds', ongoingJobSequenceIds);
 

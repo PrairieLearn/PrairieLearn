@@ -33,18 +33,18 @@ export function connection(socket: Socket) {
             return callback(null);
         }
 
-        // TODO (MAJOR SECURITY VULNERABILITY): Validate the job sequence token here.
+        // TODO (MAJOR SECURITY VULNERABILITY): Validate the job sequence token here
+        console.log('msg', msg);
 
         void socket.join(`server-job-${msg.job_sequence_id}`);
 
         const serverJobProgressCache = await getServerJobProgressCache();
         const progress = await serverJobProgressCache.get(`server-job-progress-${msg.job_sequence_id}`);
 
-        console.log('progress', progress);
-
         if (!progress) {
             return callback({
                 job_sequence_id: msg.job_sequence_id,
+                valid: false,
                 num_complete: 0,
                 num_total: 0,
             } satisfies StatusMessageWithProgress);
@@ -58,6 +58,7 @@ export function connection(socket: Socket) {
 
         callback({
             job_sequence_id: msg.job_sequence_id,
+            valid: true,
             num_complete: progressData.num_complete,
             num_total: progressData.num_total,
             item_statuses: progressData.item_statuses
@@ -67,6 +68,9 @@ export function connection(socket: Socket) {
 
 // Emit progress updates to clients
 export function emitServerJobProgressUpdate(progress: StatusMessageWithProgress) {
+
+    console.log('Emitting server job progress update', progress);
+
     namespace
         .to(`server-job-${progress.job_sequence_id}`)
         .emit('serverJobProgressUpdate', progress);        
