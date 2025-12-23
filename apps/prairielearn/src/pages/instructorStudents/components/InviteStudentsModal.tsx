@@ -6,7 +6,7 @@ import { z } from 'zod';
 
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
-import { parseUniqueValuesFromString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 
 interface InviteStudentForm {
   uids: string;
@@ -36,7 +36,13 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUniqueValuesFromString(value);
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'An error occurred';
+    }
+
     if (uids.length === 0) {
       return 'At least one UID is required';
     }

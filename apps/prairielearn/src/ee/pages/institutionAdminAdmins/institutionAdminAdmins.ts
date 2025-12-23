@@ -4,8 +4,8 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import {
@@ -62,7 +62,7 @@ router.post(
     });
 
     if (req.body.__action === 'addAdmins') {
-      const uids = UniqueUidsFromStringSchema(MAX_UIDS).parse(req.body.uids);
+      const uids = parseUniqueValuesFromString(req.body.uids, MAX_UIDS);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {

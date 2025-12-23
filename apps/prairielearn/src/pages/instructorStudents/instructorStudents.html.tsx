@@ -12,6 +12,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
+import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
 import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
@@ -155,6 +156,7 @@ interface StudentsCardProps {
   enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
+  selfEnrollLink: string;
 }
 
 type ColumnId =
@@ -172,6 +174,7 @@ function StudentsCard({
   students: initialStudents,
   timezone,
   csrfToken,
+  selfEnrollLink,
 }: StudentsCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -245,13 +248,7 @@ function StudentsCard({
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
   const handleCopyEnrollLink = async () => {
-    const selfEnrollmentLink = courseInstance.self_enrollment_use_enrollment_code
-      ? getSelfEnrollmentLinkUrl({
-          courseInstanceId: courseInstance.id,
-          enrollmentCode: courseInstance.enrollment_code,
-        })
-      : getStudentCourseInstanceUrl(courseInstance.id);
-    await copyToClipboard(`${window.location.origin}${selfEnrollmentLink}`);
+    await copyToClipboard(selfEnrollLink);
     setCopiedEnrollLink(true);
     setTimeout(() => setCopiedEnrollLink(false), 2000);
   };
@@ -473,15 +470,13 @@ function StudentsCard({
                 <div class="text-center">
                   <h5 class="mb-2">No students enrolled</h5>
                   <p class="text-muted mb-0">
-                    This course doesn't have any students yet. Invite students to join or share the
-                    enrollment link to get started.
+                    This course doesn't have any students yet.
+                    {courseInstance.self_enrollment_enabled
+                      ? 'Share the enrollment link or invite them to get started.'
+                      : 'Invite them to get started.'}
                   </p>
                 </div>
                 <div class="d-flex gap-2">
-                  <Button variant="dark" onClick={() => setShowInvite(true)}>
-                    <i class="bi bi-person-plus me-2" aria-hidden="true" />
-                    Invite students
-                  </Button>
                   {courseInstance.self_enrollment_enabled && (
                     <OverlayTrigger
                       placement="top"
@@ -491,24 +486,24 @@ function StudentsCard({
                       }}
                       show={copiedEnrollLink}
                     >
-                      <Button variant="outline-dark" onClick={handleCopyEnrollLink}>
+                      <Button variant="primary" onClick={handleCopyEnrollLink}>
                         <i class="bi bi-link-45deg me-2" aria-hidden="true" />
                         Copy enrollment link
                       </Button>
                     </OverlayTrigger>
                   )}
+                  <Button
+                    variant={clsx(
+                      courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary',
+                    )}
+                    onClick={() => setShowInvite(true)}
+                  >
+                    <i class="bi bi-person-plus me-2" aria-hidden="true" />
+                    Invite students
+                  </Button>
                 </div>
                 {courseInstance.self_enrollment_enabled && (
-                  <code class="bg-light text-muted px-3 py-2 rounded">
-                    {`${window.location.origin}${
-                      courseInstance.self_enrollment_use_enrollment_code
-                        ? getSelfEnrollmentLinkUrl({
-                            courseInstanceId: courseInstance.id,
-                            enrollmentCode: courseInstance.enrollment_code,
-                          })
-                        : getStudentCourseInstanceUrl(courseInstance.id)
-                    }`}
-                  </code>
+                  <code class="bg-light text-muted px-3 py-2 rounded">{selfEnrollLink}</code>
                 )}
               </div>
             </TanstackTableEmptyState>
@@ -536,6 +531,7 @@ function StudentsCard({
 
 export const InstructorStudents = ({
   authzData,
+  selfEnrollLink,
   search,
   students,
   timezone,
@@ -546,6 +542,7 @@ export const InstructorStudents = ({
   isDevMode,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
+  selfEnrollLink: string;
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
@@ -556,6 +553,7 @@ export const InstructorStudents = ({
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <StudentsCard
           authzData={authzData}
+          selfEnrollLink={selfEnrollLink}
           course={course}
           courseInstance={courseInstance}
           enrollmentManagementEnabled={enrollmentManagementEnabled}

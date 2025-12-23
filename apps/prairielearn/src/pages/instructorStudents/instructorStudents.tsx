@@ -11,11 +11,12 @@ import { InsufficientCoursePermissionsCardPage } from '../../components/Insuffic
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
-import { getUrl } from '../../lib/url.js';
+import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -246,6 +247,17 @@ router.get(
       StudentRowSchema,
     );
 
+    const host = getCanonicalHost(req);
+    const selfEnrollLink = new URL(
+      courseInstance.self_enrollment_use_enrollment_code
+        ? getSelfEnrollmentLinkUrl({
+            courseInstanceId: courseInstance.id,
+            enrollmentCode: courseInstance.enrollment_code,
+          })
+        : getStudentCourseInstanceUrl(courseInstance.id),
+      host,
+    ).href;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -271,6 +283,7 @@ router.get(
               courseInstance={courseInstance}
               course={course}
               csrfToken={csrfToken}
+              selfEnrollLink={selfEnrollLink}
             />
           </Hydrate>
         ),

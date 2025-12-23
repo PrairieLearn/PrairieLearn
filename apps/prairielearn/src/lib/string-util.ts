@@ -1,3 +1,6 @@
+/**
+ * Utility functions for working with / parsing strings in various ways.
+ */
 import { HttpStatusError } from '@prairielearn/error';
 
 /**

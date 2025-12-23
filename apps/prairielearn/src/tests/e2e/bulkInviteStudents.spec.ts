@@ -161,7 +161,7 @@ test.describe('Bulk invite students', () => {
       'fresh_student@test.com: Invited',
       `${ENROLLED_STUDENT.uid}: Skipped (already enrolled)`,
       'Successfully invited: 1',
-      'Already enrolled (skipped): 1',
+      'Skipped (already enrolled): 1',
     ]);
   });
 
@@ -175,6 +175,8 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    await expect(page.getByText('invalid', { exact: false })).toBeVisible();
+    await expect(
+      page.getByText('The following UIDs were invalid: "not-an-email"', { exact: true }),
+    ).toBeVisible();
   });
 });
