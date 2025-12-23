@@ -28,7 +28,7 @@ import type { LanguageModelUsage } from 'ai';
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { calculateResponseCost } from '../lib/ai.js';
-import type { config } from '../lib/config.js';
+import type { Config, config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -111,7 +111,7 @@ export async function updateCourseInstanceUsagesForAiGrading({
 }: {
   gradingJobId: string;
   authnUserId: string;
-  model: keyof (typeof config)['costPerMillionTokens'];
+  model: keyof Config['costPerMillionTokens'];
   usage: LanguageModelUsage | undefined;
 }) {
   await execute(sql.update_course_instance_usages_for_ai_grading, {
