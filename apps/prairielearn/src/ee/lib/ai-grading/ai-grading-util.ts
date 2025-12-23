@@ -83,6 +83,7 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
+  grader_guidelines,
   model_id,
 }: {
   questionPrompt: string;
@@ -91,6 +92,7 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
+  grader_guidelines: string | null;
   model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
@@ -98,6 +100,19 @@ export async function generatePrompt({
   const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
     ? 'system'
     : 'user';
+
+  const graderGuidelinesMessages = grader_guidelines
+    ? ([
+        {
+          role: systemRoleAfterUserMessage,
+          content: 'The instructor has provided the following grader guidelines:',
+        },
+        {
+          role: 'user',
+          content: grader_guidelines,
+        },
+      ] satisfies ModelMessage[])
+    : [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -113,8 +128,12 @@ export async function generatePrompt({
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
-          'Here are the rubric items:',
         ]),
+      },
+      ...graderGuidelinesMessages,
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'Here are the rubric items:',
       },
       {
         role: 'user',
@@ -133,16 +152,19 @@ export async function generatePrompt({
       },
     );
   } else {
-    input.push({
-      role: 'system',
-      content: formatPrompt([
-        "You are an instructor for a course, and you are grading a student's response to a question.",
-        'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
-        "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
-        'You must include an explanation on why you made these choices.',
-        'Follow any special instructions given by the instructor in the question.',
-      ]),
-    });
+    input.push(
+      {
+        role: 'system',
+        content: formatPrompt([
+          "You are an instructor for a course, and you are grading a student's response to a question.",
+          'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
+          "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
+          'You must include an explanation on why you made these choices.',
+          'Follow any special instructions given by the instructor in the question.',
+        ]),
+      },
+      ...graderGuidelinesMessages,
+    );
   }
 
   input.push(
@@ -527,16 +549,6 @@ export async function selectClosestSubmissionInfo({
       limit,
     },
     GradedExampleSchema,
-  );
-}
-
-export async function selectRubricForGrading(
-  assessment_question_id: string,
-): Promise<RubricItem[]> {
-  return await queryRows(
-    sql.select_rubric_for_grading,
-    { assessment_question_id },
-    RubricItemSchema,
   );
 }
 
