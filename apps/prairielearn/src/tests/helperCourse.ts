@@ -23,5 +23,5 @@ export async function updateCourseRepo({
   courseId: string;
   repository: string;
 }) {
-  await execute(sql.update_course_repo, { course_id: courseId, repository });
+  await execute(sql.update_course_repo, { courseId, repository });
 }
