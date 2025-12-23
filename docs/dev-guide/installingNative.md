@@ -39,14 +39,6 @@ Most of these prerequisites can be installed using the package manager of your O
     > sudo service postgresql start
     > ```
 
-    Python 3.10 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
-
-    ```sh
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    sudo apt update
-    sudo apt install python3.10 python3.10-dev
-    ```
-
     Install `uv`:
 
     ```sh
@@ -94,7 +86,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.10
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -113,10 +105,6 @@ Most of these prerequisites can be installed using the package manager of your O
     corepack enable
     ```
 
-    !!! bug
-
-        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
-
 - Clone the latest code:
 
   ```sh
@@ -126,19 +114,10 @@ Most of these prerequisites can be installed using the package manager of your O
 
 - Set up a Python virtual environment in the root of the cloned repository:
 
-  === "uv"
-
-        ```sh
-        uv venv --python-preference only-system --python 3.10 --seed
-        source .venv/bin/activate
-        ```
-
-  === "Native"
-
-        ```sh
-        python3.10 -m venv .venv
-        source .venv/bin/activate
-        ```
+  ```sh
+  uv venv --python-preference managed --python 3.10 --seed .venv
+  source .venv/bin/activate
+  ```
 
   You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
 
