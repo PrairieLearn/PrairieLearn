@@ -188,8 +188,8 @@ router.post(
           long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
-          self_enrollment_enabled: z.boolean().optional(),
-          self_enrollment_use_enrollment_code: z.boolean().optional(),
+          self_enrollment_enabled: z.boolean(),
+          self_enrollment_use_enrollment_code: z.boolean(),
         })
         .parse(req.body);
 

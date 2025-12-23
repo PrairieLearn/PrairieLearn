@@ -190,6 +190,7 @@ export function CreateCourseInstanceModal({
               originalStartDate={null}
               originalEndDate={null}
               showButtons={false}
+              formId="create-course-instance"
             />
 
             {enrollmentManagementEnabled && (
@@ -201,7 +202,7 @@ export function CreateCourseInstanceModal({
                   Configure self-enrollment for your new course instance. This can be changed later.
                 </p>
 
-                <CourseInstanceSelfEnrollmentForm />
+                <CourseInstanceSelfEnrollmentForm formId="create-course-instance" />
               </>
             )}
           </Modal.Body>

@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
 import { propertyValueWithDefault } from '../../lib/editors.js';
@@ -39,10 +40,8 @@ router.post(
         end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
         course_instance_id: z.string(),
         // HTML form checkboxes send "on" when checked and are absent (undefined) when unchecked
-        self_enrollment_enabled: z.preprocess((val) => val === 'on', z.boolean()).optional(),
-        self_enrollment_use_enrollment_code: z
-          .preprocess((val) => val === 'on', z.boolean())
-          .optional(),
+        self_enrollment_enabled: BooleanFromCheckboxSchema,
+        self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
       })
       .parse(req.body);
 

@@ -246,9 +246,7 @@ export function ExtensionModifyModal({
                 },
               })}
             />
-            {errors.end_date && (
-              <div class="form-text text-danger">{String(errors.end_date.message)}</div>
-            )}
+            {errors.end_date && <div class="form-text text-danger">{errors.end_date.message}</div>}
             <small class="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
           {saveMutation.isError && (

@@ -199,6 +199,7 @@ export function CopyCourseInstanceModal({
               originalStartDate={null}
               originalEndDate={null}
               showButtons={false}
+              formId="copy-course-instance"
             />
 
             {enrollmentManagementEnabled && (
@@ -210,7 +211,7 @@ export function CopyCourseInstanceModal({
                   Configure self-enrollment for your new course instance. This can be changed later.
                 </p>
 
-                <CourseInstanceSelfEnrollmentForm />
+                <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
               </>
             )}
           </Modal.Body>

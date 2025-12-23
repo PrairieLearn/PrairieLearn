@@ -948,13 +948,23 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    const fileContents = await fs.readJson(
+      path.join(courseInstancePath, 'infoCourseInstance.json'),
+    );
 
-    // Clear access rules to avoid leaking student PII or unexpectedly
-    // making the copied course instance available to users.
-    // Note: this means that copied course instances will be switched to the modern publishing
-    // system.
-    infoJson.allowAccess = undefined;
+    const infoJson = {
+      ...fileContents,
+      longName,
+      uuid: this.uuid,
+      // We do not want to preserve sharing settings when copying a course instance
+      shareSourcePublicly: undefined,
+      // Clear access rules to avoid leaking student PII or unexpectedly
+      // making the copied course instance available to users.
+      // Note: this means that copied course instances will be switched to the modern publishing
+      // system.
+      allowAccess: undefined,
+      ...this.metadataOverrides,
+    };
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1047,17 +1057,6 @@ export class CourseInstanceCopyEditor extends Editor {
         questionsToLink,
         newQids,
       );
-    }
-
-    debug('Write infoCourseInstance.json with new longName and uuid');
-    infoJson.longName = longName;
-    infoJson.uuid = this.uuid;
-
-    // We do not want to preserve sharing settings when copying a course instance
-    delete infoJson.shareSourcePublicly;
-
-    if (this.metadataOverrides) {
-      infoJson = { ...infoJson, ...this.metadataOverrides };
     }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));

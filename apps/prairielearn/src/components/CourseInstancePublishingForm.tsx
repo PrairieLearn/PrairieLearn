@@ -38,6 +38,7 @@ export interface PublishingFormValues {
  * @param params.originalStartDate - The original start date of the course instance.
  * @param params.originalEndDate - The original end date of the course instance.
  * @param params.showButtons - Whether to show the buttons to save and cancel.
+ * @param params.formId - An unique ID for the form on the page.
  */
 export function CourseInstancePublishingForm({
   displayTimezone,
@@ -45,12 +46,14 @@ export function CourseInstancePublishingForm({
   originalStartDate,
   originalEndDate,
   showButtons = true,
+  formId,
 }: {
   displayTimezone: string;
   canEdit: boolean;
   originalStartDate: Date | null;
   originalEndDate: Date | null;
   showButtons?: boolean;
+  formId: string;
 }) {
   const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
@@ -220,7 +223,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-unpublished-reusable"
+              id={`${formId}-status-unpublished`}
               value="unpublished"
               checked={selectedStatus === 'unpublished'}
               disabled={!canEdit}
@@ -230,7 +233,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-unpublished-reusable">
+            <label class="form-check-label" for={`${formId}-status-unpublished`}>
               Unpublished
             </label>
           </div>
@@ -271,7 +274,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-publish-scheduled-reusable"
+              id={`${formId}-status-publish-scheduled`}
               value="publish_scheduled"
               checked={selectedStatus === 'publish_scheduled'}
               disabled={!canEdit}
@@ -281,7 +284,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-publish-scheduled-reusable">
+            <label class="form-check-label" for={`${formId}-status-publish-scheduled`}>
               Scheduled to be published
             </label>
           </div>
@@ -310,7 +313,7 @@ export function CourseInstancePublishingForm({
               <div class="ms-4 mt-2">
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="start-date-reusable">
+                    <label class="form-label mb-0" for={`${formId}-start-date`}>
                       Start date
                     </label>
                     {canEdit && (
@@ -328,12 +331,12 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.start_date && 'is-invalid')}
-                      id="start-date-reusable"
+                      id={`${formId}-start-date`}
                       step="1"
                       disabled={!canEdit}
                       aria-invalid={!!errors.start_date}
                       aria-errormessage={
-                        errors.start_date ? 'start-date-reusable-error' : undefined
+                        errors.start_date ? `${formId}-start-date-error` : undefined
                       }
                       {...register('start_date', {
                         validate: validateStartDate,
@@ -344,7 +347,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
-                    <div class="form-text text-danger" id="start-date-reusable-error">
+                    <div class="form-text text-danger" id={`${formId}-start-date-error`}>
                       {errors.start_date.message}
                     </div>
                   )}
@@ -352,7 +355,7 @@ export function CourseInstancePublishingForm({
 
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end-date-reusable">
+                    <label class="form-label mb-0" for={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -370,11 +373,11 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end-date-reusable"
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
                       aria-invalid={!!errors.end_date}
-                      aria-errormessage={errors.end_date ? 'end-date-reusable-error' : undefined}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -383,7 +386,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="form-text text-danger" id="end-date-reusable-error">
+                    <div class="form-text text-danger" id={`${formId}-end-date-error`}>
                       {errors.end_date.message}
                     </div>
                   )}
@@ -400,7 +403,7 @@ export function CourseInstancePublishingForm({
               class="form-check-input"
               type="radio"
               name="status"
-              id="status-published-reusable"
+              id={`${formId}-status-published`}
               value="published"
               checked={selectedStatus === 'published'}
               disabled={!canEdit}
@@ -410,7 +413,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-published-reusable">
+            <label class="form-check-label" for={`${formId}-status-published`}>
               Published
             </label>
           </div>
@@ -444,7 +447,7 @@ export function CourseInstancePublishingForm({
               <div class="ms-4 mt-2">
                 <div class="mb-3">
                   <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end-date-reusable">
+                    <label class="form-label mb-0" for={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -462,11 +465,11 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end-date-reusable"
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
                       aria-invalid={!!errors.end_date}
-                      aria-errormessage={errors.end_date ? 'end-date-reusable-error' : undefined}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -475,7 +478,7 @@ export function CourseInstancePublishingForm({
                     <span class="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="form-text text-danger" id="end-date-reusable-error">
+                    <div class="form-text text-danger" id={`${formId}-end-date-error`}>
                       {errors.end_date.message}
                     </div>
                   )}
