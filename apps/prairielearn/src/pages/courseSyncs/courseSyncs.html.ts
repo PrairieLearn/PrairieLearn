@@ -3,17 +3,13 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { JobStatus } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
-import {
-  type Course,
-  IdSchema,
-  JobSequenceSchema,
-  QuestionSchema,
-  UserSchema,
-} from '../../lib/db-types.js';
+import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -37,7 +33,7 @@ export function CourseSyncs({
   images,
   jobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
 }) {

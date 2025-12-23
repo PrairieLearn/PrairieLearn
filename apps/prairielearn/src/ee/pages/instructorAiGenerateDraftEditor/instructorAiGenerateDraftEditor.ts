@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -12,7 +13,6 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
   type Course,
-  IdSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';
@@ -22,6 +22,7 @@ import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
@@ -48,7 +49,10 @@ async function saveGeneratedQuestion(
   title?: string,
   qid?: string,
 ): Promise<{ question_id: string; qid: string }> {
-  const files = {};
+  const files: {
+    'question.html'?: string;
+    'server.py'?: string;
+  } = {};
 
   if (htmlFileContents) {
     files['question.html'] = htmlFileContents;
@@ -144,7 +148,7 @@ async function saveRevisedQuestion({
   });
 }
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');

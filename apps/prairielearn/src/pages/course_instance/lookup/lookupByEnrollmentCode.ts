@@ -7,6 +7,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
+import { features } from '../../../lib/features/index.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
@@ -21,26 +22,29 @@ const LookupCodeSchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
     // Parse and validate the code parameter
     const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
 
+    const enrollmentManagementEnabled = await features.enabledFromLocals(
+      'enrollment-management',
+      res.locals,
+    );
+
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
-      enrollment_code: code,
+      enrollmentCode: code,
     });
     if (!courseInstanceId) {
       // User-facing terminology is to use "course" instead of "course instance"
-      res.status(404).json({
-        error: 'No course found with this enrollment code',
-      });
-      return;
+      throw new HttpStatusError(404, 'No course found with this enrollment code');
     }
 
     if (courseInstanceIdToCheck && courseInstanceId !== courseInstanceIdToCheck) {
-      res.status(404).json({
-        error: 'This enrollment code is for a different course',
-      });
-      return;
+      throw new HttpStatusError(404, 'This enrollment code is for a different course');
     }
 
     const { authzData, courseInstance } = await constructCourseOrInstanceContext({
@@ -55,11 +59,8 @@ router.get(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    if (!hasRole(authzData, 'Student')) {
-      res.status(404).json({
-        error: 'Only students can look up course instances',
-      });
-      return;
+    if (!hasRole(authzData, ['Student'])) {
+      throw new HttpStatusError(404, 'Only students can look up course instances');
     }
 
     const authnUser: User = res.locals.authn_user;
@@ -67,18 +68,18 @@ router.get(
     const existingEnrollment = await selectOptionalEnrollmentByUid({
       uid: res.locals.authn_user.uid,
       courseInstance,
-      requestedRole: 'Student',
+      requiredRole: ['Student'],
       authzData,
     });
 
     if (existingEnrollment) {
       if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
-        res.status(403).json({
-          error: 'You are blocked from accessing this course',
-        });
-        return;
-      } else {
-        // If the user had some other prior enrollment state, return the course instance ID.
+        throw new HttpStatusError(403, 'You are blocked from accessing this course');
+      }
+
+      // If the user was invited, joined, or removed, then they have access so we can return the course instance ID.
+      // This means that rejected users will fall through to the self-enrollment checks.
+      if (['invited', 'joined', 'removed'].includes(existingEnrollment.status)) {
         res.json({
           course_instance_id: courseInstance.id,
         });
@@ -88,20 +89,24 @@ router.get(
 
     // Check if self-enrollment is enabled for this course instance
     if (!courseInstance.self_enrollment_enabled) {
-      res.status(403).json({
-        error: 'Self-enrollment is disabled for this course',
-      });
-      return;
+      throw new HttpStatusError(403, 'Self-enrollment is disabled for this course');
     }
 
-    if (courseInstance.self_enrollment_restrict_to_institution) {
+    if (
+      enrollmentManagementEnabled &&
+      courseInstance.self_enrollment_restrict_to_institution &&
+      // The default value for self-enrollment restriction is true.
+      // In the old system (before publishing was introduced), the default was false.
+      // So if publishing is not set up, we should ignore the restriction.
+      courseInstance.modern_publishing
+    ) {
       // Lookup the course
       const course = await selectCourseById(courseInstance.course_id);
       if (course.institution_id !== authnUser.institution_id) {
-        res.status(403).json({
-          error: 'Self-enrollment is restricted to users from the same institution',
-        });
-        return;
+        throw new HttpStatusError(
+          403,
+          'Self-enrollment is restricted to users from the same institution',
+        );
       }
     }
 
@@ -109,10 +114,7 @@ router.get(
       courseInstance.self_enrollment_enabled_before_date &&
       new Date() >= courseInstance.self_enrollment_enabled_before_date
     ) {
-      res.status(403).json({
-        error: 'Self-enrollment is no longer allowed for this course',
-      });
-      return;
+      throw new HttpStatusError(403, 'Self-enrollment is no longer allowed for this course');
     }
 
     // Return the course instance ID

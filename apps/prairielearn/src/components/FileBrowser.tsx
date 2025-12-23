@@ -9,22 +9,16 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
-import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import * as editorUtil from '../lib/editorUtil.js';
 import type { InstructorFilePaths } from '../lib/instructorFiles.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import { PageLayout } from './PageLayout.js';
-import {
-  AssessmentSyncErrorsAndWarnings,
-  CourseInstanceSyncErrorsAndWarnings,
-  CourseSyncErrorsAndWarnings,
-  QuestionSyncErrorsAndWarnings,
-} from './SyncErrorsAndWarnings.js';
 import { SyncProblemButtonHtml } from './SyncProblemButton.js';
 
 interface FileInfo {
@@ -66,6 +60,7 @@ interface DirectoryEntryFile extends DirectoryEntry {
   canDelete: boolean;
   sync_errors: string | null;
   sync_warnings: string | null;
+  uuid: string | null;
 }
 
 interface DirectoryListings {
@@ -115,11 +110,8 @@ export async function browseDirectory({
         const editable = !(await isBinaryFile(filepath));
         const movable = !paths.cannotMove.includes(filepath);
         const relative_path = path.relative(paths.coursePath, filepath);
-        const sync_data = await editorUtil.getErrorsAndWarningsForFilePath(
-          paths.courseId,
-          relative_path,
-        );
-        return {
+        const fileMetadata = await editorUtil.getFileMetadataForPath(paths.courseId, relative_path);
+        const result: DirectoryEntryFile = {
           id: file.index,
           name: file.name,
           isFile: true,
@@ -133,13 +125,15 @@ export async function browseDirectory({
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-          sync_errors: sync_data.errors,
-          sync_warnings: sync_data.warnings,
-        } as DirectoryEntryFile;
+          sync_errors: fileMetadata.syncErrors,
+          sync_warnings: fileMetadata.syncWarnings,
+          uuid: fileMetadata.uuid,
+        };
+        return result;
       } else if (stats.isDirectory()) {
         // The .git directory is hidden in the browser interface.
         if (file.name === '.git') return null;
-        return {
+        const result: DirectoryEntryDirectory = {
           id: file.index,
           name: file.name,
           isFile: false,
@@ -147,15 +141,16 @@ export async function browseDirectory({
           canView: !paths.invalidRootPaths.some((invalidRootPath) =>
             contains(invalidRootPath, filepath),
           ),
-        } as DirectoryEntryDirectory;
+        };
+        return result;
       } else {
         return null;
       }
     },
   );
   return {
-    files: all_files.filter((f) => f?.isFile === true),
-    dirs: all_files.filter((f) => f?.isFile === false),
+    files: all_files.filter((f): f is DirectoryEntryFile => f?.isFile === true),
+    dirs: all_files.filter((f): f is DirectoryEntryDirectory => f?.isFile === false),
   };
 }
 
@@ -235,7 +230,7 @@ export async function createFileBrowser({
   paths,
   isReadOnly,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   paths: InstructorFilePaths;
   isReadOnly: boolean;
 }) {
@@ -270,49 +265,11 @@ export function FileBrowser({
   fileInfo,
   directoryListings,
   isReadOnly,
-}: { resLocals: Record<string, any>; paths: InstructorFilePaths; isReadOnly: boolean } & (
+}: { resLocals: UntypedResLocals; paths: InstructorFilePaths; isReadOnly: boolean } & (
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
-  const syncErrorsAndWarnings =
-    navPage === 'course_admin'
-      ? renderHtml(
-          <CourseSyncErrorsAndWarnings
-            authzData={authz_data}
-            course={course}
-            urlPrefix={urlPrefix}
-          />,
-        )
-      : navPage === 'instance_admin'
-        ? renderHtml(
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={authz_data}
-              courseInstance={resLocals.course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />,
-          )
-        : navPage === 'assessment'
-          ? renderHtml(
-              <AssessmentSyncErrorsAndWarnings
-                authzData={authz_data}
-                assessment={resLocals.assessment}
-                courseInstance={resLocals.course_instance}
-                course={course}
-                urlPrefix={urlPrefix}
-              />,
-            )
-          : navPage === 'question' || navPage === 'public_question'
-            ? renderHtml(
-                <QuestionSyncErrorsAndWarnings
-                  authzData={authz_data}
-                  question={resLocals.question}
-                  course={course}
-                  urlPrefix={urlPrefix}
-                />,
-              )
-            : '';
+  const { navPage, __csrf_token: csrfToken } = resLocals;
   const pageTitle =
     navPage === 'course_admin'
       ? 'Course Files'
@@ -353,7 +310,6 @@ export function FileBrowser({
       </style>
     `,
     content: html`
-      ${syncErrorsAndWarnings}
       <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

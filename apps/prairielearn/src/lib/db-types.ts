@@ -5,9 +5,6 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-// re-export schemas for backwards compatibility
-export { DateFromISOString, IdSchema, IntervalSchema };
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -374,6 +371,7 @@ export const AssessmentInstanceSchema = z.object({
   open: z.boolean().nullable(),
   points: z.number().nullable(),
   score_perc: z.number().nullable(),
+  score_perc_pending: z.number(),
   user_id: IdSchema.nullable(),
 });
 export type AssessmentInstance = z.infer<typeof AssessmentInstanceSchema>;
@@ -734,7 +732,6 @@ export const ExamModeNetworkSchema = z.object({
 });
 export type ExamModeNetwork = z.infer<typeof ExamModeNetworkSchema>;
 
-export const ExamSchema = null;
 export const FeatureGrantSchema = null;
 
 export const FileSchema = z.object({
@@ -1258,11 +1255,11 @@ export const QuestionTagSchema = z.object({
   tag_id: IdSchema,
 });
 export type QuestionTag = z.infer<typeof QuestionTagSchema>;
-export const ReservationSchema = null;
 
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
+  grader_guidelines: z.string().nullable(),
   id: IdSchema,
   max_extra_points: z.number(),
   min_points: z.number(),
@@ -1587,13 +1584,11 @@ export const TableNames = [
   'course_instances',
   'course_permissions',
   'course_requests',
-  'courses',
   'cron_jobs',
   'current_pages',
   'draft_question_metadata',
   'enrollments',
   'exam_mode_networks',
-  'exams',
   'feature_grants',
   'file_edits',
   'file_transfers',
@@ -1635,7 +1630,6 @@ export const TableNames = [
   'question_score_logs',
   'question_tags',
   'questions',
-  'reservations',
   'rubric_grading_items',
   'rubric_gradings',
   'rubric_items',

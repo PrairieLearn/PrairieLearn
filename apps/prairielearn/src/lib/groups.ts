@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
@@ -19,7 +20,6 @@ import {
   GroupRoleSchema,
   GroupSchema,
   type GroupUserRole,
-  IdSchema,
   type User,
   UserSchema,
 } from './db-types.js';
@@ -28,7 +28,7 @@ import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'GroupOperationError';
   }
@@ -40,12 +40,12 @@ const RoleAssignmentSchema = z.object({
   role_name: z.string(),
   group_role_id: z.string(),
 });
-type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
+export type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
 const GroupRoleWithCountSchema = GroupRoleSchema.extend({
   count: z.number(),
 });
-type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
+export type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;
@@ -223,8 +223,8 @@ async function selectUserInCourseInstance({
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
       userId: user.user_id,
-      // The function can be called by a student or instructor
-      requestedRole: 'Any',
+      // The function can be called by the system, a student, or an instructor
+      requiredRole: ['Student', 'Student Data Viewer', 'System'],
       authzData,
     }))
   ) {

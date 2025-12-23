@@ -3,24 +3,23 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { Pager } from '../../components/Pager.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Issue,
   IssueSchema,
   QuestionSchema,
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const PAGE_SIZE = 100;
 
@@ -66,7 +65,7 @@ export function InstructorIssues({
   closedCount,
   chosenPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;
@@ -74,7 +73,7 @@ export function InstructorIssues({
   closedCount: number;
   chosenPage: number;
 }) {
-  const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
+  const { authz_data, __csrf_token, urlPrefix } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
 
   return PageLayout({
@@ -90,13 +89,6 @@ export function InstructorIssues({
     },
     headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={authz_data}
-          course={course}
-          urlPrefix={urlPrefix}
-        />,
-      )}
       ${authz_data.has_course_permission_edit
         ? CloseMatchingIssuesModal({
             openFilteredIssuesCount,

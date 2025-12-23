@@ -7,10 +7,11 @@ import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { truncate } from '@prairielearn/sanitize';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectQuestionByQid } from '../models/question.js';
 import { selectOrInsertUserByUid } from '../models/user.js';
 
@@ -22,7 +23,6 @@ import {
   type Assessment,
   AssessmentQuestionSchema,
   type Group,
-  IdSchema,
   RubricItemSchema,
 } from './db-types.js';
 import { createOrAddToGroup, deleteAllGroups } from './groups.js';
@@ -56,6 +56,7 @@ const BaseSubmissionCsvRowSchema = z.object({
   Feedback: ZodStringToJson,
   'Rubric Grading': ZodStringToJson,
   'Auto points': z.coerce.number().optional(),
+  'Manual points': z.coerce.number().optional(),
 });
 
 const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
@@ -102,23 +103,23 @@ export async function uploadSubmissions(
   const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
+    type: 'upload_submissions',
+    description: 'Upload submissions CSV for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_submissions',
-    description: 'Upload submissions CSV for ' + assessment_label,
   });
 
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: user.user_id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
-      requestedRole: 'System',
+      requiredRole: ['System'],
     });
     return user;
   });
@@ -301,7 +302,7 @@ export async function uploadSubmissions(
           IdSchema,
         );
 
-        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] | null = null;
+        let manual_rubric_data: InstanceQuestionScoreInput['manual_rubric_data'] = null;
 
         if (assessmentQuestion.manual_rubric_id) {
           const rubric_items = await sqldb.queryRows(

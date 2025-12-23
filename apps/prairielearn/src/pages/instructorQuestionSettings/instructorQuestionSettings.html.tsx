@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -16,18 +16,19 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
+  CourseInstanceSchema,
   type Question,
   type Tag,
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
-  short_name: z.string(),
-  long_name: z.string(),
+  short_name: CourseInstanceSchema.shape.short_name,
+  long_name: CourseInstanceSchema.shape.long_name,
   course_instance_id: IdSchema,
   assessments: z.array(
     z.object({
@@ -46,7 +47,7 @@ export const SharingSetRowSchema = z.object({
   name: z.string(),
   in_set: z.boolean(),
 });
-type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
+export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export function InstructorQuestionSettings({
   resLocals,
@@ -65,7 +66,7 @@ export function InstructorQuestionSettings({
   courseTopics,
   courseTags,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
@@ -73,7 +74,7 @@ export function InstructorQuestionSettings({
   qids: string[];
   assessmentsWithQuestion: SelectedAssessments[];
   sharingEnabled: boolean;
-  sharingSetsIn: SharingSetRow[];
+  sharingSetsIn: SharingSetRow[] | undefined;
   editableCourses: CourseWithPermissions[];
   infoPath: string;
   origHash: string;
@@ -115,14 +116,6 @@ export function InstructorQuestionSettings({
       />
     `,
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
@@ -241,7 +234,12 @@ export function InstructorQuestionSettings({
                   ${shouldShowAssessmentsList
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
-                        <td>${AssessmentBadges({ assessmentsWithQuestion, resLocals })}</td>
+                        <td>
+                          ${AssessmentBadges({
+                            assessmentsWithQuestion,
+                            courseInstanceId: resLocals.course_instance.id,
+                          })}
+                        </td>
                       </tr>`
                     : ''}
                 </tbody>
@@ -603,7 +601,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                   <div data-testid="shared-with">
                     ${QuestionSharing({
                       question: resLocals.question,
-                      sharingSetsIn,
+                      sharingSetsIn: sharingSetsIn ?? [],
                     })}
                   </div>
                 </div>
@@ -762,7 +760,10 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
+                    <div class="h6">
+                      ${a_with_q.short_name ?? html`<i>Unknown</i>`}
+                      (${a_with_q.long_name ?? html`<i>Unknown</i>`})
+                    </div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
                         courseInstanceId: a_with_q.course_instance_id,
@@ -870,13 +871,11 @@ function QuestionSharing({
 
 function AssessmentBadges({
   assessmentsWithQuestion,
-  resLocals,
+  courseInstanceId,
 }: {
   assessmentsWithQuestion: SelectedAssessments[];
-  resLocals: Record<string, any>;
+  courseInstanceId: string;
 }) {
-  const courseInstanceId = resLocals.course_instance.id;
-
   const assessmentsInCourseInstance = assessmentsWithQuestion.find((a) =>
     idsEqual(a.course_instance_id, courseInstanceId),
   );

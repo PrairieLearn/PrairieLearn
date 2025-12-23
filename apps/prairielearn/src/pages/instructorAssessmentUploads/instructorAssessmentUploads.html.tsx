@@ -1,14 +1,13 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { JobStatus } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -21,7 +20,7 @@ export function InstructorAssessmentUploads({
   resLocals,
   uploadJobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({
@@ -36,25 +35,23 @@ export function InstructorAssessmentUploads({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
-            ${UploadInstanceQuestionScoresModal({ csrfToken: resLocals.__csrf_token })}
-            ${UploadAssessmentInstanceScoresModal({ csrfToken: resLocals.__csrf_token })}
+            ${UploadInstanceQuestionScoresModal({
+              csrfToken: resLocals.__csrf_token,
+              groupWork: resLocals.assessment.group_work,
+            })}
+            ${UploadAssessmentInstanceScoresModal({
+              csrfToken: resLocals.__csrf_token,
+              groupWork: resLocals.assessment.group_work,
+            })}
             ${config.devMode
               ? UploadSubmissionsCsvModal({ csrfToken: resLocals.__csrf_token })
               : ''}
           `
         : ''}
       ${AssessmentUploadCard({
+        groupWork: resLocals.assessment.group_work,
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
@@ -66,12 +63,14 @@ export function InstructorAssessmentUploads({
 }
 
 function AssessmentUploadCard({
+  groupWork,
   assessmentSetName,
   assessmentNumber,
   authzHasPermissionEdit,
   uploadJobSequences,
   urlPrefix,
 }: {
+  groupWork: boolean;
   assessmentSetName: string;
   assessmentNumber: number;
   authzHasPermissionEdit: boolean;
@@ -108,7 +107,7 @@ function AssessmentUploadCard({
                         </a>
                       </p>
                       <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                        ${CsvHelpInstanceQuestionScores()}
+                        ${CsvHelpInstanceQuestionScores({ groupWork })}
                       </div>
                     </td>
                   </tr>
@@ -131,7 +130,7 @@ function AssessmentUploadCard({
                         </a>
                       </p>
                       <div class="collapse" id="uploadAssessmentScoresHelp">
-                        ${CsvHelpAssessmentInstanceScores()}
+                        ${CsvHelpAssessmentInstanceScores({ groupWork })}
                       </div>
                     </td>
                   </tr>
@@ -208,79 +207,74 @@ function AssessmentUploadCard({
   `;
 }
 
-function CsvHelpInstanceQuestionScores() {
+function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork: boolean }) {
   return html`
     <p>
       Upload a CSV file in the format of the
       <code><i>&lt;assessment&gt;</i>_submissions_for_manual_grading.csv</code>
-      file from the Downloads page. See the
-      <a href="https://prairielearn.readthedocs.io/en/latest/manualGrading/"
-        >Manual Grading documentation</a
-      >.
+      file from the Downloads page. Alternatively, the CSV file can be in the format:
     </p>
-    <p>Alternatively, the CSV file can be in the format:</p>
     <pre class="ms-4">
-uid,instance,qid,score_perc,feedback
-student1@example.com,1,addTwoNumbers,34.5,The second step was wrong
-student2@example.com,1,addTwoNumbers,78.92,
-student2@example.com,1,matrixMultiply,100,Great job!</pre
+${groupWork ? 'group_name' : 'uid'},instance,qid,score_perc,feedback
+${groupWork ? 'group1' : 'student1@example.com'},1,addTwoNumbers,34.5,The second step was wrong
+${groupWork ? 'group2' : 'student2@example.com'},1,addTwoNumbers,78.92,
+${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!</pre
     >
     <p>
-      The <code>instance</code> column indicates which assessment instance to modify. The total
-      scores for the assessments will be automatically recalculated. The feedback will be attached
-      to the most recent student submission. To change the per-question points, replace the
-      <code>score_perc</code> column above with a <code>points</code> column.
-    </p>
-    <p>
-      By default the updates above change the manual portion of the grades for the instance
-      question, in such a way that the sum of the new manual portion with the existing autograding
-      portion matches the total listed in the <code>points</code> or <code>score_perc</code> columns
-      above. It is, however, possible to replace these columns with <code>manual_points</code> and
-      <code>auto_points</code> (or <code>manual_score_perc</code> and <code>auto_score_perc</code>)
-      for more fine-tuned change of grade components.
+      Additional information, including instructions on how to update points instead of percentage
+      or to update the auto/manual portions of the score, can be found in the
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#manual-grading-using-file-uploads"
+        target="_blank"
+        rel="noopener noreferrer"
+        >Manual Grading documentation</a
+      >.
     </p>
   `;
 }
 
-function CsvHelpAssessmentInstanceScores() {
+function CsvHelpAssessmentInstanceScores({ groupWork }: { groupWork: boolean }) {
   return html`
     <p>Upload a CSV file like this:</p>
     <pre class="ms-4">
-uid,instance,score_perc
-student1@example.com,1,63.5
-student2@example.com,1,100</pre
+${groupWork ? 'group_name' : 'uid'},instance,score_perc
+${groupWork ? 'group1' : 'student1@example.com'},1,63.5
+${groupWork ? 'group2' : 'student2@example.com'},1,100</pre
     >
     <p>
       The example above will change the total assessment percentage scores for
-      <code>student1@example.com</code> to 63.5% and for <code>student2@example.com</code> to 100%.
-      The <code>instance</code> column indicates which assessment instance to modify, and should be
-      <code>1</code> if there is only a single instance per student.
+      ${groupWork ? html`group <code>group1</code>` : html`<code>student1@example.com</code>`} to
+      63.5% and for
+      ${groupWork ? html`group <code>group2</code>` : html`<code>student2@example.com</code>`} to
+      100%. The <code>instance</code> column indicates which assessment instance to modify, and
+      should be <code>1</code> if there is only a single instance per
+      ${groupWork ? 'group' : 'student'}.
     </p>
     <p>
       Alternatively, the total assessment points can be changed with a CSV containing a
       <code>points</code> column, like:
     </p>
     <pre class="ms-4">
-uid,instance,points
-student1@example.com,1,120
-student2@example.com,1,130.27</pre
-    >
-    <p>For assessments using group work, use the <code>group_name</code> column instead:</p>
-    <pre class="ms-4">
-group_name,instance,score_perc
-myhappygroup,1,95
-greatgroup,1,85</pre
+${groupWork ? 'group_name' : 'uid'},instance,points
+${groupWork ? 'group1' : 'student1@example.com'},1,120
+${groupWork ? 'group2' : 'student2@example.com'},1,130.27</pre
     >
   `;
 }
 
-function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string }) {
+function UploadInstanceQuestionScoresModal({
+  csrfToken,
+  groupWork,
+}: {
+  csrfToken: string;
+  groupWork: boolean;
+}) {
   return Modal({
     id: 'upload-instance-question-scores-form',
     title: 'Upload new question scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${CsvHelpInstanceQuestionScores()}
+      ${CsvHelpInstanceQuestionScores({ groupWork })}
       <div class="mb-3">
         <label class="form-label" for="uploadInstanceQuestionScoresFileInput">
           Choose CSV file
@@ -302,13 +296,19 @@ function UploadInstanceQuestionScoresModal({ csrfToken }: { csrfToken: string })
   });
 }
 
-function UploadAssessmentInstanceScoresModal({ csrfToken }: { csrfToken: string }) {
+function UploadAssessmentInstanceScoresModal({
+  csrfToken,
+  groupWork,
+}: {
+  csrfToken: string;
+  groupWork: boolean;
+}) {
   return Modal({
     id: 'upload-assessment-instance-scores-form',
     title: 'Upload new total scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${CsvHelpAssessmentInstanceScores()}
+      ${CsvHelpAssessmentInstanceScores({ groupWork })}
       <div class="mb-3">
         <label class="form-label" for="uploadAssessmentInstanceScoresFileInput">
           Choose CSV file

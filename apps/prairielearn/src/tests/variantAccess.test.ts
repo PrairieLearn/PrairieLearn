@@ -187,7 +187,7 @@ describe('Variant access', () => {
   test.sequential('get relevant entities', async () => {
     courseInstance = await selectCourseInstanceByShortName({
       course: await selectCourseById('1'),
-      short_name: 'Sp15',
+      shortName: 'Sp15',
     });
     question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(

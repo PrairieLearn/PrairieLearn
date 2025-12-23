@@ -4,6 +4,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AssessmentInstanceSchema,
@@ -13,7 +14,6 @@ import {
   FileSchema,
   type GroupConfig,
   GroupSchema,
-  IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
@@ -99,6 +99,9 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
     SelectAndAuthzInstanceQuestionSchema,
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  // TODO: consider row.assessment.modern_access_control
+  if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
 
   Object.assign(res.locals, row);
   if (res.locals.assessment.group_work) {

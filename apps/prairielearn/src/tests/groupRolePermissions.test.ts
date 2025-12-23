@@ -3,9 +3,10 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, GroupRoleSchema, IdSchema, type User } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupRoleSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -112,9 +113,9 @@ async function updateGroupRoles(
   );
 
   // Grab IDs of checkboxes to construct update request
-  const checkedElementIds = {};
+  const checkedElementIds: Record<string, string> = {};
   for (let i = 0; i < checkedBoxes.length; i++) {
-    checkedElementIds[checkedBoxes[i.toString()].attribs.id] = 'on';
+    checkedElementIds[checkedBoxes[`${i}`].attribs.id] = 'on';
   }
   const res = await fetch(assessmentUrl, {
     method: 'POST',

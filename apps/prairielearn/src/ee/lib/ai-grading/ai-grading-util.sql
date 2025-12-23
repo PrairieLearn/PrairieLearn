@@ -132,18 +132,6 @@ ORDER BY
 LIMIT
   $limit;
 
--- BLOCK select_rubric_for_grading
-SELECT
-  ri.*
-FROM
-  assessment_questions aq
-  JOIN rubric_items ri ON aq.manual_rubric_id = ri.rubric_id
-WHERE
-  aq.id = $assessment_question_id
-  AND ri.deleted_at IS NULL
-ORDER BY
-  ri.number;
-
 -- BLOCK select_last_submission_id
 SELECT
   s.id
@@ -344,5 +332,12 @@ FROM
 UPDATE assessment_questions
 SET
   ai_grading_mode = NOT ai_grading_mode
+WHERE
+  id = $assessment_question_id;
+
+-- BLOCK set_ai_grading_mode
+UPDATE assessment_questions
+SET
+  ai_grading_mode = $ai_grading_mode
 WHERE
   id = $assessment_question_id;

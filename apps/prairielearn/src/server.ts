@@ -845,10 +845,7 @@ export async function initExpress(): Promise<Express> {
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/selectAssessments.js')).default,
-    ],
+    [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
@@ -924,9 +921,7 @@ export async function initExpress(): Promise<Express> {
         next();
       },
       (
-        await import(
-          './pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js'
-        )
+        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
       ).default,
     ],
   );
@@ -995,9 +990,7 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
       (
-        await import(
-          './pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js'
-        )
+        await import('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js')
       ).default,
     ],
   );
@@ -1010,9 +1003,7 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (
-        await import(
-          './pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js'
-        )
+        await import('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js')
       ).default,
     ],
   );
@@ -1075,7 +1066,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1209,18 +1199,14 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
     (
-      await import(
-        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
-      )
+      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
     ).default,
   );
   if (isEnterprise()) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
       (
-        await import(
-          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
-        )
+        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
       ).default,
     );
     app.use(
@@ -1280,8 +1266,8 @@ export async function initExpress(): Promise<Express> {
       .default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
-    (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/publishing',
+    (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
       .default,
   );
   app.use(
@@ -1473,9 +1459,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
     (
-      await import(
-        './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
-      )
+      await import('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js')
     ).default,
   );
   app.use(
@@ -1678,9 +1662,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
     (
-      await import(
-        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
-      )
+      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
     ).default,
   ]);
   app.use(
@@ -1695,9 +1677,7 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
       (
-        await import(
-          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
-        )
+        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
       ).default,
     );
     app.use(
@@ -1758,9 +1738,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_course_instance',
     (
-      await import(
-        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
-      )
+      await import('./pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js')
     ).default,
   );
 
@@ -1830,7 +1808,7 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_question';
       next();
     },
@@ -1930,17 +1908,6 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
-
-  app.use(
-    '/pl/administrator',
-    asyncHandler(async (req, res, next) => {
-      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-        user_id: res.locals.authn_user.user_id,
-      });
-      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
-      next();
-    }),
-  );
 
   app.use(
     '/pl/administrator/admins',
@@ -2210,8 +2177,6 @@ if (isHMR && isServerPending()) {
 }
 
 const shouldStartServer = run(() => {
-  if (process.env.PL_START_SERVER === 'true') return true;
-  if (process.env.PL_START_SERVER === 'false') return false;
   if (!config.startServer) return false;
   if (esMain(import.meta)) return true;
   if (isHMR && !isServerInitialized()) return true;
@@ -2648,12 +2613,20 @@ if (shouldStartServer) {
     //
     // We use `allSettled()` here to ensure that all tasks can gracefully
     // shut down, even if some of them fail.
-    logger.info('Shutting down async processing');
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info('Shutting down async processing');
+    }
     const results = await Promise.allSettled([
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
+      socketServer.close(),
+      cache.close(),
+      assets.close(),
+      codeCaller.finish(),
       stopBatchedMigrations(),
+      namedLocks.close(),
+      sqldb.closeAsync(),
     ]);
     results.forEach((r) => {
       if (r.status === 'rejected') {
@@ -2687,11 +2660,9 @@ if (shouldStartServer) {
   });
 
   setServerState('initialized');
-  if (process.env.NODE_ENV !== 'test') {
-    logger.info('PrairieLearn server ready, press Control-C to quit');
-    if (config.devMode) {
-      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-    }
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode && process.env.NODE_ENV !== 'test') {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.

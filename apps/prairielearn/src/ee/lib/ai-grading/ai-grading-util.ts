@@ -18,13 +18,13 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
-import { type OpenAIModelId, calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
   type Course,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
   type Question,
@@ -44,9 +44,9 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
-const sql = loadSqlEquiv(import.meta.url);
+import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
-export const AI_GRADING_OPENAI_MODEL = 'gpt-5-mini-2025-08-07' satisfies OpenAIModelId;
+const sql = loadSqlEquiv(import.meta.url);
 
 export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
@@ -61,6 +61,18 @@ export const GradedExampleSchema = z.object({
 });
 export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
+/**
+ * Models supporting system messages after the first user message.
+ * As of November 2025,
+ * - OpenAI GPT 5-mini and GPT 5.1 support this.
+ * - Google Gemini 2.5-flash and Gemini 3 Pro Preview do not support this.
+ * - Anthropic Claude Haiku 4.5, Claude Sonnet 4.5, and Claude Opus 4.5 do not support this.
+ */
+const MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG = new Set<AiGradingModelId>([
+  'gpt-5-mini-2025-08-07',
+  'gpt-5.1-2025-11-13',
+]);
+
 export async function generatePrompt({
   questionPrompt,
   questionAnswer,
@@ -68,6 +80,8 @@ export async function generatePrompt({
   submitted_answer,
   example_submissions,
   rubric_items,
+  grader_guidelines,
+  model_id,
 }: {
   questionPrompt: string;
   questionAnswer: string;
@@ -75,8 +89,27 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   example_submissions: GradedExample[];
   rubric_items: RubricItem[];
+  grader_guidelines: string | null;
+  model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
+
+  const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
+    ? 'system'
+    : 'user';
+
+  const graderGuidelinesMessages = grader_guidelines
+    ? ([
+        {
+          role: systemRoleAfterUserMessage,
+          content: 'The instructor has provided the following grader guidelines:',
+        },
+        {
+          role: 'user',
+          content: grader_guidelines,
+        },
+      ] satisfies ModelMessage[])
+    : [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -92,8 +125,12 @@ export async function generatePrompt({
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
-          'Here are the rubric items:',
         ]),
+      },
+      ...graderGuidelinesMessages,
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'Here are the rubric items:',
       },
       {
         role: 'user',
@@ -112,21 +149,24 @@ export async function generatePrompt({
       },
     );
   } else {
-    input.push({
-      role: 'system',
-      content: formatPrompt([
-        "You are an instructor for a course, and you are grading a student's response to a question.",
-        'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
-        "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
-        'You must include an explanation on why you made these choices.',
-        'Follow any special instructions given by the instructor in the question.',
-      ]),
-    });
+    input.push(
+      {
+        role: 'system',
+        content: formatPrompt([
+          "You are an instructor for a course, and you are grading a student's response to a question.",
+          'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
+          "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
+          'You must include an explanation on why you made these choices.',
+          'Follow any special instructions given by the instructor in the question.',
+        ]),
+      },
+      ...graderGuidelinesMessages,
+    );
   }
 
   input.push(
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'This is the question for which you will be grading a response:',
     },
     {
@@ -138,7 +178,7 @@ export async function generatePrompt({
   if (questionAnswer.trim()) {
     input.push(
       {
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content: 'The instructor has provided the following answer for this question:',
       },
       {
@@ -151,13 +191,13 @@ export async function generatePrompt({
   if (example_submissions.length > 0) {
     if (rubric_items.length > 0) {
       input.push({
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding selected rubric items.',
       });
     } else {
       input.push({
-        role: 'system',
+        role: systemRoleAfterUserMessage,
         content:
           'Here are some example student responses and their corresponding scores and feedback.',
       });
@@ -214,7 +254,7 @@ export async function generatePrompt({
 
   input.push(
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'The student made the following submission:',
     },
     generateSubmissionMessage({
@@ -222,7 +262,7 @@ export async function generatePrompt({
       submitted_answer,
     }),
     {
-      role: 'system',
+      role: systemRoleAfterUserMessage,
       content: 'Please grade the submission according to the above instructions.',
     },
   );
@@ -296,7 +336,9 @@ export function generateSubmissionMessage({
           throw new Error('No file name found.');
         }
 
-        const fileData = submitted_answer._files?.find((file) => file.name === fileName);
+        const fileData = submitted_answer._files?.find(
+          (file: { name: string; contents: string }) => file.name === fileName,
+        );
 
         if (fileData) {
           // fileData.contents does not contain the MIME type header, so we add it.
@@ -446,6 +488,7 @@ export async function selectRubricGradingItems(
 export async function insertAiGradingJob({
   grading_job_id,
   job_sequence_id,
+  model_id,
   prompt,
   response,
   course_id,
@@ -453,6 +496,7 @@ export async function insertAiGradingJob({
 }: {
   grading_job_id: string;
   job_sequence_id: string;
+  model_id: AiGradingModelId;
   prompt: ModelMessage[];
   response: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
@@ -463,10 +507,10 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
-    model: AI_GRADING_OPENAI_MODEL,
+    model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
-    cost: calculateResponseCost({ model: AI_GRADING_OPENAI_MODEL, usage: response.usage }),
+    cost: calculateResponseCost({ model: model_id, usage: response.usage }),
     course_id,
     course_instance_id,
   });
@@ -502,16 +546,6 @@ export async function selectClosestSubmissionInfo({
       limit,
     },
     GradedExampleSchema,
-  );
-}
-
-export async function selectRubricForGrading(
-  assessment_question_id: string,
-): Promise<RubricItem[]> {
-  return await queryRows(
-    sql.select_rubric_for_grading,
-    { assessment_question_id },
-    RubricItemSchema,
   );
 }
 
@@ -597,4 +631,8 @@ export async function deleteAiGradingJobs({
 
 export async function toggleAiGradingMode(assessment_question_id: string): Promise<void> {
   await execute(sql.toggle_ai_grading_mode, { assessment_question_id });
+}
+
+export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
+  await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
