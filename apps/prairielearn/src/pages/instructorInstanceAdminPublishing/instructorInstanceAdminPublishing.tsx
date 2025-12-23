@@ -252,8 +252,8 @@ router.post(
 
       const parsedBody = z
         .object({
-          start_date: DatetimeLocalStringSchema,
-          end_date: DatetimeLocalStringSchema,
+          start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+          end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         })
         .parse(req.body);
 

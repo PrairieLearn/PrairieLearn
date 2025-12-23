@@ -413,17 +413,20 @@ function StudentsCard({
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
           mapRowToData: (row) => {
-            return {
-              uid: row.user?.uid ?? row.enrollment.pending_uid,
-              name: row.user?.name ?? null,
-              email: row.user?.email ?? null,
-              status: row.enrollment.status,
-              first_joined_at: row.enrollment.first_joined_at
-                ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-                    includeTz: false,
-                  })
-                : null,
-            };
+            return [
+              { value: row.user?.uid ?? row.enrollment.pending_uid, name: 'uid' },
+              { value: row.user?.name ?? null, name: 'name' },
+              { value: row.user?.email ?? null, name: 'email' },
+              { value: row.enrollment.status, name: 'status' },
+              {
+                value: row.enrollment.first_joined_at
+                  ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                      includeTz: false,
+                    })
+                  : null,
+                name: 'first_joined_at',
+              },
+            ];
           },
           hasSelection: false,
         }}
