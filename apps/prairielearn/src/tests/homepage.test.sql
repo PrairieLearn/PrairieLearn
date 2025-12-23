@@ -29,3 +29,11 @@ DELETE FROM enrollments
 WHERE
   course_instance_id = $course_instance_id
   AND pending_uid = $pending_uid;
+
+-- BLOCK update_course_instance_publishing
+UPDATE course_instances
+SET
+  publishing_start_date = $publishing_start_date,
+  publishing_end_date = $publishing_end_date
+WHERE
+  id = $course_instance_id;

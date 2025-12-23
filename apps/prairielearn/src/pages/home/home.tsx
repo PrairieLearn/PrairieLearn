@@ -16,6 +16,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
@@ -186,6 +187,27 @@ router.post(
 
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
+    }
+
+    // Invitations and rejections are only supported for modern publishing courses.
+    if (
+      !courseInstance.modern_publishing &&
+      ['accept_invitation', 'reject_invitation'].includes(body.__action)
+    ) {
+      flash(
+        'error',
+        'Invitations and rejections are only supported for courses using modern publishing.',
+      );
+      return;
+    }
+
+    if (
+      courseInstance.modern_publishing &&
+      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
+        'published'
+    ) {
+      flash('error', 'This course instance is not accessible to students');
+      return;
     }
 
     switch (body.__action) {
