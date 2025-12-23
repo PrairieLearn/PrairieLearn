@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
@@ -15,7 +16,6 @@ import {
   type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
-  IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
