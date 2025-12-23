@@ -1262,6 +1262,7 @@ export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
+  grader_guidelines: z.string().nullable(),
   id: IdSchema,
   max_extra_points: z.number(),
   min_points: z.number(),

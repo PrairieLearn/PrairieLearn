@@ -27,7 +27,7 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
-import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
@@ -43,7 +43,6 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -322,7 +321,7 @@ export async function aiGrade({
       }
       logger.info(gradedExampleInfo);
 
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
@@ -331,6 +330,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
         model_id,
       });
 
