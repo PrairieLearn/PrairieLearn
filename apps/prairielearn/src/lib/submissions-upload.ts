@@ -7,6 +7,7 @@ import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { truncate } from '@prairielearn/sanitize';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -22,7 +23,6 @@ import {
   type Assessment,
   AssessmentQuestionSchema,
   type Group,
-  IdSchema,
   RubricItemSchema,
 } from './db-types.js';
 import { createOrAddToGroup, deleteAllGroups } from './groups.js';

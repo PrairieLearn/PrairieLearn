@@ -5,9 +5,10 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupConfigSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 

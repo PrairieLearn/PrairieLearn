@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { StaffRubricItemSchema, StaffRubricSchema } from './client/safe-db-types.js';
 import {
-  IdSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
   type RubricItem,

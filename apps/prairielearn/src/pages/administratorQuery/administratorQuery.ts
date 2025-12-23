@@ -5,12 +5,13 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type AdministratorQueryResult,
   loadAdminQueryModule,
 } from '../../admin_queries/lib/util.js';
-import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
 import { AdministratorQuery, QueryRunRowSchema } from './administratorQuery.html.js';
 
