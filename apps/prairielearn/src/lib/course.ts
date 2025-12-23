@@ -69,11 +69,11 @@ export async function pullAndUpdateCourse({
   commit_hash?: string | null;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
-    courseId,
-    userId: userId ?? undefined,
-    authnUserId: authnUserId ?? undefined,
     type: 'sync',
     description: 'Pull from remote git repository',
+    userId,
+    authnUserId,
+    courseId,
   });
 
   const gitEnv = process.env;

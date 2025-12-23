@@ -139,13 +139,13 @@ export async function aiGrade({
   const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
+    type: 'ai_grading',
+    description: 'Perform AI grading',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_grading',
-    description: 'Perform AI grading',
   });
 
   serverJob.executeInBackground(async (job) => {
