@@ -58,7 +58,7 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
         />
         <input
           type="hidden"
-          name={`${formId}-self-enrollment-use-enrollment-code`}
+          name="self-enrollment-use-enrollment-code"
           value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
         />
         <label class="form-check-label" for={`${formId}-self-enrollment-use-enrollment-code`}>
