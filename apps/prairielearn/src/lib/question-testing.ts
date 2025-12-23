@@ -460,11 +460,11 @@ export async function startTestQuestion({
   let success = true;
 
   const serverJob = await createServerJob({
-    type: 'test_question',
-    description: 'Test ' + question.qid,
+    courseId: course.id,
     userId: user_id,
     authnUserId: authn_user_id,
-    courseId: course.id,
+    type: 'test_question',
+    description: 'Test ' + question.qid,
   });
 
   const stats: TestResultStats[] = [];

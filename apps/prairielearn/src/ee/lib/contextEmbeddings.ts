@@ -115,8 +115,6 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
-    userId: authnUserId,
-    authnUserId,
   });
 
   serverJob.executeInBackground(async (job) => {

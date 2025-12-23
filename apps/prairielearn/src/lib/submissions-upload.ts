@@ -103,13 +103,13 @@ export async function uploadSubmissions(
   const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    type: 'upload_submissions',
-    description: 'Upload submissions CSV for ' + assessment_label,
-    userId: user_id,
-    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
+    userId: user_id,
+    authnUserId: authn_user_id,
+    type: 'upload_submissions',
+    description: 'Upload submissions CSV for ' + assessment_label,
   });
 
   const ensureAndEnrollUser = memoize(async (uid: string) => {

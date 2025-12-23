@@ -38,11 +38,11 @@ export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
  */
 export async function gitStatus(locals: UntypedResLocals): Promise<string> {
   const serverJob = await createServerJob({
-    type: 'git_status',
-    description: 'Show server git status',
+    courseId: locals.course.id,
     userId: locals.user.user_id,
     authnUserId: locals.authz_data.authn_user.user_id,
-    courseId: locals.course.id,
+    type: 'git_status',
+    description: 'Show server git status',
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -213,11 +213,11 @@ export async function ecrUpdate(
   const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({
-    type: 'images_sync',
-    description: 'Sync Docker images from Docker Hub to PL registry',
+    courseId: locals.course.id,
     userId: locals.user.user_id,
     authnUserId: locals.authz_data.authn_user.user_id,
-    courseId: locals.course.id,
+    type: 'images_sync',
+    description: 'Sync Docker images from Docker Hub to PL registry',
   });
 
   serverJob.executeInBackground(async (job) => {

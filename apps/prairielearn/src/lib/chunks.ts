@@ -910,10 +910,10 @@ export async function updateChunksForCourse({
  */
 export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
   const serverJob = await createServerJob({
-    type: 'generate_all_chunks',
-    description: 'Generate all chunks for a list of courses',
     userId: authn_user_id,
     authnUserId: authn_user_id,
+    type: 'generate_all_chunks',
+    description: 'Generate all chunks for a list of courses',
   });
 
   serverJob.executeInBackground(async (job) => {

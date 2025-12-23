@@ -53,13 +53,13 @@ export default makeBatchedMigration({
  */
 export async function syncCourse(course: Course) {
   const serverJob = await createServerJob({
+    courseId: course.id,
     type: 'sync',
     description: 'Sync from disk',
     // Since this is a sync performed by the system, don't associate any user
     // with it.
-    userId: null,
-    authnUserId: null,
-    courseId: course.id,
+    userId: undefined,
+    authnUserId: undefined,
   });
 
   // We use `executeUnsafe` to ensure that any errors bubble up and mark the

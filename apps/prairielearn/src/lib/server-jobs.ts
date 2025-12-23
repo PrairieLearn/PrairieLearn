@@ -28,19 +28,14 @@ import * as socketServer from './socket-server.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 interface CreateServerJobOptions {
-  /** The type of the job (lowercase, snake_case, no spaces) */
-  type: string;
-  /** A description of the job. */
-  description: string;
-  /** The effective user ID (res.locals.authz_data.user.user_id) */
-  userId: string | null;
-  /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
-  authnUserId: string | null;
   courseId?: string;
-  /** If provided, courseId should also be provided. */
   courseInstanceId?: string;
   courseRequestId?: string;
   assessmentId?: string;
+  userId?: string;
+  authnUserId?: string;
+  type: string;
+  description: string;
 }
 
 interface ServerJobExecOptions {
