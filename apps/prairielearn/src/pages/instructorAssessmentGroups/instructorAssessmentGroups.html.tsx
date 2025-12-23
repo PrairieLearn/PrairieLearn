@@ -1,11 +1,12 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const GroupUsersRowSchema = z.object({

@@ -10,6 +10,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
@@ -18,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  IdSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
@@ -27,6 +27,7 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
@@ -42,7 +43,6 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -140,13 +140,13 @@ export async function aiGrade({
   const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
+    type: 'ai_grading',
+    description: 'Perform AI grading',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_grading',
-    description: 'Perform AI grading',
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -325,7 +325,7 @@ export async function aiGrade({
       }
       logger.info(gradedExampleInfo);
 
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
@@ -334,6 +334,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
         model_id,
       });
 

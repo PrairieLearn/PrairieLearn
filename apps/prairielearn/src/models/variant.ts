@@ -11,12 +11,12 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
   EnumCourseInstanceRoleSchema,
-  IdSchema,
   SubmissionSchema,
   type User,
   type Variant,
