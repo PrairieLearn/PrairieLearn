@@ -62,7 +62,7 @@ router.post(
     });
 
     if (req.body.__action === 'addAdmins') {
-      const uids = parseUniqueValuesFromString(req.body.uids);
+      const uids = parseUniqueValuesFromString(req.body.uids, MAX_UIDS);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {
