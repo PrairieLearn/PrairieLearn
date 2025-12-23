@@ -12,3 +12,5 @@ if __name__ == "__main__":
 
     if has_broken_links:
         sys.exit(1)
+
+    print("No broken links found.")
