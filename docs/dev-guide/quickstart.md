@@ -36,7 +36,7 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
 sudo make dev
 ```
 
-On MacOS, you should set the following in your `config.json`:
+On a macOS native installation, you should set the following in your `config.json`:
 
 ```json title="config.json"
 {
@@ -46,7 +46,7 @@ On MacOS, you should set the following in your `config.json`:
 }
 ```
 
-More information can be found in the [config.json](configJson.md) documentation.
+More information can be found in the [config.json](configJson.md#running-workspaces-external-graders-natively-on-macos) documentation.
 
 ??? note "Troubleshooting workspaces"
 

@@ -71,9 +71,9 @@ You should set the workspace host home directory root and home directory root in
 }
 ```
 
-### Running workspaces / external graders natively on Mac OS
+### Running workspaces / external graders natively on macOS
 
-If you are running workspaces natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+If you are running workspaces natively on macOS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
 
 ```json title="config.json"
 {
