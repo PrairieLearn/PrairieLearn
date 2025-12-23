@@ -248,6 +248,7 @@ export interface ResLocalsBuildLocals {
   variantAttemptsTotal: number;
   submissions: SubmissionForRender[];
   variantToken: string;
+  jobSequenceTokens: Record<string, string>;
 }
 
 function buildLocals({
@@ -292,6 +293,7 @@ function buildLocals({
     // Used for "auth" for external grading realtime results
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
+    jobSequenceTokens: {},
   };
 
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {

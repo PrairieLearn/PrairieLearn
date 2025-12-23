@@ -44,6 +44,8 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
 import { JobSequenceSchema } from '../../../lib/db-types.js';
+import { generateSignedToken } from '@prairielearn/signed-token';
+import { config } from '../../../lib/config.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -100,12 +102,19 @@ router.get(
       JobSequenceSchema,
     )
 
-    console.log('ongoingJobSequences',ongoingJobSequences);
-
     const ongoingJobSequenceIds = ongoingJobSequences.map(js => js.id);
 
-    console.log('ongoingJobSequenceIds', ongoingJobSequenceIds);
-
+    // Used for "auth" to connect to the job sequence progress sockets.
+    // ID is coerced to a string so that it matches what we get back from the client.
+    
+    const jobSequenceTokens = ongoingJobSequences.reduce((acc, js) => {
+      acc[js.id.toString()] = generateSignedToken(
+        { jobSequenceId: js.id.toString() },
+        config.secretKey,
+      );
+      return acc;
+    }, {} as Record<string, string>);
+    
     const {
       authz_data,
       urlPrefix,
@@ -162,6 +171,7 @@ router.get(
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
+                jobSequenceTokens={jobSequenceTokens}
                 courseStaff={courseStaff}
                 aiGradingStats={
                   aiGradingEnabled && assessment_question.ai_grading_mode

@@ -11,7 +11,13 @@ type JobProgress = {
 }
 
 export function useJobSequenceProgress(
-  jobSequenceIds: string[]
+  {
+    jobSequenceIds,
+    jobSequenceTokens
+  } : {
+    jobSequenceIds: string[],
+    jobSequenceTokens: Record<string, string>
+  }
 ) {
   // TODO: if Ai grading mode is off, then don't establish any socket connections.
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
@@ -60,6 +66,7 @@ export function useJobSequenceProgress(
         'joinServerJobProgress',
         {
           job_sequence_id: jobSequenceId,
+          job_sequence_token: jobSequenceTokens[jobSequenceId]
         },
         (response: StatusMessageWithProgress) => {
           console.log('response', response);

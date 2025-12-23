@@ -6,6 +6,7 @@ import { ensureProps } from './ensureProps.js';
 import { StatusMessageWithProgressSchema, type StatusMessage, type StatusMessageWithProgress } from './serverJobProgressSocket.shared.js';
 import { Cache } from '@prairielearn/cache';
 import { config } from './config.js';
+import { checkJobSequenceToken } from './checkJobSequenceToken.js';
 
 let serverJobProgressCache: Cache | undefined;
 export async function getServerJobProgressCache(): Promise<Cache> {
@@ -29,12 +30,15 @@ export function init() {
 
 export function connection(socket: Socket) {
     socket.on('joinServerJobProgress', async (msg: StatusMessage, callback) => {
-        if (!ensureProps(msg, ['job_sequence_id'])) {
+        if (!ensureProps(msg, ['job_sequence_id', 'job_sequence_token'])) {
             return callback(null);
         }
 
-        // TODO (MAJOR SECURITY VULNERABILITY): Validate the job sequence token here
-        console.log('msg', msg);
+        console.log('msg', msg.job_sequence_token);
+
+        if (!checkJobSequenceToken(msg.job_sequence_token, msg.job_sequence_id)) {
+            return callback(null);
+        }
 
         void socket.join(`server-job-${msg.job_sequence_id}`);
 
@@ -68,13 +72,9 @@ export function connection(socket: Socket) {
 
 // Emit progress updates to clients
 export function emitServerJobProgressUpdate(progress: StatusMessageWithProgress) {
-
-    console.log('Emitting server job progress update', progress);
-
     namespace
         .to(`server-job-${progress.job_sequence_id}`)
         .emit('serverJobProgressUpdate', progress);        
-    // Cache it in Redis
     serverJobProgressCache?.set(
         `server-job-progress-${progress.job_sequence_id}`,
         progress,

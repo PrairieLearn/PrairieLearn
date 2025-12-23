@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 export interface StatusMessage {
     job_sequence_id: string;
+    job_sequence_token: string;
 }
 
 export const JobItemStatusEnum = z.enum(['pending', 'in_progress', 'complete', 'failed']);

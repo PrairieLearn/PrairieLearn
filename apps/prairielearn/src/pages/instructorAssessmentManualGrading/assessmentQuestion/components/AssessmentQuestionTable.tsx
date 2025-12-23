@@ -83,6 +83,7 @@ export interface AssessmentQuestionTableProps {
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
   ongoingJobSequenceIds: string[];
+  jobSequenceTokens: Record<string, string>;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -158,6 +159,7 @@ export function AssessmentQuestionTable({
   aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
+  jobSequenceTokens,
   courseStaff,
   course,
   courseInstance,
@@ -388,7 +390,10 @@ export function AssessmentQuestionTable({
     [columnFilters, columnFilterSetters],
   );
 
-  const jobSequenceProgress = useJobSequenceProgress(ongoingJobSequenceIds);
+  const jobSequenceProgress = useJobSequenceProgress({
+    jobSequenceIds: ongoingJobSequenceIds,
+    jobSequenceTokens,
+  });
 
   // Refetch instance questions whenever job progress updates
   useEffect(() => {
