@@ -167,7 +167,7 @@ router.post(
       // e.g. launch_no_longer_valid
       throw new HttpStatusError(
         400,
-        `Error code: ${authResponse.error} ${authResponse?.error_description}`,
+        `Error code: ${authResponse.error} ${authResponse.error_description}`,
       );
     }
 
