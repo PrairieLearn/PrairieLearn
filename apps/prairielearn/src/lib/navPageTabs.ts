@@ -1,6 +1,8 @@
 import { IssueBadgeHtml } from '../components/IssueBadge.js';
 import type { NavPage, TabInfo } from '../components/Navbar.types.js';
 
+import { encodeSearchString } from './uri-util.shared.js';
+
 /**
  * Retrieves horizontal navigation tab info for ContextNavigation.
  * @returns Navigation page tabs and their configurations
@@ -211,7 +213,7 @@ export function getNavPageTabs() {
       {
         activeSubPage: 'issues',
         urlSuffix: ({ question }) =>
-          `/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(question.qid)}`,
+          `/course_admin/issues?q=${encodeSearchString({ is: 'open', qid: question.qid })}`,
         iconClasses: 'fas fa-bug',
         tabLabel: 'Issues',
         htmlSuffix: (resLocals) =>

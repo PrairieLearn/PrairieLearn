@@ -57,16 +57,8 @@ jobs:
 
       - name: Build all code
         run: make build
-      - name: Set up Prettier and ESLint cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules/.cache/prettier/.prettier-cache
-            .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**', 'packages/*/tsconfig.json', 'apps/*/tsconfig.json', 'packages/tsconfig/tsconfig*.json') }}
-
       - name: Run the JavaScript linter
-        run: make lint-js-cached
+        run: make lint-js
       - name: Run the links linter
         run: make lint-links
 
