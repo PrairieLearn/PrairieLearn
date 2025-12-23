@@ -175,6 +175,8 @@ test.describe('Bulk invite students', () => {
 
     await page.getByRole('button', { name: 'Invite', exact: true }).click();
 
-    await expect(page.getByText('invalid', { exact: false })).toBeVisible();
+    await expect(
+      page.getByText('The following UIDs were invalid: "not-an-email"', { exact: true }),
+    ).toBeVisible();
   });
 });
