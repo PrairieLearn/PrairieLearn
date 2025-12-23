@@ -100,7 +100,7 @@ router.post(
 
     const BodySchema = z.object({
       uids: z.preprocess(
-        (val) => (typeof val === 'string' ? parseUidsString(val, null) : val),
+        (val) => (typeof val === 'string' ? parseUidsString(val, 1000) : val),
         z.array(z.string().trim().email()).min(1, 'At least one UID is required'),
       ),
       __action: z.literal('invite_uids'),
@@ -108,12 +108,12 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     const serverJob = await createServerJob({
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
       type: 'invite_students',
       description: 'Invite students to course instance',
       userId,
       authnUserId,
+      courseId: course.id,
+      courseInstanceId: courseInstance.id,
     });
 
     serverJob.executeInBackground(async (job) => {

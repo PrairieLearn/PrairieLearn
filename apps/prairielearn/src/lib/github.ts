@@ -282,11 +282,10 @@ export async function createCourseRepoJob(
 
   // Create a server job to wrap the course creation process.
   const serverJob = await createServerJob({
-    userId: authn_user.user_id,
-    authnUserId: authn_user.user_id,
     type: 'create_course_repo',
     description: 'Create course repository from request',
-    courseId: null,
+    userId: authn_user.user_id,
+    authnUserId: authn_user.user_id,
     courseRequestId: options.course_request_id,
   });
 

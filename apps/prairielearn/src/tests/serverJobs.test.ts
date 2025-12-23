@@ -27,11 +27,10 @@ describe('server-jobs', () => {
   describe('execute', () => {
     it('runs a job', async () => {
       const serverJob = await createServerJob({
-        courseId: null,
-        userId: null,
-        authnUserId: null,
         type: 'test',
         description: 'test server job',
+        userId: null,
+        authnUserId: null,
       });
 
       await serverJob.execute(async (job) => {
@@ -57,11 +56,10 @@ describe('server-jobs', () => {
 
     it('runs a job with an error', async () => {
       const serverJob = await createServerJob({
-        courseId: null,
-        userId: null,
-        authnUserId: null,
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(
@@ -83,11 +81,10 @@ describe('server-jobs', () => {
 
     it('fails the job when fail() is called', async () => {
       const serverJob = await createServerJob({
-        courseId: null,
-        userId: null,
-        authnUserId: null,
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(
@@ -113,11 +110,10 @@ describe('server-jobs', () => {
   describe('executeUnsafe', () => {
     it('propagates error to the caller', async () => {
       const serverJob = await createServerJob({
-        courseId: null,
-        userId: null,
-        authnUserId: null,
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(

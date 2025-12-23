@@ -21,11 +21,11 @@ const router = Router();
 
 async function update(locals: UntypedResLocals) {
   const serverJob = await createServerJob({
-    courseId: locals.course ? locals.course.id : null,
-    userId: locals.authz_data?.user?.user_id ?? null,
-    authnUserId: locals.authz_data?.authn_user?.user_id ?? null,
     type: 'loadFromDisk',
     description: 'Load data from local disk',
+    userId: locals.authz_data?.user?.user_id,
+    authnUserId: locals.authz_data?.authn_user?.user_id,
+    courseId: locals.course?.id,
   });
 
   serverJob.executeInBackground(async (job) => {

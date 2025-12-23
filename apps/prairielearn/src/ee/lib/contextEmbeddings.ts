@@ -113,11 +113,10 @@ async function insertDocumentChunk(
  */
 export async function syncContextDocuments(embeddingModel: EmbeddingModel, authnUserId: string) {
   const serverJob = await createServerJob({
-    courseId: null,
-    authnUserId,
-    userId: authnUserId,
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
+    userId: authnUserId,
+    authnUserId,
   });
 
   serverJob.executeInBackground(async (job) => {

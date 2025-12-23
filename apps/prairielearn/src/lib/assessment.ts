@@ -378,13 +378,13 @@ export async function gradeAllAssessmentInstances({
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'grade_all_assessment_instances',
+    description: 'Grade all assessment instances for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
