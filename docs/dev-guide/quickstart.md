@@ -36,33 +36,19 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
 sudo make dev
 ```
 
-!!! note "Debugging workspaces"
+On MacOS, you should set the following in your `config.json`:
 
-    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "localhost",
+  "workspaceJobsDirectoryOwnerUid": 1001,
+  "workspaceJobsDirectoryOwnerGid": 1001
+}
+```
 
-    ```json title="config.json"
-    {
-        "workspaceDevContainerHostname": "localhost"
-    }
-    ```
+More information can be found in the [config.json](configJson.md) documentation.
 
-    You may need to change `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` to 1001 on macOS to avoid permissions errors.
-
-    If you don't do this, you will see errors like:
-
-    ```
-    chown: changing ownership of '/home/coder/workspace': Permission denied
-    chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
-    ```
-
-    ```json title="config.json"
-    {
-        "workspaceJobsDirectoryOwnerUid": 1001,
-        "workspaceJobsDirectoryOwnerGid": 1001
-    }
-    ```
-
-    Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
+??? note "Troubleshooting workspaces"
 
     You can list the active hosts with:
 
@@ -72,7 +58,7 @@ sudo make dev
 
     If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
 
-    Additionally, since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
+    Since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
 
 ## Documentation
 
