@@ -46,7 +46,7 @@ export class Cache {
     }
   }
 
-  set(key: string, value: any, maxAgeMS: number) {
+  async set(key: string, value: any, maxAgeMS: number) {
     if (!this.enabled) return;
 
     const scopedKey = this.keyPrefix + key;
@@ -59,16 +59,15 @@ export class Cache {
       }
 
       case 'redis': {
-        // This returns a promise, but we don't want to wait for this data
-        // to reach the cache before continuing, and we don't *really*
-        // care if it errors.
-        //
-        // We don't log the error because it contains the cached value,
-        // which can be huge and which fills up the logs.
         assert(this.redisClient, 'Redis client is enabled but not configured');
-        this.redisClient
-          .set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
-          .catch((_err) => logger.error('Cache set error', { key, scopedKey, maxAgeMS }));
+        
+        try {
+          await this.redisClient.set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
+        } catch (_err) {
+          // We don't log the error because it contains the cached value,
+          // which can be huge and which fills up the logs.
+          logger.error('Cache set error', { key, scopedKey, maxAgeMS })
+        }
         break;
       }
     }

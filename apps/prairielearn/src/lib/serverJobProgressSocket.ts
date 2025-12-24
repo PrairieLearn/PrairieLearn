@@ -34,6 +34,8 @@ export function connection(socket: Socket) {
             return callback(null);
         }
 
+        console.log('msg', msg.job_sequence_token);
+
         if (!checkJobSequenceToken(msg.job_sequence_token, msg.job_sequence_id)) {
             return callback(null);
         }
@@ -71,11 +73,11 @@ export function connection(socket: Socket) {
 }
 
 // Emit progress updates to clients
-export function emitServerJobProgressUpdate(progress: StatusMessageWithProgress) {
+export async function emitServerJobProgressUpdate(progress: StatusMessageWithProgress) {
     namespace
         .to(`server-job-${progress.job_sequence_id}`)
         .emit('serverJobProgressUpdate', progress);        
-    serverJobProgressCache?.set(
+    await serverJobProgressCache?.set(
         `server-job-progress-${progress.job_sequence_id}`,
         progress,
         5 * 60 * 1000, // 5 minutes
