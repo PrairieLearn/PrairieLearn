@@ -7,6 +7,7 @@ type JobProgress = {
   jobSequenceId: string;
   numCompleted: number;
   numTotal: number;
+  numFailed: number;
   itemStatuses: Record<string, JobItemStatus>;
 }
 
@@ -19,7 +20,6 @@ export function useJobSequenceProgress(
     jobSequenceTokens: Record<string, string>
   }
 ) {
-  // TODO: if Ai grading mode is off, then don't establish any socket connections.
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
   const displayedStatuses = useMemo(() => {
     const statusPrecedence: Record<string, number> = {
@@ -84,6 +84,7 @@ export function useJobSequenceProgress(
               jobSequenceId,
               numCompleted: response.num_complete,
               numTotal: response.num_total,
+              numFailed: response.num_failed,
               itemStatuses: response.item_statuses || {},
             },
           }));
@@ -97,13 +98,16 @@ export function useJobSequenceProgress(
 
         console.log('msg', msg);
 
+        const itemStatuses = msg.item_statuses || {};
+        const numFailed = Object.values(itemStatuses).filter(status => status === 'failed').length;
         setJobsProgress((prev) => ({
           ...prev,
           [jobSequenceId]: {
             jobSequenceId,
             numCompleted: msg.num_complete,
             numTotal: msg.num_total,
-            itemStatuses: msg.item_statuses || {},
+            numFailed,
+            itemStatuses,
           },
         }));
       });
@@ -144,8 +148,11 @@ function ServerJobProgressBar({
     inProgressIcon,
     completeText,
     completeIcon,
+    failedText,
+    failedIcon,
     numCompleted,
     numTotal,
+    numFailed,
     itemNames,
     onDismissCompleteJobSequence
 }: {
@@ -154,16 +161,20 @@ function ServerJobProgressBar({
     inProgressIcon: string;
     completeText: string;
     completeIcon: string;
+    failedText: string;
+    failedIcon: string;
     numCompleted: number;
     numTotal: number;
+    numFailed: number;
     /** What is being counted: e.g. submissions graded, students invited */
     itemNames: string;
     onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
     const isComplete = numCompleted >= numTotal;
-    const text = isComplete ? completeText : inProgressText;
-    const icon = isComplete ? completeIcon : inProgressIcon;
-    const variant = isComplete ? "success" : "info";
+    const hasFailed = isComplete && numFailed > 0;
+    const text = hasFailed ? failedText : isComplete ? completeText : inProgressText;
+    const icon = hasFailed ? failedIcon : isComplete ? completeIcon : inProgressIcon;
+    const variant = hasFailed ? 'danger' : isComplete ? "success" : "info";
 
     return <Alert variant={variant} class="mb-0" dismissible={isComplete} onClose={() => onDismissCompleteJobSequence(jobSequenceId)}>
         <div class="d-flex align-items-center gap-3">
@@ -178,12 +189,15 @@ function ServerJobProgressBar({
               </div>
               <div class="text-muted small text-nowrap">
                   {`${numCompleted}/${numTotal} ${itemNames}`}
+                  <span class='text-danger'>
+                    {numFailed > 0 ? ` (${numFailed} failed)` : ''}
+                  </span> 
               </div>
             </>
           )}
           {isComplete && (
             <div class="text-muted small text-nowrap">
-                {`${numTotal} ${itemNames}`}
+                {hasFailed ? `${numTotal - numFailed}/${numTotal} ${itemNames} (${numFailed} failed)` : `${numTotal} ${itemNames}`}
             </div>
           )}
         </div>
@@ -195,6 +209,8 @@ export function ServerJobProgressBars({
     inProgressIcon,
     completeText,
     completeIcon,
+    failedText,
+    failedIcon,
     itemNames,
     jobsProgress,
     onDismissCompleteJobSequence
@@ -203,12 +219,13 @@ export function ServerJobProgressBars({
     inProgressIcon: string;
     completeText: string;
     completeIcon: string;
+    failedText: string;
+    failedIcon: string;
     /** What is being counted: e.g. submissions graded, students invited */
     itemNames: string;
     jobsProgress: JobProgress[];
     onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
-
     return <div class="d-flex flex-column gap-3">
       {jobsProgress.map((jobProgress) => (
         <ServerJobProgressBar 
@@ -218,8 +235,11 @@ export function ServerJobProgressBars({
           inProgressIcon={inProgressIcon}
           completeText={completeText}
           completeIcon={completeIcon}
+          failedText={failedText}
+          failedIcon={failedIcon}
           numCompleted={jobProgress.numCompleted}
           numTotal={jobProgress.numTotal}
+          numFailed={jobProgress.numFailed}
           itemNames={itemNames}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />

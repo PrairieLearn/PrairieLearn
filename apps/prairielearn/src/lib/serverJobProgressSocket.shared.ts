@@ -15,7 +15,11 @@ export const StatusMessageWithProgressSchema = z.object({
      * True if the progress data was found in the cache, false otherwise.
      **/
     valid: z.boolean(),
+    /**
+     * Number of items completed, including failed items.
+     */
     num_complete: z.number().int().nonnegative(),
+    num_failed: z.number().int().nonnegative(),
     num_total: z.number().int().nonnegative(),
     item_statuses: z.record(z.string(), JobItemStatusEnum).optional()
 })

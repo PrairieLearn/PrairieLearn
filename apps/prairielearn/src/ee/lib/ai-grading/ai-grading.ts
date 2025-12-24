@@ -185,6 +185,7 @@ export async function aiGrade({
     job_sequence_id: serverJob.jobSequenceId,
     valid: true,
     num_complete: 0,
+    num_failed: 0,
     num_total: instance_questions.length,
     item_statuses
   });
@@ -595,6 +596,7 @@ export async function aiGrade({
     };
 
     let num_complete = 0;
+    let num_failed = 0;
 
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
@@ -624,6 +626,7 @@ export async function aiGrade({
             job_sequence_id: serverJob.jobSequenceId,
             valid: true,
             num_complete,
+            num_failed,
             num_total: instance_questions.length,
             item_statuses
           });
@@ -633,6 +636,7 @@ export async function aiGrade({
         } catch (err: any) {
           logger.error(err);
           item_statuses[instance_question.id] = 'failed';
+          num_failed += 1;
           return false;
         } finally {
           num_complete += 1;
@@ -640,6 +644,7 @@ export async function aiGrade({
             job_sequence_id: serverJob.jobSequenceId,
             valid: true,
             num_complete,
+            num_failed,
             num_total: instance_questions.length,
             item_statuses
           });

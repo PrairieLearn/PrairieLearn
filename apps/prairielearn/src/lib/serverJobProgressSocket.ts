@@ -34,8 +34,6 @@ export function connection(socket: Socket) {
             return callback(null);
         }
 
-        console.log('msg', msg.job_sequence_token);
-
         if (!checkJobSequenceToken(msg.job_sequence_token, msg.job_sequence_id)) {
             return callback(null);
         }
@@ -50,6 +48,7 @@ export function connection(socket: Socket) {
                 job_sequence_id: msg.job_sequence_id,
                 valid: false,
                 num_complete: 0,
+                num_failed: 0,
                 num_total: 0,
             } satisfies StatusMessageWithProgress);
         }
@@ -64,6 +63,7 @@ export function connection(socket: Socket) {
             job_sequence_id: msg.job_sequence_id,
             valid: true,
             num_complete: progressData.num_complete,
+            num_failed: progressData.num_failed,
             num_total: progressData.num_total,
             item_statuses: progressData.item_statuses
         } satisfies StatusMessageWithProgress);

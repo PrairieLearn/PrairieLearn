@@ -648,6 +648,8 @@ export function AssessmentQuestionTable({
           inProgressIcon="bi-stars"
           completeText="AI grading complete"
           completeIcon="bi-check-circle-fill"
+          failedText="AI grading failed"
+          failedIcon="bi-exclamation-triangle-fill"
           itemNames="submissions graded"
           jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
           onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
