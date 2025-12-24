@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.9.0
+
+### Minor Changes
+
+- 3954e02: Allow for duplicate column names in CSV export
+
 ## 1.8.0
 
 ### Minor Changes
