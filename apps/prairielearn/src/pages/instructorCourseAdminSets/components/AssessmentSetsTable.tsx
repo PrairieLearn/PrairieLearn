@@ -1,4 +1,21 @@
-import { useState } from 'preact/compat';
+import { useMemo, useState } from 'preact/compat';
+import {
+  DndContext,
+  closestCenter,
+  KeyboardSensor,
+  PointerSensor,
+  useSensor,
+  useSensors,
+  type DragEndEvent,
+} from '@dnd-kit/core';
+import {
+  SortableContext,
+  useSortable,
+  arrayMove,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
+import { CSS } from '@dnd-kit/utilities';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
@@ -17,6 +34,156 @@ const emptyAssessmentSet = {
   json_comment: '',
   name: '',
 };
+
+function AssessmentSetRow({
+  assessmentSet,
+  index,
+  editMode,
+  allowEdit,
+  onEdit,
+  onDelete,
+}: {
+  assessmentSet: StaffAssessmentSet;
+  index: number;
+  editMode: boolean;
+  allowEdit: boolean;
+  onEdit: () => void;
+  onDelete: () => void;
+}) {
+  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+    id: assessmentSet.id,
+  });
+
+  const style = {
+    opacity: isDragging ? 0.6 : 1,
+    transform: CSS.Transform.toString(transform),
+    transition,
+    background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
+  };
+
+  return (
+    <tr ref={setNodeRef} style={style} key={assessmentSet.id}>
+      {editMode && allowEdit && (
+        <td class="align-middle">
+          <div class="d-flex align-items-center">
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost"
+              style={{ cursor: 'grab', touchAction: 'none' }}
+              aria-label="Drag row"
+              {...listeners}
+            >
+              <i class="fa fa-grip-vertical" aria-hidden="true" />
+            </button>
+
+            <button class="btn btn-sm btn-ghost" type="button" onClick={onEdit}>
+              <i class="fa fa-edit" aria-hidden="true" />
+            </button>
+            <button class="btn btn-sm btn-ghost" type="button" onClick={onDelete}>
+              <i class="fa fa-trash text-danger" aria-hidden="true" />
+            </button>
+          </div>
+        </td>
+      )}
+
+      <td class="align-middle">{index + 1}</td>
+      <td class="align-middle">
+        <span class={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
+      </td>
+      <td class="align-middle">{assessmentSet.name}</td>
+      <td class="align-middle">
+        <AssessmentSetHeading assessmentSet={assessmentSet} />
+      </td>
+      <td class="align-middle">{assessmentSet.color}</td>
+    </tr>
+  );
+}
+
+function DraggableTable({
+  assessmentSetsState,
+  setAssessmentSetsState,
+  editMode,
+  allowEdit,
+  handleEdit,
+  handleDelete,
+  handleCreate,
+}: {
+  assessmentSetsState: StaffAssessmentSet[];
+  setAssessmentSetsState: (setter: (items: StaffAssessmentSet[]) => StaffAssessmentSet[]) => void;
+  editMode: boolean;
+  allowEdit: boolean;
+  handleEdit: (index: number) => void;
+  handleDelete: (id: string) => void;
+  handleCreate: () => void;
+}) {
+  const sensors = useSensors(
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
+  );
+
+  const ids = useMemo(() => assessmentSetsState.map((s) => s.id), [assessmentSetsState]);
+
+  return (
+    <DndContext
+      sensors={sensors}
+      collisionDetection={closestCenter}
+      autoScroll={false}
+      onDragEnd={({ active, over }: DragEndEvent) => {
+        if (!over || active.id === over.id) return;
+
+        setAssessmentSetsState((items) => {
+          const oldIndex = items.findIndex((item) => item.id === active.id);
+          const newIndex = items.findIndex((item) => item.id === over.id);
+          if (oldIndex === -1 || newIndex === -1) return items;
+          return arrayMove(items, oldIndex, newIndex);
+        });
+      }}
+    >
+      <SortableContext items={ids} strategy={verticalListSortingStrategy}>
+        <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
+          <thead>
+            <tr>
+              {editMode && allowEdit && (
+                <th style="width: 1%">
+                  <span class="visually-hidden">Drag, Edit and Delete</span>
+                </th>
+              )}
+              <th>Number</th>
+              <th>Abbreviation</th>
+              <th>Name</th>
+              <th>Heading</th>
+              <th>Color</th>
+            </tr>
+          </thead>
+
+          <tbody>
+            {assessmentSetsState.map((assessmentSet, index) => (
+              <AssessmentSetRow
+                key={assessmentSet.id}
+                assessmentSet={assessmentSet}
+                index={index}
+                editMode={editMode}
+                allowEdit={allowEdit}
+                onEdit={() => handleEdit(index)}
+                onDelete={() => handleDelete(assessmentSet.id)}
+              />
+            ))}
+
+            {editMode && allowEdit && (
+              <tr>
+                <td colSpan={6}>
+                  <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                    <i class="fa fa-plus" aria-hidden="true" /> New assessment set
+                  </button>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </SortableContext>
+    </DndContext>
+  );
+}
 
 export function AssessmentSetsTable({
   assessmentSets,
@@ -115,73 +282,20 @@ export function AssessmentSetsTable({
             )}
           </div>
         </div>
+
         <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
-            <thead>
-              <tr>
-                {editMode && allowEdit && (
-                  <th style="width: 1%">
-                    <span class="visually-hidden">Edit and Delete</span>
-                  </th>
-                )}
-                <th>Number</th>
-                <th>Abbreviation</th>
-                <th>Name</th>
-                <th>Heading</th>
-                <th>Color</th>
-              </tr>
-            </thead>
-            <tbody>
-              {assessmentSetsState.map((assessmentSet, index) => {
-                return (
-                  <tr key={assessmentSet.id}>
-                    {editMode && allowEdit && (
-                      <td class="align-middle">
-                        <div class="d-flex align-items-center">
-                          <button
-                            class="btn btn-sm btn-ghost"
-                            type="button"
-                            onClick={() => handleEdit(index)}
-                          >
-                            <i class="fa fa-edit" aria-hidden="true" />
-                          </button>
-                          <button
-                            class="btn btn-sm btn-ghost"
-                            type="button"
-                            onClick={() => handleDelete(assessmentSet.id)}
-                          >
-                            <i class="fa fa-trash text-danger" aria-hidden="true" />
-                          </button>
-                        </div>
-                      </td>
-                    )}
-                    <td class="align-middle">{index + 1}</td>
-                    <td class="align-middle">
-                      <span class={`badge color-${assessmentSet.color}`}>
-                        {assessmentSet.abbreviation}
-                      </span>
-                    </td>
-                    <td class="align-middle">{assessmentSet.name}</td>
-                    <td class="align-middle">
-                      <AssessmentSetHeading assessmentSet={assessmentSet} />
-                    </td>
-                    <td class="align-middle">{assessmentSet.color}</td>
-                  </tr>
-                );
-              })}
-              {editMode && allowEdit && (
-                <tr>
-                  <td colSpan={6}>
-                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                      <i class="fa fa-plus" aria-hidden="true" /> New assessment set
-                    </button>
-                  </td>
-                </tr>
-              )}
-            </tbody>
-          </table>
+          <DraggableTable
+            assessmentSetsState={assessmentSetsState}
+            setAssessmentSetsState={setAssessmentSetsState}
+            editMode={editMode}
+            allowEdit={allowEdit}
+            handleEdit={handleEdit}
+            handleDelete={handleDelete}
+            handleCreate={handleCreate}
+          />
         </div>
       </div>
+
       <EditAssessmentSetsModal
         state={modalState}
         onClose={() => setModalState({ type: 'closed' })}
