@@ -1,13 +1,17 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { CommentPopover } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+
+import { AccessControl } from './components/AccessControl.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -30,11 +34,19 @@ type AssessmentAccessRules = z.infer<typeof AssessmentAccessRulesSchema>;
 export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
+  enhancedAccessControl,
+  origHash,
 }: {
   resLocals: UntypedResLocals;
   accessRules: AssessmentAccessRules[];
+  enhancedAccessControl: boolean;
+  origHash: string;
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
+  const { course_instance: courseInstance } = extractPageContext(resLocals, {
+    pageType: 'courseInstance',
+    accessType: 'instructor',
+  });
   return PageLayout({
     resLocals,
     pageTitle: 'Access',
@@ -47,9 +59,19 @@ export function InstructorAssessmentAccess({
       fullWidth: true,
     },
     content: html`
+      ${enhancedAccessControl
+        ? hydrateHtml(
+            <AccessControl
+              courseInstance={courseInstance}
+              csrfToken={resLocals.__csrf_token}
+              origHash={origHash}
+            />,
+          )
+        : ''}
+
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center">
-          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access</h1>
+          <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Access rules</h1>
         </div>
 
         <div class="table-responsive">

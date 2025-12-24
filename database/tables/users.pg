@@ -23,6 +23,7 @@ foreign-key constraints
     users_lti_course_instance_id_fkey: FOREIGN KEY (lti_course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
+    access_control_group_member: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     access_tokens: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     administrators: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     ai_question_generation_prompts: FOREIGN KEY (prompting_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL

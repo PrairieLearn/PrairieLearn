@@ -8,6 +8,11 @@ import {
   zodToJsonSchema,
 } from 'zod-to-json-schema';
 
+import {
+  type AccessControlJson,
+  AccessControlJsonSchema,
+  DeadlineEntryJsonSchema,
+} from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -242,6 +247,16 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
   target: 'jsonSchema7',
   definitions: { CommentJsonSchema },
 }) as JSONSchemaType<QuestionOptionsv3Json>;
+
+// TODO: We aren't currently using this schema, but it's here for reference.
+export const accessControl = prairielearnZodToJsonSchema(AccessControlJsonSchema, {
+  name: 'Access rule',
+  nameStrategy: 'title',
+  target: 'jsonSchema7',
+  definitions: {
+    DeadlineEntryJsonSchema,
+  },
+}) as JSONSchemaType<AccessControlJson>;
 
 export const ajvSchemas = {
   infoNewsItem,

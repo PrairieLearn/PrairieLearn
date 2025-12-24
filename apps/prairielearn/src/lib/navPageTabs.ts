@@ -40,6 +40,13 @@ export function getNavPageTabs() {
       },
 
       {
+        activeSubPage: 'student_groups',
+        urlSuffix: '/instance_admin/student_groups',
+        iconClasses: 'fas fa-users',
+        tabLabel: 'Student groups',
+      },
+
+      {
         activeSubPage: 'lti',
         urlSuffix: '/instance_admin/lti',
         iconClasses: 'fas fa-graduation-cap',

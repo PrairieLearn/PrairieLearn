@@ -220,6 +220,91 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // because `Group` comes before `GroupConfig` alphabetically.
 // *******************************************************************************
 
+export const AccessControlSchema = z.object({
+  assessment_id: IdSchema,
+  block_access: z.boolean(),
+  course_instance_id: IdSchema,
+  enabled: z.boolean(),
+  id: IdSchema, // BIGSERIAL primary key, optional on insert
+  list_before_release: z.boolean(),
+
+  // Date control fields
+  date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
+  date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_credit_overridden: z.boolean().nullable(),
+  date_control_due_date: DateFromISOString.nullable(),
+  date_control_due_date_overridden: z.boolean().nullable(),
+  date_control_duration_minutes: z.number().nullable(),
+  date_control_duration_minutes_overridden: z.boolean().nullable(),
+  date_control_early_deadlines_overridden: z.boolean().nullable(),
+  date_control_late_deadlines_overridden: z.boolean().nullable(),
+  date_control_overridden: z.boolean().nullable(),
+  date_control_password: z.string().nullable(),
+  date_control_password_overridden: z.boolean().nullable(),
+  date_control_release_date: DateFromISOString.nullable(),
+  date_control_release_date_overridden: z.boolean().nullable(),
+
+  // Prairie test control
+
+  // Question visibility
+  after_complete_hide_questions: z.boolean().nullable(),
+  after_complete_hide_questions_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_questions_again_date: DateFromISOString.nullable(),
+  after_complete_show_questions_again_date_overridden: z.boolean().nullable(),
+
+  // Score visibility
+  after_complete_hide_score: z.boolean().nullable(),
+  after_complete_show_score_again_date: DateFromISOString.nullable(),
+  after_complete_show_score_again_date_overridden: z.boolean().nullable(),
+  number: z.number().int(),
+
+  prairietest_control_overridden: z.boolean().nullable(),
+});
+
+export const AccessControlEarlyDeadlineSchema = z.object({
+  access_control_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AccessControlGroupMemberSchema = z.object({
+  group_id: IdSchema,
+  id: IdSchema,
+  user_id: IdSchema,
+});
+
+export const AccessControlGroupSchema = z.object({
+  // access_control_group_id: IdSchema, // XXX FIXME FIXME FIXME
+  course_instance_id: IdSchema,
+  description: z.string().nullable(),
+  id: IdSchema,
+  name: z.string().nullable(),
+  uuid: z.string(),
+});
+
+export const AccessControlLateDeadlineSchema = z.object({
+  access_control_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AccessControlPrairietestExamSchema = z.object({
+  access_control_id: IdSchema,
+  id: IdSchema,
+  read_only: z.boolean(),
+  uuid: z.string(),
+});
+
+export const AccessControlTargetSchema = z.object({
+  access_control_id: IdSchema,
+  id: IdSchema,
+  target_id: IdSchema,
+  target_type: z.enum(['assessment', 'group', 'individual']),
+});
+
 export const AccessLogSchema = null;
 export const AccessTokenSchema = null;
 
@@ -1349,6 +1434,21 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
+export const StudentGroupSchema = z.object({
+  course_instance_id: IdSchema,
+  deleted_at: DateFromISOString.nullable(),
+  id: IdSchema,
+  name: z.string(),
+});
+export type StudentGroup = z.infer<typeof StudentGroupSchema>;
+
+export const StudentGroupEnrollmentSchema = z.object({
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  student_group_id: IdSchema,
+});
+export type StudentGroupEnrollment = z.infer<typeof StudentGroupEnrollmentSchema>;
+
 export const SubmissionGradingContextEmbeddingSchema = z.object({
   assessment_question_id: IdSchema,
   created_at: DateFromISOString,
@@ -1552,6 +1652,13 @@ export type Zone = z.infer<typeof ZoneSchema>;
 // *******************************************************************************
 
 export const TableNames = [
+  'access_control',
+  'access_control_early_deadline',
+  'access_control_group_member',
+  'access_control_groups',
+  'access_control_late_deadline',
+  'access_control_prairietest_exam',
+  'access_control_target',
   'access_logs',
   'access_tokens',
   'administrators',
@@ -1640,6 +1747,8 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
+  'student_groups',
+  'student_group_enrollments',
   'submission_grading_context_embeddings',
   'submissions',
   'tags',

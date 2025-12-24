@@ -16,6 +16,7 @@ const featureNames = [
   // LTI 1.1. Deprecated so keep scope to course instance, where possible.
   'lti11',
   // Can be applied to any context.
+  'enhanced-access-control',
   'enrollment-management',
   'rich-text-editor',
 ] as const;
