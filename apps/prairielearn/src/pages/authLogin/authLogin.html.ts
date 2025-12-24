@@ -157,17 +157,6 @@ function LoginPageContainer({
             </div>
           </div>
         </main>
-        ${config.homepageFooterText && config.homepageFooterTextHref
-          ? html`
-              <footer class="footer small fw-light text-light text-center">
-                <div class="bg-secondary p-1">
-                  <a class="text-light" href="${config.homepageFooterTextHref}">
-                    ${config.homepageFooterText}
-                  </a>
-                </div>
-              </footer>
-            `
-          : ''}
       </body>
     </html>
   `;

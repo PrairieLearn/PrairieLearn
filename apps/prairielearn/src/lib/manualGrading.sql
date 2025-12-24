@@ -221,14 +221,16 @@ INSERT INTO
     starting_points,
     min_points,
     max_extra_points,
-    replace_auto_points
+    replace_auto_points,
+    grader_guidelines
   )
 VALUES
   (
     $starting_points,
     $min_points,
     $max_extra_points,
-    $replace_auto_points
+    $replace_auto_points,
+    $grader_guidelines
   )
 RETURNING
   id;
@@ -240,6 +242,7 @@ SET
   min_points = $min_points,
   max_extra_points = $max_extra_points,
   replace_auto_points = $replace_auto_points,
+  grader_guidelines = $grader_guidelines,
   modified_at = CURRENT_TIMESTAMP
 WHERE
   id = $rubric_id;

@@ -94,14 +94,14 @@ $I_T = V_T/R_T = 0.735 A$
 
 Create one or two questions using some of these basic elements:
 
-`pl-multiple-choice` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-multiple-choice) and [example](https://us.prairielearn.com/pl/course/108/question/6312319/preview)
+`pl-multiple-choice` [documentation](../elements/pl-multiple-choice.md) and [example](https://us.prairielearn.com/pl/course/108/question/6312319/preview)
 
-`pl-checkbox` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-checkbox) and [example](https://us.prairielearn.com/pl/course/108/question/1420145/preview)
+`pl-checkbox` [documentation](../elements/pl-checkbox.md) and [example](https://us.prairielearn.com/pl/course/108/question/1420145/preview)
 
-`pl-dropdown` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-dropdown) and [example](https://us.prairielearn.com/pl/course/108/question/7911603/preview)
+`pl-dropdown` [documentation](../elements/pl-dropdown.md) and [example](https://us.prairielearn.com/pl/course/108/question/7911603/preview)
 
-`pl-integer-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-integer-input) and [example](https://us.prairielearn.com/pl/course/108/question/3637014/preview)
+`pl-integer-input` [documentation](../elements/pl-integer-input.md) and [example](https://us.prairielearn.com/pl/course/108/question/3637014/preview)
 
-`pl-number-input` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-number-input) and [example](https://us.prairielearn.com/pl/course/108/question/3131525/preview)
+`pl-number-input` [documentation](../elements/pl-number-input.md) and [example](https://us.prairielearn.com/pl/course/108/question/3131525/preview)
 
-`pl-figure` [documentation](https://prairielearn.readthedocs.io/en/latest/elements/pl-figure) and [example](https://us.prairielearn.com/pl/course/108/question/611923/preview)
+`pl-figure` [documentation](../elements/pl-figure.md) and [example](https://us.prairielearn.com/pl/course/108/question/611923/preview)
