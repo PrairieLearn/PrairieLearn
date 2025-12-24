@@ -241,6 +241,7 @@ export const AiGradingJobSchema = z.object({
   model: z.string(),
   prompt: z.unknown(),
   prompt_tokens: z.number(),
+  rotation_correction_degrees: z.unknown().nullable(),
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 

@@ -1,11 +1,14 @@
-import type {
-  EmbeddingModel,
-  GenerateObjectResult,
-  GenerateTextResult,
-  ModelMessage,
-  UserContent,
+import {
+  type EmbeddingModel,
+  type GenerateObjectResult,
+  type GenerateTextResult,
+  type LanguageModel,
+  type ModelMessage,
+  type UserContent,
+  generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import sharp from 'sharp';
 import { z } from 'zod';
 
 import {
@@ -45,6 +48,7 @@ import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
+import { type ClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -378,6 +382,56 @@ export function generateSubmissionMessage({
   };
 }
 
+/**
+ * Returns all images the student submitted via pl-image-capture.
+ * Returns a mapping from an image's filename to its base64-encoded contents.
+ */
+export function extractSubmissionImages({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any>;
+}): Record<string, string> {
+  const images: Record<string, string> = {};
+
+  const $submission_html = cheerio.load(submission_text);
+
+  $submission_html
+    .root()
+    .find('body')
+    .contents()
+    .each((_, node) => {
+      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
+      if (!imageCaptureUUID) {
+        return;
+      }
+
+      const fileName = run(() => {
+        // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
+        const submittedFileName = $submission_html(node).data('file-name');
+        if (submittedFileName && typeof submittedFileName === 'string') {
+          return submittedFileName.trim();
+        }
+
+        // Old style, where we have to pick the filename out of the `data-options` attribute.
+        const options = $submission_html(node).data('options') as Record<string, string> | null;
+
+        return options?.submitted_file_name;
+      });
+
+      const fileData = submitted_answer._files?.find(
+        (file: { name: string; contents: string }) => file.name === fileName,
+      );
+
+      if (fileData) {
+        images[fileData.name] = fileData.contents;
+      }
+    });
+
+  return images;
+}
+
 export async function generateSubmissionEmbedding({
   course,
   question,
@@ -507,10 +561,87 @@ export async function insertAiGradingJob({
     job_sequence_id,
     prompt: JSON.stringify(prompt),
     completion: response,
+    rotation_correction_degrees: null,
     model: model_id,
     prompt_tokens: response.usage.inputTokens ?? 0,
     completion_tokens: response.usage.outputTokens ?? 0,
     cost: calculateResponseCost({ model: model_id, usage: response.usage }),
+    course_id,
+    course_instance_id,
+  });
+}
+
+/**
+ * Create an AI grading job that performed rotation correction on its submitted images.
+ * This accounts for all responses associated with detecting and correcting rotation issues.
+ *
+ * @param params
+ * @param params.grading_job_id
+ * @param params.job_sequence_id
+ * @param params.model_id
+ * @param params.prompt
+ * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
+ * @param params.rotationCorrectionResponses - The responses of the rotation correction LLM calls for each image.
+ * @param params.rotationCorrectionDegrees - The amount of clockwise rotation applied to each image.
+ * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
+ * @param params.course_id
+ * @param params.course_instance_id
+ */
+export async function insertAiGradingJobWithRotationCorrection({
+  grading_job_id,
+  job_sequence_id,
+  model_id,
+  prompt,
+  gradingResponseWithRotationIssue,
+  rotationCorrectionResponses,
+  rotationCorrectionDegrees,
+  gradingResponseWithRotationCorrection,
+  course_id,
+  course_instance_id,
+}: {
+  grading_job_id: string;
+  job_sequence_id: string;
+  model_id: AiGradingModelId;
+  prompt: ModelMessage[];
+  gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+  rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
+  rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+  gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
+  course_id: string;
+  course_instance_id?: string;
+}): Promise<void> {
+  let prompt_tokens =
+    (gradingResponseWithRotationIssue.usage.inputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.inputTokens ?? 0);
+  let completion_tokens =
+    (gradingResponseWithRotationIssue.usage.outputTokens ?? 0) +
+    (gradingResponseWithRotationCorrection.usage.outputTokens ?? 0);
+  let cost =
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationIssue.usage,
+    }) +
+    calculateResponseCost({
+      model: model_id,
+      usage: gradingResponseWithRotationCorrection.usage,
+    });
+
+  for (const rotationCorrectionResponse of Object.values(rotationCorrectionResponses)) {
+    prompt_tokens += rotationCorrectionResponse.usage.inputTokens ?? 0;
+    completion_tokens += rotationCorrectionResponse.usage.outputTokens ?? 0;
+    cost += calculateResponseCost({ model: model_id, usage: rotationCorrectionResponse.usage });
+  }
+
+  await execute(sql.insert_ai_grading_job, {
+    grading_job_id,
+    job_sequence_id,
+    prompt: JSON.stringify(prompt),
+    completion: gradingResponseWithRotationCorrection,
+    rotation_correction_degrees: rotationCorrectionDegrees,
+    model: model_id,
+    prompt_tokens,
+    completion_tokens,
+    cost,
     course_id,
     course_instance_id,
   });
@@ -635,4 +766,149 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+async function rotateBase64Image(
+  base64Image: string,
+  clockwiseRotation: ClockwiseRotationDegrees,
+): Promise<string> {
+  const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
+  const imageBuffer = Buffer.from(base64Data, 'base64');
+  const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
+  return rotatedImageBuffer.toString('base64');
+}
+
+/**
+ * Reorients a base64-encoded image to be upright using an LLM.
+ * Designed specifically for images of handwritten student submissions.
+ *
+ * The function rotates the image 0, 90, 180, and 270 degrees, then
+ * prompts the LLM to select which of the four images is closest to being upright.
+ *
+ * @param params
+ * @param params.image - The base64-encoded image to correct.
+ * @param params.model - The LLM to use for determining the correct orientation.
+ */
+export async function correctImageOrientation({
+  image,
+  model,
+}: {
+  image: string;
+  model: LanguageModel;
+}): Promise<{
+  correctedImage: string;
+  clockwiseRotation: ClockwiseRotationDegrees;
+  response: GenerateObjectResult<any>;
+}> {
+  const rotated90 = await rotateBase64Image(image, 90);
+  const rotated180 = await rotateBase64Image(image, 180);
+  const rotated270 = await rotateBase64Image(image, 270);
+
+  const prompt: ModelMessage[] = [
+    {
+      role: 'system',
+      content: formatPrompt([
+        'Of the four images provided, select the one that is closest to being upright.',
+        'Upright (0 degrees): The handwriting is in a standard reading position already.',
+        "Only use the student's handwriting to determine its orientation. Do not use the background or the page.",
+      ]),
+    },
+  ];
+
+  const images = [image, rotated90, rotated180, rotated270];
+
+  const rotationCorrectionDegrees = [0, 90, 180, 270] as ClockwiseRotationDegrees[];
+
+  for (let i = 1; i <= 4; i++) {
+    prompt.push({
+      role: 'user',
+      content: [
+        {
+          type: 'text',
+          text: `${i}:`,
+        },
+        {
+          type: 'image',
+          image: `data:image/jpeg;base64,${images[i - 1]}`,
+          providerOptions: {
+            openai: {
+              imageDetail: 'auto',
+            },
+          },
+        },
+      ],
+    });
+  }
+
+  const response = await generateObject({
+    model,
+    schema: RotationCorrectionOutputSchema,
+    messages: prompt,
+  });
+
+  const index = Number.parseInt(response.object.upright_image) - 1;
+
+  return {
+    correctedImage: images[index],
+    clockwiseRotation: rotationCorrectionDegrees[index],
+    response,
+  };
+}
+
+/**
+ * Reorients all submitted images to be upright using the provided LLM.
+ *
+ * @param param
+ * @param param.submittedAnswer - The student's submitted answer object.
+ * @param param.submittedImages - A mapping from filenames to base64-encoded images.
+ * @param param.model - The LLM to use for determining the correct orientations.
+ *
+ * @returns An updated submitted answer with corrected images, rotations correction amounts, and LLM responses.
+ */
+export async function correctImagesOrientation({
+  submittedAnswer,
+  /** The key is the filename, and the value is the base64-encoded image */
+  submittedImages,
+  model,
+}: {
+  submittedAnswer: Record<string, any>;
+  submittedImages: Record<string, string>;
+  model: LanguageModel;
+}) {
+  if (!submittedAnswer._files) {
+    return {
+      updatedSubmittedAnswer: submittedAnswer,
+      rotationCorrectionResponses: {},
+      rotationCorrectionDegrees: {},
+    };
+  }
+
+  const updatedSubmittedAnswer = { ...submittedAnswer };
+
+  const rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
+  const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
+
+  for (const [filename, image] of Object.entries(submittedImages)) {
+    const { correctedImage, clockwiseRotation, response } = await correctImageOrientation({
+      image,
+      model,
+    });
+
+    const existingIndex = submittedAnswer._files.findIndex(
+      (file: { name: string; contents: string }) => file.name === filename,
+    );
+
+    if (existingIndex !== -1) {
+      updatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
+    }
+
+    rotationCorrectionResponses[filename] = response;
+    rotationCorrectionDegrees[filename] = clockwiseRotation;
+  }
+
+  return {
+    updatedSubmittedAnswer,
+    rotationCorrectionResponses,
+    rotationCorrectionDegrees,
+  };
 }
