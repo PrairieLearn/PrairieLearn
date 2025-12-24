@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.js';
@@ -40,7 +41,6 @@ import {
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
-  IdSchema,
   type InstanceQuestion,
   type Question,
   type Submission,

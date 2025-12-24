@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { parseUidsString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import {
@@ -62,7 +62,7 @@ router.post(
     });
 
     if (req.body.__action === 'addAdmins') {
-      const uids = parseUidsString(req.body.uids, MAX_UIDS);
+      const uids = parseUniqueValuesFromString(req.body.uids, MAX_UIDS);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {
