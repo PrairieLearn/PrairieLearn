@@ -370,7 +370,7 @@ export async function aiGrade({
         for (const item of rubric_items) {
           RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
-              [item.description]: z.boolean(),
+              [item.id]: z.boolean(),
             }),
           );
         }
