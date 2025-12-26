@@ -232,7 +232,7 @@ export function ExtensionModifyModal({
               id="ext-date"
               type="datetime-local"
               step="1"
-              class="form-control"
+              class={clsx('form-control', errors.end_date && 'is-invalid')}
               {...register('end_date', {
                 required: 'End date is required',
                 validate: (value) => {
@@ -247,9 +247,7 @@ export function ExtensionModifyModal({
                 },
               })}
             />
-            {errors.end_date && (
-              <div class="text-danger small">{String(errors.end_date.message)}</div>
-            )}
+            {errors.end_date && <div class="form-text text-danger">{errors.end_date.message}</div>}
             <small class="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
           {saveMutation.isError && (
@@ -263,7 +261,8 @@ export function ExtensionModifyModal({
             </label>
             <textarea
               id="ext-uids"
-              class="form-control"
+              class={clsx('form-control', errors.uids && 'is-invalid')}
+              aria-errormessage={errors.uids ? 'ext-uids-error' : undefined}
               aria-describedby="ext-uids-help"
               rows={5}
               {...register('uids', {
@@ -271,7 +270,9 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div class="text-danger small">{String(errors.uids.message)}</div>
+              <div class="form-text text-danger" id="ext-uids-error">
+                {String(errors.uids.message)}
+              </div>
             )}
             <small id="ext-uids-help" class="form-text">
               Enter UIDs separated by commas, whitespace, or new lines.

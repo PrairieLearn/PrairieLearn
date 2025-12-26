@@ -3,9 +3,11 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
-import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+import { BooleanFromCheckboxSchema, DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
+import { propertyValueWithDefault } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
@@ -14,11 +16,24 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { start_date, end_date, course_instance_id } = z
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: res.locals.institution.id,
+      course_id: res.locals.course.id,
+    });
+
+    const {
+      start_date,
+      end_date,
+      course_instance_id,
+      self_enrollment_enabled,
+      self_enrollment_use_enrollment_code,
+    } = z
       .object({
         start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         course_instance_id: z.string(),
+        self_enrollment_enabled: BooleanFromCheckboxSchema,
+        self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
       })
       .parse(req.body);
 
@@ -41,6 +56,27 @@ router.post(
           }
         : undefined;
 
+    const selfEnrollmentEnabled = propertyValueWithDefault(
+      undefined,
+      self_enrollment_enabled,
+      true,
+      { isUIBoolean: true },
+    );
+    const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+      undefined,
+      self_enrollment_use_enrollment_code,
+      false,
+    );
+
+    const resolvedSelfEnrollment =
+      (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+      enrollmentManagementEnabled
+        ? {
+            enabled: selfEnrollmentEnabled,
+            useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+          }
+        : undefined;
+
     const fileTransferId = await copyCourseInstanceBetweenCourses({
       fromCourse: course,
       fromCourseInstance: courseInstance,
@@ -48,6 +84,7 @@ router.post(
       userId: res.locals.user.user_id,
       metadataOverrides: {
         publishing: resolvedPublishing,
+        selfEnrollment: resolvedSelfEnrollment,
       },
     });
 
