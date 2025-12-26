@@ -77,3 +77,23 @@ FROM
   LEFT OUTER JOIN sharing_set_questions AS ssq ON ssq.sharing_set_id = ss.id
 WHERE
   ss.course_id = $course_id;
+
+-- BLOCK author_for_qid
+WITH
+  author_to_qid AS (
+    SELECT
+      author_id
+    FROM
+      question_authors
+    WHERE
+      question_id = $question_id
+  )
+SELECT
+  authors.author_name,
+  authors.email,
+  authors.orcid,
+  authors.origin_course,
+  authors.id
+FROM
+  author_to_qid
+  LEFT JOIN authors ON author_to_qid.author_id = authors.id
