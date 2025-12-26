@@ -657,7 +657,7 @@ Alternatively, if you want to check if you _might_ be authorized to perform an a
 
 [ESLint](http://eslint.org/) and [Prettier](https://prettier.io/) are used to enforce consistent code conventions and formatting throughout the codebase. See `.eslintrc.js` and `.prettierrc.json` in the root of the PrairieLearn repository to view our specific configuration. The repo includes an [`.editorconfig`](https://editorconfig.org/) file that most editors will detect and use to automatically configure things like indentation. If your editor doesn't natively support an EditorConfig file, there are [plugins](https://editorconfig.org/#download) available for most other editors.
 
-For Python files, [ruff](https://docs.astral.sh/ruff/) is used for autoformatting and enforcing code conventions, and [Pyright](https://github.com/microsoft/pyright) is used for static typechecking. See `pyproject.toml` in the root of the PrairieLearn repository to view our specific configuration. We encourage all new Python code to include type hints for use with the static typechecker, as this makes it easier to read, review, and verify contributions.
+For Python files, [ruff](https://docs.astral.sh/ruff/) is used for autoformatting and enforcing code conventions, and [ty](https://docs.astral.sh/ty) is used for static typechecking. See `pyproject.toml` in the root of the PrairieLearn repository to view our specific configuration. We encourage all new Python code to include type hints for use with the static typechecker, as this makes it easier to read, review, and verify contributions.
 
 To lint the code, use `make lint`. This is also run by the CI tests.
 

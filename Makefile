@@ -168,7 +168,7 @@ typecheck-scripts:
 typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps
-	@yarn pyright
+	@python3 -m ty check
 typecheck-sql:
 	@yarn postgres-language-server check .
 

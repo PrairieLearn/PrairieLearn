@@ -16044,7 +16044,6 @@ __metadata:
     prettier-plugin-sh: "npm:^0.18.0"
     prettier-plugin-sql: "npm:^0.19.2"
     prettier-plugin-toml: "npm:^2.0.6"
-    pyright: "npm:^1.1.407"
     react: "npm:^19.2.0"
     react-dom: "npm:^19.2.0"
     s3rver: "npm:^3.7.1"
@@ -16521,21 +16520,6 @@ __metadata:
   version: 2.3.1
   resolution: "punycode@npm:2.3.1"
   checksum: 10c0/14f76a8206bc3464f794fb2e3d3cc665ae416c01893ad7a02b23766eb07159144ee612ad67af5e84fa4479ccfe67678c4feb126b0485651b302babf66f04f9e9
-  languageName: node
-  linkType: hard
-
-"pyright@npm:^1.1.407":
-  version: 1.1.407
-  resolution: "pyright@npm:1.1.407"
-  dependencies:
-    fsevents: "npm:~2.3.3"
-  dependenciesMeta:
-    fsevents:
-      optional: true
-  bin:
-    pyright: index.js
-    pyright-langserver: langserver.index.js
-  checksum: 10c0/524bf2a6f979f294e91dfea555285f804a8b8a1581a8b7618775eb18fa17b4d86652301706549396419c6b1fa7f276fc24cb3ec58cd5dff72fae150bb49619bb
   languageName: node
   linkType: hard
 
