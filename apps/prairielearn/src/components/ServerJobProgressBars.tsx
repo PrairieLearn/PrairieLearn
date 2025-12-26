@@ -1,6 +1,7 @@
+import type { DefaultEventsMap } from "@socket.io/component-emitter";
 import { useEffect, useMemo, useState } from "preact/compat";
 import { Alert, ProgressBar } from "react-bootstrap";
-import { io } from "socket.io-client";
+import { io, Socket } from "socket.io-client";
 import type { JobItemStatus, StatusMessageWithProgress } from "../lib/serverJobProgressSocket.shared.js";
 
 type JobProgress = {
@@ -13,13 +14,16 @@ type JobProgress = {
 
 export function useJobSequenceProgress(
   {
+    aiGradingMode,
     jobSequenceIds,
     jobSequenceTokens
   } : {
+    aiGradingMode: boolean;
     jobSequenceIds: string[],
     jobSequenceTokens: Record<string, string>
   }
 ) {
+  const [socket, setSocket] = useState<Socket<DefaultEventsMap, DefaultEventsMap> | null>(null);
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
   const displayedStatuses = useMemo(() => {
     const statusPrecedence: Record<string, number> = {
@@ -55,14 +59,24 @@ export function useJobSequenceProgress(
   }, [jobsProgress]);
 
   useEffect(() => {
-    const socket = io('/server-job-progress');
-
     if (!jobSequenceIds) {
       return;
     }
+    if (!aiGradingMode) {
+      console.log('AI grading mode disabled, not connecting to server job progress socket.');
+      return;
+    }
+
+    console.log('Connecting to server job progress socket.');
+
+    let currentSocket = socket;
+    if (!currentSocket) {
+      currentSocket = io('/server-job-progress');
+      setSocket(currentSocket);
+    }
 
     for (const jobSequenceId of jobSequenceIds) {
-      socket.emit(
+      currentSocket.emit(
         'joinServerJobProgress',
         {
           job_sequence_id: jobSequenceId,
@@ -91,7 +105,7 @@ export function useJobSequenceProgress(
         }
       )
 
-      socket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
+      currentSocket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
         if (msg.job_sequence_id !== jobSequenceId) {
             return;
         }
@@ -112,8 +126,14 @@ export function useJobSequenceProgress(
         }));
       });
     }
+    return () => {
+      console.log('Disconnect socket.')
+      if (currentSocket) {
+        currentSocket.disconnect();
+      }
+    }
   }, [
-    jobSequenceIds
+    jobSequenceIds, aiGradingMode
   ])
 
   function handleDismissCompleteJobSequence(

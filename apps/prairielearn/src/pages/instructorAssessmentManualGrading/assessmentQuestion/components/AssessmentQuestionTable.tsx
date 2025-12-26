@@ -391,6 +391,7 @@ export function AssessmentQuestionTable({
   );
 
   const jobSequenceProgress = useJobSequenceProgress({
+    aiGradingMode,
     jobSequenceIds: ongoingJobSequenceIds,
     jobSequenceTokens,
   });
@@ -642,19 +643,21 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
-      <div class="mb-3">
-        <ServerJobProgressBars
-          inProgressText="AI grading in progress"
-          inProgressIcon="bi-stars"
-          completeText="AI grading complete"
-          completeIcon="bi-check-circle-fill"
-          failedText="AI grading failed"
-          failedIcon="bi-exclamation-triangle-fill"
-          itemNames="submissions graded"
-          jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
-          onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
-        />
-      </div>
+      {aiGradingMode && (
+        <div class="mb-3">
+          <ServerJobProgressBars
+            inProgressText="AI grading in progress"
+            inProgressIcon="bi-stars"
+            completeText="AI grading complete"
+            completeIcon="bi-check-circle-fill"
+            failedText="AI grading failed"
+            failedIcon="bi-exclamation-triangle-fill"
+            itemNames="submissions graded"
+            jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
+            onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
+          />
+        </div>
+      )}
       {batchActionMutation.isError && (
         <Alert
           variant="danger"

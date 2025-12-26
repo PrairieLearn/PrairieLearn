@@ -236,94 +236,90 @@ export function createColumns({
       cell: (info) => {
         const rowId = info.row.original.instance_question.id;
         const aiGradingStatus = displayedStatuses[rowId];
-
-        console.log('displayedStatuses', displayedStatuses);
-
         const requiresGrading = info.getValue();
-        
-        if (aiGradingStatus) {
-          if (aiGradingStatus === 'complete') {
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'AI grading completed successfully',
-                  props: { id: `ai-status-${rowId}-success-tooltip` },
-                }}
-              >
-                <span class="d-flex align-items-center gap-2">
-                  <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
-                  <span>Graded</span>
-                </span>
-              </OverlayTrigger>
-            );
-          }
-          
-          if (aiGradingStatus === 'in_progress') {
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'AI grading in progress',
-                  props: { id: `ai-status-${rowId}-progress-tooltip` },
-                }}
-              >
-                <span class="d-flex align-items-center gap-2">
-                  <span
-                    class="d-inline-block text-secondary"
-                    style={{
-                      width: '0.75rem',
-                      height: '0.75rem',
-                      borderRadius: '50%',
-                      backgroundColor: 'currentColor',
-                      animation: 'pulse-opacity 2s ease-in-out infinite',
-                    }}
-                    aria-hidden="true"
-                  />
-                  <style>{`
-                    @keyframes pulse-opacity {
-                      0%, 100% { opacity: 1; }
-                      50% { opacity: 0.3; }
-                    }
-                  `}</style>
-                  <span>AI grading...</span>
-                </span>
-              </OverlayTrigger>
-            );
-          }
-          
-          if (aiGradingStatus === 'pending') {
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'AI grading queued',
-                  props: { id: `ai-status-${rowId}-queued-tooltip` },
-                }}
-              >
-                <span class="d-flex align-items-center gap-2">
-                  <i class="bi bi-clock text-secondary" aria-hidden="true" />
-                  <span>Queued</span>
-                </span>
-              </OverlayTrigger>
-            );
-          }
-          
-          if (aiGradingStatus === 'failed') {
-            return (
-              <OverlayTrigger
-                tooltip={{
-                  body: 'AI grading failed',
-                  props: { id: `ai-status-${rowId}-failed-tooltip` },
-                }}
-              >
-                <span class="d-flex align-items-center gap-2">
-                  <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
-                  <span>Failed</span>
-                </span>
-              </OverlayTrigger>
-            );
-          }
+        if (!aiGradingMode || !aiGradingStatus) {
+          return requiresGrading ? 'Requires grading' : 'Graded';
+        }
+        if (aiGradingStatus === 'complete') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading completed successfully',
+                props: { id: `ai-status-${rowId}-success-tooltip` },
+              }}
+            >
+              <span class="d-flex align-items-center gap-2">
+                <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
+                <span>Graded</span>
+              </span>
+            </OverlayTrigger>
+          );
         }
         
-        return requiresGrading ? 'Requires grading' : 'Graded';
+        if (aiGradingStatus === 'in_progress') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading in progress',
+                props: { id: `ai-status-${rowId}-progress-tooltip` },
+              }}
+            >
+              <span class="d-flex align-items-center gap-2">
+                <span
+                  class="d-inline-block text-secondary"
+                  style={{
+                    width: '0.75rem',
+                    height: '0.75rem',
+                    borderRadius: '50%',
+                    backgroundColor: 'currentColor',
+                    animation: 'pulse-opacity 2s ease-in-out infinite',
+                  }}
+                  aria-hidden="true"
+                />
+                <style>{`
+                  @keyframes pulse-opacity {
+                    0%, 100% { opacity: 1; }
+                    50% { opacity: 0.3; }
+                  }
+                `}</style>
+                <span>AI grading...</span>
+              </span>
+            </OverlayTrigger>
+          );
+        }
+        
+        if (aiGradingStatus === 'pending') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading queued',
+                props: { id: `ai-status-${rowId}-queued-tooltip` },
+              }}
+            >
+              <span class="d-flex align-items-center gap-2">
+                <i class="bi bi-clock text-secondary" aria-hidden="true" />
+                <span>Queued</span>
+              </span>
+            </OverlayTrigger>
+          );
+        }
+        
+        if (aiGradingStatus === 'failed') {
+          return (
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI grading failed',
+                props: { id: `ai-status-${rowId}-failed-tooltip` },
+              }}
+            >
+              <span class="d-flex align-items-center gap-2">
+                <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+                <span>Failed</span>
+              </span>
+            </OverlayTrigger>
+          );
+        }
+      
       },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
