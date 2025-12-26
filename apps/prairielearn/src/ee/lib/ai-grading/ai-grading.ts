@@ -184,7 +184,6 @@ export async function aiGrade({
 
   await emitServerJobProgressUpdate({
     job_sequence_id: serverJob.jobSequenceId,
-    valid: true,
     num_complete: 0,
     num_failed: 0,
     num_total: instance_questions.length,
@@ -653,7 +652,6 @@ export async function aiGrade({
           num_complete += 1;
           await emitServerJobProgressUpdate({
             job_sequence_id: serverJob.jobSequenceId,
-            valid: true,
             num_complete,
             num_failed,
             num_total: instance_questions.length,
