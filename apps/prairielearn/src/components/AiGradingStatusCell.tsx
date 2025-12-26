@@ -38,7 +38,7 @@ export function AiGradingStatusCell({
       >
         <span class="d-flex align-items-center gap-2">
           <div class="spinner-grow spinner-grow-sm text-secondary bg-secondary" role="status">
-            <span class="sr-only">Loading...</span>
+            <span class="visually-hidden">Loading...</span>
           </div>
           <span>AI grading...</span>
         </span>

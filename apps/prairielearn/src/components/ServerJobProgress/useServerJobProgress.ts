@@ -3,14 +3,14 @@ import { io } from 'socket.io-client';
 
 import type {
   JobItemStatus,
-  StatusMessageWithProgress,
-  StatusMessageWithProgressValid,
+  JobProgress,
+  ProgressUpdateMessage,
 } from '../../lib/serverJobProgressSocket.shared.js';
 
 /**
  * Manages and retrieves live progress information for server jobs via WebSocket connections.
  *
- * `ServerJobsProgressInfo` can be used to display the retrieved progress information.
+ * The `ServerJobsProgressInfo` component can be used to display the retrieved progress information.
  *
  * @param params
  *
@@ -29,7 +29,7 @@ export function useServerJobProgress({
   enabled: boolean;
   ongoingJobSequenceTokens: Record<string, string> | null;
 }) {
-  const [jobsProgress, setJobsProgress] = useState<Record<string, StatusMessageWithProgress>>({});
+  const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
 
   /**
    * The status to display for a specific job item across all ongoing jobs.
@@ -74,8 +74,8 @@ export function useServerJobProgress({
           job_sequence_id: jobSequenceId,
           job_sequence_token: ongoingJobSequenceTokens[jobSequenceId],
         },
-        (response: StatusMessageWithProgressValid) => {
-          if (!response.valid) {
+        (response: ProgressUpdateMessage) => {
+          if (!response.has_progress_data) {
             return;
           }
           setJobsProgress((prev) => ({
@@ -86,8 +86,8 @@ export function useServerJobProgress({
       );
 
       // Listen for progress updates for this job sequence.
-      socket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
-        if (msg.job_sequence_id !== jobSequenceId) {
+      socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
+        if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) {
           return;
         }
         setJobsProgress((prev) => ({

@@ -8,9 +8,10 @@ import { checkJobSequenceToken } from './checkJobSequenceToken.js';
 import { config } from './config.js';
 import { ensureProps } from './ensureProps.js';
 import {
-  type StatusMessage,
-  StatusMessageWithProgressSchema,
-  type StatusMessageWithProgressValid,
+  type ClientConnectMessage,
+  type JobProgress,
+  JobProgressSchema,
+  type ProgressUpdateMessage,
 } from './serverJobProgressSocket.shared.js';
 import * as socketServer from './socket-server.js';
 
@@ -39,7 +40,7 @@ export function init() {
 }
 
 export function connection(socket: Socket) {
-  socket.on('joinServerJobProgress', async (msg: StatusMessage, callback) => {
+  socket.on('joinServerJobProgress', async (msg: ClientConnectMessage, callback) => {
     if (!ensureProps(msg, ['job_sequence_id', 'job_sequence_token'])) {
       return callback(null);
     }
@@ -62,11 +63,11 @@ export function connection(socket: Socket) {
 
       return callback({
         job_sequence_id: msg.job_sequence_id,
-        valid: false,
-      } satisfies StatusMessageWithProgressValid);
+        has_progress_data: false,
+      } satisfies ProgressUpdateMessage);
     }
 
-    const result = StatusMessageWithProgressSchema.safeParse(progress);
+    const result = JobProgressSchema.safeParse(progress);
     if (!result.success) {
       return callback(null);
     }
@@ -74,19 +75,19 @@ export function connection(socket: Socket) {
 
     callback({
       job_sequence_id: msg.job_sequence_id,
-      valid: true,
+      has_progress_data: true,
       num_complete: progressData.num_complete,
       num_failed: progressData.num_failed,
       num_total: progressData.num_total,
       item_statuses: progressData.item_statuses,
-    } satisfies StatusMessageWithProgressValid);
+    } satisfies ProgressUpdateMessage);
   });
 }
 
 /**
  * Emits a server job progress update event for the specified job sequence ID.
  */
-export async function emitServerJobProgressUpdate(progress: StatusMessageWithProgressValid) {
+export async function emitServerJobProgressUpdate(progress: JobProgress) {
   namespace
     .to(`server-job-progress-${progress.job_sequence_id}`)
     .emit('serverJobProgressUpdate', progress);

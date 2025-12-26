@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-export interface StatusMessage {
+export interface ClientConnectMessage {
   job_sequence_id: string;
   job_sequence_token: string;
 }
@@ -18,7 +18,10 @@ export enum JobItemStatus {
 
 export const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
 
-export const StatusMessageWithProgressSchema = z.object({
+/**
+ * Describes the overall progress of a server job.
+ */
+export const JobProgressSchema = z.object({
   job_sequence_id: z.string(),
   /**
    * Number of items completed, including failed items.
@@ -29,20 +32,21 @@ export const StatusMessageWithProgressSchema = z.object({
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
 });
 
-export type StatusMessageWithProgress = z.infer<typeof StatusMessageWithProgressSchema>;
+export type JobProgress = z.infer<typeof JobProgressSchema>;
 
-export const StatusMessageWithProgressValidSchema = z.discriminatedUnion('valid', [
-  StatusMessageWithProgressSchema.extend({
-    job_sequence_id: z.string(),
-    valid: z.literal(true),
+/**
+ * Progress update message sent from the server job progress socket.
+ */
+export const ProgressUpdateMessageSchema = z.discriminatedUnion('has_progress_data', [
+  JobProgressSchema.extend({
+    /** Progress data was available in the cache. */
+    has_progress_data: z.literal(true),
   }),
   z.object({
-    /**
-     * True if the progress data was found in the cache, false otherwise.
-     */
     job_sequence_id: z.string(),
-    valid: z.literal(false),
+    /** No progress data was available in the cache. */
+    has_progress_data: z.literal(false),
   }),
 ]);
 
-export type StatusMessageWithProgressValid = z.infer<typeof StatusMessageWithProgressValidSchema>;
+export type ProgressUpdateMessage = z.infer<typeof ProgressUpdateMessageSchema>;

@@ -1,7 +1,7 @@
 import { useMemo } from 'preact/compat';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
-import type { StatusMessageWithProgress } from '../../lib/serverJobProgressSocket.shared.js';
+import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
 /**
  * Displays progress information for multiple server jobs.
@@ -11,7 +11,10 @@ import type { StatusMessageWithProgress } from '../../lib/serverJobProgressSocke
  *
  * @param params
  *
- * @param params.statusIcons Icon indicating the server job status.
+ * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
+ * @param params.jobsProgress Progress information for each server job.
+ *
+ * @param params.statusIcons Icons for indicating the server job status.
  * @param params.statusIcons.inProgress Icon for in-progress jobs.
  * @param params.statusIcons.complete Icon for completed jobs.
  * @param params.statusIcons.failed Icon for failed jobs.
@@ -21,8 +24,6 @@ import type { StatusMessageWithProgress } from '../../lib/serverJobProgressSocke
  * @param params.statusText.complete Text for completed jobs.
  * @param params.statusText.failed Text for failed jobs.
  *
- * @param params.itemNames Name of the items being processed (e.g. "submissions graded").
- * @param params.jobsProgress Progress information for each server job.
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 export function ServerJobsProgressInfo({
@@ -32,6 +33,8 @@ export function ServerJobsProgressInfo({
   jobsProgress,
   onDismissCompleteJobSequence,
 }: {
+  itemNames: string;
+  jobsProgress: JobProgress[];
   statusIcons: {
     inProgress?: string;
     complete?: string;
@@ -42,8 +45,6 @@ export function ServerJobsProgressInfo({
     complete?: string;
     failed?: string;
   };
-  itemNames: string;
-  jobsProgress: StatusMessageWithProgress[];
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const statusIconsSafe = {
