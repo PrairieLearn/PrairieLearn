@@ -3,7 +3,107 @@ import { Alert, ProgressBar } from 'react-bootstrap';
 
 import type { StatusMessageWithProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
-function ServerJobProgressBar({
+/**
+ * Displays progress information for multiple server jobs.
+ *
+ * This is used alongside the `useServerJobProgress` hook to display live progress information
+ * for server jobs, retrieved via WebSocket connections.
+ *
+ * @param params
+ *
+ * @param params.statusIcons Icon indicating the server job status.
+ * @param params.statusIcons.inProgress Icon for in-progress jobs.
+ * @param params.statusIcons.complete Icon for completed jobs.
+ * @param params.statusIcons.failed Icon for failed jobs.
+ *
+ * @param params.statusText Text describing the server job status.
+ * @param params.statusText.inProgress Text for in-progress jobs.
+ * @param params.statusText.complete Text for completed jobs.
+ * @param params.statusText.failed Text for failed jobs.
+ *
+ * @param params.itemNames Name of the items being processed (e.g. "submissions graded").
+ * @param params.jobsProgress Progress information for each server job.
+ * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ */
+export function ServerJobsProgressInfo({
+  statusIcons,
+  statusText,
+  itemNames,
+  jobsProgress,
+  onDismissCompleteJobSequence,
+}: {
+  statusIcons: {
+    inProgress?: string;
+    complete?: string;
+    failed?: string;
+  };
+  statusText: {
+    inProgress?: string;
+    complete?: string;
+    failed?: string;
+  };
+  itemNames: string;
+  jobsProgress: StatusMessageWithProgress[];
+  onDismissCompleteJobSequence: (jobSequenceId: string) => void;
+}) {
+  const statusIconsSafe = {
+    inProgress: statusIcons.inProgress || 'bi-hourglass-split',
+    complete: statusIcons.complete || 'bi-check-circle-fill',
+    failed: statusIcons.failed || 'bi-x-circle-fill',
+  };
+
+  const statusTextSafe = {
+    inProgress: statusText.inProgress || 'Job in progress',
+    complete: statusText.complete || 'Job complete',
+    failed: statusText.failed || 'Job failed',
+  };
+
+  return (
+    <div class={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
+      {jobsProgress.map((jobProgress) => (
+        <ServerJobProgressInfo
+          key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
+          jobSequenceId={jobProgress.job_sequence_id}
+          nums={{
+            complete: jobProgress.num_complete,
+            failed: jobProgress.num_failed,
+            total: jobProgress.num_total,
+          }}
+          statusIcons={statusIconsSafe}
+          statusText={statusTextSafe}
+          itemNames={itemNames}
+          onDismissCompleteJobSequence={onDismissCompleteJobSequence}
+        />
+      ))}
+    </div>
+  );
+}
+
+/**
+ * Displays progress information for a single server job.
+ *
+ * @param params
+ * @param params.jobSequenceId The server job sequence ID to display progress info for.
+ * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
+ *
+ * @param params.nums
+ * @param params.nums.complete Number of job items completed (including failed items).
+ * @param params.nums.failed Number of job items that failed.
+ * @param params.nums.total Total number of items.
+ *
+ * @param params.statusIcons Icon indicating the server job status.
+ * @param params.statusIcons.inProgress Icon for in-progress jobs.
+ * @param params.statusIcons.complete Icon for completed jobs.
+ * @param params.statusIcons.failed Icon for failed jobs.
+ *
+ * @param params.statusText Text describing the server job status.
+ * @param params.statusText.inProgress Text for in-progress jobs.
+ * @param params.statusText.complete Text for completed jobs.
+ * @param params.statusText.failed Text for failed jobs.
+ *
+ * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
+ */
+function ServerJobProgressInfo({
   jobSequenceId,
   nums,
   statusIcons,
@@ -12,23 +112,22 @@ function ServerJobProgressBar({
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
+  itemNames: string;
   nums: {
     complete: number;
     failed: number;
     total: number;
-  },
+  };
   statusIcons: {
     inProgress: string;
     complete: string;
     failed: string;
-  },
+  };
   statusText: {
     inProgress: string;
     complete: string;
     failed: string;
-  },
-  /** What is being counted: e.g. submissions graded, students invited */
-  itemNames: string;
+  };
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const jobStatus = useMemo(() => {
@@ -38,36 +137,32 @@ function ServerJobProgressBar({
     return 'inProgress';
   }, [nums]);
 
-  const {
-    text,
-    icon,
-    variant
-  } = useMemo(() => {
+  const { text, icon, variant } = useMemo(() => {
     if (jobStatus === 'complete') {
       return {
         text: statusText.complete,
         icon: statusIcons.complete,
-        variant: 'success'
+        variant: 'success',
       };
     }
     if (jobStatus === 'failed') {
       return {
         text: statusText.failed,
         icon: statusIcons.failed,
-        variant: 'danger'
+        variant: 'danger',
       };
     }
     return {
       text: statusText.inProgress,
       icon: statusIcons.inProgress,
-      variant: 'info'
+      variant: 'info',
     };
-  }, [statusText, statusIcons, jobStatus])
+  }, [statusText, statusIcons, jobStatus]);
 
   return (
     <Alert
       variant={variant}
-      class="mb-3"
+      class="mb-0"
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
@@ -100,62 +195,5 @@ function ServerJobProgressBar({
         )}
       </div>
     </Alert>
-  );
-}
-
-/**
- * Displays progress bars for multiple server jobs.
- */
-export function ServerJobProgressBars({
-  statusIcons,
-  statusText,
-  itemNames,
-  jobsProgress,
-  onDismissCompleteJobSequence,
-}: {
-  statusIcons: {
-    inProgress?: string;
-    complete?: string;
-    failed?: string;
-  },
-  statusText: {
-    inProgress?: string;
-    complete?: string;
-    failed?: string;
-  },
-  itemNames: string;
-  jobsProgress: StatusMessageWithProgress[];
-  onDismissCompleteJobSequence: (jobSequenceId: string) => void;
-}) {
-  const statusIconsSafe = {
-    inProgress: statusIcons.inProgress || 'bi-hourglass-split',
-    complete: statusIcons.complete || 'bi-check-circle-fill',
-    failed: statusIcons.failed || 'bi-x-circle-fill',
-  };
-
-  const statusTextSafe = {
-    inProgress: statusText.inProgress || 'Job in progress',
-    complete: statusText.complete || 'Job complete',
-    failed: statusText.failed || 'Job failed',
-  };
-  
-  return (
-    <div class="d-flex flex-column">
-      {jobsProgress.map((jobProgress) => (
-        <ServerJobProgressBar
-          key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
-          jobSequenceId={jobProgress.job_sequence_id}
-          nums={{
-            complete: jobProgress.num_complete,
-            failed: jobProgress.num_failed,
-            total: jobProgress.num_total,
-          }}
-          statusIcons={statusIconsSafe}
-          statusText={statusTextSafe}
-          itemNames={itemNames}
-          onDismissCompleteJobSequence={onDismissCompleteJobSequence}
-        />
-      ))}
-    </div>
   );
 }

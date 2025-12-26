@@ -640,7 +640,9 @@ export async function aiGrade({
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
           const result = await gradeInstanceQuestion(instance_question, logger);
-          item_statuses[instance_question.id] = result ? JobItemStatus.complete : JobItemStatus.failed;
+          item_statuses[instance_question.id] = result
+            ? JobItemStatus.complete
+            : JobItemStatus.failed;
           return result;
         } catch (err: any) {
           logger.error(err);

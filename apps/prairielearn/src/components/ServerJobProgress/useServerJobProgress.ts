@@ -1,52 +1,78 @@
 import { useEffect, useMemo, useState } from 'preact/compat';
 import { io } from 'socket.io-client';
 
-import type { JobItemStatus, StatusMessageWithProgress, StatusMessageWithProgressValid } from '../../lib/serverJobProgressSocket.shared.js';
+import type {
+  JobItemStatus,
+  StatusMessageWithProgress,
+  StatusMessageWithProgressValid,
+} from '../../lib/serverJobProgressSocket.shared.js';
 
-export function useJobSequenceProgress({
-  aiGradingMode,
-  jobSequenceIds,
-  jobSequenceTokens,
+/**
+ * Manages and retrieves live progress information for server jobs via WebSocket connections.
+ *
+ * `ServerJobsProgressInfo` can be used to display the retrieved progress information.
+ *
+ * @param params
+ *
+ * @param params.enabled If true, the hook connects to the WebSocket for progress updates; otherwise, it does not.
+ * Use this to save resources if server job progress updates aren't needed.
+ *
+ * E.g. For the assessment questions page, if AI grading mode is off but AI grading jobs are ongoing in the background,
+ * progress updates won't be displayed, so we can skip connecting to the WebSocket.
+ *
+ * @param params.ongoingJobSequenceTokens A mapping of ongoing job sequence IDs to their server-generated tokens. Used to authenticate the WebSocket connection for each job.
+ */
+export function useServerJobProgress({
+  enabled,
+  ongoingJobSequenceTokens,
 }: {
-  aiGradingMode: boolean;
-  jobSequenceIds: string[];
-  jobSequenceTokens: Record<string, string>;
+  enabled: boolean;
+  ongoingJobSequenceTokens: Record<string, string> | null;
 }) {
   const [jobsProgress, setJobsProgress] = useState<Record<string, StatusMessageWithProgress>>({});
 
-  // An instance question's displayed status is the minimum status
-  // across all jobs grading it. 
+  /**
+   * The status to display for a specific job item across all ongoing jobs.
+   *
+   * If multiple jobs are processing the same item, the least progressed status is shown --
+   * from highest to lowest precedence: queued, in_progress, failed, complete.
+   */
   const displayedStatuses = useMemo(() => {
     const merged: Record<string, JobItemStatus> = {};
-    if (!aiGradingMode) {
-        return merged;
+    if (!enabled) {
+      return merged;
     }
     for (const job of Object.values(jobsProgress)) {
-        if (!job.item_statuses) {
-            continue;
+      if (!job.item_statuses) {
+        continue;
+      }
+      for (const [itemId, status] of Object.entries(job.item_statuses)) {
+        if (!(itemId in merged) || status < merged[itemId]) {
+          merged[itemId] = status;
         }
-        for (const [itemId, status] of Object.entries(job.item_statuses)) {
-            if (!(itemId in merged) || status < merged[itemId]) {
-                merged[itemId] = status;
-            }
-        }
+      }
     }
     return merged;
-  }, [jobsProgress, aiGradingMode]);
+  }, [jobsProgress, enabled]);
 
   useEffect(() => {
-    if (jobSequenceIds.length === 0 || !aiGradingMode) {
+    if (
+      !ongoingJobSequenceTokens ||
+      Object.keys(ongoingJobSequenceTokens).length === 0 ||
+      !enabled
+    ) {
       return;
     }
 
     const socket = io('/server-job-progress');
 
-    for (const jobSequenceId of jobSequenceIds) {
+    for (const jobSequenceId of Object.keys(ongoingJobSequenceTokens)) {
+      // Join the WebSocket room for this job sequence to receive progress updates.
       socket.emit(
         'joinServerJobProgress',
         {
           job_sequence_id: jobSequenceId,
-          job_sequence_token: jobSequenceTokens[jobSequenceId],
+          job_sequence_token: ongoingJobSequenceTokens[jobSequenceId],
         },
         (response: StatusMessageWithProgressValid) => {
           if (!response.valid) {
@@ -54,32 +80,38 @@ export function useJobSequenceProgress({
           }
           setJobsProgress((prev) => ({
             ...prev,
-            [jobSequenceId]: response
+            [jobSequenceId]: response,
           }));
         },
       );
 
+      // Listen for progress updates for this job sequence.
       socket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
         if (msg.job_sequence_id !== jobSequenceId) {
           return;
         }
         setJobsProgress((prev) => ({
           ...prev,
-          [jobSequenceId]: msg
+          [jobSequenceId]: msg,
         }));
       });
     }
     return () => {
       socket.disconnect();
     };
-  }, [jobSequenceTokens, jobSequenceIds, aiGradingMode]);
+  }, [ongoingJobSequenceTokens, enabled]);
 
+  /**
+   * When the user dismisses a completed job progress alert, remove the job from state.
+   */
   function handleDismissCompleteJobSequence(jobSequenceId: string) {
     if (!(jobSequenceId in jobsProgress)) {
       return;
     }
 
     const jobProgress = jobsProgress[jobSequenceId];
+
+    // Only dismiss if the job is complete.
     if (jobProgress.num_complete < jobProgress.num_total) {
       return;
     }

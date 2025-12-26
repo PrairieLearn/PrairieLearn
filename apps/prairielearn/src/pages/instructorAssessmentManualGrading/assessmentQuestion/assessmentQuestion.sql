@@ -102,9 +102,9 @@ WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
 
--- BLOCK select_ai_grading_job_sequences_for_assessment_question
+-- BLOCK select_ai_grading_job_sequence_ids_for_assessment_question
 SELECT
-  js.*
+  js.id
 FROM
   job_sequences AS js
 WHERE

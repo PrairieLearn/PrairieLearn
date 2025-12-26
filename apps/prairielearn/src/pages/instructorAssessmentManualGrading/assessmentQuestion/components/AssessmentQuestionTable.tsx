@@ -27,10 +27,8 @@ import {
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
-import {
-  ServerJobProgressBars
-} from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
-import { useJobSequenceProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
+import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
@@ -85,8 +83,7 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
-  ongoingJobSequenceIds: string[];
-  jobSequenceTokens: Record<string, string>;
+  ongoingJobSequenceTokens: Record<string, string> | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -162,12 +159,11 @@ export function AssessmentQuestionTable({
   aiGradingModelSelectionEnabled,
   rubricData,
   instanceQuestionGroups,
-  jobSequenceTokens,
   courseStaff,
   course,
   courseInstance,
   aiGradingStats,
-  ongoingJobSequenceIds,
+  ongoingJobSequenceTokens,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -393,18 +389,19 @@ export function AssessmentQuestionTable({
     [columnFilters, columnFilterSetters],
   );
 
-  const jobSequenceProgress = useJobSequenceProgress({
-    aiGradingMode,
-    jobSequenceIds: ongoingJobSequenceIds,
-    jobSequenceTokens,
+  const serverJobProgress = useServerJobProgress({
+    enabled: aiGradingMode,
+    ongoingJobSequenceTokens,
   });
 
-  // Refetch instance questions whenever job progress updates
+  // Refresh the displayed table data when server job progress updates, since
+  // instance question grading data (e.g. AI agreements, grading status)
+  // may have changed.
   useEffect(() => {
     void queryClientInstance.invalidateQueries({
       queryKey: ['instance-questions'],
     });
-  }, [jobSequenceProgress.jobsProgress, queryClientInstance]);
+  }, [serverJobProgress.jobsProgress, queryClientInstance]);
 
   // Create columns using the extracted function
   const columns = useMemo(
@@ -412,7 +409,7 @@ export function AssessmentQuestionTable({
       createColumns({
         aiGradingMode,
         instanceQuestionGroups,
-        displayedStatuses: jobSequenceProgress.displayedStatuses,
+        displayedStatuses: serverJobProgress.displayedStatuses,
         assessment,
         assessmentQuestion,
         hasCourseInstancePermissionEdit,
@@ -433,7 +430,7 @@ export function AssessmentQuestionTable({
     [
       aiGradingMode,
       instanceQuestionGroups,
-      jobSequenceProgress.displayedStatuses,
+      serverJobProgress.displayedStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -643,7 +640,7 @@ export function AssessmentQuestionTable({
         />
       </div>
       {aiGradingMode && (
-        <ServerJobProgressBars
+        <ServerJobsProgressInfo
           statusIcons={{
             inProgress: 'bi-stars',
             complete: 'bi-check-circle-fill',
@@ -655,8 +652,8 @@ export function AssessmentQuestionTable({
             failed: 'AI grading failed',
           }}
           itemNames="submissions graded"
-          jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
-          onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
       {batchActionMutation.isError && (

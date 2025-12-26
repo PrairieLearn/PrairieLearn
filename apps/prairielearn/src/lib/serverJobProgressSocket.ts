@@ -10,12 +10,16 @@ import { ensureProps } from './ensureProps.js';
 import {
   type StatusMessage,
   StatusMessageWithProgressSchema,
-  type StatusMessageWithProgressValid
+  type StatusMessageWithProgressValid,
 } from './serverJobProgressSocket.shared.js';
 import * as socketServer from './socket-server.js';
 
+/**
+ * Manages live progress information for server jobs.
+ */
 let serverJobProgressCache: Cache | undefined;
-export async function getServerJobProgressCache(): Promise<Cache> {
+
+async function getServerJobProgressCache(): Promise<Cache> {
   if (serverJobProgressCache) return serverJobProgressCache;
   serverJobProgressCache = new Cache();
   await serverJobProgressCache.init({
@@ -50,9 +54,15 @@ export function connection(socket: Socket) {
     const progress = await serverJobProgressCache.get(`server-job-progress-${msg.job_sequence_id}`);
 
     if (!progress) {
+      // No progress data found.
+
+      // If the job sequence is still running according to the database,
+      // this indicates that the job may have crashed without updating progress
+      // or status in the database.
+
       return callback({
         job_sequence_id: msg.job_sequence_id,
-        valid: false
+        valid: false,
       } satisfies StatusMessageWithProgressValid);
     }
 
@@ -73,9 +83,13 @@ export function connection(socket: Socket) {
   });
 }
 
-/** Emit progress updates to clients */
+/**
+ * Emits a server job progress update event for the specified job sequence ID.
+ */
 export async function emitServerJobProgressUpdate(progress: StatusMessageWithProgressValid) {
-  namespace.to(`server-job-progress-${progress.job_sequence_id}`).emit('serverJobProgressUpdate', progress);
+  namespace
+    .to(`server-job-progress-${progress.job_sequence_id}`)
+    .emit('serverJobProgressUpdate', progress);
   serverJobProgressCache?.set(
     `server-job-progress-${progress.job_sequence_id}`,
     progress,

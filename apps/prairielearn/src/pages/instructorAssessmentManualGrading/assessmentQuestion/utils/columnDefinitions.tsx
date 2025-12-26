@@ -241,10 +241,7 @@ export function createColumns({
         if (!aiGradingMode || !aiGradingStatus) {
           return requiresGrading ? 'Requires grading' : 'Graded';
         }
-        return <AiGradingStatusCell
-          rowId={rowId}
-          aiGradingStatus={aiGradingStatus}
-        />;
+        return <AiGradingStatusCell rowId={rowId} aiGradingStatus={aiGradingStatus} />;
       },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;

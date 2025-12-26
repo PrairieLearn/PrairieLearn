@@ -5,7 +5,7 @@ export interface StatusMessage {
   job_sequence_token: string;
 }
 
-/** 
+/**
  * Status of an individual item within a server job.
  * Ordered by progression (queued < in_progress < failed < complete).
  */
@@ -32,19 +32,17 @@ export const StatusMessageWithProgressSchema = z.object({
 export type StatusMessageWithProgress = z.infer<typeof StatusMessageWithProgressSchema>;
 
 export const StatusMessageWithProgressValidSchema = z.discriminatedUnion('valid', [
-  StatusMessageWithProgressSchema.extend(
-    {
-      job_sequence_id: z.string(),
-      valid: z.literal(true)
-    }
-  ),
+  StatusMessageWithProgressSchema.extend({
+    job_sequence_id: z.string(),
+    valid: z.literal(true),
+  }),
   z.object({
     /**
      * True if the progress data was found in the cache, false otherwise.
      */
     job_sequence_id: z.string(),
-    valid: z.literal(false)
-  })
-])
+    valid: z.literal(false),
+  }),
+]);
 
 export type StatusMessageWithProgressValid = z.infer<typeof StatusMessageWithProgressValidSchema>;

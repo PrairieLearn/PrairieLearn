@@ -35,7 +35,6 @@ import {
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { config } from '../../../lib/config.js';
-import { JobSequenceSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -94,29 +93,29 @@ router.get(
       res.locals.assessment_question,
     );
 
-    const ongoingJobSequences = await queryRows(
-      sql.select_ai_grading_job_sequences_for_assessment_question,
-      {
-        assessment_question_id: res.locals.assessment_question.id,
-      },
-      JobSequenceSchema,
-    );
+    const ongoingJobSequenceTokens = await run(async () => {
+      if (!aiGradingEnabled) {
+        return null;
+      }
 
-    const ongoingJobSequenceIds = ongoingJobSequences.map((js) => js.id);
+      const ongoingJobSequenceIds = await queryRows(
+        sql.select_ai_grading_job_sequence_ids_for_assessment_question,
+        {
+          assessment_question_id: res.locals.assessment_question.id,
+        },
+        z.string(),
+      );
 
-    // Used for "auth" to connect to the job sequence progress sockets.
-    // ID is coerced to a string so that it matches what we get back from the client.
+      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
+        (acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateSignedToken({ jobSequenceId }, config.secretKey);
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
 
-    const jobSequenceTokens = ongoingJobSequences.reduce(
-      (acc, js) => {
-        acc[js.id.toString()] = generateSignedToken(
-          { jobSequenceId: js.id.toString() },
-          config.secretKey,
-        );
-        return acc;
-      },
-      {} as Record<string, string>,
-    );
+      return jobSequenceTokens;
+    });
 
     const {
       authz_data,
@@ -174,18 +173,17 @@ router.get(
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
-                jobSequenceTokens={jobSequenceTokens}
                 courseStaff={courseStaff}
                 aiGradingStats={
                   aiGradingEnabled && assessment_question.ai_grading_mode
                     ? await calculateAiGradingStats(assessment_question)
                     : null
                 }
+                ongoingJobSequenceTokens={ongoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
                 questionNumber={Number(number_in_alternative_group)}
-                ongoingJobSequenceIds={ongoingJobSequenceIds}
               />
             </Hydrate>
           </>

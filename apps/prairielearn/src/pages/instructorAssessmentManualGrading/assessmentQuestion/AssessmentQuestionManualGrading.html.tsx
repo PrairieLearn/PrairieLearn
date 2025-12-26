@@ -39,15 +39,14 @@ export interface AssessmentQuestionManualGradingProps {
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
-  jobSequenceTokens: Record<string, string>;
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  ongoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
   questionTitle: string;
   questionNumber: number;
-  ongoingJobSequenceIds: string[];
 }
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
@@ -70,13 +69,12 @@ function AssessmentQuestionManualGradingInner({
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
-  jobSequenceTokens,
   courseStaff,
   aiGradingStats,
+  ongoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
-  ongoingJobSequenceIds,
 }: AssessmentQuestionManualGradingInnerProps) {
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
@@ -156,8 +154,7 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
-        ongoingJobSequenceIds={ongoingJobSequenceIds}
-        jobSequenceTokens={jobSequenceTokens}
+        ongoingJobSequenceTokens={ongoingJobSequenceTokens}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

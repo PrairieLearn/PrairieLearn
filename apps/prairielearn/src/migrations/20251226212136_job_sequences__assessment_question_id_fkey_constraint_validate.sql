@@ -1,0 +1,1 @@
+ALTER TABLE job_sequences VALIDATE CONSTRAINT job_sequences_assessment_question_id_fkey;
