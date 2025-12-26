@@ -88,12 +88,10 @@ export function connection(socket: Socket) {
  * Emits a server job progress update event for the specified job sequence ID.
  */
 export async function emitServerJobProgressUpdate(progress: JobProgress) {
-  namespace
-    .to(`server-job-progress-${progress.job_sequence_id}`)
-    .emit('serverJobProgressUpdate', {
-      ...progress,
-      has_progress_data: true,
-    } satisfies ProgressUpdateMessage);
+  namespace.to(`server-job-progress-${progress.job_sequence_id}`).emit('serverJobProgressUpdate', {
+    ...progress,
+    has_progress_data: true,
+  } satisfies ProgressUpdateMessage);
   serverJobProgressCache?.set(
     `server-job-progress-${progress.job_sequence_id}`,
     progress,
