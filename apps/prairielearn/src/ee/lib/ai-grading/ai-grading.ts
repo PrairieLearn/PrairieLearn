@@ -176,7 +176,7 @@ export async function aiGrade({
 
   const item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
-      acc[instance_question.id] = JobItemStatus.in_progress;
+      acc[instance_question.id] = JobItemStatus.queued;
       return acc;
     },
     {} as Record<string, JobItemStatus>,
@@ -638,6 +638,14 @@ export async function aiGrade({
 
         try {
           item_statuses[instance_question.id] = JobItemStatus.in_progress;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            num_complete,
+            num_failed,
+            num_total: instance_questions.length,
+            item_statuses,
+          });
+
           const result = await gradeInstanceQuestion(instance_question, logger);
           item_statuses[instance_question.id] = result
             ? JobItemStatus.complete

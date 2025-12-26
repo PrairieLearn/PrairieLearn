@@ -238,7 +238,7 @@ export function createColumns({
         const rowId = info.row.original.instance_question.id;
         const requiresGrading = info.getValue();
         const aiGradingStatus = displayedStatuses[rowId];
-        if (!aiGradingMode || !aiGradingStatus) {
+        if (!aiGradingMode || aiGradingStatus === undefined) {
           return requiresGrading ? 'Requires grading' : 'Graded';
         }
         return <AiGradingStatusCell rowId={rowId} aiGradingStatus={aiGradingStatus} />;
