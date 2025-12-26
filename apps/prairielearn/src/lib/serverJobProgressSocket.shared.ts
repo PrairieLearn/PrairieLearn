@@ -5,16 +5,21 @@ export interface StatusMessage {
   job_sequence_token: string;
 }
 
-export const JobItemStatusEnum = z.enum(['pending', 'in_progress', 'complete', 'failed']);
+/** 
+ * Status of an individual item within a server job.
+ * Ordered by progression (queued < in_progress < failed < complete).
+ */
+export enum JobItemStatus {
+  queued,
+  in_progress,
+  failed,
+  complete,
+}
 
-export type JobItemStatus = z.infer<typeof JobItemStatusEnum>;
+export const JobItemStatusEnum = z.nativeEnum(JobItemStatus);
 
 export const StatusMessageWithProgressSchema = z.object({
   job_sequence_id: z.string(),
-  /**
-   * True if the progress data was found in the cache, false otherwise.
-   */
-  valid: z.boolean(),
   /**
    * Number of items completed, including failed items.
    */
@@ -25,3 +30,21 @@ export const StatusMessageWithProgressSchema = z.object({
 });
 
 export type StatusMessageWithProgress = z.infer<typeof StatusMessageWithProgressSchema>;
+
+export const StatusMessageWithProgressValidSchema = z.discriminatedUnion('valid', [
+  StatusMessageWithProgressSchema.extend(
+    {
+      job_sequence_id: z.string(),
+      valid: z.literal(true)
+    }
+  ),
+  z.object({
+    /**
+     * True if the progress data was found in the cache, false otherwise.
+     */
+    job_sequence_id: z.string(),
+    valid: z.literal(false)
+  })
+])
+
+export type StatusMessageWithProgressValid = z.infer<typeof StatusMessageWithProgressValidSchema>;

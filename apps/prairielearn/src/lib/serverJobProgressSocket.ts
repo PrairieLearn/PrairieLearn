@@ -9,8 +9,8 @@ import { config } from './config.js';
 import { ensureProps } from './ensureProps.js';
 import {
   type StatusMessage,
-  type StatusMessageWithProgress,
   StatusMessageWithProgressSchema,
+  type StatusMessageWithProgressValid
 } from './serverJobProgressSocket.shared.js';
 import * as socketServer from './socket-server.js';
 
@@ -44,7 +44,7 @@ export function connection(socket: Socket) {
       return callback(null);
     }
 
-    void socket.join(`server-job-${msg.job_sequence_id}`);
+    void socket.join(`server-job-progress-${msg.job_sequence_id}`);
 
     const serverJobProgressCache = await getServerJobProgressCache();
     const progress = await serverJobProgressCache.get(`server-job-progress-${msg.job_sequence_id}`);
@@ -52,11 +52,8 @@ export function connection(socket: Socket) {
     if (!progress) {
       return callback({
         job_sequence_id: msg.job_sequence_id,
-        valid: false,
-        num_complete: 0,
-        num_failed: 0,
-        num_total: 0,
-      } satisfies StatusMessageWithProgress);
+        valid: false
+      } satisfies StatusMessageWithProgressValid);
     }
 
     const result = StatusMessageWithProgressSchema.safeParse(progress);
@@ -72,13 +69,13 @@ export function connection(socket: Socket) {
       num_failed: progressData.num_failed,
       num_total: progressData.num_total,
       item_statuses: progressData.item_statuses,
-    } satisfies StatusMessageWithProgress);
+    } satisfies StatusMessageWithProgressValid);
   });
 }
 
 /** Emit progress updates to clients */
-export async function emitServerJobProgressUpdate(progress: StatusMessageWithProgress) {
-  namespace.to(`server-job-${progress.job_sequence_id}`).emit('serverJobProgressUpdate', progress);
+export async function emitServerJobProgressUpdate(progress: StatusMessageWithProgressValid) {
+  namespace.to(`server-job-progress-${progress.job_sequence_id}`).emit('serverJobProgressUpdate', progress);
   serverJobProgressCache?.set(
     `server-job-progress-${progress.job_sequence_id}`,
     progress,

@@ -27,7 +27,7 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
-import type { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
+import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
@@ -176,7 +176,7 @@ export async function aiGrade({
 
   const item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
-      acc[instance_question.id] = 'pending';
+      acc[instance_question.id] = JobItemStatus.in_progress;
       return acc;
     },
     {} as Record<string, JobItemStatus>,
@@ -638,21 +638,13 @@ export async function aiGrade({
         };
 
         try {
-          item_statuses[instance_question.id] = 'in_progress';
-          await emitServerJobProgressUpdate({
-            job_sequence_id: serverJob.jobSequenceId,
-            valid: true,
-            num_complete,
-            num_failed,
-            num_total: instance_questions.length,
-            item_statuses,
-          });
+          item_statuses[instance_question.id] = JobItemStatus.in_progress;
           const result = await gradeInstanceQuestion(instance_question, logger);
-          item_statuses[instance_question.id] = result ? 'complete' : 'failed';
+          item_statuses[instance_question.id] = result ? JobItemStatus.complete : JobItemStatus.failed;
           return result;
         } catch (err: any) {
           logger.error(err);
-          item_statuses[instance_question.id] = 'failed';
+          item_statuses[instance_question.id] = JobItemStatus.failed;
           num_failed += 1;
           return false;
         } finally {

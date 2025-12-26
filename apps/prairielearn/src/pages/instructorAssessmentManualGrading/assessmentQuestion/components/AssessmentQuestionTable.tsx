@@ -28,9 +28,9 @@ import {
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import {
-  ServerJobProgressBars,
-  useJobSequenceProgress,
-} from '../../../../components/ServerJobProgressBars.js';
+  ServerJobProgressBars
+} from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { useJobSequenceProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
@@ -496,8 +496,6 @@ export function AssessmentQuestionTable({
   useEffect(() => {
     void setColumnVisibility((prev) => ({
       ...prev,
-      // Always show grading status
-      requires_manual_grading: true,
       // Hide these columns in AI grading mode
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
@@ -511,7 +509,6 @@ export function AssessmentQuestionTable({
     data: instanceQuestionsInfo,
     columns,
     columnResizeMode: 'onChange',
-
     getRowId: (row) => row.instance_question.id,
     state: {
       sorting,
@@ -646,19 +643,21 @@ export function AssessmentQuestionTable({
         />
       </div>
       {aiGradingMode && (
-        <div class="mb-3">
-          <ServerJobProgressBars
-            inProgressText="AI grading in progress"
-            inProgressIcon="bi-stars"
-            completeText="AI grading complete"
-            completeIcon="bi-check-circle-fill"
-            failedText="AI grading failed"
-            failedIcon="bi-exclamation-triangle-fill"
-            itemNames="submissions graded"
-            jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
-            onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
-          />
-        </div>
+        <ServerJobProgressBars
+          statusIcons={{
+            inProgress: 'bi-stars',
+            complete: 'bi-check-circle-fill',
+            failed: 'bi-exclamation-triangle-fill',
+          }}
+          statusText={{
+            inProgress: 'AI grading in progress',
+            complete: 'AI grading complete',
+            failed: 'AI grading failed',
+          }}
+          itemNames="submissions graded"
+          jobsProgress={Object.values(jobSequenceProgress.jobsProgress)}
+          onDismissCompleteJobSequence={jobSequenceProgress.handleDismissCompleteJobSequence}
+        />
       )}
       {batchActionMutation.isError && (
         <Alert
