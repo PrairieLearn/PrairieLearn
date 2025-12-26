@@ -29,9 +29,7 @@ export function createColumnFilters({
     }) => (
       <CategoricalColumnFilter
         column={header.column}
-        allColumnValues={[
-          ...GRADING_STATUS_VALUES
-        ]}
+        allColumnValues={[...GRADING_STATUS_VALUES]}
       />
     ),
     assigned_grader_name: ({

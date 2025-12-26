@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -33,6 +34,8 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { config } from '../../../lib/config.js';
+import { JobSequenceSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -43,9 +46,6 @@ import { selectCourseInstanceGraderStaff } from '../../../models/course-instance
 
 import { AssessmentQuestionManualGrading } from './AssessmentQuestionManualGrading.html.js';
 import { InstanceQuestionRowSchema } from './assessmentQuestion.types.js';
-import { JobSequenceSchema } from '../../../lib/db-types.js';
-import { generateSignedToken } from '@prairielearn/signed-token';
-import { config } from '../../../lib/config.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -93,28 +93,31 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
-  
+
     const ongoingJobSequences = await queryRows(
       sql.select_ai_grading_job_sequences_for_assessment_question,
       {
         assessment_question_id: res.locals.assessment_question.id,
       },
       JobSequenceSchema,
-    )
+    );
 
-    const ongoingJobSequenceIds = ongoingJobSequences.map(js => js.id);
+    const ongoingJobSequenceIds = ongoingJobSequences.map((js) => js.id);
 
     // Used for "auth" to connect to the job sequence progress sockets.
     // ID is coerced to a string so that it matches what we get back from the client.
-    
-    const jobSequenceTokens = ongoingJobSequences.reduce((acc, js) => {
-      acc[js.id.toString()] = generateSignedToken(
-        { jobSequenceId: js.id.toString() },
-        config.secretKey,
-      );
-      return acc;
-    }, {} as Record<string, string>);
-    
+
+    const jobSequenceTokens = ongoingJobSequences.reduce(
+      (acc, js) => {
+        acc[js.id.toString()] = generateSignedToken(
+          { jobSequenceId: js.id.toString() },
+          config.secretKey,
+        );
+        return acc;
+      },
+      {} as Record<string, string>,
+    );
+
     const {
       authz_data,
       urlPrefix,

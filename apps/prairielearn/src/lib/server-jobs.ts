@@ -71,7 +71,7 @@ type CreateServerJobOptions =
       /** Required when assessmentQuestionId is provided. */
       assessmentId: string;
       assessmentQuestionId: string;
-  })
+    });
 
 interface ServerJobExecOptions {
   cwd: string;

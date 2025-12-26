@@ -26,6 +26,8 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
+import type { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
@@ -46,8 +48,6 @@ import {
   selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
-import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
-import type { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -88,7 +88,6 @@ export async function aiGrade({
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
 }): Promise<string> {
-
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const { model, embeddingModel } = run(() => {
     if (provider === 'openai') {
@@ -175,12 +174,13 @@ export async function aiGrade({
     }
   });
 
-  let item_statuses = instance_questions.reduce((acc, instance_question) => {
-    acc[instance_question.id] = 'pending';
-    return acc;
-  }, {} as {
-    [key: string]: JobItemStatus
-  });
+  const item_statuses = instance_questions.reduce(
+    (acc, instance_question) => {
+      acc[instance_question.id] = 'pending';
+      return acc;
+    },
+    {} as Record<string, JobItemStatus>,
+  );
 
   await emitServerJobProgressUpdate({
     job_sequence_id: serverJob.jobSequenceId,
@@ -188,7 +188,7 @@ export async function aiGrade({
     num_complete: 0,
     num_failed: 0,
     num_total: instance_questions.length,
-    item_statuses
+    item_statuses,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -645,7 +645,7 @@ export async function aiGrade({
             num_complete,
             num_failed,
             num_total: instance_questions.length,
-            item_statuses
+            item_statuses,
           });
           const result = await gradeInstanceQuestion(instance_question, logger);
           item_statuses[instance_question.id] = result ? 'complete' : 'failed';
@@ -663,7 +663,7 @@ export async function aiGrade({
             num_complete,
             num_failed,
             num_total: instance_questions.length,
-            item_statuses
+            item_statuses,
           });
           for (const log of logs) {
             switch (log.messageType) {

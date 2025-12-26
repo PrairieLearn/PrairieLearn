@@ -76,7 +76,7 @@ function AssessmentQuestionManualGradingInner({
   numOpenInstances,
   questionTitle,
   questionNumber,
-  ongoingJobSequenceIds
+  ongoingJobSequenceIds,
 }: AssessmentQuestionManualGradingInnerProps) {
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);

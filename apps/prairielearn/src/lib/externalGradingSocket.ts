@@ -12,9 +12,9 @@ import { gradingJobStatus } from '../models/grading-job.js';
 
 import { checkVariantToken } from './checkVariantToken.js';
 import { GradingJobSchema } from './db-types.js';
+import { ensureProps } from './ensureProps.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
-import { ensureProps } from './ensureProps.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

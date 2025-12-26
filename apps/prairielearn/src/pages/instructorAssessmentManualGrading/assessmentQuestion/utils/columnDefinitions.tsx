@@ -7,10 +7,10 @@ import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
+import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
-import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
 
@@ -237,7 +237,7 @@ export function createColumns({
         const rowId = info.row.original.instance_question.id;
         const aiGradingStatus = displayedStatuses[rowId];
         const requiresGrading = info.getValue();
-        if (!aiGradingMode || !aiGradingStatus) {
+        if (!aiGradingMode) {
           return requiresGrading ? 'Requires grading' : 'Graded';
         }
         if (aiGradingStatus === 'complete') {
@@ -255,7 +255,7 @@ export function createColumns({
             </OverlayTrigger>
           );
         }
-        
+
         if (aiGradingStatus === 'in_progress') {
           return (
             <OverlayTrigger
@@ -287,7 +287,7 @@ export function createColumns({
             </OverlayTrigger>
           );
         }
-        
+
         if (aiGradingStatus === 'pending') {
           return (
             <OverlayTrigger
@@ -303,63 +303,26 @@ export function createColumns({
             </OverlayTrigger>
           );
         }
-        
-        if (aiGradingStatus === 'failed') {
-          return (
-            <OverlayTrigger
-              tooltip={{
-                body: 'AI grading failed',
-                props: { id: `ai-status-${rowId}-failed-tooltip` },
-              }}
-            >
-              <span class="d-flex align-items-center gap-2">
-                <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
-                <span>Failed</span>
-              </span>
-            </OverlayTrigger>
-          );
-        }
-      
+
+        return (
+          <OverlayTrigger
+            tooltip={{
+              body: 'AI grading failed',
+              props: { id: `ai-status-${rowId}-failed-tooltip` },
+            }}
+          >
+            <span class="d-flex align-items-center gap-2">
+              <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+              <span>Failed</span>
+            </span>
+          </OverlayTrigger>
+        );
       },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const requiresGrading = getValue(columnId);
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return filterValues.includes(status);
-      },
-      sortingFn: (rowA, rowB) => {
-        const rowIdA = rowA.original.instance_question.id;
-        const rowIdB = rowB.original.instance_question.id;
-        const aiGradingStatusA = displayedStatuses[rowIdA];
-        const aiGradingStatusB = displayedStatuses[rowIdB];
-        
-        // Submissions being AI graded go above submissions not being AI graded
-        if (aiGradingStatusA && !aiGradingStatusB) return -1;
-        if (!aiGradingStatusA && aiGradingStatusB) return 1;
-        
-        // If both have AI status, sort by: Queued < In progress < Failed < Complete
-        if (aiGradingStatusA && aiGradingStatusB) {
-          const aiStatusOrder: Record<string, number> = {
-            'pending': 0,      // Queued
-            'in_progress': 1,  // In progress
-            'failed': 2,       // Failed
-            'complete': 3,     // Complete
-          };
-          
-          const orderA = aiStatusOrder[aiGradingStatusA] ?? 4;
-          const orderB = aiStatusOrder[aiGradingStatusB] ?? 4;
-          
-          if (orderA !== orderB) return orderA - orderB;
-        }
-        
-        // If neither has AI status, sort by requires_manual_grading
-        const requiresGradingA = rowA.original.instance_question.requires_manual_grading;
-        const requiresGradingB = rowB.original.instance_question.requires_manual_grading;
-        
-        if (requiresGradingA && !requiresGradingB) return -1;
-        if (!requiresGradingA && requiresGradingB) return 1;
-        
-        return 0;
       },
       meta: {
         autoSize: true,

@@ -1,4 +1,4 @@
-import { logger } from "@prairielearn/logger";
+import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 export function ensureProps(data: Record<string, any>, props: string[]): boolean {

@@ -28,6 +28,10 @@ import {
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import {
+  ServerJobProgressBars,
+  useJobSequenceProgress,
+} from '../../../../components/ServerJobProgressBars.js';
+import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
@@ -53,7 +57,6 @@ import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
-import { ServerJobProgressBars, useJobSequenceProgress } from '../../../../components/ServerJobProgressBars.js';
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
@@ -402,7 +405,6 @@ export function AssessmentQuestionTable({
       queryKey: ['instance-questions'],
     });
   }, [jobSequenceProgress.jobsProgress, queryClientInstance]);
-
 
   // Create columns using the extracted function
   const columns = useMemo(

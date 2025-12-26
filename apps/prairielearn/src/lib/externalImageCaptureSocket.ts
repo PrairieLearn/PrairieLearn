@@ -6,12 +6,12 @@ import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { checkVariantToken } from './checkVariantToken.js';
+import { ensureProps } from './ensureProps.js';
 import type {
   StatusMessage,
   StatusMessageWithFileContent,
 } from './externalImageCaptureSocket.types.js';
 import * as socketServer from './socket-server.js';
-import { ensureProps } from './ensureProps.js';
 
 let namespace: Namespace;
 

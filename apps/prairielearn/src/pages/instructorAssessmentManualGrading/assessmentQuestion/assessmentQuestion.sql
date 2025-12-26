@@ -107,7 +107,7 @@ SELECT
   js.*
 FROM
   job_sequences AS js
-WHERE 
+WHERE
   js.assessment_question_id = $assessment_question_id
   AND js.status = 'Running'
   AND js.type = 'ai_grading';

@@ -9,7 +9,9 @@ export function checkJobSequenceToken(token: string, jobSequenceId: string): boo
   const valid = checkSignedToken(token, data, config.secretKey, { maxAge: 24 * 60 * 60 * 1000 });
   if (!valid) {
     logger.error(`Token for job sequence ${jobSequenceId} failed validation.`);
-    Sentry.captureException(new Error(`Token for job sequence ${jobSequenceId} failed validation.`));
+    Sentry.captureException(
+      new Error(`Token for job sequence ${jobSequenceId} failed validation.`),
+    );
   }
   return valid;
-};
+}
