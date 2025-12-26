@@ -327,6 +327,40 @@ export function createColumns({
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return filterValues.includes(status);
       },
+      sortingFn: (rowA, rowB) => {
+        const rowIdA = rowA.original.instance_question.id;
+        const rowIdB = rowB.original.instance_question.id;
+        const aiGradingStatusA = displayedStatuses[rowIdA];
+        const aiGradingStatusB = displayedStatuses[rowIdB];
+        
+        // Submissions being AI graded go above submissions not being AI graded
+        if (aiGradingStatusA && !aiGradingStatusB) return -1;
+        if (!aiGradingStatusA && aiGradingStatusB) return 1;
+        
+        // If both have AI status, sort by: Queued < In progress < Failed < Complete
+        if (aiGradingStatusA && aiGradingStatusB) {
+          const aiStatusOrder: Record<string, number> = {
+            'pending': 0,      // Queued
+            'in_progress': 1,  // In progress
+            'failed': 2,       // Failed
+            'complete': 3,     // Complete
+          };
+          
+          const orderA = aiStatusOrder[aiGradingStatusA] ?? 4;
+          const orderB = aiStatusOrder[aiGradingStatusB] ?? 4;
+          
+          if (orderA !== orderB) return orderA - orderB;
+        }
+        
+        // If neither has AI status, sort by requires_manual_grading
+        const requiresGradingA = rowA.original.instance_question.requires_manual_grading;
+        const requiresGradingB = rowB.original.instance_question.requires_manual_grading;
+        
+        if (requiresGradingA && !requiresGradingB) return -1;
+        if (!requiresGradingA && requiresGradingB) return 1;
+        
+        return 0;
+      },
       meta: {
         autoSize: true,
       },

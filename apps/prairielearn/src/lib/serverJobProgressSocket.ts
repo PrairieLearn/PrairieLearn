@@ -77,7 +77,7 @@ export async function emitServerJobProgressUpdate(progress: StatusMessageWithPro
     namespace
         .to(`server-job-${progress.job_sequence_id}`)
         .emit('serverJobProgressUpdate', progress);        
-    await serverJobProgressCache?.set(
+    serverJobProgressCache?.set(
         `server-job-progress-${progress.job_sequence_id}`,
         progress,
         5 * 60 * 1000, // 5 minutes

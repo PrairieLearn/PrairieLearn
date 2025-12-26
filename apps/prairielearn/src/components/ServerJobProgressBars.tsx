@@ -1,7 +1,6 @@
-import type { DefaultEventsMap } from "@socket.io/component-emitter";
 import { useEffect, useMemo, useState } from "preact/compat";
 import { Alert, ProgressBar } from "react-bootstrap";
-import { io, Socket } from "socket.io-client";
+import { io } from "socket.io-client";
 import type { JobItemStatus, StatusMessageWithProgress } from "../lib/serverJobProgressSocket.shared.js";
 
 type JobProgress = {
@@ -23,7 +22,6 @@ export function useJobSequenceProgress(
     jobSequenceTokens: Record<string, string>
   }
 ) {
-  const [socket, setSocket] = useState<Socket<DefaultEventsMap, DefaultEventsMap> | null>(null);
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
   const displayedStatuses = useMemo(() => {
     const statusPrecedence: Record<string, number> = {
@@ -67,16 +65,12 @@ export function useJobSequenceProgress(
       return;
     }
 
-    console.log('Connecting to server job progress socket.');
+    console.log('Sockets connecting...');
 
-    let currentSocket = socket;
-    if (!currentSocket) {
-      currentSocket = io('/server-job-progress');
-      setSocket(currentSocket);
-    }
+    const socket = io('/server-job-progress');
 
     for (const jobSequenceId of jobSequenceIds) {
-      currentSocket.emit(
+      socket.emit(
         'joinServerJobProgress',
         {
           job_sequence_id: jobSequenceId,
@@ -105,7 +99,7 @@ export function useJobSequenceProgress(
         }
       )
 
-      currentSocket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
+      socket.on('serverJobProgressUpdate', (msg: StatusMessageWithProgress) => {
         if (msg.job_sequence_id !== jobSequenceId) {
             return;
         }
@@ -125,12 +119,10 @@ export function useJobSequenceProgress(
           },
         }));
       });
-    }
+    }    console.log('Sockets connected.');
     return () => {
-      console.log('Disconnect socket.')
-      if (currentSocket) {
-        currentSocket.disconnect();
-      }
+      socket.disconnect();
+      console.log('Sockets disconnected.')
     }
   }, [
     jobSequenceIds, aiGradingMode
