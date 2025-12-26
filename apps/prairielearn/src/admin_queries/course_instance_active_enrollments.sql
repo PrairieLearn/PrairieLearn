@@ -11,7 +11,7 @@ WITH
       count(*) AS instance_question_count
     FROM
       institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN courses AS c ON (c.institution_id = i.id)
       JOIN course_instances AS ci ON (ci.course_id = c.id)
       JOIN assessments AS a ON (a.course_instance_id = ci.id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -61,7 +61,7 @@ WITH
       ) AS workspace_hours
     FROM
       institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN courses AS c ON (c.institution_id = i.id)
       JOIN course_instances AS ci ON (ci.course_id = c.id)
       JOIN assessments AS a ON (a.course_instance_id = ci.id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -89,7 +89,7 @@ WITH
       ) AS external_grading_hours
     FROM
       institutions AS i
-      JOIN pl_courses AS c ON (c.institution_id = i.id)
+      JOIN courses AS c ON (c.institution_id = i.id)
       JOIN course_instances AS ci ON (ci.course_id = c.id)
       JOIN assessments AS a ON (a.course_instance_id = ci.id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
@@ -128,7 +128,7 @@ SELECT
   coalesce(wd.workspace_hours, 0) + coalesce(gjd.external_grading_hours, 0) AS total_compute_hours
 FROM
   institutions AS i
-  JOIN pl_courses AS c ON (c.institution_id = i.id)
+  JOIN courses AS c ON (c.institution_id = i.id)
   JOIN course_instances AS ci ON (ci.course_id = c.id)
   LEFT JOIN course_instance_data AS cid ON (cid.course_instance_id = ci.id)
   LEFT JOIN workspace_data AS wd ON (wd.course_instance_id = ci.id)

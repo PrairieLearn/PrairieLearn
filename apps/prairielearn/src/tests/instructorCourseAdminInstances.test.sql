@@ -1,5 +1,5 @@
 -- BLOCK update_course_repo
-UPDATE pl_courses
+UPDATE courses
 SET
   repository = $repo
 WHERE

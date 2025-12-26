@@ -230,12 +230,11 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
-  - Tables that reference the `pl_courses` table use `course_id` instead of `pl_course_id`.
   - The `users` table has a `user_id` primary key instead of `id`.
 
 - Each user is stored as a single row in the `users` table.
 
-- The `pl_courses` table has one row for each course, like `TAM 212`.
+- The `courses` table has one row for each course, like `TAM 212`.
 
 - The `course_instances` table has one row for each semester ("instance") of each course, with the `course_id` indicating which course it belongs to.
 
