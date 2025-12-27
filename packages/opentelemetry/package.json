@@ -9,8 +9,8 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -41,6 +41,7 @@
     "@opentelemetry/context-async-hooks": "^2.2.0",
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.19.1",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "@vitest/coverage-v8": "^4.0.14",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

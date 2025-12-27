@@ -10,12 +10,13 @@
   "private": true,
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "@vitest/coverage-v8": "^4.0.14",
     "marked": "^17.0.1",
     "mathjax": "^3.2.2",

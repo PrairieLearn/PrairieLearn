@@ -12,8 +12,8 @@
     "./*.css": "./dist/*.css"
   },
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch",
     "test": "vitest run --coverage"
   },
   "dependencies": {

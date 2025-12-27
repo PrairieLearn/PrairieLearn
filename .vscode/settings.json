@@ -32,6 +32,7 @@
   },
   "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
   "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.experimental.useTsgo": true,
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {

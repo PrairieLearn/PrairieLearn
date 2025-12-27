@@ -4,8 +4,8 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
@@ -16,6 +16,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "typescript": "^5.9.3"
   }
 }

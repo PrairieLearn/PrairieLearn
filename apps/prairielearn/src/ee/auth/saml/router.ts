@@ -16,10 +16,10 @@ import { strategy } from './index.js';
 const router = Router({ mergeParams: true });
 
 router.get('/login', (req, res, next) => {
-  // @ts-expect-error Missing `additionalParams` on the type.
   passport.authenticate('saml', {
     failureRedirect: '/pl',
     session: false,
+    // @ts-expect-error Missing `additionalParams` on the type.
     additionalParams: req.query.RelayState
       ? {
           // This is used be the SAML configuration page to test SAML. It includes

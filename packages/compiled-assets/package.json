@@ -10,8 +10,8 @@
   "bin": "dist/cli.js",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -27,6 +27,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.19.1",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "@vitest/coverage-v8": "^4.0.14",
     "express": "^4.22.0",
     "get-port": "^7.1.0",

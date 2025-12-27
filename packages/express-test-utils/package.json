@@ -9,10 +9,13 @@
   },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@types/express": "^4.17.25"
+  },
+  "devDependencies": {
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1"
   }
 }

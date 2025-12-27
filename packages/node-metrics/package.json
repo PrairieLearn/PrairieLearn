@@ -9,8 +9,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@aws-sdk/client-cloudwatch": "^3.940.0",
@@ -20,6 +20,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
     "@types/node": "^22.19.1",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "typescript": "^5.9.3"
   }
 }
