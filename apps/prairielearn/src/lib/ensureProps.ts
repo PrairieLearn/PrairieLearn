@@ -1,6 +1,16 @@
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
+/**
+ * Ensure that the specified properties exist in the given data object.
+ * If any property is missing, logs a Sentry error and captures a Sentry exception.
+ *
+ * @param params
+ * @param params.data The data object to check.
+ * @param params.props The list of property names to ensure exist in the data object.
+ * @param params.socketName The socket name to display in logged error messages,
+ * e.g. "socket.io [socketName] connected without [prop]"
+ */
 export function ensureProps({
   data,
   props,
@@ -8,10 +18,6 @@ export function ensureProps({
 }: {
   data: Record<string, any>;
   props: string[];
-  /**
-   * The name of the socket that should be logged. Will be logged as follows:
-   * "socket.io [socketName] connected without [prop]"
-   */
   socketName: string;
 }): boolean {
   for (const prop of props) {
