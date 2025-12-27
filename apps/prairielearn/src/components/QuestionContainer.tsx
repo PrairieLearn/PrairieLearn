@@ -113,6 +113,8 @@ export function QuestionContainer({
       aiGradingInfo?.explanation
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            confidence_level: aiGradingInfo.confidence_level,
+            confidence_explanation: aiGradingInfo.confidence_explanation,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -197,7 +199,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({ explanation, confidence_level, confidence_explanation }: { explanation: string, confidence_level: string| null, confidence_explanation: string | null}) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -223,6 +225,13 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
           <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
 ${explanation}</pre
           >
+
+          <div class="mt-3">
+            <h5>AI Confidence Level</h5>
+            <p>${confidence_level ?? 'N/A'}</p>
+            <h5>AI Confidence Explanation</h5>
+            <p>${confidence_explanation ?? 'N/A'}</p>
+          </div>
         </div>
       </div>
     </div>

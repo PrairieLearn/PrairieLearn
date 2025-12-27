@@ -43,4 +43,7 @@ export interface InstanceQuestionAIGradingInfo {
   prompt: string;
   /** Explanation from the LLM for AI grading */
   explanation: string | null;
+
+  confidence_level: string | null;
+  confidence_explanation: string | null;
 }

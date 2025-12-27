@@ -175,42 +175,82 @@ router.get(
         // Over the lifetime of this feature, we've changed which APIs/libraries we
         // use to generate the completion, so we need to handle all formats we've ever
         // used for backwards-compatibility. Each one is documented below.
-        const explanation = run(() => {
+        const {explanation, confidence_level, confidence_explanation} = run(() => {
           const completion = ai_grading_job_data.completion;
-          if (!completion) return null;
+          if (!completion) {
+            return {
+              explanation: null,
+              confidence_level: null,
+              confidence_explanation: null
+            };
+          }
 
           // OpenAI chat completion format
           if (completion.choices) {
             const explanation = completion?.choices?.[0]?.message?.parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
+            if (typeof explanation !== 'string') {
+              return {
+                explanation: null,
+                confidence_level: null,
+                confidence_explanation: null
+              };
+            }
 
-            return explanation.trim() || null;
+            return {explanation: explanation.trim() || null, confidence_level: null, confidence_explanation: null};
           }
 
           // OpenAI response format
           if (completion.output_parsed) {
             const explanation = completion?.output_parsed?.explanation;
-            if (typeof explanation !== 'string') return null;
+            if (typeof explanation !== 'string') {
+              return {
+                explanation: null,
+                confidence_level: null,
+                confidence_explanation: null
+              };
+            }
 
-            return explanation.trim() || null;
+            return {explanation: explanation.trim() || null, confidence_level: null, confidence_explanation: null};
           }
 
           // `ai` package format
           if (completion.object) {
             const explanation = completion?.object?.explanation;
-            if (typeof explanation !== 'string') return null;
+            if (typeof explanation !== 'string') {
+              return {
+                explanation: null,
+                confidence_level: null,
+                confidence_explanation: null
+              };
+            }
 
-            return explanation.trim() || null;
+            console.log('completion', completion);
+
+            const confidence_level = completion.object?.confidence_level;
+            const confidence_explanation = completion.object?.confidence_explanation
+
+            return {
+              explanation: explanation.trim() || null, 
+              confidence_level, 
+              confidence_explanation
+            };
           }
 
-          return null;
+          return {
+            explanation: null,
+            confidence_level: null,
+            confidence_explanation: null
+          };
         });
+
 
         aiGradingInfo = {
           submissionManuallyGraded,
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
+          confidence_level,
+          confidence_explanation
         };
       }
     }

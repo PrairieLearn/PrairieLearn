@@ -12,7 +12,7 @@ import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/pos
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { logResponseUsage } from '../../../lib/ai.js';
+import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -378,11 +378,20 @@ export async function aiGrade({
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
-          highly_confident_grading: z.boolean().describe([
-            'Set to true if you are highly confident in your grading decision based on the rubric items, other guidelines,',
-            'and your interpretation of the student submission.',
-            'Otherwise, set to false.'
-          ].join(' ')),
+          confidence_level: z.enum(['high', 'medium', 'low']).describe(formatPrompt([
+            'Select the closest confidence level for your grading decision based on the following criteria:',
+            'High: It was very clear how to apply the rubric to the submission. No assumptions were made.',
+            'Medium: Some minor assumptions were required to apply the rubric.',
+            'Low: Significant assumptions were required to apply the rubric.',
+            'You must protect the integrity of the grading process.',
+            'It is better to flag a submission as \'Low\' confidence than to guess a grade, even if it ends up being correct.',
+            'If a human grader would hestitate about the grading decision, you must choose between Low or Medium.'
+          ])),
+          confidence_explanation: z.string().describe(formatPrompt([
+            'Explain why you selected the confidence level for the grading decision.',
+            'Provide specific details from the submission that influenced your confidence level.',
+          ])
+        ),
           explanation: z.string().describe(explanationDescription),
           rubric_items: RubricGradingItemsSchema,
         });
