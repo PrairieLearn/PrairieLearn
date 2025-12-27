@@ -216,6 +216,7 @@ router.get(
     }
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+    req.session.assigned_to_me = req.session.assigned_to_me ?? true;
 
     const submissionCredits = await sqldb.queryRows(
       sql.select_submission_credit_values,
@@ -238,6 +239,7 @@ router.get(
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
+        assignedToMe: req.session.assigned_to_me,
         submissionCredits,
       }),
     );
@@ -353,6 +355,7 @@ const PostBodySchema = z.union([
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
+    assigned_to_me: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -381,6 +384,8 @@ const PostBodySchema = z.union([
     __action: z.custom<`reassign_${string}`>(
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
+    skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
+    assigned_to_me: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
     __action: z.literal('report_issue'),
@@ -395,13 +400,17 @@ const PostBodySchema = z.union([
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_edit) {
+    const body = PostBodySchema.parse(req.body);
+    if (body.__action === 'next_instance_question') {
+      if (!res.locals.authz_data.has_course_instance_permission_view) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+      }
+    } else if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
-
-    const body = PostBodySchema.parse(req.body);
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
+      req.session.assigned_to_me = body.assigned_to_me;
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -461,11 +470,13 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
+          assigned_to_me: req.session.assigned_to_me,
           use_instance_question_groups,
         }),
       );
     } else if (body.__action === 'next_instance_question') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
+      req.session.assigned_to_me = body.assigned_to_me;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =
@@ -487,6 +498,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
+          assigned_to_me: req.session.assigned_to_me,
           use_instance_question_groups,
         }),
       );
@@ -494,6 +506,9 @@ router.post(
       body.__action === 'add_manual_grade_for_instance_question_group_ungraded' ||
       body.__action === 'add_manual_grade_for_instance_question_group'
     ) {
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
+      req.session.assigned_to_me = body.assigned_to_me;
+
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
       if (!aiGradingEnabled) {
@@ -594,6 +609,7 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
+          assigned_to_me: req.session.assigned_to_me,
           use_instance_question_groups: true,
         }),
       );
@@ -616,6 +632,12 @@ router.post(
       } catch (err) {
         res.status(500).send({ err: String(err) });
       }
+    } else if (body.__action === 'report_issue') {
+      await reportIssueFromForm(req, res);
+      res.redirect(req.originalUrl);
+    } else if (body.__action === 'toggle_ai_grading_mode') {
+      await toggleAiGradingMode(res.locals.assessment_question.id);
+      res.redirect(req.originalUrl);
     } else if (typeof body.__action === 'string' && body.__action.startsWith('reassign_')) {
       const actionPrompt = body.__action.slice(9);
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
@@ -639,6 +661,7 @@ router.post(
       });
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+      req.session.assigned_to_me = req.session.assigned_to_me ?? true;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =
@@ -652,6 +675,9 @@ router.post(
         });
       });
 
+      req.session.skip_graded_submissions = body.skip_graded_submissions;
+      req.session.assigned_to_me = body.assigned_to_me;
+
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
           urlPrefix: res.locals.urlPrefix,
@@ -660,15 +686,10 @@ router.post(
           user_id: res.locals.authz_data.user.user_id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
+          assigned_to_me: req.session.assigned_to_me,
           use_instance_question_groups,
         }),
       );
-    } else if (body.__action === 'report_issue') {
-      await reportIssueFromForm(req, res);
-      res.redirect(req.originalUrl);
-    } else if (body.__action === 'toggle_ai_grading_mode') {
-      await toggleAiGradingMode(res.locals.assessment_question.id);
-      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

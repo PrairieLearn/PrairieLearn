@@ -209,6 +209,7 @@ router.get(
     }
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+    req.session.assigned_to_me = req.session.assigned_to_me ?? true;
 
     const use_instance_question_groups = await run(async () => {
       const aiGradingMode =
@@ -230,6 +231,7 @@ router.get(
         user_id: res.locals.authz_data.user.user_id,
         prior_instance_question_id: req.query.prior_instance_question_id ?? null,
         skip_graded_submissions: true,
+        assigned_to_me: req.session.assigned_to_me,
         use_instance_question_groups,
       }),
     );
