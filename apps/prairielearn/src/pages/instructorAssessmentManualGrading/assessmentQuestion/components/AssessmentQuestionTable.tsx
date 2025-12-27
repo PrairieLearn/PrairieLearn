@@ -643,8 +643,6 @@ export function AssessmentQuestionTable({
         <ServerJobsProgressInfo
           statusIcons={{
             inProgress: 'bi-stars',
-            complete: 'bi-check-circle-fill',
-            failed: 'bi-exclamation-triangle-fill',
           }}
           statusText={{
             inProgress: 'AI grading in progress',

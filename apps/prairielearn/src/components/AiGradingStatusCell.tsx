@@ -14,17 +14,17 @@ export function AiGradingStatusCell({
   rowId: string;
   aiGradingStatus: JobItemStatus;
 }) {
-  if (aiGradingStatus === JobItemStatus.complete) {
+  if (aiGradingStatus === JobItemStatus.queued) {
     return (
       <OverlayTrigger
         tooltip={{
-          body: 'AI grading completed successfully',
-          props: { id: `ai-status-${rowId}-success-tooltip` },
+          body: 'AI grading queued',
+          props: { id: `ai-status-${rowId}-queued-tooltip` },
         }}
       >
         <span class="d-flex align-items-center gap-2">
-          <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
-          <span>Graded</span>
+          <i class="bi bi-clock text-secondary" aria-hidden="true" />
+          <span>Queued</span>
         </span>
       </OverlayTrigger>
     );
@@ -44,31 +44,33 @@ export function AiGradingStatusCell({
         </span>
       </OverlayTrigger>
     );
-  } else if (aiGradingStatus === JobItemStatus.queued) {
+  } else if (aiGradingStatus === JobItemStatus.failed) {
     return (
       <OverlayTrigger
         tooltip={{
-          body: 'AI grading queued',
-          props: { id: `ai-status-${rowId}-queued-tooltip` },
+          body: 'AI grading failed',
+          props: { id: `ai-status-${rowId}-failed-tooltip` },
         }}
       >
         <span class="d-flex align-items-center gap-2">
-          <i class="bi bi-clock text-secondary" aria-hidden="true" />
-          <span>Queued</span>
+          <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+          <span>Failed</span>
         </span>
       </OverlayTrigger>
     );
   } else {
-    <OverlayTrigger
-      tooltip={{
-        body: 'AI grading failed',
-        props: { id: `ai-status-${rowId}-failed-tooltip` },
-      }}
-    >
-      <span class="d-flex align-items-center gap-2">
-        <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
-        <span>Failed</span>
-      </span>
-    </OverlayTrigger>;
+    return (
+      <OverlayTrigger
+        tooltip={{
+          body: 'AI grading completed successfully',
+          props: { id: `ai-status-${rowId}-success-tooltip` },
+        }}
+      >
+        <span class="d-flex align-items-center gap-2">
+          <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
+          <span>Graded</span>
+        </span>
+      </OverlayTrigger>
+    );
   }
 }

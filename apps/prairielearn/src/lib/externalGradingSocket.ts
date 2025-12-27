@@ -40,7 +40,13 @@ export function init() {
 
 export function connection(socket: Socket) {
   socket.on('init', (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['variant_id', 'variant_token'],
+        socketName: 'external grader',
+      })
+    ) {
       return callback(null);
     }
     if (!checkVariantToken(msg.variant_token, msg.variant_id)) {

@@ -41,7 +41,13 @@ export function init() {
 
 export function connection(socket: Socket) {
   socket.on('joinServerJobProgress', async (msg: ClientConnectMessage, callback) => {
-    if (!ensureProps(msg, ['job_sequence_id', 'job_sequence_token'])) {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['job_sequence_id', 'job_sequence_token'],
+        socketName: 'server job progress',
+      })
+    ) {
       return callback(null);
     }
 
@@ -92,7 +98,8 @@ export async function emitServerJobProgressUpdate(progress: JobProgress) {
     ...progress,
     has_progress_data: true,
   } satisfies ProgressUpdateMessage);
-  serverJobProgressCache?.set(
+  const cache = await getServerJobProgressCache();
+  cache.set(
     `server-job-progress-${progress.job_sequence_id}`,
     progress,
     5 * 60 * 1000, // 5 minutes

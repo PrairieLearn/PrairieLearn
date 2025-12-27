@@ -27,20 +27,20 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 export function ServerJobsProgressInfo({
-  statusIcons,
-  statusText,
   itemNames,
   jobsProgress,
+  statusIcons = {},
+  statusText = {},
   onDismissCompleteJobSequence,
 }: {
   itemNames: string;
   jobsProgress: JobProgress[];
-  statusIcons: {
+  statusIcons?: {
     inProgress?: string;
     complete?: string;
     failed?: string;
   };
-  statusText: {
+  statusText?: {
     inProgress?: string;
     complete?: string;
     failed?: string;
@@ -50,7 +50,7 @@ export function ServerJobsProgressInfo({
   const statusIconsSafe = {
     inProgress: statusIcons.inProgress || 'bi-hourglass-split',
     complete: statusIcons.complete || 'bi-check-circle-fill',
-    failed: statusIcons.failed || 'bi-x-circle-fill',
+    failed: statusIcons.failed || 'bi-exclamation-triangle-fill',
   };
 
   const statusTextSafe = {
@@ -132,7 +132,7 @@ function ServerJobProgressInfo({
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const jobStatus = useMemo(() => {
-    if (nums.complete >= nums.total) {
+    if (nums.total > 0 && nums.complete >= nums.total) {
       return nums.failed > 0 ? 'failed' : 'complete';
     }
     return 'inProgress';
@@ -176,7 +176,11 @@ function ServerJobProgressInfo({
           <>
             <div class="flex-grow-1">
               <ProgressBar
-                now={(nums.complete / nums.total) * 100}
+                now={
+                  nums.total !== 0 // Prevent division by 0
+                    ? (nums.complete / nums.total) * 100
+                    : 0
+                }
                 variant="primary"
                 striped
                 animated
