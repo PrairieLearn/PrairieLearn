@@ -41,6 +41,7 @@ export interface AssessmentQuestionManualGradingProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  ongoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
@@ -70,6 +71,7 @@ function AssessmentQuestionManualGradingInner({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  ongoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
@@ -152,6 +154,7 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
+        ongoingJobSequenceTokens={ongoingJobSequenceTokens}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />

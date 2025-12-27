@@ -99,10 +99,7 @@ export function useManualGradingActions({
     },
     onSuccess: (data) => {
       if (data) {
-        window.location.href = getCourseInstanceJobSequenceUrl(
-          courseInstanceId,
-          data.job_sequence_id,
-        );
+        window.location.reload();
       } else {
         void queryClient.invalidateQueries({
           queryKey: ['instance-questions'],
@@ -123,10 +120,7 @@ export function useManualGradingActions({
       {
         onSuccess: (data) => {
           if (data) {
-            window.location.href = getCourseInstanceJobSequenceUrl(
-              courseInstanceId,
-              data.job_sequence_id,
-            );
+            window.location.reload();
           } else {
             void queryClient.invalidateQueries({
               queryKey: ['instance-questions'],

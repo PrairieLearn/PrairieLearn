@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
+import { generateSignedToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -33,6 +34,7 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -90,6 +92,30 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
+
+    const ongoingJobSequenceTokens = await run(async () => {
+      if (!aiGradingEnabled) {
+        return null;
+      }
+
+      const ongoingJobSequenceIds = await queryRows(
+        sql.select_ai_grading_job_sequence_ids_for_assessment_question,
+        {
+          assessment_question_id: res.locals.assessment_question.id,
+        },
+        z.string(),
+      );
+
+      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
+        (acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateSignedToken({ jobSequenceId }, config.secretKey);
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      return jobSequenceTokens;
+    });
 
     const {
       authz_data,
@@ -153,6 +179,7 @@ router.get(
                     ? await calculateAiGradingStats(assessment_question)
                     : null
                 }
+                ongoingJobSequenceTokens={ongoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}

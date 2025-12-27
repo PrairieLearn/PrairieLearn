@@ -1,6 +1,7 @@
 columns
     arguments: text[]
     assessment_id: bigint
+    assessment_question_id: bigint
     authn_user_id: bigint
     command: text
     course_id: bigint
@@ -36,6 +37,7 @@ check constraints
 
 foreign-key constraints
     jobs_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
+    jobs_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
     jobs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     jobs_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

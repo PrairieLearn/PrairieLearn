@@ -1,0 +1,131 @@
+import { useEffect, useMemo, useState } from 'preact/compat';
+import { io } from 'socket.io-client';
+
+import type {
+  JobItemStatus,
+  JobProgress,
+  ProgressUpdateMessage,
+} from '../../lib/serverJobProgressSocket.shared.js';
+
+/**
+ * Manages and retrieves live progress information for server jobs via WebSocket connections.
+ *
+ * The `ServerJobsProgressInfo` component can be used to display the retrieved progress information.
+ *
+ * @param params
+ *
+ * @param params.enabled If true, the hook connects to the WebSocket for progress updates; otherwise, it does not.
+ * Use this to save resources if server job progress updates aren't needed.
+ *
+ * E.g. For the assessment questions page, if AI grading mode is off but AI grading jobs are ongoing in the background,
+ * progress updates won't be displayed, so we can skip connecting to the WebSocket.
+ *
+ * @param params.ongoingJobSequenceTokens A mapping of ongoing job sequence IDs to their server-generated tokens. Used to authenticate the WebSocket connection for each job.
+ */
+export function useServerJobProgress({
+  enabled,
+  ongoingJobSequenceTokens,
+}: {
+  enabled: boolean;
+  ongoingJobSequenceTokens: Record<string, string> | null;
+}) {
+  const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
+
+  /**
+   * The status to display for a specific job item across all ongoing jobs.
+   *
+   * If multiple jobs are processing the same item, the least progressed status is shown --
+   * from highest to lowest precedence: queued, in_progress, failed, complete.
+   */
+  const displayedStatuses = useMemo(() => {
+    const merged: Record<string, JobItemStatus> = {};
+    if (!enabled) {
+      return merged;
+    }
+    for (const job of Object.values(jobsProgress)) {
+      if (!job.item_statuses) {
+        continue;
+      }
+      for (const [itemId, status] of Object.entries(job.item_statuses)) {
+        if (!(itemId in merged) || status < merged[itemId]) {
+          merged[itemId] = status;
+        }
+      }
+    }
+    return merged;
+  }, [jobsProgress, enabled]);
+
+  useEffect(() => {
+    if (
+      !ongoingJobSequenceTokens ||
+      Object.keys(ongoingJobSequenceTokens).length === 0 ||
+      !enabled
+    ) {
+      return;
+    }
+
+    const socket = io('/server-job-progress');
+
+    for (const jobSequenceId of Object.keys(ongoingJobSequenceTokens)) {
+      // Join the WebSocket room for this job sequence to receive progress updates.
+      socket.emit(
+        'joinServerJobProgress',
+        {
+          job_sequence_id: jobSequenceId,
+          job_sequence_token: ongoingJobSequenceTokens[jobSequenceId],
+        },
+        (response: ProgressUpdateMessage) => {
+          if (!response.has_progress_data) {
+            return;
+          }
+          setJobsProgress((prev) => ({
+            ...prev,
+            [jobSequenceId]: response,
+          }));
+        },
+      );
+
+      // Listen for progress updates for this job sequence.
+      socket.on('serverJobProgressUpdate', (msg: ProgressUpdateMessage) => {
+        if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) {
+          return;
+        }
+        setJobsProgress((prev) => ({
+          ...prev,
+          [jobSequenceId]: msg,
+        }));
+      });
+    }
+    return () => {
+      socket.disconnect();
+    };
+  }, [ongoingJobSequenceTokens, enabled]);
+
+  /**
+   * When the user dismisses a completed job progress alert, remove the job from state.
+   */
+  function handleDismissCompleteJobSequence(jobSequenceId: string) {
+    if (!(jobSequenceId in jobsProgress)) {
+      return;
+    }
+
+    const jobProgress = jobsProgress[jobSequenceId];
+
+    // Only dismiss if the job is complete.
+    if (jobProgress.num_complete < jobProgress.num_total) {
+      return;
+    }
+
+    setJobsProgress((prev) => {
+      const newJobsProgress = { ...prev };
+      delete newJobsProgress[jobSequenceId];
+      return newJobsProgress;
+    });
+  }
+
+  return {
+    jobsProgress,
+    displayedStatuses,
+    handleDismissCompleteJobSequence,
+  };
+}
