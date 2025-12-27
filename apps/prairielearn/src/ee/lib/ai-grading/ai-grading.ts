@@ -378,6 +378,11 @@ export async function aiGrade({
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
+          highly_confident_grading: z.boolean().describe([
+            'Set to true if you are highly confident in your grading decision based on the rubric items, other guidelines,',
+            'and your interpretation of the student submission.',
+            'Otherwise, set to false.'
+          ].join(' ')),
           explanation: z.string().describe(explanationDescription),
           rubric_items: RubricGradingItemsSchema,
         });

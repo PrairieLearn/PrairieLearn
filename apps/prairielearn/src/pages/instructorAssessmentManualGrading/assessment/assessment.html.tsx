@@ -84,6 +84,22 @@ export function ManualGradingAssessment({
               <input type="hidden" name="__action" value="export_ai_grading_statistics" />
               <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
             </form>
+            <form method="POST" id="export-ai-grading-statistics-high-confidence">
+              <input
+                type="hidden"
+                name="__action"
+                value="export_ai_grading_statistics_high_confidence"
+              />
+              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
+            </form>
+            <form method="POST" id="export-ai-grading-statistics-non-high-confidence">
+              <input
+                type="hidden"
+                name="__action"
+                value="export_ai_grading_statistics_non_high_confidence"
+              />
+              <input type="hidden" name="__csrf_token" value={resLocals.__csrf_token} />
+            </form>
           </>
         )}
         <div class="card mb-4">
@@ -93,17 +109,53 @@ export function ManualGradingAssessment({
             </h1>
             {adminFeaturesEnabled && questions.length > 0 && (
               <div class="d-flex align-items-center gap-2">
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
-                  name="export-ai-grading-statistics"
-                  aria-label="Export AI grading statistics"
-                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
-                  onclick="$('#export-ai-grading-statistics').submit();"
-                >
-                  <i class="bi bi-download" aria-hidden="true" />
-                  Export AI grading statistics
-                </button>
+                <div class="btn-group">
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light grading-tag-button"
+                    name="export-ai-grading-statistics"
+                    aria-label="Export AI grading statistics"
+                    // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                    onclick="$('#export-ai-grading-statistics').submit();"
+                  >
+                    <i class="bi bi-download" aria-hidden="true" />
+                    Export AI grading statistics
+                  </button>
+                  <button
+                    type="button"
+                    class="btn btn-sm btn-light dropdown-toggle dropdown-toggle-split"
+                    data-bs-toggle="dropdown"
+                    aria-haspopup="true"
+                    aria-expanded="false"
+                    aria-label="Export options"
+                   />
+                  <div class="dropdown-menu dropdown-menu-end">
+                    <button
+                      type="button"
+                      class="dropdown-item"
+                      // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                      onclick="$('#export-ai-grading-statistics').submit();"
+                    >
+                      Export all AI grading statistics
+                    </button>
+                    <button
+                      type="button"
+                      class="dropdown-item"
+                      // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                      onclick="$('#export-ai-grading-statistics-high-confidence').submit();"
+                    >
+                      Export high confidence statistics
+                    </button>
+                    <button
+                      type="button"
+                      class="dropdown-item"
+                      // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                      onclick="$('#export-ai-grading-statistics-non-high-confidence').submit();"
+                    >
+                      Export non-high confidence statistics
+                    </button>
+                  </div>
+                </div>
                 <button
                   type="button"
                   class="btn btn-sm btn-light grading-tag-button"

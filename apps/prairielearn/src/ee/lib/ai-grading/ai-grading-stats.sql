@@ -70,12 +70,13 @@ WITH
       ri.deleted_at IS NULL
   )
 SELECT
-  grading_job_id,
-  grading_method,
-  graded_at,
-  manual_points,
-  manual_rubric_grading_id,
-  instance_question_id,
+  ggj.grading_job_id,
+  ggj.grading_method,
+  ggj.graded_at,
+  ggj.manual_points,
+  ggj.manual_rubric_grading_id,
+  ggj.instance_question_id,
+  agj.completion AS completion,
   COALESCE(u.name, u.uid) AS grader_name,
   COALESCE(
     json_agg(to_jsonb(rgti)) FILTER (
@@ -90,14 +91,17 @@ FROM
   LEFT JOIN rubric_grading_to_items AS rgti ON (
     ggj.manual_rubric_grading_id = rgti.rubric_grading_id
   )
+LEFT JOIN
+  ai_grading_jobs AS agj ON ggj.grading_job_id = agj.id
 WHERE
   rn = 1
 GROUP BY
-  grading_job_id,
-  grading_method,
-  graded_at,
-  manual_points,
-  manual_rubric_grading_id,
-  instance_question_id,
+  ggj.grading_job_id,
+  ggj.grading_method,
+  ggj.graded_at,
+  ggj.manual_points,
+  ggj.manual_rubric_grading_id,
+  ggj.instance_question_id,
   u.name,
-  u.uid;
+  u.uid,
+  agj.completion;

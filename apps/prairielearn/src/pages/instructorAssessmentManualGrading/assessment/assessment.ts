@@ -12,6 +12,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
 import {
   AI_GRADING_MODEL_IDS,
@@ -190,7 +191,7 @@ router.post(
       }
       flash('success', 'AI grading successfully initiated.');
       res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'export_ai_grading_statistics') {
+    } else if (['export_ai_grading_statistics', 'export_ai_grading_statistics_high_confidence', 'export_ai_grading_statistics_non_high_confidence'].includes(req.body.__action)) {
       if (!res.locals.is_administrator) {
         throw new HttpStatusError(403, 'Access denied');
       }
@@ -200,7 +201,18 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const stats = await generateAssessmentAiGradingStats(res.locals.assessment as Assessment);
+      const stats = await generateAssessmentAiGradingStats({ 
+        assessment: res.locals.assessment as Assessment,
+        highly_confident_grading: run(() => {
+          if (req.body.__action === 'export_ai_grading_statistics_high_confidence') {
+            return true;
+          }
+          if (req.body.__action === 'export_ai_grading_statistics_non_high_confidence') {
+            return false;
+          }
+          return undefined;
+        })
+      });
       res.attachment('assessment_statistics.csv');
       stringify([...stats.perQuestion, stats.total], {
         header: true,

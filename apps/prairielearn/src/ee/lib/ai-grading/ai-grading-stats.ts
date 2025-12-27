@@ -27,6 +27,7 @@ const GradingJobInfoSchema = z.object({
   manual_rubric_grading_id: IdSchema.nullable(),
   grader_name: z.string(),
   rubric_items: z.array(RubricItemSchema),
+  completion: z.any().nullable(),
 });
 type GradingJobInfo = z.infer<typeof GradingJobInfoSchema>;
 
@@ -89,6 +90,7 @@ export async function fillInstanceQuestionColumnEntries<
       rubric_difference: null,
       instance_question_group_name: null,
       rubric_similarity: null,
+      highly_confident_grading: null
     };
     results.push({
       ...row,
@@ -111,6 +113,7 @@ export async function fillInstanceQuestionColumnEntries<
         instance_question.ai_grading_status =
           aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
       }
+      instance_question.highly_confident_grading = aiGradingJob.completion?.highly_confident_grading ?? null;
     }
 
     if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {
@@ -302,7 +305,14 @@ function safeDivide(numerator: number, denominator: number): number {
  * Generate detailed AI grading classification performance statistics for an assessment, including confusion
  * matrix elements (TP, FP, TN, FN), accuracy, precision, recall, and F1 score per question and overall.
  */
-export async function generateAssessmentAiGradingStats(assessment: Assessment): Promise<{
+export async function generateAssessmentAiGradingStats({
+  assessment,
+  highly_confident_grading,
+}: {
+  assessment: Assessment,
+  /** If specified, filters for instance questions with highly confident grading or not. Otherwise, no filtering occurs. */
+  highly_confident_grading?: boolean
+}): Promise<{
   perQuestion: AiGradingAQPerformanceStatsQuestionRow[];
   total: AiGradingPerformanceStatsRow;
 }> {
@@ -343,12 +353,17 @@ export async function generateAssessmentAiGradingStats(assessment: Assessment): 
       assessment_question_id: questionRow.assessment_question.id,
     });
 
-    const instanceQuestionsTable = await fillInstanceQuestionColumnEntries(
+    const instanceQuestionsTable = (await fillInstanceQuestionColumnEntries(
       instanceQuestions.map((instanceQuestion) => ({
         instance_question: instanceQuestion,
       })),
       questionRow.assessment_question,
-    );
+    )).filter(
+      (row) => (
+        highly_confident_grading === undefined ||
+        row.instance_question.highly_confident_grading === highly_confident_grading
+      ) 
+    )
 
     const confusionMatrix = {
       truePositives: 0,
