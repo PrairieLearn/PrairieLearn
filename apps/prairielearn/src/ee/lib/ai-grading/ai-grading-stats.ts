@@ -113,7 +113,10 @@ export async function fillInstanceQuestionColumnEntries<
         instance_question.ai_grading_status =
           aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
       }
-      instance_question.highly_confident_grading = aiGradingJob.completion?.highly_confident_grading ?? null;
+
+      console.log('aiGradingJob completion', aiGradingJob.completion)
+
+      instance_question.highly_confident_grading = aiGradingJob.completion?.object?.highly_confident_grading ?? null;
     }
 
     if (manualGradingJob?.manual_points != null && aiGradingJob?.manual_points != null) {

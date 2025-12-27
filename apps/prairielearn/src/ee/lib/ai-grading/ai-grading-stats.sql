@@ -92,7 +92,7 @@ FROM
     ggj.manual_rubric_grading_id = rgti.rubric_grading_id
   )
 LEFT JOIN
-  ai_grading_jobs AS agj ON ggj.grading_job_id = agj.id
+  ai_grading_jobs AS agj ON ggj.grading_job_id = agj.grading_job_id
 WHERE
   rn = 1
 GROUP BY
