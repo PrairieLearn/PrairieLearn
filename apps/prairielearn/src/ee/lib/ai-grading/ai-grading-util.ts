@@ -270,6 +270,135 @@ export async function generatePrompt({
   return input;
 }
 
+/** 
+ * Prompt for LLM that attempts to dispute the grading of a previous LLM.
+ */
+export async function generateAuditorPrompt({
+  questionPrompt,
+  questionAnswer,
+  submission_text,
+  submitted_answer,
+  rubric_items,
+  grader_guidelines,
+  selected_rubric_items,
+  model_id,
+}: {
+  questionPrompt: string;
+  questionAnswer: string;
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+  rubric_items: RubricItem[];
+  grader_guidelines: string | null;
+  selected_rubric_items: Record<string, boolean>;
+  model_id: AiGradingModelId;
+}): Promise<ModelMessage[]> {
+  const input: ModelMessage[] = [];
+
+  const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
+    ? 'system'
+    : 'user';
+
+  const graderGuidelinesMessages = grader_guidelines
+    ? ([
+        {
+          role: systemRoleAfterUserMessage,
+          content: 'The following guidelines were provided to the grader:',
+        },
+        {
+          role: 'user',
+          content: grader_guidelines,
+        },
+      ] satisfies ModelMessage[])
+    : [];
+
+  // Instructions for grading
+  if (rubric_items.length === 0) {
+    throw new Error('Auditor prompt generation requires rubric items.');
+  }
+  input.push(
+    {
+      role: 'system',
+      content: formatPrompt([
+        [
+          "You are a rubric grading auditor for a course, and you are reviewing the grading of a student's response to a question.",
+          'You must dispute potential errors in the previous grading.',
+          'Find any grading decisions that could reasonably be graded differently.'
+        ],
+      ]),
+    },
+    ...graderGuidelinesMessages,
+    {
+      role: systemRoleAfterUserMessage,
+      content: 'These were the rubric items provided to the grader:',
+    },
+    {
+      role: 'user',
+      content: rubric_items
+        .map((item) => {
+          const itemParts: string[] = [`description: ${item.description}`];
+          if (item.explanation) {
+            itemParts.push(`explanation: ${item.explanation}`);
+          }
+          if (item.grader_note) {
+            itemParts.push(`grader note: ${item.grader_note}`);
+          }
+          return itemParts.join('\n');
+        })
+        .join('\n\n'),
+    }, 
+    {
+      role: systemRoleAfterUserMessage,
+      content: 'This is the question the grader graded:',
+    },
+    {
+      role: 'user',
+      content: questionPrompt,
+    },
+  );
+
+  if (questionAnswer.trim()) {
+    input.push(
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'The instructor provided the following answer for this question to the grader:',
+      },
+      {
+        role: 'user',
+        content: questionAnswer.trim(),
+      },
+    );
+  }
+
+  input.push(
+    {
+      role: systemRoleAfterUserMessage,
+      content: 'The student made the following submission:',
+    },
+    generateSubmissionMessage({
+      submission_text,
+      submitted_answer,
+    }), 
+    {
+      role: systemRoleAfterUserMessage,
+      content: 'The grader provided the following grading. A true indicates the rubric item was selected, a false indicates it was not.',
+    },
+    {
+      role: 'user',
+      content: JSON.stringify(
+        selected_rubric_items,
+        null,
+        2,
+      ),
+    },
+    {
+      role: systemRoleAfterUserMessage,
+      content: 'Please dispute any grading decisions that could reasonably be graded differently or were ambiguous.',
+    }
+  );
+
+  return input;
+}
+
 /**
  * Returns true if the text contains any element with a `data-image-capture-uuid` attribute.
  */

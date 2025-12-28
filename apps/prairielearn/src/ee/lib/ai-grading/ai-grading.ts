@@ -21,6 +21,7 @@ import {
   type CourseInstance,
   type InstanceQuestion,
   type Question,
+  UserSchema,
 } from '../../../lib/db-types.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
@@ -35,6 +36,7 @@ import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  generateAuditorPrompt,
   generatePrompt,
   generateSubmissionEmbedding,
   insertAiGradingJob,
@@ -148,6 +150,8 @@ export async function aiGrade({
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
   });
+
+  const auditorResponses: Record<string, any> = {};  
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
@@ -394,6 +398,51 @@ export async function aiGrade({
         logResponseUsage({ response, logger });
 
         logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+
+
+        let GradingAuditSchema = z.object({});
+        for (const item of rubric_items) {
+          GradingAuditSchema = GradingAuditSchema.merge(
+            z.object({
+              [item.description]: z.object({
+                dispute: z.boolean().describe('Whether or not you dispute the grading of this item.'),
+                explanation: z.string().describe('Explanation for disputing or not disputing this item.')
+              })
+            }),
+          );
+        }
+
+        // Attempt to dispute the grading to catch potential issues.
+        const auditorPrompt = await generateAuditorPrompt({
+          questionPrompt,
+          questionAnswer,
+          submission_text,
+          submitted_answer: submission.submitted_answer,
+          rubric_items,
+          grader_guidelines: rubric?.grader_guidelines ?? null,
+          selected_rubric_items: response.object.rubric_items,
+          model_id,
+        })
+
+        const auditorResponse = await generateObject({
+          model,
+          schema: GradingAuditSchema,
+          messages: auditorPrompt,
+          providerOptions: {
+            openai: openaiProviderOptions,
+          },
+        });
+
+        const user = await queryRow(
+          sql.select_instance_question_user_email,
+          { instance_question_id: instance_question.id },
+          UserSchema
+        );
+
+        auditorResponses[user.uid] = auditorResponse.object;
+
+        logger.info(`Auditor parsed response: ${JSON.stringify(auditorResponse.object, null, 2)}`);
+
         const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
           ai_rubric_items: response.object.rubric_items,
           rubric_items,
@@ -633,6 +682,8 @@ export async function aiGrade({
         }
       },
     );
+
+    job.info('Auditor responses: ' + JSON.stringify(auditorResponses, null, 2));
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
 

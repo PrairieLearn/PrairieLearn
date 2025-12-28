@@ -29,3 +29,19 @@ VALUES
   )
 RETURNING
   id;
+
+-- BLOCK select_instance_question_user_email
+SELECT
+  u.*
+FROM 
+  instance_questions AS iq
+JOIN 
+  assessment_instances AS ai
+ON
+  ai.id = iq.assessment_instance_id
+JOIN
+  users AS u
+ON 
+  u.user_id = ai.user_id
+WHERE
+  iq.id = $instance_question_id;
