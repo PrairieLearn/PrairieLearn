@@ -84,9 +84,9 @@ test-prairielearn-docker-smoke-tests: start-support
 	@yarn workspace @prairielearn/prairielearn run test:docker-smoke-tests
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
-test-python: python-deps
-	@python3 -m pytest
-	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
+test-python:
+	@uv run --group dev pytest
+	@uv run --group dev coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 test-e2e: start-support
@@ -111,9 +111,9 @@ lint-js:
 lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
-lint-python: python-deps
-	@python3 -m ruff check ./
-	@python3 -m ruff format --check ./
+lint-python:
+	@uv run --group dev ruff check ./
+	@uv run --group dev ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -126,9 +126,9 @@ lint-docker:
 lint-shell:
 	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-sql:
-	@sqlfluff lint
+	@uv run --group dev sqlfluff lint
 lint-sql-migrations:
-	@squawk apps/prairielearn/src/migrations/*.sql
+	@uv run --group dev squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 lint-changeset:
@@ -139,7 +139,7 @@ format-all: format-js format-python format-sql
 
 format: format-js format-python
 format-sql:
-	@sqlfluff fix
+	@uv run --group dev sqlfluff fix
 
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
@@ -149,9 +149,9 @@ format-js-cached:
 	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
-format-python: python-deps
-	@python3 -m ruff check --fix ./
-	@python3 -m ruff format ./
+format-python:
+	@uv run --group dev ruff check --fix ./
+	@uv run --group dev ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
@@ -171,10 +171,10 @@ changeset:
 
 lint-docs: lint-d2 lint-links lint-markdown
 
-build-docs: python-deps
-	@.venv/bin/mkdocs build --strict
-dev-docs: python-deps
-	@.venv/bin/mkdocs serve --livereload
+build-docs:
+	@uv run --group docs mkdocs build --strict
+dev-docs:
+	@uv run --group docs mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
