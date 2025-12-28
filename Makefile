@@ -162,9 +162,9 @@ format-python: python-deps
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@yarn tsc -p contrib
+	@yarn tsgo -p contrib --noEmit
 typecheck-scripts:
-	@yarn tsc -p scripts
+	@yarn tsgo -p scripts --noEmit
 typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps

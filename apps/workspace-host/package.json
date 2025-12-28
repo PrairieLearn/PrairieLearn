@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc && tscp",
+    "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
