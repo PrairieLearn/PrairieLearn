@@ -1,26 +1,28 @@
 export PATH := $(CURDIR)/.venv/bin:$(PATH)
 
+# On macOS, set flags for pygraphviz to find graphviz headers
+# See https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt
+ifeq ($(shell uname -s),Darwin)
+export CFLAGS := -I$(shell brew --prefix graphviz)/include
+export LDFLAGS := -L$(shell brew --prefix graphviz)/lib
+endif
+
 build:
 	@yarn turbo run build
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 
-venv-setup:
-	@[ -f .venv/bin/python3 ] || \
-		uv venv --python-preference only-managed --python 3.10 --seed .venv || \
-		python3 -m venv --upgrade-deps .venv
-
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
 # performance the first time things run:
 # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
-python-deps-core: venv-setup
-	@uv sync --compile-bytecode --python .venv
-python-deps-docs: venv-setup
-	@uv sync --group docs --compile-bytecode --python .venv
-python-deps-dev: venv-setup
-	@uv sync --group dev --compile-bytecode --python .venv
-python-deps: venv-setup
-	@uv sync --group docs --group dev --compile-bytecode --python .venv
+python-deps-core:
+	@uv sync --compile-bytecode
+python-deps-docs:
+	@uv sync --group docs --compile-bytecode
+python-deps-dev:
+	@uv sync --group dev --compile-bytecode
+python-deps:
+	@uv sync --group docs --group dev --compile-bytecode
 
 # This is a separate target since we can't currently install the necessary
 # browsers in the development Docker image.

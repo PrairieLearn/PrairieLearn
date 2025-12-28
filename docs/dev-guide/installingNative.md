@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Git](https://git-scm.com)
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
-  - [Python 3.10](https://www.python.org)
+  - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
   - [PostgreSQL 16](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
@@ -39,10 +39,11 @@ Most of these prerequisites can be installed using the package manager of your O
     > sudo service postgresql start
     > ```
 
-    Install `uv`:
+    Install `uv` using the standalone installer:
 
     ```sh
-    pip install uv
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source $HOME/.local/bin/env  # Add uv to PATH for current shell
     ```
 
     Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
@@ -112,25 +113,23 @@ Most of these prerequisites can be installed using the package manager of your O
   cd PrairieLearn
   ```
 
-- Set up a Python virtual environment in the root of the cloned repository:
+- Install Python dependencies (this will automatically create a virtual environment at `.venv` if needed):
 
   ```sh
-  uv venv --python-preference managed --python 3.10 --seed .venv
+  make python-deps
+  ```
+
+  After installation, activate the virtual environment:
+
+  ```sh
   source .venv/bin/activate
   ```
 
   You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
 
-- On macOS, set the following environment variables so that `pygraphviz` can [find the necessary headers](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt):
+  !!! note
 
-  ```sh
-  cat << EOF >> .venv/bin/activate
-  export CFLAGS="-I$(brew --prefix graphviz)/include"
-  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
-  EOF
-  
-  source .venv/bin/activate
-  ```
+      The virtual environment activation is only needed for running Python commands directly.
 
 - Install all dependencies and transpile local packages:
 

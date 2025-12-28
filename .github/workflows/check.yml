@@ -136,6 +136,8 @@ jobs:
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
+      - name: Check uv.lock is up-to-date
+        run: uv lock --check
       - name: Install all Python dependencies
         run: make python-deps
 
