@@ -175,13 +175,12 @@ router.get(
         // Over the lifetime of this feature, we've changed which APIs/libraries we
         // use to generate the completion, so we need to handle all formats we've ever
         // used for backwards-compatibility. Each one is documented below.
-        const {explanation, confidence_level, confidence_explanation} = run(() => {
+        const {explanation, completion_object} = run(() => {
           const completion = ai_grading_job_data.completion;
           if (!completion) {
             return {
               explanation: null,
-              confidence_level: null,
-              confidence_explanation: null
+              completion_object: null
             };
           }
 
@@ -191,12 +190,11 @@ router.get(
             if (typeof explanation !== 'string') {
               return {
                 explanation: null,
-                confidence_level: null,
-                confidence_explanation: null
+                completion_object: null,
               };
             }
 
-            return {explanation: explanation.trim() || null, confidence_level: null, confidence_explanation: null};
+            return {explanation: explanation.trim() || null, completion_object: null};
           }
 
           // OpenAI response format
@@ -205,12 +203,11 @@ router.get(
             if (typeof explanation !== 'string') {
               return {
                 explanation: null,
-                confidence_level: null,
-                confidence_explanation: null
+                completion_object: null,
               };
             }
 
-            return {explanation: explanation.trim() || null, confidence_level: null, confidence_explanation: null};
+            return {explanation: explanation.trim() || null, completion_object: null};
           }
 
           // `ai` package format
@@ -219,27 +216,21 @@ router.get(
             if (typeof explanation !== 'string') {
               return {
                 explanation: null,
-                confidence_level: null,
-                confidence_explanation: null
+                completion_object: null
               };
             }
 
-            console.log('completion', completion);
-
-            const confidence_level = completion.object?.confidence_level;
-            const confidence_explanation = completion.object?.confidence_explanation
+            const completion_object = completion.object;
 
             return {
               explanation: explanation.trim() || null, 
-              confidence_level, 
-              confidence_explanation
+              completion_object
             };
           }
 
           return {
             explanation: null,
-            confidence_level: null,
-            confidence_explanation: null
+            completion_object: null
           };
         });
 
@@ -249,8 +240,7 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
-          confidence_level,
-          confidence_explanation
+          completion_object
         };
       }
     }

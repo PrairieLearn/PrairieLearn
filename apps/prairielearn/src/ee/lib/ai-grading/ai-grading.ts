@@ -378,20 +378,21 @@ export async function aiGrade({
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
-          confidence_level: z.enum(['high', 'medium', 'low']).describe(formatPrompt([
-            'Select the closest confidence level for your grading decision based on the following criteria:',
-            'High: It was very clear how to apply the rubric to the submission. No assumptions were made.',
-            'Medium: Some minor assumptions were required to apply the rubric.',
-            'Low: Significant assumptions were required to apply the rubric.',
-            'You must protect the integrity of the grading process.',
-            'It is better to flag a submission as \'Low\' confidence than to guess a grade, even if it ends up being correct.',
-            'If a human grader would hestitate about the grading decision, you must choose between Low or Medium.'
+          grading_counter_argument: z.string().describe(formatPrompt([
+            'Play Devil\'s Advocate. Assume your grading decision is controversial or incorrect.',
+            'Write a specific argument a student might make to dispute this grade,',
+            'or a reason a strict human auditor might disagree with your decision.',
+            'Focus on ambiguous handwriting, vague work, or "gray areas" in the rubric.',
+            'Do not try to justify your grading decisions in this explanation; try to refute them.'
           ])),
-          confidence_explanation: z.string().describe(formatPrompt([
-            'Explain why you selected the confidence level for the grading decision.',
-            'Provide specific details from the submission that influenced your confidence level.',
-          ])
-        ),
+          potential_issue_severity: z.enum(['low', 'medium', 'high']).describe(
+            formatPrompt([
+              'Based on the grading counter-argument, rate the severity of the potential issue with your grading decision.',
+              'If the counter-argument raises a nitpicky, trivial, or minor concern, rate it "low".',
+              'If the counter-argument raises a moderate concern rate it "medium".',
+              'If the counter-argument raises a serious concern, rate it "high".',
+            ]),
+          ),
           explanation: z.string().describe(explanationDescription),
           rubric_items: RubricGradingItemsSchema,
         });

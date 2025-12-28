@@ -113,8 +113,7 @@ export function QuestionContainer({
       aiGradingInfo?.explanation
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
-            confidence_level: aiGradingInfo.confidence_level,
-            confidence_explanation: aiGradingInfo.confidence_explanation,
+            completion_object: aiGradingInfo.completion_object,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -199,7 +198,7 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation, confidence_level, confidence_explanation }: { explanation: string, confidence_level: string| null, confidence_explanation: string | null}) {
+function AIGradingExplanation({ explanation, completion_object }: { explanation: string, completion_object: Record<string, any> | null}) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -227,10 +226,8 @@ ${explanation}</pre
           >
 
           <div class="mt-3">
-            <h5>AI Confidence Level</h5>
-            <p>${confidence_level ?? 'N/A'}</p>
-            <h5>AI Confidence Explanation</h5>
-            <p>${confidence_explanation ?? 'N/A'}</p>
+            <h5>AI Grading Completion Object</h5>
+            <pre>${completion_object ? JSON.stringify(completion_object, null, 2) : 'N/A'}</pre>
           </div>
         </div>
       </div>

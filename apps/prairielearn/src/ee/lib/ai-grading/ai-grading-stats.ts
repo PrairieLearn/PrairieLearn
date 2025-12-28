@@ -90,7 +90,8 @@ export async function fillInstanceQuestionColumnEntries<
       rubric_difference: null,
       instance_question_group_name: null,
       rubric_similarity: null,
-      highly_confident_grading: null
+      highly_confident_grading: null,
+      completion: null
     };
     results.push({
       ...row,
@@ -114,6 +115,7 @@ export async function fillInstanceQuestionColumnEntries<
           aiGradingJob.graded_at > rubric_modify_time ? 'LatestRubric' : 'OutdatedRubric';
       }
 
+      instance_question.completion = aiGradingJob.completion?.object ?? null;
       // instance_question.highly_confident_grading = aiGradingJob.completion?.object?.highly_confident_grading ?? null;
     }
 
@@ -374,6 +376,7 @@ export async function generateAssessmentAiGradingStats({
     };
 
     for (const { instance_question: row } of instanceQuestionsTable) {
+      
       if (row.ai_grading_status === 'LatestRubric') {
         if (row.rubric_difference) {
           for (const difference of row.rubric_difference) {
