@@ -1,19 +1,20 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import type * as z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { type PageAuthzData } from '../../../lib/authz-data-lib.js';
-import { extractPageContext } from '../../../lib/client/page-context.js';
+import { type PageAuthzData, PageAuthzDataSchema, hasRole } from '../../../lib/authz-data-lib.js';
+import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import {
   type Course,
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
-import { selectCourseById, selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -53,6 +54,7 @@ async function courseInstancesAllowedToLink({
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
     authzData,
+    // TODO: Why is "Previewer" included here? And why is this "Student Data Viewer" and not "Student Data Editor"?
     requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
@@ -77,24 +79,32 @@ async function coursesAllowedToLink({
 router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
-    const courses = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-    });
-
     const unsafe_course_id = req.query.unsafe_course_id?.toString();
     if (!unsafe_course_id) {
       throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
     }
 
-    const course = courses.find((c) => c.id === unsafe_course_id);
-    if (!course) {
+    const { authzData, course } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: unsafe_course_id,
+      course_instance_id: null,
+      ip: req.ip || null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
+
+    if (!authzData || !hasRole(authzData, ['Editor'])) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
     const course_instances = await courseInstancesAllowedToLink({
       course,
-      authzData: res.locals.authz_data,
+      authzData: PageAuthzDataSchema.parse({
+        ...authzData,
+        authn_user: authzData.user,
+        is_administrator: res.locals.is_administrator,
+        authn_is_administrator: res.locals.authn_is_administrator,
+      } satisfies z.input<typeof PageAuthzDataSchema>),
     });
 
     let options: HtmlSafeString;
@@ -203,18 +213,25 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { authz_data: authzData } = extractPageContext(res.locals, {
-      pageType: 'plain',
-      accessType: 'instructor',
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: null,
+      course_instance_id: req.body.unsafe_course_instance_id,
+      ip: req.ip || null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
     });
 
-    const ltiClaim = new Lti13Claim(req);
+    if (!authzData || !hasRole(authzData, ['Editor', 'Student Data Editor']) || !courseInstance) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
 
-    // Map passed and auth lti13_instance_id through institution to course instance, or fail
+    // Ensure that the selected course instance transitively belongs to the institution
+    // to which the LTI 1.3 instance belongs.
     const course_instance = await queryOptionalRow(
       sql.select_lti13_institution_course_instance,
       {
-        course_instance_id: req.body.unsafe_course_instance_id,
+        course_instance_id: courseInstance.id,
         lti13_instance_id: req.params.lti13_instance_id,
         authn_lti13_instance_id: req.session.authn_lti13_instance_id,
       },
@@ -225,21 +242,8 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    const courseInstancesAllowed = await courseInstancesAllowedToLink({
-      course: await selectCourseById(course_instance.course_id),
-      authzData,
-    });
-    const hasCourseInstanceAllowed = courseInstancesAllowed.some(
-      (ci) => ci.id === course_instance.id,
-    );
-
-    const coursesAllowed = await coursesAllowedToLink({
-      user_id: authzData.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-    });
-    const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
-
-    if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
+    const ltiClaim = new Lti13Claim(req);
+    if (ltiClaim.isRoleInstructor()) {
       await execute(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
