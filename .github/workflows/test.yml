@@ -112,9 +112,9 @@ jobs:
           sudo apt-get update
           sudo apt-get purge -y man-db
           sudo apt-get install -y curl ca-certificates
-          install -d /usr/share/postgresql-common/pgdg
-          curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list
+          sudo install -d /usr/share/postgresql-common/pgdg
+          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
+          sudo sh -c "echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
           sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-17-pgvector
 
       # The two `sed` commands are here to handle the fact that the default
