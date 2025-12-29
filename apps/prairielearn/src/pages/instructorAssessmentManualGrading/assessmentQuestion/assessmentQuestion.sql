@@ -101,13 +101,3 @@ SET
 WHERE
   iq.assessment_question_id = $assessment_question_id
   AND iq.id = ANY ($instance_question_ids::bigint[]);
-
--- BLOCK select_ai_grading_job_sequence_ids_for_assessment_question
-SELECT
-  js.id
-FROM
-  job_sequences AS js
-WHERE
-  js.assessment_question_id = $assessment_question_id
-  AND js.status = 'Running'
-  AND js.type = 'ai_grading';

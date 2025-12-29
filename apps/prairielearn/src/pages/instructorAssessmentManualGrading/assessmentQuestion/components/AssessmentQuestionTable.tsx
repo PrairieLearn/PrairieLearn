@@ -392,16 +392,15 @@ export function AssessmentQuestionTable({
   const serverJobProgress = useServerJobProgress({
     enabled: aiGradingMode,
     ongoingJobSequenceTokens,
+    onProgressChange: () => {
+      // Refresh the displayed table data when server job progress updates, since
+      // instance question grading data (e.g. AI agreements, grading status)
+      // may have changed.
+      void queryClientInstance.invalidateQueries({
+        queryKey: ['instance-questions'],
+      });
+    },
   });
-
-  // Refresh the displayed table data when server job progress updates, since
-  // instance question grading data (e.g. AI agreements, grading status)
-  // may have changed.
-  useEffect(() => {
-    void queryClientInstance.invalidateQueries({
-      queryKey: ['instance-questions'],
-    });
-  }, [serverJobProgress.jobsProgress, queryClientInstance]);
 
   // Create columns using the extracted function
   const columns = useMemo(

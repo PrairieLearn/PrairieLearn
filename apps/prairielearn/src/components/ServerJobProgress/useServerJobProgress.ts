@@ -21,13 +21,17 @@ import type {
  * progress updates won't be displayed, so we can skip connecting to the WebSocket.
  *
  * @param params.ongoingJobSequenceTokens A mapping of ongoing job sequence IDs to their server-generated tokens. Used to authenticate the WebSocket connection for each job.
+ *
+ * @param params.onProgressChange Callback invoked whenever there is a change in any server job progress data
  */
 export function useServerJobProgress({
   enabled,
   ongoingJobSequenceTokens,
+  onProgressChange,
 }: {
   enabled: boolean;
   ongoingJobSequenceTokens: Record<string, string> | null;
+  onProgressChange: () => void;
 }) {
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
 
@@ -122,6 +126,10 @@ export function useServerJobProgress({
       return newJobsProgress;
     });
   }
+
+  useEffect(() => {
+    onProgressChange();
+  }, [jobsProgress, onProgressChange]);
 
   return {
     jobsProgress,

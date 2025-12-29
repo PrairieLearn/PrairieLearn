@@ -98,9 +98,7 @@ export function useManualGradingActions({
       return data;
     },
     onSuccess: (data) => {
-      if (data) {
-        window.location.reload();
-      } else {
+      if (!data) {
         void queryClient.invalidateQueries({
           queryKey: ['instance-questions'],
         });

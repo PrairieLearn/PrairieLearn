@@ -275,3 +275,30 @@ SET
   heartbeat_at = CURRENT_TIMESTAMP
 WHERE
   j.id = ANY ($job_ids::bigint[]);
+
+-- BLOCK select_job_sequence_ids
+SELECT
+  js.id
+FROM
+  job_sequences AS js
+WHERE
+  (
+    $assessment_question_id::bigint IS NULL
+    OR js.assessment_question_id = $assessment_question_id::bigint
+  )
+  AND (
+    $course_id::bigint IS NULL
+    OR js.course_id = $course_id::bigint
+  )
+  AND (
+    $course_instance_id::bigint IS NULL
+    OR js.course_instance_id = $course_instance_id::bigint
+  )
+  AND (
+    $status::enum_job_status IS NULL
+    OR js.status = $status::enum_job_status
+  )
+  AND (
+    $type::text IS NULL
+    OR js.type = $type::text
+  );

@@ -3,12 +3,30 @@ import { OverlayTrigger } from '@prairielearn/ui';
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import { assertNever } from '../../../../lib/types.js';
 
+export function GradingStatusCell({
+  aiGradingMode,
+  requiresGrading,
+  instanceQuestionId,
+  displayedStatuses,
+}: {
+  aiGradingMode: boolean;
+  requiresGrading: boolean;
+  instanceQuestionId: string;
+  displayedStatuses: Record<string, JobItemStatus | undefined>;
+}) {
+  const aiGradingStatus = displayedStatuses[instanceQuestionId];
+  if (!aiGradingMode || aiGradingStatus === undefined) {
+    return requiresGrading ? 'Requires grading' : 'Graded';
+  }
+  return <AiGradingStatusCell rowId={instanceQuestionId} aiGradingStatus={aiGradingStatus} />;
+}
+
 /**
  * In the manual instance question grading table,
  * when an instance question is being AI graded,
  * this cell displays its grading status.
  */
-export function AiGradingStatusCell({
+function AiGradingStatusCell({
   rowId,
   aiGradingStatus,
 }: {

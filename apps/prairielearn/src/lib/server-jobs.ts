@@ -22,7 +22,7 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type EnumJobStatus, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
@@ -553,4 +553,33 @@ export async function getJobSequence(
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
   };
+}
+
+/**
+ * Retrieve job sequence IDs with columns matching the provided values.
+ */
+export async function getJobSequenceIds({
+  assessment_question_id,
+  course_id,
+  course_instance_id,
+  status,
+  type,
+}: {
+  assessment_question_id?: string;
+  course_id?: string;
+  course_instance_id?: string;
+  status?: EnumJobStatus;
+  type?: string;
+}) {
+  return await queryRows(
+    sql.select_job_sequence_ids,
+    {
+      assessment_question_id: assessment_question_id ?? null,
+      course_id: course_id ?? null,
+      course_instance_id: course_instance_id ?? null,
+      status: status ?? null,
+      type: type ?? null,
+    },
+    z.string(),
+  );
 }

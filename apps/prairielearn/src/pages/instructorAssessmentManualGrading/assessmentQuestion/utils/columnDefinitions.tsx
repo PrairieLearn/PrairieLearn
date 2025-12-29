@@ -9,7 +9,7 @@ import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/
 import { formatPoints } from '../../../../lib/format.js';
 import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
-import { AiGradingStatusCell } from '../components/AiGradingStatusCell.js';
+import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
@@ -235,13 +235,14 @@ export function createColumns({
       id: 'requires_manual_grading',
       header: 'Grading status',
       cell: (info) => {
-        const rowId = info.row.original.instance_question.id;
-        const requiresGrading = info.getValue();
-        const aiGradingStatus = displayedStatuses[rowId];
-        if (!aiGradingMode || aiGradingStatus === undefined) {
-          return requiresGrading ? 'Requires grading' : 'Graded';
-        }
-        return <AiGradingStatusCell rowId={rowId} aiGradingStatus={aiGradingStatus} />;
+        return (
+          <GradingStatusCell
+            aiGradingMode={aiGradingMode}
+            instanceQuestionId={info.row.original.instance_question.id}
+            requiresGrading={info.getValue()}
+            displayedStatuses={displayedStatuses}
+          />
+        );
       },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
