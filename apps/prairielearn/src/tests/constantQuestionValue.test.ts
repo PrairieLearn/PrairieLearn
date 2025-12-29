@@ -124,7 +124,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
       });
     });
 
-    describe('GET ' + locals.assessmentsUrl, function () {
+    describe('GET assessments list URL', function () {
       it('should load successfully', async () => {
         const res = await fetch(locals.assessmentsUrl);
         assert.equal(res.status, 200);
