@@ -149,18 +149,7 @@ router.get(
             enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
-        postContent:
-          config.homepageFooterText && config.homepageFooterTextHref ? (
-            <footer class="footer fw-light text-light text-center small">
-              <div class="bg-secondary p-1">
-                <a class="text-light" href={config.homepageFooterTextHref}>
-                  {config.homepageFooterText}
-                </a>
-              </div>
-            </footer>
-          ) : (
-            <PageFooter />
-          ),
+        postContent: <PageFooter />,
       }),
     );
   }),

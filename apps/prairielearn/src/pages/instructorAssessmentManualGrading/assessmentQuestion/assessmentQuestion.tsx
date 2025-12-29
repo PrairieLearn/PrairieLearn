@@ -8,7 +8,6 @@ import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
@@ -125,13 +124,6 @@ router.get(
         },
         content: (
           <>
-            <AssessmentSyncErrorsAndWarnings
-              authzData={authz_data}
-              assessment={assessment}
-              courseInstance={course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
             <AssessmentOpenInstancesAlert
               numOpenInstances={num_open_instances}
               assessmentId={assessment.id}
@@ -296,6 +288,7 @@ router.post(
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
         const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
@@ -509,6 +502,7 @@ router.post(
           req.body.max_extra_points,
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
+          req.body.grader_guidelines,
           res.locals.authn_user.user_id,
         );
         res.redirect(req.originalUrl);

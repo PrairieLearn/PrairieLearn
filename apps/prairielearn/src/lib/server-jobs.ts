@@ -7,30 +7,59 @@ import type { Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken, generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import type { JobSequenceResultsData } from '../components/JobSequenceResults.js';
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { IdSchema, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-interface CreateServerJobOptions {
-  courseId?: string;
-  courseInstanceId?: string;
-  courseRequestId?: string;
-  assessmentId?: string;
-  userId?: string;
-  authnUserId?: string;
+interface CreateServerJobOptionsBase {
+  /** The type of the job (lowercase, snake_case, no spaces) */
   type: string;
+  /** A description of the job. */
   description: string;
+  /** The effective user ID (res.locals.authz_data.user.user_id) */
+  userId: string | null;
+  /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
+  authnUserId: string | null;
+  /** The course request ID */
+  courseRequestId?: string;
 }
+
+type CreateServerJobOptions =
+  | (CreateServerJobOptionsBase & {
+      courseId?: string;
+      courseInstanceId?: undefined;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when courseInstanceId is provided. */
+      courseId: string;
+      courseInstanceId: string;
+      assessmentId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when assessmentId is provided. */
+      courseId: string;
+      /** Required when assessmentId is provided. */
+      courseInstanceId: string;
+      assessmentId: string;
+    });
 
 interface ServerJobExecOptions {
   cwd: string;
@@ -279,23 +308,30 @@ class ServerJobImpl implements ServerJob, ServerJobExecutor {
  * Creates a job sequence with a single job.
  */
 export async function createServerJob(options: CreateServerJobOptions): Promise<ServerJobExecutor> {
-  const { job_sequence_id, job_id } = await queryRow(
-    sql.insert_job_sequence,
-    {
-      course_id: options.courseId,
-      course_instance_id: options.courseInstanceId,
-      course_request_id: options.courseRequestId,
-      assessment_id: options.assessmentId,
-      user_id: options.userId,
-      authn_user_id: options.authnUserId,
-      type: options.type,
-      description: options.description,
-    },
-    z.object({
-      job_sequence_id: z.string(),
-      job_id: z.string(),
-    }),
-  );
+  const { job_sequence_id, job_id } = await runInTransactionAsync(async () => {
+    // NOTE: this needs to be a separate statement to ensure that the snapshot
+    // that we end up reading from to get the job sequence number is actually
+    // up to date. We can't just do this in the `insert_job_sequence` block.
+    await execute(sql.course_advisory_lock, { course_id: options.courseId ?? null });
+
+    return await queryRow(
+      sql.insert_job_sequence,
+      {
+        course_id: options.courseId,
+        course_instance_id: options.courseInstanceId,
+        course_request_id: options.courseRequestId,
+        assessment_id: options.assessmentId,
+        user_id: options.userId,
+        authn_user_id: options.authnUserId,
+        type: options.type,
+        description: options.description,
+      },
+      z.object({
+        job_sequence_id: z.string(),
+        job_id: z.string(),
+      }),
+    );
+  });
 
   const serverJob = new ServerJobImpl(job_sequence_id, job_id);
   liveJobs[job_id] = serverJob;

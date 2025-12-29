@@ -282,11 +282,11 @@ export abstract class Editor {
   async prepareServerJob() {
     this.assertCanEdit();
     const serverJob = await createServerJob({
-      courseId: this.course.id,
-      userId: this.user.user_id,
-      authnUserId: this.authz_data.authn_user.user_id,
       type: 'sync',
       description: this.description,
+      userId: this.user.user_id,
+      authnUserId: this.authz_data.authn_user.user_id,
+      courseId: this.course.id,
     });
     return serverJob;
   }
@@ -509,7 +509,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).toReversed();
+    const reverseFolders = idSplit.slice(0, -1).reverse();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
