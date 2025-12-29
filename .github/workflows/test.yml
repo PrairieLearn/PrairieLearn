@@ -115,7 +115,7 @@ jobs:
           sudo sh -c "echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
           sudo apt-get update
           sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgres-17 postgresql-17-pgvector
+          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-17 postgresql-17-pgvector
 
       # The two `sed` commands are here to handle the fact that the default
       # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
