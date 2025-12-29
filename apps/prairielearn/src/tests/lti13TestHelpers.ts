@@ -1,0 +1,335 @@
+import express from 'express';
+import * as jose from 'jose';
+import type nodeJose from 'node-jose';
+import { assert } from 'vitest';
+
+import { execute } from '@prairielearn/postgres';
+
+import {
+  insertCourseInstancePermissions,
+  insertCoursePermissionsByUserUid,
+} from '../models/course-permissions.js';
+
+import { fetchCheerio } from './helperClient.js';
+
+export const CLIENT_ID = 'prairielearn_test_lms';
+
+export async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
+  const server = app.listen(port);
+
+  await new Promise<void>((resolve, reject) => {
+    server.on('listening', () => resolve());
+    server.on('error', (err) => reject(err));
+  });
+
+  try {
+    return await fn();
+  } finally {
+    server.close();
+  }
+}
+
+export async function makeLoginExecutor({
+  user,
+  fetchWithCookies,
+  oidcProviderPort,
+  keystore,
+  loginUrl,
+  callbackUrl,
+  targetLinkUri,
+  isInstructor = true,
+}: {
+  user: {
+    name: string;
+    email: string;
+    uin: string | null;
+    sub: string;
+  };
+  fetchWithCookies: typeof fetch;
+  oidcProviderPort: number;
+  keystore: nodeJose.JWK.KeyStore;
+  loginUrl: string;
+  callbackUrl: string;
+  targetLinkUri: string;
+  isInstructor?: boolean;
+}) {
+  const siteUrl = new URL(loginUrl).origin;
+
+  const startLoginResponse = await fetchWithCookies(loginUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      iss: siteUrl,
+      login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
+      target_link_uri: targetLinkUri,
+    }),
+    redirect: 'manual',
+  });
+  assert.equal(startLoginResponse.status, 302);
+  const location = startLoginResponse.headers.get('location');
+  assert.ok(location);
+
+  const redirectUrl = new URL(location);
+  assert.equal(redirectUrl.hostname, 'localhost');
+  assert.equal(redirectUrl.pathname, '/auth');
+  assert.equal(redirectUrl.searchParams.get('client_id'), CLIENT_ID);
+  assert.equal(redirectUrl.searchParams.get('scope'), 'openid');
+  assert.equal(redirectUrl.searchParams.get('response_type'), 'id_token');
+  assert.equal(redirectUrl.searchParams.get('response_mode'), 'form_post');
+  assert.equal(redirectUrl.searchParams.get('redirect_uri'), callbackUrl);
+  assert.equal(redirectUrl.searchParams.get('login_hint'), 'fef15674-ae78-4763-b915-6fe3dbf42c67');
+
+  const redirectUri = redirectUrl.searchParams.get('redirect_uri');
+  const nonce = redirectUrl.searchParams.get('nonce');
+  const state = redirectUrl.searchParams.get('state');
+
+  assert.ok(redirectUri);
+  assert.ok(nonce);
+  assert.ok(state);
+
+  const key = keystore.get('test');
+  const joseKey = await jose.importJWK(key.toJSON(true) as any);
+  const fakeIdToken = await new jose.SignJWT({
+    nonce,
+    // The below values are based on data observed by Dave during an actual
+    // login with Canvas.
+    'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiResourceLinkRequest',
+    'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
+    'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
+      '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
+    // This MUST match the value in the login request.
+    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': targetLinkUri,
+    'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
+      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+      title: 'Test Course',
+    },
+    'https://purl.imsglobal.org/spec/lti/claim/roles': isInstructor
+      ? [
+          'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
+          'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
+          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
+        ]
+      : [
+          'http://purl.imsglobal.org/vocab/lis/v2/membership#Learner',
+          'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
+        ],
+    'https://purl.imsglobal.org/spec/lti/claim/context': {
+      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+      type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
+      label: 'TEST 101',
+      title: 'Test Course',
+    },
+    name: user.name,
+    email: user.email,
+    ...(user.uin
+      ? {
+          'https://purl.imsglobal.org/spec/lti/claim/custom': {
+            uin: user.uin,
+          },
+        }
+      : {}),
+    'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
+      scope: [
+        'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
+        'https://purl.imsglobal.org/spec/lti-ags/scope/score',
+      ],
+      errors: {
+        errors: {},
+      },
+      lineitems: `https://localhost:${oidcProviderPort}/api/lti/courses/1/line_items`,
+      validation_context: null,
+    },
+  })
+    .setProtectedHeader({ alg: 'RS256' })
+    .setIssuer(`http://localhost:${oidcProviderPort}`)
+    .setIssuedAt()
+    .setExpirationTime('1h')
+    .setSubject(user.sub)
+    .setAudience(CLIENT_ID)
+    .sign(joseKey);
+
+  // Run a server to respond to JWKS requests.
+  const app = express();
+  app.get('/jwks', (req, res) => {
+    res.setHeader('Content-Type', 'application/json');
+    // Pass `false` to `toJSON` to only include public keys.
+    res.end(JSON.stringify(keystore.toJSON(false)));
+  });
+
+  return {
+    login: async () => {
+      return await withServer(app, oidcProviderPort, async () => {
+        return await fetchWithCookies(redirectUri, {
+          method: 'POST',
+          body: new URLSearchParams({
+            nonce,
+            state,
+            id_token: fakeIdToken,
+          }),
+        });
+      });
+    },
+  };
+}
+
+export async function createLti13Instance({
+  siteUrl,
+  issuer_params,
+  attributes,
+}: {
+  siteUrl: string;
+  issuer_params: {
+    issuer: string;
+    authorization_endpoint: string;
+    jwks_uri: string;
+    token_endpoint: string;
+  };
+  attributes?: {
+    uid_attribute: string;
+    uin_attribute: string;
+    email_attribute: string;
+    name_attribute: string;
+  };
+}) {
+  // Load the LTI admin page.
+  const ltiInstancesResponse = await fetchCheerio(
+    `${siteUrl}/pl/administrator/institution/1/lti13`,
+  );
+  assert.equal(ltiInstancesResponse.status, 200);
+
+  const newInstanceButton = ltiInstancesResponse.$('button:contains(Add a new LTI 1.3 instance)');
+  const newInstanceForm = newInstanceButton.closest('form');
+
+  const newInstanceButtonValue = newInstanceButton.attr('value');
+  assert.ok(newInstanceButtonValue);
+
+  // Create a new LTI instance.
+  const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
+      __action: newInstanceButtonValue,
+    }),
+  });
+  assert.equal(createInstanceResponse.status, 200);
+  const instanceUrl = createInstanceResponse.url;
+
+  const ltiInstanceResponse = await fetchCheerio(instanceUrl);
+  assert.equal(ltiInstanceResponse.status, 200);
+
+  const savePlatformOptionsButton = ltiInstanceResponse.$('button:contains(Save platform options)');
+  const platformOptionsForm = savePlatformOptionsButton.closest('form');
+
+  // Update the platform options.
+  const updatePlatformOptionsResponse = await fetchCheerio(instanceUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __csrf_token: platformOptionsForm.find('input[name=__csrf_token]').val() as string,
+      __action: platformOptionsForm.find('input[name=__action]').val() as string,
+      platform: 'Unknown',
+      issuer_params: JSON.stringify(issuer_params),
+      custom_fields: JSON.stringify({
+        uin: '$Canvas.user.sisIntegrationId',
+      }),
+      client_id: CLIENT_ID,
+    }),
+  });
+  assert.equal(updatePlatformOptionsResponse.status, 200);
+
+  const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
+  const keystoreForm = addKeyButton.closest('form');
+
+  // Update the attributes if needed.
+  if (attributes) {
+    const savePrairieLearnConfigButton = ltiInstanceResponse.$(
+      'button:contains(Save PrairieLearn config)',
+    );
+    const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
+
+    // Update the instance's attribute settings.
+    const updateRes = await fetchCheerio(instanceUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'save_pl_config',
+        __csrf_token: prairieLearnOptionsForm.find('input[name=__csrf_token]').val() as string,
+        uid_attribute: attributes.uid_attribute,
+        uin_attribute: attributes.uin_attribute,
+        email_attribute: attributes.email_attribute,
+        name_attribute: attributes.name_attribute,
+      }),
+    });
+    assert.equal(updateRes.status, 200);
+  }
+
+  const addKeyButtonValue = addKeyButton.attr('value');
+  assert.ok(addKeyButtonValue);
+
+  // Create a key
+  const createKeyResponse = await fetchCheerio(instanceUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
+      __action: addKeyButtonValue,
+    }),
+  });
+  assert.equal(createKeyResponse.status, 200);
+}
+
+/**
+ * Helper to create an lti13_course_instances record (simulates a linked course).
+ */
+export async function linkLtiContext({
+  lti13InstanceId,
+  deploymentId,
+  contextId,
+  courseInstanceId,
+}: {
+  lti13InstanceId: string;
+  deploymentId: string;
+  contextId: string;
+  courseInstanceId: string;
+}) {
+  await execute(
+    `INSERT INTO lti13_course_instances
+      (lti13_instance_id, deployment_id, context_id, context_label, context_title, course_instance_id)
+    VALUES ($lti13_instance_id, $deployment_id, $context_id, 'TEST 101', 'Test Course', $course_instance_id)`,
+    {
+      lti13_instance_id: lti13InstanceId,
+      deployment_id: deploymentId,
+      context_id: contextId,
+      course_instance_id: courseInstanceId,
+    },
+  );
+}
+
+export async function grantCoursePermissions({
+  uid,
+  courseId,
+  courseRole,
+  courseInstanceId,
+  courseInstanceRole,
+  authnUserId,
+}: {
+  uid: string;
+  courseId: string;
+  courseRole: 'Owner' | 'Editor' | 'Viewer' | 'None';
+  courseInstanceId?: string;
+  courseInstanceRole?: 'Student Data Viewer' | 'Student Data Editor';
+  authnUserId: string;
+}) {
+  const user = await insertCoursePermissionsByUserUid({
+    course_id: courseId,
+    uid,
+    course_role: courseRole,
+    authn_user_id: authnUserId,
+  });
+
+  if (courseInstanceId && courseInstanceRole) {
+    await insertCourseInstancePermissions({
+      course_id: courseId,
+      course_instance_id: courseInstanceId,
+      user_id: user.user_id,
+      course_instance_role: courseInstanceRole,
+      authn_user_id: authnUserId,
+    });
+  }
+}
