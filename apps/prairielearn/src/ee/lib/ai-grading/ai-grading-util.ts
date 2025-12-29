@@ -817,7 +817,7 @@ export async function correctImageOrientation({
 
   const images = [image, rotated90, rotated180, rotated270];
 
-  const rotationCorrectionDegrees = [0, 90, 180, 270] as ClockwiseRotationDegrees[];
+  const rotationCorrectionDegrees: ClockwiseRotationDegrees[] = [0, 90, 180, 270]; 
 
   for (let i = 1; i <= 4; i++) {
     prompt.push({
