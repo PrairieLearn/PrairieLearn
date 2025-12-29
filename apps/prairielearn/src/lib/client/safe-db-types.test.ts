@@ -111,20 +111,20 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
 
 const minimalStaffUser: z.input<typeof StaffUserSchema> = {
   email: 'a@b.com',
+  id: '4',
   institution_id: '2',
   name: 'Test User',
   uid: 'u123@example.com',
   uin: '123456789',
-  user_id: '4',
 };
 
 // StudentUser omits uin and email. We're building this type to reflect
 // information about one student that should be available to other students.
 const minimalStudentUser: z.input<typeof StudentUserSchema> = {
+  id: '4',
   institution_id: '2',
   name: 'Test User',
   uid: 'u123@example.com',
-  user_id: '4',
 };
 
 // Minimal valid data for each new schema

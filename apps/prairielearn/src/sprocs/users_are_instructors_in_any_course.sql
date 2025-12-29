@@ -10,7 +10,7 @@ BEGIN
     -- the user is on the course staff of any course
     RETURN QUERY
         SELECT
-            u.user_id,
+            u.id,
             bool_or(
                 adm.id IS NOT NULL
                 OR (
@@ -20,12 +20,12 @@ BEGIN
             ) AS is_instructor
         FROM
             users AS u
-            LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-            LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+            LEFT JOIN administrators AS adm ON adm.user_id = u.id
+            LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
             LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
             LEFT JOIN courses AS c ON (c.id = cp.course_id)
             LEFT JOIN course_instances AS ci ON (ci.id = cip.course_instance_id AND ci.course_id = c.id)
         GROUP BY
-            u.user_id;
+            u.id;
 END;
 $$ LANGUAGE plpgsql STABLE;

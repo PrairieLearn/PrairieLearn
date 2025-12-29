@@ -386,7 +386,7 @@ ${submission.feedback?.manual}</textarea
                             type="submit"
                             class="dropdown-item"
                             name="__action"
-                            value="reassign_${grader.user_id}"
+                            value="reassign_${grader.id}"
                           >
                             Assign to: ${grader.name} (${grader.uid})
                           </button>

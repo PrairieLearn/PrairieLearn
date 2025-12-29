@@ -217,12 +217,12 @@ async function selectUserInCourseInstance({
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
+      [user.id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
-      userId: user.user_id,
+      userId: user.id,
       // The function can be called by the system, a student, or an instructor
       requiredRole: ['Student', 'Student Data Viewer', 'System'],
       authzData,
@@ -234,7 +234,7 @@ async function selectUserInCourseInstance({
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
   const course = await selectCourseById(courseInstance.course_id);
-  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.id }))) {
     return user;
   }
 
@@ -280,10 +280,10 @@ export async function addUserToGroup({
 
     // This is technically susceptible to race conditions. That won't be an
     // issue once we have a unique constraint for group membership.
-    const existingGroupId = await getGroupId(assessment.id, user.user_id);
+    const existingGroupId = await getGroupId(assessment.id, user.id);
     if (existingGroupId != null) {
       // Otherwise, the user is in a different group, which is an error
-      if (idsEqual(user.user_id, authn_user_id)) {
+      if (idsEqual(user.id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
         throw new GroupOperationError('User is already in another group.');
@@ -305,7 +305,7 @@ export async function addUserToGroup({
 
     await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
-      user_id: user.user_id,
+      user_id: user.id,
       group_config_id: group.group_config_id,
       assessment_id: assessment.id,
       authn_user_id,
@@ -534,9 +534,9 @@ export function getGroupRoleReassignmentsAfterLeave(
     // First, try to give the role to a user with no roles
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
-        !idsEqual(m.user_id, leavingUserId) &&
-        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
-    )?.user_id;
+        !idsEqual(m.id, leavingUserId) &&
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.id)),
+    )?.id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: userIdWithNoRoles,
@@ -560,11 +560,11 @@ export function getGroupRoleReassignmentsAfterLeave(
     // Finally, try to give the role to a user that doesn't already have it
     const assigneeUserId = groupInfo.groupMembers.find(
       (m) =>
-        !idsEqual(m.user_id, leavingUserId) &&
+        !idsEqual(m.id, leavingUserId) &&
         !groupRoleAssignmentUpdates.some(
-          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.user_id),
+          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.id),
         ),
-    )?.user_id;
+    )?.id;
     if (assigneeUserId !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: assigneeUserId,
@@ -675,7 +675,7 @@ export async function updateGroupRoles(
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
-      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.id, userId))) {
         throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
       }
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
@@ -697,9 +697,9 @@ export async function updateGroupRoles(
       assignerRoleIds.includes(roleAssignment.group_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
-        userId = groupInfo.groupMembers[0].user_id;
+        userId = groupInfo.groupMembers[0].id;
       }
       roleAssignments.push({
         group_id: groupId,

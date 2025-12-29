@@ -350,8 +350,8 @@ SELECT
   TRUE
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
+  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
   LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
   LEFT JOIN courses AS c ON (c.id = cp.course_id)
   LEFT JOIN course_instances AS ci ON (
@@ -359,7 +359,7 @@ FROM
     AND ci.course_id = c.id
   )
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND (
     adm.id IS NOT NULL
     OR (

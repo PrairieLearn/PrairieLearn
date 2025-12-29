@@ -1421,6 +1421,7 @@ export type Topic = z.infer<typeof TopicSchema>;
 export const UserSchema = z.object({
   deleted_at: DateFromISOString.nullable(),
   email: z.string().nullable(),
+  id: IdSchema,
   institution_id: IdSchema,
   lti_context_id: z.string().nullable(),
   lti_course_instance_id: IdSchema.nullable(),
@@ -1430,7 +1431,6 @@ export const UserSchema = z.object({
   terms_accepted_at: DateFromISOString.nullable(),
   uid: z.string(),
   uin: z.string().nullable(),
-  user_id: IdSchema,
 });
 export type User = z.infer<typeof UserSchema>;
 

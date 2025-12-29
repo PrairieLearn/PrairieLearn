@@ -151,7 +151,7 @@ SELECT
 FROM
   grading_jobs AS gj
   JOIN ai_grading_jobs AS aj ON (aj.grading_job_id = gj.id)
-  JOIN pl_courses AS c ON (c.id = aj.course_id)
+  JOIN courses AS c ON (c.id = aj.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   gj.id = $grading_job_id

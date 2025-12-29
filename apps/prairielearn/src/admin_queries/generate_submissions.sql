@@ -22,7 +22,7 @@ FROM
   JOIN questions AS q ON aq.question_id = q.id
   JOIN courses AS c ON q.course_id = c.id
   LEFT JOIN random_user_per_group AS rug ON rug.group_id = ai.group_id
-  JOIN users AS u ON u.user_id = COALESCE(ai.user_id, rug.user_id)
+  JOIN users AS u ON u.id = COALESCE(ai.user_id, rug.user_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.open

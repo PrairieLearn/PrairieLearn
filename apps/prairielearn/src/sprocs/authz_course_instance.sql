@@ -52,7 +52,7 @@ BEGIN
     FROM
         users AS u
     WHERE
-        u.user_id = authz_course_instance.user_id;
+        u.id = authz_course_instance.user_id;
 
     IF FOUND AND (has_student_access IS TRUE) THEN
 

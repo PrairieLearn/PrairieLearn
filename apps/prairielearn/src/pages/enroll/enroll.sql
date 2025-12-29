@@ -4,7 +4,7 @@ SELECT
   c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
   to_jsonb(e) AS enrollment,
-  users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
+  users_is_instructor_in_course (u.id, c.id) AS instructor_access
 FROM
   users AS u
   CROSS JOIN (
@@ -12,7 +12,7 @@ FROM
     JOIN courses AS c ON (c.id = ci.course_id)
   )
   LEFT JOIN enrollments AS e ON (
-    e.user_id = u.user_id
+    e.user_id = u.id
     AND e.course_instance_id = ci.id
   ),
   LATERAL (
@@ -25,7 +25,7 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND ci.deleted_at IS NULL
   AND c.deleted_at IS NULL
   AND c.example_course IS FALSE

@@ -4,7 +4,7 @@ SELECT
   to_json(u.*) AS approved_by_user
 FROM
   course_requests AS r
-  LEFT JOIN users AS u ON u.user_id = r.approved_by
+  LEFT JOIN users AS u ON u.id = r.approved_by
 WHERE
   r.user_id = $user_id
 ORDER BY
