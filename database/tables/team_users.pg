@@ -10,7 +10,7 @@ indexes
 foreign-key constraints
     team_users_team_config_id_fkey: FOREIGN KEY (team_config_id) REFERENCES team_configs(id) ON UPDATE CASCADE ON DELETE CASCADE
     team_users_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE CASCADE
-    team_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     team_user_roles: FOREIGN KEY (team_id, user_id) REFERENCES team_users(team_id, user_id) ON UPDATE CASCADE ON DELETE CASCADE

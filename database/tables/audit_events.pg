@@ -36,3 +36,4 @@ foreign-key constraints
     audit_events_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_subject_user_id_fkey: FOREIGN KEY (subject_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE SET NULL
