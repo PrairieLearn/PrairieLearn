@@ -106,7 +106,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
         questionsArray.forEach(function (question) {
           for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
+              delete question[prop as keyof TestQuestion];
             }
           }
           question.points = 0;
@@ -124,7 +124,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
       });
     });
 
-    describe('GET ' + locals.assessmentsUrl, function () {
+    describe('GET assessments list URL', function () {
       it('should load successfully', async () => {
         const res = await fetch(locals.assessmentsUrl);
         assert.equal(res.status, 200);
@@ -248,11 +248,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
-              locals.getSubmittedAnswer = function (_variant) {
-                return {
-                  s: String(questionTest.score),
-                };
-              };
+              locals.getSubmittedAnswer = () => ({ s: String(questionTest.score) });
             });
           });
           helperQuestion.getInstanceQuestion(locals);
