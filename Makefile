@@ -43,24 +43,24 @@ refresh-workspace-hosts:
 refresh-workspace-hosts-dev:
 	@yarn refresh-workspace-hosts-dev
 
-dev: start-support
+dev: start-support python-deps-core
 	@yarn dev
-dev-vite: start-support
+dev-vite: start-support python-deps-core
 	@yarn dev-vite
-dev-bun:
+dev-bun: python-deps-core
 	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
-dev-all: start-support
+dev-all: start-support python-deps-core
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
-start: start-support
+start: start-support python-deps-core
 	@yarn start
-start-workspace-host: start-support
+start-workspace-host: start-support python-deps-core
 	@yarn start-workspace-host
-start-executor:
+start-executor: python-deps-core
 	@node apps/prairielearn/dist/executor.js
-start-all: start-support
+start-all: start-support python-deps-core
 	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:
@@ -178,7 +178,6 @@ dev-docs:
 
 format-d2:
 	@d2 fmt docs/**/*.d2
-
 lint-d2:
 	@d2 fmt --check docs/**/*.d2
 
