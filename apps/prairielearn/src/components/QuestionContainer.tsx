@@ -109,7 +109,7 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') && aiGradingInfo
+      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
             rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
