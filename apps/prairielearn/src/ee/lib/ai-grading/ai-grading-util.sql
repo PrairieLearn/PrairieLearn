@@ -201,9 +201,7 @@ WITH
       -- we may want to refactor `highest_submission_score` to only track auto points.
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
-      -- requires manual grading. This both helps ensure that it eventually gets graded, and
-      -- also ensures that this submission isn't erroneously picked up when we're looking for
-      -- similar submissions for RAG.
+      -- requires manual grading. This helps ensure that it eventually gets graded.
       requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
     FROM
       deleted_grading_jobs AS dgj
