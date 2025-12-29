@@ -65,7 +65,7 @@ router.get(
 
     // For homeworks without group work, create the new assessment instance
     // and redirect to it without further student action.
-    if (!res.locals.assessment.group_work && res.locals.assessment.type === 'Homework') {
+    if (!res.locals.assessment.team_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await makeAssessmentInstance({
@@ -94,7 +94,7 @@ router.get(
         { allowHtml: false, interpretMath: false },
       );
     }
-    if (!res.locals.assessment.group_work) {
+    if (!res.locals.assessment.team_work) {
       res.send(StudentAssessment({ resLocals: res.locals, customHonorCode }));
       return;
     }
@@ -143,7 +143,7 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
-      if (res.locals.assessment.group_work) {
+      if (res.locals.assessment.team_work) {
         const groupConfig = await getGroupConfig(res.locals.assessment.id);
         const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
         if (groupId === null) {

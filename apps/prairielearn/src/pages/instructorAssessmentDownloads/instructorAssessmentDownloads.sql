@@ -4,7 +4,7 @@ WITH
     SELECT DISTINCT
       ON (
         CASE
-          WHEN $group_work THEN ai.group_id
+          WHEN $group_work THEN ai.team_id
           ELSE u.id
         END,
         CASE
@@ -44,18 +44,18 @@ WITH
       DATE_PART('epoch', ai.duration) AS duration_secs,
       DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
       g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessments AS a
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.group_config_id = gc.id
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.team_config_id = gc.id
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (
         u.id = ai.user_id
         OR u.id = gu.user_id
@@ -64,7 +64,7 @@ WITH
       a.id = $assessment_id
     ORDER BY
       CASE
-        WHEN $group_work THEN ai.group_id
+        WHEN $group_work THEN ai.team_id
         ELSE u.id
       END,
       CASE
@@ -111,7 +111,7 @@ SELECT
   iq.number_attempts,
   DATE_PART('epoch', iq.duration) AS duration_seconds,
   g.name AS group_name,
-  groups_uid_list (g.id) AS uid_list,
+  teams_uid_list (g.id) AS uid_list,
   agu.uid AS assigned_grader,
   lgu.uid AS last_grader
 FROM
@@ -122,10 +122,10 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
-    AND g.group_config_id = gc.id
+  LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.team_config_id = gc.id
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN users AS agu ON (agu.id = iq.assigned_grader)
@@ -151,11 +151,11 @@ WITH
       u.id AS user_id,
       g.id AS group_id,
       assessment_id,
-      g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list
+      g.name AS team_name,
+      teams_uid_list (g.id) AS uid_list
     FROM
       assessment_instances AS ai
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ai.assessment_id = $assessment_id
@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.group_name,
+      ai.team_name AS group_name,
       ai.uid_list
     FROM
       submissions AS s
@@ -309,7 +309,7 @@ WITH
         )
       ) = 1 AS best_submission_per_variant,
       g.name AS group_name,
-      groups_uid_list (g.id) AS uid_list,
+      teams_uid_list (g.id) AS uid_list,
       su.uid AS submission_user,
       agu.uid AS assigned_grader,
       lgu.uid AS last_grader
@@ -318,10 +318,10 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.group_config_id = gc.id
+      LEFT JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+      LEFT JOIN teams AS g ON (
+        g.id = ai.team_id
+        AND g.team_config_id = gc.id
       )
       LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
@@ -375,15 +375,15 @@ SELECT
     '{}'::text[]
   ) AS roles
 FROM
-  group_configs AS gc
-  JOIN groups AS g ON gc.id = g.group_config_id
-  JOIN group_users AS gu ON g.id = gu.group_id
+  team_configs AS gc
+  JOIN teams AS g ON gc.id = g.team_config_id
+  JOIN team_users AS gu ON g.id = gu.team_id
   JOIN users AS u ON gu.user_id = u.id
-  LEFT JOIN group_user_roles AS gur ON (
-    gur.group_id = g.id
+  LEFT JOIN team_user_roles AS gur ON (
+    gur.team_id = g.id
     AND gur.user_id = u.id
   )
-  LEFT JOIN group_roles AS gr ON gur.group_role_id = gr.id
+  LEFT JOIN team_roles AS gr ON gur.team_role_id = gr.id
 WHERE
   gc.assessment_id = $assessment_id
   AND gc.deleted_at IS NULL

@@ -55,7 +55,6 @@ describe('audit-event', () => {
           "course_id": "1",
           "course_instance_id": "1",
           "enrollment_id": null,
-          "group_id": null,
           "id": "1",
           "institution_id": "1",
           "new_row": {
@@ -76,6 +75,7 @@ describe('audit-event', () => {
           "row_id": "1",
           "subject_user_id": "1",
           "table_name": "users",
+          "team_id": null,
         }
       `);
     });
@@ -110,7 +110,6 @@ describe('audit-event', () => {
           "course_id": null,
           "course_instance_id": null,
           "enrollment_id": null,
-          "group_id": null,
           "id": "1",
           "institution_id": null,
           "new_row": {
@@ -120,6 +119,7 @@ describe('audit-event', () => {
           "row_id": "1",
           "subject_user_id": "1",
           "table_name": "users",
+          "team_id": null,
         }
       `);
     });
@@ -549,7 +549,6 @@ describe('audit-event', () => {
           "course_id": "1",
           "course_instance_id": "1",
           "enrollment_id": null,
-          "group_id": null,
           "id": "1",
           "institution_id": "1",
           "new_row": {
@@ -561,6 +560,7 @@ describe('audit-event', () => {
           "row_id": "1",
           "subject_user_id": "1",
           "table_name": "users",
+          "team_id": null,
         }
       `);
     });

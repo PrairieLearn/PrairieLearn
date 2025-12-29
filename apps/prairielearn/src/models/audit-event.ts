@@ -165,7 +165,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_id: inferred_course_id,
     course_instance_id: inferred_course_instance_id,
     enrollment_id: inferred_enrollment_id,
-    group_id: inferred_group_id,
+    team_id: inferred_team_id,
     institution_id: inferred_institution_id,
     user_id: inferred_subject_user_id,
   } = new_row ?? {};
@@ -202,10 +202,10 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
       enrollment_id !== undefined
         ? enrollment_id
         : ((table_name === 'enrollments' ? row_id : null) ?? inferred_enrollment_id),
-    group_id:
+    team_id:
       group_id !== undefined
         ? group_id
-        : ((table_name === 'groups' ? row_id : null) ?? inferred_group_id),
+        : ((table_name === 'teams' ? row_id : null) ?? inferred_team_id),
     institution_id:
       institution_id !== undefined
         ? institution_id

@@ -187,7 +187,7 @@ router.post(
       await updateGroupRoles(
         req.body,
         res.locals.assessment.id,
-        res.locals.assessment_instance.group_id,
+        res.locals.assessment_instance.team_id,
         res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
         res.locals.authn_user.id,
@@ -241,7 +241,7 @@ router.get(
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-    if (!res.locals.assessment.group_work) {
+    if (!res.locals.assessment.team_work) {
       res.send(
         StudentAssessmentInstance({
           instance_question_rows,
@@ -255,7 +255,7 @@ router.get(
 
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
       (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
@@ -268,7 +268,7 @@ router.get(
         for (const question of instance_question_rows) {
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
-            res.locals.assessment_instance.group_id,
+            res.locals.assessment_instance.team_id,
             res.locals.authz_data.user.id,
           );
         }

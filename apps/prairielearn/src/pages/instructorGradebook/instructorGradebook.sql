@@ -23,14 +23,14 @@ WITH
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
-      ai.group_id,
+      ai.team_id,
       ai.assessment_id,
       ai.score_perc
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       a.course_instance_id = $course_instance_id
       AND g.deleted_at IS NULL
@@ -42,7 +42,7 @@ WITH
       cai.user_id,
       cai.assessment_id,
       cai.score_perc,
-      cai.group_id
+      cai.team_id
     FROM
       course_assessment_instances AS cai
     ORDER BY
@@ -124,14 +124,14 @@ WITH
                   json_build_object('uid', ou.uid, 'enrollment_id', e.id)
                 )
               FROM
-                group_users AS ogu
+                team_users AS ogu
                 LEFT JOIN course_users AS ou ON (ou.id = ogu.user_id)
                 LEFT JOIN enrollments AS e ON (
                   ou.id = e.user_id
                   AND e.course_instance_id = $course_instance_id
                 )
               WHERE
-                ogu.group_id = s.group_id
+                ogu.team_id = s.team_id
                 AND ogu.user_id != u.id
             ),
             '[]'::json
@@ -171,7 +171,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.id = $assessment_instance_id
