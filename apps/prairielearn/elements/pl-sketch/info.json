@@ -1,0 +1,12 @@
+{
+    "controller": "pl-sketch.py",
+    "dependencies": {
+        "nodeModulesScripts": ["@nritschel/sketch-tool-pl/dist/sketchresponse.min.js"],
+        "elementScripts": [
+            "pl-sketch.js"
+        ],
+        "elementStyles": [
+            "sketchresponse.min.css"
+        ]
+    }
+}

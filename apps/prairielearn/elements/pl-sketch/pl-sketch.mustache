@@ -1,0 +1,130 @@
+{{^answer}}
+  {{^read_only}}
+    {{#scored}}
+      {{#all_correct}}
+          <span class="badge badge-success badge-large">
+              <i class="fa fa-check-circle" aria-hidden="true"></i> 100%
+          </span>
+      {{/all_correct}}
+      {{^all_correct}}
+          {{#all_incorrect}}
+              <span class="badge badge-danger badge-large">
+                  <i class="fa fa-times-circle" aria-hidden="true"></i> 0%
+              </span>
+          {{/all_incorrect}}
+          {{^all_incorrect}}
+              {{#score}}
+                  <span class="badge badge-warning badge-large">
+                      {{score}}%
+                  </span>
+              {{/score}}
+          {{/all_incorrect}}
+      {{/all_correct}}
+    {{/scored}}
+    {{#format_error}}
+    <button
+        type="button"
+        class="btn btn-light border d-flex align-items-center text-danger"
+        data-toggle="popover"
+        data-html="true"
+        title="Format Error"
+        data-placement="auto"
+        data-content="{{format_error}}"
+    >
+        <span class="mr-1">Invalid</span>
+        <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+    </button>
+{{/format_error}}
+  {{/read_only}}
+    <div class="sketchresponse">
+      <!-- Base64-encoded config data for SketchResponse below -->
+      <div id="{{id}}-sketchresponse-data" style="display:none">{{config}}</div>
+      <!-- Base64-encoded submission data (for saving/grading) for SketchResponse below -->
+      <input type="hidden" id="{{id}}-sketchresponse-submission" name="{{id}}-sketchresponse-submission"></input>
+      <div id="{{id}}-si-container" class="si-container" tabindex="0">
+        Loading SketchInput canvas...
+      </div>
+    </div>
+    <script type="text/javascript">
+      window.SketchInput('{{id}}', {{#readonly}}true{{/readonly}}{{^readonly}}false{{/readonly}})
+    </script>
+  {{^read_only}}
+    {{#scored}}
+        {{#all_correct}}
+            <div class="alert alert-success">
+            <strong>Feedback:</strong>
+              <ul>
+                 {{#feedback}}
+                <li>
+                  {{#correct}}
+                  <span>
+                      <i class="fa-solid fa-check text-success" aria-hidden="true"></i>
+                  </span>
+                  {{/correct}}
+                  {{fb}}
+                </li>
+                {{/feedback}}
+              </ul>
+            </div>
+        {{/all_correct}}
+        {{^all_correct}}
+            {{#all_incorrect}}
+              <div class="alert alert-danger">
+                <strong>Feedback:</strong>
+                  <ul>
+                    {{#feedback}}
+                    <li>
+                      {{^correct}}
+                        <span>
+                        <i class="fa fa-xmark text-danger" aria-hidden="true"></i> 
+                        </span>
+                      {{/correct}}
+                      {{{fb}}}
+                      {{#debug_mode}}
+                          <div class="debug"> 
+                            <ul>  
+                            {{#debug}}     
+                              <li>
+                               <div>&gt;&gt; {{message}}</div>
+                              </li>
+                            {{/debug}}
+                            </ul>       
+                          </div>
+                      {{/debug_mode}}
+                    </li>
+                    {{/feedback}}
+                  </ul>
+                </div>
+              {{/all_incorrect}}
+              {{^all_incorrect}}
+                  <div class = "alert alert-warning">
+                  <strong>Feedback:</strong>
+                  <ul>
+                  {{#feedback}}
+                  <li>
+                    {{^correct}}
+                      <span >
+                      <i class="fa fa-xmark text-danger" aria-hidden="true"></i> 
+                      </span>
+                    {{/correct}}
+                    {{fb}}
+                    {{#debug_mode}}
+                          <div class="debug"> 
+                            <ul>  
+                            {{#debug}}     
+                              <li>
+                               <div>&gt;&gt; {{message}}</div>
+                              </li>
+                            {{/debug}}
+                            </ul>       
+                          </div>
+                    {{/debug_mode}}
+                  </li>
+                  {{/feedback}}
+                  </ul>
+              </div>
+            {{/all_incorrect}}
+        {{/all_correct}}
+    {{/scored}}
+  {{/read_only}}
+{{/answer}}
