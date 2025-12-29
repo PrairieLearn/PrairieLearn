@@ -237,7 +237,7 @@ ${explanation}
             ? html`
                 <br />
                 <pre>
-All images were upright: false
+Not all images were upright
 Clockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
 </pre>
               `
