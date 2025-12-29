@@ -1349,19 +1349,6 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
-export const SubmissionGradingContextEmbeddingSchema = z.object({
-  assessment_question_id: IdSchema,
-  created_at: DateFromISOString,
-  embedding: z.string(),
-  id: IdSchema,
-  submission_id: IdSchema,
-  submission_text: z.string(),
-  updated_at: DateFromISOString,
-});
-export type SubmissionGradingContextEmbedding = z.infer<
-  typeof SubmissionGradingContextEmbeddingSchema
->;
-
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
@@ -1640,7 +1627,6 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
-  'submission_grading_context_embeddings',
   'submissions',
   'tags',
   'time_series',
