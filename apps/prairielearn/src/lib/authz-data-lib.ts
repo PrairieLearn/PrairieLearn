@@ -318,6 +318,10 @@ export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceR
  * Converts a `PlainAuthzData` into a `PageAuthzData`. Assumes that the context
  * in which this is called does not differentiate between authenticated user and
  * effective user.
+ *
+ * This function is a temporary solution until we can add `is_administrator` to
+ * `PlainAuthzData` directly, and teach model functions how to work with both
+ * `PlainAuthzData` and `PageAuthzData`.
  */
 export function makePageAuthzData({
   authzData,
