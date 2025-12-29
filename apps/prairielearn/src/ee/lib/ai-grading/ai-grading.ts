@@ -27,6 +27,7 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
@@ -511,6 +512,7 @@ export async function aiGrade({
           ai_rubric_items: finalGradingResponse.object.rubric_items,
           rubric_items,
         });
+
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
           const manual_rubric_data = {
@@ -556,6 +558,15 @@ export async function aiGrade({
                 response: finalGradingResponse,
               });
             }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrectionResponses,
+              finalGradingResponse,
+            });
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -609,6 +620,15 @@ export async function aiGrade({
                 response: finalGradingResponse,
               });
             }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrectionResponses,
+              finalGradingResponse,
+            });
           });
         }
 
@@ -786,6 +806,15 @@ export async function aiGrade({
                 response: finalGradingResponse,
               });
             }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrectionResponses,
+              finalGradingResponse,
+            });
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -829,6 +858,15 @@ export async function aiGrade({
                 response: finalGradingResponse,
               });
             }
+
+            await updateCourseInstanceUsagesForAiGradingResponses({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              gradingResponseWithRotationIssue,
+              rotationCorrectionResponses,
+              finalGradingResponse,
+            });
           });
         }
 
