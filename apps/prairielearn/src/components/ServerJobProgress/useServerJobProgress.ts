@@ -47,6 +47,7 @@ export function useServerJobProgress({
         continue;
       }
       for (const [itemId, status] of Object.entries(job.item_statuses)) {
+        // show least progressed status
         if (!(itemId in merged) || status < merged[itemId]) {
           merged[itemId] = status;
         }
