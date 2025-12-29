@@ -77,7 +77,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     cd /tmp
-    git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
+    git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
     cd pgvector
     make
     sudo make install
@@ -94,7 +94,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.10
+    brew install git graphviz postgresql@17 redis uv d2 node pgvector python@3.10
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -103,8 +103,8 @@ Most of these prerequisites can be installed using the package manager of your O
     You may want to start up the `postgresql` server on boot, and add binaries to your path:
 
     ```sh
-    brew services start postgresql@16
-    brew link postgresql@16
+    brew services start postgresql@17
+    brew link postgresql@17
     ```
 
     Enable `corepack` to make `yarn` available:
