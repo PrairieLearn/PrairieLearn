@@ -118,8 +118,7 @@ export function useServerJobProgress({
     }
 
     setJobsProgress((prev) => {
-      const newJobsProgress = { ...prev };
-      delete newJobsProgress[jobSequenceId];
+      const { [jobSequenceId]: _, ...newJobsProgress } = prev;
       return newJobsProgress;
     });
   }
