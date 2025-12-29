@@ -15,6 +15,7 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getLockNameForCoursePath } from '../models/course.js';
 import * as courseDB from '../sync/course-db.js';
@@ -28,7 +29,6 @@ import {
   ChunkSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
 } from './db-types.js';
 import { DefaultMap } from './default-map.js';
@@ -910,10 +910,10 @@ export async function updateChunksForCourse({
  */
 export async function generateAllChunksForCourseList(course_ids: string[], authn_user_id: string) {
   const serverJob = await createServerJob({
-    userId: authn_user_id,
-    authnUserId: authn_user_id,
     type: 'generate_all_chunks',
     description: 'Generate all chunks for a list of courses',
+    userId: authn_user_id,
+    authnUserId: authn_user_id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -1012,7 +1012,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
     if (linkString === relativeUnpackPath) {
       chunkExists = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     // If we encounter an EINVAL error, chances are that we're trying to `readlink`
     // on a directory. This can occur if a question is renamed to a parent directory,
     // e.g. renamed from `foo/bar/baz` to `foo/bar`. In this case, we should remove
@@ -1071,7 +1071,7 @@ const ensureChunk = async (courseId: string, chunk: DatabaseChunk) => {
       } else if (!stat.isDirectory()) {
         throw new Error(`${parentPath} exists but is not a directory`);
       }
-    } catch (err) {
+    } catch (err: any) {
       if (err.code !== 'ENOENT') throw err;
     }
   }

@@ -22,16 +22,14 @@ export function InstructorGradingJob({
   resLocals,
   gradingJobRow,
 }: {
-  resLocals: ResLocalsForPage['course'] | ResLocalsForPage['course-instance'];
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   gradingJobRow: GradingJobRow;
 }) {
   const formatGradingJobDate = (date: Date | null) =>
     date
       ? formatDate(
           date,
-          'course_instance' in resLocals
-            ? resLocals.course_instance.display_timezone
-            : resLocals.course.display_timezone,
+          resLocals.course_instance?.display_timezone ?? resLocals.course.display_timezone,
           { includeMs: true },
         )
       : html`&mdash;`;

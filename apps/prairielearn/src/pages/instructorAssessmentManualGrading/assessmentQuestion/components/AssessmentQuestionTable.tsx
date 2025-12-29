@@ -686,28 +686,30 @@ export function AssessmentQuestionTable({
         table={table}
         title="Student instance questions"
         style={{ height: '90vh' }}
-        columnManagerTopContent={
-          <div class="px-2 py-1 d-flex align-items-center">
-            <label class="form-check text-nowrap d-flex align-items-stretch">
-              <input
-                type="checkbox"
-                checked={studentInfoCheckboxState === 'checked'}
-                indeterminate={studentInfoCheckboxState === 'indeterminate'}
-                class="form-check-input"
-                onChange={handleStudentInfoCheckboxClick}
-              />
-              <span class="form-check-label ms-2">Show student info</span>
-            </label>
-          </div>
-        }
-        columnManagerButtons={
-          <RubricItemsFilter
-            rubricData={rubricData}
-            instanceQuestionsInfo={instanceQuestionsInfo}
-            rubricItemsFilter={rubricItemsFilter}
-            setRubricItemsFilter={setRubricItemsFilter}
-          />
-        }
+        columnManager={{
+          topContent: (
+            <div class="px-2 py-1 d-flex align-items-center">
+              <label class="form-check text-nowrap d-flex align-items-stretch">
+                <input
+                  type="checkbox"
+                  checked={studentInfoCheckboxState === 'checked'}
+                  indeterminate={studentInfoCheckboxState === 'indeterminate'}
+                  class="form-check-input"
+                  onChange={handleStudentInfoCheckboxClick}
+                />
+                <span class="form-check-label ms-2">Show student info</span>
+              </label>
+            </div>
+          ),
+          buttons: (
+            <RubricItemsFilter
+              rubricData={rubricData}
+              instanceQuestionsInfo={instanceQuestionsInfo}
+              rubricItemsFilter={rubricItemsFilter}
+              setRubricItemsFilter={setRubricItemsFilter}
+            />
+          ),
+        }}
         headerButtons={
           <>
             {aiGradingMode ? (
@@ -821,9 +823,9 @@ export function AssessmentQuestionTable({
                     </Dropdown.Header>
                     {courseStaff.map((grader) => (
                       <Dropdown.Item
-                        key={grader.user_id}
+                        key={grader.id}
                         onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
+                          handleBatchAction({ assigned_grader: grader.id }, selectedIds)
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
@@ -859,8 +861,6 @@ export function AssessmentQuestionTable({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by name, UID...',
         }}
         tableOptions={{
@@ -872,31 +872,50 @@ export function AssessmentQuestionTable({
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          mapRowToData: (row) => ({
-            Instance: row.instance_question.id,
-            [assessment.group_work ? 'Group Name' : 'Name']: row.user_or_group_name || '',
-            [assessment.group_work ? 'UIDs' : 'UID']: row.uid || '',
-            'Grading Status': row.instance_question.requires_manual_grading
-              ? 'Requires grading'
-              : 'Graded',
-            'Assigned Grader': row.assigned_grader_name || '',
-            'Auto Points':
-              row.instance_question.auto_points != null
-                ? row.instance_question.auto_points.toString()
-                : '',
-            'Manual Points':
-              row.instance_question.manual_points != null
-                ? row.instance_question.manual_points.toString()
-                : '',
-            'Total Points':
-              row.instance_question.points != null ? row.instance_question.points.toString() : '',
-            'Score %':
-              row.instance_question.score_perc != null
-                ? row.instance_question.score_perc.toString()
-                : '',
-            'Graded By': row.last_grader_name || '',
-            'Modified At': row.instance_question.modified_at.toISOString(),
-          }),
+          mapRowToData: (row) => [
+            {
+              name: 'Instance',
+              value: row.instance_question.id,
+            },
+            {
+              name: assessment.team_work ? 'Group Name' : 'Name',
+              value: row.user_or_group_name || '',
+            },
+            { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
+            {
+              name: 'Grading Status',
+              value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',
+            },
+            { name: 'Assigned Grader', value: row.assigned_grader_name || '' },
+            {
+              name: 'Auto Points',
+              value:
+                row.instance_question.auto_points != null
+                  ? row.instance_question.auto_points.toString()
+                  : '',
+            },
+            {
+              name: 'Manual Points',
+              value:
+                row.instance_question.manual_points != null
+                  ? row.instance_question.manual_points.toString()
+                  : '',
+            },
+            {
+              name: 'Total Points',
+              value:
+                row.instance_question.points != null ? row.instance_question.points.toString() : '',
+            },
+            {
+              name: 'Score %',
+              value:
+                row.instance_question.score_perc != null
+                  ? row.instance_question.score_perc.toString()
+                  : '',
+            },
+            { name: 'Graded By', value: row.last_grader_name || '' },
+            { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
+          ],
           hasSelection: true,
         }}
       />

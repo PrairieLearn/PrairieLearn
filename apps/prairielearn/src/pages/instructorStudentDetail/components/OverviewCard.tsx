@@ -94,7 +94,7 @@ export function OverviewCard({
                     </button>
                   </form>
                 )}
-                {enrollment.status === 'invited' && (
+                {(enrollment.status === 'invited' || enrollment.status === 'rejected') && (
                   <button
                     type="button"
                     class="btn btn-sm btn-outline-secondary d-flex flex-row align-items-center gap-1"

@@ -5,8 +5,8 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../models/course.js';
 import type { CourseInstanceJson } from '../schemas/infoCourseInstance.js';
 
@@ -34,7 +34,7 @@ async function getCopyTargets({
   urlSuffix: string;
 }): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
-    user_id: user.user_id,
+    user_id: user.id,
     is_administrator,
   });
 
@@ -49,13 +49,10 @@ async function getCopyTargets({
 
       // The copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
-      const csrfToken = generateSignedToken(
-        {
-          url: copyUrl,
-          authn_user_id: authn_user.user_id,
-        },
-        config.secretKey,
-      );
+      const csrfToken = generateCsrfToken({
+        url: copyUrl,
+        authnUserId: authn_user.id,
+      });
 
       return {
         id: editableCourse.id,
@@ -208,7 +205,7 @@ export async function copyQuestionBetweenCourses(
   const fromFolderPath = path.join(fromCourse.path, 'questions', question.qid);
 
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId: res.locals.user.id,
     fromCourse,
     toCourseId,
     transferType: 'CopyQuestion',

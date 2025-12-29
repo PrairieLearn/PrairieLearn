@@ -10,6 +10,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
@@ -18,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  IdSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
@@ -27,6 +27,8 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
@@ -42,7 +44,6 @@ import {
   selectInstanceQuestionsForAssessmentQuestion,
   selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -139,13 +140,13 @@ export async function aiGrade({
   const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
+    type: 'ai_grading',
+    description: 'Perform AI grading',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_grading',
-    description: 'Perform AI grading',
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -321,7 +322,7 @@ export async function aiGrade({
       }
       logger.info(gradedExampleInfo);
 
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
@@ -330,6 +331,7 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         example_submissions,
         rubric_items,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
         model_id,
       });
 
@@ -396,6 +398,7 @@ export async function aiGrade({
           ai_rubric_items: response.object.rubric_items,
           rubric_items,
         });
+
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
           const manual_rubric_data = {
@@ -427,6 +430,13 @@ export async function aiGrade({
               course_id: course.id,
               course_instance_id: course_instance.id,
             });
+
+            await updateCourseInstanceUsagesForAiGrading({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              usage: response.usage,
+            });
           });
         } else {
           // Does not require grading: only create grading job and rubric grading
@@ -456,6 +466,7 @@ export async function aiGrade({
               },
               IdSchema,
             );
+
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
@@ -464,6 +475,13 @@ export async function aiGrade({
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGrading({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              usage: response.usage,
             });
           });
         }
@@ -596,7 +614,7 @@ export async function aiGrade({
 
         try {
           return await gradeInstanceQuestion(instance_question, logger);
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
           return false;
         } finally {

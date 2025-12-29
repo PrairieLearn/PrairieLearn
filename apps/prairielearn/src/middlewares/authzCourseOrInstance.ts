@@ -173,7 +173,7 @@ function canBecomeEffectiveUser({
       // authenticated user, since an instructor may want to view their course
       // as a student without enrolling in their own course.
       hasFailedCheck:
-        !idsEqual(effectiveAuthzData.user.user_id, authnAuthzData.user.user_id) &&
+        !idsEqual(effectiveAuthzData.user.id, authnAuthzData.user.id) &&
         !effectiveAuthzData.has_course_permission_preview &&
         !effectiveAuthzData.has_course_instance_permission_view &&
         !effectiveAuthzData.has_student_access_with_enrollment &&
@@ -336,7 +336,6 @@ export interface ResLocalsCourse {
   authz_data: ResLocalsCourseAuthz;
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
-  has_enhanced_navigation: boolean;
   question_sharing_enabled: boolean;
 }
 
@@ -436,7 +435,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     });
   }
 
-  const req_date = run(() => {
+  const req_date = run<Date>(() => {
     if (req.cookies.pl2_requested_date) {
       const req_date = parseISO(req.cookies.pl2_requested_date);
       if (!isValid(req_date)) {
@@ -587,7 +586,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       // important because we no longer automatically enroll instructors in their
       // own course instances when they view them.
       if (
-        idsEqual(effectiveAuthResult.user.user_id, authnAuthzData.user.user_id) &&
+        idsEqual(effectiveAuthResult.user.id, authnAuthzData.user.id) &&
         !effectiveAuthResult.has_course_instance_permission_view &&
         !effectiveAuthResult.has_course_permission_view
       ) {
@@ -683,7 +682,9 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   res.locals.course = authnCourse;
   res.locals.institution = authnInstitution;
   res.locals.user = effectiveAuthzData.user;
-  res.locals.course_instance = authnCourseInstance;
+  if (authnCourseInstance) {
+    res.locals.course_instance = authnCourseInstance;
+  }
 
   // The session middleware does not run for API requests.
   // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
@@ -693,10 +694,6 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
     course: res.locals.course,
   });
 
-  res.locals.has_enhanced_navigation = !(await features.enabledFromLocals(
-    'legacy-navigation',
-    res.locals,
-  ));
   res.locals.question_sharing_enabled = await features.enabledFromLocals(
     'question-sharing',
     res.locals,
