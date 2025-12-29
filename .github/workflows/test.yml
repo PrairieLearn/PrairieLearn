@@ -128,6 +128,7 @@ jobs:
       - name: Start Postgres
         run: |
           sudo systemctl start postgresql.service
+          sleep 2
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
