@@ -13,7 +13,7 @@ export default asyncHandler(async (req, res, next) => {
       sql.select_single_assessment_instance,
       {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.user.user_id,
+        user_id: res.locals.user.id,
       },
       IdSchema,
     );

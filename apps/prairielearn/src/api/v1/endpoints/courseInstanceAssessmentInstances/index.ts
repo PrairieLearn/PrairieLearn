@@ -16,7 +16,7 @@ import {
   QuestionSchema,
   RubricGradingItemSchema,
   RubricGradingSchema,
-  SprocGroupInfoSchema,
+  SprocTeamInfoSchema,
   SprocUsersGetDisplayedRoleSchema,
   SubmissionSchema,
   TagSchema,
@@ -56,16 +56,16 @@ export const SubmissionDataSchema = z.array(
   z.object({
     submission_id: SubmissionSchema.shape.id,
     // left join users table
-    user_id: UserSchema.shape.user_id.nullable(),
+    user_id: UserSchema.shape.id.nullable(),
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),
     user_role: SprocUsersGetDisplayedRoleSchema,
 
-    // left join group_info sproc
-    group_id: SprocGroupInfoSchema.shape.id.nullable(),
-    group_name: SprocGroupInfoSchema.shape.name.nullable(),
-    group_uids: SprocGroupInfoSchema.shape.uid_list.nullable(),
+    // left join team_info sproc
+    group_id: SprocTeamInfoSchema.shape.id.nullable(),
+    group_name: SprocTeamInfoSchema.shape.name.nullable(),
+    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
 
     assessment_id: AssessmentSchema.shape.id,
     assessment_name: AssessmentSchema.shape.tid,

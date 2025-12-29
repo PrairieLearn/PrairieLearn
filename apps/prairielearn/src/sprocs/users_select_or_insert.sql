@@ -26,7 +26,7 @@ BEGIN
         AND (users_select_or_insert.institution_id IS NULL OR users.institution_id = users_select_or_insert.institution_id);
 
     -- if we couldn't match "uin", try "uid"
-    IF u.user_id IS NULL THEN
+    IF u.id IS NULL THEN
         SELECT *
         INTO u
         FROM users
@@ -99,7 +99,7 @@ BEGIN
     END IF;
 
     -- if we don't have the user already, make it
-    IF u.user_id IS NULL THEN
+    IF u.id IS NULL THEN
         INSERT INTO users (
             uid,
             name,
@@ -116,7 +116,7 @@ BEGIN
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
-        VALUES                 ('users', u.user_id, 'insert', to_jsonb(u));
+        VALUES                 ('users', u.id, 'insert', to_jsonb(u));
     END IF;
 
     -- update user data as needed
@@ -124,7 +124,7 @@ BEGIN
     IF uid IS NOT NULL AND uid IS DISTINCT FROM u.uid THEN
         UPDATE users
         SET uid = users_select_or_insert.uid
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -132,7 +132,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'uid', u.user_id, 'update',
+            ('users', 'uid', u.id, 'update',
             jsonb_build_object('uid', uid),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -140,7 +140,7 @@ BEGIN
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users
         SET name = users_select_or_insert.name
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -148,7 +148,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'name', u.user_id, 'update',
+            ('users', 'name', u.id, 'update',
             jsonb_build_object('name', name),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -156,7 +156,7 @@ BEGIN
     IF uin IS NOT NULL AND uin IS DISTINCT FROM u.uin THEN
         UPDATE users
         SET uin = users_select_or_insert.uin
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -164,7 +164,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'uin', u.user_id, 'update',
+            ('users', 'uin', u.id, 'update',
             jsonb_build_object('uin', uin),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -172,7 +172,7 @@ BEGIN
     IF email IS NOT NULL AND email IS DISTINCT FROM u.email THEN
         UPDATE users
         SET email = users_select_or_insert.email
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -180,7 +180,7 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'email', u.user_id, 'update',
+            ('users', 'email', u.id, 'update',
             jsonb_build_object('email', email),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
@@ -188,7 +188,7 @@ BEGIN
     IF institution.id IS DISTINCT FROM u.institution_id THEN
         UPDATE users
         SET institution_id = institution.id
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -196,13 +196,13 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'institution_id', u.user_id, 'update',
+            ('users', 'institution_id', u.id, 'update',
             jsonb_build_object('institution_id', institution.id),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 
     -- return value
-    user_id := u.user_id;
+    user_id := u.id;
     if user_id IS NULL THEN
         RAISE EXCEPTION 'computed NULL user_id';
     END IF;
