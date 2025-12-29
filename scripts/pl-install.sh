@@ -56,7 +56,7 @@ su postgres -c "initdb -D /var/postgres"
 echo "installing pgvector..."
 dnf -y install postgresql17-server-devel
 cd /tmp
-git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
 cd pgvector
 # This Docker image will be built in GitHub Actions but must run on a variety
 # of platforms, so we need to build it without machine-specific instructions.
