@@ -1,0 +1,398 @@
+/**
+ * Tests for LTI 1.3 course instance linking and admin page.
+ */
+import fetchCookie from 'fetch-cookie';
+import getPort from 'get-port';
+import nodeJose from 'node-jose';
+import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+
+import { execute, queryOptionalRow } from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
+import { Lti13CourseInstanceSchema } from '../lib/db-types.js';
+import { selectOptionalUserByUid } from '../models/user.js';
+
+import { fetchCheerio } from './helperClient.js';
+import * as helperServer from './helperServer.js';
+import {
+  createLti13Instance,
+  grantCoursePermissions,
+  linkLtiContext,
+  makeLoginExecutor,
+} from './lti13TestHelpers.js';
+
+// Constants from JWT claims - must match what's in makeLoginExecutor
+const LTI_DEPLOYMENT_ID = '7fdce954-4c33-47c9-97b4-e435dbbed9bb';
+const LTI_CONTEXT_ID = 'f6bc7a50-448c-4469-94f7-54d6ea882c2a';
+
+const siteUrl = 'http://localhost:' + config.serverPort;
+
+describe('LTI 1.3 course instance linking', () => {
+  let oidcProviderPort: number;
+  let keystore: nodeJose.JWK.KeyStore;
+
+  beforeAll(async () => {
+    config.isEnterprise = true;
+    config.features.lti13 = true;
+    await helperServer.before()();
+
+    await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
+
+    oidcProviderPort = await getPort();
+
+    keystore = nodeJose.JWK.createKeyStore();
+    await keystore.generate('RSA', 2048, {
+      alg: 'RS256',
+      use: 'sig',
+      kid: 'test',
+    });
+
+    // Create and configure LTI instance for linking tests
+    await createLti13Instance({
+      siteUrl,
+      issuer_params: {
+        issuer: `http://localhost:${oidcProviderPort}`,
+        authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
+        jwks_uri: `http://localhost:${oidcProviderPort}/jwks`,
+        token_endpoint: `http://localhost:${oidcProviderPort}/token`,
+      },
+    });
+
+    // Enable LTI 1.3 as auth provider
+    const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
+    const saveButton = ssoResponse.$('button:contains(Save)');
+    const form = saveButton.closest('form');
+    const lti13Input = form.find('label:contains(LTI 1.3)').closest('div').find('input');
+
+    await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: form.find('input[name=__csrf_token]').val() as string,
+        enabled_authn_provider_ids: lti13Input.attr('value')!,
+        default_authn_provider_id: '',
+      }),
+    });
+  });
+
+  afterAll(async () => {
+    await helperServer.after();
+    config.isEnterprise = false;
+    config.features = {};
+  });
+
+  test.sequential('linkLtiContext helper creates link record', async () => {
+    await execute(
+      `DELETE FROM lti13_course_instances
+       WHERE lti13_instance_id = '1'
+       AND deployment_id = $deployment_id
+       AND context_id = $context_id`,
+      { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+    );
+
+    await linkLtiContext({
+      lti13InstanceId: '1',
+      deploymentId: LTI_DEPLOYMENT_ID,
+      contextId: LTI_CONTEXT_ID,
+      courseInstanceId: '1',
+    });
+
+    const linkRecord = await queryOptionalRow(
+      `SELECT * FROM lti13_course_instances
+       WHERE lti13_instance_id = '1'
+       AND deployment_id = $deployment_id
+       AND context_id = $context_id`,
+      { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      Lti13CourseInstanceSchema,
+    );
+    assert.ok(linkRecord);
+    assert.equal(linkRecord.course_instance_id, '1');
+
+    // Clean up for subsequent tests
+    await execute(
+      `DELETE FROM lti13_course_instances
+       WHERE lti13_instance_id = '1'
+       AND deployment_id = $deployment_id
+       AND context_id = $context_id`,
+      { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+    );
+  });
+
+  test.sequential('instructor sees linking UI for unlinked context', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Linking Test Instructor',
+        email: 'linking-instructor@example.com',
+        uin: '111222333',
+        sub: 'linking-instructor-sub-1',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri,
+      isInstructor: true,
+    });
+
+    const res = await executor.login();
+    assert.equal(res.status, 200);
+    assert.equal(res.url, targetLinkUri);
+
+    const pageText = await res.text();
+    assert.include(pageText, 'Link');
+  });
+
+  test.sequential('student sees "not ready" page for unlinked context', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Linking Test Student',
+        email: 'linking-student@example.com',
+        uin: '444555666',
+        sub: 'linking-student-sub-1',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri,
+      isInstructor: false,
+    });
+
+    const res = await executor.login();
+    assert.equal(res.status, 200);
+
+    const pageText = await res.text();
+    assert.include(pageText, "isn't ready yet");
+  });
+
+  test.sequential('instructor can link course instance via POST', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Linking Editor',
+        email: 'linking-editor@example.com',
+        uin: '777888999',
+        sub: 'linking-editor-sub-1',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri,
+      isInstructor: true,
+    });
+
+    const loginRes = await executor.login();
+    assert.equal(loginRes.status, 200);
+
+    const user = await selectOptionalUserByUid('linking-editor@example.com');
+    assert.ok(user);
+
+    await grantCoursePermissions({
+      uid: 'linking-editor@example.com',
+      courseId: '1',
+      courseRole: 'Editor',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Editor',
+      authnUserId: user.user_id,
+    });
+
+    const linkingPageRes = await fetchWithCookies(targetLinkUri);
+    assert.equal(linkingPageRes.status, 200);
+
+    const linkingPageText = await linkingPageRes.text();
+    const csrfMatch = linkingPageText.match(/name="__csrf_token"\s+value="([^"]+)"/);
+    assert.ok(csrfMatch, 'Could not find CSRF token');
+    const csrfToken = csrfMatch[1];
+
+    const linkRes = await fetchWithCookies(targetLinkUri, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __csrf_token: csrfToken,
+        unsafe_course_instance_id: '1',
+      }),
+      redirect: 'manual',
+    });
+
+    assert.equal(linkRes.status, 302);
+    const location = linkRes.headers.get('location');
+    assert.ok(location);
+    assert.include(location, 'done');
+
+    const linkRecord = await queryOptionalRow(
+      `SELECT * FROM lti13_course_instances
+       WHERE lti13_instance_id = '1'
+       AND deployment_id = $deployment_id
+       AND context_id = $context_id`,
+      { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      Lti13CourseInstanceSchema,
+    );
+    assert.ok(linkRecord);
+    assert.equal(linkRecord.course_instance_id, '1');
+  });
+
+  test.sequential('already linked context redirects instructor to course instance', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+    await grantCoursePermissions({
+      uid: 'linked-instructor@example.com',
+      courseId: '1',
+      courseRole: 'Editor',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Editor',
+      authnUserId: '1',
+    });
+
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Linked Context Instructor',
+        email: 'linked-instructor@example.com',
+        uin: '101010101',
+        sub: 'linked-instructor-sub-1',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri,
+      isInstructor: true,
+    });
+
+    const res = await executor.login();
+    assert.equal(res.status, 200);
+    assert.include(res.url, '/pl/course_instance/1/instructor/');
+  });
+
+  test.sequential('already linked context redirects student to course instance', async () => {
+    const fetchWithCookies = fetchCookie(fetch);
+    const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+    const executor = await makeLoginExecutor({
+      user: {
+        name: 'Linked Context Student',
+        email: 'linked-student@example.com',
+        uin: '121212121',
+        sub: 'linked-student-sub-1',
+      },
+      fetchWithCookies,
+      oidcProviderPort,
+      keystore,
+      loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+      callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+      targetLinkUri,
+      isInstructor: false,
+    });
+
+    const res = await executor.login();
+    assert.equal(res.status, 200);
+    assert.include(res.url, '/pl/course_instance/1/');
+    assert.notInclude(res.url, '/instructor/');
+  });
+
+  describe('LTI 1.3 instructor admin page', () => {
+    test.sequential('GET admin page shows linked instance', async () => {
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+      await grantCoursePermissions({
+        uid: 'admin-test@example.com',
+        courseId: '1',
+        courseRole: 'Editor',
+        courseInstanceId: '1',
+        courseInstanceRole: 'Student Data Editor',
+        authnUserId: '1',
+      });
+
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Admin Page Test Instructor',
+          email: 'admin-test@example.com',
+          uin: '131313131',
+          sub: 'admin-test-sub-1',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: true,
+      });
+
+      const loginRes = await executor.login();
+      assert.equal(loginRes.status, 200);
+
+      const linkRecord = await queryOptionalRow(
+        `SELECT * FROM lti13_course_instances
+         WHERE course_instance_id = '1'
+         AND lti13_instance_id = '1'`,
+        {},
+        Lti13CourseInstanceSchema,
+      );
+      assert.ok(linkRecord);
+
+      const adminPageRes = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance/${linkRecord.id}`,
+      );
+      assert.equal(adminPageRes.status, 200);
+
+      const pageText = await adminPageRes.text();
+      assert.include(pageText, 'LTI');
+    });
+
+    test.sequential('GET admin page redirects when no ID provided', async () => {
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+      await grantCoursePermissions({
+        uid: 'admin-redirect@example.com',
+        courseId: '1',
+        courseRole: 'Editor',
+        courseInstanceId: '1',
+        courseInstanceRole: 'Student Data Editor',
+        authnUserId: '1',
+      });
+
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Admin Redirect Test',
+          email: 'admin-redirect@example.com',
+          uin: '141414141',
+          sub: 'admin-redirect-sub-1',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: true,
+      });
+
+      const loginRes = await executor.login();
+      assert.equal(loginRes.status, 200);
+
+      const adminPageRes = await fetchWithCookies(
+        `${siteUrl}/pl/course_instance/1/instructor/instance_admin/lti13_instance`,
+        { redirect: 'manual' },
+      );
+
+      assert.equal(adminPageRes.status, 302);
+      const location = adminPageRes.headers.get('location');
+      assert.ok(location);
+      assert.include(location, 'lti13_instance/');
+    });
+  });
+});
