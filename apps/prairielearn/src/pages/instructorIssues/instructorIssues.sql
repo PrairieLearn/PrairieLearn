@@ -108,7 +108,7 @@ SELECT
 FROM
   selected_issues
   JOIN issues AS i ON (i.id = selected_issues.issue_id)
-  JOIN pl_courses AS c ON (c.id = i.course_id)
+  JOIN courses AS c ON (c.id = i.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
   LEFT JOIN assessments AS a ON (a.id = i.assessment_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)

@@ -10,7 +10,7 @@ WITH
   ),
   setup_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone, path)
+      courses (id, display_timezone, path)
     VALUES
       (1, 'UTC', '/path/to/course/1')
   ),

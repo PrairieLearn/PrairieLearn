@@ -9,7 +9,7 @@ FROM
   users AS u
   CROSS JOIN (
     course_instances AS ci
-    JOIN pl_courses AS c ON (c.id = ci.course_id)
+    JOIN courses AS c ON (c.id = ci.course_id)
   )
   LEFT JOIN enrollments AS e ON (
     e.user_id = u.id
@@ -50,6 +50,6 @@ SELECT
   ci.long_name AS ci_long_name
 FROM
   course_instances AS ci
-  JOIN pl_courses AS plc ON plc.id = ci.course_id
+  JOIN courses AS plc ON plc.id = ci.course_id
 WHERE
   ci.id = $course_instance_id;

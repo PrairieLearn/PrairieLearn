@@ -85,7 +85,7 @@ SELECT
   ) AS formatted_date
 FROM
   new_variant AS v
-  JOIN pl_courses AS c ON (c.id = v.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
 
 -- BLOCK select_and_lock_assessment_instance_for_instance_question

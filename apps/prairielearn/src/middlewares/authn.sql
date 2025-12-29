@@ -14,7 +14,7 @@ INSERT INTO
     FROM
       users AS u,
       course_instances AS ci
-      JOIN pl_courses AS c ON (c.id = ci.course_id)
+      JOIN courses AS c ON (c.id = ci.course_id)
     WHERE
       u.id = $user_id
       AND c.example_course IS TRUE

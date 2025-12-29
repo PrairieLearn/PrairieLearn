@@ -35,7 +35,7 @@ SELECT
 FROM
   issues AS i
   LEFT JOIN course_instances AS ci ON (ci.id = i.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = i.course_id)
+  JOIN courses AS c ON (c.id = i.course_id)
   LEFT JOIN users AS u ON (u.id = i.user_id)
 WHERE
   i.variant_id = $variant_id
@@ -81,7 +81,7 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = v.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   LEFT JOIN LATERAL (
     SELECT
       *
@@ -215,8 +215,8 @@ FROM
   LEFT JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = v.course_id)
-  JOIN pl_courses AS qc ON (qc.id = q.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
+  JOIN courses AS qc ON (qc.id = q.course_id)
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)

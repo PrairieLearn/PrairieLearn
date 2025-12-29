@@ -247,7 +247,7 @@ SELECT
 FROM
   combined_data AS cd
   LEFT JOIN course_instances AS ci ON (ci.id = cd.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = cd.course_id)
+  JOIN courses AS c ON (c.id = cd.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
   i.short_name,

@@ -17,7 +17,7 @@ SELECT
 FROM
   course_permissions AS cp
   JOIN users AS u ON (u.id = cp.user_id)
-  JOIN pl_courses AS plc ON (plc.id = cp.course_id)
+  JOIN courses AS plc ON (plc.id = cp.course_id)
   JOIN institutions AS i ON (i.id = plc.institution_id)
   LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
   LEFT JOIN course_instances AS ci ON (ci.id = cip.course_instance_id)

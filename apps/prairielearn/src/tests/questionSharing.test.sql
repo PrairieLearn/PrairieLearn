@@ -16,7 +16,7 @@ WHERE
   name = $sharing_set_name;
 
 -- BLOCK update_course_repository
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   repository = $course_repository
 WHERE

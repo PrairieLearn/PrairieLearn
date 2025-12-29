@@ -28,7 +28,7 @@ SELECT
   co.display_timezone
 FROM
   course_permissions AS cp
-  JOIN pl_courses AS co ON co.id = cp.course_id
+  JOIN courses AS co ON co.id = cp.course_id
 WHERE
   (
     cp.user_id = $user_id

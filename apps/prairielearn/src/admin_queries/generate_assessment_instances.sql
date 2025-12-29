@@ -10,7 +10,7 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
   JOIN users AS u ON (u.id = e.user_id)
 WHERE
@@ -31,7 +31,7 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN team_configs AS gc ON (gc.assessment_id = a.id)
   JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN LATERAL (

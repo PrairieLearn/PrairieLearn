@@ -28,7 +28,7 @@ WITH
         '[]'::jsonb
       ) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       LEFT JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
@@ -69,7 +69,7 @@ WITH
           ci.id DESC
       ) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
@@ -125,7 +125,7 @@ WITH
       ) AS can_open_course,
       coalesce(ici.course_instances, '[]'::jsonb) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       LEFT JOIN course_permissions AS cp ON (
         cp.user_id = $user_id
         AND cp.course_id = c.id
@@ -180,7 +180,7 @@ FROM
     -- We only consider courses using the legacy access system in this query.
     AND ci.modern_publishing IS FALSE
   )
-  JOIN pl_courses AS c ON (
+  JOIN courses AS c ON (
     c.id = ci.course_id
     AND c.deleted_at IS NULL
     AND (
@@ -222,7 +222,7 @@ FROM
     -- We only consider courses using the modern publishing system in this query.
     AND ci.modern_publishing IS TRUE
   )
-  JOIN pl_courses AS c ON (
+  JOIN courses AS c ON (
     c.id = ci.course_id
     AND c.deleted_at IS NULL
     AND (

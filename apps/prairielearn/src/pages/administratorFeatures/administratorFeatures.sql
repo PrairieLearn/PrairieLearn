@@ -12,7 +12,7 @@ SELECT
 FROM
   feature_grants AS fg
   LEFT JOIN institutions AS i ON (i.id = fg.institution_id)
-  LEFT JOIN pl_courses AS c ON (c.id = fg.course_id)
+  LEFT JOIN courses AS c ON (c.id = fg.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = fg.course_instance_id)
   LEFT JOIN users AS u ON (u.id = fg.user_id)
 WHERE
@@ -41,7 +41,7 @@ ORDER BY
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   institution_id = $institution_id
   AND deleted_at IS NULL

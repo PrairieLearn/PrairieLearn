@@ -503,7 +503,7 @@ FROM
   JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS vc ON (vc.id = v.course_id)
+  JOIN courses AS vc ON (vc.id = v.course_id)
 WHERE
   ai.id = $assessment_instance_id
 ORDER BY

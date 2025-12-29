@@ -353,7 +353,7 @@ FROM
   LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
   LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
   LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
-  LEFT JOIN pl_courses AS c ON (c.id = cp.course_id)
+  LEFT JOIN courses AS c ON (c.id = cp.course_id)
   LEFT JOIN course_instances AS ci ON (
     ci.id = cip.course_instance_id
     AND ci.course_id = c.id
