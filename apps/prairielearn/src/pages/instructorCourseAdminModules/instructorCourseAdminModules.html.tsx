@@ -32,7 +32,6 @@ export function InstructorCourseAdminModules({
           <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
             <thead>
               <tr>
-                <th>Number</th>
                 <th>Name</th>
                 <th>Heading</th>
               </tr>
@@ -41,7 +40,6 @@ export function InstructorCourseAdminModules({
               ${modules.map(function (module) {
                 return html`
                   <tr>
-                    <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
                     <td class="align-middle">
                       ${AssessmentModuleHeadingHtml({ assessment_module: module })}
