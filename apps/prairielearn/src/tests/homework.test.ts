@@ -281,7 +281,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
       });
     });
 
-    describe('GET ' + locals.assessmentsUrl, function () {
+    describe('GET assessments list URL', function () {
       it('should load successfully', async () => {
         const res = await fetch(locals.assessmentsUrl);
         assert.equal(res.status, 200);
