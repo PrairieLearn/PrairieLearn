@@ -48,7 +48,7 @@ router.post(
         path: req.body.path,
         repository: req.body.repository,
         branch: req.body.branch,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
@@ -56,7 +56,7 @@ router.post(
         req.body.course_id,
         req.body.column_name,
         req.body.value,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_delete') {
@@ -69,7 +69,7 @@ router.post(
       }
       await deleteCourse({
         course_id: req.body.course_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {

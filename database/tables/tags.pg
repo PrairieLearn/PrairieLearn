@@ -13,7 +13,7 @@ indexes
     tags_course_id_name_key: UNIQUE (course_id, name) USING btree (course_id, name)
 
 foreign-key constraints
-    tags_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    tags_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     question_tags: FOREIGN KEY (tag_id) REFERENCES tags(id) ON UPDATE CASCADE ON DELETE CASCADE

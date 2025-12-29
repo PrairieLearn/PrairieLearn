@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   deleted_at IS NULL
 ORDER BY

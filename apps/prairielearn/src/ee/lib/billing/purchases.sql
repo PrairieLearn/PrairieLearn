@@ -6,7 +6,7 @@ SELECT
 FROM
   stripe_checkout_sessions AS scs
   LEFT JOIN course_instances AS ci ON (ci.id = scs.course_instance_id)
-  LEFT JOIN pl_courses AS c ON (c.id = ci.course_id)
+  LEFT JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
   agent_user_id = $user_id
 ORDER BY

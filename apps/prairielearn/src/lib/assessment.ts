@@ -126,7 +126,7 @@ export async function makeAssessmentInstance({
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
     let group_id: string | null = null;
-    if (assessment.group_work) {
+    if (assessment.team_work) {
       group_id = await getGroupId(assessment.id, user_id);
       if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
