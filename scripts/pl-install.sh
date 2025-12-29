@@ -24,9 +24,9 @@ dnf -y install \
     lsof \
     make \
     openssl \
-    postgresql16 \
-    postgresql16-server \
-    postgresql16-contrib \
+    postgresql17 \
+    postgresql17-server \
+    postgresql17-contrib \
     procps-ng \
     redis6 \
     tar \
@@ -54,7 +54,7 @@ mkdir /var/postgres && chown postgres:postgres /var/postgres
 su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
-dnf -y install postgresql16-server-devel
+dnf -y install postgresql17-server-devel
 cd /tmp
 git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
 cd pgvector
@@ -65,7 +65,7 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-dnf -y remove postgresql16-server-devel
+dnf -y remove postgresql17-server-devel
 dnf -y autoremove
 
 echo "setting up uv + venv..."

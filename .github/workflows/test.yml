@@ -111,7 +111,7 @@ jobs:
         run: |
           sudo apt-get update
           sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-16-pgvector
+          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-17-pgvector
 
       # The two `sed` commands are here to handle the fact that the default
       # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
@@ -123,10 +123,10 @@ jobs:
       # We also update the configuration to try to speed up Postgres itself.
       - name: Start Postgres
         run: |
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
-          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
           fsync = off
           full_page_writes = off
           synchronous_commit = off

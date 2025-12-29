@@ -9,7 +9,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [Python 3.10](https://www.python.org)
-  - [PostgreSQL 16](https://www.postgresql.org)
+  - [PostgreSQL 17](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
