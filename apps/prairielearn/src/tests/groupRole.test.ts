@@ -170,12 +170,12 @@ function verifyRoleAssignmentsInRoleTable(
 async function updateGroupRoles(
   roleUpdates: { roleId: string; groupUserId: string }[],
   groupRoles: { id: string }[],
-  studentUsers: { user_id: string }[],
+  studentUsers: { id: string }[],
   assessmentUrl: string,
 ) {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
-  const userIds = studentUsers.map((user) => user.user_id);
+  const userIds = studentUsers.map((user) => user.id);
   for (const roleId of roleIds) {
     for (const userId of userIds) {
       const elementId = `#user_role_${roleId}-${userId}`;
@@ -306,9 +306,7 @@ describe(
 
     test.sequential('group creator should have manager role in database', async function () {
       // Updating local variables to persist role updates across tests
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      ];
+      locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
 
       // Check role config
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
@@ -379,9 +377,7 @@ describe(
     test.sequential('assigns first user to manager role after re-joining', async function () {
       await joinGroup(locals.assessmentUrl, locals.joinCode);
 
-      locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      ];
+      locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
     });
 
@@ -400,8 +396,8 @@ describe(
       await joinGroup(locals.assessmentUrl, locals.joinCode);
 
       const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
       ];
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
     });
@@ -438,7 +434,7 @@ describe(
       async function () {
         // Remove role assignments from second user
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
         ];
         await updateGroupRoles(
           locals.roleUpdates,
@@ -484,8 +480,8 @@ describe(
 
     test.sequential('second user cannot update roles as non-assigner', async function () {
       const roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
       ];
 
       const checkedElementIds: Record<string, string> = {};
@@ -516,8 +512,8 @@ describe(
       );
 
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].id },
       ];
       await updateGroupRoles(
         locals.roleUpdates,
@@ -569,8 +565,8 @@ describe(
       'database contains correct role configuration after second user leaves and rejoins',
       async function () {
         const expectedRoleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
         ];
         await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
       },
@@ -588,9 +584,9 @@ describe(
 
     test.sequential('assigns third user with required role upon join', async function () {
       const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
       ];
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
     });
@@ -619,9 +615,9 @@ describe(
       );
 
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
       ];
       await updateGroupRoles(
         locals.roleUpdates,
@@ -668,10 +664,10 @@ describe(
     test.sequential('assigns fourth user with required role upon join', async function () {
       // Fourth user should receive required role because there is one role still to be assigned its minimum
       const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
       ];
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, locals.assessment_id);
     });
@@ -694,14 +690,14 @@ describe(
       async function () {
         // Remove manager role to test whether it is correctly reassigned upon date
         locals.roleUpdates = [
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
         ];
 
         locals.assignerRoleUpdate = {
           roleId: locals.manager.id,
-          groupUserId: locals.studentUsers[0].user_id,
+          groupUserId: locals.studentUsers[0].id,
         };
 
         await updateGroupRoles(
@@ -747,10 +743,10 @@ describe(
 
     test.sequential('first user can assign too many recorders', async function () {
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
       ];
       await updateGroupRoles(
         locals.roleUpdates,
@@ -783,12 +779,12 @@ describe(
     test.sequential('first user can update roles to have two contributors', async function () {
       locals.roleUpdates = [
         // First user has both manager and contributor
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[0].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[0].id },
 
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
       ];
       await updateGroupRoles(
         locals.roleUpdates,
@@ -838,9 +834,9 @@ describe(
       async function () {
         // First user has no contributor role now that group size = # of required roles
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
       },
@@ -869,10 +865,10 @@ describe(
 
         // Fourth user receives contributor
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
       },
@@ -902,11 +898,11 @@ describe(
 
         // Fifth user should have contributor role
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
       },
@@ -927,11 +923,11 @@ describe(
       async function () {
         locals.roleUpdates = [
           // Second user has contributor, fifth user has recorder
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[4].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[4].id },
         ];
 
         // Perform update and verify in database
@@ -966,17 +962,17 @@ describe(
 
         // Scenario 1: Recorder role is transferred from the leaving fifth user to the second user
         const roleUpdates1 = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[3].id },
         ];
         // Scenario 2: Recorder role is transferred from the leaving fifth user to the fourth user
         const roleUpdates2 = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].id },
         ];
 
         // Assert that the recorder role is given to either the second or fourth user because
@@ -988,9 +984,7 @@ describe(
         );
         assert.lengthOf(result, 4);
 
-        const secondUserRoles = result.filter(
-          (row) => row.user_id === locals.studentUsers[1].user_id,
-        );
+        const secondUserRoles = result.filter((row) => row.user_id === locals.studentUsers[1].id);
         assert.isTrue(secondUserRoles.length === 1);
 
         const secondUserRole = secondUserRoles[0];
@@ -1031,10 +1025,10 @@ describe(
       async function () {
         locals.roleUpdates = [
           // Third user has contributor, fourth user has reflector
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
         ];
 
         // Perform update and verify in database
@@ -1070,9 +1064,9 @@ describe(
       async function () {
         // Fourth user's contributor role should replace third user's contributor role
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
 
@@ -1105,15 +1099,15 @@ describe(
 
         // Scenario 1: Reflector is given to the first user
         const roleUpdates1 = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
         ];
         // Scenario 2: Reflector is given to the second user
         const roleUpdates2 = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
         ];
 
         // Assert that the reflector role is given to either first or second user
@@ -1126,7 +1120,7 @@ describe(
 
         // Get all roles for first user
         const firstUserRoleUpdates = result.filter(
-          (row) => row.user_id === locals.studentUsers[0].user_id,
+          (row) => row.user_id === locals.studentUsers[0].id,
         );
         assert.isTrue(firstUserRoleUpdates.length === 1 || firstUserRoleUpdates.length === 2);
 
@@ -1169,9 +1163,9 @@ describe(
         );
 
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[1].id },
         ];
 
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, locals.assessment_id);
@@ -1336,9 +1330,7 @@ describe('Test group role reassignments with role of minimum > 1', function () {
   });
 
   test.sequential('check role configuration', async function () {
-    locals.roleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-    ];
+    locals.roleUpdates = [{ roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id }];
     await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
   });
 
@@ -1356,8 +1348,8 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     'should have correct role configuration in the database for two users',
     async function () {
       const expectedRoleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
       ];
       await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
     },
@@ -1380,9 +1372,9 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
   test.sequential('database assigns third user with required role', async function () {
     const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
     ];
     await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
   });
@@ -1427,10 +1419,10 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
   test.sequential('assigns fourth user with required role upon join', async function () {
     const expectedRoleUpdates = [
-      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
-      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].user_id },
+      { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+      { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
+      { roleId: locals.recorder.id, groupUserId: locals.studentUsers[3].id },
     ];
     await verifyRoleAssignmentsInDatabase(expectedRoleUpdates, assessmentId);
   });
@@ -1470,14 +1462,14 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       async function () {
         // First user keeps manager unchecked, since we expect the role to be automatically assigned
         locals.roleUpdates = [
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
         ];
 
         locals.assignerRoleUpdate = {
           roleId: locals.manager.id,
-          groupUserId: locals.studentUsers[0].user_id,
+          groupUserId: locals.studentUsers[0].id,
         };
 
         await updateGroupRoles(
@@ -1532,11 +1524,11 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
       // Fifth user should have contributor role
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
       ];
       await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
     });
@@ -1580,12 +1572,12 @@ describe('Test group role reassignments with role of minimum > 1', function () {
     test.sequential('first user should be able to add extra contributor', async function () {
       // Third user receives contributor
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
-        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
+        { roleId: locals.contributor.id, groupUserId: locals.studentUsers[4].id },
       ];
       await updateGroupRoles(
         locals.roleUpdates,
@@ -1629,9 +1621,9 @@ describe('Test group role reassignments with role of minimum > 1', function () {
 
       // Remove recorder assignment from second user
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[2].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[3].id },
       ];
 
       await updateGroupRoles(
@@ -1670,10 +1662,10 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       // Give first user both manager and recorder
       // Leave fourth user without a role
       locals.roleUpdates = [
-        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].user_id },
-        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+        { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].id },
+        { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+        { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
       ];
 
       // Verify update in database
@@ -1718,10 +1710,10 @@ describe('Test group role reassignments with role of minimum > 1', function () {
       'should have correct role configuration in the database after fourth user leaves',
       async function () {
         locals.roleUpdates = [
-          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].user_id },
-          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].user_id },
-          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].user_id },
+          { roleId: locals.manager.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[0].id },
+          { roleId: locals.recorder.id, groupUserId: locals.studentUsers[1].id },
+          { roleId: locals.reflector.id, groupUserId: locals.studentUsers[2].id },
         ];
         await verifyRoleAssignmentsInDatabase(locals.roleUpdates, assessmentId);
       },
@@ -1866,11 +1858,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       locals.groupInfo.groupSize = 2;
       const roleAssignments = [
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.recorder.id,
         },
       ];
@@ -1887,16 +1879,16 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       // Get role reassignments if second user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[1].user_id,
+        locals.studentUsers[1].id,
       );
       // Recorder role should be transferred to first user
       const expected = [
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.recorder.id,
         },
       ];
@@ -1912,11 +1904,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       locals.groupInfo.groupSize = 2;
       const roleAssignments = [
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.contributor.id,
         },
       ];
@@ -1932,12 +1924,12 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
+        locals.studentUsers[0].id,
       );
       // Manager role should replace first user's contributor role
       const expected = [
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.manager.id,
         },
       ];
@@ -1953,19 +1945,19 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       locals.groupInfo.groupSize = 3;
       const roleAssignments = [
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.reflector.id,
         },
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.contributor.id,
         },
         {
-          user_id: locals.studentUsers[2].user_id,
+          user_id: locals.studentUsers[2].id,
           group_role_id: locals.contributor.id,
         },
       ];
@@ -1981,27 +1973,27 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
+        locals.studentUsers[0].id,
       );
       // Case 1: Manager role should replace second user's contributor role, and
       // reflector role should replace third user's contributor role
       const expected1 = [
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[2].user_id,
+          user_id: locals.studentUsers[2].id,
           group_role_id: locals.reflector.id,
         },
       ];
       const expected2 = [
         {
-          user_id: locals.studentUsers[2].user_id,
+          user_id: locals.studentUsers[2].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.reflector.id,
         },
       ];
@@ -2009,7 +2001,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       assert.lengthOf(result, 2);
       // If second user receives manager, we expect case 1; otherwise, we expect case 2
       const secondUserRoleAssignment = result.find(
-        ({ user_id }) => user_id === locals.studentUsers[1].user_id,
+        ({ user_id }) => user_id === locals.studentUsers[1].id,
       );
       assert.isDefined(secondUserRoleAssignment);
       const expected =
@@ -2026,23 +2018,23 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       locals.groupInfo.groupSize = 3;
       const roleAssignments = [
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.manager.id,
         },
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.recorder.id,
         },
         {
-          user_id: locals.studentUsers[0].user_id,
+          user_id: locals.studentUsers[0].id,
           group_role_id: locals.reflector.id,
         },
         {
-          user_id: locals.studentUsers[1].user_id,
+          user_id: locals.studentUsers[1].id,
           group_role_id: locals.contributor.id,
         },
         {
-          user_id: locals.studentUsers[2].user_id,
+          user_id: locals.studentUsers[2].id,
           group_role_id: locals.contributor.id,
         },
       ];
@@ -2058,7 +2050,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       // Get role reassignments if first user leaves
       const result = getGroupRoleReassignmentsAfterLeave(
         locals.groupInfo,
-        locals.studentUsers[0].user_id,
+        locals.studentUsers[0].id,
       );
 
       // Ensure that there is a single role assignment for manager, recorder, and reflector each
@@ -2089,11 +2081,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     locals.groupInfo.groupSize = 2;
     const roleAssignments = [
       {
-        user_id: locals.studentUsers[0].user_id,
+        user_id: locals.studentUsers[0].id,
         group_role_id: locals.manager.id,
       },
       {
-        user_id: locals.studentUsers[1].user_id,
+        user_id: locals.studentUsers[1].id,
         group_role_id: locals.contributor.id,
       },
     ];
@@ -2107,14 +2099,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       RoleAssignment[]
     >;
     // Get role reassignments if second user leaves
-    const result = getGroupRoleReassignmentsAfterLeave(
-      locals.groupInfo,
-      locals.studentUsers[1].user_id,
-    );
+    const result = getGroupRoleReassignmentsAfterLeave(locals.groupInfo, locals.studentUsers[1].id);
     // Recorder role should be transferred to first user
     const expected = [
       {
-        user_id: locals.studentUsers[0].user_id,
+        user_id: locals.studentUsers[0].id,
         group_role_id: locals.manager.id,
       },
     ];
@@ -2127,7 +2116,7 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
     locals.groupInfo.groupSize = 2;
     const roleAssignments = [
       {
-        user_id: locals.studentUsers[0].user_id,
+        user_id: locals.studentUsers[0].id,
         group_role_id: locals.manager.id,
       },
     ];
@@ -2141,14 +2130,11 @@ describe('Test group role reassignment logic when user leaves', { timeout: 20_00
       RoleAssignment[]
     >;
     // Get role reassignments if second user leaves
-    const result = getGroupRoleReassignmentsAfterLeave(
-      locals.groupInfo,
-      locals.studentUsers[1].user_id,
-    );
+    const result = getGroupRoleReassignmentsAfterLeave(locals.groupInfo, locals.studentUsers[1].id);
     // Recorder role should be transferred to first user
     const expected = [
       {
-        user_id: locals.studentUsers[0].user_id,
+        user_id: locals.studentUsers[0].id,
         group_role_id: locals.manager.id,
       },
     ];

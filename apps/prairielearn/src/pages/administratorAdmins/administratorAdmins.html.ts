@@ -75,7 +75,7 @@ export function AdministratorAdmins({
                           AdministratorDeleteForm({
                             csrfToken: resLocals.__csrf_token,
                             uid: admin.uid,
-                            userId: admin.user_id,
+                            userId: admin.id,
                           }),
                         )}"
                       >

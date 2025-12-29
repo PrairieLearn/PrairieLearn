@@ -204,14 +204,14 @@ describe('Variant access', () => {
       course_id: '1',
       uid: instructorUser.uid,
       course_role: 'Owner',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
     await insertCourseInstancePermissions({
       course_id: '1',
       course_instance_id: '1',
-      user_id: instructorUser.user_id,
+      user_id: instructorUser.id,
       course_instance_role: 'Student Data Viewer',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
   });
 
@@ -222,7 +222,7 @@ describe('Variant access', () => {
       course_id: '1',
       uid: courseAssistantUser.uid,
       course_role: 'Editor',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
   });
 
