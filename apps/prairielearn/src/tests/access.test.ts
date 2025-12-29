@@ -132,9 +132,9 @@ describe('Access control', { timeout: 20000 }, function () {
     it('should succeed', async () => {
       const courseInstance = await selectCourseInstanceById('1');
       await ensureUncheckedEnrollment({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

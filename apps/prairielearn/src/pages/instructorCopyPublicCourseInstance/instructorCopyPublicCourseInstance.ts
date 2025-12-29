@@ -3,6 +3,7 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as error from '@prairielearn/error';
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
@@ -15,8 +16,8 @@ router.post(
   asyncHandler(async (req, res) => {
     const { start_date, end_date, course_instance_id } = z
       .object({
-        start_date: z.string(),
-        end_date: z.string(),
+        start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+        end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         course_instance_id: z.string(),
       })
       .parse(req.body);
@@ -44,7 +45,7 @@ router.post(
       fromCourse: course,
       fromCourseInstance: courseInstance,
       toCourseId,
-      userId: res.locals.user.user_id,
+      userId: res.locals.user.id,
       metadataOverrides: {
         publishing: resolvedPublishing,
       },

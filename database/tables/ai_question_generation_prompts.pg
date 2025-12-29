@@ -18,5 +18,5 @@ indexes
 
 foreign-key constraints
     ai_question_generation_prompts_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
-    ai_question_generation_prompts_prompting_user_id_fkey: FOREIGN KEY (prompting_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_question_generation_prompts_prompting_user_id_fkey: FOREIGN KEY (prompting_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     ai_question_generation_prompts_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE SET NULL

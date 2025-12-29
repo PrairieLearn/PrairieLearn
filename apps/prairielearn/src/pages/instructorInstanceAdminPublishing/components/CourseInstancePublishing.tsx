@@ -8,7 +8,7 @@ import {
 } from '../../../components/CourseInstancePublishingForm.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
+import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
@@ -18,14 +18,14 @@ export function CourseInstancePublishing({
   canEdit,
   csrfToken,
   origHash,
-  publishingExtensions,
+  extensions,
   isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
   csrfToken: string;
   origHash: string | null;
-  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
+  extensions: CourseInstancePublishingExtensionRow[];
   isDevMode: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -96,7 +96,7 @@ export function CourseInstancePublishing({
             <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
               <PublishingExtensions
                 courseInstance={courseInstance}
-                initialExtensions={publishingExtensions}
+                initialExtensions={extensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
               />

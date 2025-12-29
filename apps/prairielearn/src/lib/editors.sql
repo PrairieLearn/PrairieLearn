@@ -48,7 +48,7 @@ WHERE
   AND q.uuid IS NOT NULL;
 
 -- BLOCK update_draft_number
-UPDATE pl_courses
+UPDATE courses
 SET
   draft_number = draft_number + 1
 WHERE

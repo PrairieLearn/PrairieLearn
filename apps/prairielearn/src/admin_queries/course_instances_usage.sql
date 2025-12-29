@@ -53,15 +53,15 @@ WITH
     SELECT
       ciu.course_id,
       ciu.course_instance_id,
-      count(DISTINCT u.user_id) AS total_students,
-      count(DISTINCT u.user_id) FILTER (
+      count(DISTINCT u.id) AS total_students,
+      count(DISTINCT u.id) FILTER (
         WHERE
           u.institution_id != i.id
       ) AS outside_students
     FROM
       active_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY
@@ -96,7 +96,7 @@ WITH
     FROM
       term_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY
@@ -115,7 +115,7 @@ WITH
     FROM
       total_course_instance_usages AS ciu
       JOIN institutions AS i ON (i.id = ciu.institution_id)
-      JOIN users AS u ON (u.user_id = ciu.user_id)
+      JOIN users AS u ON (u.id = ciu.user_id)
     WHERE
       ciu.include_in_statistics
     GROUP BY
@@ -137,7 +137,8 @@ WITH
       term.term_submissions::float / greatest(1, total.total_submissions::float) AS submission_term_ratio,
       term.external_grading_hours,
       term.workspace_hours,
-      NULL::double precision AS cost_ai_question_generation
+      NULL::double precision AS cost_ai_question_generation,
+      NULL::double precision AS cost_ai_grading
     FROM
       student_active_data AS active
       JOIN student_term_data AS term ON (
@@ -181,7 +182,8 @@ WITH
               ciu.type = 'Workspace'
           )
       ) / 3600 AS workspace_hours,
-      sum(ciu.cost_ai_question_generation) AS cost_ai_question_generation
+      sum(ciu.cost_ai_question_generation) AS cost_ai_question_generation,
+      sum(ciu.cost_ai_grading) AS cost_ai_grading
     FROM
       term_course_instance_usages AS ciu
     WHERE
@@ -239,11 +241,13 @@ SELECT
   -- total compute time for both workspaces and external grading jobs (in hours)
   coalesce(cd.external_grading_hours, 0) + coalesce(cd.workspace_hours, 0) AS total_compute_hours,
   -- cost of AI question generation (in USD)
-  cd.cost_ai_question_generation
+  cd.cost_ai_question_generation,
+  -- cost of AI grading (in USD)
+  cd.cost_ai_grading
 FROM
   combined_data AS cd
   LEFT JOIN course_instances AS ci ON (ci.id = cd.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = cd.course_id)
+  JOIN courses AS c ON (c.id = cd.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
   i.short_name,

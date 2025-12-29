@@ -131,8 +131,6 @@ export function TanstackTableHeaderCell<RowDataModel>({
     top: 0,
     zIndex: isPinned === 'left' ? 2 : 1,
     left: isPinned === 'left' ? header.getStart() : undefined,
-    boxShadow:
-      'inset 0 calc(-1 * var(--bs-border-width)) 0 0 rgba(0, 0, 0, 1), inset 0 var(--bs-border-width) 0 0 var(--bs-border-color)',
   };
 
   const isNormalColumn = canSort || canFilter;

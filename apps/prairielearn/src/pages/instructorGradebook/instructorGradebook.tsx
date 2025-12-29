@@ -7,7 +7,6 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { updateAssessmentInstanceScore } from '../../lib/assessment.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import {
@@ -93,26 +92,18 @@ router.get(
           fullHeight: true,
         },
         content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              courseInstance={course_instance}
-              course={course}
+          <Hydrate fullHeight>
+            <InstructorGradebookTable
+              csrfToken={__csrf_token}
+              courseAssessments={courseAssessments}
+              gradebookRows={gradebookRows}
               urlPrefix={urlPrefix}
+              filenameBase={filenameBase}
+              courseInstanceId={course_instance.id}
+              search={getUrl(req).search}
+              isDevMode={process.env.NODE_ENV === 'development'}
             />
-            <Hydrate fullHeight>
-              <InstructorGradebookTable
-                csrfToken={__csrf_token}
-                courseAssessments={courseAssessments}
-                gradebookRows={gradebookRows}
-                urlPrefix={urlPrefix}
-                filenameBase={filenameBase}
-                courseInstanceId={course_instance.id}
-                search={getUrl(req).search}
-                isDevMode={process.env.NODE_ENV === 'development'}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
         postContent: [RoleDescriptionModal()],
       }),
@@ -150,7 +141,7 @@ router.post(
       await updateAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
 
       const updatedScores = await queryRows(

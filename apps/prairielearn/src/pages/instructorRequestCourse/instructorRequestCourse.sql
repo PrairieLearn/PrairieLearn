@@ -4,7 +4,7 @@ SELECT
   to_json(u.*) AS approved_by_user
 FROM
   course_requests AS r
-  LEFT JOIN users AS u ON u.user_id = r.approved_by
+  LEFT JOIN users AS u ON u.id = r.approved_by
 WHERE
   r.user_id = $user_id
 ORDER BY
@@ -28,7 +28,7 @@ SELECT
   co.display_timezone
 FROM
   course_permissions AS cp
-  JOIN pl_courses AS co ON co.id = cp.course_id
+  JOIN courses AS co ON co.id = cp.course_id
 WHERE
   (
     cp.user_id = $user_id

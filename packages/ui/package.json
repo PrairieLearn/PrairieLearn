@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "1.6.0",
+  "version": "1.8.0",
   "type": "module",
   "repository": {
     "type": "git",
@@ -24,7 +24,8 @@
     "@tanstack/table-core": "^8.21.3",
     "clsx": "^2.1.1",
     "nuqs": "^2.8.2",
-    "react-bootstrap": "3.0.0-beta.5"
+    "react-bootstrap": "3.0.0-beta.5",
+    "use-debounce": "^10.0.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

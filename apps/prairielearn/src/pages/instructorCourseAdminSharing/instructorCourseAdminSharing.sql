@@ -16,7 +16,7 @@ SELECT
 FROM
   sharing_sets AS ss
   LEFT JOIN sharing_set_courses AS css ON css.sharing_set_id = ss.id
-  LEFT JOIN pl_courses AS c ON c.id = css.course_id
+  LEFT JOIN courses AS c ON c.id = css.course_id
 WHERE
   ss.course_id = $course_id
 GROUP BY
@@ -25,7 +25,7 @@ ORDER BY
   ss.name;
 
 -- BLOCK update_sharing_token
-UPDATE pl_courses
+UPDATE courses
 SET
   sharing_token = gen_random_uuid()
 WHERE
@@ -38,9 +38,9 @@ SELECT
   consuming_course.id AS course_id,
   ss.id AS sharing_set_id
 FROM
-  pl_courses AS sharing_course
+  courses AS sharing_course
   JOIN sharing_sets AS ss ON ss.course_id = sharing_course.id
-  JOIN pl_courses AS consuming_course ON consuming_course.id <> sharing_course.id
+  JOIN courses AS consuming_course ON consuming_course.id <> sharing_course.id
 WHERE
   consuming_course.sharing_token = $unsafe_course_sharing_token
   AND ss.id = $unsafe_sharing_set_id

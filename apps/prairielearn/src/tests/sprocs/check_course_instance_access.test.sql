@@ -2,12 +2,7 @@
 WITH
   setup_user AS (
     INSERT INTO
-      users (
-        user_id,
-        uid,
-        lti_course_instance_id,
-        institution_id
-      )
+      users (id, uid, lti_course_instance_id, institution_id)
     VALUES
       (100, 'normaluser@host.com', NULL, 1),
       (101, 'ltiuserci1@host.com', 1, 2),
@@ -15,7 +10,7 @@ WITH
   ),
   setup_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone, path)
+      courses (id, display_timezone, path)
     VALUES
       (1, 'UTC', '/path/to/course/1')
   ),

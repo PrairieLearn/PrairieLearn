@@ -187,8 +187,8 @@ function GroupRoleTable({
                               >
                                 <input
                                   type="checkbox"
-                                  id="user_role_${role.id}-${user.user_id}"
-                                  name="user_role_${role.id}-${user.user_id}"
+                                  id="user_role_${role.id}-${user.id}"
+                                  name="user_role_${role.id}-${user.id}"
                                   ${rolesInfo.disabledRoles.includes(role.role_name) ||
                                   !userCanAssignRoles
                                     ? 'disabled'
@@ -196,7 +196,7 @@ function GroupRoleTable({
                                   ${
                                     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                                     rolesInfo.roleAssignments[user.uid]?.some((a) =>
-                                      idsEqual(a.group_role_id, role.id),
+                                      idsEqual(a.team_role_id, role.id),
                                     )
                                       ? 'checked'
                                       : ''

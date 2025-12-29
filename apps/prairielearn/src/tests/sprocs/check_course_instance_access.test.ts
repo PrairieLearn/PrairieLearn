@@ -2,8 +2,9 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { CourseInstanceAccessRuleSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
 import * as helperDb from '../helperDb.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);

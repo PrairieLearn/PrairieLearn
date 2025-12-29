@@ -194,13 +194,13 @@ export async function aiInstanceQuestionGrouping({
   const model = openai(INSTANCE_QUESTION_GROUPING_OPENAI_MODEL);
 
   const serverJob = await createServerJob({
+    type: 'ai_instance_question_grouping',
+    description: 'Perform AI submission grouping',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_question.assessment_id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_instance_question_grouping',
-    description: 'Perform AI submission grouping',
   });
 
   const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
@@ -310,7 +310,7 @@ export async function aiInstanceQuestionGrouping({
             instanceQuestion,
             logger,
           );
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
         } finally {
           for (const log of logs) {

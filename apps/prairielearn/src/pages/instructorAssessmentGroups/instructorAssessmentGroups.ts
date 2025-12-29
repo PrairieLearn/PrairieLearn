@@ -17,7 +17,7 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { parseUidsString } from '../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
@@ -98,8 +98,8 @@ router.post(
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         csvFile: req.file,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
@@ -107,23 +107,23 @@ router.post(
       const job_sequence_id = await randomGroups({
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         max_group_size: Number(req.body.max_group_size),
         min_group_size: Number(req.body.min_group_size),
         authzData: res.locals.authz_data,
       });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
-      await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.user_id);
+      await deleteAllGroups(res.locals.assessment.id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_group') {
       await createGroup({
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         group_name: req.body.group_name,
-        uids: parseUidsString(req.body.uids, MAX_UIDS),
-        authn_user_id: res.locals.authn_user.user_id,
+        uids: parseUniqueValuesFromString(req.body.uids, MAX_UIDS),
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
@@ -135,14 +135,14 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
-      for (const uid of parseUidsString(req.body.add_member_uids, MAX_UIDS)) {
+      for (const uid of parseUniqueValuesFromString(req.body.add_member_uids, MAX_UIDS)) {
         try {
           await addUserToGroup({
             course_instance: res.locals.course_instance,
             assessment: res.locals.assessment,
             group_id: req.body.group_id,
             uid,
-            authn_user_id: res.locals.authn_user.user_id,
+            authn_user_id: res.locals.authn_user.id,
             enforceGroupSize: false, // Enforce group size limits (instructors can override limits)
             authzData: res.locals.authz_data,
           });
@@ -159,10 +159,10 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const group_id = req.body.group_id;
       const user_id = req.body.user_id;
-      await leaveGroup(assessment_id, user_id, res.locals.authn_user.user_id, group_id);
+      await leaveGroup(assessment_id, user_id, res.locals.authn_user.id, group_id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_group') {
-      await deleteGroup(res.locals.assessment.id, req.body.group_id, res.locals.authn_user.user_id);
+      await deleteGroup(res.locals.assessment.id, req.body.group_id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

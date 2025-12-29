@@ -25,8 +25,8 @@ const docker = new Docker();
 export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
     ...locals.course,
   });
   return jobSequenceId;
@@ -38,11 +38,11 @@ export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
  */
 export async function gitStatus(locals: UntypedResLocals): Promise<string> {
   const serverJob = await createServerJob({
-    courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'git_status',
     description: 'Show server git status',
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
+    courseId: locals.course.id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -213,11 +213,11 @@ export async function ecrUpdate(
   const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({
-    courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'images_sync',
     description: 'Sync Docker images from Docker Hub to PL registry',
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
+    courseId: locals.course.id,
   });
 
   serverJob.executeInBackground(async (job) => {

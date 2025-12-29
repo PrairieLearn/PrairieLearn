@@ -49,18 +49,18 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
     const studentOneUser = await getOrCreateUser(studentOne);
     const courseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
-      userId: studentOneUser.user_id,
+      userId: studentOneUser.id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
     await ensureUncheckedEnrollment({
-      userId: studentTwoUser.user_id,
+      userId: studentTwoUser.id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
