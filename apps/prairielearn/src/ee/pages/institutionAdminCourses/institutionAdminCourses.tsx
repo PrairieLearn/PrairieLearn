@@ -18,7 +18,7 @@ router.get(
     const institution = AdminInstitutionSchema.parse(
       await selectAndAuthzInstitutionAsAdmin({
         institution_id: req.params.institution_id,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         access_as_administrator: res.locals.access_as_administrator,
       }),
     );

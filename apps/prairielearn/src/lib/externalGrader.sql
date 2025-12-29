@@ -10,7 +10,7 @@ FROM
   LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
   LEFT JOIN variants AS v ON (v.id = s.variant_id)
   LEFT JOIN questions AS q ON (q.id = v.question_id)
-  LEFT JOIN pl_courses AS c ON (c.id = q.course_id)
+  LEFT JOIN courses AS c ON (c.id = q.course_id)
 WHERE
   gj.id = $grading_job_id;
 

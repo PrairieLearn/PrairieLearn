@@ -33,9 +33,9 @@ interface CreateServerJobOptionsBase {
   type: string;
   /** A description of the job. */
   description: string;
-  /** The effective user ID (res.locals.authz_data.user.user_id) */
+  /** The effective user ID (res.locals.authz_data.user.id) */
   userId: string | null;
-  /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
+  /** The authenticated user ID (res.locals.authz_data.authn_user.id) */
   authnUserId: string | null;
   /** The course request ID */
   courseRequestId?: string;

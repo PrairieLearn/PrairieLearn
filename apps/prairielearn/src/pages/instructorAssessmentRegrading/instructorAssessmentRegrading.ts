@@ -41,8 +41,8 @@ router.post(
     if (req.body.__action === 'regrade_all') {
       const job_sequence_id = await regradeAllAssessmentInstances(
         res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else {
