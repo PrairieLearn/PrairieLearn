@@ -230,12 +230,11 @@ const question = await queryRow(sql.select_question, { question_id: 45 }, Questi
 - Detailed descriptions of the format of each table are in the [list of database tables](https://github.com/PrairieLearn/PrairieLearn/blob/master/database/tables/).
 
 - Each table has an `id` number that is used for cross-referencing. For example, each row in the `questions` table has an `id` and other tables will refer to this as a `question_id`. For legacy reasons, there are two exceptions to this rule:
-  - Tables that reference the `pl_courses` table use `course_id` instead of `pl_course_id`.
   - The `users` table has a `user_id` primary key instead of `id`.
 
 - Each user is stored as a single row in the `users` table.
 
-- The `pl_courses` table has one row for each course, like `TAM 212`.
+- The `courses` table has one row for each course, like `TAM 212`.
 
 - The `course_instances` table has one row for each semester ("instance") of each course, with the `course_id` indicating which course it belongs to.
 
@@ -469,30 +468,34 @@ FOR NO KEY UPDATE;
 
 - All state-modifying requests must (normally) be POST and all associated data must be in the body. GET requests may use query parameters for viewing options only.
 
-## Safely interacting with the database
+## Permission checking
+
+Almost every page is dealing with database data, so it is important to understand how to interact with the database securely and do proper permission checking.
+
+### Role hierarchy
+
+There are 4 non-overlapping types of roles: "System roles", "Student course instance roles", "Instructor course instance roles", and "Course roles". Having a role higher in the hierarchy implies having all the permissions of the roles below it -- but it does not imply having any of the permissions in other columns.
+
+![Role hierarchy](./role-hierarchy.png)
+
+### Safely interacting with the database
 
 !!! note
 
     This pattern is currently being rolled out as a gradual refactor of existing code on a model-by-model basis.
 
-Almost every page is dealing with database data, so it is important to understand how to interact with the database securely.
+For most API/POST handlers, we want to look up or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we institute two checks:
 
-For most API/POST handlers, we want to lookup or modify data based on unvalidated query parameters or request body fields. It is easy to forget to validate these fields with the correct authorization levels. To help with this, we are moving to a pattern where model functions should accept full, typed row objects as parameters. As an example, we want to make it hard to update an enrollment status using just an enrollment ID.
+1. Model functions should accept full, typed row objects as parameters. Possession of this object implies the caller is authorized to read the record. For example, updates to the enrollment status should require the caller to pass in the full enrollment row object. We want to make it hard to update an enrollment status using just an enrollment ID (e.g. by sending a POST request to `/api/enrollments/<enrollment_id>/status`, and performing an unvalidated update with `req.params.enrollment_id`).
+
+2. Model functions should require the caller to pass in context about their authorization. In the below example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance.
 
 ```typescript
-// We want to prove that we are authorized to read the course instance.
-// Most pages don't need to do this, as `res.locals.course_instance` is already set.
-const courseInstance = await selectCourseInstance({
-  id: course_instance_id,
-  requestedRole: 'Student',
-  authzData: res.locals.authz_data,
-});
-
 const enrollment = await selectEnrollment({
   id: enrollment_id,
   // This serves to require the caller to be aware of the role they want to authorize as.
-  // For example, on a student page, you would set requestedRole is 'Student'. Instructors don't have the 'Student' role.
-  requestedRole: 'Student',
+  // We want to require the user to have at least the Student Data Viewer role.
+  requiredRole: ['Student Data Viewer'],
   // Information to prove we are authorized to read the record.
   // E.g. we need to prove that we have access to the course instance it's in,
   // and that we have the correct permissions to read the enrollment record.
@@ -501,60 +504,84 @@ const enrollment = await selectEnrollment({
 });
 ```
 
+![Single role](./single-role-example.png)
+
 !!! note "Sample model function"
 
     This is a sample model function that demonstrates the pattern from `src/models/enrollment.ts`.
 
     ```typescript
     export async function selectEnrollmentById({
+      // The ID of the enrollment to look up. This ID is unvalidated and comes from the request body.
       id,
+      // The course instance from res.locals
       courseInstance,
-      requestedRole,
+      requiredRole,
+      // The authorization data from res.locals
       authzData,
+    }: {
+      id: string;
+      courseInstance: CourseInstanceContext;
+      // The type of `requiredRole` is used to restrict the set of roles that can call this function.
+      requiredRole: ('Student' | 'Student Data Viewer' | 'Student Data Editor')[];
+      authzData: AuthzData;
     }) {
-      assertHasRole(authzData, requestedRole, [
-        // The allowable roles that can call this function
-        'Student',
-        'Student Data Viewer',
-        'Student Data Editor',
-      ]);
+      assertHasRole(authzData, requiredRole);
       const enrollment = await queryRow(sql.select_enrollment_by_id, { id }, EnrollmentSchema);
       assertEnrollmentInCourseInstance(enrollment, courseInstance);
-      if (requestedRole === 'Student') {
+      if (requiredRole === 'Student') {
         assertEnrollmentBelongsToUser(enrollment, authzData);
       }
       return enrollment;
     }
     ```
 
-This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks. For example, in the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
+In the above example, the `selectEnrollment` function requires the caller to pass in the `courseInstance` and `authzData` parameters, so it can assert that the enrollment belongs to the user, and is in the correct course instance. It will throw an error if the caller is not authorized to access the enrollment (or null if it was `selectOptionalEnrollment`). This also forced the caller to prove access to the course instance in order to read the enrollment record.
 
-Once you have a full row object, you have asserted that the caller is authorized to _read_ the record. You will also need to assert that the caller is authorized to _write_ the record.
+This is good, because in order to perform an update, you need to pass in a full row object, and a request body won't have enough information for this. Model functions that fetch rows require the caller to pass in the needed information to perform the correct authorization checks.
+
+Once you have a full row object, you have asserted that the caller is authorized to _read_ the record. You will also need to assert that the caller is authorized to _write_ the record. In the below example, we set `requiredRole` to `['Student']`, so the caller must be a student to update the enrollment status.
 
 ```typescript
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  // What role are we trying to authorize as?
-  requestedRole: 'Student',
-  // Information to prove we are authorized to write the record
+  // What role are we requiring the user to have?
+  requiredRole: ['Student'],
+  // The user's authorization data, needed to prove we are authorized to write the record
   authzData: res.locals.authz_data,
 });
 ```
 
-In this example, instructors are typically allowed to read the enrollment record for students, but for certain actions, like joining a course instance, they need to be authorized as a student. The model function would note that the `requestedRole` parameter is `'Student'`, but the current user is an instructor, so it would throw an error.
+In this example, instructors are not allowed to join a course instance for the student. The model function would note that the `requiredRole` parameter is `['Student']`, but the current user is an instructor, so it would throw an error.
 
-In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system.
+### Bypassing authorization checks
+
+In some cases, you may not have access to `authzData`, e.g. if you are pulling data from a queue, or deep in internal code. In this case, you can use the `dangerousFullSystemAuthz` function to build a dummy `authzData` object that allows you to perform the action as the system. This should be used sparingly.
 
 ```typescript
 await updateEnrollmentStatus({
   enrollment: myEnrollment,
   status: 'joined',
-  // We are authorizing as the system, any non-System role will throw an error.
-  requestedRole: 'System',
+  // We are requiring the user to have the System role, any non-System role will throw an error.
+  requiredRole: ['System'],
   authzData: dangerousFullSystemAuthz(),
 });
 ```
+
+### Multiple roles
+
+In some cases, you may want to allow the user to perform the action if they have any of the required roles. For example, if you are updating an enrollment status, you may want to allow the user to perform the action if they have the `Viewer` role, but you may also want to allow the user to perform the action if they have the `Student Data Viewer` role. This is a common pattern where when performing an action in the context of a course instance, you check if they have `Previewer` in the course, or `Student Data Viewer` in the course instance.
+
+```typescript
+await updateEnrollmentStatus({
+  enrollment: myEnrollment,
+  status: 'joined',
+  requiredRole: ['Viewer', 'Student Data Viewer'],
+});
+```
+
+![Multiple roles](./multiple-role-example.png)
 
 ### Exceptions to the pattern
 
@@ -584,7 +611,7 @@ Alternatively, if you want to check if you _might_ be authorized to perform an a
       if (req.body.__action == 'enroll') {
         await execute(sql.enroll, {
           course_instance_id: req.body.course_instance_id,
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
         });
         res.redirect(req.originalUrl);
       } else {

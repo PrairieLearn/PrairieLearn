@@ -4,15 +4,15 @@ SELECT
   c.short_name || ', ' || ci.long_name AS short_label,
   ci.id AS course_instance_id,
   to_jsonb(e) AS enrollment,
-  users_is_instructor_in_course (u.user_id, c.id) AS instructor_access
+  users_is_instructor_in_course (u.id, c.id) AS instructor_access
 FROM
   users AS u
   CROSS JOIN (
     course_instances AS ci
-    JOIN pl_courses AS c ON (c.id = ci.course_id)
+    JOIN courses AS c ON (c.id = ci.course_id)
   )
   LEFT JOIN enrollments AS e ON (
-    e.user_id = u.user_id
+    e.user_id = u.id
     AND e.course_instance_id = ci.id
   ),
   LATERAL (
@@ -25,7 +25,7 @@ FROM
       ar.course_instance_id = ci.id
   ) AS d
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND ci.deleted_at IS NULL
   AND c.deleted_at IS NULL
   AND c.example_course IS FALSE
@@ -44,24 +44,12 @@ ORDER BY
   d.end_date DESC NULLS LAST,
   ci.id DESC;
 
--- BLOCK select_course_instance
-SELECT
-  to_jsonb(ci.*) AS course_instance,
-  to_jsonb(c.*) AS course,
-  to_jsonb(i.*) AS institution
-FROM
-  course_instances AS ci
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-  JOIN institutions AS i ON (i.id = c.institution_id)
-WHERE
-  ci.id = $course_instance_id;
-
 -- BLOCK lti_course_instance_lookup
 SELECT
   plc.short_name AS plc_short_name,
   ci.long_name AS ci_long_name
 FROM
   course_instances AS ci
-  JOIN pl_courses AS plc ON plc.id = ci.course_id
+  JOIN courses AS plc ON plc.id = ci.course_id
 WHERE
   ci.id = $course_instance_id;

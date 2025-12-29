@@ -5,7 +5,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
-import { parseUidsString } from '../../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
 import {
@@ -31,7 +31,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       access_as_administrator: res.locals.access_as_administrator,
     });
 
@@ -57,12 +57,12 @@ router.post(
   asyncHandler(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       access_as_administrator: res.locals.access_as_administrator,
     });
 
     if (req.body.__action === 'addAdmins') {
-      const uids = parseUidsString(req.body.uids, MAX_UIDS);
+      const uids = parseUniqueValuesFromString(req.body.uids, MAX_UIDS);
       const validUids: string[] = [];
       const invalidUids: string[] = [];
       await runInTransactionAsync(async () => {
@@ -77,9 +77,9 @@ router.post(
           }
 
           await ensureInstitutionAdministrator({
-            user_id: user.user_id,
+            user_id: user.id,
             institution_id: institution.id,
-            authn_user_id: res.locals.authn_user.user_id,
+            authn_user_id: res.locals.authn_user.id,
           });
 
           validUids.push(uid);
@@ -102,7 +102,7 @@ router.post(
       await deleteInstitutionAdministrator({
         institution_id: institution.id,
         unsafe_institution_administrator_id: req.body.unsafe_institution_administrator_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);

@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
@@ -22,9 +23,7 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import {
   AiGradingJobSchema,
-  DateFromISOString,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -51,7 +50,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 async function prepareLocalsForRender(
   query: Record<string, any>,
-  resLocals: ResLocalsForPage['instructor-instance-question'],
+  resLocals: ResLocalsForPage<'instructor-instance-question'>,
 ) {
   // Even though getAndRenderVariant will select variants for the instance question, if the
   // question has multiple variants, by default getAndRenderVariant may select a variant without
@@ -86,7 +85,9 @@ async function prepareLocalsForRender(
   }
 
   const graders = await selectCourseInstanceGraderStaff({
-    course_instance: resLocals.course_instance,
+    courseInstance: resLocals.course_instance,
+    authzData: resLocals.authz_data,
+    requiredRole: ['Student Data Viewer'],
   });
   return { resLocals, conflict_grading_job, graders };
 }
@@ -216,6 +217,12 @@ router.get(
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
 
+    const submissionCredits = await sqldb.queryRows(
+      sql.select_submission_credit_values,
+      { assessment_instance_id: res.locals.assessment_instance.id },
+      z.number(),
+    );
+
     res.send(
       InstanceQuestionPage({
         ...(await prepareLocalsForRender(req.query, res.locals)),
@@ -231,6 +238,7 @@ router.get(
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
+        submissionCredits,
       }),
     );
   }),
@@ -295,13 +303,13 @@ router.get(
   typedAsyncHandler<'instructor-instance-question'>(async (req, res) => {
     try {
       const locals = await prepareLocalsForRender({}, res.locals);
+      const rubric_data = await manualGrading.selectRubricData({
+        assessment_question: res.locals.assessment_question,
+      });
       const gradingPanel = GradingPanel({
         ...locals,
         context: 'main',
       }).toString();
-      const rubric_data = await manualGrading.selectRubricData({
-        assessment_question: res.locals.assessment_question,
-      });
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
       res.json({
         gradingPanel,
@@ -354,6 +362,7 @@ const PostBodySchema = z.union([
     min_points: z.coerce.number(),
     max_extra_points: z.coerce.number(),
     tag_for_manual_grading: z.boolean().default(false),
+    grader_guidelines: z.string().nullable(),
     rubric_items: z
       .array(
         z.object({
@@ -417,7 +426,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
       if (modified_at_conflict) {
@@ -428,7 +437,7 @@ router.post(
         await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         });
       }
 
@@ -449,7 +458,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,
@@ -475,7 +484,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,
@@ -563,7 +572,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
         if (modified_at_conflict) {
@@ -582,7 +591,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups: true,
@@ -600,7 +609,8 @@ router.post(
           body.max_extra_points,
           body.rubric_items,
           body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
+          body.grader_guidelines,
+          res.locals.authn_user.id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
@@ -611,9 +621,11 @@ router.post(
       const assigned_grader = ['nobody', 'graded'].includes(actionPrompt) ? null : actionPrompt;
       if (assigned_grader != null) {
         const courseStaff = await selectCourseInstanceGraderStaff({
-          course_instance: res.locals.course_instance,
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          requiredRole: ['Student Data Editor'],
         });
-        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+        if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
             'Assigned grader does not have Student Data Editor permission',
@@ -645,7 +657,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,

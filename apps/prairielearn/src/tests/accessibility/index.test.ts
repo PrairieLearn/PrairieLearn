@@ -423,7 +423,7 @@ describe('accessibility', () => {
     );
 
     const user_id = await sqldb.queryRow(
-      'SELECT user_id FROM users WHERE uid = $uid',
+      'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
     );
@@ -433,7 +433,7 @@ describe('accessibility', () => {
     const enrollment = await ensureUncheckedEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -472,7 +472,7 @@ describe('accessibility', () => {
     );
 
     await sqldb.executeRow(
-      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      'UPDATE courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );
   });

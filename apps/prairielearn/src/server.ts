@@ -1910,17 +1910,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
   app.use(
-    '/pl/administrator',
-    asyncHandler(async (req, res, next) => {
-      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-        user_id: res.locals.authn_user.user_id,
-      });
-      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
-      next();
-    }),
-  );
-
-  app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
   );
@@ -2159,8 +2148,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2188,8 +2177,6 @@ if (isHMR && isServerPending()) {
 }
 
 const shouldStartServer = run(() => {
-  if (process.env.PL_START_SERVER === 'true') return true;
-  if (process.env.PL_START_SERVER === 'false') return false;
   if (!config.startServer) return false;
   if (esMain(import.meta)) return true;
   if (isHMR && !isServerInitialized()) return true;
@@ -2626,12 +2613,20 @@ if (shouldStartServer) {
     //
     // We use `allSettled()` here to ensure that all tasks can gracefully
     // shut down, even if some of them fail.
-    logger.info('Shutting down async processing');
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info('Shutting down async processing');
+    }
     const results = await Promise.allSettled([
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
+      socketServer.close(),
+      cache.close(),
+      assets.close(),
+      codeCaller.finish(),
       stopBatchedMigrations(),
+      namedLocks.close(),
+      sqldb.closeAsync(),
     ]);
     results.forEach((r) => {
       if (r.status === 'rejected') {
@@ -2665,11 +2660,9 @@ if (shouldStartServer) {
   });
 
   setServerState('initialized');
-  if (process.env.NODE_ENV !== 'test') {
-    logger.info('PrairieLearn server ready, press Control-C to quit');
-    if (config.devMode) {
-      logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
-    }
+  logger.info('PrairieLearn server ready, press Control-C to quit');
+  if (config.devMode && process.env.NODE_ENV !== 'test') {
+    logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 } else if (isHMR && isServerInitialized()) {
   // We need to re-initialize the server when we are running in HMR mode.

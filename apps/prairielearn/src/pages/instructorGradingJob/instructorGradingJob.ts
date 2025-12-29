@@ -26,7 +26,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * Throws an error if the user does not have access to the grading job.
  */
 async function assertHasAccessToGradingJob(
-  resLocals: ResLocalsForPage['course'] | ResLocalsForPage['course-instance'],
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>,
   gradingJobRow: GradingJobRow,
 ) {
   // We'll reuse the variant access logic to gate access. This will let us know
@@ -37,7 +37,7 @@ async function assertHasAccessToGradingJob(
   await selectAndAuthzVariant({
     unsafe_variant_id: gradingJobRow.variant_id,
     variant_course: resLocals.course,
-    course_instance_id: 'course_instance' in resLocals ? resLocals.course_instance.id : undefined,
+    course_instance_id: resLocals.course_instance?.id ?? undefined,
     question_id: gradingJobRow.question_id,
     // IMPORTANT: We pass `undefined` here to indicate that we haven't yet authenticated
     // that the current user should have access to this instance question. This forces
@@ -57,7 +57,7 @@ router.get(
       sql.select_job,
       {
         job_id: req.params.job_id,
-        course_instance_id: 'course_instance' in res.locals ? res.locals.course_instance.id : null,
+        course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
       },
       GradingJobRowSchema,
@@ -88,7 +88,7 @@ router.get(
       sql.select_job,
       {
         job_id: req.params.job_id,
-        course_instance_id: 'course_instance' in res.locals ? res.locals.course_instance.id : null,
+        course_instance_id: res.locals.course_instance?.id ?? null,
         course_id: res.locals.course.id,
       },
       GradingJobRowSchema,
