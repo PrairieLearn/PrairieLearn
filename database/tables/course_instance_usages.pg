@@ -1,4 +1,5 @@
 columns
+    cost_ai_grading: double precision not null default 0
     cost_ai_question_generation: double precision not null default 0
     course_id: bigint not null
     course_instance_id: bigint
