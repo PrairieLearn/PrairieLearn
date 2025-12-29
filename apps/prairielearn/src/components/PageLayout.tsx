@@ -285,10 +285,11 @@ export function PageLayout({
         ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
-        class="${clsx(
-          resolvedOptions.fullHeight && 'd-flex flex-column h-100',
-          resolvedOptions.showFooter && 'min-vh-100 d-flex flex-column',
-        )}"
+        class="${clsx({
+          'd-flex flex-column': resolvedOptions.fullHeight || resolvedOptions.showFooter,
+          'h-100': resolvedOptions.fullHeight,
+          'min-vh-100': resolvedOptions.showFooter,
+        })}"
         hx-ext="${resolvedOptions.hxExt}"
         ${unsafeHtml(
           Object.entries(resolvedOptions.dataAttributes)
