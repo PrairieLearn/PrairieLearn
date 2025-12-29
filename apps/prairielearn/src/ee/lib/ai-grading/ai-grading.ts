@@ -39,7 +39,7 @@ import {
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastVariantAndSubmission
+  selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 

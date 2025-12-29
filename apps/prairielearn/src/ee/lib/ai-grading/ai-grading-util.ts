@@ -1,9 +1,4 @@
-import type {
-  GenerateObjectResult,
-  GenerateTextResult,
-  ModelMessage,
-  UserContent,
-} from 'ai';
+import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
@@ -13,7 +8,7 @@ import {
   loadSqlEquiv,
   queryRow,
   queryRows,
-  runInTransactionAsync
+  runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
@@ -30,7 +25,7 @@ import {
   type Submission,
   SubmissionSchema,
   type Variant,
-  VariantSchema
+  VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 
