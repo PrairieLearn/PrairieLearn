@@ -36,7 +36,7 @@ export const AssessmentInstanceRowSchema = z.object({
   total_time: z.string(),
   uid_list: z.array(UserSchema.shape.uid).nullable(),
   uid: UserSchema.shape.uid.nullable(),
-  user_id: UserSchema.shape.user_id.nullable(),
+  user_id: UserSchema.shape.id.nullable(),
   user_name_list: z.array(UserSchema.shape.name).nullable(),
   username: z.string().nullable(),
 });

@@ -90,7 +90,7 @@ async function updateGroupRoles(
 ): Promise<cheerio.CheerioAPI> {
   // Uncheck all of the inputs
   const roleIds = groupRoles.map((role) => role.id);
-  const userIds = studentUsers.map((user) => user.user_id);
+  const userIds = studentUsers.map((user) => user.id);
   for (const roleId of roleIds) {
     for (const userId of userIds) {
       const elementId = `#user_role_${roleId}-${userId}`;
@@ -217,9 +217,9 @@ async function prepareGroup() {
     '#leaveGroupModal',
   );
   const validRoleConfig = [
-    { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-    { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-    { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+    { roleId: manager.id, groupUserId: studentUsers[0].id },
+    { roleId: recorder.id, groupUserId: studentUsers[1].id },
+    { roleId: reflector.id, groupUserId: studentUsers[2].id },
   ];
   $ = await updateGroupRoles(
     validRoleConfig,
@@ -452,10 +452,10 @@ describe('Assessment instance with group roles & permissions - Homework', functi
         '#leaveGroupModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[0].user_id },
-        { roleId: recorder.id, groupUserId: studentUsers[1].user_id },
-        { roleId: reflector.id, groupUserId: studentUsers[2].user_id },
+        { roleId: manager.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[0].id },
+        { roleId: recorder.id, groupUserId: studentUsers[1].id },
+        { roleId: reflector.id, groupUserId: studentUsers[2].id },
       ];
       let $ = await updateGroupRoles(
         invalidRoleConfig,

@@ -50,7 +50,7 @@ SELECT
     AND ai.date_limit <= $req_date::timestamptz
   ) AS assessment_instance_time_limit_expired,
   to_jsonb(u) AS instance_user,
-  users_get_displayed_role (u.user_id, ci.id) AS instance_role,
+  users_get_displayed_role (u.id, ci.id) AS instance_role,
   to_jsonb(a) AS assessment,
   to_jsonb(aset) AS assessment_set,
   to_jsonb(aai) AS authz_result,
@@ -64,8 +64,8 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN teams AS g ON (g.id = ai.team_id) -- Ignore deleted_at, as we want to show the group even if it's deleted
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id) -- Only used for non-group instances
+  LEFT JOIN teams AS g ON (g.id = ai.team_id) -- Ignore deleted_at, as we want to show the team even if it's deleted
+  LEFT JOIN users AS u ON (u.id = ai.user_id) -- Only used for non-team instances
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,

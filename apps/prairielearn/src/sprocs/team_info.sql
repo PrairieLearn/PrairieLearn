@@ -16,13 +16,13 @@ BEGIN
             g.id as id,
             array_agg(u.uid) AS uid_list,
             array_agg(u.name) AS user_name_list,
-            array_agg(users_get_displayed_role(u.user_id, a.course_instance_id)) as user_roles_list
+            array_agg(users_get_displayed_role(u.id, a.course_instance_id)) as user_roles_list
         FROM
             team_configs AS gc
             JOIN assessments AS a ON (a.id = gc.assessment_id)
             JOIN teams AS g ON (g.team_config_id = gc.id)
             JOIN team_users AS gu ON (gu.team_id = g.id)
-            JOIN users AS u ON (u.user_id = gu.user_id)
+            JOIN users AS u ON (u.id = gu.user_id)
         WHERE
             gc.assessment_id = team_info.assessment_id
             AND gc.deleted_at IS NULL

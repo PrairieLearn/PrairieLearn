@@ -73,7 +73,7 @@ SELECT
     AND ai.date_limit <= $req_date::timestamptz
   ) AS assessment_instance_time_limit_expired,
   to_jsonb(u) AS instance_user,
-  users_get_displayed_role (u.user_id, ci.id) AS instance_role,
+  users_get_displayed_role (u.id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
   teams_uid_list (g.id) AS instance_group_uid_list,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
@@ -113,7 +113,7 @@ FROM
     g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,

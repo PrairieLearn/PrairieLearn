@@ -21,7 +21,7 @@ SELECT
   u.uid AS user_uid
 FROM
   query_runs AS qr
-  LEFT JOIN users u ON (u.user_id = qr.authn_user_id)
+  LEFT JOIN users u ON (u.id = qr.authn_user_id)
 WHERE
   qr.name = $query_name
 ORDER BY

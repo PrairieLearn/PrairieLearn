@@ -9,7 +9,7 @@ BEGIN
     INTO uid_list
     FROM
         team_users AS gu
-        JOIN users AS u ON (u.user_id = gu.user_id)
+        JOIN users AS u ON (u.id = gu.user_id)
     WHERE gu.team_id = teams_uid_list.team_id;
 
     uid_list := coalesce(uid_list, '{}');

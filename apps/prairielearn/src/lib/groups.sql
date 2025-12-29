@@ -83,7 +83,7 @@ SELECT
   u.*
 FROM
   team_users AS gu
-  JOIN users AS u ON (u.user_id = gu.user_id)
+  JOIN users AS u ON (u.id = gu.user_id)
 WHERE
   gu.team_id = $group_id;
 
@@ -154,7 +154,7 @@ SELECT
   gr.id AS team_role_id
 FROM
   team_users AS gu
-  JOIN users u ON (gu.user_id = u.user_id)
+  JOIN users u ON (gu.user_id = u.id)
   JOIN team_user_roles gur ON (
     gu.team_id = gur.team_id
     AND gu.user_id = gur.user_id

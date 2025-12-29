@@ -70,7 +70,7 @@ export const AssessmentInstanceDataSchema = z.array(
     assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
     assessment_number: AssessmentSchema.shape.number,
     // Left join users table
-    user_id: UserSchema.shape.user_id.nullable(),
+    user_id: UserSchema.shape.id.nullable(),
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
     user_name: UserSchema.shape.name.nullable(),

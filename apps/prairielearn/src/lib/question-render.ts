@@ -140,8 +140,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user?.user_id ?? null;
-  const authn_user_id = locals.authn_user?.user_id ?? null;
+  const user_id = locals.user?.id ?? null;
+  const authn_user_id = locals.authn_user?.id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -470,8 +470,8 @@ export async function getAndRenderVariant(
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
-        locals.user.user_id,
-        locals.authn_user.user_id,
+        locals.user.id,
+        locals.authn_user.id,
         locals.course_instance ?? null,
         locals.course,
         question_course,
@@ -860,10 +860,10 @@ export async function renderPanelsForSubmission({
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
           assessment_instance.team_id,
-          user.user_id,
+          user.id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.team_id, user.user_id))
+          (await getUserRoles(assessment_instance.team_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

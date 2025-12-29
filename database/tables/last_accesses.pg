@@ -13,5 +13,5 @@ check constraints
     user_team_xor: CHECK (user_id IS NOT NULL AND team_id IS NULL OR team_id IS NOT NULL AND user_id IS NULL)
 
 foreign-key constraints
-    last_accesses_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE CASCADE
-    last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

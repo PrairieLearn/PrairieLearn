@@ -12,7 +12,7 @@ const TEST_USER = {
   email: 'test@illinois.edu',
   institution_id: '1',
   uin: '123456789',
-  user_id: '1',
+  id: '1',
 };
 
 const TEST_INSTITUTION = {
