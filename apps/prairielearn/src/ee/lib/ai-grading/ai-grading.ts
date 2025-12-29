@@ -646,7 +646,7 @@ export async function aiGrade({
             item_statuses,
           });
 
-          const result = await gradeInstanceQuestion(instance_question, logger);
+          const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
 
           item_statuses[instance_question.id] = result
             ? JobItemStatus.complete
