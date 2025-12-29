@@ -3,6 +3,7 @@ import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { useFormContext } from 'react-hook-form';
 
+import { type PublishingStatus, computeStatus } from '../lib/publishing.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
@@ -11,28 +12,13 @@ import {
 
 import { FriendlyDate } from './FriendlyDate.js';
 
-type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
+function normalizeDateTimeLocal(value: string): string {
+  // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
+  // Note that this transformation will only work with a client-side POST.
 
-/** Helper to compute status from dates and current time. */
-function computeStatus(startDate: Date | null, endDate: Date | null): PublishingStatus {
-  if (!startDate && !endDate) {
-    return 'unpublished';
-  }
-
-  const now = nowRoundedToSeconds();
-
-  if (startDate && endDate) {
-    if (endDate <= now) {
-      return 'unpublished';
-    }
-    if (startDate > now) {
-      return 'publish_scheduled';
-    }
-    return 'published';
-  }
-
-  // Should not happen in valid states, but default to unpublished
-  return 'unpublished';
+  // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+  // https://issues.chromium.org/issues/41159420
+  return value.length === 16 ? `${value}:00` : value;
 }
 
 export interface PublishingFormValues {
@@ -89,8 +75,10 @@ export function CourseInstancePublishingForm({
     const now = nowRoundedToSeconds();
     const nowTemporal = dateToPlainDateTime(now, displayTimezone);
 
-    const oneWeekLater = nowTemporal.add({ weeks: 1 });
-    const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
+    const oneWeekLater = nowTemporal.add({ weeks: 1 }).with({ hour: 0, minute: 1, second: 1 });
+    const eighteenWeeksLater = nowTemporal
+      .add({ weeks: 18 })
+      .with({ hour: 23, minute: 59, second: 59 });
 
     const currentStartDate = startDate === '' ? null : Temporal.PlainDateTime.from(startDate);
     const currentEndDate = endDate === '' ? null : Temporal.PlainDateTime.from(endDate);
@@ -345,6 +333,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('start_date', {
                         validate: validateStartDate,
+                        setValueAs: normalizeDateTimeLocal,
                         deps: ['end_date'],
                       })}
                     />
@@ -380,6 +369,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
                     <span class="input-group-text">{displayTimezone}</span>
@@ -467,6 +457,7 @@ export function CourseInstancePublishingForm({
                       disabled={!canEdit}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
                     <span class="input-group-text">{displayTimezone}</span>

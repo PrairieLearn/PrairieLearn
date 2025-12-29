@@ -14,12 +14,10 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import type { Course } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -37,7 +35,6 @@ import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
-import { plainDateTimeStringToDate } from '../instructorInstanceAdminPublishing/utils/dateUtils.js';
 
 import { InstructorInstanceAdminSettings } from './instructorInstanceAdminSettings.html.js';
 import { SettingsFormBodySchema } from './instructorInstanceAdminSettings.types.js';
@@ -52,7 +49,6 @@ router.get(
       course_instance: courseInstance,
       course,
       institution,
-      has_enhanced_navigation,
       authz_data,
       urlPrefix,
       navPage,
@@ -124,21 +120,11 @@ router.get(
         },
         content: (
           <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={{
-                has_course_instance_permission_edit:
-                  authz_data.has_course_instance_permission_edit ?? false,
-              }}
-              courseInstance={courseInstance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />
             <Hydrate>
               <InstructorInstanceAdminSettings
                 csrfToken={__csrf_token}
                 urlPrefix={urlPrefix}
                 navPage={navPage}
-                hasEnhancedNavigation={has_enhanced_navigation}
                 canEdit={canEdit}
                 course={course}
                 courseInstance={courseInstance}
@@ -234,15 +220,18 @@ router.post(
         ...courseInstance,
         short_name,
         long_name,
-        publishing_start_date:
-          start_date.length > 0
-            ? plainDateTimeStringToDate(start_date, courseInstance.display_timezone)
-            : null,
-        publishing_end_date:
-          end_date.length > 0
-            ? plainDateTimeStringToDate(end_date, courseInstance.display_timezone)
-            : null,
       };
+
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
 
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
@@ -251,6 +240,9 @@ router.post(
         from_course: course,
         from_path: path.join(courseInstancesPath, courseInstance.short_name),
         course_instance: updatedCourseInstance,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+        },
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -263,7 +255,7 @@ router.post(
 
       const copiedInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
+        course,
       });
 
       res.status(200).json({ course_instance_id: copiedInstance.id });
@@ -352,7 +344,9 @@ router.post(
       const selfEnrollmentBeforeDate = propertyValueWithDefault(
         parseDateTime(courseInstanceInfo.selfEnrollment?.beforeDate ?? ''),
         // We'll only serialize the value if self-enrollment is enabled.
-        parsedBody.self_enrollment_enabled && parsedBody.self_enrollment_enabled_before_date
+        parsedBody.self_enrollment_enabled &&
+          parsedBody.self_enrollment_enabled_before_date_enabled &&
+          parsedBody.self_enrollment_enabled_before_date
           ? parseDateTime(parsedBody.self_enrollment_enabled_before_date)
           : undefined,
         undefined,

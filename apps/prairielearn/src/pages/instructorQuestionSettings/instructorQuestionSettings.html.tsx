@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -16,7 +16,7 @@ import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
+  CourseInstanceSchema,
   type Question,
   type Tag,
   type Topic,
@@ -27,8 +27,8 @@ import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
 export const SelectedAssessmentsSchema = z.object({
-  short_name: z.string(),
-  long_name: z.string(),
+  short_name: CourseInstanceSchema.shape.short_name,
+  long_name: CourseInstanceSchema.shape.long_name,
   course_instance_id: IdSchema,
   assessments: z.array(
     z.object({
@@ -116,14 +116,6 @@ export function InstructorQuestionSettings({
       />
     `,
     content: html`
-      ${renderHtml(
-        <QuestionSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          question={resLocals.question}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
@@ -768,7 +760,10 @@ function DeleteQuestionModal({
               ${assessmentsWithQuestion.map((a_with_q) => {
                 return html`
                   <li class="list-group-item">
-                    <div class="h6">${a_with_q.short_name} (${a_with_q.long_name})</div>
+                    <div class="h6">
+                      ${a_with_q.short_name ?? html`<i>Unknown</i>`}
+                      (${a_with_q.long_name ?? html`<i>Unknown</i>`})
+                    </div>
                     ${a_with_q.assessments.map((assessment) =>
                       AssessmentBadgeHtml({
                         courseInstanceId: a_with_q.course_instance_id,

@@ -120,7 +120,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         const pathSuffix = match[2];
         const newPath = '/' + pathSuffix;
         return newPath;
-      } catch (err) {
+      } catch (err: any) {
         logger.error(`Error in pathRewrite for path=${path}: ${err}`);
         return path;
       }

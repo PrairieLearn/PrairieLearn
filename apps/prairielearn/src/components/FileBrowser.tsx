@@ -9,7 +9,6 @@ import { isBinaryFile } from 'isbinaryfile';
 
 import { type HtmlValue, escapeHtml, html, joinHtml, unsafeHtml } from '@prairielearn/html';
 import { contains } from '@prairielearn/path-utils';
-import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
 
 import { compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
@@ -20,12 +19,6 @@ import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { encodePath } from '../lib/uri-util.js';
 
 import { PageLayout } from './PageLayout.js';
-import {
-  AssessmentSyncErrorsAndWarnings,
-  CourseInstanceSyncErrorsAndWarnings,
-  CourseSyncErrorsAndWarnings,
-  QuestionSyncErrorsAndWarnings,
-} from './SyncErrorsAndWarnings.js';
 import { SyncProblemButtonHtml } from './SyncProblemButton.js';
 
 interface FileInfo {
@@ -276,45 +269,7 @@ export function FileBrowser({
   | { isFile: true; fileInfo: FileInfo; directoryListings?: undefined }
   | { isFile: false; directoryListings: DirectoryListings; fileInfo?: undefined }
 )) {
-  const { navPage, __csrf_token: csrfToken, authz_data, course, urlPrefix } = resLocals;
-  const syncErrorsAndWarnings =
-    navPage === 'course_admin'
-      ? renderHtml(
-          <CourseSyncErrorsAndWarnings
-            authzData={authz_data}
-            course={course}
-            urlPrefix={urlPrefix}
-          />,
-        )
-      : navPage === 'instance_admin'
-        ? renderHtml(
-            <CourseInstanceSyncErrorsAndWarnings
-              authzData={authz_data}
-              courseInstance={resLocals.course_instance}
-              course={course}
-              urlPrefix={urlPrefix}
-            />,
-          )
-        : navPage === 'assessment'
-          ? renderHtml(
-              <AssessmentSyncErrorsAndWarnings
-                authzData={authz_data}
-                assessment={resLocals.assessment}
-                courseInstance={resLocals.course_instance}
-                course={course}
-                urlPrefix={urlPrefix}
-              />,
-            )
-          : navPage === 'question' || navPage === 'public_question'
-            ? renderHtml(
-                <QuestionSyncErrorsAndWarnings
-                  authzData={authz_data}
-                  question={resLocals.question}
-                  course={course}
-                  urlPrefix={urlPrefix}
-                />,
-              )
-            : '';
+  const { navPage, __csrf_token: csrfToken } = resLocals;
   const pageTitle =
     navPage === 'course_admin'
       ? 'Course Files'
@@ -355,7 +310,6 @@ export function FileBrowser({
       </style>
     `,
     content: html`
-      ${syncErrorsAndWarnings}
       <h1 class="visually-hidden">Files</h1>
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">

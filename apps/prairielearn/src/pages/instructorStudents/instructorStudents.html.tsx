@@ -49,7 +49,7 @@ import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorSt
 
 // This default must be declared outside the component to ensure referential
 // stability across renders, as `[] !== []` in JavaScript.
-const DEFAULT_SORT: SortingState = [];
+const DEFAULT_SORT: SortingState = [{ id: 'user_uid', desc: false }];
 
 const DEFAULT_PINNING: ColumnPinningState = { left: ['user_uid'], right: [] };
 
@@ -104,6 +104,7 @@ function CopyEnrollmentLinkButton({
     <DropdownButton
       as={ButtonGroup}
       title="Enrollment details"
+      size="sm"
       disabled={!courseInstance.self_enrollment_enabled}
       variant="light"
     >
@@ -415,17 +416,20 @@ function StudentsCard({
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
           mapRowToData: (row) => {
-            return {
-              uid: row.user?.uid ?? row.enrollment.pending_uid,
-              name: row.user?.name ?? null,
-              email: row.user?.email ?? null,
-              status: row.enrollment.status,
-              first_joined_at: row.enrollment.first_joined_at
-                ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-                    includeTz: false,
-                  })
-                : null,
-            };
+            return [
+              { value: row.user?.uid ?? row.enrollment.pending_uid, name: 'uid' },
+              { value: row.user?.name ?? null, name: 'name' },
+              { value: row.user?.email ?? null, name: 'email' },
+              { value: row.enrollment.status, name: 'status' },
+              {
+                value: row.enrollment.first_joined_at
+                  ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                      includeTz: false,
+                    })
+                  : null,
+                name: 'first_joined_at',
+              },
+            ];
           },
           hasSelection: false,
         }}
@@ -435,6 +439,7 @@ function StudentsCard({
               <>
                 <Button
                   variant="light"
+                  size="sm"
                   disabled={!authzData.has_course_instance_permission_edit}
                   onClick={() => setShowInvite(true)}
                 >
@@ -447,8 +452,6 @@ function StudentsCard({
           </>
         }
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name, email...',
         }}
         tableOptions={{

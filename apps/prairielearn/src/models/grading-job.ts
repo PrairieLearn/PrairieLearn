@@ -6,12 +6,12 @@ import {
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
-  IdSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';

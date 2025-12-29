@@ -8,10 +8,10 @@ import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
@@ -30,7 +30,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const rows = await queryRows(
       sql.get_requests,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       CourseRequestRowSchema,
     );
 
@@ -112,7 +112,7 @@ router.post(
     const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         short_name,
       },
       z.boolean(),
@@ -134,7 +134,7 @@ router.post(
       {
         short_name,
         title,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         github_user,
         first_name,
         last_name,
@@ -148,7 +148,7 @@ router.post(
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
       sql.can_auto_create_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       z.boolean(),
     );
 
@@ -156,7 +156,7 @@ router.post(
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await queryRow(
         sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.user_id },
+        { user_id: res.locals.authn_user.id },
         z.object({
           institution_id: IdSchema,
           display_timezone: z.string(),

@@ -43,13 +43,15 @@ router.get(
       sql.select_questions_manual_grading,
       {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.authz_data.user.user_id,
+        user_id: res.locals.authz_data.user.id,
       },
       ManualGradingQuestionSchema,
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance: res.locals.course_instance,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      requiredRole: ['Student Data Viewer'],
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -82,9 +84,11 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance: res.locals.course_instance,
+            courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requiredRole: ['Student Data Editor'],
           })
-        ).map((user) => user.user_id),
+        ).map((user) => user.id),
       );
       if (assignedGraderIds.some((graderId) => !allowedGraderIds.has(graderId))) {
         flash(
@@ -178,8 +182,8 @@ router.post(
           assessment,
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
           model_id,
           mode: 'all',
         });
@@ -229,7 +233,7 @@ router.post(
 
       await deleteAiGradingJobs({
         assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       flash('success', 'AI grading data deleted successfully.');

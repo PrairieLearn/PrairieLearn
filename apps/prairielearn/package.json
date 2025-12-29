@@ -7,7 +7,7 @@
     "build": "tsc --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:bun": "bun --watch src/server.ts",
-    "dev:no-watch": "tsx --tsconfig src/tsconfig.json src/server.js",
+    "dev:no-watch": "tsx --tsconfig src/tsconfig.json src/server.ts",
     "dev:vite": "vite --port 3000 --host",
     "start": "node dist/server.js",
     "start-executor": "node dist/executor.js",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@ai-sdk/anthropic": "^2.0.50",
-    "@ai-sdk/google": "^2.0.44",
+    "@ai-sdk/google": "^2.0.49",
     "@ai-sdk/openai": "^2.0.75",
     "@aws-sdk/client-auto-scaling": "^3.940.0",
     "@aws-sdk/client-cloudwatch": "^3.940.0",
@@ -101,8 +101,8 @@
     "@tiptap/pm": "^3.11.1",
     "@tiptap/react": "^3.11.1",
     "@tiptap/y-tiptap": "^3.0.1",
-    "@trpc/client": "^11.7.2",
-    "@trpc/server": "^11.7.2",
+    "@trpc/client": "^11.8.0",
+    "@trpc/server": "^11.8.0",
     "@types/d3": "^7.4.3",
     "@viz-js/viz": "^3.21.0",
     "@web3-storage/parse-link-header": "^3.1.0",
@@ -318,11 +318,11 @@
   "nodemonConfig": {
     "ignore": [
       "assets/*",
-      "elements/**/*.js",
+      "elements/*",
       "dist/*",
       "public/*"
     ],
-    "ext": "js,jsx,ts,tsx,json,sql",
+    "ext": "js,jsx,ts,tsx,json,sql,py",
     "delay": 100
   }
 }
