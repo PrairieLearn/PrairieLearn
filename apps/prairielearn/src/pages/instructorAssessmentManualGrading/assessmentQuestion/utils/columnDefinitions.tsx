@@ -3,13 +3,13 @@ import { type Row, type Table, createColumnHelper } from '@tanstack/react-table'
 import { run } from '@prairielearn/run';
 import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
 
-import { AiGradingStatusCell } from '../../../../components/AiGradingStatusCell.js';
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
 import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import { AiGradingStatusCell } from '../components/AiGradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 

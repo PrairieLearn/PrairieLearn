@@ -48,15 +48,15 @@ export function ServerJobsProgressInfo({
   onDismissCompleteJobSequence: (jobSequenceId: string) => void;
 }) {
   const statusIconsSafe = {
-    inProgress: statusIcons.inProgress || 'bi-hourglass-split',
-    complete: statusIcons.complete || 'bi-check-circle-fill',
-    failed: statusIcons.failed || 'bi-exclamation-triangle-fill',
+    inProgress: statusIcons.inProgress ?? 'bi-hourglass-split',
+    complete: statusIcons.complete ?? 'bi-check-circle-fill',
+    failed: statusIcons.failed ?? 'bi-exclamation-triangle-fill',
   };
 
   const statusTextSafe = {
-    inProgress: statusText.inProgress || 'Job in progress',
-    complete: statusText.complete || 'Job complete',
-    failed: statusText.failed || 'Job failed',
+    inProgress: statusText.inProgress ?? 'Job in progress',
+    complete: statusText.complete ?? 'Job complete',
+    failed: statusText.failed ?? 'Job failed',
   };
 
   return (

@@ -118,7 +118,7 @@ export function useServerJobProgress({
     }
 
     setJobsProgress((prev) => {
-      const { [jobSequenceId]: _, ...newJobsProgress } = prev;
+      const { [jobSequenceId]: _removed, ...newJobsProgress } = prev;
       return newJobsProgress;
     });
   }
