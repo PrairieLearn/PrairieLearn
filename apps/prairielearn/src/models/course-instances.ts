@@ -102,8 +102,9 @@ export async function selectCourseInstancesWithStaffAccess({
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
     {
-      user_id: authzData.user.user_id,
-      is_administrator: authzData.is_administrator,
+      // TODO: Make sure this uses .id after DB migration is complete.
+      user_id: authzData.authn_user.user_id,
+      is_administrator: authzData.authn_is_administrator,
       course_id: course.id,
     },
     CourseInstanceAuthzSchema,
