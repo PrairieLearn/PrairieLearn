@@ -797,7 +797,7 @@ export async function correctImageOrientation({
   model: LanguageModel;
 }): Promise<{
   correctedImage: string;
-  clockwiseRotation: ClockwiseRotationDegrees;
+  degreesRotatedClockwise: ClockwiseRotationDegrees;
   response: GenerateObjectResult<any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
