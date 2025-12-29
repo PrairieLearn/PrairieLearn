@@ -52,13 +52,13 @@ export async function uploadInstanceGroups({
   const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
+    type: 'upload_groups',
+    description: `Upload group settings for ${assessment_label}`,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_instance.course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_groups',
-    description: `Upload group settings for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -160,13 +160,13 @@ export async function randomGroups({
   const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
+    type: 'random_generate_groups',
+    description: `Randomly generate groups for ${assessment_label}`,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_instance.course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'random_generate_groups',
-    description: `Randomly generate groups for ${assessment_label}`,
   });
 
   serverJob.executeInBackground(async (job) => {

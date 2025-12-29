@@ -17,7 +17,7 @@ import {
   leaveGroup,
 } from '../../lib/groups.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { parseUidsString } from '../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
@@ -122,7 +122,7 @@ router.post(
         course_instance: res.locals.course_instance,
         assessment: res.locals.assessment,
         group_name: req.body.group_name,
-        uids: parseUidsString(req.body.uids, MAX_UIDS),
+        uids: parseUniqueValuesFromString(req.body.uids, MAX_UIDS),
         authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
@@ -135,7 +135,7 @@ router.post(
 
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_member') {
-      for (const uid of parseUidsString(req.body.add_member_uids, MAX_UIDS)) {
+      for (const uid of parseUniqueValuesFromString(req.body.add_member_uids, MAX_UIDS)) {
         try {
           await addUserToGroup({
             course_instance: res.locals.course_instance,

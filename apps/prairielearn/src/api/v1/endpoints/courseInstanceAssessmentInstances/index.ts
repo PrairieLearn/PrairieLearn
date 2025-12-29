@@ -5,13 +5,13 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as assessment from '../../../../lib/assessment.js';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
   AssessmentSchema,
-  IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,

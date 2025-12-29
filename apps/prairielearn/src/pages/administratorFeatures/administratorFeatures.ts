@@ -4,12 +4,12 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   InstitutionSchema,
   type User,
 } from '../../lib/db-types.js';

@@ -288,6 +288,7 @@ router.post(
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
         const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
@@ -501,6 +502,7 @@ router.post(
           req.body.max_extra_points,
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
+          req.body.grader_guidelines,
           res.locals.authn_user.id,
         );
         res.redirect(req.originalUrl);

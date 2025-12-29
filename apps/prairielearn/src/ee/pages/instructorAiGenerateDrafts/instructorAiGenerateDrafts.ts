@@ -4,10 +4,11 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import {
