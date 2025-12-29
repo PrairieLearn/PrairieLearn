@@ -68,6 +68,7 @@ export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
   authn_user: StaffUserSchema,
 }).brand<'PageAuthzData'>();
 export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
+type PageAuthzDataInput = z.input<typeof PageAuthzDataSchema>;
 
 export interface DangerousSystemAuthzData {
   authn_user: {
@@ -311,4 +312,43 @@ export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceR
     ),
     has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
   };
+}
+
+/**
+ * Converts a `PlainAuthzData` into a `PageAuthzData`. Assumes that the context
+ * in which this is called does not differentiate between authenticated user and
+ * effective user.
+ */
+export function makePageAuthzData({
+  authzData,
+  is_administrator,
+}: {
+  authzData: PlainAuthzData;
+  is_administrator: boolean;
+}): PageAuthzData {
+  const input: PageAuthzDataInput = {
+    ...authzData,
+    is_administrator,
+
+    authn_user: authzData.user,
+    authn_is_administrator: is_administrator,
+
+    authn_has_course_permission_preview: authzData.has_course_permission_preview,
+    authn_has_course_permission_view: authzData.has_course_permission_view,
+    authn_has_course_permission_edit: authzData.has_course_permission_edit,
+    authn_has_course_permission_own: authzData.has_course_permission_own,
+    authn_course_role: authzData.course_role,
+  };
+
+  if (authzData.course_instance_role != null) {
+    Object.assign(input, {
+      authn_course_instance_role: authzData.course_instance_role,
+      authn_has_course_instance_permission_view: authzData.has_course_instance_permission_view,
+      authn_has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
+      authn_has_student_access: authzData.has_student_access,
+      authn_has_student_access_with_enrollment: authzData.has_student_access_with_enrollment,
+    } satisfies Partial<PageAuthzDataInput>);
+  }
+
+  return PageAuthzDataSchema.parse(input);
 }

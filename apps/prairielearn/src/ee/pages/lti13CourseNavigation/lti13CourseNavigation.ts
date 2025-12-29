@@ -1,12 +1,11 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import type * as z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
-import { type PageAuthzData, PageAuthzDataSchema, hasRole } from '../../../lib/authz-data-lib.js';
+import { type PageAuthzData, hasRole, makePageAuthzData } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import {
   type Course,
@@ -54,7 +53,6 @@ async function courseInstancesAllowedToLink({
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
     authzData,
-    // TODO: Why is "Previewer" included here? And why is this "Student Data Viewer" and not "Student Data Editor"?
     requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
@@ -99,12 +97,10 @@ router.get(
 
     const course_instances = await courseInstancesAllowedToLink({
       course,
-      authzData: PageAuthzDataSchema.parse({
-        ...authzData,
-        authn_user: authzData.user,
+      authzData: makePageAuthzData({
+        authzData,
         is_administrator: res.locals.is_administrator,
-        authn_is_administrator: res.locals.authn_is_administrator,
-      } satisfies z.input<typeof PageAuthzDataSchema>),
+      }),
     });
 
     let options: HtmlSafeString;
