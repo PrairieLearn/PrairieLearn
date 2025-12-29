@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {

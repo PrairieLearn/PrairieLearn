@@ -5,9 +5,6 @@ import { z } from 'zod';
 
 import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 
-// re-export schemas for backwards compatibility
-export { DateFromISOString, IdSchema, IntervalSchema };
-
 // *******************************************************************************
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
@@ -1275,6 +1272,7 @@ export type QuestionTag = z.infer<typeof QuestionTagSchema>;
 export const RubricSchema = z.object({
   created_at: DateFromISOString,
   deleted_at: DateFromISOString.nullable(),
+  grader_guidelines: z.string().nullable(),
   id: IdSchema,
   max_extra_points: z.number(),
   min_points: z.number(),

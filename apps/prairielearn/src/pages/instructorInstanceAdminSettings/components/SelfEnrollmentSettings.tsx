@@ -262,7 +262,7 @@ export function SelfEnrollmentSettings({
         </div>
       </div>
 
-      <div class="mb-3 form-check">
+      <div class={clsx('mb-3 form-check', enrollmentManagementEnabled && 'd-none')}>
         <input
           class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
           type="checkbox"

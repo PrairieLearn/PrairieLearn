@@ -872,31 +872,50 @@ export function AssessmentQuestionTable({
         pluralLabel="submissions"
         downloadButtonOptions={{
           filenameBase: `manual_grading_${questionQid}`,
-          mapRowToData: (row) => ({
-            Instance: row.instance_question.id,
-            [assessment.team_work ? 'Group Name' : 'Name']: row.user_or_group_name || '',
-            [assessment.team_work ? 'UIDs' : 'UID']: row.uid || '',
-            'Grading Status': row.instance_question.requires_manual_grading
-              ? 'Requires grading'
-              : 'Graded',
-            'Assigned Grader': row.assigned_grader_name || '',
-            'Auto Points':
-              row.instance_question.auto_points != null
-                ? row.instance_question.auto_points.toString()
-                : '',
-            'Manual Points':
-              row.instance_question.manual_points != null
-                ? row.instance_question.manual_points.toString()
-                : '',
-            'Total Points':
-              row.instance_question.points != null ? row.instance_question.points.toString() : '',
-            'Score %':
-              row.instance_question.score_perc != null
-                ? row.instance_question.score_perc.toString()
-                : '',
-            'Graded By': row.last_grader_name || '',
-            'Modified At': row.instance_question.modified_at.toISOString(),
-          }),
+          mapRowToData: (row) => [
+            {
+              name: 'Instance',
+              value: row.instance_question.id,
+            },
+            {
+              name: assessment.team_work ? 'Group Name' : 'Name',
+              value: row.user_or_group_name || '',
+            },
+            { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
+            {
+              name: 'Grading Status',
+              value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',
+            },
+            { name: 'Assigned Grader', value: row.assigned_grader_name || '' },
+            {
+              name: 'Auto Points',
+              value:
+                row.instance_question.auto_points != null
+                  ? row.instance_question.auto_points.toString()
+                  : '',
+            },
+            {
+              name: 'Manual Points',
+              value:
+                row.instance_question.manual_points != null
+                  ? row.instance_question.manual_points.toString()
+                  : '',
+            },
+            {
+              name: 'Total Points',
+              value:
+                row.instance_question.points != null ? row.instance_question.points.toString() : '',
+            },
+            {
+              name: 'Score %',
+              value:
+                row.instance_question.score_perc != null
+                  ? row.instance_question.score_perc.toString()
+                  : '',
+            },
+            { name: 'Graded By', value: row.last_grader_name || '' },
+            { name: 'Modified At', value: row.instance_question.modified_at.toISOString() },
+          ],
           hasSelection: true,
         }}
       />

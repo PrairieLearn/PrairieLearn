@@ -4,6 +4,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AssessmentInstanceSchema,
@@ -13,7 +14,6 @@ import {
   FileSchema,
   type GroupConfig,
   GroupSchema,
-  IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,

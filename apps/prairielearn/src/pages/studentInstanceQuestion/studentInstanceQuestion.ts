@@ -5,11 +5,12 @@ import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { type File, IdSchema } from '../../lib/db-types.js';
+import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
