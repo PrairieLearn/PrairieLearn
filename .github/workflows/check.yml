@@ -81,7 +81,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y --no-install-recommends postgresql-17 postgresql-17-pgvector
           sudo systemctl start postgresql.service
-          sleep 2
+          # Wait for PostgreSQL to initialize and create config files
+          until [ -f /etc/postgresql/17/main/pg_hba.conf ]; do sleep 0.5; done
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
