@@ -54,6 +54,7 @@ export function GradingPanel({
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
   const points = custom_points ?? resLocals.instance_question.points ?? 0;
   const submission = grading_job ?? resLocals.submission;
+
   assert(submission, 'submission is missing');
   assert(resLocals.submission, 'resLocals.submission is missing');
 
@@ -76,6 +77,8 @@ export function GradingPanel({
   const instanceQuestionGroupsWithEmpty = instanceQuestionGroups
     ? [...instanceQuestionGroups, emptyGroup]
     : [emptyGroup];
+
+  const graderGuidelines = resLocals.rubric_data?.rubric.grader_guidelines;
 
   return html`
     <form
@@ -188,6 +191,14 @@ export function GradingPanel({
                     </div>
                   </div>
                 </div>
+              </li>
+            `
+          : ''}
+        ${graderGuidelines
+          ? html`
+              <li class="list-group-item">
+                <div class="mb-1">Guidelines:</div>
+                <p class="my-3" style="white-space: pre-line;">${graderGuidelines}</p>
               </li>
             `
           : ''}
@@ -375,7 +386,7 @@ ${submission.feedback?.manual}</textarea
                             type="submit"
                             class="dropdown-item"
                             name="__action"
-                            value="reassign_${grader.user_id}"
+                            value="reassign_${grader.id}"
                           >
                             Assign to: ${grader.name} (${grader.uid})
                           </button>

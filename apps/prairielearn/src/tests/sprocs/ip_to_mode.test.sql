@@ -50,7 +50,7 @@ WITH
     INSERT INTO
       pt_enrollments (user_id)
     SELECT
-      user_id
+      id
     FROM
       new_users
     RETURNING
@@ -64,7 +64,7 @@ WITH
       *
   )
 SELECT
-  user_id
+  id
 FROM
   new_users;
 
