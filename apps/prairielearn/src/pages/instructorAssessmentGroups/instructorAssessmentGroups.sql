@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  group_configs
+  team_configs
 WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
@@ -14,19 +14,19 @@ WITH
       g.id,
       g.name
     FROM
-      groups AS g
+      teams AS g
     WHERE
       g.deleted_at IS NULL
-      AND g.group_config_id = $group_config_id
+      AND g.team_config_id = $group_config_id
   ),
   assessment_group_users AS (
     SELECT
-      g.id AS group_id,
+      g.id AS team_id,
       COUNT(u.uid)::integer AS size,
       jsonb_agg(jsonb_build_object('uid', u.uid, 'id', u.id)) AS users
     FROM
       assessment_groups AS g
-      JOIN group_users AS gu ON (gu.group_id = g.id)
+      JOIN team_users AS gu ON (gu.team_id = g.id)
       JOIN users AS u ON (u.id = gu.user_id)
     GROUP BY
       g.id
@@ -38,7 +38,7 @@ SELECT
   COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
   assessment_groups AS ag
-  LEFT JOIN assessment_group_users AS agu ON (agu.group_id = ag.id)
+  LEFT JOIN assessment_group_users AS agu ON (agu.team_id = ag.id)
 ORDER BY
   ag.id;
 
@@ -46,9 +46,9 @@ ORDER BY
 SELECT
   u.uid
 FROM
-  groups AS g
-  JOIN group_users AS gu ON gu.group_id = g.id
-  AND g.group_config_id = $group_config_id
+  teams AS g
+  JOIN team_users AS gu ON gu.team_id = g.id
+  AND g.team_config_id = $group_config_id
   AND g.deleted_at IS NULL
   RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id -- noqa: CV08
   JOIN users AS u ON u.id = e.user_id

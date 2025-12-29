@@ -145,7 +145,6 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   duration_stat_median: 24 * 60 * 60 * 1000,
   duration_stat_min: 24 * 60 * 60 * 1000,
   duration_stat_thresholds: [],
-  group_work: null,
   honor_code: null,
   id: '2',
   json_allow_real_time_grading: null,
@@ -179,6 +178,7 @@ const minimalStaffAssessment: z.input<typeof StaffAssessmentSchema> = {
   sync_errors: null,
   sync_job_sequence_id: null,
   sync_warnings: null,
+  team_work: null,
   text: null,
   tid: null,
   title: null,
@@ -196,7 +196,6 @@ const minimalStudentAssessment: z.input<typeof StudentAssessmentSchema> = {
   constant_question_value: null,
   course_instance_id: '1',
   deleted_at: null,
-  group_work: null,
   honor_code: null,
   id: '2',
   max_bonus_points: null,
@@ -205,6 +204,7 @@ const minimalStudentAssessment: z.input<typeof StudentAssessmentSchema> = {
   number: 'A1',
   require_honor_code: null,
   shuffle_questions: null,
+  team_work: null,
   text: null,
   tid: null,
   title: null,
@@ -221,7 +221,6 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   date_limit: null,
   duration: null,
   grading_needed: false,
-  group_id: null,
   id: '3',
   include_in_statistics: false,
   last_client_fingerprint_id: null,
@@ -234,6 +233,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   points: null,
   score_perc: null,
   score_perc_pending: 0,
+  team_id: null,
   user_id: null,
 };
 
@@ -246,7 +246,6 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   date_limit: null,
   duration: null,
   grading_needed: false,
-  group_id: null,
   id: '3',
   max_bonus_points: null,
   max_points: null,
@@ -257,6 +256,7 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   points: null,
   score_perc: null,
   score_perc_pending: 0,
+  team_id: null,
   user_id: null,
 };
 
@@ -322,7 +322,6 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   course_instance_id: null,
   date: new Date(),
   enrollment_id: null,
-  group_id: null,
   id: '5',
   institution_id: null,
   new_row: null,
@@ -330,6 +329,7 @@ const minimalStaffAuditEvent: z.input<typeof StaffAuditEventSchema> = {
   row_id: '6',
   subject_user_id: null,
   table_name: 'assessment_instances',
+  team_id: null,
 };
 
 const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> = {

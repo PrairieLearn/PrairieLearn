@@ -19,7 +19,7 @@ export const AssessmentInstanceRowSchema = z.object({
   duration_mins: z.number(),
   duration_secs: z.number(),
   duration: z.string(),
-  group_id: AssessmentInstanceSchema.shape.group_id,
+  group_id: AssessmentInstanceSchema.shape.team_id,
   group_name: GroupSchema.shape.name.nullable(),
   group_roles: z.array(z.string()).nullable(),
   highest_score: z.boolean(),

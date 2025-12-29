@@ -32,23 +32,23 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN pl_courses AS c ON (c.id = ci.course_id)
-  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-  JOIN groups AS g ON (g.group_config_id = gc.id)
+  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN teams AS g ON (g.team_config_id = gc.id)
   JOIN LATERAL (
     SELECT
       *
     FROM
-      group_users AS gu
+      team_users AS gu
     WHERE
-      gu.group_id = g.id
+      gu.team_id = g.id
     LIMIT
       1
   ) AS lgu ON (TRUE)
   JOIN users AS u ON (u.id = lgu.user_id)
 WHERE
   a.id = $assessment_id
-  -- This query only works for assessments with group work enabled
-  AND a.group_work = TRUE
+  -- This query only works for assessments with team work enabled
+  AND a.team_work = TRUE
   AND g.deleted_at IS NULL
 ORDER BY
   u.id;

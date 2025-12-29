@@ -125,7 +125,7 @@ export function InstructorAssessments({
                                 : ''}
                             <a href="${urlPrefix}/assessment/${row.id}/">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>

@@ -358,20 +358,20 @@ router.get(
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       assert(
-        res.locals.assessment_instance.group_id !== null,
-        'assessment_instance.group_id is null',
+        res.locals.assessment_instance.team_id !== null,
+        'assessment_instance.team_id is null',
       );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
         res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
-          res.locals.assessment_instance.group_id,
+          res.locals.assessment_instance.team_id,
           res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
         res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.next_instance_question.id,
-          res.locals.assessment_instance.group_id,
+          res.locals.assessment_instance.team_id,
           res.locals.authz_data.user.id,
         );
       }

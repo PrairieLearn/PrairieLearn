@@ -75,7 +75,7 @@ SELECT
   to_jsonb(u) AS instance_user,
   users_get_displayed_role (u.id, ci.id) AS instance_role,
   to_jsonb(g) AS instance_group,
-  groups_uid_list (g.id) AS instance_group_uid_list,
+  teams_uid_list (g.id) AS instance_group_uid_list,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   jsonb_build_object(
     'id',
@@ -109,8 +109,8 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
@@ -119,7 +119,7 @@ FROM
     $authz_data,
     $req_date,
     ci.display_timezone,
-    a.group_work
+    a.team_work
   ) AS aai ON TRUE
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   CROSS JOIN file_list AS fl

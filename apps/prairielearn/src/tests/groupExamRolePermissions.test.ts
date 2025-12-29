@@ -243,7 +243,7 @@ async function prepareGroup() {
     sql.select_all_assessment_instance,
     AssessmentInstanceSchema,
   );
-  assert.equal(assessmentInstanceResult.group_id, '1');
+  assert.equal(assessmentInstanceResult.team_id, '1');
   const assessmentInstanceId = assessmentInstanceResult.id;
 
   return {

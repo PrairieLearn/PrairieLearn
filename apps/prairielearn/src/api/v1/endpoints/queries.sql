@@ -95,7 +95,7 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_info (a.id) AS gi ON (gi.id = ai.group_id)
+      LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ci.id = $course_instance_id
@@ -369,7 +369,7 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN group_info (a.id) AS gi ON (gi.id = ai.group_id)
+      LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

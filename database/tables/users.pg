@@ -53,8 +53,6 @@ referenced by
     grading_jobs: FOREIGN KEY (deleted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs: FOREIGN KEY (graded_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     grading_jobs: FOREIGN KEY (grading_request_canceled_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_user_roles: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
-    group_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions: FOREIGN KEY (assigned_grader) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     instance_questions: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     instance_questions: FOREIGN KEY (last_grader) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
@@ -76,6 +74,8 @@ referenced by
     query_runs: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     question_score_logs: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     submissions: FOREIGN KEY (auth_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_user_roles: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    team_users: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     user_sessions: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
     variants: FOREIGN KEY (broken_by) REFERENCES users(id)
