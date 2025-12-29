@@ -556,7 +556,7 @@ export async function getJobSequence(
 }
 
 /**
- * Retrieve job sequence IDs with columns matching the provided values.
+ * Retrieve the IDs of job sequences matching the provided filters.
  */
 export async function getJobSequenceIds({
   assessment_question_id,
