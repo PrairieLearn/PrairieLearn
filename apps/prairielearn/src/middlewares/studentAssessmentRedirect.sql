@@ -3,11 +3,11 @@ SELECT
   ai.id
 FROM
   assessment_instances AS ai
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
-  LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = 1

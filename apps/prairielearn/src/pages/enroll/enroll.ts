@@ -45,7 +45,7 @@ router.get('/', [
     const courseInstances = await queryRows(
       sql.select_course_instances_legacy_access,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         req_date: res.locals.req_date,
       },
       CourseInstanceRowSchema,

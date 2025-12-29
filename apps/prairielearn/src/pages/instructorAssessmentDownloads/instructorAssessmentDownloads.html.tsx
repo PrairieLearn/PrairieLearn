@@ -37,7 +37,7 @@ export function InstructorAssessmentDownloads({
   resLocals: UntypedResLocals;
   filenames: Filenames;
 }) {
-  const identity = resLocals.assessment.group_work ? 'group' : 'student';
+  const identity = resLocals.assessment.team_work ? 'group' : 'student';
 
   return PageLayout({
     resLocals,
@@ -142,7 +142,7 @@ export function InstructorAssessmentDownloads({
                     </tr>
                   `
                 : ''}
-              ${resLocals.assessment.group_work
+              ${resLocals.assessment.team_work
                 ? html`
                     <tr>
                       <td>

@@ -5,9 +5,10 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, GroupConfigSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, GroupConfigSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -469,7 +470,7 @@ describe('Group based homework assess control on student side', { timeout: 20_00
       locals.assessment_instance_id = result.id;
       locals.assessmentInstanceURL =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(result.group_id, '1');
+      assert.equal(result.team_id, '1');
     });
   });
 

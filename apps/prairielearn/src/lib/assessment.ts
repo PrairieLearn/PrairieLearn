@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
@@ -14,8 +15,6 @@ import {
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
-  DateFromISOString,
-  IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';
@@ -127,7 +126,7 @@ export async function makeAssessmentInstance({
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
     let group_id: string | null = null;
-    if (assessment.group_work) {
+    if (assessment.team_work) {
       group_id = await getGroupId(assessment.id, user_id);
       if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
@@ -378,13 +377,13 @@ export async function gradeAllAssessmentInstances({
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'grade_all_assessment_instances',
+    description: 'Grade all assessment instances for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
