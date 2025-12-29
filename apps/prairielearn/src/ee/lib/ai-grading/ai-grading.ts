@@ -12,7 +12,7 @@ import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/pos
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { logResponseUsage, logResponsesUsage } from '../../../lib/ai.js';
+import { logResponseUsage, logResponsesUsage } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -403,8 +403,7 @@ export async function aiGrade({
 
         const {
           gradingResponseWithRotationIssue,
-          rotationCorrectionResponses,
-          rotationCorrectionDegrees,
+          rotationCorrections,
           finalGradingResponse,
           rotationCorrectionApplied,
         } = (await run(async () => {
@@ -445,19 +444,18 @@ export async function aiGrade({
           // so we assume all images might need correction. If an image is already upright, the
           // correction process will keep the image the same.
 
-          const { rotatedSubmittedAnswer, rotationCorrectionResponses, rotationCorrectionDegrees } =
-            await correctImagesOrientation({
-              submittedAnswer: submission.submitted_answer,
-              submittedImages,
-              model,
-            });
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            model,
+          });
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
             submission_text,
-            submitted_answer: updatedSubmittedAnswer,
+            submitted_answer: rotatedSubmittedAnswer,
             grader_guidelines: rubric?.grader_guidelines ?? null,
             example_submissions,
             rubric_items,
@@ -477,8 +475,7 @@ export async function aiGrade({
           return {
             rotationCorrectionApplied: true,
             gradingResponseWithRotationIssue: initialResponse,
-            rotationCorrectionResponses,
-            rotationCorrectionDegrees,
+            rotationCorrections,
             finalGradingResponse: finalResponse,
           };
         })) satisfies
@@ -489,15 +486,20 @@ export async function aiGrade({
           | {
               rotationCorrectionApplied: true;
               finalGradingResponse: GenerateObjectResult<any>;
-              rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
-              rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+              rotationCorrections: Record<
+                string,
+                {
+                  degreesRotatedClockwise: ClockwiseRotationDegrees;
+                  response: GenerateObjectResult<any>;
+                }
+              >;
               gradingResponseWithRotationIssue: GenerateObjectResult<any>;
             };
 
         if (rotationCorrectionApplied) {
           logResponsesUsage({
             responses: [
-              ...Object.values(rotationCorrectionResponses),
+              ...Object.values(rotationCorrections).map((r) => r.response),
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ],
@@ -548,8 +550,7 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 gradingResponseWithRotationIssue,
-                rotationCorrectionResponses,
-                rotationCorrectionDegrees,
+                rotationCorrections,
                 gradingResponseWithRotationCorrection: finalGradingResponse,
               });
             } else {
@@ -564,7 +565,7 @@ export async function aiGrade({
               authnUserId: authn_user_id,
               model: model_id,
               gradingResponseWithRotationIssue,
-              rotationCorrectionResponses,
+              rotationCorrections,
               finalGradingResponse,
             });
           });
@@ -610,8 +611,7 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 gradingResponseWithRotationIssue,
-                rotationCorrectionResponses,
-                rotationCorrectionDegrees,
+                rotationCorrections,
                 gradingResponseWithRotationCorrection: finalGradingResponse,
               });
             } else {
@@ -626,7 +626,7 @@ export async function aiGrade({
               authnUserId: authn_user_id,
               model: model_id,
               gradingResponseWithRotationIssue,
-              rotationCorrectionResponses,
+              rotationCorrections,
               finalGradingResponse,
             });
           });
@@ -665,8 +665,7 @@ export async function aiGrade({
           rotationCorrectionApplied,
           finalGradingResponse,
           gradingResponseWithRotationIssue,
-          rotationCorrectionResponses,
-          rotationCorrectionDegrees,
+          rotationCorrections,
         } = (await run(async () => {
           if (!hasImage || !submission.submitted_answer) {
             return {
@@ -700,19 +699,18 @@ export async function aiGrade({
             return { finalGradingResponse: initialResponse, rotationCorrectionApplied: false };
           }
 
-          const { updatedSubmittedAnswer, rotationCorrectionResponses, rotationCorrectionDegrees } =
-            await correctImagesOrientation({
-              submittedAnswer: submission.submitted_answer,
-              submittedImages,
-              model,
-            });
+          const { rotatedSubmittedAnswer, rotationCorrections } = await correctImagesOrientation({
+            submittedAnswer: submission.submitted_answer,
+            submittedImages,
+            model,
+          });
 
           // Regenerate the prompt with the rotation-corrected images.
           input = await generatePrompt({
             questionPrompt,
             questionAnswer,
             submission_text,
-            submitted_answer: updatedSubmittedAnswer,
+            submitted_answer: rotatedSubmittedAnswer,
             grader_guidelines: rubric?.grader_guidelines ?? null,
             example_submissions,
             rubric_items,
@@ -732,8 +730,7 @@ export async function aiGrade({
           return {
             rotationCorrectionApplied: true,
             gradingResponseWithRotationIssue: initialResponse,
-            rotationCorrectionResponses,
-            rotationCorrectionDegrees,
+            rotationCorrections,
             finalGradingResponse: finalResponse,
           };
         })) satisfies
@@ -744,15 +741,20 @@ export async function aiGrade({
           | {
               rotationCorrectionApplied: true;
               finalGradingResponse: GenerateObjectResult<any>;
-              rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
-              rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+              rotationCorrections: Record<
+                string,
+                {
+                  degreesRotatedClockwise: ClockwiseRotationDegrees;
+                  response: GenerateObjectResult<any>;
+                }
+              >;
               gradingResponseWithRotationIssue: GenerateObjectResult<any>;
             };
 
         if (rotationCorrectionApplied) {
           logResponsesUsage({
             responses: [
-              ...Object.values(rotationCorrectionResponses),
+              ...Object.values(rotationCorrections).map((correction) => correction.response),
               gradingResponseWithRotationIssue,
               finalGradingResponse,
             ],
@@ -796,8 +798,7 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 gradingResponseWithRotationIssue,
-                rotationCorrectionResponses,
-                rotationCorrectionDegrees,
+                rotationCorrections,
                 gradingResponseWithRotationCorrection: finalGradingResponse,
               });
             } else {
@@ -812,7 +813,7 @@ export async function aiGrade({
               authnUserId: authn_user_id,
               model: model_id,
               gradingResponseWithRotationIssue,
-              rotationCorrectionResponses,
+              rotationCorrections,
               finalGradingResponse,
             });
           });
@@ -848,8 +849,7 @@ export async function aiGrade({
               await insertAiGradingJobWithRotationCorrection({
                 ...aiGradingJobParams,
                 gradingResponseWithRotationIssue,
-                rotationCorrectionResponses,
-                rotationCorrectionDegrees,
+                rotationCorrections,
                 gradingResponseWithRotationCorrection: finalGradingResponse,
               });
             } else {
@@ -864,7 +864,7 @@ export async function aiGrade({
               authnUserId: authn_user_id,
               model: model_id,
               gradingResponseWithRotationIssue,
-              rotationCorrectionResponses,
+              rotationCorrections,
               finalGradingResponse,
             });
           });

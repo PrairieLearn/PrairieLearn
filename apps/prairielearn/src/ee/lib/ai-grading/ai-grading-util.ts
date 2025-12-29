@@ -23,7 +23,7 @@ import {
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
 import {
   AssessmentQuestionSchema,
   type Course,
@@ -44,6 +44,7 @@ import {
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
+import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
@@ -295,14 +296,75 @@ export function generateSubmissionMessage({
   submission_text: string;
   submitted_answer: Record<string, any> | null;
 }): ModelMessage {
-  const content: UserContent = [];
+  const segments = parseSubmission({
+    submission_text,
+    submitted_answer,
+  });
 
-  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments
-  // to the message content to construct an AI-readable version of the submission.
+  const content: UserContent = segments.map((segment) => {
+    switch (segment.type) {
+      case 'text':
+        return segment;
+      case 'image':
+        if (segment.fileData) {
+          // fileData does not contain the MIME type header, so we add it.
+          return {
+            type: 'image',
+            image: `data:image/jpeg;base64,${segment.fileData}`,
+            providerOptions: {
+              openai: {
+                imageDetail: 'auto',
+              },
+            },
+          };
+        } else {
+          return {
+            type: 'text',
+            text: `Image capture with ${segment.fileName} was not captured.`,
+          };
+        }
+      default:
+        assertNever(segment);
+    }
+  });
+
+  return {
+    role: 'user',
+    content,
+  };
+}
+
+type SubmissionHTMLSegment =
+  | {
+      type: 'text';
+      text: string;
+    }
+  | {
+      type: 'image';
+      fileName: string;
+      /**
+       * Base64-encoded image data. Does not include MIME type header
+       * If null, the image was not found in the submitted answer.
+       */
+      fileData: string | null;
+    };
+
+/**
+ * Helper function that returns parsed text and image segments from the HTML of a student submission.
+ */
+function parseSubmission({
+  submission_text,
+  submitted_answer,
+}: {
+  submission_text: string;
+  submitted_answer: Record<string, any> | null;
+}): SubmissionHTMLSegment[] {
+  const segments: SubmissionHTMLSegment[] = [];
 
   const $submission_html = cheerio.load(submission_text);
   let submissionTextSegment = '';
 
+  // Walk through the submitted HTML from top to bottom, appending alternating text and image segments.
   $submission_html
     .root()
     .find('body')
@@ -312,7 +374,7 @@ export function generateSubmissionMessage({
       if (imageCaptureUUID) {
         if (submissionTextSegment) {
           // Push and reset the current text segment before adding the image.
-          content.push({
+          segments.push({
             type: 'text',
             text: submissionTextSegment.trim(),
           });
@@ -344,42 +406,23 @@ export function generateSubmissionMessage({
           (file: { name: string; contents: string }) => file.name === fileName,
         );
 
-        if (fileData) {
-          // fileData.contents does not contain the MIME type header, so we add it.
-          content.push({
-            type: 'image',
-            image: `data:image/jpeg;base64,${fileData.contents}`,
-            providerOptions: {
-              openai: {
-                imageDetail: 'auto',
-              },
-            },
-          });
-        } else {
-          // If the submitted answer doesn't contain the image, the student likely
-          // didn't capture an image.
-          content.push({
-            type: 'text',
-            text: `Image capture with ${fileName} was not captured.`,
-          });
-          return;
-        }
+        segments.push({
+          type: 'image',
+          fileName: fileData.name,
+          fileData: fileData?.contents,
+        });
       } else {
         submissionTextSegment += $submission_html(node).text();
       }
     });
-
   if (submissionTextSegment) {
-    content.push({
+    segments.push({
       type: 'text',
       text: submissionTextSegment.trim(),
     });
   }
 
-  return {
-    role: 'user',
-    content,
-  };
+  return segments;
 }
 
 /**
@@ -393,41 +436,20 @@ export function extractSubmissionImages({
   submission_text: string;
   submitted_answer: Record<string, any>;
 }): Record<string, string> {
-  const images: Record<string, string> = {};
+  const segments = parseSubmission({
+    submission_text,
+    submitted_answer,
+  });
 
-  const $submission_html = cheerio.load(submission_text);
-
-  $submission_html
-    .root()
-    .find('body')
-    .contents()
-    .each((_, node) => {
-      const imageCaptureUUID = $submission_html(node).data('image-capture-uuid');
-      if (!imageCaptureUUID) {
-        return;
+  const images = segments.reduce(
+    (acc, segment) => {
+      if (segment.type === 'image' && segment.fileData) {
+        acc[segment.fileName] = segment.fileData;
       }
-
-      const fileName = run(() => {
-        // New style, where `<pl-image-capture>` has been specialized for AI grading rendering.
-        const submittedFileName = $submission_html(node).data('file-name');
-        if (submittedFileName && typeof submittedFileName === 'string') {
-          return submittedFileName.trim();
-        }
-
-        // Old style, where we have to pick the filename out of the `data-options` attribute.
-        const options = $submission_html(node).data('options') as Record<string, string> | null;
-
-        return options?.submitted_file_name;
-      });
-
-      const fileData = submitted_answer._files?.find(
-        (file: { name: string; contents: string }) => file.name === fileName,
-      );
-
-      if (fileData) {
-        images[fileData.name] = fileData.contents;
-      }
-    });
+      return acc;
+    },
+    {} as Record<string, string>,
+  );
 
   return images;
 }
@@ -581,8 +603,7 @@ export async function insertAiGradingJob({
  * @param params.model_id
  * @param params.prompt
  * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
- * @param params.rotationCorrectionResponses - The responses of the rotation correction LLM calls for each image.
- * @param params.rotationCorrectionDegrees - The amount of clockwise rotation applied to each image.
+ * @param params.rotationCorrections - For each image, the amount of clockwise rotation applied and the response of the rotation correction LLM call.
  * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
  * @param params.course_id
  * @param params.course_instance_id
@@ -593,8 +614,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   model_id,
   prompt,
   gradingResponseWithRotationIssue,
-  rotationCorrectionResponses,
-  rotationCorrectionDegrees,
+  rotationCorrections,
   gradingResponseWithRotationCorrection,
   course_id,
   course_instance_id,
@@ -604,8 +624,13 @@ export async function insertAiGradingJobWithRotationCorrection({
   model_id: AiGradingModelId;
   prompt: ModelMessage[];
   gradingResponseWithRotationIssue: GenerateObjectResult<any>;
-  rotationCorrectionResponses: Record<string, GenerateObjectResult<any>>;
-  rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees>;
+  rotationCorrections: Record<
+    string,
+    {
+      degreesRotatedClockwise: ClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  >;
   gradingResponseWithRotationCorrection: GenerateObjectResult<any> | GenerateTextResult<any, any>;
   course_id: string;
   course_instance_id?: string;
@@ -626,10 +651,14 @@ export async function insertAiGradingJobWithRotationCorrection({
       usage: gradingResponseWithRotationCorrection.usage,
     });
 
-  for (const rotationCorrectionResponse of Object.values(rotationCorrectionResponses)) {
-    prompt_tokens += rotationCorrectionResponse.usage.inputTokens ?? 0;
-    completion_tokens += rotationCorrectionResponse.usage.outputTokens ?? 0;
-    cost += calculateResponseCost({ model: model_id, usage: rotationCorrectionResponse.usage });
+  const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
+  for (const [filename, { degreesRotatedClockwise, response }] of Object.entries(
+    rotationCorrections,
+  )) {
+    prompt_tokens += response.usage.inputTokens ?? 0;
+    completion_tokens += response.usage.outputTokens ?? 0;
+    cost += calculateResponseCost({ model: model_id, usage: response.usage });
+    rotationCorrectionDegrees[filename] = degreesRotatedClockwise;
   }
 
   await execute(sql.insert_ai_grading_job, {
@@ -789,7 +818,7 @@ async function rotateBase64Image(
  * @param params.image - The base64-encoded image to correct.
  * @param params.model - The LLM to use for determining the correct orientation.
  */
-export async function correctImageOrientation({
+async function correctImageOrientation({
   image,
   model,
 }: {
@@ -817,7 +846,7 @@ export async function correctImageOrientation({
 
   const images = [image, rotated90, rotated180, rotated270];
 
-  const rotationCorrectionDegrees: ClockwiseRotationDegrees[] = [0, 90, 180, 270]; 
+  const rotationCorrectionDegrees: ClockwiseRotationDegrees[] = [0, 90, 180, 270];
 
   for (let i = 1; i <= 4; i++) {
     prompt.push({
@@ -850,7 +879,7 @@ export async function correctImageOrientation({
 
   return {
     correctedImage: images[index],
-    clockwiseRotation: rotationCorrectionDegrees[index],
+    degreesRotatedClockwise: rotationCorrectionDegrees[index],
     response,
   };
 }
@@ -877,19 +906,23 @@ export async function correctImagesOrientation({
 }) {
   if (!submittedAnswer._files) {
     return {
-      updatedSubmittedAnswer: submittedAnswer,
-      rotationCorrectionResponses: {},
-      rotationCorrectionDegrees: {},
+      rotatedSubmittedAnswer: submittedAnswer,
+      rotationCorrections: {},
     };
   }
 
-  const updatedSubmittedAnswer = { ...submittedAnswer };
+  const rotatedSubmittedAnswer = { ...submittedAnswer };
 
-  const rotationCorrectionResponses: Record<string, GenerateObjectResult<any>> = {};
-  const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
+  const rotationCorrections: Record<
+    string,
+    {
+      degreesRotatedClockwise: ClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  > = {};
 
   for (const [filename, image] of Object.entries(submittedImages)) {
-    const { correctedImage, clockwiseRotation, response } = await correctImageOrientation({
+    const { correctedImage, degreesRotatedClockwise, response } = await correctImageOrientation({
       image,
       model,
     });
@@ -899,16 +932,17 @@ export async function correctImagesOrientation({
     );
 
     if (existingIndex !== -1) {
-      updatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
+      rotatedSubmittedAnswer._files[existingIndex].contents = correctedImage;
     }
 
-    rotationCorrectionResponses[filename] = response;
-    rotationCorrectionDegrees[filename] = clockwiseRotation;
+    rotationCorrections[filename] = {
+      degreesRotatedClockwise,
+      response,
+    };
   }
 
   return {
-    updatedSubmittedAnswer,
-    rotationCorrectionResponses,
-    rotationCorrectionDegrees,
+    rotatedSubmittedAnswer,
+    rotationCorrections,
   };
 }
