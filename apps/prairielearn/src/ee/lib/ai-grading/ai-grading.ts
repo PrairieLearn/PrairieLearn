@@ -445,7 +445,7 @@ export async function aiGrade({
           // so we assume all images might need correction. If an image is already upright, the
           // correction process will keep the image the same.
 
-          const { updatedSubmittedAnswer, rotationCorrectionResponses, rotationCorrectionDegrees } =
+          const { rotatedSubmittedAnswer, rotationCorrectionResponses, rotationCorrectionDegrees } =
             await correctImagesOrientation({
               submittedAnswer: submission.submitted_answer,
               submittedImages,
