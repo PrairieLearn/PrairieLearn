@@ -75,6 +75,8 @@ jobs:
       - name: Start Postgres
         run: |
           sudo apt-get update
+          sudo apt install -y postgresql-common ca-certificates
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
           sudo apt-get install -y --no-install-recommends postgresql-17-pgvector
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
