@@ -243,7 +243,7 @@ Clockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
               `
             : html`
                 <br />
-                <pre>All images were upright: true </pre>
+                <pre>All images were upright</pre>
               `}
         </div>
       </div>
