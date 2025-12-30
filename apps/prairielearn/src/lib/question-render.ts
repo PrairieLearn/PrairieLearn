@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { generateSignedToken } from '@prairielearn/signed-token';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentScorePanel } from '../components/AssessmentScorePanel.js';
 import { QuestionFooterContent } from '../components/QuestionContainer.js';
@@ -40,9 +41,7 @@ import {
   GradingJobSchema,
   type GroupConfig,
   GroupConfigSchema,
-  IdSchema,
   type InstanceQuestion,
-  IssueSchema,
   type Question,
   type Submission,
   SubmissionSchema,
@@ -58,19 +57,17 @@ import {
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
-import type { RubricData } from './manualGrading.types.js';
-import type { SubmissionPanels } from './question-render.types.js';
+import {
+  IssueRenderDataSchema,
+  type QuestionUrls,
+  type ResLocalsInstanceQuestionRenderAdded,
+  type ResLocalsQuestionRenderAdded,
+  type SubmissionPanels,
+} from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const IssueRenderDataSchema = IssueSchema.extend({
-  formatted_date: z.string().nullable(),
-  user_uid: z.string().nullable(),
-  user_name: z.string().nullable(),
-  user_email: z.string().nullable(),
-});
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 type InstanceQuestionWithAllowGrade = InstanceQuestion & {
   allow_grade_left_ms: number;
@@ -126,7 +123,7 @@ async function render(
   submission: Submission | null,
   submissions: Submission[],
   question_course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): Promise<questionServers.RenderResultData> {
   const questionModule = questionServers.getModule(question.type);
 
@@ -143,8 +140,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user?.user_id ?? null;
-  const authn_user_id = locals.authn_user?.user_id ?? null;
+  const user_id = locals.user?.id ?? null;
+  const authn_user_id = locals.authn_user?.id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -154,21 +151,6 @@ async function render(
     courseData,
   );
   return data;
-}
-
-interface QuestionUrls {
-  questionUrl: string;
-  newVariantUrl: string;
-  tryAgainUrl: string;
-  reloadUrl: string;
-  clientFilesQuestionUrl: string;
-  calculationQuestionFileUrl: string;
-  calculationQuestionGeneratedFileUrl: string;
-  clientFilesCourseUrl: string;
-  clientFilesQuestionGeneratedFileUrl: string;
-  baseUrl: string;
-  externalImageCaptureUrl: string | null;
-  workspaceUrl?: string;
 }
 
 /**
@@ -409,31 +391,6 @@ function buildLocals({
   return locals;
 }
 
-// All properties that are added to the locals by `getAndRenderVariant`.
-interface ResLocalsQuestionRenderAdded {
-  question_is_shared: boolean;
-  variant: Variant;
-  urls: QuestionUrls;
-  showTrueAnswer: boolean;
-  submission: SubmissionForRender | null;
-  submissions: SubmissionForRender[];
-  effectiveQuestionType: questionServers.EffectiveQuestionType;
-  extraHeadersHtml: string;
-  questionHtml: string;
-  submissionHtmls: string[];
-  answerHtml: string;
-  issues: IssueRenderData[];
-  questionJsonBase64: string | undefined;
-}
-
-interface ResLocalsInstanceQuestionRenderAdded {
-  rubric_data: RubricData | null;
-}
-
-export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
-export type ResLocalsInstanceQuestionRender = ResLocalsQuestionRender &
-  ResLocalsInstanceQuestionRenderAdded;
-
 /**
  * Render all information needed for a question.
  *
@@ -513,8 +470,8 @@ export async function getAndRenderVariant(
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
-        locals.user.user_id,
-        locals.authn_user.user_id,
+        locals.user.id,
+        locals.authn_user.id,
         locals.course_instance ?? null,
         locals.course,
         question_course,
@@ -760,7 +717,6 @@ export async function renderPanelsForSubmission({
 
   const locals = {
     urlPrefix,
-    plainUrlPrefix: config.urlPrefix,
     questionRenderContext,
     ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
     ...buildLocals({
@@ -867,9 +823,9 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       const group_info = await run(async () => {
-        if (!assessment_instance?.group_id || !group_config) return null;
+        if (!assessment_instance?.team_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance.group_id, group_config);
+        return await getGroupInfo(assessment_instance.team_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({
@@ -900,14 +856,14 @@ export async function renderPanelsForSubmission({
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.group_id && group_config?.has_roles) {
+      if (assessment_instance?.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
-          assessment_instance.group_id,
-          user.user_id,
+          assessment_instance.team_id,
+          user.id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user.user_id))
+          (await getUserRoles(assessment_instance.team_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

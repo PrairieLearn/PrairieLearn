@@ -1,4 +1,4 @@
-import type { OpenAIChatLanguageModelOptions } from '@ai-sdk/openai';
+import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import {
   type EmbeddingModel,
   type GenerateTextResult,
@@ -16,6 +16,7 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type OpenAIModelId,
@@ -29,11 +30,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import {
-  IdSchema,
-  type Issue,
-  QuestionGenerationContextEmbeddingSchema,
-} from '../../lib/db-types.js';
+import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
@@ -169,7 +166,7 @@ export async function makeContext(
       ? await queryRows(
           sql.select_documents_by_chunk_id,
           {
-            doc_path: 'docs/elements.md',
+            doc_path_pattern: 'docs/elements/%',
             chunk_ids: mandatoryElementNames,
           },
           QuestionGenerationContextEmbeddingSchema,
@@ -190,7 +187,7 @@ export async function makeContext(
     sql.select_nearby_documents_from_file,
     {
       embedding: vectorToString(embedding),
-      doc_path: 'docs/elements.md',
+      doc_path_pattern: 'docs/elements/%',
       limit: 1,
     },
     QuestionGenerationContextEmbeddingSchema,
@@ -377,10 +374,11 @@ export async function generateQuestion({
   usage: LanguageModelUsage;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
+    userId,
     authnUserId,
+    courseId,
   });
 
   let usage = emptyUsage();
@@ -419,7 +417,7 @@ export async function generateQuestion({
       providerOptions: {
         openai: {
           safetyIdentifier: openAiUserFromAuthn(authnUserId),
-        } satisfies OpenAIChatLanguageModelOptions,
+        } satisfies OpenAIResponsesProviderOptions,
       },
     });
 
@@ -433,7 +431,10 @@ export async function generateQuestion({
       errors = ['Please generate a question.html file.'];
     }
 
-    const files = {};
+    const files: {
+      'question.html'?: string;
+      'server.py'?: string;
+    } = {};
     if (results.html) {
       files['question.html'] = results.html;
     }
@@ -646,7 +647,7 @@ async function regenInternal({
     providerOptions: {
       openai: {
         safetyIdentifier: openAiUserFromAuthn(authnUserId),
-      } satisfies OpenAIChatLanguageModelOptions,
+      } satisfies OpenAIResponsesProviderOptions,
     },
   });
 
@@ -793,10 +794,11 @@ export async function regenerateQuestion({
   usage: LanguageModelUsage | undefined;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
+    userId,
     authnUserId,
+    courseId,
   });
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });

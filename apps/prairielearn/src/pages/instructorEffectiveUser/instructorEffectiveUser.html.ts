@@ -9,6 +9,7 @@ import {
   CoursePermissionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -24,7 +25,7 @@ export function InstructorEffectiveUser({
   ipAddress,
   courseRoles,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
@@ -171,8 +172,8 @@ export function InstructorEffectiveUser({
                   id="changeEffectiveCourseRole"
                   name="pl_requested_course_role"
                 >
-                  ${courseRoles.available_course_roles
-                    .toReversed()
+                  ${[...courseRoles.available_course_roles]
+                    .reverse()
                     .map((available_course_role) =>
                       available_course_role === authz_data.course_role
                         ? html`
@@ -228,8 +229,8 @@ export function InstructorEffectiveUser({
                         id="changeEffectiveCourseInstanceRole"
                         name="pl_requested_course_instance_role"
                       >
-                        ${courseRoles.available_course_instance_roles
-                          .toReversed()
+                        ${[...courseRoles.available_course_instance_roles]
+                          .reverse()
                           .map((available_course_instance_role) =>
                             available_course_instance_role === authz_data.course_instance_role
                               ? html`

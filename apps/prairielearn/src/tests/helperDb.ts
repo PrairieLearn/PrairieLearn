@@ -21,7 +21,7 @@ const POSTGRES_INIT_CONNECTION_STRING = 'postgres://postgres@localhost/postgres'
 const POSTGRES_DATABASE = 'pltest';
 const POSTGRES_DATABASE_TEMPLATE = 'pltest_template';
 
-const postgresTestUtils = sqldb.makePostgresTestUtils({
+export const postgresTestUtils = sqldb.makePostgresTestUtils({
   user: POSTGRES_USER,
   host: POSTGRES_HOST,
   defaultDatabase: 'postgres',
@@ -47,7 +47,7 @@ async function runMigrationsAndSprocs(dbName: string, runMigrations: boolean): P
     errorOnUnusedParameters: true,
   };
 
-  function idleErrorHandler(err) {
+  function idleErrorHandler(err: Error) {
     throw err;
   }
   await sqldb.initAsync(pgConfig, idleErrorHandler);
@@ -82,16 +82,18 @@ async function createFromTemplate({
   dbName,
   dbTemplateName,
   dropFirst,
+  configurePool = true,
 }: {
   dbName: string;
   dbTemplateName: string;
   dropFirst: boolean;
-}): Promise<void> {
-  await postgresTestUtils.createDatabase({
+  configurePool?: boolean;
+}) {
+  return await postgresTestUtils.createDatabase({
     dropExistingDatabase: dropFirst,
     database: dbName,
     templateDatabase: dbTemplateName,
-    configurePool: true,
+    configurePool,
     prepare: () => runMigrationsAndSprocs(dbName, false),
   });
 }
@@ -112,20 +114,29 @@ async function databaseExists(dbName: string): Promise<boolean> {
   return existsResult;
 }
 
-async function setupDatabases(): Promise<void> {
+export async function setupDatabases({ configurePool = true }: { configurePool?: boolean } = {}) {
   const templateExists = await databaseExists(POSTGRES_DATABASE_TEMPLATE);
   const dbName = getDatabaseNameForCurrentWorker();
   if (!templateExists) {
     await createTemplate();
   }
 
-  await createFromTemplate({ dbName, dbTemplateName: POSTGRES_DATABASE_TEMPLATE, dropFirst: true });
-
-  // Ideally this would happen only over in `helperServer`, but we need to use
-  // the same database details, so this is a convenient place to do it.
-  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
-    throw err;
+  const poolConfig = await createFromTemplate({
+    dbName,
+    dbTemplateName: POSTGRES_DATABASE_TEMPLATE,
+    dropFirst: true,
+    configurePool,
   });
+
+  if (configurePool) {
+    // Ideally this would happen only over in `helperServer`, but we need to use
+    // the same database details, so this is a convenient place to do it.
+    await namedLocks.init(poolConfig, (err) => {
+      throw err;
+    });
+  }
+
+  return poolConfig;
 }
 
 async function runMigrations(
@@ -223,7 +234,7 @@ export async function testMigration<T>({
 }): Promise<void> {
   const dbName = getDatabaseNameForCurrentWorker();
 
-  await postgresTestUtils.createDatabase({
+  const poolConfig = await postgresTestUtils.createDatabase({
     dropExistingDatabase: true,
     database: dbName,
     configurePool: true,
@@ -231,7 +242,7 @@ export async function testMigration<T>({
 
   // We have to do this here so that `migrations.init` can successfully
   // acquire a lock.
-  await namedLocks.init(postgresTestUtils.getPoolConfig(), (err) => {
+  await namedLocks.init(poolConfig, (err) => {
     throw err;
   });
 
@@ -272,7 +283,7 @@ export async function resetDatabase(): Promise<void> {
 }
 
 export function getDatabaseNameForCurrentWorker(): string {
-  return postgresTestUtils.getDatabaseNameForCurrentMochaWorker();
+  return postgresTestUtils.getDatabaseNameForCurrentTestWorker();
 }
 
 class RollbackTransactionError extends Error {

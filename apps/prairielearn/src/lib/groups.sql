@@ -2,7 +2,7 @@
 SELECT
   gc.*
 FROM
-  group_configs AS gc
+  team_configs AS gc
 WHERE
   gc.assessment_id = $assessment_id
   AND gc.deleted_at IS NULL;
@@ -17,8 +17,8 @@ WITH
           6
       )::integer + 1 AS group_number
     FROM
-      groups AS g
-      JOIN group_configs AS gc ON (gc.id = g.group_config_id)
+      teams AS g
+      JOIN team_configs AS gc ON (gc.id = g.team_config_id)
     WHERE
       gc.assessment_id = $assessment_id
       AND g.name ~ '^group[0-9]+$'
@@ -30,7 +30,7 @@ WITH
   ),
   create_group AS (
     INSERT INTO
-      groups (name, group_config_id, course_instance_id) (
+      teams (name, team_config_id, course_instance_id) (
         SELECT
           COALESCE(
             NULLIF($group_name::text, ''),
@@ -47,31 +47,34 @@ WITH
           gc.id,
           gc.course_instance_id
         FROM
-          group_configs AS gc
+          team_configs AS gc
         WHERE
           gc.assessment_id = $assessment_id
           AND gc.deleted_at IS NULL
       )
     RETURNING
-      id,
-      group_config_id
+      *
+  ),
+  log_group AS (
+    INSERT INTO
+      team_logs (authn_user_id, team_id, action)
+    SELECT
+      $authn_user_id,
+      cg.id,
+      'create'
+    FROM
+      create_group AS cg
   )
-INSERT INTO
-  group_logs (authn_user_id, group_id, action)
 SELECT
-  $authn_user_id,
-  cg.id,
-  'create'
+  *
 FROM
-  create_group AS cg
-RETURNING
-  group_id;
+  create_group;
 
 -- BLOCK select_group
 SELECT
   *
 FROM
-  groups
+  teams
 WHERE
   id = $group_id;
 
@@ -79,10 +82,10 @@ WHERE
 SELECT
   u.*
 FROM
-  group_users AS gu
-  JOIN users AS u ON (u.user_id = gu.user_id)
+  team_users AS gu
+  JOIN users AS u ON (u.id = gu.user_id)
 WHERE
-  gu.group_id = $group_id;
+  gu.team_id = $group_id;
 
 -- BLOCK get_group_roles
 WITH
@@ -90,31 +93,31 @@ WITH
     SELECT
       gc.assessment_id
     FROM
-      group_configs AS gc
-      JOIN groups AS g ON g.group_config_id = gc.id
+      team_configs AS gc
+      JOIN teams AS g ON g.team_config_id = gc.id
     WHERE
       g.id = $group_id
   ),
   count_group_user_per_role AS (
     SELECT
-      gur.group_role_id,
+      gur.team_role_id,
       COUNT(gur.id) AS count
     FROM
-      group_user_roles AS gur
+      team_user_roles AS gur
     WHERE
-      gur.group_id = $group_id
+      gur.team_id = $group_id
     GROUP BY
-      gur.group_role_id
+      gur.team_role_id
   )
 SELECT
   gr.*,
   COALESCE(gur.count, 0)::int AS count
 FROM
   get_assessment_id
-  JOIN group_roles AS gr ON (
+  JOIN team_roles AS gr ON (
     gr.assessment_id = get_assessment_id.assessment_id
   )
-  LEFT JOIN count_group_user_per_role AS gur ON gur.group_role_id = gr.id
+  LEFT JOIN count_group_user_per_role AS gur ON gur.team_role_id = gr.id
 ORDER BY
   minimum DESC;
 
@@ -122,11 +125,11 @@ ORDER BY
 SELECT
   gr.*
 FROM
-  group_roles AS gr
-  JOIN group_user_roles AS gur ON gur.group_role_id = gr.id
+  team_roles AS gr
+  JOIN team_user_roles AS gur ON gur.team_role_id = gr.id
 WHERE
   gur.user_id = $user_id
-  AND gur.group_id = $group_id;
+  AND gur.team_id = $group_id;
 
 -- BLOCK select_question_permissions
 SELECT
@@ -137,10 +140,10 @@ FROM
   JOIN assessment_question_role_permissions AS aqrp ON (
     aqrp.assessment_question_id = iq.assessment_question_id
   )
-  JOIN group_user_roles AS gur ON gur.group_role_id = aqrp.group_role_id
+  JOIN team_user_roles AS gur ON gur.team_role_id = aqrp.team_role_id
 WHERE
   iq.id = $instance_question_id
-  AND gur.group_id = $group_id
+  AND gur.team_id = $group_id
   AND gur.user_id = $user_id;
 
 -- BLOCK get_role_assignments
@@ -148,25 +151,25 @@ SELECT
   gu.user_id,
   u.uid,
   gr.role_name,
-  gr.id AS group_role_id
+  gr.id AS team_role_id
 FROM
-  group_users AS gu
-  JOIN users u ON (gu.user_id = u.user_id)
-  JOIN group_user_roles gur ON (
-    gu.group_id = gur.group_id
+  team_users AS gu
+  JOIN users u ON (gu.user_id = u.id)
+  JOIN team_user_roles gur ON (
+    gu.team_id = gur.team_id
     AND gu.user_id = gur.user_id
   )
-  JOIN group_roles gr ON (gur.group_role_id = gr.id)
+  JOIN team_roles gr ON (gur.team_role_id = gr.id)
 WHERE
-  gu.group_id = $group_id;
+  gu.team_id = $group_id;
 
 -- BLOCK get_group_id
 SELECT
   g.id
 FROM
-  groups AS g
-  JOIN group_configs AS gc ON g.group_config_id = gc.id
-  JOIN group_users AS gu ON gu.group_id = g.id
+  teams AS g
+  JOIN team_configs AS gc ON g.team_config_id = gc.id
+  JOIN team_users AS gu ON gu.team_id = g.id
 WHERE
   gc.assessment_id = $assessment_id
   AND gu.user_id = $user_id
@@ -176,8 +179,8 @@ WHERE
 SELECT
   g.*
 FROM
-  groups AS g
-  JOIN group_configs AS gc ON g.group_config_id = gc.id
+  teams AS g
+  JOIN team_configs AS gc ON g.team_config_id = gc.id
 WHERE
   g.name = $group_name
   AND gc.assessment_id = $assessment_id
@@ -193,15 +196,15 @@ SELECT
     SELECT
       COUNT(*)
     FROM
-      group_users AS gu
+      team_users AS gu
     WHERE
-      gu.group_id = g.id
+      gu.team_id = g.id
   )::int AS cur_size,
   gc.maximum AS max_size,
   gc.has_roles
 FROM
-  groups AS g
-  JOIN group_configs AS gc ON g.group_config_id = gc.id
+  teams AS g
+  JOIN team_configs AS gc ON g.team_config_id = gc.id
 WHERE
   g.id = $group_id
   AND gc.assessment_id = $assessment_id
@@ -214,14 +217,14 @@ FOR NO KEY UPDATE OF
 WITH
   users_per_group_role AS (
     SELECT
-      gur.group_role_id,
+      gur.team_role_id,
       COUNT(*) AS user_count
     FROM
-      group_user_roles AS gur
+      team_user_roles AS gur
     WHERE
-      gur.group_id = $group_id
+      gur.team_id = $group_id
     GROUP BY
-      gur.group_role_id
+      gur.team_role_id
   ),
   suitable_group_roles AS (
     SELECT
@@ -237,8 +240,8 @@ WITH
       GREATEST(0, gr.minimum - COALESCE(upgr.user_count, 0)) AS needed_users,
       (gr.maximum - COALESCE(upgr.user_count, 0)) AS remaining
     FROM
-      group_roles AS gr
-      LEFT JOIN users_per_group_role AS upgr ON (upgr.group_role_id = gr.id)
+      team_roles AS gr
+      LEFT JOIN users_per_group_role AS upgr ON (upgr.team_role_id = gr.id)
     WHERE
       gr.assessment_id = $assessment_id
       AND (
@@ -266,7 +269,7 @@ LIMIT
 WITH
   inserted_user AS (
     INSERT INTO
-      group_users (group_id, user_id, group_config_id)
+      team_users (team_id, user_id, team_config_id)
     VALUES
       ($group_id, $user_id, $group_config_id)
     RETURNING
@@ -274,10 +277,10 @@ WITH
   ),
   inserted_user_roles AS (
     INSERT INTO
-      group_user_roles (user_id, group_id, group_role_id)
+      team_user_roles (user_id, team_id, team_role_id)
     SELECT
       iu.user_id,
-      iu.group_id,
+      iu.team_id,
       $group_role_id
     FROM
       inserted_user AS iu
@@ -292,14 +295,14 @@ WITH
       modified_at = NOW()
     WHERE
       ai.assessment_id = $assessment_id
-      AND ai.group_id = $group_id
+      AND ai.team_id = $group_id
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action, roles)
+  team_logs (authn_user_id, user_id, team_id, action, roles)
 SELECT
   $authn_user_id,
   iu.user_id,
-  iu.group_id,
+  iu.team_id,
   'join',
   CASE
     WHEN gr.id IS NOT NULL THEN ARRAY[gr.role_name]
@@ -307,23 +310,23 @@ SELECT
 FROM
   inserted_user AS iu
   LEFT JOIN inserted_user_roles AS ur ON TRUE
-  LEFT JOIN group_roles AS gr ON ur.group_role_id = gr.id;
+  LEFT JOIN team_roles AS gr ON ur.team_role_id = gr.id;
 
 -- BLOCK delete_non_required_roles
-DELETE FROM group_user_roles gur USING group_roles AS gr
+DELETE FROM team_user_roles gur USING team_roles AS gr
 WHERE
-  gur.group_id = $group_id
-  AND gur.group_role_id = gr.id
+  gur.team_id = $group_id
+  AND gur.team_role_id = gr.id
   AND gr.assessment_id = $assessment_id
   AND gr.minimum = 0;
 
 -- BLOCK delete_group_users
 WITH
   deleted_group_users AS (
-    DELETE FROM group_users
+    DELETE FROM team_users
     WHERE
       user_id = $user_id
-      AND group_id = $group_id
+      AND team_id = $group_id
   ),
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
@@ -331,10 +334,10 @@ WITH
       modified_at = NOW()
     WHERE
       ai.assessment_id = $assessment_id
-      AND ai.group_id = $group_id
+      AND ai.team_id = $group_id
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action)
+  team_logs (authn_user_id, user_id, team_id, action)
 VALUES
   ($authn_user_id, $user_id, $group_id, 'leave');
 
@@ -343,28 +346,28 @@ WITH
   json_roles AS (
     SELECT
       gu.user_id,
-      gu.group_id,
-      (role_assignment ->> 'group_role_id')::bigint AS group_role_id
+      gu.team_id,
+      (role_assignment ->> 'team_role_id')::bigint AS team_role_id
     FROM
       JSON_ARRAY_ELEMENTS($role_assignments::json) AS role_assignment
-      JOIN group_users AS gu ON gu.group_id = $group_id
+      JOIN team_users AS gu ON gu.team_id = $group_id
       AND gu.user_id = (role_assignment ->> 'user_id')::bigint
   ),
   assign_new_group_roles AS (
     INSERT INTO
-      group_user_roles (group_id, user_id, group_role_id)
+      team_user_roles (team_id, user_id, team_role_id)
     SELECT
-      jr.group_id,
+      jr.team_id,
       jr.user_id,
-      jr.group_role_id
+      jr.team_role_id
     FROM
       json_roles jr
     ON CONFLICT DO NOTHING
   ),
   deleted_group_users_roles AS (
-    DELETE FROM group_user_roles AS gur
+    DELETE FROM team_user_roles AS gur
     WHERE
-      gur.group_id = $group_id
+      gur.team_id = $group_id
       AND NOT EXISTS (
         SELECT
           1
@@ -372,11 +375,11 @@ WITH
           json_roles jr
         WHERE
           gur.user_id = jr.user_id
-          AND gur.group_role_id = jr.group_role_id
+          AND gur.team_role_id = jr.team_role_id
       )
   )
 INSERT INTO
-  group_logs (authn_user_id, user_id, group_id, action, roles)
+  team_logs (authn_user_id, user_id, team_id, action, roles)
 SELECT
   $authn_user_id,
   gu.user_id,
@@ -390,11 +393,11 @@ SELECT
     ARRAY[]::text[]
   )
 FROM
-  group_users AS gu
+  team_users AS gu
   LEFT JOIN json_roles AS jr ON jr.user_id = gu.user_id
-  LEFT JOIN group_roles AS gr ON jr.group_role_id = gr.id
+  LEFT JOIN team_roles AS gr ON jr.team_role_id = gr.id
 WHERE
-  gu.group_id = $group_id
+  gu.team_id = $group_id
 GROUP BY
   gu.user_id;
 
@@ -404,8 +407,8 @@ WITH
     SELECT
       g.id
     FROM
-      groups AS g
-      JOIN group_configs AS gc ON (g.group_config_id = gc.id)
+      teams AS g
+      JOIN team_configs AS gc ON (g.team_config_id = gc.id)
     WHERE
       gc.assessment_id = $assessment_id
       AND g.id = $group_id
@@ -415,9 +418,9 @@ WITH
       g
   ),
   deleted_group_users AS (
-    DELETE FROM group_users AS gu
+    DELETE FROM team_users AS gu
     WHERE
-      gu.group_id IN (
+      gu.team_id IN (
         SELECT
           gd.id
         FROM
@@ -425,21 +428,21 @@ WITH
       )
     RETURNING
       user_id,
-      group_id
+      team_id
   ),
   deleted_group_users_logs AS (
     INSERT INTO
-      group_logs (authn_user_id, user_id, group_id, action)
+      team_logs (authn_user_id, user_id, team_id, action)
     SELECT
       $authn_user_id,
       user_id,
-      group_id,
+      team_id,
       'leave'
     FROM
       deleted_group_users
   ),
   deleted_group AS (
-    UPDATE groups AS g
+    UPDATE teams AS g
     SET
       deleted_at = NOW()
     FROM
@@ -451,7 +454,7 @@ WITH
   ),
   deleted_group_log AS (
     INSERT INTO
-      group_logs (authn_user_id, group_id, action)
+      team_logs (authn_user_id, team_id, action)
     SELECT
       $authn_user_id,
       id,
@@ -465,7 +468,7 @@ WITH
       modified_at = NOW()
     WHERE
       ai.assessment_id = $assessment_id
-      AND ai.group_id = $group_id
+      AND ai.team_id = $group_id
   )
 SELECT
   id
@@ -478,17 +481,17 @@ WITH
     SELECT
       g.id
     FROM
-      group_configs AS gc
-      JOIN groups AS g ON (g.group_config_id = gc.id)
+      team_configs AS gc
+      JOIN teams AS g ON (g.team_config_id = gc.id)
     WHERE
       gc.assessment_id = $assessment_id
       AND g.deleted_at IS NULL
       AND gc.deleted_at IS NULL
   ),
   deleted_group_users AS (
-    DELETE FROM group_users
+    DELETE FROM team_users
     WHERE
-      group_id IN (
+      team_id IN (
         SELECT
           id
         FROM
@@ -496,21 +499,21 @@ WITH
       )
     RETURNING
       user_id,
-      group_id
+      team_id
   ),
   deleted_group_users_logs AS (
     INSERT INTO
-      group_logs (authn_user_id, user_id, group_id, action)
+      team_logs (authn_user_id, user_id, team_id, action)
     SELECT
       $authn_user_id,
       user_id,
-      group_id,
+      team_id,
       'leave'
     FROM
       deleted_group_users
   ),
   deleted_groups AS (
-    UPDATE groups AS g
+    UPDATE teams AS g
     SET
       deleted_at = NOW()
     FROM
@@ -528,10 +531,10 @@ WITH
       deleted_groups AS dg
     WHERE
       ai.assessment_id = $assessment_id
-      AND ai.group_id = dg.id
+      AND ai.team_id = dg.id
   )
 INSERT INTO
-  group_logs (authn_user_id, group_id, action)
+  team_logs (authn_user_id, team_id, action)
 SELECT
   $authn_user_id,
   id,

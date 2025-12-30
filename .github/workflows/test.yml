@@ -35,7 +35,7 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -99,7 +99,7 @@ jobs:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -142,7 +142,9 @@ jobs:
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
-        run: yarn install --immutable --inline-builds
+        run: |
+          yarn install --immutable --inline-builds
+          yarn playwright install chromium --with-deps
         env:
           # Disable hardened mode to eke out a little more speed.
           YARN_ENABLE_HARDENED_MODE: 0
@@ -176,19 +178,31 @@ jobs:
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
 
-      - name: Test JavaScript code
+      - name: Vitest suite
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
 
-      - name: Upload blob report to GitHub Actions Artifacts
+      - name: Playwright suite
+        run: |
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
+      - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
         uses: actions/upload-artifact@v5
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
+          include-hidden-files: true
+          retention-days: 1
+      - name: Upload Playwright blob report to GitHub Actions Artifacts
+        if: ${{ !cancelled() }}
+        uses: actions/upload-artifact@v5
+        with:
+          name: playwright-blob-report-${{ matrix.shardIndex }}
+          path: apps/prairielearn/test-results/blob-report/*
           include-hidden-files: true
           retention-days: 1
 
@@ -198,7 +212,7 @@ jobs:
     needs: [test-prairielearn-native]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -207,18 +221,33 @@ jobs:
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
+        # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
-      - name: Download blob reports from GitHub Actions Artifacts
+      - name: Download Vitest blob reports from GitHub Actions Artifacts
         uses: actions/download-artifact@v6
         with:
           path: .vitest-reports
           pattern: blob-report-*
           merge-multiple: true
 
-      - name: Merge reports
+      - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
+      - name: Download Playwright blob reports from GitHub Actions Artifacts
+        uses: actions/download-artifact@v6
+        with:
+          path: apps/prairielearn/test-results/blob-report
+          pattern: playwright-blob-report-*
+          merge-multiple: true
+      - name: Merge Playwright reports
+        run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.5.1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
+      - name: Upload HTML report
+        uses: actions/upload-artifact@v5
+        with:
+          name: html-report--attempt-${{ github.run_attempt }}
+          path: playwright-report
+          retention-days: 7

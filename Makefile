@@ -5,10 +5,9 @@ build:
 build-sequential:
 	@yarn turbo run --concurrency 1 build
 
-# We use the system Python due to this bug: https://github.com/astral-sh/python-build-standalone/issues/758
 venv-setup:
 	@[ -f .venv/bin/python3 ] || \
-		uv venv --python-preference only-system --python 3.10 --seed .venv || \
+		uv venv --python-preference only-managed --python 3.10 --seed .venv || \
 		python3 -m venv --upgrade-deps .venv
 
 # Note the `--compile-bytecode` flag, which is needed to ensure fast
@@ -31,6 +30,11 @@ python-deps: venv-setup
 	@uv pip install . --group docs --group dev --compile-bytecode --python .venv || \
 		.venv/bin/python3 -m pip install . --group docs --group dev
 	@rm -rf build
+
+# This is a separate target since we can't currently install the necessary
+# browsers in the development Docker image.
+e2e-deps:
+	@yarn playwright install chromium --with-deps
 
 deps:
 	@yarn
@@ -77,6 +81,9 @@ start-redis:
 start-s3rver:
 	@scripts/start_s3rver.sh
 
+# Runs additional tests that may not work in the container.
+test-all: test-js test-python test-e2e
+
 test: test-js test-python
 test-js: start-support
 	@yarn test
@@ -89,6 +96,8 @@ test-python: python-deps
 	@python3 -m coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
+test-e2e: start-support
+	@yarn workspace @prairielearn/prairielearn run test:e2e
 
 check-dependencies:
 	@yarn depcruise apps/*/src apps/*/assets packages/*/src
@@ -161,7 +170,7 @@ typecheck-js:
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
-	@yarn postgrestools check .
+	@yarn postgres-language-server check .
 
 changeset:
 	@yarn changeset
@@ -171,8 +180,8 @@ lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs: python-deps
 	@.venv/bin/mkdocs build --strict
-preview-docs: python-deps
-	@.venv/bin/mkdocs serve
+dev-docs: python-deps
+	@.venv/bin/mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2

@@ -13,8 +13,10 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
-import { type Course, CourseSchema } from '../lib/db-types.js';
+import { calculateCourseRolePermissions } from '../lib/authz-data-lib.js';
+import { type Course, CourseSchema, type EnumCourseRole } from '../lib/db-types.js';
 
 import { insertAuditLog } from './audit-log.js';
 
@@ -23,13 +25,17 @@ const sql = loadSqlEquiv(import.meta.url);
 const CourseWithPermissionsSchema = CourseSchema.extend({
   permissions_course: z.object({
     course_role: z.enum(['None', 'Previewer', 'Viewer', 'Editor', 'Owner']),
-    has_course_permission_own: z.boolean(),
-    has_course_permission_edit: z.boolean(),
-    has_course_permission_view: z.boolean(),
-    has_course_permission_preview: z.boolean(),
   }),
 });
-export type CourseWithPermissions = z.infer<typeof CourseWithPermissionsSchema>;
+export type CourseWithPermissions = Course & {
+  permissions_course: {
+    course_role: EnumCourseRole;
+    has_course_permission_own: boolean;
+    has_course_permission_edit: boolean;
+    has_course_permission_view: boolean;
+    has_course_permission_preview: boolean;
+  };
+};
 
 export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
@@ -50,7 +56,7 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
       env: process.env,
     });
     return stdout.trim();
-  } catch (err) {
+  } catch (err: any) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
       data: {
         stdout: err.stdout,
@@ -106,13 +112,40 @@ export async function selectCoursesWithStaffAccess({
 }: {
   user_id: string;
   is_administrator: boolean;
-}) {
-  const courses = await queryRows(
+}): Promise<CourseWithPermissions[]> {
+  const rawCourses = await queryRows(
     sql.select_courses_with_staff_access,
     { user_id, is_administrator },
     CourseWithPermissionsSchema,
   );
-  return courses;
+
+  // Users always have access to the example course.
+  const courses = rawCourses.map((c) => {
+    const course_role = run(() => {
+      if (c.example_course && ['None', 'Previewer'].includes(c.permissions_course.course_role)) {
+        return 'Viewer';
+      }
+      return c.permissions_course.course_role;
+    });
+    return {
+      ...c,
+      permissions_course: {
+        course_role,
+        ...calculateCourseRolePermissions(course_role),
+      },
+    };
+  });
+  if (!is_administrator) return courses;
+
+  // The above query isn't aware of administrator status. We need to update the
+  // permissions to reflect that the user is an administrator.
+  return courses.map((c) => ({
+    ...c,
+    permissions_course: {
+      course_role: 'Owner',
+      ...calculateCourseRolePermissions('Owner'),
+    },
+  })) satisfies CourseWithPermissions[];
 }
 
 /**
@@ -155,7 +188,7 @@ export async function deleteCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course_id,
       new_state: deletedCourse,
       course_id,
@@ -196,7 +229,7 @@ export async function insertCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course.id,
       new_state: course,
       institution_id,
@@ -225,7 +258,13 @@ export async function updateCourseShowGettingStarted({
 /**
  * Update the `sharing_name` column for a course.
  */
-export async function updateCourseSharingName({ course_id, sharing_name }): Promise<void> {
+export async function updateCourseSharingName({
+  course_id,
+  sharing_name,
+}: {
+  course_id: string;
+  sharing_name: string;
+}): Promise<void> {
   await execute(sql.update_course_sharing_name, {
     course_id,
     sharing_name,

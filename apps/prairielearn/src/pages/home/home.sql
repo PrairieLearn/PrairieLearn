@@ -28,15 +28,15 @@ WITH
         '[]'::jsonb
       ) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       LEFT JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
       ),
       LATERAL (
         SELECT
-          min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date
+          COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+          COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
         FROM
           course_instance_access_rules AS ar
         WHERE
@@ -69,7 +69,7 @@ WITH
           ci.id DESC
       ) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       JOIN course_instances AS ci ON (
         ci.course_id = c.id
         AND ci.deleted_at IS NULL
@@ -84,13 +84,18 @@ WITH
       ),
       LATERAL (
         SELECT
-          min(ar.start_date) AS start_date,
-          max(ar.end_date) AS end_date,
-          bool_and(
-            ar.end_date IS NOT NULL
-            -- Tolerance of 1 month to allow instructors to easily see recently expired courses
-            AND ar.end_date < now() - interval '1 month'
-          ) AS expired
+          -- Use new publishing dates if available, otherwise fall back to legacy access rules
+          COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+          COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date,
+          -- Check if expired using new publishing dates or legacy access rules.
+          -- Use a tolerance of 1 month to allow instructors to easily see recently expired courses.
+          CASE
+            WHEN ci.publishing_end_date IS NOT NULL THEN ci.publishing_end_date < now() - interval '1 month'
+            ELSE bool_and(
+              ar.end_date IS NOT NULL
+              AND ar.end_date < now() - interval '1 month'
+            )
+          END AS expired
         FROM
           course_instance_access_rules AS ar
         WHERE
@@ -120,7 +125,7 @@ WITH
       ) AS can_open_course,
       coalesce(ici.course_instances, '[]'::jsonb) AS course_instances
     FROM
-      pl_courses AS c
+      courses AS c
       LEFT JOIN course_permissions AS cp ON (
         cp.user_id = $user_id
         AND cp.course_id = c.id
@@ -159,29 +164,30 @@ ORDER BY
   title,
   id;
 
--- BLOCK select_student_courses
+-- BLOCK select_student_courses_legacy_access
 SELECT
   c.short_name AS course_short_name,
   c.title AS course_title,
-  ci.long_name,
-  ci.id,
+  to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
   JOIN course_instances AS ci ON (
     ci.id = e.course_instance_id
     AND ci.deleted_at IS NULL
     AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
+    -- We only consider courses using the legacy access system in this query.
+    AND ci.modern_publishing IS FALSE
   )
-  JOIN pl_courses AS c ON (
+  JOIN courses AS c ON (
     c.id = ci.course_id
     AND c.deleted_at IS NULL
     AND (
       c.example_course IS FALSE
       OR $include_example_course_enrollments
     )
-    AND users_is_instructor_in_course (u.user_id, c.id) IS FALSE
+    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
   ),
   LATERAL (
     SELECT
@@ -198,6 +204,55 @@ WHERE
 ORDER BY
   d.start_date DESC NULLS LAST,
   d.end_date DESC NULLS LAST,
+  ci.id DESC;
+
+-- BLOCK select_student_courses_modern_publishing
+SELECT
+  c.short_name AS course_short_name,
+  c.title AS course_title,
+  to_jsonb(ci) AS course_instance,
+  to_jsonb(e) AS enrollment,
+  to_jsonb(cie) AS latest_publishing_extension
+FROM
+  enrollments AS e
+  LEFT JOIN users AS u ON (u.id = e.user_id)
+  JOIN course_instances AS ci ON (
+    ci.id = e.course_instance_id
+    AND ci.deleted_at IS NULL
+    -- We only consider courses using the modern publishing system in this query.
+    AND ci.modern_publishing IS TRUE
+  )
+  JOIN courses AS c ON (
+    c.id = ci.course_id
+    AND c.deleted_at IS NULL
+    AND (
+      c.example_course IS FALSE
+      OR $include_example_course_enrollments
+    )
+    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
+  )
+  LEFT JOIN LATERAL (
+    SELECT
+      cie.*
+    FROM
+      course_instance_publishing_extension_enrollments AS ciee
+      JOIN course_instance_publishing_extensions AS cie ON (
+        cie.id = ciee.course_instance_publishing_extension_id
+      )
+    WHERE
+      ciee.enrollment_id = e.id
+    ORDER BY
+      cie.end_date DESC NULLS LAST,
+      cie.id DESC
+    LIMIT
+      1
+  ) AS cie ON TRUE
+WHERE
+  e.user_id = $user_id
+  OR e.pending_uid = $pending_uid
+ORDER BY
+  ci.publishing_start_date DESC NULLS LAST,
+  ci.publishing_end_date DESC NULLS LAST,
   ci.id DESC;
 
 -- BLOCK select_admin_institutions

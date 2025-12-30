@@ -1,5 +1,6 @@
 import * as path from 'path';
 
+// @ts-expect-error No types for ace-code/src/ext/modelist.js
 import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
@@ -15,12 +16,13 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { FileEditSchema } from '../../lib/db-types.js';
+import { getFileMetadataForPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
@@ -105,10 +107,7 @@ router.get(
     }
 
     const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
-    const { errors: sync_errors, warnings: sync_warnings } = await getErrorsAndWarningsForFilePath(
-      res.locals.course.id,
-      relPath,
-    );
+    const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
 
     const editorData: FileEditorData = {
       fileName: path.basename(relPath),
@@ -116,13 +115,12 @@ router.get(
       aceMode: getModeForPath(relPath).mode,
       diskContents: encodedContents,
       diskHash: getHash(encodedContents),
-      sync_errors,
-      sync_warnings,
+      fileMetadata,
     };
 
     const draftEdit = await readDraftEdit({
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.user.id,
+      authn_user_id: res.locals.authn_user.id,
       course_id: res.locals.course.id,
       dir_name: path.dirname(relPath),
       file_name: editorData.fileName,
@@ -201,8 +199,8 @@ router.post(
 
     if (req.body.__action === 'save_and_sync') {
       const editID = await writeDraftEdit({
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         course_id: res.locals.course.id,
         dir_name: paths.workingDirectory,
         file_name: paths.workingFilename,

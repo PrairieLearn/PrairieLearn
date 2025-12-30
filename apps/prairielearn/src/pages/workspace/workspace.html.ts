@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function Workspace({
   pageTitle,
@@ -24,7 +25,7 @@ export function Workspace({
   heartbeatIntervalSec: number;
   visibilityTimeoutSec: number;
   socketToken: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { workspace_id, urlPrefix, __csrf_token } = resLocals;
 
@@ -37,16 +38,16 @@ export function Workspace({
     },
     options: {
       fullWidth: true,
-      pageNote,
       fullHeight: true,
+      pageNote,
       dataAttributes: {
         'socket-token': socketToken,
         'workspace-id': workspace_id,
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
-      enableEnhancedNav: false,
       enableNavbar: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />
@@ -57,7 +58,7 @@ export function Workspace({
             {
               serverRemainingMS: resLocals.assessment_instance_remaining_ms,
               serverTimeLimitMS: resLocals.assessment_instance_time_limit_ms,
-              serverUpdateURL: `${resLocals.plainUrlPrefix}/course_instance/${resLocals.course_instance.id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
+              serverUpdateURL: `/pl/course_instance/${resLocals.course_instance.id}/assessment_instance/${resLocals.assessment_instance.id}/time_remaining`,
               canTriggerFinish: false,
               showsTimeoutWarning: true,
               reloadOnFail: false,
@@ -183,7 +184,11 @@ export function Workspace({
         <h2>Workspace failed to load</h2>
         <p id="failed-message"></p>
       </div>
-      <iframe id="workspace" class="d-none flex-grow h-100 border-0" title="Workspace"></iframe>
+      <iframe
+        id="workspace"
+        class="d-none flex-grow h-100 w-100 border-0"
+        title="Workspace"
+      ></iframe>
     `,
   });
 }

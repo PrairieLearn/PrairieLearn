@@ -1,8 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface Filenames {
   scoresCsvFilename: string;
@@ -35,10 +34,10 @@ export function InstructorAssessmentDownloads({
   resLocals,
   filenames,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   filenames: Filenames;
 }) {
-  const identity = resLocals.assessment.group_work ? 'group' : 'student';
+  const identity = resLocals.assessment.team_work ? 'group' : 'student';
 
   return PageLayout({
     resLocals,
@@ -52,16 +51,6 @@ export function InstructorAssessmentDownloads({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
@@ -153,7 +142,7 @@ export function InstructorAssessmentDownloads({
                     </tr>
                   `
                 : ''}
-              ${resLocals.assessment.group_work
+              ${resLocals.assessment.team_work
                 ? html`
                     <tr>
                       <td>

@@ -7,7 +7,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
@@ -34,13 +34,12 @@ router.get(
       throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     const { urlPrefix } = pageContext;
-    const {
-      course_instance: courseInstance,
-      course,
-      institution,
-    } = getCourseInstanceContext(res.locals, 'instructor');
+    const { course_instance: courseInstance, course, institution } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
 
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
@@ -66,10 +65,10 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.user_id
+    const gradebookRows = student.user?.id
       ? await getGradebookRows({
           course_instance_id: courseInstance.id,
-          user_id: student.user.user_id,
+          user_id: student.user.id,
           authz_data: res.locals.authz_data,
           req_date: res.locals.req_date,
           auth: 'instructor',
@@ -110,6 +109,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
+              hasModernPublishing={courseInstance.modern_publishing}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
@@ -122,14 +122,15 @@ router.get(
 router.post(
   '/:enrollment_id(\\d+)',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
     if (!pageContext.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
-    const { authz_data: authzData } = getPageContext(res.locals);
-
-    const { course_instance } = getCourseInstanceContext(res.locals, 'instructor');
+    const { authz_data: authzData, course_instance: courseInstance } = pageContext;
 
     const action = req.body.__action;
     const enrollment_id = req.params.enrollment_id;
@@ -137,8 +138,8 @@ router.post(
     // assert that the enrollment belongs to the course instance
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
-      courseInstance: course_instance,
-      requestedRole: 'Student Data Editor',
+      courseInstance,
+      requiredRole: ['Student Data Editor'],
       authzData,
     });
 
@@ -151,7 +152,7 @@ router.post(
           enrollment,
           status: 'blocked',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
@@ -164,24 +165,22 @@ router.post(
           enrollment,
           status: 'joined',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(400, 'Enrollment is not invited');
+        if (!['invited', 'rejected'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
         }
         await deleteEnrollment({
           enrollment,
           actionDetail: 'invitation_deleted',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
-        res.redirect(
-          `/pl/course_instance/${course_instance.id}/instructor/instance_admin/students`,
-        );
+        res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
       case 'invite_student': {
@@ -204,7 +203,7 @@ router.post(
           enrollment,
           pendingUid,
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;

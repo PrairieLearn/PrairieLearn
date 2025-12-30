@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { userIsInstructorInAnyCourse } from '../models/course-permissions.js';
 import { selectCourseById } from '../models/course.js';
@@ -13,12 +14,12 @@ import type { AuthzData } from './authz-data-lib.js';
 import {
   type Assessment,
   type CourseInstance,
+  type Group,
   type GroupConfig,
   GroupConfigSchema,
   GroupRoleSchema,
   GroupSchema,
   type GroupUserRole,
-  IdSchema,
   type User,
   UserSchema,
 } from './db-types.js';
@@ -27,7 +28,7 @@ import { idsEqual } from './id.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 export class GroupOperationError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'GroupOperationError';
   }
@@ -37,14 +38,14 @@ const RoleAssignmentSchema = z.object({
   user_id: z.string(),
   uid: z.string(),
   role_name: z.string(),
-  group_role_id: z.string(),
+  team_role_id: z.string(),
 });
-type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
+export type RoleAssignment = z.infer<typeof RoleAssignmentSchema>;
 
 const GroupRoleWithCountSchema = GroupRoleSchema.extend({
   count: z.number(),
 });
-type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
+export type GroupRoleWithCount = z.infer<typeof GroupRoleWithCountSchema>;
 
 interface RolesInfo {
   roleAssignments: Record<string, RoleAssignment[]>;
@@ -64,7 +65,7 @@ export interface GroupInfo {
   rolesInfo?: RolesInfo;
 }
 
-type GroupRoleAssignment = Pick<GroupUserRole, 'group_role_id' | 'user_id'>;
+type GroupRoleAssignment = Pick<GroupUserRole, 'team_role_id' | 'user_id'>;
 
 const GroupForUpdateSchema = GroupSchema.extend({
   cur_size: z.number(),
@@ -216,14 +217,14 @@ async function selectUserInCourseInstance({
   if (
     (await sqldb.callRow(
       'users_is_instructor_in_course_instance',
-      [user.user_id, courseInstance.id],
+      [user.id, courseInstance.id],
       z.boolean(),
     )) ||
     (await selectOptionalEnrollmentByUserId({
       courseInstance,
-      userId: user.user_id,
-      // The function can be called by a student or instructor
-      requestedRole: 'Any',
+      userId: user.id,
+      // The function can be called by the system, a student, or an instructor
+      requiredRole: ['Student', 'Student Data Viewer', 'System'],
       authzData,
     }))
   ) {
@@ -233,7 +234,7 @@ async function selectUserInCourseInstance({
   // In the example course, any user with instructor access in any other
   // course should have access and thus be allowed to be added to a group.
   const course = await selectCourseById(courseInstance.course_id);
-  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.user_id }))) {
+  if (course.example_course && (await userIsInstructorInAnyCourse({ user_id: user.id }))) {
     return user;
   }
 
@@ -279,9 +280,10 @@ export async function addUserToGroup({
 
     // This is technically susceptible to race conditions. That won't be an
     // issue once we have a unique constraint for group membership.
-    const existingGroupId = await getGroupId(assessment.id, user.user_id);
+    const existingGroupId = await getGroupId(assessment.id, user.id);
     if (existingGroupId != null) {
-      if (idsEqual(user.user_id, authn_user_id)) {
+      // Otherwise, the user is in a different group, which is an error
+      if (idsEqual(user.id, authn_user_id)) {
         throw new GroupOperationError('You are already in another group.');
       } else {
         throw new GroupOperationError('User is already in another group.');
@@ -303,8 +305,8 @@ export async function addUserToGroup({
 
     await sqldb.execute(sql.insert_group_user, {
       group_id: group.id,
-      user_id: user.user_id,
-      group_config_id: group.group_config_id,
+      user_id: user.id,
+      group_config_id: group.team_config_id,
       assessment_id: assessment.id,
       authn_user_id,
       group_role_id: groupRoleId,
@@ -378,7 +380,7 @@ export async function createGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
+}): Promise<Group> {
   if (group_name) {
     if (group_name.length > 30) {
       throw new GroupOperationError(
@@ -409,34 +411,35 @@ export async function createGroup({
   }
 
   try {
-    await sqldb.runInTransactionAsync(async () => {
-      let group_id;
-      try {
-        group_id = await sqldb.queryRow(
+    return await sqldb.runInTransactionAsync(async () => {
+      const group = await sqldb
+        .queryRow(
           sql.create_group,
           { assessment_id: assessment.id, authn_user_id, group_name },
-          IdSchema,
-        );
-      } catch (err) {
-        // 23505 is the Postgres error code for unique constraint violation
-        // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
-        if (err.code === '23505' && err.constraint === 'unique_group_name') {
-          throw new GroupOperationError('Group name is already taken.');
-        }
-        // Any other error is unexpected and should be handled by the main processes
-        throw err;
-      }
+          GroupSchema,
+        )
+        .catch((err) => {
+          // 23505 is the Postgres error code for unique constraint violation
+          // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
+          if (err.code === '23505' && err.constraint === 'unique_team_name') {
+            throw new GroupOperationError('Group name is already taken.');
+          }
+          // Any other error is unexpected and should be handled by the main processes
+          throw err;
+        });
+
       for (const uid of uids) {
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id,
+          group_id: group.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
           authzData,
         });
       }
+      return group;
     });
   } catch (err) {
     if (err instanceof GroupOperationError) {
@@ -466,15 +469,15 @@ export async function createOrAddToGroup({
   uids: string[];
   authn_user_id: string;
   authzData: AuthzData;
-}): Promise<void> {
-  await sqldb.runInTransactionAsync(async () => {
-    const group = await sqldb.queryOptionalRow(
+}): Promise<Group> {
+  return await sqldb.runInTransactionAsync(async () => {
+    const existingGroup = await sqldb.queryOptionalRow(
       sql.select_and_lock_group_by_name,
       { group_name, assessment_id: assessment.id },
       GroupSchema,
     );
-    if (group == null) {
-      await createGroup({
+    if (existingGroup == null) {
+      return await createGroup({
         course_instance,
         assessment,
         group_name,
@@ -487,13 +490,14 @@ export async function createOrAddToGroup({
         await addUserToGroup({
           course_instance,
           assessment,
-          group_id: group.id,
+          group_id: existingGroup.id,
           uid,
           authn_user_id,
           enforceGroupSize: false,
           authzData,
         });
       }
+      return existingGroup;
     }
   });
 }
@@ -508,7 +512,7 @@ export function getGroupRoleReassignmentsAfterLeave(
   const leavingUserRoleIds = new Set(
     groupRoleAssignments
       .filter(({ user_id }) => idsEqual(user_id, leavingUserId))
-      .map(({ group_role_id }) => group_role_id),
+      .map(({ team_role_id }) => team_role_id),
   );
 
   const roleIdsToReassign =
@@ -524,47 +528,47 @@ export function getGroupRoleReassignmentsAfterLeave(
   // Get group user to group role assignments, excluding the leaving user
   const groupRoleAssignmentUpdates = groupRoleAssignments
     .filter(({ user_id }) => !idsEqual(user_id, leavingUserId))
-    .map(({ user_id, group_role_id }) => ({ user_id, group_role_id }));
+    .map(({ user_id, team_role_id }) => ({ user_id, team_role_id }));
 
   for (const roleId of roleIdsToReassign) {
     // First, try to give the role to a user with no roles
     const userIdWithNoRoles = groupInfo.groupMembers.find(
       (m) =>
-        !idsEqual(m.user_id, leavingUserId) &&
-        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.user_id)),
-    )?.user_id;
+        !idsEqual(m.id, leavingUserId) &&
+        !groupRoleAssignmentUpdates.some(({ user_id }) => idsEqual(user_id, m.id)),
+    )?.id;
     if (userIdWithNoRoles !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: userIdWithNoRoles,
-        group_role_id: roleId,
+        team_role_id: roleId,
       });
       continue;
     }
 
     // Next, try to find a user with a non-required role and replace that role
-    const idxToUpdate = groupRoleAssignmentUpdates.findIndex(({ group_role_id }) => {
+    const idxToUpdate = groupRoleAssignmentUpdates.findIndex(({ team_role_id }) => {
       const roleMin =
-        groupInfo.rolesInfo?.groupRoles.find((role) => idsEqual(role.id, group_role_id))?.minimum ??
+        groupInfo.rolesInfo?.groupRoles.find((role) => idsEqual(role.id, team_role_id))?.minimum ??
         0;
       return roleMin === 0;
     });
     if (idxToUpdate !== -1) {
-      groupRoleAssignmentUpdates[idxToUpdate].group_role_id = roleId;
+      groupRoleAssignmentUpdates[idxToUpdate].team_role_id = roleId;
       continue;
     }
 
     // Finally, try to give the role to a user that doesn't already have it
     const assigneeUserId = groupInfo.groupMembers.find(
       (m) =>
-        !idsEqual(m.user_id, leavingUserId) &&
+        !idsEqual(m.id, leavingUserId) &&
         !groupRoleAssignmentUpdates.some(
-          (u) => idsEqual(u.group_role_id, roleId) && idsEqual(u.user_id, m.user_id),
+          (u) => idsEqual(u.team_role_id, roleId) && idsEqual(u.user_id, m.id),
         ),
-    )?.user_id;
+    )?.id;
     if (assigneeUserId !== undefined) {
       groupRoleAssignmentUpdates.push({
         user_id: assigneeUserId,
-        group_role_id: roleId,
+        team_role_id: roleId,
       });
       continue;
     }
@@ -636,7 +640,7 @@ export function canUserAssignGroupRoles(groupInfo: GroupInfo, user_id: string): 
       .map((role) => role.id) ?? [];
   const assignerUsers = Object.values(groupInfo.rolesInfo?.roleAssignments ?? {})
     .flat()
-    .filter((assignment) => assignerRoles.some((id) => idsEqual(id, assignment.group_role_id)))
+    .filter((assignment) => assignerRoles.some((id) => idsEqual(id, assignment.team_role_id)))
     .map((assignment) => assignment.user_id);
   if (assignerUsers.length === 0) {
     // If none of the current users in the group has an assigner role, allow any
@@ -671,16 +675,15 @@ export async function updateGroupRoles(
     const roleKeys = Object.keys(requestBody).filter((key) => key.startsWith('user_role_'));
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
-      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.id, userId))) {
         throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
       }
       if (!groupInfo.rolesInfo?.groupRoles.some((role) => idsEqual(role.id, roleId))) {
         throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
       }
       return {
-        group_id: groupId,
         user_id: userId,
-        group_role_id: roleId,
+        team_role_id: roleId,
       };
     });
 
@@ -690,17 +693,16 @@ export async function updateGroupRoles(
         .filter((role) => role.can_assign_roles)
         .map((role) => role.id) ?? [];
     const assignerRoleFound = roleAssignments.some((roleAssignment) =>
-      assignerRoleIds.includes(roleAssignment.group_role_id),
+      assignerRoleIds.includes(roleAssignment.team_role_id),
     );
     if (!assignerRoleFound) {
-      if (!groupInfo.groupMembers.some((member) => idsEqual(member.user_id, userId))) {
+      if (!groupInfo.groupMembers.some((member) => idsEqual(member.id, userId))) {
         // If the current user is not in the group, this usually means they are a staff member, so give the assigner role to the first user
-        userId = groupInfo.groupMembers[0].user_id;
+        userId = groupInfo.groupMembers[0].id;
       }
       roleAssignments.push({
-        group_id: groupId,
         user_id: userId,
-        group_role_id: assignerRoleIds[0],
+        team_role_id: assignerRoleIds[0], // JSON key name for SQL
       });
     }
 

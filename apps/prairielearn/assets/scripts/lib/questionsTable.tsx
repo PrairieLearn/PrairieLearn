@@ -3,6 +3,7 @@ import { html, joinHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
+import { IssueBadgeHtml } from '../../../src/components/IssueBadge.js';
 import { type QuestionsTableData } from '../../../src/components/QuestionsTable.types.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
@@ -44,7 +45,6 @@ onDocumentReady(() => {
     showAiGenerateQuestionButton,
     qidPrefix,
     urlPrefix,
-    plainUrlPrefix,
   } = decodeData<QuestionsTableData>('questions-table-data');
 
   window.topicList = function () {
@@ -95,17 +95,16 @@ onDocumentReady(() => {
 
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
-        ${prefix}${question.qid}
-      </a>
+        ${prefix}${question.qid}</a
+      >
     `.toString();
     if (question.open_issue_count > 0) {
-      text += html`<a
-        class="badge rounded-pill text-bg-danger ms-1"
-        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
-        >${question.open_issue_count}</a
-      >`.toString();
+      text += IssueBadgeHtml({
+        count: question.open_issue_count,
+        class: 'ms-1',
+        issueQid: question.qid,
+        urlPrefix,
+      }).toString();
     }
     return text.toString();
   };
@@ -176,7 +175,6 @@ onDocumentReady(() => {
       )
       .map((assessment) =>
         AssessmentBadgeHtml({
-          plainUrlPrefix,
           courseInstanceId: course_instance_id,
           assessment,
         }).toString(),

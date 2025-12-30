@@ -2,7 +2,7 @@ import _ from 'lodash';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
-import type { StaffUser } from '../lib/client/safe-db-types.js';
+import type { StaffUser, StudentUser } from '../lib/client/safe-db-types.js';
 
 // These keys can be used as part of permission checks.
 export type CheckablePermissionKeys = Extract<
@@ -141,7 +141,7 @@ function clearEffectiveUserCookies() {
   window.location.reload();
 }
 
-function formatUser(user: StaffUser) {
+function formatUser(user: StudentUser | StaffUser) {
   if (!user.name) return user.uid;
   return `${user.name} (${user.uid})`;
 }
@@ -179,8 +179,8 @@ export function AuthzAccessMismatch({
   errorExplanation?: string;
   oneOfPermissionKeys: CheckablePermissionKeys[];
   authzData: PageContextWithAuthzData['authz_data'];
-  authnUser: StaffUser;
-  authzUser: StaffUser | null;
+  authnUser: StudentUser | StaffUser;
+  authzUser: StudentUser | StaffUser | null;
 }) {
   const permissions: PermissionData[] = PERMISSIONS_META.map((permission) => {
     return {
@@ -201,7 +201,7 @@ export function AuthzAccessMismatch({
   );
 
   // Use special messaging if there is an effective role but the effective user remains the same
-  const hasEffectiveUser = authzUser?.user_id !== authnUser.user_id;
+  const hasEffectiveUser = authzUser?.id !== authnUser.id;
   const isStudentViewActive =
     !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
 

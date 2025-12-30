@@ -1,16 +1,18 @@
--- BLOCK select_errors_and_warnings_for_course
+-- BLOCK select_file_metadata_for_course
 SELECT
   sync_errors,
-  sync_warnings
+  sync_warnings,
+  NULL AS uuid
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id;
 
--- BLOCK select_errors_and_warnings_for_question
+-- BLOCK select_file_metadata_for_question
 SELECT
   sync_errors,
-  sync_warnings
+  sync_warnings,
+  uuid
 FROM
   questions
 WHERE
@@ -18,10 +20,11 @@ WHERE
   AND qid = $qid
   AND deleted_at IS NULL;
 
--- BLOCK select_errors_and_warnings_for_course_instance
+-- BLOCK select_file_metadata_for_course_instance
 SELECT
   sync_errors,
-  sync_warnings
+  sync_warnings,
+  uuid
 FROM
   course_instances
 WHERE
@@ -29,10 +32,11 @@ WHERE
   AND short_name = $ciid
   AND deleted_at IS NULL;
 
--- BLOCK select_errors_and_warnings_for_assessment
+-- BLOCK select_file_metadata_for_assessment
 SELECT
   a.sync_errors,
-  a.sync_warnings
+  a.sync_warnings,
+  a.uuid
 FROM
   assessments AS a,
   course_instances AS ci

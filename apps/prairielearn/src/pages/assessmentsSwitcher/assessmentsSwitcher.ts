@@ -13,7 +13,7 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const subPage = req.query.subPage as NavSubPage | undefined;
+    const subPage = req.query.subPage as NavSubPage;
 
     // Target subpage for the assessment dropdown links
     const targetSubPage = run(() => {
@@ -33,7 +33,7 @@ router.get(
         assessmentsGroupBy: res.locals.course_instance.assessments_group_by,
         currentAssessmentId: req.params.assessment_id,
         courseInstanceId: res.locals.course_instance.id,
-        plainUrlPrefix: res.locals.plainUrlPrefix,
+
         targetSubPage,
       }),
     );

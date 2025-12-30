@@ -20,11 +20,11 @@
     "@socket.io/redis-emitter": "^5.1.0",
     "fast-glob": "^3.3.3",
     "filesize": "^11.0.13",
-    "socket.io": "^4.8.1"
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
+    "@types/node": "^22.19.3",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"
   }

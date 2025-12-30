@@ -2,6 +2,7 @@ import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
+// @ts-expect-error No types for better-ajv-errors (see https://github.com/atlassian/better-ajv-errors/issues/176)
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
@@ -238,10 +239,25 @@ export async function loadFullCourse(
     // expired if it either has zero `allowAccess` rules (in which case it is never
     // accessible), or if it has one or more `allowAccess` rules and they all have
     // an `endDate` that is in the past.
-    const allowAccessRules = courseInstance.data?.allowAccess ?? [];
-    const courseInstanceExpired = allowAccessRules.every((rule) => {
-      const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
-      return endDate && isPast(endDate);
+    //
+    // If the `allowAccess` section is not present, we instead consider publishing.endDate.
+
+    const allowAccessRules = courseInstance.data?.allowAccess;
+
+    const courseInstanceExpired = run(() => {
+      if (allowAccessRules !== undefined) {
+        return allowAccessRules.every((rule) => {
+          const endDate = rule.endDate ? parseJsonDate(rule.endDate) : null;
+          return endDate && isPast(endDate);
+        });
+      }
+
+      // We have no access rules, so we are using a modern publishing configuration.
+      return (
+        courseInstance.data?.publishing?.endDate == null ||
+        courseInstance.data.publishing.startDate == null ||
+        isPast(courseInstance.data.publishing.endDate)
+      );
     });
 
     const assessments = await loadAssessments({
@@ -385,7 +401,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // practice in years, so that's a risk we're willing to take. We explicitly
     // use the native Node fs API here to opt out of this queueing behavior.
     contents = await fs.readFile(absolutePath, 'utf8');
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOTDIR' && err.path === absolutePath) {
       // In a previous version of this code, we'd pre-filter
       // all files in the parent directory to remove anything
@@ -447,7 +463,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
         uuid: json.uuid,
         data: json,
       });
-    } catch (err) {
+    } catch (err: any) {
       return infofile.makeError(err.message);
     }
   } catch {
@@ -457,7 +473,7 @@ export async function loadInfoFile<T extends { uuid: string }>({
     try {
       // This should always throw
       jju.parse(contents, { mode: 'json' });
-    } catch (e) {
+    } catch (e: any) {
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
@@ -531,17 +547,20 @@ export async function loadCourseInfo({
    * Used to retrieve fields such as "assessmentSets" and "topics".
    * Adds a warning when syncing if duplicates are found.
    * If defaults are provided, the entries from defaults not present in the resulting list are merged.
+   *
+   * Each entry must have a `name` property.
+   *
    * @param fieldName The member of `info` to inspect
-   * @param entryIdentifier The member of each element of the field which uniquely identifies it, usually "name"
    */
   function getFieldWithoutDuplicates<
     K extends 'tags' | 'topics' | 'assessmentSets' | 'assessmentModules' | 'sharingSets',
-  >(fieldName: K, entryIdentifier: string, defaults?: CourseJson[K]): CourseJson[K] {
-    const known = new Map();
+  >(fieldName: K, defaults?: CourseJson[K]): CourseJson[K] {
+    type Entry = NonNullable<CourseJson[K]>[number];
+    const known = new Map<string, Entry>();
     const duplicateEntryIds = new Set<string>();
 
     (info![fieldName] ?? []).forEach((entry) => {
-      const entryId = entry[entryIdentifier];
+      const entryId = entry.name;
       if (known.has(entryId)) {
         duplicateEntryIds.add(entryId);
       }
@@ -558,7 +577,7 @@ export async function loadCourseInfo({
 
     if (defaults) {
       defaults.forEach((defaultEntry) => {
-        const defaultEntryId = defaultEntry[entryIdentifier];
+        const defaultEntryId = defaultEntry.name;
         if (!known.has(defaultEntryId)) {
           known.set(defaultEntryId, defaultEntry);
         }
@@ -567,7 +586,7 @@ export async function loadCourseInfo({
 
     // Turn the map back into a list; the JS spec ensures that Maps remember
     // insertion order, so the order is preserved.
-    return [...known.values()];
+    return [...known.values()] as CourseJson[K];
   }
 
   // Assessment sets in DEFAULT_ASSESSMENT_SETS may be in use but not present in the
@@ -577,22 +596,18 @@ export async function loadCourseInfo({
     assessmentSetsInUse.has(set.name),
   );
 
-  const assessmentSets = getFieldWithoutDuplicates(
-    'assessmentSets',
-    'name',
-    defaultAssessmentSetsInUse,
-  );
+  const assessmentSets = getFieldWithoutDuplicates('assessmentSets', defaultAssessmentSetsInUse);
 
   // Tags in DEFAULT_TAGS may be in use but not present in the course info JSON
   // file. This ensures that default tags are added if a question uses them, and
   // removed if not.
   const defaultTagsInUse = DEFAULT_TAGS.filter((tag) => tagsInUse.has(tag.name));
 
-  const tags = getFieldWithoutDuplicates('tags', 'name', defaultTagsInUse);
-  const topics = getFieldWithoutDuplicates('topics', 'name');
-  const sharingSets = getFieldWithoutDuplicates('sharingSets', 'name');
+  const tags = getFieldWithoutDuplicates('tags', defaultTagsInUse);
+  const topics = getFieldWithoutDuplicates('topics');
+  const sharingSets = getFieldWithoutDuplicates('sharingSets');
 
-  const assessmentModules = getFieldWithoutDuplicates('assessmentModules', 'name');
+  const assessmentModules = getFieldWithoutDuplicates('assessmentModules');
 
   const devModeFeatures = run(() => {
     const features = info.options.devModeFeatures ?? {};
@@ -783,7 +798,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
             );
           }
           Object.assign(infoFiles, subInfoFiles);
-        } catch (e) {
+        } catch (e: any) {
           if (e.code === 'ENOTDIR') {
             // This wasn't a directory; ignore it.
           } else if (e.code === 'ENOENT') {
@@ -803,7 +818,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
 
   try {
     return await walk('');
-  } catch (e) {
+  } catch (e: any) {
     if (e.code === 'ENOENT') {
       // Missing directory; return an empty list
       return {};
@@ -1039,7 +1054,7 @@ function validateQuestion({
     try {
       const schema = schemas[`QuestionOptions${question.type}JsonSchema`];
       schema.parse(question.options);
-    } catch (err) {
+    } catch (err: any) {
       errors.push(`Error validating question options: ${err.message}`);
     }
   }
@@ -1159,10 +1174,10 @@ function validateAssessment({
     errors.push(...dateErrors.errors);
   });
 
-  // When additional validation is added, we don't want to warn for past course
-  // instances that instructors will never touch again, as they won't benefit
-  // from fixing things. So, we'll only show some warnings for course instances
-  // which are accessible either now or any time in the future.
+  // We don't want to warn for past course instances that instructors will
+  // never touch again, as they won't benefit from fixing things. We'll
+  // only show certain warnings for course instances which are accessible
+  // either now or any time in the future.
   if (!courseInstanceExpired) {
     assessment.allowAccess.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
@@ -1450,15 +1465,70 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
+    errors.push(
+      '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
+    );
+  }
+
   if (courseInstance.selfEnrollment.beforeDate != null) {
+    if (courseInstance.allowAccess != null) {
+      errors.push(
+        '"selfEnrollment.beforeDate" is not configurable when you have access control rules ("allowAccess" is set).',
+      );
+    }
     const date = parseJsonDate(courseInstance.selfEnrollment.beforeDate);
     if (date == null) {
       errors.push('"selfEnrollment.beforeDate" is not a valid date.');
     }
   }
 
-  let accessibleInFuture = false;
-  for (const rule of courseInstance.allowAccess) {
+  let parsedEndDate: Date | null = null;
+
+  if (courseInstance.allowAccess && courseInstance.publishing) {
+    errors.push('Cannot use both "allowAccess" and "publishing" in the same course instance.');
+  } else if (courseInstance.publishing) {
+    const hasEndDate = courseInstance.publishing.endDate != null;
+    const hasStartDate = courseInstance.publishing.startDate != null;
+    if (hasStartDate && !hasEndDate) {
+      errors.push('"publishing.endDate" is required if "publishing.startDate" is specified.');
+    }
+    if (!hasStartDate && hasEndDate) {
+      errors.push('"publishing.startDate" is required if "publishing.endDate" is specified.');
+    }
+
+    const parsedStartDate =
+      courseInstance.publishing.startDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.startDate);
+
+    if (hasStartDate && parsedStartDate == null) {
+      errors.push('"publishing.startDate" is not a valid date.');
+    }
+
+    parsedEndDate =
+      courseInstance.publishing.endDate == null
+        ? null
+        : parseJsonDate(courseInstance.publishing.endDate);
+
+    if (hasEndDate && parsedEndDate == null) {
+      errors.push('"publishing.endDate" is not a valid date.');
+    }
+
+    if (
+      hasStartDate &&
+      hasEndDate &&
+      parsedStartDate != null &&
+      parsedEndDate != null &&
+      isAfter(parsedStartDate, parsedEndDate)
+    ) {
+      errors.push('"publishing.startDate" must be before "publishing.endDate".');
+    }
+  }
+
+  // Default to the publishing end date being in the future.
+  let accessibleInFuture = parsedEndDate != null && isFuture(parsedEndDate);
+  for (const rule of courseInstance.allowAccess ?? []) {
     const allowAccessResult = checkAllowAccessDates(rule);
     if (allowAccessResult.accessibleInFuture) {
       accessibleInFuture = true;
@@ -1469,7 +1539,7 @@ function validateCourseInstance({
 
   if (accessibleInFuture) {
     // Only warn about new roles and invalid UIDs for current or future course instances.
-    courseInstance.allowAccess.forEach((rule) => {
+    courseInstance.allowAccess?.forEach((rule) => {
       warnings.push(...checkAllowAccessRoles(rule), ...checkAllowAccessUids(rule));
     });
 

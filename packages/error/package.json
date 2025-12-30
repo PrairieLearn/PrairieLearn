@@ -19,10 +19,10 @@
   "devDependencies": {
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.6",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.19.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.6"
+    "vitest": "^4.0.16"
   }
 }

@@ -117,7 +117,7 @@ async function launchFlow(req: Request, res: Response) {
   };
 
   // https://www.imsglobal.org/spec/security/v1p0/#step-2-authentication-request
-  const requestParameters = {
+  const requestParameters: Record<string, string> = {
     scope: 'openid',
     response_type: 'id_token',
     client_id: lti13_instance.client_params.client_id,
@@ -131,9 +131,10 @@ async function launchFlow(req: Request, res: Response) {
 
   // If these parameters were offered, they must be included back:
   // https://www.imsglobal.org/spec/lti/v1p3#additional-login-parameters
-  for (const key of ['lti_message_hint', 'lti_deployment_id']) {
-    if (key in parameters) {
-      requestParameters[key] = parameters[key];
+  for (const key of ['lti_message_hint', 'lti_deployment_id'] as const) {
+    const value = parameters[key];
+    if (value != null) {
+      requestParameters[key] = value;
     }
   }
 
@@ -252,7 +253,7 @@ router.post(
         });
 
         if (user && user.uid !== uid) {
-          await updateUserUid({ user_id: user.user_id, uid });
+          await updateUserUid({ user_id: user.id, uid });
         }
 
         // We still have a valid UID; pass it back.
@@ -322,7 +323,7 @@ router.post(
 
     // Record the LTI 1.3 user's subject id.
     await updateLti13UserSub({
-      user_id: authedUser.user.user_id,
+      user_id: authedUser.user.id,
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });

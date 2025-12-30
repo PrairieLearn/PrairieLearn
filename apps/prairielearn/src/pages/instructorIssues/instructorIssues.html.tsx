@@ -3,25 +3,23 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { Pager } from '../../components/Pager.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledStylesheetTag } from '../../lib/assets.js';
-import { config } from '../../lib/config.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Issue,
   IssueSchema,
   QuestionSchema,
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const PAGE_SIZE = 100;
 
@@ -67,7 +65,7 @@ export function InstructorIssues({
   closedCount,
   chosenPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;
@@ -75,7 +73,7 @@ export function InstructorIssues({
   closedCount: number;
   chosenPage: number;
 }) {
-  const { authz_data, __csrf_token, urlPrefix, course } = resLocals;
+  const { authz_data, __csrf_token, urlPrefix } = resLocals;
   const issueCount = issues[0]?.issue_count ?? 0;
 
   return PageLayout({
@@ -91,13 +89,6 @@ export function InstructorIssues({
     },
     headContent: compiledStylesheetTag('instructorIssues.css'),
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={authz_data}
-          course={course}
-          urlPrefix={urlPrefix}
-        />,
-      )}
       ${authz_data.has_course_permission_edit
         ? CloseMatchingIssuesModal({
             openFilteredIssuesCount,
@@ -238,16 +229,15 @@ function IssueRow({
   authz_data: Record<string, any>;
   csrfToken: string;
 }) {
-  const plainUrlPrefix = config.urlPrefix;
   const mailtoLink = `mailto:${
     issue.user_email || issue.user_uid || '-'
   }?subject=Reported%20PrairieLearn%20Issue&body=${encodeURIComponent(
     `Hello ${issue.user_name},\n\nRegarding the issue of:\n\n"${issue.student_message || '-'}"\n\nWe've...`,
   )}`;
   const questionPreviewUrl = `${urlPrefix}/question/${issue.question_id}/`;
-  const studentViewUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
-  const manualGradingUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
-  const assessmentInstanceUrl = `${plainUrlPrefix}/course_instance/${issue.course_instance_id}/instructor/assessment_instance/${issue.assessment_instance_id}`;
+  const studentViewUrl = `/pl/course_instance/${issue.course_instance_id}/instance_question/${issue.instance_question_id}/?variant_id=${issue.variant_id}`;
+  const manualGradingUrl = `/pl/course_instance/${issue.course_instance_id}/instructor/assessment/${issue.assessment_id}/manual_grading/instance_question/${issue.instance_question_id}`;
+  const assessmentInstanceUrl = `/pl/course_instance/${issue.course_instance_id}/instructor/assessment_instance/${issue.assessment_instance_id}`;
 
   return html`
     <div class="list-group-item issue-list-item d-flex flex-row align-items-center">
@@ -307,7 +297,6 @@ function IssueRow({
           : html`<span class="badge text-bg-warning">Automatically reported</span>`}
         ${issue.assessment && issue.course_instance_id
           ? AssessmentBadgeHtml({
-              plainUrlPrefix,
               courseInstanceId: issue.course_instance_id,
               hideLink: issue.hideAssessmentLink,
               assessment: issue.assessment,

@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -14,7 +15,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -348,7 +349,7 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    group_work: assessment.groupWork,
+    team_work: assessment.groupWork,
     group_max_size: assessment.groupMaxSize ?? null,
     group_min_size: assessment.groupMinSize ?? null,
     student_group_create: assessment.studentGroupCreate,
@@ -360,6 +361,8 @@ function getParamsForAssessment(
     has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
+    // TODO: This will be conditional based on the access control settings in the future.
+    modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
@@ -402,10 +405,17 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null) {
+    return false;
+  }
+
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(

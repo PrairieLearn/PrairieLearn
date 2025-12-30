@@ -953,7 +953,8 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np.array2string(A, formatter=formatter)
+        np
+        .array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()
