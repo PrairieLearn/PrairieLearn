@@ -85,8 +85,8 @@ test-prairielearn-docker-smoke-tests: start-support
 test-prairielearn-dist: start-support build
 	@yarn workspace @prairielearn/prairielearn run test:dist
 test-python:
-	@uv run --group dev pytest
-	@uv run --group dev coverage xml -o ./apps/prairielearn/python/coverage.xml
+	@uv run pytest
+	@uv run coverage xml -o ./apps/prairielearn/python/coverage.xml
 test-prairielearn: start-support
 	@yarn workspace @prairielearn/prairielearn run test
 test-e2e: start-support
@@ -112,8 +112,8 @@ lint-js-cached:
 	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
-	@uv run --group dev ruff check ./
-	@uv run --group dev ruff format --check ./
+	@uv run ruff check ./
+	@uv run ruff format --check ./
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -126,9 +126,9 @@ lint-docker:
 lint-shell:
 	@shellcheck -S warning $(shell find . -type f -name "*.sh" ! -path "./node_modules/*" ! -path "./.venv/*" ! -path "./testCourse/*")
 lint-sql:
-	@uv run --group dev sqlfluff lint
+	@uv run sqlfluff lint
 lint-sql-migrations:
-	@uv run --group dev squawk apps/prairielearn/src/migrations/*.sql
+	@uv run squawk apps/prairielearn/src/migrations/*.sql
 lint-actions:
 	@actionlint
 lint-changeset:
@@ -139,7 +139,7 @@ format-all: format-js format-python format-sql
 
 format: format-js format-python
 format-sql:
-	@uv run --group dev sqlfluff fix
+	@uv run sqlfluff fix
 
 format-js:
 	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
@@ -150,8 +150,8 @@ format-js-cached:
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-python:
-	@uv run --group dev ruff check --fix ./
-	@uv run --group dev ruff format ./
+	@uv run ruff check --fix ./
+	@uv run ruff format ./
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
