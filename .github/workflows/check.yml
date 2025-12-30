@@ -74,13 +74,12 @@ jobs:
         run: make typecheck-scripts
       - name: Start Postgres
         run: |
-          sudo apt-get install -y curl ca-certificates
-          sudo install -d /usr/share/postgresql-common/pgdg
-          sudo curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
-          sudo sh -c "echo 'deb [signed-by=/usr/share/postgresql-common/pgdg/apt.postgresql.org.asc] https://apt.postgresql.org/pub/repos/apt noble-pgdg main' > /etc/apt/sources.list.d/pgdg.list"
-          sudo apt-get update
-          sudo apt-get purge -y man-db postgresql-16 postgresql-client-16
-          sudo apt-get install -y --no-install-recommends postgresql-17 postgresql-17-pgvector
+          sudo apt-get purge -y man-db
+          sudo apt-get install -y --no-install-recommends postgresql-common
+          # Configure Postgres repository, purge existing postgres version, and install v17
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
+          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector
+
           sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
           sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
