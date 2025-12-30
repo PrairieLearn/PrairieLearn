@@ -11,6 +11,7 @@ import {
   type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
@@ -26,7 +27,7 @@ export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
   lti13_instances,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lti13_instances: Lti13Instance[];
 }): string {
   return PageLayout({
@@ -97,7 +98,7 @@ export function InstructorInstanceAdminLti13({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
@@ -217,7 +218,7 @@ function LinkedAssessments({
   assessments,
   lineitems,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lms_name: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];
@@ -326,7 +327,7 @@ function LinkedAssessments({
                 <td class="align-middle">
                   <a href="${urlPrefix}/assessment/${row.id}/"
                     >${row.title}
-                    ${row.group_work
+                    ${row.team_work
                       ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                       : ''}</a
                   >

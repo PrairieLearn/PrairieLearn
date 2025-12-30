@@ -10,9 +10,10 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { AssessmentModuleSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import { AssessmentModuleSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
@@ -52,11 +53,11 @@ router.get(
     );
     const host = getCanonicalHost(req);
     const studentLink = new URL(
-      `${res.locals.plainUrlPrefix}/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
+      `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       host,
     ).href;
     const publicLink = new URL(
-      `${res.locals.plainUrlPrefix}/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
+      `/pl/public/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}/questions`,
       host,
     ).href;
     const infoAssessmentPath = encodePath(

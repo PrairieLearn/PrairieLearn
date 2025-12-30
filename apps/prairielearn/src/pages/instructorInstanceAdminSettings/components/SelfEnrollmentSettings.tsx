@@ -1,7 +1,9 @@
 import clsx from 'clsx';
 import { useState } from 'preact/compat';
-import { Button, Form, InputGroup, Modal, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { StudentLinkSharing } from '../../../components/LinkSharing.js';
 import { QRCodeModal } from '../../../components/QRCodeModal.js';
@@ -30,7 +32,12 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
           style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
           disabled
         />
-        <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+        <OverlayTrigger
+          tooltip={{
+            body: copied ? 'Copied!' : 'Copy',
+            props: { id: 'self-enrollment-code-copy-tooltip' },
+          }}
+        >
           <Button
             size="sm"
             variant="outline-secondary"
@@ -73,7 +80,12 @@ function SelfEnrollmentLink({
         </label>
         <InputGroup>
           <Form.Control id="self_enrollment_link" value={selfEnrollLink} disabled />
-          <OverlayTrigger overlay={<Tooltip>{copied ? 'Copied!' : 'Copy'}</Tooltip>}>
+          <OverlayTrigger
+            tooltip={{
+              body: copied ? 'Copied!' : 'Copy',
+              props: { id: 'self-enrollment-link-copy-tooltip' },
+            }}
+          >
             <Button
               size="sm"
               variant="outline-secondary"
@@ -87,7 +99,12 @@ function SelfEnrollmentLink({
               <i class="bi bi-clipboard" />
             </Button>
           </OverlayTrigger>
-          <OverlayTrigger overlay={<Tooltip>View QR Code</Tooltip>}>
+          <OverlayTrigger
+            tooltip={{
+              body: 'View QR Code',
+              props: { id: 'self-enrollment-link-qr-code-tooltip' },
+            }}
+          >
             <Button
               size="sm"
               variant="outline-secondary"
@@ -98,7 +115,12 @@ function SelfEnrollmentLink({
             </Button>
           </OverlayTrigger>
           {canEdit && (
-            <OverlayTrigger overlay={<Tooltip>Regenerate</Tooltip>}>
+            <OverlayTrigger
+              tooltip={{
+                body: 'Regenerate',
+                props: { id: 'self-enrollment-link-regenerate-tooltip' },
+              }}
+            >
               <Button
                 size="sm"
                 variant="outline-secondary"
@@ -154,6 +176,7 @@ export function SelfEnrollmentSettings({
   control,
   trigger,
   canEdit,
+  hasModernPublishing,
   enrollmentManagementEnabled,
   studentLink,
   selfEnrollLink,
@@ -164,6 +187,7 @@ export function SelfEnrollmentSettings({
   control: Control<SettingsFormValues>;
   trigger: UseFormTrigger<SettingsFormValues>;
   canEdit: boolean;
+  hasModernPublishing: boolean;
   enrollmentManagementEnabled: boolean;
   studentLink: string;
   selfEnrollLink: string;
@@ -176,10 +200,17 @@ export function SelfEnrollmentSettings({
     control,
     name: 'self_enrollment_use_enrollment_code',
   });
-
+  const selfEnrollmentRestrictToInstitution = useWatch({
+    control,
+    name: 'self_enrollment_restrict_to_institution',
+  });
   const selfEnrollmentEnabledBeforeDateEnabled = useWatch({
     control,
     name: 'self_enrollment_enabled_before_date_enabled',
+  });
+  const selfEnrollmentEnabledBeforeDate = useWatch({
+    control,
+    name: 'self_enrollment_enabled_before_date',
   });
 
   const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
@@ -194,17 +225,35 @@ export function SelfEnrollmentSettings({
     <>
       <h2 class="h4">Self-enrollment</h2>
 
+      {!hasModernPublishing && enrollmentManagementEnabled ? (
+        <div class="alert alert-warning">
+          You are using access rules to control who can access the course instance. To change the
+          self-enrollment settings, you must first{' '}
+          <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
+            migrate to publishing
+          </a>
+          .
+        </div>
+      ) : null}
+
       <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
         <input
           class="form-check-input"
           type="checkbox"
           id="self_enrollment_enabled"
+          disabled={!canEdit || !hasModernPublishing || !enrollmentManagementEnabled}
           {...control.register('self_enrollment_enabled', {
             // Re-run validation on show_in_enroll_page when self-enrollment changes
             deps: ['show_in_enroll_page'],
           })}
-          name="self_enrollment_enabled"
         />
+        {(!canEdit || !hasModernPublishing || !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled"
+            value={selfEnrollmentEnabled ? 'checked' : ''}
+          />
+        )}
         <label class="form-check-label" for="self_enrollment_enabled">
           Allow self-enrollment
         </label>
@@ -213,7 +262,7 @@ export function SelfEnrollmentSettings({
         </div>
       </div>
 
-      <div class="mb-3 form-check">
+      <div class={clsx('mb-3 form-check', enrollmentManagementEnabled && 'd-none')}>
         <input
           class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
           type="checkbox"
@@ -226,7 +275,6 @@ export function SelfEnrollmentSettings({
               return true;
             },
           })}
-          name="show_in_enroll_page"
         />
         <label class="form-check-label" for="show_in_enroll_page">
           Show on enrollment page
@@ -250,10 +298,24 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
-          disabled={!canEdit || !selfEnrollmentEnabled}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
           {...control.register('self_enrollment_use_enrollment_code')}
-          name="self_enrollment_use_enrollment_code"
         />
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_use_enrollment_code"
+            value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
+          />
+        )}
         <label class="form-check-label" for="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
@@ -272,10 +334,24 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
-          disabled={!canEdit || !selfEnrollmentEnabled}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled
+          }
           {...control.register('self_enrollment_restrict_to_institution')}
-          name="self_enrollment_restrict_to_institution"
         />
+        {(!canEdit ||
+          !selfEnrollmentEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_restrict_to_institution"
+            value={selfEnrollmentRestrictToInstitution ? 'checked' : ''}
+          />
+        )}
         <label class="form-check-label" for="self_enrollment_restrict_to_institution">
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
@@ -294,7 +370,12 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input')}
           type="checkbox"
           id="disable_self_enrollment_after_date"
-          disabled={!canEdit}
+          disabled={
+            !canEdit ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
           {...control.register('self_enrollment_enabled_before_date_enabled', {
             onChange: async (event) => {
               if (!event.target.checked) {
@@ -302,17 +383,36 @@ export function SelfEnrollmentSettings({
               }
             },
           })}
-          name="self_enrollment_enabled_before_date_enabled"
         />
+        {(!canEdit ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date_enabled"
+            value={selfEnrollmentEnabledBeforeDateEnabled ? 'checked' : ''}
+          />
+        )}
         <label class="form-check-label" for="disable_self_enrollment_after_date">
-          Forbid self-enrollment after specified date
+          Self-enrollment cutoff date
         </label>
+        <div class="small text-muted">
+          If set, self-enrollment will be disabled after this date. We recommend setting this to the
+          University-imposed deadline for students to add courses.
+        </div>
 
         <input
           type="datetime-local"
-          aria-label="Self-enrollment enabled before date"
+          aria-label="Self-enrollment cutoff date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
-          disabled={!canEdit || !selfEnrollmentEnabledBeforeDateEnabled}
+          disabled={
+            !canEdit ||
+            !selfEnrollmentEnabledBeforeDateEnabled ||
+            !hasModernPublishing ||
+            !enrollmentManagementEnabled ||
+            !selfEnrollmentEnabled
+          }
           step="1"
           {...control.register('self_enrollment_enabled_before_date', {
             validate: (value, { self_enrollment_enabled_before_date_enabled }) => {
@@ -323,6 +423,17 @@ export function SelfEnrollmentSettings({
             },
           })}
         />
+        {(!canEdit ||
+          !selfEnrollmentEnabledBeforeDateEnabled ||
+          !hasModernPublishing ||
+          !enrollmentManagementEnabled ||
+          !selfEnrollmentEnabled) && (
+          <input
+            type="hidden"
+            name="self_enrollment_enabled_before_date"
+            value={`${selfEnrollmentEnabledBeforeDate}`}
+          />
+        )}
         {selfEnrollmentEnabledBeforeDateError && (
           <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
         )}

@@ -11,7 +11,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 async function getUserParams(user_id: string | null) {
   assert.ok(user_id);
   return await sqldb.queryRow(
-    'SELECT uid, name, uin, institution_id FROM users WHERE user_id = $user_id;',
+    'SELECT uid, name, uin, institution_id FROM users WHERE id = $user_id;',
     { user_id },
     z.object({
       uid: UserSchema.shape.uid,

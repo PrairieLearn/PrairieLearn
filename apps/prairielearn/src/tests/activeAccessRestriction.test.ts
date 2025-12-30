@@ -9,7 +9,7 @@ import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
 
 import * as helperClient from './helperClient.js';
@@ -75,10 +75,10 @@ describe(
     test.sequential('enroll the test student user in the course', async () => {
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
-      await ensureEnrollment({
-        userId: user.user_id,
+      await ensureUncheckedEnrollment({
+        userId: user.id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
@@ -87,7 +87,7 @@ describe(
     test.sequential(
       'ensure that the exam is not visible on the assessments page when no access rule applies',
       async () => {
-        headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
+        headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
 
         const response = await helperClient.fetchCheerio(context.assessmentListUrl, { headers });
         assert.isTrue(response.ok);
@@ -97,7 +97,7 @@ describe(
     );
 
     test.sequential('try to access the exam when no access rule applies', async () => {
-      headers.cookie = 'pl_test_date=1850-06-01T00:00:01Z';
+      headers.cookie = 'pl_test_date=1910-06-01T00:00:01Z';
 
       const response = await helperClient.fetchCheerio(context.examUrl, {
         headers,

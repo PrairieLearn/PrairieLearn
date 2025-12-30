@@ -3,7 +3,8 @@ import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { config } from '../lib/config.js';
-import { assertNever } from '../lib/types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import type { Override } from '../middlewares/authzCourseOrInstance.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage, NavbarType } from './Navbar.types.js';
@@ -19,7 +20,7 @@ export function Navbar({
   isInPageLayout = false,
   sideNavEnabled = false,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage?: NavPage;
   navSubPage?: NavSubPage;
   navbarType?: NavbarType;
@@ -90,7 +91,7 @@ export function Navbar({
               </button>
             `
           : ''}
-        <a class="navbar-brand" href="${config.homeUrl}" aria-label="Homepage">
+        <a class="navbar-brand" href="/" aria-label="Homepage">
           <span class="navbar-brand-label">PrairieLearn</span>
           <span class="navbar-brand-hover-label">
             Go home <i class="fa fa-angle-right" aria-hidden="true"></i>
@@ -142,7 +143,7 @@ export function Navbar({
           </div>
         `
       : ''}
-    ${resLocals.has_enhanced_navigation && isInPageLayout
+    ${isInPageLayout
       ? FlashMessages()
       : html`
           <div class="${marginBottom ? 'mb-3' : ''}">
@@ -159,7 +160,7 @@ function NavbarByType({
   navbarType,
   isInPageLayout,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
   navbarType: NavbarType;
@@ -172,26 +173,19 @@ function NavbarByType({
   } else if (navbarType === 'public') {
     return NavbarPublic({ resLocals });
   } else {
-    if (resLocals.has_enhanced_navigation && isInPageLayout) {
+    if (isInPageLayout) {
       return NavbarButtons({
         resLocals,
         navPage,
         navbarType,
       });
+    } else if (navbarType === 'instructor') {
+      // TODO: Remove this once `instructorAiGenerateDraftEditor.html.tsx` uses PageLayout.
+      return NavbarInstructor({ resLocals, navPage, navSubPage });
     } else {
-      switch (navbarType) {
-        case 'plain':
-        case undefined:
-          return NavbarPlain({ resLocals, navPage });
-        case 'instructor':
-          return NavbarInstructor({ resLocals, navPage, navSubPage });
-        case 'administrator_institution':
-          return NavbarAdministratorInstitution({ resLocals });
-        case 'institution':
-          return NavbarInstitution({ resLocals });
-        default:
-          assertNever(navbarType);
-      }
+      // The only page that isn't in a PageLayout and hit by other checks
+      // is `instructorAiGenerateDraftEditor.html.tsx`, which has navbarType `instructor`.
+      throw new Error(`Invalid navbar type: ${navbarType}`);
     }
   }
 }
@@ -201,7 +195,7 @@ function UserDropdownMenu({
   navPage,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navbarType: NavbarType;
 }) {
@@ -234,11 +228,11 @@ function UserDropdownMenu({
   if (
     navbarType === 'student' &&
     course_instance &&
-    (authz_data.authn_has_course_permission_preview ||
-      authz_data.authn_has_course_instance_permission_view)
+    (authz_data?.authn_has_course_permission_preview ||
+      authz_data?.authn_has_course_instance_permission_view)
   ) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">student</span>`;
-  } else if (authz_data?.overrides) {
+  } else if (authz_data?.overrides?.length > 0) {
     displayedName = html`${displayedName} <span class="badge text-bg-warning">modified</span>`;
   } else if (navbarType === 'instructor') {
     displayedName = html`${displayedName} <span class="badge text-bg-success">staff</span>`;
@@ -296,13 +290,9 @@ function UserDropdownMenu({
               `
             : ''}
           ${!authz_data || authz_data?.mode === 'Public'
-            ? html`
-                <a class="dropdown-item" href="${config.urlPrefix}/request_course">
-                  Course Requests
-                </a>
-              `
+            ? html` <a class="dropdown-item" href="/pl/request_course"> Course Requests </a> `
             : ''}
-          <a class="dropdown-item" href="${config.urlPrefix}/settings">Settings</a>
+          <a class="dropdown-item" href="/pl/settings">Settings</a>
           <a
             class="dropdown-item news-item-link"
             href="${urlPrefix}/news_items"
@@ -318,7 +308,7 @@ function UserDropdownMenu({
               : ''}
           </a>
 
-          <a class="dropdown-item" href="${config.urlPrefix}/logout">Log out</a>
+          <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
       </li>
     </ul>
@@ -359,7 +349,7 @@ function FlashMessages() {
   );
 }
 
-function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
+function ViewTypeMenu({ resLocals }: { resLocals: UntypedResLocals }) {
   const {
     viewType,
     course,
@@ -372,8 +362,8 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
-  if (course?.example_course && !authz_data?.authn_is_administrator) {
+  // user if the authenticated user is an administrator or we are in development mode.
+  if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
 
@@ -399,9 +389,9 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   let studentLink = '#';
   if (viewType === 'instructor') {
     if (assessment?.id) {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessment/${assessment.id}`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessment/${assessment.id}`;
     } else {
-      studentLink = `${config.urlPrefix}/course_instance/${course_instance.id}/assessments`;
+      studentLink = `/pl/course_instance/${course_instance.id}/assessments`;
     }
   } else {
     if (question?.id) {
@@ -472,7 +462,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
   }
 
   return html`
-    ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+    ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
       ? html`
           <a class="dropdown-item" href="${instructorLink}" id="navbar-reset-view">
             Reset to default staff view
@@ -492,7 +482,7 @@ function ViewTypeMenu({ resLocals }: { resLocals: Record<string, any> }) {
     >
       <span class="${authnViewTypeMenuChecked !== 'instructor' ? 'invisible' : ''}">&check;</span>
       <span class="ps-3">
-        ${authz_data?.overrides && authnViewTypeMenuChecked === 'instructor'
+        ${authz_data?.overrides?.length > 0 && authnViewTypeMenuChecked === 'instructor'
           ? 'Modified staff'
           : 'Staff'}
         view <span class="badge text-bg-success">staff</span>
@@ -560,13 +550,13 @@ function AuthnOverrides({
   resLocals,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navbarType: NavbarType;
 }) {
   const { authz_data, urlPrefix, course, course_instance } = resLocals;
 
   // If we're working with an example course, only allow changing the effective
-  // user if the authenticated user is an administrator.
+  // user if the authenticated user is an administrator or we are in development mode.
   if (course?.example_course && !config.devMode && !authz_data?.authn_is_administrator) {
     return '';
   }
@@ -591,9 +581,9 @@ function AuthnOverrides({
     // It is ok to use the instructor route only to the effectiveUser page - this will redirect
     // to the student route if necessary.
     if (course_instance) {
-      effectiveUserUrl = `${config.urlPrefix}/course_instance/${course_instance.id}/instructor/effectiveUser`;
+      effectiveUserUrl = `/pl/course_instance/${course_instance.id}/instructor/effectiveUser`;
     } else {
-      effectiveUserUrl = `${config.urlPrefix}/course/${course.id}/effectiveUser`;
+      effectiveUserUrl = `/pl/course/${course.id}/effectiveUser`;
     }
   }
 
@@ -617,12 +607,12 @@ function AuthnOverrides({
       </button>
     </form>
 
-    ${authz_data.overrides
+    ${authz_data?.overrides?.length > 0
       ? html`
           <div class="dropdown-item-text">
             <div class="list-group small text-nowrap">
               ${authz_data.overrides.map(
-                (override) => html`
+                (override: Override) => html`
                   <div class="list-group-item list-group-item-warning small p-2">
                     <div class="d-flex flex-row justify-content-between align-items-center">
                       <div class="p-0 me-4">
@@ -656,16 +646,6 @@ function AuthnOverrides({
   `;
 }
 
-function NavbarPlain({ resLocals, navPage }: { resLocals: Record<string, any>; navPage: NavPage }) {
-  if (!resLocals.is_administrator) return '';
-
-  return html`
-    <li class="nav-item ${navPage === 'admin' ? 'active' : ''}">
-      <a class="nav-link" href="${config.urlPrefix}/administrator/admins">Admin</a>
-    </li>
-  `;
-}
-
 function NavbarButton({
   text,
   href,
@@ -696,7 +676,7 @@ function NavbarButtons({
   navPage,
   navbarType,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navbarType: NavbarType;
 }) {
@@ -785,13 +765,7 @@ function NavbarButtons({
   `;
 }
 
-function NavbarStudent({
-  resLocals,
-  navPage,
-}: {
-  resLocals: Record<string, any>;
-  navPage: NavPage;
-}) {
+function NavbarStudent({ resLocals, navPage }: { resLocals: UntypedResLocals; navPage: NavPage }) {
   const { course, course_instance, assessment_instance, assessment_instance_label, urlPrefix } =
     resLocals;
 
@@ -824,16 +798,13 @@ function NavbarInstructor({
   navPage,
   navSubPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage?: NavSubPage;
 }) {
   const {
     course,
     course_instance,
-    assessment,
-    assessment_label,
-    assessments,
     navbarOpenIssueCount,
     navbarCompleteGettingStartedTasksCount,
     navbarTotalGettingStartedTasksCount,
@@ -930,7 +901,7 @@ function NavbarInstructor({
               !(navSubPage === 'assessments' || navSubPage === 'gradebook')
                 ? 'active'
                 : ''}"
-              href="${config.urlPrefix}/course_instance/${course_instance.id}/instructor/instance_admin"
+              href="/pl/course_instance/${course_instance.id}/instructor/instance_admin"
             >
               ${course_instance.short_name}
             </a>
@@ -975,52 +946,6 @@ function NavbarInstructor({
           >
             <a class="nav-link" href="${urlPrefix}/instance_admin/gradebook">Gradebook</a>
           </li>
-
-          ${assessment_label != null && assessment != null
-            ? html`
-                <li class="navbar-text mx-2 no-select">/</li>
-                <li class="nav-item btn-group">
-                  <a
-                    class="nav-link ${navPage === 'assessment' ? 'active' : ''}"
-                    href="${urlPrefix}/assessment/${assessment.id}"
-                  >
-                    ${assessment_label}
-                  </a>
-                  ${assessments != null
-                    ? html`
-                        <a
-                          class="nav-link dropdown-toggle dropdown-toggle-split"
-                          id="navbarDropdownMenuLink"
-                          href="#"
-                          role="button"
-                          data-bs-toggle="dropdown"
-                          aria-haspopup="true"
-                          aria-expanded="false"
-                          aria-label="Change assessment"
-                        ></a>
-                        <div class="dropdown-menu" aria-labelledby="navbarDropdownMenuLink">
-                          ${assessments.map(
-                            (a) => html`
-                              <a
-                                class="dropdown-item ${navPage === 'assessment' &&
-                                assessment.id === a.id
-                                  ? 'active'
-                                  : ''}"
-                                href="${urlPrefix}/assessment/${a.id}${navPage === 'assessment' &&
-                                navSubPage !== 'file_edit'
-                                  ? `/${navSubPage}`
-                                  : ''}"
-                              >
-                                ${a.assessment_label}
-                              </a>
-                            `,
-                          )}
-                        </div>
-                      `
-                    : ''}
-                </li>
-              `
-            : ''}
         `
       : html`
           <li class="navbar-text mx-2 no-select">/</li>
@@ -1056,7 +981,7 @@ function NavbarInstructor({
   `;
 }
 
-function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
+function NavbarPublic({ resLocals }: { resLocals: UntypedResLocals }) {
   const { course, urlPrefix } = resLocals;
   return html`
     <li class="nav-item btn-group">
@@ -1066,34 +991,6 @@ function NavbarPublic({ resLocals }: { resLocals: Record<string, any> }) {
         href="${urlPrefix}/questions"
       >
         ${course?.short_name ?? ''}
-      </a>
-    </li>
-  `;
-}
-
-function NavbarInstitution({ resLocals }: { resLocals: Record<string, any> }) {
-  const { institution } = resLocals;
-
-  return html`
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/institution/${institution.id}/admin/courses">
-        ${institution.short_name} (${institution.long_name})
-      </a>
-    </li>
-  `;
-}
-
-function NavbarAdministratorInstitution({ resLocals }: { resLocals: Record<string, any> }) {
-  const { institution } = resLocals;
-
-  return html`
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/administrator/institutions">Admin</a>
-    </li>
-
-    <li class="nav-item">
-      <a class="nav-link" href="/pl/administrator/institution/${institution.id}">
-        ${institution.short_name}
       </a>
     </li>
   `;

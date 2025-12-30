@@ -10,23 +10,12 @@ import {
 } from '../../../lib/client/safe-db-types.js';
 
 export const StudentHomePageCourseSchema = z.object({
-  id: RawStudentCourseInstanceSchema.shape.id,
+  course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
-
-interface StudentCoursesCardProps {
-  studentCourses: StudentHomePageCourse[];
-  hasInstructorCourses: boolean;
-  canAddCourses: boolean;
-  csrfToken: string;
-  urlPrefix: string;
-  isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
-}
 
 export function StudentCoursesCard({
   studentCourses,
@@ -36,7 +25,15 @@ export function StudentCoursesCard({
   urlPrefix,
   isDevMode,
   enrollmentManagementEnabled,
-}: StudentCoursesCardProps) {
+}: {
+  studentCourses: StudentHomePageCourse[];
+  hasInstructorCourses: boolean;
+  canAddCourses: boolean;
+  csrfToken: string;
+  urlPrefix: string;
+  isDevMode: boolean;
+  enrollmentManagementEnabled: boolean;
+}) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
   const [removingCourseId, setRemovingCourseId] = useState<string | null>(null);
@@ -94,14 +91,14 @@ export function StudentCoursesCard({
         <div class="table-responsive">
           <table class="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
-              {invited.map((courseInstance: StudentHomePageCourse) => (
-                <tr key={`invite-${courseInstance.id}`} class="table-warning">
+              {invited.map((entry: StudentHomePageCourse) => (
+                <tr key={`invite-${entry.course_instance.id}`} class="table-warning">
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
                       <div>
                         <span class="fw-semibold">
-                          {courseInstance.course_short_name}: {courseInstance.course_title},
-                          {courseInstance.long_name}
+                          {entry.course_short_name}: {entry.course_title},
+                          {entry.course_instance.long_name}
                         </span>
                         <span class="ms-2 badge bg-warning text-dark">Invitation</span>
                       </div>
@@ -112,7 +109,7 @@ export function StudentCoursesCard({
                           <input
                             type="hidden"
                             name="course_instance_id"
-                            value={courseInstance.id}
+                            value={entry.course_instance.id}
                           />
                           <button type="submit" class="btn btn-primary btn-sm">
                             Accept
@@ -121,7 +118,7 @@ export function StudentCoursesCard({
                         <button
                           type="button"
                           class="btn btn-danger btn-sm"
-                          onClick={() => setRejectingCourseId(courseInstance.id)}
+                          onClick={() => setRejectingCourseId(entry.course_instance.id)}
                         >
                           Reject
                         </button>
@@ -130,18 +127,18 @@ export function StudentCoursesCard({
                   </td>
                 </tr>
               ))}
-              {joined.map((courseInstance) => (
-                <tr key={courseInstance.id}>
+              {joined.map((entry) => (
+                <tr key={entry.course_instance.id}>
                   <td class="align-middle">
                     <div class="d-flex align-items-center justify-content-between gap-2">
-                      <a href={`${urlPrefix}/course_instance/${courseInstance.id}`}>
-                        {courseInstance.course_short_name}: {courseInstance.course_title},
-                        {courseInstance.long_name}
+                      <a href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}>
+                        {entry.course_short_name}: {entry.course_title},
+                        {entry.course_instance.long_name}
                       </a>
                       <button
                         type="button"
                         class="btn btn-danger btn-sm"
-                        onClick={() => setRemovingCourseId(courseInstance.id)}
+                        onClick={() => setRemovingCourseId(entry.course_instance.id)}
                       >
                         Remove
                       </button>
@@ -170,8 +167,8 @@ export function StudentCoursesCard({
         </Modal.Header>
         <Modal.Body>
           <p>
-            Are you sure you want to reject this invitation? You will need to be reinvited if you
-            want to join this class again later.
+            Are you sure you want to reject this invitation? If the course doesn't allow
+            self-enrollment, you will need to be reinvited by an instructor.
           </p>
         </Modal.Body>
         <Modal.Footer>

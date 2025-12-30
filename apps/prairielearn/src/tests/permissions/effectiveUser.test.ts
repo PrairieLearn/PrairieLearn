@@ -18,7 +18,7 @@ import {
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 import { getOrCreateUser } from '../utils/auth.js';
@@ -63,7 +63,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'institution-admin@example.com',
     });
-    institutionAdminId = institutionAdmin.user_id;
+    institutionAdminId = institutionAdmin.id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
@@ -76,7 +76,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '100000000',
       email: 'instructor@example.com',
     });
-    instructorId = instructor.user_id;
+    instructorId = instructor.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -90,7 +90,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'staff@example.com',
     });
-    staffId = staff.user_id;
+    staffId = staff.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'staff@example.com',
@@ -104,12 +104,12 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '000000001',
       email: 'student@example.com',
     });
-    studentId = student.user_id;
+    studentId = student.id;
     courseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
+    await ensureUncheckedEnrollment({
       userId: studentId,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -217,7 +217,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1900-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1950-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 200);
@@ -229,7 +229,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);
@@ -586,10 +586,10 @@ describe('effective user', { timeout: 60_000 }, function () {
         uin: 'student',
         email: 'student@example.com',
       });
-      await ensureEnrollment({
+      await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
-        requestedRole: 'System',
+        userId: user.id,
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });

@@ -14,12 +14,13 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const StudentAssessmentsRowSchema = z.object({
   multiple_instance_header: z.boolean(),
   assessment_number: AssessmentSchema.shape.number,
   title: AssessmentSchema.shape.title,
-  group_work: AssessmentSchema.shape.group_work.nullable(),
+  team_work: AssessmentSchema.shape.team_work.nullable(),
   assessment_set_name: AssessmentSetSchema.shape.name,
   assessment_set_color: AssessmentSetSchema.shape.color,
   label: z.string(),
@@ -40,7 +41,7 @@ export function StudentAssessments({
   resLocals,
   rows,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   rows: StudentAssessmentsRow[];
 }) {
   const { urlPrefix, authz_data } = resLocals;
@@ -95,7 +96,7 @@ export function StudentAssessments({
                         : html`
                             <a href="${urlPrefix}${row.link}">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html`<i class="fas fa-users" aria-hidden="true"></i>`
                                 : ''}
                             </a>

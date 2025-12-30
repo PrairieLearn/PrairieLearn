@@ -5,7 +5,6 @@ import { z } from 'zod';
 
 import { type HtmlValue, html, unsafeHtml } from '@prairielearn/html';
 
-import { config } from '../lib/config.js';
 import {
   type AssessmentQuestion,
   type GradingJob,
@@ -15,7 +14,11 @@ import {
   type RubricGradingItem,
   SubmissionSchema,
 } from '../lib/db-types.js';
-import type { RubricData, RubricGradingData } from '../lib/manualGrading.types.js';
+import type {
+  RenderedRubricItem,
+  RubricData,
+  RubricGradingData,
+} from '../lib/manualGrading.types.js';
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -136,14 +139,15 @@ export function SubmissionPanel({
                         ${(rubric_data?.rubric_items || [])
                           .filter(
                             (item) =>
-                              item.always_show_to_students ||
-                              submission.rubric_grading?.rubric_items?.[item.id]?.score,
+                              item.rubric_item.always_show_to_students ||
+                              submission.rubric_grading?.rubric_items?.[item.rubric_item.id]?.score,
                           )
                           .map((item) =>
                             RubricItem({
                               item,
                               item_grading:
-                                submission.rubric_grading?.rubric_items?.[item.id] ?? null,
+                                submission.rubric_grading?.rubric_items?.[item.rubric_item.id] ??
+                                null,
                             }),
                           )}
                         ${submission.rubric_grading.adjust_points
@@ -401,8 +405,8 @@ function SubmissionInfoModal({
   const gradingJobStats = buildGradingJobStats(submission.grading_job);
   const gradingJobUrl =
     course_instance_id == null
-      ? `${config.urlPrefix}/course/${course_id}/grading_job/${submission.grading_job?.id}`
-      : `${config.urlPrefix}/course_instance/${course_instance_id}/instructor/grading_job/${
+      ? `/pl/course/${course_id}/grading_job/${submission.grading_job?.id}`
+      : `/pl/course_instance/${course_instance_id}/instructor/grading_job/${
           submission.grading_job?.id
         }`;
   return Modal({
@@ -497,22 +501,22 @@ function RubricItem({
   item,
   item_grading,
 }: {
-  item: RubricData['rubric_items'][0];
+  item: RenderedRubricItem;
   item_grading: RubricGradingItem | undefined | null;
 }) {
   return html`
     <div>
-      <label class="w-100" data-testid="rubric-item-container-${item.id}">
+      <label class="w-100" data-testid="rubric-item-container-${item.rubric_item.id}">
         <input type="checkbox" disabled ${item_grading?.score ? 'checked' : ''} />
-        <span class="text-${item.points >= 0 ? 'success' : 'danger'}">
+        <span class="text-${item.rubric_item.points >= 0 ? 'success' : 'danger'}">
           <strong data-testid="rubric-item-points">
-            [${(item.points >= 0 ? '+' : '') + item.points}]
+            [${(item.rubric_item.points >= 0 ? '+' : '') + item.rubric_item.points}]
           </strong>
         </span>
         <span class="d-inline-block" data-testid="rubric-item-description">
           ${unsafeHtml(item.description_rendered ?? '')}
         </span>
-        ${item.explanation
+        ${item.explanation_rendered
           ? html`
               <button
                 type="button"

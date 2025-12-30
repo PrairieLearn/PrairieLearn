@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
@@ -26,13 +27,12 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
-  DateFromISOString,
   type GroupConfig,
-  IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -81,7 +81,7 @@ export function StudentAssessmentInstance({
   instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 } & (
   | {
       groupConfig: GroupConfig;
@@ -196,7 +196,7 @@ export function StudentAssessmentInstance({
             ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
             ${resLocals.assessment.title}
           </h1>
-          ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+          ${resLocals.assessment.team_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">
@@ -698,7 +698,7 @@ function InstanceQuestionTableHeader({
   resLocals,
   someQuestionsAllowRealTimeGrading,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   someQuestionsAllowRealTimeGrading: boolean;
 }) {
   const trailingColumns =

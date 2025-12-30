@@ -9,4 +9,4 @@ indexes
 
 foreign-key constraints
     news_item_notifications_news_item_id_fkey: FOREIGN KEY (news_item_id) REFERENCES news_items(id) ON UPDATE CASCADE ON DELETE CASCADE
-    news_item_notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    news_item_notifications_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -8,8 +8,9 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../../lib/db-types.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -123,9 +124,14 @@ router.get(
   asyncHandler(async (req, res) => {
     const filterQuery = typeof req.query.q === 'string' ? req.query.q : 'is:open';
 
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     const [closedCount, openCount] = await queryRows(
       sql.issues_count,
-      { course_id: res.locals.course.id },
+      { course_id: course.id },
       z.number(),
     );
 
@@ -134,7 +140,7 @@ router.get(
     const offset = Number.isInteger(queryPageNumber) ? (queryPageNumber - 1) * PAGE_SIZE : 0;
     const issueRows = await queryRows(
       sql.select_issues,
-      { course_id: res.locals.course.id, offset, limit: PAGE_SIZE, ...filters },
+      { course_id: course.id, offset, limit: PAGE_SIZE, ...filters },
       IssueRowSchema,
     );
     // If the offset is not zero and there are no returned issues, this
@@ -149,11 +155,9 @@ router.get(
     // Compute the IDs of the course instances to which the effective user has access.
 
     const course_instances = await selectCourseInstancesWithStaffAccess({
-      course: res.locals.course,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      course,
+      authzData,
+      requiredRole: ['Student Data Viewer', 'Previewer'],
     });
     const linkableCourseInstanceIds = new Set(course_instances.map((ci) => ci.id));
 
@@ -229,7 +233,7 @@ router.post(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
@@ -237,17 +241,17 @@ router.post(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
-      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id) => id !== '');
+      const issueIds = req.body.unsafe_issue_ids.split(',').filter((id: string) => id !== '');
       const closedCount = await queryRow(
         sql.close_issues,
         {
           issue_ids: issueIds,
           course_id: res.locals.course.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         },
         z.number(),
       );

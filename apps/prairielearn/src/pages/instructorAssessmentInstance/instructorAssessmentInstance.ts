@@ -17,6 +17,7 @@ import {
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
@@ -35,7 +36,7 @@ const DateDurationResultSchema = z.object({
   assessment_instance_duration: z.string(),
 });
 
-function makeLogCsvFilename(locals) {
+function makeLogCsvFilename(locals: UntypedResLocals) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -171,7 +172,7 @@ router.post(
       await updateAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
@@ -179,13 +180,13 @@ router.post(
       await updateAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.body.instance_question_id,
         null, // submission_id
         req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
@@ -195,7 +196,7 @@ router.post(
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       if (modified_at_conflict) {
         return res.redirect(
@@ -212,7 +213,7 @@ router.post(
       await resetVariantsForInstanceQuestion({
         assessment_instance_id: res.locals.assessment_instance.id,
         unsafe_instance_question_id: req.body.unsafe_instance_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

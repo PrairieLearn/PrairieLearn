@@ -34,6 +34,7 @@ DISPLAY_DEFAULT = DisplayType.INLINE
 REMOVE_LEADING_TRAILING_DEFAULT = False
 REMOVE_SPACES_DEFAULT = False
 PLACEHOLDER_DEFAULT = None
+INITIAL_VALUE_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 IGNORE_CASE_DEFAULT = False
 SIZE_DEFAULT = 35
@@ -60,6 +61,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "allow-blank",
         "ignore-case",
         "placeholder",
+        "initial-value",
         "size",
         "show-help-text",
         "normalize-to-ascii",
@@ -96,6 +98,11 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
 
     raw_submitted_answer = data["raw_submitted_answers"].get(name)
+
+    if raw_submitted_answer is None:
+        raw_submitted_answer = pl.get_string_attrib(
+            element, "initial-value", INITIAL_VALUE_DEFAULT
+        )
     multiline = pl.get_boolean_attrib(element, "multiline", MULTILINE_DEFAULT)
     score = data["partial_scores"].get(name, {"score": None}).get("score", None)
     parse_error = data["format_errors"].get(name)

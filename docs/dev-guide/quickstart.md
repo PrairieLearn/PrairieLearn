@@ -38,7 +38,14 @@ sudo make dev
 
 !!! note "Debugging workspaces"
 
-    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`.
+    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+
+    ```json file="config.json"
+    {
+        ...
+        "workspaceDevContainerHostname": "localhost"
+    }
+    ```
 
     Also check that `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` are set to the correct values in your `config.json`. Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
 
@@ -57,7 +64,7 @@ sudo make dev
 If you want to preview the documentation, run:
 
 ```sh
-make preview-docs
+make dev-docs
 ```
 
 ## Testing
@@ -67,14 +74,16 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
-make test
+make test-all
 ```
 
-Or, to run tests for just a specific language:
+Or, to run just a specific subset of tests:
 
 ```sh
-make test-js     # Javascript only
-make test-python # Python only
+make test-js           # Javascript tests (both packages and applications)
+make test-prairielearn # PrairieLearn application tests
+make test-python       # Python tests
+make test-e2e          # E2E tests (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests

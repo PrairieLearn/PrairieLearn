@@ -35,7 +35,7 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -99,7 +99,7 @@ jobs:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -178,13 +178,16 @@ jobs:
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
 
-      - name: Test JavaScript code
+      - name: Vitest suite
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
+
+      - name: Playwright suite
+        run: |
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
 
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
@@ -196,7 +199,7 @@ jobs:
           retention-days: 1
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: playwright-blob-report-${{ matrix.shardIndex }}
           path: apps/prairielearn/test-results/blob-report/*
@@ -209,7 +212,7 @@ jobs:
     needs: [test-prairielearn-native]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
@@ -243,7 +246,7 @@ jobs:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
       - name: Upload HTML report
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v5
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report

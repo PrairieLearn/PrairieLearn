@@ -1,19 +1,19 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+  users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
@@ -28,7 +28,7 @@ export function InstructorAssessmentGroups({
   groupConfigInfo?: GroupConfig;
   groups?: GroupUsersRow[];
   notAssigned?: string[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -54,15 +54,6 @@ export function InstructorAssessmentGroups({
         )}"></script>
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${!groupConfigInfo
         ? html`
             <div class="card mb-4">
@@ -355,7 +346,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
         <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
-            return html` <option value="${user.user_id}">${user.uid}</option> `;
+            return html` <option value="${user.id}">${user.uid}</option> `;
           })}
         </select>
       </div>

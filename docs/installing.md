@@ -9,7 +9,7 @@ PrairieLearn provides the ability to create and update questions with a browser 
 - Questions using [code autograding](externalGrading.md)
 - Questions using [workspaces](workspaces/index.md)
 - Questions that involve a significant number of [images, documents and other files](clientServerFiles.md)
-- Questions using [custom Python libraries](questionRuntime/index.md#installing-libraries-in-your-course) in the generation and/or grading process
+- Questions using [custom Python libraries](question/runtime.md#installing-libraries-in-your-course) in the generation and/or grading process
 - Custom [elements](devElements.md) or [element extensions](elementExtensions.md)
 
 Using the course repository with a local installation simplifies the process of updating the course content. This workflow allows instructors to test changes in the question code or assessment configuration without affecting the student experience. It also supports collaboration and coordination in courses with multiple staff members using [Git workflows](https://git-scm.com/book/en/v2/Distributed-Git-Distributed-Workflows) and [pull requests](https://docs.github.com/en/pull-requests/collaborating-with-pull-requests/proposing-changes-to-your-work-with-pull-requests/about-pull-requests).
@@ -36,11 +36,11 @@ If you are running PrairieLearn with the example course only, you may skip this 
 
 When you request your course, you will typically receive a GitHub repository URL to your course's content. You may use [Git](https://git-scm.com/) to clone (make a local copy of) this course content in your own computer. Make note of the directory you are cloning your course to. If you are working with multiple courses, you will need to store each course in a separate directory.
 
-If you are using Windows, you have two options to store your course repository(ies):
+If you are using Windows, store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`).
 
-- Store your course content inside the WSL 2 instance. This option typically provides the best performance when running PrairieLearn locally. You can clone the repository [using git commands](https://git-scm.com/book/en/v2/Git-Basics-Getting-a-Git-Repository) inside your WSL shell. Note that, in this case, you will need to either update your files using WSL tools and editors, or access the files using the Linux file systems. [Instructions to do so are listed here](https://learn.microsoft.com/en-us/windows/wsl/filesystems). In this case, keep track of the path used by your course inside WSL (e.g., `$HOME/pl-tam212`)
+!!! warning
 
-- Store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the C:\ drive). If you are using this option, you will need to translate the Windows path into the WSL mounted path in `/mnt`. For example, if your course is stored in `C:\Users\mwest\Documents\pl-tam212`, then the directory you will use is `/mnt/c/Users/mwest/Documents/pl-tam212` (note the change of prefix and the replacement of backslashes with forward slashes).
+    While there are ways to store your course content in the Windows file system itself (e.g., in your Documents or Desktop folder, or elsewhere inside the `C:\` drive) and to translate those paths to WSL mounted paths (e.g., via `/mnt/c/...` paths), these are not recommended due to performance concerns.
 
 ## Running instructions
 
