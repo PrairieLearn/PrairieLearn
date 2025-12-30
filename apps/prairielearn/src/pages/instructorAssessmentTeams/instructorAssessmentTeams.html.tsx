@@ -36,7 +36,7 @@ export function InstructorAssessmentTeams({
     navContext: {
       type: 'instructor',
       page: 'assessment',
-      subPage: 'teams',
+      subPage: 'groups',
     },
     options: {
       fullWidth: true,
