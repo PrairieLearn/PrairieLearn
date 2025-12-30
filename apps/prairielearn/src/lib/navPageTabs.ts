@@ -220,7 +220,7 @@ export function getNavPageTabs() {
           IssueBadgeHtml({
             count: resLocals.open_issue_count,
             suppressLink: true,
-            class: 'ms-2',
+            className: 'ms-2',
           }),
         renderCondition: ({ course, question }) => question.course_id === course.id,
       },

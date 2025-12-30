@@ -409,7 +409,6 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         singularLabel="student"
         pluralLabel="students"

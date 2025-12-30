@@ -468,7 +468,6 @@ function GradebookTable({
         title="Gradebook"
         singularLabel="user"
         pluralLabel="users"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         downloadButtonOptions={{
           filenameBase,

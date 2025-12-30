@@ -64,7 +64,6 @@ export function NumericInputColumnFilter<TData, TValue>({
         />
       </Dropdown.Toggle>
       <Dropdown.Menu
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="p-0"
       >
         <div className="p-3" style={{ minWidth: '240px' }}>
