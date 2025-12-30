@@ -72,7 +72,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   return <Form.Text class="text-muted">{explanation}</Form.Text>;
 }
 
-interface TimeLimitFormProps {
+export interface TimeLimitFormProps {
   row: TimeLimitRowData;
   csrfToken: string;
   timezone: string;
@@ -80,7 +80,7 @@ interface TimeLimitFormProps {
   onCancel: () => void;
 }
 
-function TimeLimitForm({ row, csrfToken, timezone, onSuccess, onCancel }: TimeLimitFormProps) {
+export function TimeLimitForm({ row, csrfToken, timezone, onSuccess, onCancel }: TimeLimitFormProps) {
   const [form, setForm] = useState<{
     action: TimeLimitAction;
     time_add: number;
