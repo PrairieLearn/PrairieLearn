@@ -48,12 +48,6 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
-import {
-  type QuestionGroupPermissions,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  getUserRoles,
-} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
@@ -66,6 +60,12 @@ import {
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import type { UntypedResLocals } from './res-locals.types.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -140,8 +140,8 @@ async function render(
   const studentMessage = 'Error rendering question';
   const courseData = { variant, question, submission, course: variant_course };
   // user information may not be populated when rendering a panel.
-  const user_id = locals.user?.user_id ?? null;
-  const authn_user_id = locals.authn_user?.user_id ?? null;
+  const user_id = locals.user?.id ?? null;
+  const authn_user_id = locals.authn_user?.id ?? null;
   await writeCourseIssues(
     courseIssues,
     variant,
@@ -470,8 +470,8 @@ export async function getAndRenderVariant(
       return await ensureVariant(
         locals.question.id,
         instance_question_id,
-        locals.user.user_id,
-        locals.authn_user.user_id,
+        locals.user.id,
+        locals.authn_user.id,
         locals.course_instance ?? null,
         locals.course,
         question_course,
@@ -823,9 +823,9 @@ export async function renderPanelsForSubmission({
       if (!renderScorePanels) return;
 
       const group_info = await run(async () => {
-        if (!assessment_instance?.group_id || !group_config) return null;
+        if (!assessment_instance?.team_id || !group_config) return null;
 
-        return await getGroupInfo(assessment_instance.group_id, group_config);
+        return await getGroupInfo(assessment_instance.team_id, group_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({
@@ -856,14 +856,14 @@ export async function renderPanelsForSubmission({
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.group_id && group_config?.has_roles) {
+      if (assessment_instance?.team_id && group_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
           next_instance_question.id,
-          assessment_instance.group_id,
-          user.user_id,
+          assessment_instance.team_id,
+          user.id,
         );
         userGroupRoles =
-          (await getUserRoles(assessment_instance.group_id, user.user_id))
+          (await getUserRoles(assessment_instance.team_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
       }

@@ -24,16 +24,7 @@ export function ContextNavigation({
 
   return html`
     <nav>
-      <ul
-        class="
-          nav 
-          nav-tabs 
-          pl-nav-tabs-bar 
-          pt-2
-          px-3 
-          bg-light
-        "
-      >
+      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>

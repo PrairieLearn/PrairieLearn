@@ -13,7 +13,7 @@ export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+  users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
@@ -113,7 +113,7 @@ export function InstructorAssessmentGroups({
                 ? html`
                     <div class="container-fluid">
                       <div class="row">
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
@@ -124,7 +124,7 @@ export function InstructorAssessmentGroups({
                           </button>
                           <div class="mt-2">Upload a CSV file with group assignments.</div>
                         </div>
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
@@ -346,7 +346,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
         <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
-            return html` <option value="${user.user_id}">${user.uid}</option> `;
+            return html` <option value="${user.id}">${user.uid}</option> `;
           })}
         </select>
       </div>

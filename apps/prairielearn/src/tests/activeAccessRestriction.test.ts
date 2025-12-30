@@ -76,7 +76,7 @@ describe(
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
       await ensureUncheckedEnrollment({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),

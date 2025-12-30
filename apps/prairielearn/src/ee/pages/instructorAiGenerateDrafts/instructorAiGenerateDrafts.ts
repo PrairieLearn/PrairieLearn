@@ -105,7 +105,7 @@ router.post(
 
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
       });
 
       const approxPromptCost = approximatePromptCost({
@@ -131,14 +131,14 @@ router.post(
         model: openai(QUESTION_GENERATION_OPENAI_MODEL),
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
+        authnUserId: res.locals.authn_user.id,
         prompt: req.body.prompt,
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
         usage: result.usage,
         intervalCost,
       });
@@ -167,8 +167,8 @@ router.post(
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_ids: questions,
       });
