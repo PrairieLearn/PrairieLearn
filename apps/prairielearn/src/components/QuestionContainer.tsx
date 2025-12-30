@@ -14,7 +14,7 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';

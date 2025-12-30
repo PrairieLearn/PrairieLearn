@@ -14,7 +14,7 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups.js';
+} from '../../lib/teams.js';
 import { idsEqual } from '../../lib/id.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';

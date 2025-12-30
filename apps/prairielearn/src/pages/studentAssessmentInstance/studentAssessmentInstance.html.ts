@@ -31,7 +31,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import { type GroupInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 

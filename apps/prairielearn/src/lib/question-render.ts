@@ -53,7 +53,7 @@ import {
   getGroupInfo,
   getQuestionGroupPermissions,
   getUserRoles,
-} from './groups.js';
+} from './teams.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';

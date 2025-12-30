@@ -25,7 +25,7 @@ import {
   type Group,
   RubricItemSchema,
 } from './db-types.js';
-import { createOrAddToGroup, deleteAllGroups } from './groups.js';
+import { createOrAddToGroup, deleteAllGroups } from './teams.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
