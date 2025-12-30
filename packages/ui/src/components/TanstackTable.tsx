@@ -249,6 +249,7 @@ export function TanstackTable<RowDataModel>({
   // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
     if (hasAutoSized) {
+      // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
       // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
       columnVirtualizer.measure();
     }
