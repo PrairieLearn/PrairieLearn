@@ -858,9 +858,9 @@ export function AssessmentQuestionTable({
                     </Dropdown.Header>
                     {courseStaff.map((grader) => (
                       <Dropdown.Item
-                        key={grader.user_id}
+                        key={grader.id}
                         onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.user_id }, selectedIds)
+                          handleBatchAction({ assigned_grader: grader.id }, selectedIds)
                         }
                       >
                         <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
@@ -913,10 +913,10 @@ export function AssessmentQuestionTable({
               value: row.instance_question.id,
             },
             {
-              name: assessment.group_work ? 'Group Name' : 'Name',
+              name: assessment.team_work ? 'Group Name' : 'Name',
               value: row.user_or_group_name || '',
             },
-            { name: assessment.group_work ? 'UIDs' : 'UID', value: row.uid || '' },
+            { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
             {
               name: 'Grading Status',
               value: row.instance_question.requires_manual_grading ? 'Requires grading' : 'Graded',

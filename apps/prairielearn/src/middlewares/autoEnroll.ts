@@ -69,7 +69,7 @@ export default asyncHandler(async (req, res, next) => {
     ['invited', 'joined', 'removed'].includes(existingEnrollment.status);
 
   if (
-    idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
+    idsEqual(res.locals.user.id, res.locals.authn_user.id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&

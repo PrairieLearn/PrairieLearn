@@ -2149,8 +2149,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
