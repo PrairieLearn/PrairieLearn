@@ -370,7 +370,7 @@ describe('Assessment instance with team roles & permissions - Homework', functio
       const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
-        'Your team role (Manager) is not allowed to submit this question.',
+        'Your group role (Manager) is not allowed to submit this question.',
       );
 
       // Save button should be disabled without correct permission
