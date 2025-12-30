@@ -3,7 +3,7 @@ import type {
   GenerateTextResult,
   LanguageModelUsage,
   ModelMessage,
-  UserContent
+  UserContent,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
