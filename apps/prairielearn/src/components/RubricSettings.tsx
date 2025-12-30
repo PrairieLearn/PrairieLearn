@@ -974,8 +974,7 @@ function RubricRow({
               type="button"
               class="btn btn-sm btn-ghost"
               style={{ cursor: 'grab' }}
-              // @ts-expect-error See https://github.com/preactjs/preact-render-to-string/issues/429
-              draggable="true"
+              draggable
               onDragStart={onDragStart}
             >
               <i class="fas fa-arrows-up-down" />
