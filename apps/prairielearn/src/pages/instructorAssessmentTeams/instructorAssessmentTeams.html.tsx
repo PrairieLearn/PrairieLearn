@@ -69,14 +69,14 @@ export function InstructorAssessmentTeams({
         : html`
             ${resLocals.authz_data.has_course_instance_permission_edit
               ? html`
-                  ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
-                  ${RandomAssessmentGroupsModal({
+                  ${UploadAssessmentTeamsModal({ csrfToken: resLocals.__csrf_token })}
+                  ${RandomAssessmentTeamsModal({
                     groupMin: teamConfigInfo.minimum ?? 2,
                     groupMax: teamConfigInfo.maximum ?? 5,
                     csrfToken: resLocals.__csrf_token,
                   })}
-                  ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
-                  ${DeleteAllGroupsModal({
+                  ${AddTeamModal({ csrfToken: resLocals.__csrf_token })}
+                  ${DeleteAllTeamsModal({
                     assessmentSetName: resLocals.assessment_set.name,
                     assessmentNumber: resLocals.assessment.number,
                     csrfToken: resLocals.__csrf_token,
@@ -93,7 +93,7 @@ export function InstructorAssessmentTeams({
                           type="button"
                           class="btn btn-sm btn-light"
                           data-bs-toggle="modal"
-                          data-bs-target="#addGroupModal"
+                          data-bs-target="#addTeamModal"
                         >
                           <i class="fa fa-plus" aria-hidden="true"></i> Add a group
                         </button>
@@ -118,7 +118,7 @@ export function InstructorAssessmentTeams({
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-bs-toggle="modal"
-                            data-bs-target="#uploadAssessmentGroupsModal"
+                            data-bs-target="#uploadAssessmentTeamsModal"
                           >
                             <i class="fas fa-upload" aria-hidden="true"></i> Upload
                           </button>
@@ -129,7 +129,7 @@ export function InstructorAssessmentTeams({
                             type="button"
                             class="btn btn-primary text-nowrap"
                             data-bs-toggle="modal"
-                            data-bs-target="#randomAssessmentGroupsModal"
+                            data-bs-target="#randomAssessmentTeamsModal"
                           >
                             <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                           </button>
@@ -232,7 +232,7 @@ export function InstructorAssessmentTeams({
                                       data-bs-placement="auto"
                                       data-bs-title="Delete group"
                                       data-bs-content="${escapeHtml(
-                                        DeleteGroupForm({
+                                        DeleteTeamForm({
                                           row,
                                           csrfToken: resLocals.__csrf_token,
                                         }),
@@ -326,9 +326,9 @@ function AddMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: stri
   `;
 }
 
-function DeleteGroupForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
+function DeleteTeamForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
   return html`
-    <form name="delete-group-form" method="POST">
+    <form name="delete-team-form" method="POST">
       <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
       <input type="hidden" name="__action" value="delete_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
@@ -361,9 +361,9 @@ function RemoveMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: s
   `;
 }
 
-function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
+function UploadAssessmentTeamsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'uploadAssessmentGroupsModal',
+    id: 'uploadAssessmentTeamsModal',
     title: 'Upload new group assignments',
     formEncType: 'multipart/form-data',
     body: html`
@@ -381,13 +381,13 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
         the grouping, link uids to the groupname.
       </p>
       <div class="mb-3">
-        <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
+        <label class="form-label" for="uploadAssessmentTeamsFileInput"> Choose CSV file </label>
         <input
           type="file"
           accept=".csv"
           name="file"
           class="form-control"
-          id="uploadAssessmentGroupsFileInput"
+          id="uploadAssessmentTeamsFileInput"
         />
       </div>
     `,
@@ -400,7 +400,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function RandomAssessmentGroupsModal({
+function RandomAssessmentTeamsModal({
   groupMin,
   groupMax,
   csrfToken,
@@ -410,7 +410,7 @@ function RandomAssessmentGroupsModal({
   csrfToken: string;
 }) {
   return Modal({
-    id: 'randomAssessmentGroupsModal',
+    id: 'randomAssessmentTeamsModal',
     title: 'Random group assignments',
     body: html`
       <div class="mb-3">
@@ -447,9 +447,9 @@ function RandomAssessmentGroupsModal({
   });
 }
 
-function AddGroupModal({ csrfToken }: { csrfToken: string }) {
+function AddTeamModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'addGroupModal',
+    id: 'addTeamModal',
     title: 'Add a group',
     body: html`
       <div class="mb-3">
@@ -459,11 +459,11 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
           class="form-control"
           id="formName"
           name="team_name"
-          aria-describedby="addGroupNameHelp"
+          aria-describedby="addTeamNameHelp"
           maxlength="30"
           pattern="[0-9a-zA-Z]+"
         />
-        <small id="addGroupNameHelp" class="form-text text-muted">
+        <small id="addTeamNameHelp" class="form-text text-muted">
           Keep blank to use a default name. If provided, the name must be at most 30 characters long
           and may only contain letters and numbers.
         </small>
@@ -493,7 +493,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
   });
 }
 
-function DeleteAllGroupsModal({
+function DeleteAllTeamsModal({
   csrfToken,
   assessmentSetName,
   assessmentNumber,

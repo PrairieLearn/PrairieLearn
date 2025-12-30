@@ -173,27 +173,27 @@ export async function uploadSubmissions(
       maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
     });
 
-    // Detect if this is a group work CSV by checking the first row
-    let isGroupWork: boolean | null = null;
+    // Detect if this is a team work CSV by checking the first row
+    let isTeamWork: boolean | null = null;
 
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
         // Auto-detect CSV type on first data row
-        if (isGroupWork === null) {
-          isGroupWork = 'Group name' in record && !('UID' in record);
+        if (isTeamWork === null) {
+          isTeamWork = 'Group name' in record && !('UID' in record);
 
-          if (isGroupWork && !assessment.team_work) {
+          if (isTeamWork && !assessment.team_work) {
             throw new Error(
               'Group work CSV detected, but assessment does not have group work enabled',
             );
-          } else if (!isGroupWork && assessment.team_work) {
+          } else if (!isTeamWork && assessment.team_work) {
             throw new Error('Individual work CSV detected, but assessment has group work enabled');
           }
         }
 
-        const row = isGroupWork
+        const row = isTeamWork
           ? TeamSubmissionCsvRowSchema.parse(record)
           : IndividualSubmissionCsvRowSchema.parse(record);
 
@@ -210,11 +210,11 @@ export async function uploadSubmissions(
             const user = await ensureAndEnrollUser(row.UID);
             return { type: 'user' as const, user_id: user.id };
           } else {
-            // Create users for all group members concurrently
+            // Create users for all team members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
 
             const team = await getOrInsertTeam([row['Group name']], async () => {
-              // Use createOrAddToTeam which handles both creating new groups and adding to existing ones
+              // Use createOrAddToTeam which handles both creating new teams and adding to existing ones
               return await createOrAddToTeam({
                 course_instance,
                 assessment,
@@ -226,11 +226,11 @@ export async function uploadSubmissions(
               });
             });
 
-            return { type: 'group' as const, team_id: team.id, users };
+            return { type: 'team' as const, team_id: team.id, users };
           }
         });
 
-        // Insert assessment instance (for user or group)
+        // Insert assessment instance (for user or team)
         const entityKey = entity.type === 'user' ? entity.user_id : entity.team_id;
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
@@ -240,7 +240,7 @@ export async function uploadSubmissions(
               {
                 assessment_id: assessment.id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.team_id : null,
+                team_id: entity.type === 'team' ? entity.team_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -271,11 +271,11 @@ export async function uploadSubmissions(
                 course_instance_id: course_instance.id,
                 instance_question_id,
                 question_id: question.id,
-                // For group work, arbitrarily use the first user's ID as the authn_user_id.
+                // For team work, arbitrarily use the first user's ID as the authn_user_id.
                 // This value doesn't really matter, especially in dev mode.
                 authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.team_id : null,
+                team_id: entity.type === 'team' ? entity.team_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This

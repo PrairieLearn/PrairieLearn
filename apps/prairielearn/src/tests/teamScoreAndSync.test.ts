@@ -26,7 +26,7 @@ let elemList;
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
 const questions = _.keyBy(question, 'qid');
 
-describe('assessment instance group synchronization test', function () {
+describe('assessment instance team synchronization test', function () {
   const storedConfig: Record<string, any> = {};
 
   beforeAll(() => {
@@ -48,7 +48,7 @@ describe('assessment instance group synchronization test', function () {
       assert.notEqual(assessment_ids.length, 0);
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
-      locals.instructorAssessmentsUrlGroupTab =
+      locals.instructorAssessmentsUrlTeamTab =
         locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
       locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
@@ -56,7 +56,7 @@ describe('assessment instance group synchronization test', function () {
   });
   describe('2. GET to instructor assessments URL group tab for the first assessment', function () {
     it('should load successfully', async () => {
-      const res = await fetch(locals.instructorAssessmentsUrlGroupTab);
+      const res = await fetch(locals.instructorAssessmentsUrlTeamTab);
       assert.equal(res.status, 200);
       page = await res.text();
     });
@@ -71,19 +71,19 @@ describe('assessment instance group synchronization test', function () {
       assert.isString(locals.__csrf_token);
     });
   });
-  describe('3. user and group initialization', function () {
+  describe('3. user and team initialization', function () {
     it('create 3 users', async () => {
       locals.studentUsers = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
       assert.lengthOf(locals.studentUsers, 3);
-      locals.groupCreator = locals.studentUsers[0];
+      locals.teamCreator = locals.studentUsers[0];
     });
-    it('put 3 users in a group', async () => {
-      const res = await fetch(locals.instructorAssessmentsUrlGroupTab, {
+    it('put 3 users in a team', async () => {
+      const res = await fetch(locals.instructorAssessmentsUrlTeamTab, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_team',
           __csrf_token: locals.__csrf_token,
-          team_name: 'testgroup',
+          team_name: 'testteam',
           uids:
             locals.studentUsers[0].uid +
             ',' +
@@ -94,10 +94,10 @@ describe('assessment instance group synchronization test', function () {
       });
       assert.equal(res.status, 200);
     });
-    it('should create the correct group configuration', async () => {
+    it('should create the correct team configuration', async () => {
       const rowCount = await sqldb.execute(sql.select_team_users, {
         assessment_id: locals.assessment_id,
-        team_name: 'testgroup',
+        team_name: 'testteam',
       });
       assert.equal(rowCount, 3);
     });

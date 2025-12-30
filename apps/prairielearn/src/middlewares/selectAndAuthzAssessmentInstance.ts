@@ -33,8 +33,8 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
-  instance_group: TeamSchema.nullable(),
-  instance_group_uid_list: z.array(z.string()),
+  instance_team: TeamSchema.nullable(),
+  instance_team_uid_list: z.array(z.string()),
 });
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;

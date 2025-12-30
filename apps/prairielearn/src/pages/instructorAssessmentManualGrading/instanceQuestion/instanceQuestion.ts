@@ -292,7 +292,7 @@ router.get(
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
       // Group role permissions are not used in this context.
-      groupRolePermissions: null,
+      teamRolePermissions: null,
     });
     res.json(panels);
   }),

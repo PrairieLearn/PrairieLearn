@@ -142,11 +142,11 @@ function getFilenames(locals: UntypedResLocals) {
     allFilesZipFilename: prefix + 'all_files.zip',
   };
   if (locals.assessment.team_work) {
-    filenames.groupsCsvFilename = prefix + 'groups.csv';
-    filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
-    filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
-    filenames.pointsGroupCsvFilename = prefix + 'points_by_group.csv';
-    filenames.pointsGroupAllCsvFilename = prefix + 'points_by_group_all.csv';
+    filenames.teamsCsvFilename = prefix + 'groups.csv';
+    filenames.scoresTeamCsvFilename = prefix + 'scores_by_group.csv';
+    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_group_all.csv';
+    filenames.pointsTeamCsvFilename = prefix + 'points_by_group.csv';
+    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_group_all.csv';
   }
   return filenames;
 }
@@ -335,7 +335,7 @@ router.get(
     ];
     const usernameColumn: Columns = [['Username', 'username']];
     const teamNameColumn: Columns = [
-      ['Group name', 'team_name'],
+      ['Group name', 'group_name'],
       ['Usernames', 'uid_list'],
     ];
     const scoreColumn: Columns = [[assessmentName, 'score_perc']];
@@ -353,8 +353,8 @@ router.get(
     ];
     const scoresColumns = studentColumn.concat(scoreColumn);
     const pointsColumns = studentColumn.concat(pointColumn);
-    const scoresGroupColumns = teamNameColumn.concat(scoreColumn);
-    const pointsGroupColumns = teamNameColumn.concat(pointColumn);
+    const scoresTeamColumns = teamNameColumn.concat(scoreColumn);
+    const pointsTeamColumns = teamNameColumn.concat(pointColumn);
     const scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
     const pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
@@ -549,7 +549,7 @@ router.get(
 
       res.attachment(req.params.filename);
       await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
-    } else if (req.params.filename === filenames.groupsCsvFilename) {
+    } else if (req.params.filename === filenames.teamsCsvFilename) {
       const teamConfig = await getTeamConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(
         sql.team_configs,
@@ -568,23 +568,23 @@ router.get(
       if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
-    } else if (req.params.filename === filenames.scoresGroupCsvFilename) {
-      await sendInstancesCsv(res, req, scoresGroupColumns, {
+    } else if (req.params.filename === filenames.scoresTeamCsvFilename) {
+      await sendInstancesCsv(res, req, scoresTeamColumns, {
         only_highest: true,
         team_work: true,
       });
-    } else if (req.params.filename === filenames.scoresGroupAllCsvFilename) {
-      await sendInstancesCsv(res, req, scoresGroupColumns, {
+    } else if (req.params.filename === filenames.scoresTeamAllCsvFilename) {
+      await sendInstancesCsv(res, req, scoresTeamColumns, {
         only_highest: false,
         team_work: true,
       });
-    } else if (req.params.filename === filenames.pointsGroupCsvFilename) {
-      await sendInstancesCsv(res, req, pointsGroupColumns, {
+    } else if (req.params.filename === filenames.pointsTeamCsvFilename) {
+      await sendInstancesCsv(res, req, pointsTeamColumns, {
         only_highest: true,
         team_work: true,
       });
-    } else if (req.params.filename === filenames.pointsGroupAllCsvFilename) {
-      await sendInstancesCsv(res, req, pointsGroupColumns, {
+    } else if (req.params.filename === filenames.pointsTeamAllCsvFilename) {
+      await sendInstancesCsv(res, req, pointsTeamColumns, {
         only_highest: false,
         team_work: true,
       });

@@ -100,7 +100,7 @@ function StartAssessmentForm({
     ${startAllowed && assessment.type === 'Exam' && assessment.require_honor_code
       ? HonorPledge({
           user,
-          groupWork: !!assessment.team_work,
+          teamWork: !!assessment.team_work,
           customHonorCode,
         })
       : ''}
@@ -128,11 +128,11 @@ function StartAssessmentForm({
 
 function HonorPledge({
   user,
-  groupWork,
+  teamWork,
   customHonorCode,
 }: {
   user: User;
-  groupWork: boolean;
+  teamWork: boolean;
   customHonorCode?: string;
 }) {
   return html`
@@ -141,13 +141,13 @@ function HonorPledge({
         ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
         : html`<ul class="list-group list-group-flush">
             <li class="list-group-item py-2">
-              I certify that I am ${user.name} and ${groupWork ? 'our group is' : 'I am'} allowed to
+              I certify that I am ${user.name} and ${teamWork ? 'our group is' : 'I am'} allowed to
               take this assessment.
             </li>
             <li class="list-group-item py-2">
-              ${groupWork ? 'We' : 'I'} pledge on ${groupWork ? 'our' : 'my'} honor that
-              ${groupWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
-              assessment and that all work will be ${groupWork ? 'our' : 'my'} own.
+              ${teamWork ? 'We' : 'I'} pledge on ${teamWork ? 'our' : 'my'} honor that
+              ${teamWork ? 'we' : 'I'} will not give or receive any unauthorized assistance on this
+              assessment and that all work will be ${teamWork ? 'our' : 'my'} own.
             </li>
           </ul>`}
       <div class="card-footer d-flex justify-content-center">

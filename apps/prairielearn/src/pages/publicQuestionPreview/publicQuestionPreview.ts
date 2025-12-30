@@ -89,7 +89,7 @@ router.get(
       // Score panels are never rendered on the public question preview page.
       renderScorePanels: false,
       // Group role permissions are not used in this context.
-      groupRolePermissions: null,
+      teamRolePermissions: null,
     });
     res.json(panels);
   }),

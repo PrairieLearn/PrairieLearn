@@ -148,7 +148,7 @@ export function StudentAssessmentInstance({
         : 1 + trailingColumnsCount;
   });
 
-  const userGroupRoles = teamInfo
+  const userTeamRoles = teamInfo
     ? getRoleNamesForUser(teamInfo, resLocals.authz_data.user).join(', ')
     : null;
 
@@ -338,7 +338,7 @@ export function StudentAssessmentInstance({
                     <td>
                       ${RowLabel({
                         instance_question_row,
-                        userGroupRoles,
+                        userTeamRoles,
                         urlPrefix: resLocals.urlPrefix,
                         rowLabelText:
                           resLocals.assessment.type === 'Exam'
@@ -630,8 +630,8 @@ export function StudentAssessmentInstance({
         course_instance: resLocals.course_instance,
         assessment: resLocals.assessment,
         assessment_instance: resLocals.assessment_instance,
-        instance_group: resLocals.instance_group,
-        instance_group_uid_list: resLocals.instance_group_uid_list,
+        instance_team: resLocals.instance_team,
+        instance_team_uid_list: resLocals.instance_team_uid_list,
         instance_user: resLocals.instance_user,
         authz_data: resLocals.authz_data,
         questionContext: resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
@@ -793,12 +793,12 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
 
 function RowLabel({
   instance_question_row,
-  userGroupRoles,
+  userTeamRoles,
   rowLabelText,
   urlPrefix,
 }: {
   instance_question_row: InstanceQuestionRow;
-  userGroupRoles: string | null;
+  userTeamRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {
@@ -808,7 +808,7 @@ function RowLabel({
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
   } else if (!(instance_question_row.team_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+    lockedPopoverText = `Your current group role (${userTeamRoles}) restricts access to this question.`;
   }
 
   return html`

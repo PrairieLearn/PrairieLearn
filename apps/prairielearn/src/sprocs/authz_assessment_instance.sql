@@ -104,7 +104,7 @@ BEGIN
     -- the user about grading on an exam assessment instance. Be careful if you
     -- change this behavior!
     --
-    -- What about groups? No problem. Everything is the same, except for group work
+    -- What about teams? No problem. Everything is the same, except for team work
     -- we need to check instead that "there exists a team_users with the same team_id
     -- as the assessment instance and the same user_id as the effective user."
     IF

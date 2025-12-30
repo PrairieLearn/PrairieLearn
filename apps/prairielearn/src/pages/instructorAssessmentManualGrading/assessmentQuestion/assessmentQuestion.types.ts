@@ -40,7 +40,7 @@ export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   instancesUrl: string;
-  groupWork: boolean;
+  teamWork: boolean;
   maxPoints: number | null;
   maxAutoPoints: number | null;
   aiGradingMode: boolean;

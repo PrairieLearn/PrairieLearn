@@ -295,7 +295,7 @@ router.get(
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.team_role_permissions ?? null,
+      teamRolePermissions: res.locals.team_role_permissions ?? null,
     });
     res.json(panels);
   }),

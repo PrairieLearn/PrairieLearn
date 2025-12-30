@@ -39,11 +39,11 @@ export function InstructorAssessmentUploads({
         ? html`
             ${UploadInstanceQuestionScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.team_work,
+              teamWork: resLocals.assessment.team_work,
             })}
             ${UploadAssessmentInstanceScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.team_work,
+              teamWork: resLocals.assessment.team_work,
             })}
             ${config.devMode
               ? UploadSubmissionsCsvModal({ csrfToken: resLocals.__csrf_token })
@@ -51,7 +51,7 @@ export function InstructorAssessmentUploads({
           `
         : ''}
       ${AssessmentUploadCard({
-        groupWork: resLocals.assessment.team_work,
+        teamWork: resLocals.assessment.team_work,
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,
@@ -63,14 +63,14 @@ export function InstructorAssessmentUploads({
 }
 
 function AssessmentUploadCard({
-  groupWork,
+  teamWork,
   assessmentSetName,
   assessmentNumber,
   authzHasPermissionEdit,
   uploadJobSequences,
   urlPrefix,
 }: {
-  groupWork: boolean;
+  teamWork: boolean;
   assessmentSetName: string;
   assessmentNumber: number;
   authzHasPermissionEdit: boolean;
@@ -107,7 +107,7 @@ function AssessmentUploadCard({
                         </a>
                       </p>
                       <div class="collapse" id="uploadInstanceQuestionScoresHelp">
-                        ${CsvHelpInstanceQuestionScores({ groupWork })}
+                        ${CsvHelpInstanceQuestionScores({ teamWork })}
                       </div>
                     </td>
                   </tr>
@@ -130,7 +130,7 @@ function AssessmentUploadCard({
                         </a>
                       </p>
                       <div class="collapse" id="uploadAssessmentScoresHelp">
-                        ${CsvHelpAssessmentInstanceScores({ groupWork })}
+                        ${CsvHelpAssessmentInstanceScores({ teamWork })}
                       </div>
                     </td>
                   </tr>
@@ -207,7 +207,7 @@ function AssessmentUploadCard({
   `;
 }
 
-function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork: boolean }) {
+function CsvHelpInstanceQuestionScores({ teamWork }: { teamWork: boolean }) {
   return html`
     <p>
       Upload a CSV file in the format of the
@@ -215,10 +215,10 @@ function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork: boolean }) {
       file from the Downloads page. Alternatively, the CSV file can be in the format:
     </p>
     <pre class="ms-4">
-${groupWork ? 'team_name' : 'uid'},instance,qid,score_perc,feedback
-${groupWork ? 'group1' : 'student1@example.com'},1,addTwoNumbers,34.5,The second step was wrong
-${groupWork ? 'group2' : 'student2@example.com'},1,addTwoNumbers,78.92,
-${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!</pre
+${teamWork ? 'group_name' : 'uid'},instance,qid,score_perc,feedback
+${teamWork ? 'group1' : 'student1@example.com'},1,addTwoNumbers,34.5,The second step was wrong
+${teamWork ? 'group2' : 'student2@example.com'},1,addTwoNumbers,78.92,
+${teamWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!</pre
     >
     <p>
       Additional information, including instructions on how to update points instead of percentage
@@ -233,48 +233,48 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!
   `;
 }
 
-function CsvHelpAssessmentInstanceScores({ groupWork }: { groupWork: boolean }) {
+function CsvHelpAssessmentInstanceScores({ teamWork }: { teamWork: boolean }) {
   return html`
     <p>Upload a CSV file like this:</p>
     <pre class="ms-4">
-${groupWork ? 'team_name' : 'uid'},instance,score_perc
-${groupWork ? 'group1' : 'student1@example.com'},1,63.5
-${groupWork ? 'group2' : 'student2@example.com'},1,100</pre
+${teamWork ? 'group_name' : 'uid'},instance,score_perc
+${teamWork ? 'group1' : 'student1@example.com'},1,63.5
+${teamWork ? 'group2' : 'student2@example.com'},1,100</pre
     >
     <p>
       The example above will change the total assessment percentage scores for
-      ${groupWork ? html`group <code>group1</code>` : html`<code>student1@example.com</code>`} to
+      ${teamWork ? html`group <code>group1</code>` : html`<code>student1@example.com</code>`} to
       63.5% and for
-      ${groupWork ? html`group <code>group2</code>` : html`<code>student2@example.com</code>`} to
+      ${teamWork ? html`group <code>group2</code>` : html`<code>student2@example.com</code>`} to
       100%. The <code>instance</code> column indicates which assessment instance to modify, and
       should be <code>1</code> if there is only a single instance per
-      ${groupWork ? 'group' : 'student'}.
+      ${teamWork ? 'group' : 'student'}.
     </p>
     <p>
       Alternatively, the total assessment points can be changed with a CSV containing a
       <code>points</code> column, like:
     </p>
     <pre class="ms-4">
-${groupWork ? 'team_name' : 'uid'},instance,points
-${groupWork ? 'group1' : 'student1@example.com'},1,120
-${groupWork ? 'group2' : 'student2@example.com'},1,130.27</pre
+${teamWork ? 'group_name' : 'uid'},instance,points
+${teamWork ? 'group1' : 'student1@example.com'},1,120
+${teamWork ? 'group2' : 'student2@example.com'},1,130.27</pre
     >
   `;
 }
 
 function UploadInstanceQuestionScoresModal({
   csrfToken,
-  groupWork,
+  teamWork,
 }: {
   csrfToken: string;
-  groupWork: boolean;
+  teamWork: boolean;
 }) {
   return Modal({
     id: 'upload-instance-question-scores-form',
     title: 'Upload new question scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${CsvHelpInstanceQuestionScores({ groupWork })}
+      ${CsvHelpInstanceQuestionScores({ teamWork })}
       <div class="mb-3">
         <label class="form-label" for="uploadInstanceQuestionScoresFileInput">
           Choose CSV file
@@ -298,17 +298,17 @@ function UploadInstanceQuestionScoresModal({
 
 function UploadAssessmentInstanceScoresModal({
   csrfToken,
-  groupWork,
+  teamWork,
 }: {
   csrfToken: string;
-  groupWork: boolean;
+  teamWork: boolean;
 }) {
   return Modal({
     id: 'upload-assessment-instance-scores-form',
     title: 'Upload new total scores',
     formEncType: 'multipart/form-data',
     body: html`
-      ${CsvHelpAssessmentInstanceScores({ groupWork })}
+      ${CsvHelpAssessmentInstanceScores({ teamWork })}
       <div class="mb-3">
         <label class="form-label" for="uploadAssessmentInstanceScoresFileInput">
           Choose CSV file

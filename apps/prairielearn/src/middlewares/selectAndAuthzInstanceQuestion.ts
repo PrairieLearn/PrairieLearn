@@ -57,8 +57,8 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
-  instance_group: TeamSchema.nullable(),
-  instance_group_uid_list: z.array(z.string()),
+  instance_team: TeamSchema.nullable(),
+  instance_team_uid_list: z.array(z.string()),
   instance_question: z.object({
     ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
     ...InstanceQuestionSchema.shape,
@@ -78,7 +78,7 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
     previous_variants?: SimpleVariantWithScore[];
   };
 
-  /** These are only set if the assessment has group work. */
+  /** These are only set if the assessment has team work. */
   prev_instance_question_role_permissions?: QuestionTeamPermissions;
   next_instance_question_role_permissions?: QuestionTeamPermissions;
   team_config?: TeamConfig;

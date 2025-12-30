@@ -1354,9 +1354,9 @@ function validateAssessment({
     );
   }
 
-  if (assessment.teamRoles.length > 0) {
+  if (assessment.groupRoles.length > 0) {
     // Ensure at least one mandatory role can assign roles
-    const foundCanAssignRoles = assessment.teamRoles.some(
+    const foundCanAssignRoles = assessment.groupRoles.some(
       (role) => role.canAssignRoles && role.minimum >= 1,
     );
 
@@ -1365,7 +1365,7 @@ function validateAssessment({
     }
 
     // Ensure values for role minimum and maximum are within bounds
-    assessment.teamRoles.forEach((role) => {
+    assessment.groupRoles.forEach((role) => {
       if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
         warnings.push(
           `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
@@ -1393,7 +1393,7 @@ function validateAssessment({
     });
 
     const validRoleNames = new Set();
-    assessment.teamRoles.forEach((role) => {
+    assessment.groupRoles.forEach((role) => {
       validRoleNames.add(role.name);
     });
 

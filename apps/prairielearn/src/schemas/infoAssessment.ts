@@ -204,13 +204,13 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   canSubmit: uniqueArray(z.string())
     .describe(
-      'A list of group role names matching those in teamRoles that can submit the question. Only applicable for group assessments.',
+      'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
     )
     .optional()
     .default([]),
   canView: uniqueArray(z.string())
     .describe(
-      'A list of group role names matching those in teamRoles that can view the question. Only applicable for group assessments.',
+      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
     )
     .optional()
     .default([]),
@@ -375,7 +375,7 @@ export const AssessmentJsonSchema = z
       .default(false),
     groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
     groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
-    teamRoles: z
+    groupRoles: z
       .array(GroupRoleJsonSchema)
       .describe('Array of custom user roles in a group.')
       .optional()

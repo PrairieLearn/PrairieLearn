@@ -74,7 +74,7 @@ const TeamForUpdateSchema = TeamSchema.extend({
 });
 
 /**
- * Gets the group config info for a given assessment id.
+ * Gets the team config info for a given assessment id.
  */
 export async function getTeamConfig(assessmentId: string): Promise<TeamConfig> {
   return await sqldb.queryRow(
@@ -85,8 +85,8 @@ export async function getTeamConfig(assessmentId: string): Promise<TeamConfig> {
 }
 
 /**
- * Returns the group id for the user's current group in an assessment, if it exists.
- * Used in checking whether the user is in a group or not.
+ * Returns the team id for the user's current team in an assessment, if it exists.
+ * Used in checking whether the user is in a team or not.
  */
 export async function getTeamId(assessmentId: string, userId: string): Promise<string | null> {
   return await sqldb.queryOptionalRow(
@@ -124,7 +124,7 @@ export async function getTeamInfo(team_id: string, teamConfig: TeamConfig): Prom
 
 /**
  * A helper function to getTeamInfo that returns a data structure containing info about an
- * assessment's group roles.
+ * assessment's team roles.
  */
 async function getRolesInfo(teamId: string, teamMembers: User[]): Promise<RolesInfo> {
   // Get the current role assignments of the team

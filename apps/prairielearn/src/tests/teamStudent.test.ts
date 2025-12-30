@@ -130,8 +130,8 @@ describe('Team based homework assess control on student side', { timeout: 20_000
       const result = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
       assert.lengthOf(result, 5);
       locals.studentUsers = result.slice(0, 3);
-      locals.studentUserNotInGroup = result[3];
-      locals.studentUserInDiffGroup = result[4];
+      locals.studentUserNotInTeam = result[3];
+      locals.studentUserInDiffTeam = result[4];
       locals.teamCreator = locals.studentUsers[0];
       assert.lengthOf(locals.studentUsers, 3);
     });
@@ -309,7 +309,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
   });
   describe('13. the fourth user can not join the already full team', function () {
     it('should be able to switch to the unteamed student', function () {
-      const student = locals.studentUserNotInGroup;
+      const student = locals.studentUserNotInTeam;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -347,7 +347,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
 
   describe('13.5. The fourth user can create another team', () => {
     it('should be able to switch to the student not in team', function () {
-      const student = locals.studentUserNotInGroup;
+      const student = locals.studentUserNotInTeam;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -560,7 +560,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
 
   describe('18. access control of student who are not in any team', function () {
     it('should be able to switch to the student not in team', function () {
-      const student = locals.studentUserNotInGroup;
+      const student = locals.studentUserNotInTeam;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000004';
@@ -573,7 +573,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
 
   describe('19. access control of student who are in a different team', function () {
     it('should be able to switch to the student in the different team', function () {
-      const student = locals.studentUserInDiffGroup;
+      const student = locals.studentUserInDiffTeam;
       config.authUid = student.uid;
       config.authName = student.name;
       config.authUin = '00000005';

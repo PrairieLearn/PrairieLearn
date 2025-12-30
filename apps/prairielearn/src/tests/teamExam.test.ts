@@ -27,7 +27,7 @@ const storedConfig: any = {};
 const GROUP_EXAM_1_TID = 'exam14-groupWork';
 const GROUP_EXAM_2_TID = 'exam16-groupWorkRoles';
 const TEAM_NAME = 'teamBB';
-const TEAM_NAME_ALTERNATIVE = 'groupCC';
+const TEAM_NAME_ALTERNATIVE = 'teamCC';
 
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
@@ -36,7 +36,7 @@ async function generateThreeStudentUsers() {
 }
 
 /**
- * Creates a new group in the given assessment as the user with the given CSRF token
+ * Creates a new team in the given assessment as the user with the given CSRF token
  */
 async function createTeam(
   team_name: string,
@@ -57,7 +57,7 @@ async function createTeam(
 }
 
 /**
- * Joins a group in an assessment using the provided join code as the user with the given CSRF token
+ * Joins a team in an assessment using the provided join code as the user with the given CSRF token
  */
 async function joinTeam(
   assessmentUrl: string,
@@ -77,7 +77,7 @@ async function joinTeam(
   return $;
 }
 
-describe('Group based exam assessments', { timeout: 20_000 }, function () {
+describe('Team based exam assessments', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   beforeAll(function () {
@@ -102,11 +102,11 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
           { assessment_tid: GROUP_EXAM_1_TID },
           IdSchema,
         );
-        const instructorAssessmentsUrlGroupTab =
+        const instructorAssessmentsUrlTeamTab =
           courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
         // Page should load successfully
-        const res = await fetch(instructorAssessmentsUrlGroupTab);
+        const res = await fetch(instructorAssessmentsUrlTeamTab);
         assert.isOk(res.ok);
       },
     );
@@ -120,18 +120,18 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
           { assessment_tid: GROUP_EXAM_2_TID },
           IdSchema,
         );
-        const instructorAssessmentsUrlGroupTab =
+        const instructorAssessmentsUrlTeamTab =
           courseInstanceUrl + '/instructor/assessment/' + assessmentId + '/groups';
 
         // Page should load successfully
-        const res = await fetch(instructorAssessmentsUrlGroupTab);
+        const res = await fetch(instructorAssessmentsUrlTeamTab);
         assert.isOk(res.ok);
       },
     );
   });
 
-  describe('group config correctness', function () {
-    test.sequential('first assessment group config in database is correct', async function () {
+  describe('team config correctness', function () {
+    test.sequential('first assessment team config in database is correct', async function () {
       const assessmentId = await queryRow(
         sql.select_team_exam_by_tid,
         { assessment_tid: GROUP_EXAM_1_TID },
@@ -149,7 +149,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       assert.equal(max, 2);
     });
 
-    test.sequential('second assessment group config in database is correct', async function () {
+    test.sequential('second assessment team config in database is correct', async function () {
       const assessmentId = await queryRow(
         sql.select_team_exam_by_tid,
         { assessment_tid: GROUP_EXAM_2_TID },
@@ -168,8 +168,8 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
     });
   });
 
-  describe('exam group creation, joining, and starting', function () {
-    it('allows group creation, joining, and starting', async function () {
+  describe('exam team creation, joining, and starting', function () {
+    it('allows team creation, joining, and starting', async function () {
       // Get exam assessment URL using id from database
       const assessmentId = await queryRow(
         sql.select_team_exam_by_tid,
@@ -188,7 +188,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         'create-form',
       );
 
-      // As first user, create group, load the page, and check group information
+      // As first user, create team, load the page, and check team information
       let $ = await createTeam(TEAM_NAME, firstUserCsrfToken, assessmentUrl);
       assert.equal(
         $('#team-name').text(),
@@ -209,7 +209,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         'Page must show the group to be missing 1 more member',
       );
 
-      // Join group as second user and check group info
+      // Join team as second user and check team info
       const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[1],
         assessmentUrl,
@@ -235,7 +235,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         'Page should not show a warning for more members',
       );
 
-      // Switch to third user and attempt to join group
+      // Switch to third user and attempt to join team
       const { csrfToken: thirdUserCsrfToken } = await switchUserAndLoadAssessment(
         studentUsers[2],
         assessmentUrl,
@@ -292,7 +292,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
       const assessmentInstanceURL =
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
 
-      // Ensure all group members can access the assessment instance correctly
+      // Ensure all team members can access the assessment instance correctly
       await switchUserAndLoadAssessment(studentUsers[0], assessmentUrl, null, '#leaveTeamModal');
       const firstMemberResponse = await fetch(assessmentInstanceURL);
       assert.isOk(firstMemberResponse.ok);
@@ -304,7 +304,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
   });
 });
 
-describe('cross group exam access', { timeout: 20_000 }, function () {
+describe('cross team exam access', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   beforeAll(function () {
@@ -319,7 +319,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
     Object.assign(config, storedConfig);
   });
 
-  it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
+  it("prevents unauthorized users from accessing other teams' assessment instances", async function () {
     // Get exam assessment URL using id from database
     const assessmentId = await queryRow(
       sql.select_team_exam_by_tid,
@@ -338,11 +338,11 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
       'create-form',
     );
 
-    // As first user, create group, load the page, and check group information
+    // As first user, create team, load the page, and check team information
     let $ = await createTeam(TEAM_NAME, firstUserCsrfToken, assessmentUrl);
     const joinCode = $('#join-code').text();
 
-    // Join group as second user
+    // Join team as second user
     const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       assessmentUrl,
@@ -380,7 +380,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
       '#leaveTeamModal',
     );
 
-    // Leave exam group as second user
+    // Leave exam team as second user
     const leaveResponse = await fetch(assessmentInstanceURL, {
       method: 'POST',
       body: new URLSearchParams({
@@ -391,14 +391,14 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
     assert.isOk(leaveResponse.ok);
     $ = cheerio.load(await leaveResponse.text());
 
-    // Attempt to access exam assessment instance as a non-grouped user should be unsuccessful
+    // Attempt to access exam assessment instance as a user not in a team should be unsuccessful
     const accessResponse = await fetch(assessmentInstanceURL);
     assert.equal(accessResponse.status, 403, 'status should be forbidden');
 
-    // As second user, create an entirely new group
+    // As second user, create an entirely new team
     await createTeam(TEAM_NAME_ALTERNATIVE, secondUserCsrfToken, assessmentUrl);
 
-    // Attempt to access previous exam assessment instance while in a new group should be unsuccessful
+    // Attempt to access previous exam assessment instance while in a new team should be unsuccessful
     const secondAccessResponse = await fetch(assessmentInstanceURL);
     assert.equal(secondAccessResponse.status, 403, 'status should be forbidden');
   });
@@ -419,7 +419,7 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
     Object.assign(config, storedConfig);
   });
 
-  it("prevents unauthorized users from accessing other groups' assessment instances", async function () {
+  it("prevents unauthorized users from accessing other teams' assessment instances", async function () {
     // Get exam assessment URL using ids from database
     const firstAssessmentId = await queryRow(
       sql.select_team_exam_by_tid,
@@ -445,11 +445,11 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
       'create-form',
     );
 
-    // As first user, create group, load the page, and check group information
+    // As first user, create team, load the page, and check team information
     let $ = await createTeam(TEAM_NAME, firstUserCsrfToken, firstAssessmentUrl);
     const firstAssessmentJoinCode = $('#join-code').text();
 
-    // Join group as second user
+    // Join team as second user
     const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
       studentUsers[1],
       firstAssessmentUrl,
@@ -464,7 +464,7 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
       'jointeam-form',
     );
 
-    // Attempt to join a first assessment group from the second assessment
+    // Attempt to join a first assessment team from the second assessment
     const crossAssessmentJoinResponse = await fetchCookie(fetch)(secondAssessmentUrl, {
       method: 'POST',
       body: new URLSearchParams({

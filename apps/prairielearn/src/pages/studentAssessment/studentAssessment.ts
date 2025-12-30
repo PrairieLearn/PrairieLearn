@@ -46,7 +46,7 @@ router.get(
       // the assessment (or that they're trying to start a new instance of a
       // multi-instance assessment), and the assessment is not active.
       //
-      // This check means that students will be unable to join a group if an
+      // This check means that students will be unable to join a team if an
       // assessment is inactive, which we're deeming to be sensible behavior.
       res.status(403).send(StudentAssessmentAccess({ resLocals: res.locals }));
       return;
@@ -63,7 +63,7 @@ router.get(
     // students to create and start a new assessment instance.
     if (!checkPasswordOrRedirect(req, res)) return;
 
-    // For homeworks without group work, create the new assessment instance
+    // For homeworks without team work, create the new assessment instance
     // and redirect to it without further student action.
     if (!res.locals.assessment.team_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
@@ -99,10 +99,10 @@ router.get(
       return;
     }
 
-    // Get the group config info
+    // Get the team config info
     const teamConfig = await getTeamConfig(res.locals.assessment.id);
 
-    // Check whether the user is currently in a group in the current assessment by trying to get a group_id
+    // Check whether the user is currently in a team in the current assessment by trying to get a team_id
     const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
 
     const teamInfo = teamId === null ? null : await getTeamInfo(teamId, teamConfig);
@@ -212,7 +212,7 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_team_roles') {
-      // Check whether the user is currently in a group
+      // Check whether the user is currently in a team
       const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
       if (teamId == null) {
         throw new HttpStatusError(403, 'Cannot change group roles while not in a group.');

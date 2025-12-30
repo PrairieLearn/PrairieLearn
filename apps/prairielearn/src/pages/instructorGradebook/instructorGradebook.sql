@@ -116,7 +116,7 @@ WITH
           s.score_perc,
           'assessment_instance_id',
           s.assessment_instance_id,
-          'uid_other_users_group',
+          'uid_other_users_team',
           COALESCE(
             (
               SELECT

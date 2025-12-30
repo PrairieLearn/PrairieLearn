@@ -53,10 +53,10 @@ export async function regradeAssessmentInstance(
     RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
+  const userOrTeam = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
+    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrTeam,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: assessmentInstance.course_id,
@@ -68,7 +68,7 @@ export async function regradeAssessmentInstance(
   // continue executing below to launch the jobs themselves.
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrGroup);
+    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrTeam);
     const regrade = await regradeSingleAssessmentInstance({
       assessment_instance_id,
       authn_user_id,
@@ -131,13 +131,13 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrGroup = row.user_uid || `group "${row.team_name}"`;
+      const userOrTeam = row.user_uid || `group "${row.team_name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
           assessment_instance_id: row.assessment_instance_id,
           authn_user_id,
         });
-        msg = `Regraded ${row.assessment_instance_label} for ${userOrGroup}: `;
+        msg = `Regraded ${row.assessment_instance_label} for ${userOrTeam}: `;
         if (regrade.updated) {
           updated_count++;
           msg += `New score: ${Math.floor(
@@ -150,7 +150,7 @@ export async function regradeAllAssessmentInstances(
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;
-        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrGroup}`;
+        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrTeam}`;
       }
       output = (output == null ? '' : `${output}\n`) + msg;
 

@@ -169,10 +169,10 @@ export function StudentInstanceQuestion({
             nextInstanceQuestionId: resLocals.instance_question_info.next_instance_question?.id,
             sequenceLocked:
               resLocals.instance_question_info.next_instance_question?.sequence_locked,
-            prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
-            nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
+            prevTeamRolePermissions: resLocals.prev_instance_question_role_permissions,
+            nextTeamRolePermissions: resLocals.next_instance_question_role_permissions,
             advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-            userGroupRoles: resLocals.team_info
+            userTeamRoles: resLocals.team_info
               ? getRoleNamesForUser(resLocals.team_info, resLocals.user).join(', ')
               : null,
           })}
@@ -197,8 +197,8 @@ export function StudentInstanceQuestion({
             lastGrader,
             question: resLocals.question,
             variant: resLocals.variant,
-            instance_group: resLocals.instance_group,
-            instance_group_uid_list: resLocals.instance_group_uid_list,
+            instance_team: resLocals.instance_team,
+            instance_team_uid_list: resLocals.instance_team_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
             question_is_shared: resLocals.question_is_shared,

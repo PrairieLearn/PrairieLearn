@@ -658,7 +658,7 @@ export async function renderPanelsForSubmission({
   questionRenderContext,
   authorizedEdit,
   renderScorePanels,
-  groupRolePermissions,
+  teamRolePermissions,
 }: {
   unsafe_submission_id: string;
   question: Question;
@@ -670,7 +670,7 @@ export async function renderPanelsForSubmission({
   questionRenderContext?: QuestionRenderContext;
   authorizedEdit: boolean;
   renderScorePanels: boolean;
-  groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  teamRolePermissions: { can_view: boolean; can_submit: boolean } | null;
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -723,7 +723,7 @@ export async function renderPanelsForSubmission({
       variant,
       question,
       instance_question,
-      team_role_permissions: groupRolePermissions,
+      team_role_permissions: teamRolePermissions,
       assessment,
       assessment_instance,
       assessment_question,
@@ -838,7 +838,7 @@ export async function renderPanelsForSubmission({
           instance_question_info: { previous_variants },
           team_config,
           team_info,
-          team_role_permissions: groupRolePermissions,
+          team_role_permissions: teamRolePermissions,
           user,
           ...locals,
         },
@@ -854,7 +854,7 @@ export async function renderPanelsForSubmission({
       if (variant.instance_question_id == null || next_instance_question.id == null) return;
 
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
-      let userGroupRoles = 'None';
+      let userTeamRoles = 'None';
 
       if (assessment_instance?.team_id && team_config?.has_roles) {
         nextQuestionGroupRolePermissions = await getQuestionTeamPermissions(
@@ -862,7 +862,7 @@ export async function renderPanelsForSubmission({
           assessment_instance.team_id,
           user.id,
         );
-        userGroupRoles =
+        userTeamRoles =
           (await getUserRoles(assessment_instance.team_id, user.id))
             .map((role) => role.role_name)
             .join(', ') || 'None';
@@ -873,9 +873,9 @@ export async function renderPanelsForSubmission({
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
         whichButton: 'next',
-        groupRolePermissions: nextQuestionGroupRolePermissions,
+        teamRolePermissions: nextQuestionGroupRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,
-        userGroupRoles,
+        userTeamRoles,
       }).toString();
     },
   ]);

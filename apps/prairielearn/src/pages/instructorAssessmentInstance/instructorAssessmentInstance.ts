@@ -44,7 +44,7 @@ function makeLogCsvFilename(locals: UntypedResLocals) {
       locals.course_instance,
       locals.course,
     ) +
-    sanitizeString(locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown') +
+    sanitizeString(locals.instance_team?.name ?? locals.instance_user?.uid ?? 'unknown') +
     '_' +
     locals.assessment_instance.number +
     '_' +

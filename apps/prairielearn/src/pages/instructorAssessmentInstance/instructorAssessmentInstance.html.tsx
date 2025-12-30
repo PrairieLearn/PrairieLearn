@@ -81,7 +81,7 @@ export function InstructorAssessmentInstance({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
+    pageTitle: resLocals.instance_team?.name || resLocals.instance_user?.uid,
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -106,8 +106,8 @@ export function InstructorAssessmentInstance({
     content: html`
       <h1 class="visually-hidden">
         ${resLocals.assessment_instance_label} instance for
-        ${resLocals.instance_group
-          ? html`${resLocals.instance_group.name}`
+        ${resLocals.instance_team
+          ? html`${resLocals.instance_team.name}`
           : html`${resLocals.instance_user.name}`}
       </h1>
       ${ResetQuestionVariantsModal({
@@ -119,8 +119,8 @@ export function InstructorAssessmentInstance({
         <div class="card-header bg-primary text-white">
           <h2>
             ${resLocals.assessment_instance_label} Summary:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+            ${resLocals.instance_team
+              ? html`${resLocals.instance_team.name} <i class="fas fa-users"></i>`
               : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
           </h2>
         </div>
@@ -130,15 +130,15 @@ export function InstructorAssessmentInstance({
             aria-label="Assessment instance summary"
           >
             <tbody>
-              ${resLocals.instance_group
+              ${resLocals.instance_team
                 ? html`
                     <tr>
                       <th>Name</th>
-                      <td colspan="2">${resLocals.instance_group.name}</td>
+                      <td colspan="2">${resLocals.instance_team.name}</td>
                     </tr>
                     <tr>
                       <th>Group Members</th>
-                      <td colspan="2">${resLocals.instance_group_uid_list.join(', ')}</td>
+                      <td colspan="2">${resLocals.instance_team_uid_list.join(', ')}</td>
                     </tr>
                   `
                 : html`
@@ -302,8 +302,8 @@ export function InstructorAssessmentInstance({
         <div class="card-header bg-primary text-white">
           <h2>
             ${resLocals.assessment_instance_label} Questions:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+            ${resLocals.instance_team
+              ? html`${resLocals.instance_team.name} <i class="fas fa-users"></i>`
               : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
           </h2>
         </div>
@@ -483,8 +483,8 @@ export function InstructorAssessmentInstance({
         <div class="card-header bg-primary text-white">
           <h2>
             ${resLocals.assessment_instance_label} Statistics:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+            ${resLocals.instance_team
+              ? html`${resLocals.instance_team.name} <i class="fas fa-users"></i>`
               : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
           </h2>
         </div>
@@ -549,8 +549,8 @@ export function InstructorAssessmentInstance({
         <div class="card-header bg-primary text-white">
           <h2>
             ${resLocals.assessment_instance_label} Log:
-            ${resLocals.instance_group
-              ? html`${resLocals.instance_group.name} <i class="fas fa-users"></i>`
+            ${resLocals.instance_team
+              ? html`${resLocals.instance_team.name} <i class="fas fa-users"></i>`
               : html`${resLocals.instance_user.name} (${resLocals.instance_user.uid})`}
           </h2>
         </div>

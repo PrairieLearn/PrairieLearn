@@ -391,7 +391,7 @@ onDocumentReady(() => {
           </button>
         `,
         class: 'text-center align-middle',
-        // Hidden for groupwork by default, as it is not as relevant in that context
+        // Hidden for teamwork by default, as it is not as relevant in that context
         visible: !assessmentTeamWork,
         switchable: true,
         sortable: true,

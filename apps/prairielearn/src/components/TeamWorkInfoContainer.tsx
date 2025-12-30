@@ -60,13 +60,13 @@ export function TeamWorkInfoContainer({
                     data-bs-toggle="modal"
                     data-bs-target="#leaveTeamModal"
                   >
-                    Leave the Group
+                    Leave the group
                   </button>
                 </div>
                 ${LeaveTeamModal({ csrfToken })}
               `
             : ''}
-          <span id="group-member"><b>Group members: </b></span>
+          <span id="team-member"><b>Group members: </b></span>
           ${teamInfo.teamMembers.map((user) =>
             teamConfig.has_roles
               ? html`
@@ -101,7 +101,7 @@ function LeaveTeamModal({ csrfToken }: { csrfToken: string }) {
       <input type="hidden" name="__action" value="leave_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
+      <button id="leave-team" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });
 }
@@ -239,12 +239,12 @@ function TeamRoleTable({
             </thead>
             <tbody>
               ${rolesInfo.teamRoles.map(
-                (groupRole) => html`
+                (teamRole) => html`
                   <tr>
-                    <td>${groupRole.role_name}</td>
-                    <td>${groupRole.minimum ?? 0}</td>
-                    <td>${groupRole.maximum ?? 'Unlimited'}</td>
-                    <td>${groupRole.can_assign_roles ? 'Yes' : 'No'}</td>
+                    <td>${teamRole.role_name}</td>
+                    <td>${teamRole.minimum ?? 0}</td>
+                    <td>${teamRole.maximum ?? 'Unlimited'}</td>
+                    <td>${teamRole.can_assign_roles ? 'Yes' : 'No'}</td>
                   </tr>
                 `,
               )}

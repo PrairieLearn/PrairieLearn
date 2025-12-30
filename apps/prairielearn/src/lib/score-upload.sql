@@ -28,7 +28,7 @@ FOR UPDATE OF
 SELECT
   s.id AS submission_id,
   iq.id AS instance_question_id,
-  COALESCE(t.name, u.uid) AS uid_or_group,
+  COALESCE(t.name, u.uid) AS uid_or_team,
   q.qid
 FROM
   instance_questions AS iq
@@ -48,7 +48,7 @@ WHERE
     s.id = $submission_id
     OR (
       $submission_id IS NULL
-      AND COALESCE(t.name, u.uid) = $uid_or_group
+      AND COALESCE(t.name, u.uid) = $uid_or_team
       AND ai.number = $ai_number
       AND q.qid = $qid
     )

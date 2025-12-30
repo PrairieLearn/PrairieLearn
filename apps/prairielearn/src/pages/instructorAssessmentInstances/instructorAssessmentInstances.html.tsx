@@ -41,7 +41,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Untype
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentGroupWork: resLocals.assessment.team_work,
+              assessmentTeamWork: resLocals.assessment.team_work,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({
@@ -155,7 +155,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Untype
           data-smart-display="false"
           data-show-extended-pagination="true"
           data-sticky-header="true"
-          data-assessment-group-work="${resLocals.assessment.team_work}"
+          data-assessment-team-work="${resLocals.assessment.team_work}"
           data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
           data-assessment-number="${resLocals.assessment.number}"
           data-url-prefix="${resLocals.urlPrefix}"
@@ -315,12 +315,12 @@ function TimeRemainingHelpModal() {
 function DeleteAssessmentInstanceModal({
   assessmentSetName,
   assessmentNumber,
-  assessmentGroupWork,
+  assessmentTeamWork,
   csrfToken,
 }: {
   assessmentSetName: string;
   assessmentNumber: number;
-  assessmentGroupWork: boolean;
+  assessmentTeamWork: boolean;
   csrfToken: string;
 }) {
   return Modal({
@@ -331,7 +331,7 @@ function DeleteAssessmentInstanceModal({
       <span class="modal-number"></span> of
       <strong> ${assessmentSetName} ${assessmentNumber} </strong>
       for
-      ${assessmentGroupWork
+      ${assessmentTeamWork
         ? html`
             <strong><span class="modal-team-name"></span></strong>
             (<span class="modal-uid-list"></span>)
