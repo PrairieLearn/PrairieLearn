@@ -16,7 +16,7 @@ export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   }
 }
 
-export async function updateCourseRepo({
+export async function updateCourseRepository({
   courseId,
   repository,
 }: {

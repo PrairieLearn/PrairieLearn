@@ -14,7 +14,7 @@ import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepo } from './helperCourse.js';
+import { updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -54,7 +54,7 @@ describe('Editing assessment settings', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await updateCourseRepo({ courseId: '1', repository: courseOriginDir });
+    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
   });
 
   afterAll(helperServer.after);
