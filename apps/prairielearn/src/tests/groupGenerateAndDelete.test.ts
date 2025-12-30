@@ -4,9 +4,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import * as groupUpdate from '../lib/group-update.js';
-import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as groupUpdate from '../lib/team-update.js';
+import { deleteAllGroups } from '../lib/teams.js';
 import { selectAssessmentById } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
