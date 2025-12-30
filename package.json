@@ -65,7 +65,6 @@
     "prettier-plugin-sh": "^0.18.0",
     "prettier-plugin-sql": "^0.19.2",
     "prettier-plugin-toml": "^2.0.6",
-    "pyright": "^1.1.407",
     "s3rver": "^3.7.1",
     "turbo": "^2.6.1",
     "typescript": "^5.9.3",

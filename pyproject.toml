@@ -44,17 +44,18 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+  "pandas-stubs==2.3.2.250926",
   "pytest-cov==7.0.0",
-  "pytest-repeat==0.9.4",
   "pytest-github-actions-annotate-failures==0.3.0",
+  "pytest-repeat==0.9.4",
   "pytest==8.4.2",
   "ruff==0.14.7",
-  "squawk-cli==2.31.0",
   "sqlfluff==3.5.0",
+  "squawk-cli==2.31.0",
+  "ty==0.0.5",
   "types-chevron==0.14.2.20250103",
   "types-lxml==2025.11.25",
   "types-Pygments==2.19.0.20251121",
-  "pandas-stubs==2.3.2.250926",
 ]
 
 docs = [
@@ -143,7 +144,7 @@ ignore = [
   "PLR0915", # too-many-statements
   "PLR0916", # too-many-boolean-expressions
   "PLR0917", # too-many-positional-arguments
-  "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets)
+  "PLR6201", # literal-membership (pyright doesn't understand assert_never with sets. can we remove after migrating to ty?)
   "PLR2004", # magic-value-comparison
   "PLR6301", # no-self-use
   "PLW1514", # unspecified-encoding
@@ -242,8 +243,10 @@ exclude = [
   "./exampleCourse/questions/demo/autograder/python/square/tests/initial_code.py",
 ]
 
-[tool.pyright]
-typeCheckingMode = "strict"
+[tool.ty.environment]
+extra-paths = ["./apps/prairielearn/python"]
+
+[tool.ty.src]
 include = [
   "./apps/prairielearn/elements",
   "./apps/prairielearn/python",
@@ -252,36 +255,12 @@ include = [
   "./graders",
   "./scripts",
 ]
-ignore = [
+exclude = [
   "./apps/prairielearn/elements/pl-drawing",            # requires refactor
   "./apps/prairielearn/elements/pl-prairiedraw-figure", # deprecated
   "./apps/prairielearn/elements/pl-threejs",            # deprecated
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
-extraPaths = ["./apps/prairielearn/python"]
-pythonVersion = "3.10"
-executionEnvironments = [
-  # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
-  { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
-  ] },
-  { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
-  ] },
-  { root = "./exampleCourse/questions", pythonVersion = "3.10", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
-]
-reportUnnecessaryTypeIgnoreComment = "error"
-# These rules would require significant changes
-reportUnknownMemberType = "none"
-reportUnknownArgumentType = "none"
-reportUnknownVariableType = "none"
-# These rules don't provide much value
-reportPrivateUsage = "none"
-reportUnnecessaryIsInstance = "none"
-reportUnknownLambdaType = "none"
-# These rules require improved upstream type annotations
-reportMissingTypeStubs = "none"
-reportMissingTypeArgument = "none"
-reportOperatorIssue = "information"
-reportUnknownParameterType = "information"
 
 [tool.pytest.ini_options]
 pythonpath = ["apps/prairielearn/python"]
