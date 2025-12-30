@@ -20,18 +20,18 @@
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.12",
+    "@tanstack/react-virtual": "^3.13.13",
     "@tanstack/table-core": "^8.21.3",
     "clsx": "^2.1.1",
-    "nuqs": "^2.8.2",
+    "nuqs": "^2.8.6",
     "react-bootstrap": "3.0.0-beta.5",
     "use-debounce": "^10.0.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.3",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.16"
   }
 }
