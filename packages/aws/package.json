@@ -13,12 +13,12 @@
     "dev": "tsc --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@smithy/property-provider": "^4.2.5",
-    "@smithy/types": "^4.9.0"
+    "@smithy/property-provider": "^4.2.7",
+    "@smithy/types": "^4.11.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.3",
     "typescript": "^5.9.3"
   }
 }
