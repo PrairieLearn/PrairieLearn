@@ -50,7 +50,7 @@ describe('Instructor Students - Invite by UID', () => {
     await insertCourseInstancePermissions({
       course_id: '1',
       course_instance_id: '1',
-      user_id: instructor.user_id,
+      user_id: instructor.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '1',
     });

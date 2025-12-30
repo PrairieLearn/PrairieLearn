@@ -115,7 +115,7 @@ export async function uploadSubmissions(
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
     await ensureUncheckedEnrollment({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
@@ -184,11 +184,11 @@ export async function uploadSubmissions(
         if (isGroupWork === null) {
           isGroupWork = 'Group name' in record && !('UID' in record);
 
-          if (isGroupWork && !assessment.group_work) {
+          if (isGroupWork && !assessment.team_work) {
             throw new Error(
               'Group work CSV detected, but assessment does not have group work enabled',
             );
-          } else if (!isGroupWork && assessment.group_work) {
+          } else if (!isGroupWork && assessment.team_work) {
             throw new Error('Individual work CSV detected, but assessment has group work enabled');
           }
         }
@@ -208,7 +208,7 @@ export async function uploadSubmissions(
         const entity = await run(async () => {
           if ('UID' in row) {
             const user = await ensureAndEnrollUser(row.UID);
-            return { type: 'user' as const, user_id: user.user_id };
+            return { type: 'user' as const, user_id: user.id };
           } else {
             // Create users for all group members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
@@ -226,12 +226,12 @@ export async function uploadSubmissions(
               });
             });
 
-            return { type: 'group' as const, group_id: group.id, users };
+            return { type: 'group' as const, team_id: group.id, users };
           }
         });
 
         // Insert assessment instance (for user or group)
-        const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
+        const entityKey = entity.type === 'user' ? entity.user_id : entity.team_id;
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
           async () =>
@@ -240,7 +240,7 @@ export async function uploadSubmissions(
               {
                 assessment_id: assessment.id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -273,9 +273,9 @@ export async function uploadSubmissions(
                 question_id: question.id,
                 // For group work, arbitrarily use the first user's ID as the authn_user_id.
                 // This value doesn't really matter, especially in dev mode.
-                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                group_id: entity.type === 'group' ? entity.team_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This
