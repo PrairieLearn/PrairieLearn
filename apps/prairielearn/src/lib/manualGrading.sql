@@ -67,7 +67,7 @@ WITH
         OR iq.requires_manual_grading
       )
       AND (
-        NOT ($assigned_to_me)
+        NOT ($show_submissions_assigned_to_me_only)
         OR (
           iq.assigned_grader = $user_id
           OR iq.assigned_grader IS NULL
@@ -98,10 +98,10 @@ WHERE
     OR iq_stable_order > prior_iq_stable_order
   )
 ORDER BY
-  -- If assigned_to_me is true, choose an instance question assigned to current user if one exists, unassigned if not.
+  -- If show_submissions_assigned_to_me_only is true, choose an instance question assigned to current user if one exists, unassigned if not.
   -- Otherwise, select an instance question without using the grader assignment.
   CASE
-    WHEN NOT $assigned_to_me THEN 0
+    WHEN NOT $show_submissions_assigned_to_me_only THEN 0
     WHEN assigned_grader = $user_id THEN 1
     WHEN assigned_grader IS NULL THEN 2
     ELSE 3

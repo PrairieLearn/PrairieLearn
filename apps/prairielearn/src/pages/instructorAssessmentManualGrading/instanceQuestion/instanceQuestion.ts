@@ -216,7 +216,7 @@ router.get(
     }
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-    req.session.assigned_to_me = req.session.assigned_to_me ?? true;
+    req.session.show_submissions_assigned_to_me_only = req.session.show_submissions_assigned_to_me_only ?? true;
 
     const submissionCredits = await sqldb.queryRows(
       sql.select_submission_credit_values,
@@ -239,7 +239,7 @@ router.get(
             ? await calculateAiGradingStats(res.locals.assessment_question)
             : null,
         skipGradedSubmissions: req.session.skip_graded_submissions,
-        assignedToMe: req.session.assigned_to_me,
+        showSubmissionsAssignedToMeOnly: req.session.show_submissions_assigned_to_me_only,
         submissionCredits,
       }),
     );
@@ -355,7 +355,7 @@ const PostBodySchema = z.union([
         val == null ? [] : typeof val === 'string' ? [val] : Object.values(val),
       ),
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
-    assigned_to_me: z.preprocess((val) => val === 'true', z.boolean()),
+    show_submissions_assigned_to_me_only: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
     __action: z.literal('modify_rubric_settings'),
@@ -385,7 +385,7 @@ const PostBodySchema = z.union([
       (val) => typeof val === 'string' && val.startsWith('reassign_'),
     ),
     skip_graded_submissions: z.preprocess((val) => val === 'true', z.boolean()),
-    assigned_to_me: z.preprocess((val) => val === 'true', z.boolean()),
+    show_submissions_assigned_to_me_only: z.preprocess((val) => val === 'true', z.boolean()),
   }),
   z.object({
     __action: z.literal('report_issue'),
@@ -410,7 +410,7 @@ router.post(
     }
     if (body.__action === 'add_manual_grade') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
-      req.session.assigned_to_me = body.assigned_to_me;
+      req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
       const manual_rubric_data = res.locals.assessment_question.manual_rubric_id
         ? {
@@ -470,13 +470,13 @@ router.post(
           user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          assigned_to_me: req.session.assigned_to_me,
+          show_submissions_assigned_to_me_only: req.session.show_submissions_assigned_to_me_only,
           use_instance_question_groups,
         }),
       );
     } else if (body.__action === 'next_instance_question') {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
-      req.session.assigned_to_me = body.assigned_to_me;
+      req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =
@@ -498,7 +498,7 @@ router.post(
           user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          assigned_to_me: req.session.assigned_to_me,
+          show_submissions_assigned_to_me_only: req.session.show_submissions_assigned_to_me_only,
           use_instance_question_groups,
         }),
       );
@@ -507,7 +507,7 @@ router.post(
       body.__action === 'add_manual_grade_for_instance_question_group'
     ) {
       req.session.skip_graded_submissions = body.skip_graded_submissions;
-      req.session.assigned_to_me = body.assigned_to_me;
+      req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
       const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
 
@@ -609,7 +609,7 @@ router.post(
           user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          assigned_to_me: req.session.assigned_to_me,
+          show_submissions_assigned_to_me_only: req.session.show_submissions_assigned_to_me_only,
           use_instance_question_groups: true,
         }),
       );
@@ -661,7 +661,7 @@ router.post(
       });
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-      req.session.assigned_to_me = req.session.assigned_to_me ?? true;
+      req.session.show_submissions_assigned_to_me_only = req.session.show_submissions_assigned_to_me_only ?? true;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =
@@ -676,7 +676,7 @@ router.post(
       });
 
       req.session.skip_graded_submissions = body.skip_graded_submissions;
-      req.session.assigned_to_me = body.assigned_to_me;
+      req.session.show_submissions_assigned_to_me_only = body.show_submissions_assigned_to_me_only;
 
       res.redirect(
         await manualGrading.nextInstanceQuestionUrl({
@@ -686,7 +686,7 @@ router.post(
           user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
-          assigned_to_me: req.session.assigned_to_me,
+          show_submissions_assigned_to_me_only: req.session.show_submissions_assigned_to_me_only,
           use_instance_question_groups,
         }),
       );

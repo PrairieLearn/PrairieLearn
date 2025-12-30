@@ -49,7 +49,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param options.user_id - The user_id of the current grader. Typically the current effective user.
  * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
  * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
- * @param options.assigned_to_me - If true, the returned next submission must be assigned to the current grader or unassigned. Otherwise, submissions assigned to any grader may be returned.
+ * @param options.show_submissions_assigned_to_me_only - If true, the returned next submission must be assigned to the current grader or unassigned. Otherwise, submissions assigned to any grader may be returned.
  * @param options.use_instance_question_groups - Whether or not to use the instance question groups to determine the next instance question.
  */
 export async function nextInstanceQuestionUrl({
@@ -59,7 +59,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
-  assigned_to_me,
+  show_submissions_assigned_to_me_only,
   use_instance_question_groups,
 }: {
   urlPrefix: string;
@@ -68,7 +68,7 @@ export async function nextInstanceQuestionUrl({
   user_id: string;
   prior_instance_question_id: string | null;
   skip_graded_submissions: boolean;
-  assigned_to_me: boolean;
+  show_submissions_assigned_to_me_only: boolean;
   use_instance_question_groups: boolean;
 }): Promise<string> {
   const prior_instance_question_group_id = await run(async () => {
@@ -100,7 +100,7 @@ export async function nextInstanceQuestionUrl({
       prior_instance_question_id,
       prior_instance_question_group_id,
       skip_graded_submissions,
-      assigned_to_me,
+      show_submissions_assigned_to_me_only,
       use_instance_question_groups,
     },
     IdSchema.nullable(),
@@ -130,7 +130,7 @@ export async function nextInstanceQuestionUrl({
         prior_instance_question_id: null,
         prior_instance_question_group_id: next_instance_question_group_id,
         skip_graded_submissions,
-        assigned_to_me,
+        show_submissions_assigned_to_me_only,
         use_instance_question_groups,
       },
       IdSchema,

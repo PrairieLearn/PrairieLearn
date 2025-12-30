@@ -34,7 +34,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
-  assigned_to_me,
+  show_submissions_assigned_to_me_only,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
@@ -50,7 +50,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
-  assigned_to_me?: boolean;
+  show_submissions_assigned_to_me_only?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -66,11 +66,11 @@ export function GradingPanel({
   skip_text = skip_text || 'Next';
 
   // Users are only assigned to grade submissions if they have edit permissions.
-  // If the user has no edit permissions (view only), we set assigned_to_me to false so
+  // If the user has no edit permissions (view only), we set show_submissions_assigned_to_me_only to false so
   // the next button does not filter by assigned grader.
-  assigned_to_me = !resLocals.authz_data.has_course_instance_permission_edit
+  show_submissions_assigned_to_me_only = !resLocals.authz_data.has_course_instance_permission_edit
     ? false
-    : assigned_to_me;
+    : show_submissions_assigned_to_me_only;
 
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
   const showAssignedToMeButton = !disable && context === 'main';
@@ -303,21 +303,21 @@ ${submission.feedback?.manual}</textarea
               ${showAssignedToMeButton
                 ? html`
                     <input
-                      id="assigned_to_me"
+                      id="show_submissions_assigned_to_me_only"
                       type="checkbox"
                       class="form-check-input"
-                      name="assigned_to_me"
+                      name="show_submissions_assigned_to_me_only"
                       value="true"
-                      ${assigned_to_me ? 'checked' : ''}
+                      ${show_submissions_assigned_to_me_only ? 'checked' : ''}
                     />
-                    <label class="form-check-label" for="assigned_to_me"> Assigned to me </label>
+                    <label class="form-check-label" for="show_submissions_assigned_to_me_only"> Skip submissions not assigned to me </label>
                   `
                 : html`
                     <input
-                      id="assigned_to_me"
+                      id="show_submissions_assigned_to_me_only"
                       type="hidden"
-                      name="assigned_to_me"
-                      value="${assigned_to_me ? 'true' : 'false'}"
+                      name="show_submissions_assigned_to_me_only"
+                      value="${show_submissions_assigned_to_me_only ? 'true' : 'false'}"
                     />
                   `}
             </div>
