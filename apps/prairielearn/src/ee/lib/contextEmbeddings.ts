@@ -87,7 +87,7 @@ async function insertDocumentChunk(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  if (chunk && chunk.doc_text === doc.text) {
+  if (chunk?.doc_text === doc.text) {
     job.info(
       `Chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) already exists in the database. Skipping.`,
     );

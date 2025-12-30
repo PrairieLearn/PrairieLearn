@@ -20,7 +20,7 @@
     "build": "tsc && rm -rf dist && cp -r src dist"
   },
   "dependencies": {
-    "original-preact": "npm:preact@^10.27.2"
+    "original-preact": "npm:preact@^10.28.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
