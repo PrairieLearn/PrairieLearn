@@ -69,7 +69,8 @@ def check_path_modified(path: str) -> bool:
     This is used to determine if we need to rebuild the image.
     """
     branch = (
-        subprocess.run(
+        subprocess
+        .run(
             ["git", "rev-parse", "--abbrev-ref", "HEAD"],
             capture_output=True,
             check=True,
