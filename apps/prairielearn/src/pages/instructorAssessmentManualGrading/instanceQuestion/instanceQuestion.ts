@@ -435,7 +435,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
       if (modified_at_conflict) {
@@ -446,7 +446,7 @@ router.post(
         await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         });
       }
 
@@ -467,7 +467,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           assigned_to_me: req.session.assigned_to_me,
@@ -495,7 +495,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           assigned_to_me: req.session.assigned_to_me,
@@ -587,7 +587,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
         if (modified_at_conflict) {
@@ -606,7 +606,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           assigned_to_me: req.session.assigned_to_me,
@@ -626,7 +626,7 @@ router.post(
           body.rubric_items,
           body.tag_for_manual_grading,
           body.grader_guidelines,
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
@@ -647,7 +647,7 @@ router.post(
           authzData: res.locals.authz_data,
           requiredRole: ['Student Data Editor'],
         });
-        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+        if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
             'Assigned grader does not have Student Data Editor permission',
@@ -683,7 +683,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           assigned_to_me: req.session.assigned_to_me,

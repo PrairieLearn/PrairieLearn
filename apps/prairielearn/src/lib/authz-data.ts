@@ -178,7 +178,7 @@ export async function constructCourseOrInstanceContext({
   const isCourseInstance = Boolean(course_instance_id);
 
   const rawAuthzData = await selectCourseOrInstanceContextData({
-    user_id: user.user_id,
+    user_id: user.id,
     course_id,
     course_instance_id,
     ip,
@@ -249,7 +249,7 @@ export async function constructCourseOrInstanceContext({
             if (rawAuthzData.course_instance.modern_publishing) {
               return await calculateModernCourseInstanceStudentAccess(
                 rawAuthzData.course_instance,
-                user.user_id,
+                user.id,
                 req_date,
               );
             }

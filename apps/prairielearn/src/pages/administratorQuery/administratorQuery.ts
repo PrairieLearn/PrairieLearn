@@ -99,7 +99,7 @@ router.post(
       {
         name: req.params.query,
         params: queryParams,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         error,
         result,
       },

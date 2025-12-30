@@ -65,13 +65,13 @@ router.get(
 
     // For homeworks without group work, create the new assessment instance
     // and redirect to it without further student action.
-    if (!res.locals.assessment.group_work && res.locals.assessment.type === 'Homework') {
+    if (!res.locals.assessment.team_work && res.locals.assessment.type === 'Homework') {
       const time_limit_min = null;
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await makeAssessmentInstance({
         assessment: res.locals.assessment,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
         date: res.locals.authz_data.date,
@@ -94,7 +94,7 @@ router.get(
         { allowHtml: false, interpretMath: false },
       );
     }
-    if (!res.locals.assessment.group_work) {
+    if (!res.locals.assessment.team_work) {
       res.send(StudentAssessment({ resLocals: res.locals, customHonorCode }));
       return;
     }
@@ -103,13 +103,13 @@ router.get(
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
 
     // Check whether the user is currently in a group in the current assessment by trying to get a group_id
-    const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+    const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
 
     const groupInfo = groupId === null ? null : await getGroupInfo(groupId, groupConfig);
     const userCanAssignRoles =
       groupInfo != null &&
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     res.send(
@@ -143,9 +143,9 @@ router.post(
       // students to create and start a new assessment instance.
       if (!checkPasswordOrRedirect(req, res)) return;
 
-      if (res.locals.assessment.group_work) {
+      if (res.locals.assessment.team_work) {
         const groupConfig = await getGroupConfig(res.locals.assessment.id);
-        const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+        const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
         if (groupId === null) {
           throw new HttpStatusError(403, 'Cannot create a new instance while not in a group.');
         }
@@ -163,8 +163,8 @@ router.post(
       const client_fingerprint_id = await getClientFingerprintId(req, res);
       const assessment_instance_id = await makeAssessmentInstance({
         assessment: res.locals.assessment,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
         date: res.locals.req_date,
@@ -181,7 +181,7 @@ router.post(
         assessment: res.locals.assessment,
         fullJoinCode: req.body.join_code,
         uid: res.locals.user.uid,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
@@ -201,7 +201,7 @@ router.post(
         assessment: res.locals.assessment,
         group_name: groupConfig.student_authz_choose_name ? req.body.group_name : null,
         uids: [res.locals.user.uid],
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         authzData: res.locals.authz_data,
       }).catch((err) => {
         if (err instanceof GroupOperationError) {
@@ -213,7 +213,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'update_group_roles') {
       // Check whether the user is currently in a group
-      const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.user_id);
+      const groupId = await getGroupId(res.locals.assessment.id, res.locals.user.id);
       if (groupId == null) {
         throw new HttpStatusError(403, 'Cannot change group roles while not in a group.');
       }
@@ -221,9 +221,9 @@ router.post(
         req.body,
         res.locals.assessment.id,
         groupId,
-        res.locals.user.user_id,
+        res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'leave_group') {
@@ -231,11 +231,7 @@ router.post(
       if (!groupConfig.student_authz_leave) {
         throw new HttpStatusError(403, 'You are not authorized to leave your group.');
       }
-      await leaveGroup(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);

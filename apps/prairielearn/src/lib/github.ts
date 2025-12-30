@@ -231,7 +231,7 @@ export async function createCourseRepoJob(
       path: options.path,
       repository,
       branch,
-      authn_user_id: authn_user.user_id,
+      authn_user_id: authn_user.id,
     });
     job.verbose('Inserted course into database:');
     job.verbose(JSON.stringify(inserted_course, null, 4));
@@ -284,8 +284,8 @@ export async function createCourseRepoJob(
   const serverJob = await createServerJob({
     type: 'create_course_repo',
     description: 'Create course repository from request',
-    userId: authn_user.user_id,
-    authnUserId: authn_user.user_id,
+    userId: authn_user.id,
+    authnUserId: authn_user.id,
     courseRequestId: options.course_request_id,
   });
 

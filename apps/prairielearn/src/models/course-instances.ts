@@ -102,21 +102,21 @@ export async function selectCourseInstancesWithStaffAccess({
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
     {
-      user_id: authzData.user.user_id,
+      user_id: authzData.user.id,
       is_administrator: authzData.is_administrator,
       course_id: course.id,
     },
     CourseInstanceAuthzSchema,
   );
 
-  if (idsEqual(authzData.user.user_id, authzData.authn_user.user_id)) {
+  if (idsEqual(authzData.user.id, authzData.authn_user.id)) {
     return authnCourseInstances;
   }
 
   const authzCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
     {
-      user_id: authzData.user.user_id,
+      user_id: authzData.user.id,
       is_administrator: authzData.is_administrator,
       course_id: course.id,
     },
