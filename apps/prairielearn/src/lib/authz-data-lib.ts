@@ -72,10 +72,10 @@ type PageAuthzDataInput = z.input<typeof PageAuthzDataSchema>;
 
 export interface DangerousSystemAuthzData {
   authn_user: {
-    user_id: null;
+    id: null;
   };
   user: {
-    user_id: null;
+    id: null;
   };
 }
 
@@ -163,12 +163,12 @@ export type Role =
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
-      // We use this structure with a user_id of null to indicate that the user is the system.
-      // Inserts into the audit_events table as a system user have a user_id of null.
-      user_id: null,
+      // We use this structure with a id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a id of null.
+      id: null,
     },
     user: {
-      user_id: null,
+      id: null,
     },
   };
 }
@@ -176,7 +176,7 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.user.user_id === null;
+  return authzData.user.id === null;
 }
 
 export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {

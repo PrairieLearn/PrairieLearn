@@ -233,7 +233,7 @@ router.post(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
@@ -241,7 +241,7 @@ router.post(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
@@ -251,7 +251,7 @@ router.post(
         {
           issue_ids: issueIds,
           course_id: res.locals.course.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         },
         z.number(),
       );

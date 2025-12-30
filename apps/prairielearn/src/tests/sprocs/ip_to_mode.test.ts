@@ -20,7 +20,7 @@ async function createCourseExamReservation() {
 describe('sproc ip_to_mode tests', function () {
   beforeAll(async function () {
     await helperDb.before();
-    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.uid);
+    user_id = await sqldb.queryRow(sql.setup, UserSchema.shape.id);
   });
 
   afterAll(helperDb.after);

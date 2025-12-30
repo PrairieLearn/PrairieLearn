@@ -148,8 +148,8 @@ router.post(
     const serverJobOptions = {
       courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
-      userId: res.locals.user.user_id,
-      authnUserId: res.locals.authn_user.user_id,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authn_user.id,
       type: 'lti13',
       description: 'Some LTI operation',
     };
@@ -165,7 +165,7 @@ router.post(
           Lti13CourseInstanceSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',
           action: 'delete',
           institution_id: res.locals.institution.id,
