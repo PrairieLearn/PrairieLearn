@@ -117,7 +117,7 @@ When testing [docker images](../dockerImages.md) locally, you may want to force 
 
 ## Enterprise
 
-Some features of PrairieLearn are only available in the Enterprise Edition.
+Some features of PrairieLearn are only available in the Enterprise Edition. Note that you must adhere to the [PrairieLearn license](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE) when setting this option.
 
 ```json title="config.json"
 {
