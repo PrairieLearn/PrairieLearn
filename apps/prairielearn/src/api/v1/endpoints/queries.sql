@@ -64,6 +64,7 @@ WITH
       ai.number AS assessment_instance_number,
       ai.open,
       format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
+      -- user-facing API
       ti.id AS group_id,
       ti.name AS group_name,
       ti.uid_list AS group_uids,
@@ -281,6 +282,7 @@ WITH
       u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.id, ci.id) AS user_role,
+      -- user-facing
       ti.id AS group_id,
       ti.name AS group_name,
       ti.uid_list AS group_uids,
