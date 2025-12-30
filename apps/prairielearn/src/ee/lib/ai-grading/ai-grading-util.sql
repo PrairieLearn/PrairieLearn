@@ -7,24 +7,6 @@ FROM
 WHERE
   rgi.rubric_grading_id = $manual_rubric_grading_id;
 
--- BLOCK create_embedding_for_submission
-INSERT INTO
-  submission_grading_context_embeddings (
-    embedding,
-    submission_id,
-    submission_text,
-    assessment_question_id
-  )
-VALUES
-  (
-    $embedding,
-    $submission_id,
-    $submission_text,
-    $assessment_question_id
-  )
-RETURNING
-  *;
-
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
   iq.*
@@ -89,49 +71,6 @@ ORDER BY
 LIMIT
   1;
 
--- BLOCK select_closest_submission_info
-WITH
-  latest_submissions AS (
-    SELECT
-      s.id AS s_id,
-      iq.id AS iq_id,
-      iq.score_perc AS iq_score_perc,
-      s.feedback,
-      s.is_ai_graded,
-      s.manual_rubric_grading_id AS s_manual_rubric_grading_id,
-      ROW_NUMBER() OVER (
-        PARTITION BY
-          s.variant_id
-        ORDER BY
-          s.date DESC
-      ) AS rn
-    FROM
-      instance_questions iq
-      JOIN variants v ON iq.id = v.instance_question_id
-      JOIN submissions s ON v.id = s.variant_id
-    WHERE
-      iq.assessment_question_id = $assessment_question_id
-      AND NOT iq.requires_manual_grading
-      AND iq.status != 'unanswered'
-      AND s.id != $submission_id
-  )
-SELECT
-  emb.submission_text,
-  ls.s_manual_rubric_grading_id AS manual_rubric_grading_id,
-  ls.iq_score_perc AS score_perc,
-  ls.feedback,
-  ls.iq_id AS instance_question_id
-FROM
-  latest_submissions ls
-  JOIN submission_grading_context_embeddings AS emb ON (emb.submission_id = ls.s_id)
-WHERE
-  ls.rn = 1
-  AND NOT ls.is_ai_graded
-ORDER BY
-  embedding <=> $embedding
-LIMIT
-  $limit;
-
 -- BLOCK select_last_submission_id
 SELECT
   s.id
@@ -145,14 +84,6 @@ ORDER BY
   s.date DESC
 LIMIT
   1;
-
--- BLOCK select_embedding_for_submission
-SELECT
-  *
-FROM
-  submission_grading_context_embeddings AS emb
-WHERE
-  emb.submission_id = $submission_id;
 
 -- BLOCK delete_ai_grading_jobs
 WITH
@@ -270,9 +201,7 @@ WITH
       -- we may want to refactor `highest_submission_score` to only track auto points.
       is_ai_graded = FALSE,
       -- If there is no previous manual grading job, we'll flag that the instance question
-      -- requires manual grading. This both helps ensure that it eventually gets graded, and
-      -- also ensures that this submission isn't erroneously picked up when we're looking for
-      -- similar submissions for RAG.
+      -- requires manual grading. This helps ensure that it eventually gets graded.
       requires_manual_grading = (coalesce(mriqmgj.id IS NULL, FALSE))
     FROM
       deleted_grading_jobs AS dgj

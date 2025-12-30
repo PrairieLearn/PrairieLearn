@@ -172,7 +172,7 @@ router.post(
       await updateAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
@@ -180,7 +180,7 @@ router.post(
       await updateAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
@@ -196,7 +196,7 @@ router.post(
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       if (modified_at_conflict) {
         return res.redirect(
@@ -213,7 +213,7 @@ router.post(
       await resetVariantsForInstanceQuestion({
         assessment_instance_id: res.locals.assessment_instance.id,
         unsafe_instance_question_id: req.body.unsafe_instance_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

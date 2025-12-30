@@ -96,7 +96,7 @@ describe('Homepage enrollment actions', () => {
       // Verify enrollment is now joined
       const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -119,7 +119,7 @@ describe('Homepage enrollment actions', () => {
 
       // Verify enrollment is still joined
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -130,7 +130,7 @@ describe('Homepage enrollment actions', () => {
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {
       course_instance_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
     });
   });
 
@@ -265,7 +265,7 @@ describe('Homepage enrollment actions', () => {
       // Verify enrollment is still joined
       const courseInstance = await selectCourseInstanceById('1');
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -276,7 +276,7 @@ describe('Homepage enrollment actions', () => {
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {
       course_instance_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
     });
   });
 
@@ -338,7 +338,7 @@ describe('Homepage enrollment actions', () => {
 
       // Verify enrollment is now joined
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -349,7 +349,7 @@ describe('Homepage enrollment actions', () => {
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {
       course_instance_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
     });
   });
 
@@ -364,7 +364,7 @@ describe('Homepage enrollment actions', () => {
 
     // Create a joined enrollment
     await createEnrollmentWithStatus({
-      userId: user.user_id,
+      userId: user.id,
       courseInstanceId: '1',
       status: 'joined',
     });
@@ -387,7 +387,7 @@ describe('Homepage enrollment actions', () => {
       // Verify enrollment is now removed
       const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -410,7 +410,7 @@ describe('Homepage enrollment actions', () => {
 
       // Verify enrollment is still removed
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
@@ -421,7 +421,7 @@ describe('Homepage enrollment actions', () => {
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {
       course_instance_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
     });
   });
 });

@@ -11,4 +11,4 @@ indexes
     query_runs_pkey: PRIMARY KEY (id) USING btree (id)
 
 foreign-key constraints
-    query_runs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    query_runs_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
