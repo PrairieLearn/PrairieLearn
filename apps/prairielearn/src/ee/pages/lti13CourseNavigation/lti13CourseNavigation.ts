@@ -238,26 +238,8 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-<<<<<<< HEAD
     const ltiClaim = new Lti13Claim(req);
     if (ltiClaim.isRoleInstructor()) {
-=======
-    const courseInstancesAllowed = await courseInstancesAllowedToLink({
-      course: await selectCourseById(course_instance.course_id),
-      authzData,
-    });
-    const hasCourseInstanceAllowed = courseInstancesAllowed.some(
-      (ci) => ci.id === course_instance.id,
-    );
-
-    const coursesAllowed = await coursesAllowedToLink({
-      user_id: authzData.authn_user.id,
-      is_administrator: res.locals.is_administrator,
-    });
-    const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
-
-    if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
->>>>>>> master
       await execute(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,
