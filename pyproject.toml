@@ -71,7 +71,7 @@ docs = [
   "pymdown-extensions==10.17.2",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
-  "ruff==0.14.7",
+  "ruff==0.14.10",
 ]
 
 # We only use pyproject.toml for the Python dependencies, so we don't need to
