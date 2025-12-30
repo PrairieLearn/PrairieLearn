@@ -160,7 +160,7 @@ describe('Instructor Students - Invite by UID', () => {
        VALUES ($user_id, $course_instance_id, 'blocked', NOW())
        RETURNING *`,
       {
-        user_id: blockedStudent.user_id,
+        user_id: blockedStudent.id,
         course_instance_id: '1',
       },
       EnrollmentSchema,

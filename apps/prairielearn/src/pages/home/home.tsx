@@ -196,6 +196,7 @@ router.post(
         'error',
         'Invitations and rejections are only supported for courses using modern publishing.',
       );
+      res.redirect(req.originalUrl);
       return;
     }
 
@@ -205,6 +206,7 @@ router.post(
         'published'
     ) {
       flash('error', 'This course instance is not accessible to students');
+      res.redirect(req.originalUrl);
       return;
     }
 
