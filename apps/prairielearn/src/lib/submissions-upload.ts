@@ -22,12 +22,12 @@ import { createCsvParser } from './csv.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
-  type Group,
   RubricItemSchema,
+  type Team,
 } from './db-types.js';
-import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
+import { createOrAddToTeam, deleteAllTeams } from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -63,7 +63,7 @@ const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
   UID: z.string(),
 });
 
-const GroupSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
+const TeamSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
   'Group name': z.string(),
   Usernames: z.preprocess((val) => {
     if (val === '' || val == null) return [];
@@ -140,14 +140,14 @@ export async function uploadSubmissions(
     await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
     job.info('Deleting all existing groups');
-    await deleteAllGroups(assessment.id, authn_user_id);
+    await deleteAllTeams(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
 
-    const getOrInsertGroup = makeDedupedInserter<Group>();
+    const getOrInsertTeam = makeDedupedInserter<Team>();
     const getOrInsertAssessmentInstance = makeDedupedInserter<string>();
     const getOrInsertInstanceQuestion = makeDedupedInserter<string>();
     const getOrInsertVariant = makeDedupedInserter<string>();
@@ -194,7 +194,7 @@ export async function uploadSubmissions(
         }
 
         const row = isGroupWork
-          ? GroupSubmissionCsvRowSchema.parse(record)
+          ? TeamSubmissionCsvRowSchema.parse(record)
           : IndividualSubmissionCsvRowSchema.parse(record);
 
         if ('Usernames' in row && row.Usernames.length === 0) {
@@ -213,12 +213,12 @@ export async function uploadSubmissions(
             // Create users for all group members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
 
-            const group = await getOrInsertGroup([row['Group name']], async () => {
-              // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
-              return await createOrAddToGroup({
+            const team = await getOrInsertTeam([row['Group name']], async () => {
+              // Use createOrAddToTeam which handles both creating new groups and adding to existing ones
+              return await createOrAddToTeam({
                 course_instance,
                 assessment,
-                group_name: row['Group name'],
+                team_name: row['Group name'],
                 uids: row.Usernames,
                 authn_user_id,
                 // This function only runs in dev mode, so we can safely ignore permission checks.
@@ -226,7 +226,7 @@ export async function uploadSubmissions(
               });
             });
 
-            return { type: 'group' as const, team_id: group.id, users };
+            return { type: 'group' as const, team_id: team.id, users };
           }
         });
 

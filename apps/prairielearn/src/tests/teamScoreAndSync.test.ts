@@ -43,8 +43,8 @@ describe('assessment instance group synchronization test', function () {
 
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
-    it('get group-based homework assessment id', async () => {
-      const assessment_ids = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+    it('get team-based homework assessment id', async () => {
+      const assessment_ids = await sqldb.queryRows(sql.select_team_work_assessment, IdSchema);
       assert.notEqual(assessment_ids.length, 0);
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
@@ -81,9 +81,9 @@ describe('assessment instance group synchronization test', function () {
       const res = await fetch(locals.instructorAssessmentsUrlGroupTab, {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'add_group',
+          __action: 'add_team',
           __csrf_token: locals.__csrf_token,
-          group_name: 'testgroup',
+          team_name: 'testgroup',
           uids:
             locals.studentUsers[0].uid +
             ',' +
@@ -95,9 +95,9 @@ describe('assessment instance group synchronization test', function () {
       assert.equal(res.status, 200);
     });
     it('should create the correct group configuration', async () => {
-      const rowCount = await sqldb.execute(sql.select_group_users, {
+      const rowCount = await sqldb.execute(sql.select_team_users, {
         assessment_id: locals.assessment_id,
-        group_name: 'testgroup',
+        team_name: 'testgroup',
       });
       assert.equal(rowCount, 3);
     });

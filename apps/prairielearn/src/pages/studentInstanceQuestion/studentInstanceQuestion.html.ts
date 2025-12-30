@@ -15,8 +15,8 @@ import { QuestionScorePanel } from '../../components/QuestionScore.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
 import type { User } from '../../lib/db-types.js';
-import { getRoleNamesForUser } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { getRoleNamesForUser } from '../../lib/teams.js';
 
 export function StudentInstanceQuestion({
   resLocals,
@@ -172,8 +172,8 @@ export function StudentInstanceQuestion({
             prevGroupRolePermissions: resLocals.prev_instance_question_role_permissions,
             nextGroupRolePermissions: resLocals.next_instance_question_role_permissions,
             advanceScorePerc: resLocals.instance_question_info.advance_score_perc,
-            userGroupRoles: resLocals.group_info
-              ? getRoleNamesForUser(resLocals.group_info, resLocals.user).join(', ')
+            userGroupRoles: resLocals.team_info
+              ? getRoleNamesForUser(resLocals.team_info, resLocals.user).join(', ')
               : null,
           })}
           ${resLocals.assessment.allow_personal_notes

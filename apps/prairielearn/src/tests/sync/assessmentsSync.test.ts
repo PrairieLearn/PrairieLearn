@@ -18,9 +18,9 @@ import {
   AssessmentQuestionSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  type GroupRole,
-  GroupRoleSchema,
   QuestionSchema,
+  type TeamRole,
+  TeamRoleSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
@@ -67,7 +67,7 @@ function makeAssessmentSet() {
   } satisfies AssessmentSetJsonInput;
 }
 
-function getGroupRoles() {
+function getTeamRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
@@ -76,7 +76,7 @@ function getGroupRoles() {
 
 function getPermission(
   permissions: AssessmentQuestionRolePermission[],
-  groupRole: GroupRole,
+  groupRole: TeamRole,
   assessmentQuestion: AssessmentQuestion,
 ) {
   return permissions.find(
@@ -95,7 +95,7 @@ async function getSyncedAssessmentData(tid: string) {
       zones: z.array(ZoneSchema),
       alternative_groups: z.array(AlternativeGroupSchema),
       assessment_questions: z.array(AssessmentQuestionSchema.extend({ question: QuestionSchema })),
-      group_roles: z.array(GroupRoleSchema),
+      team_roles: z.array(TeamRoleSchema),
     }),
   );
 }
@@ -732,16 +732,16 @@ describe('Assessment syncing', () => {
     assert.isEmpty(assessmentAccessRule.uids, 'uids should be empty');
   });
 
-  it('syncs group roles correctly', async () => {
+  it('syncs team roles correctly', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessment'] =
       groupAssessment;
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.equal(syncedRoles.length, 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -757,11 +757,11 @@ describe('Assessment syncing', () => {
     assert.isFalse(contributor.can_assign_roles);
   });
 
-  it('syncs group roles and valid question-level permissions correctly', async () => {
+  it('syncs team roles and valid question-level permissions correctly', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -794,8 +794,8 @@ describe('Assessment syncing', () => {
     assert.isDefined(firstAssessmentQuestion);
     assert.isDefined(secondAssessmentQuestion);
 
-    // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    // Check team roles
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -855,11 +855,11 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('syncs group roles and valid zone-level permissions correctly', async () => {
+  it('syncs team roles and valid zone-level permissions correctly', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       canView: ['Recorder', 'Contributor'],
@@ -892,8 +892,8 @@ describe('Assessment syncing', () => {
     assert.isDefined(firstAssessmentQuestion);
     assert.isDefined(secondAssessmentQuestion);
 
-    // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    // Check team roles
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -953,11 +953,11 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('syncs group roles and valid assessment-level permissions correctly', async () => {
+  it('syncs team roles and valid assessment-level permissions correctly', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.canView = ['Recorder', 'Contributor'];
     groupAssessment.canSubmit = ['Recorder'];
     groupAssessment.zones?.push({
@@ -990,8 +990,8 @@ describe('Assessment syncing', () => {
     assert.isDefined(firstAssessmentQuestion);
     assert.isDefined(secondAssessmentQuestion);
 
-    // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    // Check team roles
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -1051,11 +1051,11 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('removes group roles and role permissions correctly upon re-sync', async () => {
+  it('removes team roles and role permissions correctly upon re-sync', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -1078,8 +1078,8 @@ describe('Assessment syncing', () => {
 
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
-    // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    // Check team roles
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.equal(syncedRoles.length, 2);
     const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -1094,8 +1094,8 @@ describe('Assessment syncing', () => {
     assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundRecorder.id).length, 2);
     assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundContributor.id).length, 2);
 
-    // Remove the "Contributor" group role and re-sync
-    groupAssessment.groupRoles = [
+    // Remove the "Contributor" team role and re-sync
+    groupAssessment.teamRoles = [
       { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     ];
     const lastZone = groupAssessment.zones?.[groupAssessment.zones.length - 1];
@@ -1116,7 +1116,7 @@ describe('Assessment syncing', () => {
     ];
 
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.equal(newSyncedRoles.length, 1);
     assert.notEqual(
       newSyncedRoles.find((role) => role.role_name === 'Recorder'),
@@ -1135,11 +1135,11 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if a question has permissions for non-existent group roles', async () => {
+  it('records an error if a question has permissions for non-existent team roles', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -1165,15 +1165,15 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone question's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone question's "canView" permission contains the non-existent team role name "Invalid"./,
     );
   });
 
-  it('records an error if a zone has permissions for non-existent group roles', async () => {
+  it('records an error if a zone has permissions for non-existent team roles', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       canView: ['Recorder', 'Invalid'],
@@ -1200,15 +1200,15 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone's "canView" permission contains the non-existent team role name "Invalid"./,
     );
   });
 
-  it('records an error if an assessment has permissions for non-existent group roles', async () => {
+  it('records an error if an assessment has permissions for non-existent team roles', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = getGroupRoles();
+    groupAssessment.teamRoles = getTeamRoles();
     groupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -1235,15 +1235,15 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The assessment's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The assessment's "canView" permission contains the non-existent team role name "Invalid"./,
     );
   });
 
-  it('records an error if there is no group role with minimum > 0 that can reassign roles', async () => {
+  it('records an error if there is no team role with minimum > 0 that can reassign roles', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [{ name: 'Recorder', canAssignRoles: false }];
+    groupAssessment.teamRoles = [{ name: 'Recorder', canAssignRoles: false }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentFail'] =
       groupAssessment;
 
@@ -1257,12 +1257,12 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('records an error if group role max/min are greater than the group maximum', async () => {
+  it('records an error if team role max/min are greater than the group maximum', async () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
     groupAssessment.groupMaxSize = 4;
-    groupAssessment.groupRoles = [
+    groupAssessment.teamRoles = [
       { name: 'Manager', canAssignRoles: true, minimum: 10 },
       { name: 'Reflector', maximum: 10 },
     ];
@@ -1288,7 +1288,7 @@ describe('Assessment syncing', () => {
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
     groupAssessment.groupMinSize = 0;
-    groupAssessment.groupRoles = [{ name: 'Manager', canAssignRoles: true, minimum: 1 }];
+    groupAssessment.teamRoles = [{ name: 'Manager', canAssignRoles: true, minimum: 1 }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentMinZero'] =
       groupAssessment;
 
@@ -1309,7 +1309,7 @@ describe('Assessment syncing', () => {
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
     groupAssessment.groupMaxSize = 0;
-    groupAssessment.groupRoles = [{ name: 'Manager', canAssignRoles: true, minimum: 1 }];
+    groupAssessment.teamRoles = [{ name: 'Manager', canAssignRoles: true, minimum: 1 }];
     courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['groupAssessmentMaxZero'] =
       groupAssessment;
 
@@ -1326,7 +1326,7 @@ describe('Assessment syncing', () => {
     const courseData = util.getCourseData();
     const groupAssessment = makeAssessment(courseData, 'Homework');
     groupAssessment.groupWork = true;
-    groupAssessment.groupRoles = [
+    groupAssessment.teamRoles = [
       { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
       { name: 'Contributor' },
     ];
@@ -1351,7 +1351,7 @@ describe('Assessment syncing', () => {
       groupAssessment;
 
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
-    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
 
     // Ensure both roles are present
     assert.equal(syncedRoles.length, 2);
@@ -1380,7 +1380,7 @@ describe('Assessment syncing', () => {
 
     // Overwrite and ensure that both roles are still present
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
     assert.equal(newSyncedRoles.length, 2);
 
     const syncedData = await getSyncedAssessmentData('groupAssessment');
@@ -1427,7 +1427,7 @@ describe('Assessment syncing', () => {
 
     const firstGroupAssessment = makeAssessment(courseData, 'Homework');
     firstGroupAssessment.groupWork = true;
-    firstGroupAssessment.groupRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
+    firstGroupAssessment.teamRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
     firstGroupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -1442,7 +1442,7 @@ describe('Assessment syncing', () => {
 
     const secondGroupAssessment = makeAssessment(courseData, 'Homework');
     secondGroupAssessment.groupWork = true;
-    secondGroupAssessment.groupRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
+    secondGroupAssessment.teamRoles = [{ name: 'Recorder', minimum: 1, canAssignRoles: true }];
     secondGroupAssessment.zones?.push({
       title: 'test zone',
       questions: [
@@ -1464,8 +1464,8 @@ describe('Assessment syncing', () => {
 
     const firstSyncedAssessment = await getSyncedAssessmentData('firstGroupAssessment');
     const secondSyncedAssessment = await getSyncedAssessmentData('secondGroupAssessment');
-    assert.lengthOf(firstSyncedAssessment.group_roles, 1);
-    assert.lengthOf(secondSyncedAssessment.group_roles, 1);
+    assert.lengthOf(firstSyncedAssessment.team_roles, 1);
+    assert.lengthOf(secondSyncedAssessment.team_roles, 1);
 
     const syncedPermissions = await util.dumpTableWithSchema(
       'assessment_question_role_permissions',
@@ -1474,12 +1474,12 @@ describe('Assessment syncing', () => {
     assert.lengthOf(syncedPermissions, 2);
 
     const firstAssessmentQuestion = firstSyncedAssessment.assessment_questions[0];
-    const firstGroupRole = firstSyncedAssessment.group_roles[0];
+    const firstGroupRole = firstSyncedAssessment.team_roles[0];
     assert.ok(firstAssessmentQuestion);
     assert.ok(firstGroupRole);
 
     const secondAssessmentQuestion = secondSyncedAssessment.assessment_questions[0];
-    const secondGroupRole = secondSyncedAssessment.group_roles[0];
+    const secondGroupRole = secondSyncedAssessment.team_roles[0];
     assert.ok(secondAssessmentQuestion);
     assert.ok(secondGroupRole);
 
@@ -2557,11 +2557,11 @@ describe('Assessment syncing', () => {
     assert.equal(thirdAssessmentQuestion?.json_grade_rate_minutes, null);
   });
 
-  it('syncs JSON data for group role permissions correctly', async () => {
+  it('syncs JSON data for team role permissions correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
-    assessment.groupRoles = [
+    assessment.teamRoles = [
       {
         name: 'Manager',
         minimum: 1,

@@ -39,21 +39,15 @@ import {
   CourseInstanceSchema,
   CourseSchema,
   GradingJobSchema,
-  type GroupConfig,
-  GroupConfigSchema,
   type InstanceQuestion,
   type Question,
   type Submission,
   SubmissionSchema,
+  type TeamConfig,
+  TeamConfigSchema,
   type User,
   type Variant,
 } from './db-types.js';
-import {
-  type QuestionGroupPermissions,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  getUserRoles,
-} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
@@ -66,6 +60,12 @@ import {
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import type { UntypedResLocals } from './res-locals.types.js';
+import {
+  type QuestionTeamPermissions,
+  getQuestionTeamPermissions,
+  getTeamInfo,
+  getUserRoles,
+} from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -94,7 +94,7 @@ const SubmissionInfoSchema = z.object({
   user_uid: z.string().nullable(),
   submission_index: z.coerce.number(),
   submission_count: z.coerce.number(),
-  group_config: GroupConfigSchema.nullable(),
+  team_config: TeamConfigSchema.nullable(),
 });
 
 /**
@@ -254,24 +254,24 @@ function buildLocals({
   variant,
   question,
   instance_question,
-  group_role_permissions,
+  team_role_permissions,
   assessment,
   assessment_instance,
   assessment_question,
-  group_config,
+  team_config,
   authz_result,
 }: {
   variant: Variant;
   question: Question;
   instance_question?: InstanceQuestionWithAllowGrade | null;
-  group_role_permissions?: {
+  team_role_permissions?: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
   assessment?: Assessment | null;
   assessment_instance?: AssessmentInstance | null;
   assessment_question?: AssessmentQuestion | null;
-  group_config?: GroupConfig | null;
+  team_config?: TeamConfig | null;
   authz_result?: any;
 }) {
   const locals: ResLocalsBuildLocals = {
@@ -383,7 +383,7 @@ function buildLocals({
     locals.showTrueAnswer = false;
   }
 
-  if (group_config?.has_roles && !group_role_permissions?.can_submit) {
+  if (team_config?.has_roles && !team_role_permissions?.can_submit) {
     locals.disableGradeButton = true;
     locals.disableSaveButton = true;
   }
@@ -413,8 +413,8 @@ export async function getAndRenderVariant(
     assessment?: Assessment;
     assessment_instance?: AssessmentInstance;
     assessment_question?: AssessmentQuestion;
-    group_config?: GroupConfig;
-    group_role_permissions?: QuestionGroupPermissions;
+    team_config?: TeamConfig;
+    team_role_permissions?: QuestionTeamPermissions;
     instance_question?: InstanceQuestionWithAllowGrade;
     authz_data?: Record<string, any>;
     authz_result?: Record<string, any>;
@@ -493,8 +493,8 @@ export async function getAndRenderVariant(
     assessment,
     assessment_instance,
     assessment_question,
-    group_config,
-    group_role_permissions,
+    team_config,
+    team_role_permissions,
     authz_result,
   } = locals;
 
@@ -512,11 +512,11 @@ export async function getAndRenderVariant(
     variant,
     question,
     instance_question,
-    group_role_permissions,
+    team_role_permissions,
     assessment,
     assessment_instance,
     assessment_question,
-    group_config,
+    team_config,
     authz_result,
   });
   if (
@@ -700,7 +700,7 @@ export async function renderPanelsForSubmission({
     formatted_date,
     user_uid,
     question_number,
-    group_config,
+    team_config,
   } = submissionInfo;
   const previous_variants =
     variant.instance_question_id == null || assessment_instance == null
@@ -723,11 +723,11 @@ export async function renderPanelsForSubmission({
       variant,
       question,
       instance_question,
-      group_role_permissions: groupRolePermissions,
+      team_role_permissions: groupRolePermissions,
       assessment,
       assessment_instance,
       assessment_question,
-      group_config,
+      team_config,
     }),
   };
 
@@ -822,10 +822,10 @@ export async function renderPanelsForSubmission({
       // Render the question panel footer
       if (!renderScorePanels) return;
 
-      const group_info = await run(async () => {
-        if (!assessment_instance?.team_id || !group_config) return null;
+      const team_info = await run(async () => {
+        if (!assessment_instance?.team_id || !team_config) return null;
 
-        return await getGroupInfo(assessment_instance.team_id, group_config);
+        return await getTeamInfo(assessment_instance.team_id, team_config);
       });
 
       panels.questionPanelFooter = QuestionFooterContent({
@@ -836,9 +836,9 @@ export async function renderPanelsForSubmission({
           instance_question,
           authz_result: { authorized_edit: authorizedEdit },
           instance_question_info: { previous_variants },
-          group_config,
-          group_info,
-          group_role_permissions: groupRolePermissions,
+          team_config,
+          team_info,
+          team_role_permissions: groupRolePermissions,
           user,
           ...locals,
         },
@@ -856,8 +856,8 @@ export async function renderPanelsForSubmission({
       let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
       let userGroupRoles = 'None';
 
-      if (assessment_instance?.team_id && group_config?.has_roles) {
-        nextQuestionGroupRolePermissions = await getQuestionGroupPermissions(
+      if (assessment_instance?.team_id && team_config?.has_roles) {
+        nextQuestionGroupRolePermissions = await getQuestionTeamPermissions(
           next_instance_question.id,
           assessment_instance.team_id,
           user.id,

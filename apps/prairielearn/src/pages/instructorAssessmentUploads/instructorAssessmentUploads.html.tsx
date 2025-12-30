@@ -215,7 +215,7 @@ function CsvHelpInstanceQuestionScores({ groupWork }: { groupWork: boolean }) {
       file from the Downloads page. Alternatively, the CSV file can be in the format:
     </p>
     <pre class="ms-4">
-${groupWork ? 'group_name' : 'uid'},instance,qid,score_perc,feedback
+${groupWork ? 'team_name' : 'uid'},instance,qid,score_perc,feedback
 ${groupWork ? 'group1' : 'student1@example.com'},1,addTwoNumbers,34.5,The second step was wrong
 ${groupWork ? 'group2' : 'student2@example.com'},1,addTwoNumbers,78.92,
 ${groupWork ? 'group2' : 'student2@example.com'},1,matrixMultiply,100,Great job!</pre
@@ -237,7 +237,7 @@ function CsvHelpAssessmentInstanceScores({ groupWork }: { groupWork: boolean }) 
   return html`
     <p>Upload a CSV file like this:</p>
     <pre class="ms-4">
-${groupWork ? 'group_name' : 'uid'},instance,score_perc
+${groupWork ? 'team_name' : 'uid'},instance,score_perc
 ${groupWork ? 'group1' : 'student1@example.com'},1,63.5
 ${groupWork ? 'group2' : 'student2@example.com'},1,100</pre
     >
@@ -255,7 +255,7 @@ ${groupWork ? 'group2' : 'student2@example.com'},1,100</pre
       <code>points</code> column, like:
     </p>
     <pre class="ms-4">
-${groupWork ? 'group_name' : 'uid'},instance,points
+${groupWork ? 'team_name' : 'uid'},instance,points
 ${groupWork ? 'group1' : 'student1@example.com'},1,120
 ${groupWork ? 'group2' : 'student2@example.com'},1,130.27</pre
     >

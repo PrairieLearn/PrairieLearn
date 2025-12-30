@@ -12,8 +12,8 @@ DECLARE
     missing_src_tids TEXT;
     mismatched_uuid_tids TEXT;
     valid_assessment record;
-    group_role JSONB;
-    valid_group_role record;
+    team_role JSONB;
+    valid_team_role record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -27,8 +27,8 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
     bad_assessments text;
-    new_group_role_names text[];
-    new_group_role_name text;
+    new_team_role_names text[];
+    new_team_role_name text;
     question_grading_method enum_grading_method;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
@@ -226,8 +226,8 @@ BEGIN
                 has_roles = EXCLUDED.has_roles,
                 deleted_at = NULL;
 
-            -- Insert all group roles
-            FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
+            -- Insert all team roles
+            FOR team_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'teamRoles') LOOP
                 INSERT INTO team_roles (
                     role_name,
                     assessment_id,
@@ -235,12 +235,12 @@ BEGIN
                     maximum,
                     can_assign_roles
                 ) VALUES (
-                    (group_role->>'role_name'),
+                    (team_role->>'role_name'),
                     new_assessment_id,
                     -- Insert default values where necessary
-                    CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
-                    (group_role->>'maximum')::integer,
-                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END
+                    CASE WHEN team_role ? 'minimum' THEN (team_role->>'minimum')::integer ELSE 0 END,
+                    (team_role->>'maximum')::integer,
+                    CASE WHEN team_role ? 'can_assign_roles' THEN (team_role->>'can_assign_roles')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
                 DO UPDATE
                 SET
@@ -248,15 +248,15 @@ BEGIN
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
                     can_assign_roles = EXCLUDED.can_assign_roles
-                RETURNING team_roles.role_name INTO new_group_role_name;
-                new_group_role_names := array_append(new_group_role_names, new_group_role_name);
+                RETURNING team_roles.role_name INTO new_team_role_name;
+                new_team_role_names := array_append(new_team_role_names, new_team_role_name);
             END LOOP;
 
-            -- Delete excess group roles
+            -- Delete excess team roles
             DELETE FROM team_roles
             WHERE
                 assessment_id = new_assessment_id
-                AND role_name != ALL (new_group_role_names);
+                AND role_name != ALL (new_team_role_names);
 
         ELSE
             UPDATE team_configs
@@ -559,11 +559,11 @@ BEGIN
                             can_submit
                         ) SELECT
                             new_assessment_question_id,
-                            gr.id,
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                        FROM team_roles AS gr
-                        WHERE gr.assessment_id = new_assessment_id
+                            tr.id,
+                            (tr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
+                            (tr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                        FROM team_roles AS tr
+                        WHERE tr.assessment_id = new_assessment_id
                         ON CONFLICT (assessment_question_id, team_role_id)
                         DO UPDATE
                         SET

@@ -9,7 +9,6 @@ import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
-import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -22,17 +21,18 @@ import {
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import { TeamWorkInfoContainer } from '../../components/TeamWorkInfoContainer.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
-  type GroupConfig,
   InstanceQuestionSchema,
+  type TeamConfig,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type TeamInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -60,7 +60,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
-  group_role_permissions: z
+  team_role_permissions: z
     .object({
       can_view: z.boolean(),
       can_submit: z.boolean(),
@@ -72,8 +72,8 @@ export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 export function StudentAssessmentInstance({
   instance_question_rows,
   showTimeLimitExpiredModal,
-  groupConfig,
-  groupInfo,
+  teamConfig,
+  teamInfo,
   userCanAssignRoles,
   userCanDeleteAssessmentInstance,
   resLocals,
@@ -84,13 +84,13 @@ export function StudentAssessmentInstance({
   resLocals: UntypedResLocals;
 } & (
   | {
-      groupConfig: GroupConfig;
-      groupInfo: GroupInfo;
+      teamConfig: TeamConfig;
+      teamInfo: TeamInfo;
       userCanAssignRoles: boolean;
     }
   | {
-      groupConfig?: undefined;
-      groupInfo?: undefined;
+      teamConfig?: undefined;
+      teamInfo?: undefined;
       userCanAssignRoles?: undefined;
     }
 )) {
@@ -148,8 +148,8 @@ export function StudentAssessmentInstance({
         : 1 + trailingColumnsCount;
   });
 
-  const userGroupRoles = groupInfo
-    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
+  const userGroupRoles = teamInfo
+    ? getRoleNamesForUser(teamInfo, resLocals.authz_data.user).join(', ')
     : null;
 
   return PageLayout({
@@ -255,12 +255,12 @@ export function StudentAssessmentInstance({
                     })}
                   </div>
                 `}
-            ${groupConfig != null
+            ${teamConfig != null
               ? html`
                   <div class="col-lg-12">
-                    ${GroupWorkInfoContainer({
-                      groupConfig,
-                      groupInfo,
+                    ${TeamWorkInfoContainer({
+                      teamConfig,
+                      teamInfo,
                       userCanAssignRoles,
                       csrfToken: resLocals.__csrf_token,
                     })}
@@ -807,7 +807,7 @@ function RowLabel({
     lockedPopoverText = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
+  } else if (!(instance_question_row.team_role_permissions?.can_view ?? true)) {
     lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
   }
 

@@ -19,7 +19,7 @@ WITH
       ai.assessment_id = $assessment_id
       AND (
         CASE
-          WHEN $group_id::bigint IS NOT NULL THEN ai.team_id = $group_id
+          WHEN $team_id::bigint IS NOT NULL THEN ai.team_id = $team_id
           ELSE ai.user_id = $user_id
         END
       )
@@ -46,9 +46,9 @@ WITH
       $authn_user_id,
       $assessment_id,
       CASE
-        WHEN $group_id::bigint IS NULL THEN $user_id
+        WHEN $team_id::bigint IS NULL THEN $user_id
       END,
-      $group_id,
+      $team_id,
       $mode,
       a.auto_close
       AND a.type = 'Exam',
@@ -94,10 +94,10 @@ WITH
     INSERT INTO
       last_accesses (team_id, last_access)
     SELECT
-      $group_id,
+      $team_id,
       current_timestamp
     WHERE
-      $group_id::bigint IS NOT NULL
+      $team_id::bigint IS NOT NULL
     ON CONFLICT (team_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -109,7 +109,7 @@ WITH
       $user_id,
       current_timestamp
     WHERE
-      $group_id::bigint IS NULL
+      $team_id::bigint IS NULL
     ON CONFLICT (user_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -397,13 +397,13 @@ FROM
 SELECT
   ai.id AS assessment_instance_id,
   ai.number AS instance_number,
-  COALESCE(u.uid, 'group ' || g.name) AS username
+  COALESCE(u.uid, 'group ' || t.name) AS username
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN teams AS g ON (
-    g.id = ai.team_id
-    AND g.deleted_at IS NULL
+  LEFT JOIN teams AS t ON (
+    t.id = ai.team_id
+    AND t.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
@@ -570,12 +570,12 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN teams AS g ON (
-        g.id = ai.team_id
-        AND g.deleted_at IS NULL
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -657,12 +657,12 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN teams AS g ON (
-        g.id = ai.team_id
-        AND g.deleted_at IS NULL
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -714,12 +714,12 @@ WITH
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       -- Only select groups that are not soft-deleted
-      LEFT JOIN teams AS g ON (
-        g.id = ai.team_id
-        AND g.deleted_at IS NULL
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
-      JOIN users AS u ON (u.id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
         e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
@@ -1393,13 +1393,13 @@ WITH
         gl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
         jsonb_strip_nulls(
-          jsonb_build_object('user', gu.uid, 'roles', gl.roles)
+          jsonb_build_object('user', tu.uid, 'roles', gl.roles)
         ) AS data
       FROM
         assessment_instances AS ai
         JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
         JOIN users AS u ON (u.id = gl.authn_user_id)
-        LEFT JOIN users AS gu ON (gu.id = gl.user_id)
+        LEFT JOIN users AS gu ON (tu.id = gl.user_id)
       WHERE
         ai.id = $assessment_instance_id
     )

@@ -233,7 +233,7 @@ async function makeAndInsertVariant(
 
   const variant = await sqldb.runInTransactionAsync(async () => {
     let real_user_id: string | null = user_id;
-    let real_group_id: string | null = null;
+    let real_team_id: string | null = null;
     let new_number: number | null = 1;
 
     if (instance_question_id != null) {
@@ -272,7 +272,7 @@ async function makeAndInsertVariant(
 
       question_id = instance_question.question_id;
       real_user_id = instance_question.user_id;
-      real_group_id = instance_question.team_id;
+      real_team_id = instance_question.team_id;
 
       new_number = await sqldb.queryOptionalRow(
         sql.next_variant_number,
@@ -305,7 +305,7 @@ async function makeAndInsertVariant(
         question_id,
         course_instance_id: course_instance?.id ?? null,
         user_id: real_user_id,
-        group_id: real_group_id,
+        team_id: real_team_id,
         number: new_number ?? 1,
         authn_user_id,
         workspace_id,

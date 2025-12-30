@@ -28,7 +28,7 @@ onDocumentReady(() => {
     return;
   }
   const { assessmentSetAbbr, assessmentNumber, csrfToken, urlPrefix } = dataset;
-  const assessmentGroupWork = dataset.assessmentGroupWork === 'true';
+  const assessmentTeamWork = dataset.assessmentTeamWork === 'true';
   const assessmentMultipleInstance = dataset.assessmentMultipleInstance === 'true';
   const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
   const timezone = dataset.timezone ?? 'UTC';
@@ -95,19 +95,19 @@ onDocumentReady(() => {
     ) => {
       return data.filter((row) => {
         const search = searchText.toLowerCase();
-        return assessmentGroupWork
-          ? (!filter?.role || row.group_roles?.includes(filter.role)) &&
-              (row.group_name?.toLowerCase().includes(search) ||
+        return assessmentTeamWork
+          ? (!filter?.role || row.team_roles?.includes(filter.role)) &&
+              (row.team_name?.toLowerCase().includes(search) ||
                 row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
                 row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
-                row.group_roles?.some((role) => role.toLowerCase().includes(search)))
+                row.team_roles?.some((role) => role.toLowerCase().includes(search)))
           : (!filter?.role || row.role === filter.role) &&
               (row.uid?.toLowerCase().includes(search) ||
                 row.name?.toLowerCase().includes(search) ||
                 row.role.toLowerCase().includes(search));
       });
     },
-    columns: tableColumns(assessmentGroupWork),
+    columns: tableColumns(assessmentTeamWork),
   });
 
   on('submit', 'form.js-popover-form', (event) => {
@@ -171,7 +171,7 @@ onDocumentReady(() => {
       templateFromAttributes(relatedTarget, modal[0], {
         'data-uid': '.modal-uid',
         'data-name': '.modal-name',
-        'data-group-name': '.modal-group-name',
+        'data-team-name': '.modal-team-name',
         'data-uid-list': '.modal-uid-list',
         'data-number': '.modal-number',
         'data-date-formatted': '.modal-date',
@@ -206,7 +206,7 @@ onDocumentReady(() => {
     $($(e.currentTarget).data('target')).modal('show');
   });
 
-  function tableColumns(assessmentGroupWork: boolean) {
+  function tableColumns(assessmentTeamWork: boolean) {
     return [
       {
         field: 'assessment_instance_id',
@@ -217,10 +217,10 @@ onDocumentReady(() => {
         class: 'align-middle sticky-column text-nowrap',
         switchable: false,
       },
-      ...(assessmentGroupWork
+      ...(assessmentTeamWork
         ? [
             {
-              field: 'group_name',
+              field: 'team_name',
               title: 'Name',
               visible: false,
               sortable: true,
@@ -246,7 +246,7 @@ onDocumentReady(() => {
               switchable: true,
             },
             {
-              field: 'group_roles',
+              field: 'team_roles',
               title: html`
                 Roles
                 <button
@@ -392,7 +392,7 @@ onDocumentReady(() => {
         `,
         class: 'text-center align-middle',
         // Hidden for groupwork by default, as it is not as relevant in that context
-        visible: !assessmentGroupWork,
+        visible: !assessmentTeamWork,
         switchable: true,
         sortable: true,
       },
@@ -687,7 +687,7 @@ onDocumentReady(() => {
   }
 
   function detailsLinkFormatter(value: string, row: AssessmentInstanceRow) {
-    const name = assessmentGroupWork ? row.group_name : row.uid;
+    const name = assessmentTeamWork ? row.team_name : row.uid;
 
     let number;
     if (!assessmentMultipleInstance) {
@@ -706,15 +706,15 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
-    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+    const nameKey = assessmentTeamWork ? 'team_name' : 'uid';
+    const idKey = assessmentTeamWork ? 'team_id' : 'user_id';
 
     const nameA = rowA[nameKey];
     const nameB = rowB[nameKey];
     const idA = rowA[idKey] ?? '';
     const idB = rowB[idKey] ?? '';
 
-    // Compare first by UID/group name, then user/group ID, then
+    // Compare first by UID/team name, then user/team ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
     if (!compare) compare = Number.parseInt(idA) - Number.parseInt(idB);
@@ -763,7 +763,7 @@ onDocumentReady(() => {
                     data-name="${row.name}"
                     data-number="${row.number}"
                     data-date-formatted="${row.date_formatted}"
-                    data-group-name="${row.group_name}"
+                    data-team-name="${row.team_name}"
                     data-uid-list="${row.uid_list?.join(', ') || 'empty'}"
                     data-score-perc="${Math.floor(row.score_perc ?? 0)}"
                     data-assessment-instance-id="${row.assessment_instance_id}"

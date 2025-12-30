@@ -22,18 +22,18 @@ WITH
     -- Select all assessment instances for the course instance
     SELECT
       ai.id,
-      COALESCE(ai.user_id, gu.user_id) AS user_id,
+      COALESCE(ai.user_id, tu.user_id) AS user_id,
       ai.team_id,
       ai.assessment_id,
       ai.score_perc
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN teams AS g ON (g.id = ai.team_id)
-      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+      LEFT JOIN teams AS t ON (t.id = ai.team_id)
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
     WHERE
       a.course_instance_id = $course_instance_id
-      AND g.deleted_at IS NULL
+      AND t.deleted_at IS NULL
   ),
   course_scores AS (
     -- For each user, select the instance with the highest score for each assessment
@@ -125,14 +125,14 @@ WITH
                 )
               FROM
                 team_users AS ogu
-                LEFT JOIN course_users AS ou ON (ou.id = ogu.user_id)
+                LEFT JOIN course_users AS ou ON (ou.id = otu.user_id)
                 LEFT JOIN enrollments AS e ON (
                   ou.id = e.user_id
                   AND e.course_instance_id = $course_instance_id
                 )
               WHERE
-                ogu.team_id = s.team_id
-                AND ogu.user_id != u.id
+                otu.team_id = s.team_id
+                AND otu.user_id != u.id
             ),
             '[]'::json
           )
@@ -165,13 +165,13 @@ ORDER BY
 
 -- BLOCK assessment_instance_score
 SELECT
-  COALESCE(ai.user_id, gu.user_id) AS user_id,
+  COALESCE(ai.user_id, tu.user_id) AS user_id,
   ai.assessment_id,
   ai.score_perc,
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  LEFT JOIN teams AS g ON (g.id = ai.team_id)
-  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+  LEFT JOIN teams AS t ON (t.id = ai.team_id)
+  LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
 WHERE
   ai.id = $assessment_instance_id

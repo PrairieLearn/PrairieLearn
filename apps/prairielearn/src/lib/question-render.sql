@@ -203,7 +203,7 @@ SELECT
     WHERE
       s2.variant_id = s.variant_id
   ) AS submission_count,
-  to_jsonb(gc) AS group_config
+  to_jsonb(gc) AS team_config
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)
@@ -220,9 +220,9 @@ FROM
   LEFT JOIN next_iq ON (next_iq.current_id = iq.id)
   LEFT JOIN users AS u ON (s.auth_user_id = u.id)
   LEFT JOIN question_order (ai.id) AS qo ON (qo.instance_question_id = iq.id)
-  LEFT JOIN team_configs AS gc ON (
-    gc.assessment_id = a.id
-    AND gc.deleted_at IS NULL
+  LEFT JOIN team_configs AS tc ON (
+    tc.assessment_id = a.id
+    AND tc.deleted_at IS NULL
   )
 WHERE
   s.id = $unsafe_submission_id

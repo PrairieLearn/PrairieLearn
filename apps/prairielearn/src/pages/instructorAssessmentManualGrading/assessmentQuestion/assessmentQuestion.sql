@@ -50,10 +50,10 @@ SELECT
   to_jsonb(iq.*) AS instance_question,
   ai.open AS assessment_open,
   COALESCE(u.uid, array_to_string(gul.uid_list, ', ')) AS uid,
-  COALESCE(agu.name, agu.uid) AS assigned_grader_name,
+  COALESCE(lgu.name, agu.uid) AS assigned_grader_name,
   COALESCE(lgu.name, lgu.uid) AS last_grader_name,
   to_jsonb(aq.*) AS assessment_question,
-  COALESCE(g.name, u.name) AS user_or_group_name,
+  COALESCE(t.name, u.name) AS user_or_team_name,
   ic.open_issue_count,
   -- Pseudo-random deterministic stable order of instance questions. This will
   -- always return the same set of instance questions in the same order, but it
@@ -69,8 +69,8 @@ FROM
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
-  LEFT JOIN teams AS g ON (g.id = ai.team_id)
-  LEFT JOIN teams_uid_list (g.id) AS gul ON TRUE
+  LEFT JOIN teams AS t ON (t.id = ai.team_id)
+  LEFT JOIN teams_uid_list (t.id) AS gul ON TRUE
   LEFT JOIN enrollments AS e ON (
     e.user_id = ai.user_id
     AND e.course_instance_id = a.course_instance_id

@@ -98,7 +98,7 @@ WHERE
 WITH
   course_assessment_instances AS (
     SELECT
-      COALESCE(ai.user_id, gu.user_id) AS user_id,
+      COALESCE(ai.user_id, tu.user_id) AS user_id,
       ai.id,
       ai.assessment_id,
       ai.score_perc,
@@ -107,11 +107,11 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN teams AS g ON (g.id = ai.team_id)
-      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
+      LEFT JOIN teams AS t ON (t.id = ai.team_id)
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
     WHERE
       ai.assessment_id = $assessment_id
-      AND g.deleted_at IS NULL
+      AND t.deleted_at IS NULL
       AND ai.score_perc IS NOT NULL
       AND ai.date IS NOT NULL
   )

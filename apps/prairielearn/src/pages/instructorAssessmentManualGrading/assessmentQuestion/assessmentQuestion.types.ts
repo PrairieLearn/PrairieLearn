@@ -18,7 +18,7 @@ export const InstanceQuestionRowSchema = z.object({
   assigned_grader_name: z.string().nullable(),
   last_grader_name: z.string().nullable(),
   assessment_question: StaffAssessmentQuestionSchema,
-  user_or_group_name: z.string().nullable(),
+  user_or_team_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),

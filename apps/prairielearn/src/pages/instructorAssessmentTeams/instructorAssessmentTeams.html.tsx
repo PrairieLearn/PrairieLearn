@@ -6,27 +6,27 @@ import { IdSchema } from '@prairielearn/zod';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
+import { type TeamConfig, UserSchema } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export const GroupUsersRowSchema = z.object({
-  group_id: IdSchema,
+export const TeamUsersRowSchema = z.object({
+  team_id: IdSchema,
   name: z.string(),
   size: z.number(),
   users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
-type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
+type TeamUsersRow = z.infer<typeof TeamUsersRowSchema>;
 
-export function InstructorAssessmentGroups({
-  groupsCsvFilename,
-  groupConfigInfo,
-  groups,
+export function InstructorAssessmentTeams({
+  teamsCsvFilename,
+  teamConfigInfo,
+  teams,
   notAssigned,
   resLocals,
 }: {
-  groupsCsvFilename?: string;
-  groupConfigInfo?: GroupConfig;
-  groups?: GroupUsersRow[];
+  teamsCsvFilename?: string;
+  teamConfigInfo?: TeamConfig;
+  teams?: TeamUsersRow[];
   notAssigned?: string[];
   resLocals: UntypedResLocals;
 }) {
@@ -36,7 +36,7 @@ export function InstructorAssessmentGroups({
     navContext: {
       type: 'instructor',
       page: 'assessment',
-      subPage: 'groups',
+      subPage: 'teams',
     },
     options: {
       fullWidth: true,
@@ -54,7 +54,7 @@ export function InstructorAssessmentGroups({
         )}"></script>
     `,
     content: html`
-      ${!groupConfigInfo
+      ${!teamConfigInfo
         ? html`
             <div class="card mb-4">
               <div class="card-header bg-primary text-white d-flex align-items-center">
@@ -71,8 +71,8 @@ export function InstructorAssessmentGroups({
               ? html`
                   ${UploadAssessmentGroupsModal({ csrfToken: resLocals.__csrf_token })}
                   ${RandomAssessmentGroupsModal({
-                    groupMin: groupConfigInfo.minimum ?? 2,
-                    groupMax: groupConfigInfo.maximum ?? 5,
+                    groupMin: teamConfigInfo.minimum ?? 2,
+                    groupMax: teamConfigInfo.maximum ?? 5,
                     csrfToken: resLocals.__csrf_token,
                   })}
                   ${AddGroupModal({ csrfToken: resLocals.__csrf_token })}
@@ -101,7 +101,7 @@ export function InstructorAssessmentGroups({
                           type="button"
                           class="btn btn-sm btn-danger"
                           data-bs-toggle="modal"
-                          data-bs-target="#deleteAllGroupsModal"
+                          data-bs-target="#deleteAllTeamsModal"
                         >
                           <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
                         </button>
@@ -156,8 +156,8 @@ export function InstructorAssessmentGroups({
                     </tr>
                   </thead>
                   <tbody>
-                    ${groups?.map(function (row) {
-                      return html` <tr data-test-group-id="${row.group_id}">
+                    ${teams?.map(function (row) {
+                      return html` <tr data-test-team-id="${row.team_id}">
                         <td>${row.name}</td>
                         <td class="text-center">${row.size}</td>
                         <td class="text-center">
@@ -170,7 +170,7 @@ export function InstructorAssessmentGroups({
                         ${resLocals.authz_data.has_course_instance_permission_edit
                           ? html`
                               <td class="text-center">
-                                <div class="dropdown js-group-action-dropdown">
+                                <div class="dropdown js-team-action-dropdown">
                                   <button
                                     type="button"
                                     class="btn btn-xs btn-ghost dropdown-toggle"
@@ -183,7 +183,7 @@ export function InstructorAssessmentGroups({
                                   </button>
                                   <div class="dropdown-menu">
                                     <button
-                                      class="dropdown-item js-group-action"
+                                      class="dropdown-item js-team-action"
                                       data-bs-toggle="popover"
                                       data-bs-container="body"
                                       data-bs-html="true"
@@ -201,7 +201,7 @@ export function InstructorAssessmentGroups({
                                     ${row.users.length > 0
                                       ? html`
                                           <button
-                                            class="dropdown-item js-group-action"
+                                            class="dropdown-item js-team-action"
                                             data-bs-toggle="popover"
                                             data-bs-container="body"
                                             data-bs-html="true"
@@ -219,13 +219,13 @@ export function InstructorAssessmentGroups({
                                           </button>
                                         `
                                       : html`
-                                          <button class="dropdown-item js-group-action" disabled>
+                                          <button class="dropdown-item js-team-action" disabled>
                                             <i class="fa fa-user-minus" aria-hidden="true"></i>
                                             Remove members
                                           </button>
                                         `}
                                     <button
-                                      class="dropdown-item js-group-action"
+                                      class="dropdown-item js-team-action"
                                       data-bs-toggle="popover"
                                       data-bs-container="body"
                                       data-bs-html="true"
@@ -254,9 +254,9 @@ export function InstructorAssessmentGroups({
                     Download
                     <a
                       href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                        .id}/downloads/${groupsCsvFilename}"
+                        .id}/downloads/${teamsCsvFilename}"
                     >
-                      ${groupsCsvFilename}
+                      ${teamsCsvFilename}
                     </a>
                   </p>
                   <small>
@@ -301,7 +301,7 @@ export function InstructorAssessmentGroups({
   });
 }
 
-function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
+function AddMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
   return html`
     <form name="add-member-form" method="POST">
       <div class="mb-3">
@@ -319,32 +319,32 @@ function AddMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: str
       </div>
       <input type="hidden" name="__action" value="add_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <input type="hidden" name="team_id" value="${row.team_id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
     </form>
   `;
 }
 
-function DeleteGroupForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
+function DeleteGroupForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
   return html`
     <form name="delete-group-form" method="POST">
       <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
-      <input type="hidden" name="__action" value="delete_group" />
+      <input type="hidden" name="__action" value="delete_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <input type="hidden" name="team_id" value="${row.team_id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Delete</button>
     </form>
   `;
 }
 
-function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: string }) {
+function RemoveMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
   return html`
     <form name="delete-member-form" method="POST">
       <div class="mb-3">
-        <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
-        <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
+        <label class="form-label" for="delete-member-form-${row.team_id}">UID:</label>
+        <select class="form-select" name="user_id" id="delete-member-form-${row.team_id}">
           ${row.users.map((user) => {
             return html` <option value="${user.id}">${user.uid}</option> `;
           })}
@@ -352,7 +352,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
       </div>
       <input type="hidden" name="__action" value="delete_member" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="group_id" value="${row.group_id}" />
+      <input type="hidden" name="team_id" value="${row.team_id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger" ${row.users.length > 0 ? '' : 'disabled'}>
         Delete
@@ -392,7 +392,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="upload_assessment_groups" />
+      <input type="hidden" name="__action" value="upload_assessment_teams" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Upload</button>
@@ -422,7 +422,7 @@ function RandomAssessmentGroupsModal({
           value="${groupMin}"
           class="form-control"
           id="formMin"
-          name="min_group_size"
+          name="min_team_size"
         />
       </div>
       <div class="mb-3">
@@ -434,12 +434,12 @@ function RandomAssessmentGroupsModal({
           value="${groupMax}"
           class="form-control"
           id="formMax"
-          name="max_group_size"
+          name="max_team_size"
         />
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="random_assessment_groups" />
+      <input type="hidden" name="__action" value="random_assessment_teams" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Group</button>
@@ -458,7 +458,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
           type="text"
           class="form-control"
           id="formName"
-          name="group_name"
+          name="team_name"
           aria-describedby="addGroupNameHelp"
           maxlength="30"
           pattern="[0-9a-zA-Z]+"
@@ -485,7 +485,7 @@ function AddGroupModal({ csrfToken }: { csrfToken: string }) {
       </div>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="add_group" />
+      <input type="hidden" name="__action" value="add_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
       <button type="submit" class="btn btn-primary">Add</button>
@@ -503,7 +503,7 @@ function DeleteAllGroupsModal({
   assessmentNumber: number;
 }) {
   return Modal({
-    id: 'deleteAllGroupsModal',
+    id: 'deleteAllTeamsModal',
     title: 'Delete all existing groups',
     body: html`
       <p>

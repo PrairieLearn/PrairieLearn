@@ -43,7 +43,7 @@ const UserRowSchema = z.object({
 });
 type UserRow = z.infer<typeof UserRowSchema>;
 const GroupRowSchema = UserRowSchema.extend({
-  group_name: z.string(),
+  team_name: z.string(),
 });
 type GroupRow = z.infer<typeof GroupRowSchema>;
 
@@ -64,9 +64,9 @@ export default async function ({
     if (!assessment) return { rows: [], columns };
 
     const users = assessment.team_work
-      ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
+      ? await queryRows(sql.select_teams, { assessment_id }, GroupRowSchema)
       : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-    if (assessment.team_work) columns.splice(0, 0, 'group_name');
+    if (assessment.team_work) columns.splice(0, 0, 'team_name');
 
     const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
       ...user,

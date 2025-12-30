@@ -7,9 +7,9 @@ import {
   type AssessmentInstance,
   type Course,
   type CourseInstance,
-  type Group,
   type InstanceQuestion,
   type Question,
+  type Team,
   type User,
   type Variant,
 } from '../lib/db-types.js';
@@ -43,7 +43,7 @@ export function InstructorInfoPanel({
   lastGrader?: User | null;
   question?: Question;
   variant?: Variant;
-  instance_group?: Group | null;
+  instance_group?: Team | null;
   instance_group_uid_list?: string[] | null;
   instance_user?: User | null;
   authz_data: Record<string, any>;
@@ -115,7 +115,7 @@ function InstanceUserInfo({
   instance_group_uid_list,
 }: {
   instance_user?: User | null;
-  instance_group?: Group | null;
+  instance_group?: Team | null;
   instance_group_uid_list?: string[] | null;
 }) {
   if (instance_user == null && instance_group == null) return '';

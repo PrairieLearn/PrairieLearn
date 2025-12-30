@@ -22,7 +22,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  group_name: z.string().nullable(),
+  team_name: z.string().nullable(),
   assessment_id: IdSchema,
   course_instance_id: IdSchema,
   course_id: IdSchema,
@@ -31,7 +31,7 @@ const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance_id: IdSchema,
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  group_name: z.string().nullable(),
+  team_name: z.string().nullable(),
 });
 const AssessmentInstancesGradeSchema = z.object({
   updated: z.boolean(),
@@ -53,7 +53,7 @@ export async function regradeAssessmentInstance(
     RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.group_name}"`;
+  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
     description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
@@ -131,7 +131,7 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrGroup = row.user_uid || `group "${row.group_name}"`;
+      const userOrGroup = row.user_uid || `group "${row.team_name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
           assessment_instance_id: row.assessment_instance_id,

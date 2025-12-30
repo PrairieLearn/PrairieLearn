@@ -104,7 +104,7 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = assessment.groupRoles.map((role) => role.name);
+  const allRoleNames = assessment.teamRoles.map((role) => role.name);
   const assessmentCanView = assessment.canView.length > 0 ? assessment.canView : allRoleNames;
   const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
@@ -315,7 +315,7 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = assessment.groupRoles.map((role) => ({
+  const teamRoles = assessment.teamRoles.map((role) => ({
     role_name: role.name,
     minimum: role.minimum,
     maximum: role.maximum,
@@ -358,7 +358,7 @@ function getParamsForAssessment(
     student_group_leave: assessment.studentGroupLeave,
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: assessment.groupRoles.length > 0,
+    has_roles: assessment.teamRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
@@ -366,7 +366,7 @@ function getParamsForAssessment(
     allowAccess,
     zones,
     alternativeGroups,
-    groupRoles,
+    teamRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,

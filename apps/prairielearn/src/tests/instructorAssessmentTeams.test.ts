@@ -18,7 +18,7 @@ import * as helperServer from './helperServer.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-describe('Instructor group controls', () => {
+describe('Instructor team controls', () => {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -30,11 +30,11 @@ describe('Instructor group controls', () => {
   let users: User[] = [];
   let assessment_id: string;
   let instructorAssessmentGroupsUrl: string;
-  let group1RowId: string | undefined;
-  let group2RowId: string | undefined;
+  let team1RowId: string | undefined;
+  let team2RowId: string | undefined;
 
-  test.sequential('has group-based homework assessment', async () => {
-    assessment_id = await queryRow(sql.select_group_work_assessment, IdSchema);
+  test.sequential('has team-based homework assessment', async () => {
+    assessment_id = await queryRow(sql.select_team_work_assessment, IdSchema);
     instructorAssessmentGroupsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
   });
 
@@ -42,7 +42,7 @@ describe('Instructor group controls', () => {
     users = await generateAndEnrollUsers({ count: 5, course_instance_id: '1' });
   });
 
-  test.sequential('can create a new group', async () => {
+  test.sequential('can create a new team', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -50,9 +50,9 @@ describe('Instructor group controls', () => {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: csrfToken,
-        __action: 'add_group',
-        group_name: 'TestGroup',
-        // Add first two users to the group
+        __action: 'add_team',
+        team_name: 'TestGroup',
+        // Add first two users to the team
         uids: users
           .slice(0, 2)
           .map((u) => u.uid)
@@ -60,14 +60,14 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    const groupRow = response.$('#usersTable tr:contains(TestGroup)');
-    assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(`:contains(${users[0].uid})`));
-    assert.ok(groupRow.is(`:contains(${users[1].uid})`));
-    group1RowId = groupRow.attr('data-test-group-id');
+    const teamRow = response.$('#usersTable tr:contains(TestGroup)');
+    assert.lengthOf(teamRow, 1);
+    assert.ok(teamRow.is(`:contains(${users[0].uid})`));
+    assert.ok(teamRow.is(`:contains(${users[1].uid})`));
+    team1RowId = teamRow.attr('data-test-team-id');
   });
 
-  test.sequential('cannot create a group with a user already in another group', async () => {
+  test.sequential('cannot create a team with a user already in another team', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -75,9 +75,9 @@ describe('Instructor group controls', () => {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: csrfToken,
-        __action: 'add_group',
-        group_name: 'TestGroup2',
-        // Add first two users to the group
+        __action: 'add_team',
+        team_name: 'TeamTeam2',
+        // Add first two users to the team
         uids: users
           .slice(0, 2)
           .map((u) => u.uid)
@@ -86,10 +86,10 @@ describe('Instructor group controls', () => {
     });
     assert.equal(response.status, 200);
     assertAlert(response.$, 'in another group');
-    assert.lengthOf(response.$('#usersTable td:contains(TestGroup2)'), 0);
+    assert.lengthOf(response.$('#usersTable td:contains(TeamTeam2)'), 0);
   });
 
-  test.sequential('can create a second group', async () => {
+  test.sequential('can create a second team', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -97,9 +97,9 @@ describe('Instructor group controls', () => {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: csrfToken,
-        __action: 'add_group',
-        group_name: 'TestGroup2',
-        // Add second two users to the group
+        __action: 'add_team',
+        team_name: 'TeamTeam2',
+        // Add second two users to the team
         uids: users
           .slice(2, 4)
           .map((u) => u.uid)
@@ -107,14 +107,14 @@ describe('Instructor group controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    const groupRow = response.$('#usersTable tr:contains(TestGroup2)');
-    assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(`:contains(${users[2].uid})`));
-    assert.ok(groupRow.is(`:contains(${users[3].uid})`));
-    group2RowId = groupRow.attr('data-test-group-id');
+    const teamRow = response.$('#usersTable tr:contains(TeamTeam2)');
+    assert.lengthOf(teamRow, 1);
+    assert.ok(teamRow.is(`:contains(${users[2].uid})`));
+    assert.ok(teamRow.is(`:contains(${users[3].uid})`));
+    team2RowId = teamRow.attr('data-test-team-id');
   });
 
-  test.sequential('can create a group with an instructor', async () => {
+  test.sequential('can create a team with an instructor', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
     const csrfToken = extractAndSaveCSRFToken({}, getResponse.$, '#addGroupModal');
 
@@ -122,19 +122,19 @@ describe('Instructor group controls', () => {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: csrfToken,
-        __action: 'add_group',
-        group_name: 'TestGroupWithInstructor',
-        // Add instructor to the group
+        __action: 'add_team',
+        team_name: 'TestTeamWithInstructor',
+        // Add instructor to the team
         uids: 'dev@example.com',
       }),
     });
     assert.equal(response.status, 200);
-    const groupRow = response.$('#usersTable tr:contains(TestGroupWithInstructor)');
-    assert.lengthOf(groupRow, 1);
-    assert.ok(groupRow.is(':contains("dev@example.com")'));
+    const teamRow = response.$('#usersTable tr:contains(TestTeamWithInstructor)');
+    assert.lengthOf(teamRow, 1);
+    assert.ok(teamRow.is(':contains("dev@example.com")'));
   });
 
-  test.sequential('can add a user to an existing group', async () => {
+  test.sequential('can add a user to an existing team', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
 
     // The add member form is dynamically rendered on the client, so we need to
@@ -147,8 +147,8 @@ describe('Instructor group controls', () => {
       body: new URLSearchParams({
         __csrf_token: csrfToken,
         __action: 'add_member',
-        group_id: group1RowId || '',
-        // Add final user to the first group
+        team_id: team1RowId || '',
+        // Add final user to the first team
         add_member_uids: users[4].uid,
       }),
     });
@@ -157,7 +157,7 @@ describe('Instructor group controls', () => {
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
   });
 
-  test.sequential('cannot add a user to a group if they are already in another group', async () => {
+  test.sequential('cannot add a user to a team if they are already in another team', async () => {
     const getResponse = await fetchCheerio(instructorAssessmentGroupsUrl, {});
 
     // The add member form is dynamically rendered on the client, so we need to
@@ -170,14 +170,14 @@ describe('Instructor group controls', () => {
       body: new URLSearchParams({
         __csrf_token: csrfToken,
         __action: 'add_member',
-        group_id: group2RowId || '',
-        // Add final user to the second group
+        team_id: team2RowId || '',
+        // Add final user to the second team
         add_member_uids: users[4].uid,
       }),
     });
     assert.equal(response.status, 200);
     assertAlert(response.$, 'in another group');
     assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup):contains(${users[4].uid})`), 1);
-    assert.lengthOf(response.$(`#usersTable tr:contains(TestGroup2):contains(${users[4].uid})`), 0);
+    assert.lengthOf(response.$(`#usersTable tr:contains(TeamTeam2):contains(${users[4].uid})`), 0);
   });
 });

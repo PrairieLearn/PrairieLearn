@@ -886,10 +886,10 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'groups';
+        res.locals.navSubPage = 'teams';
         next();
       },
-      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
     ],
   );
   app.use(

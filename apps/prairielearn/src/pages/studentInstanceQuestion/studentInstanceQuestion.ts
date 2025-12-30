@@ -12,12 +12,12 @@ import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
-import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getQuestionTeamPermissions } from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -179,7 +179,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
+  if (res.locals.team_config?.has_roles && !res.locals.team_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -295,7 +295,7 @@ router.get(
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.group_role_permissions ?? null,
+      groupRolePermissions: res.locals.team_role_permissions ?? null,
     });
     res.json(panels);
   }),
@@ -354,7 +354,7 @@ router.get(
     });
 
     if (
-      res.locals.group_config?.has_roles &&
+      res.locals.team_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       assert(
@@ -362,14 +362,14 @@ router.get(
         'assessment_instance.team_id is null',
       );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
-        res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.prev_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
           res.locals.assessment_instance.team_id,
           res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
-        res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.next_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.next_instance_question.id,
           res.locals.assessment_instance.team_id,
           res.locals.authz_data.user.id,

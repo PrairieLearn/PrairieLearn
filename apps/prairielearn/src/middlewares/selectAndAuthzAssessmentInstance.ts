@@ -10,9 +10,9 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   FileSchema,
-  GroupSchema,
   SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
+  TeamSchema,
   UserSchema,
 } from '../lib/db-types.js';
 
@@ -33,7 +33,7 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
-  instance_group: GroupSchema.nullable(),
+  instance_group: TeamSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
 });
 

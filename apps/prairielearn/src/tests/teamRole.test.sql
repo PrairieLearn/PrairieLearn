@@ -1,31 +1,31 @@
--- BLOCK select_group_work_assessment_with_roles
+-- BLOCK select_team_work_assessment_with_roles
 SELECT
   a.id
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS tc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
   AND a.team_work IS TRUE
-  AND gc.has_roles IS TRUE;
+  AND tc.has_roles IS TRUE;
 
--- BLOCK select_group_work_assessment_without_roles
+-- BLOCK select_team_work_assessment_without_roles
 SELECT
   a.id,
-  gc.has_roles
+  tc.has_roles
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN team_configs AS gc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS tc ON (gc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
   AND a.team_work IS TRUE
-  AND gc.has_roles IS FALSE;
+  AND tc.has_roles IS FALSE;
 
--- BLOCK select_assessment_group_roles
+-- BLOCK select_assessment_team_roles
 SELECT
   *
 FROM
@@ -33,19 +33,19 @@ FROM
 WHERE
   assessment_id = $assessment_id;
 
--- BLOCK select_group_user_roles
+-- BLOCK select_team_user_roles
 SELECT
-  gur.user_id,
-  gur.team_role_id
+  tur.user_id,
+  tur.team_role_id
 FROM
-  team_configs AS gc
-  JOIN teams AS g ON g.team_config_id = gc.id
-  JOIN team_user_roles AS gur ON gur.team_id = g.id
+  team_configs AS tc
+  JOIN teams AS t ON t.team_config_id = tc.id
+  JOIN team_user_roles AS tur ON tur.team_id = t.id
 WHERE
-  gc.assessment_id = $assessment_id
+  tc.assessment_id = $assessment_id
 ORDER BY
-  gur.user_id,
-  gur.team_role_id;
+  tur.user_id,
+  tur.team_role_id;
 
 -- BLOCK select_assessment
 SELECT

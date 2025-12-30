@@ -12,8 +12,6 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
-  GroupRoleSchema,
-  GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,
@@ -21,13 +19,15 @@ import {
   SprocUsersGetDisplayedRoleSchema,
   type Submission,
   SubmissionSchema,
+  TeamRoleSchema,
+  TeamSchema,
   UserSchema,
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { getGroupConfig } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getTeamConfig } from '../../lib/teams.js';
 
 import {
   type Filenames,
@@ -78,7 +78,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
-  group_name: GroupSchema.shape.name.nullable(),
+  team_name: TeamSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
@@ -106,7 +106,7 @@ const ManualGradingSubmissionRowSchema = z.object({
   true_answer: SubmissionSchema.shape.true_answer,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   old_partial_scores: SubmissionSchema.shape.partial_scores,
-  group_name: GroupSchema.shape.name.nullable(),
+  team_name: TeamSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
 
@@ -194,7 +194,7 @@ function extractFilesForSubmissions(row: AssessmentInstanceSubmissionRow): Archi
   //
   // We should probably rethink the directory structure that this will spit out.
   const filenamePrefix = [
-    row.group_name ?? row.uid,
+    row.team_name ?? row.uid,
     row.assessment_instance_number,
     row.qid,
     row.variant_number,
@@ -217,7 +217,7 @@ function extractFilesForManualGrading(row: ManualGradingSubmissionRow): ArchiveF
   // We should also aim for more consistency between this function and
   // `extractFilesForSubmissions`.
   const filenamePrefix = [
-    row.group_name ?? [row.uid, row.uin].join('_'),
+    row.team_name ?? [row.uid, row.uin].join('_'),
     row.qid,
     row.submission_id,
   ].join('_');
@@ -298,14 +298,14 @@ async function sendInstancesCsv(
   res: Response,
   req: Request,
   columns: Columns,
-  options: { only_highest: boolean; group_work?: true },
+  options: { only_highest: boolean; team_work?: true },
 ) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
       assessment_id: res.locals.assessment.id,
       highest_score: options.only_highest,
-      group_work: options.group_work,
+      team_work: options.team_work,
     },
     z.unknown(),
   );
@@ -334,8 +334,8 @@ router.get(
       ['UIN', 'uin'],
     ];
     const usernameColumn: Columns = [['Username', 'username']];
-    const groupNameColumn: Columns = [
-      ['Group name', 'group_name'],
+    const teamNameColumn: Columns = [
+      ['Group name', 'team_name'],
       ['Usernames', 'uid_list'],
     ];
     const scoreColumn: Columns = [[assessmentName, 'score_perc']];
@@ -353,8 +353,8 @@ router.get(
     ];
     const scoresColumns = studentColumn.concat(scoreColumn);
     const pointsColumns = studentColumn.concat(pointColumn);
-    const scoresGroupColumns = groupNameColumn.concat(scoreColumn);
-    const pointsGroupColumns = groupNameColumn.concat(pointColumn);
+    const scoresGroupColumns = teamNameColumn.concat(scoreColumn);
+    const pointsGroupColumns = teamNameColumn.concat(pointColumn);
     const scoresByUsernameColumns = usernameColumn.concat(scoreColumn);
     const pointsByUsernameColumns = usernameColumn.concat(pointColumn);
     let identityColumn = studentColumn.concat(
@@ -364,7 +364,7 @@ router.get(
       ]),
     );
     if (res.locals.assessment.team_work) {
-      identityColumn = groupNameColumn;
+      identityColumn = teamNameColumn;
     }
     const instancesColumns = identityColumn.concat(instanceColumn);
 
@@ -387,12 +387,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        group_work: res.locals.assessment.team_work,
+        team_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        group_work: res.locals.assessment.team_work,
+        team_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -434,7 +434,7 @@ router.get(
       );
 
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = (res.locals.assessment.team_work ? groupNameColumn : studentColumn).map(
+      identityColumn = (res.locals.assessment.team_work ? teamNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
@@ -550,43 +550,43 @@ router.get(
       res.attachment(req.params.filename);
       await pipeCursorToArchive(res, cursor, extractFilesForSubmissions);
     } else if (req.params.filename === filenames.groupsCsvFilename) {
-      const groupConfig = await getGroupConfig(res.locals.assessment.id);
+      const teamConfig = await getTeamConfig(res.locals.assessment.id);
       const cursor = await sqldb.queryCursor(
-        sql.group_configs,
+        sql.team_configs,
         { assessment_id: res.locals.assessment.id },
         z.object({
-          name: GroupSchema.shape.name,
+          name: TeamSchema.shape.name,
           uid: UserSchema.shape.uid,
-          roles: z.array(GroupRoleSchema.shape.role_name),
+          roles: z.array(TeamRoleSchema.shape.role_name),
         }),
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
+        ['teamName', 'name'],
         ['UID', 'uid'],
       ];
-      if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
+      if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifyWithColumns(columns), res);
     } else if (req.params.filename === filenames.scoresGroupCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: true,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.scoresGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, scoresGroupColumns, {
         only_highest: false,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: true,
-        group_work: true,
+        team_work: true,
       });
     } else if (req.params.filename === filenames.pointsGroupAllCsvFilename) {
       await sendInstancesCsv(res, req, pointsGroupColumns, {
         only_highest: false,
-        group_work: true,
+        team_work: true,
       });
     } else {
       throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);

@@ -75,7 +75,7 @@ function AssessmentQuestionManualGradingInner({
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
   const queryClient = useQueryClient();
-  const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
+  const [teamInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
@@ -157,7 +157,7 @@ function AssessmentQuestionManualGradingInner({
       />
 
       <GroupInfoModal
-        modalState={groupInfoModalState}
+        modalState={teamInfoModalState}
         numOpenInstances={numOpenInstances}
         mutation={groupSubmissionMutation}
         onHide={() => setGroupInfoModalState(null)}

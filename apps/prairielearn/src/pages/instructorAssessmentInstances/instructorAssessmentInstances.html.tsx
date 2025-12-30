@@ -333,7 +333,7 @@ function DeleteAssessmentInstanceModal({
       for
       ${assessmentGroupWork
         ? html`
-            <strong><span class="modal-group-name"></span></strong>
+            <strong><span class="modal-team-name"></span></strong>
             (<span class="modal-uid-list"></span>)
           `
         : html`

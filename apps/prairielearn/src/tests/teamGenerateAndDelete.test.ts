@@ -4,9 +4,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import * as groupUpdate from '../lib/group-update.js';
-import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as teamUpdate from '../lib/team-update.js';
+import { deleteAllTeams } from '../lib/teams.js';
 import { selectAssessmentById } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -16,13 +16,13 @@ import * as helperServer from './helperServer.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
-describe('test random groups and delete groups', { timeout: 20_000 }, function () {
+describe('test random teams and delete teams', { timeout: 20_000 }, function () {
   beforeAll(helperServer.before(TEST_COURSE_PATH));
 
   afterAll(helperServer.after);
 
-  test.sequential('get group-based homework assessment', async () => {
-    const assessmentIds = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+  test.sequential('get team-based homework assessment', async () => {
+    const assessmentIds = await sqldb.queryRows(sql.select_team_work_assessment, IdSchema);
     assert.equal(assessmentIds.length, 2);
     locals.assessment_id = assessmentIds[0];
   });
@@ -32,40 +32,40 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     assert.equal(result.length, 500);
   });
 
-  test.sequential('randomly assign groups', async () => {
+  test.sequential('randomly assign teams', async () => {
     const assessment = await selectAssessmentById(locals.assessment_id);
     const course_instance = await selectCourseInstanceById(assessment.course_instance_id);
-    const job_sequence_id = await groupUpdate.randomGroups({
+    const job_sequence_id = await teamUpdate.randomTeams({
       course_instance,
       assessment,
       user_id: '1',
       authn_user_id: '1',
-      max_group_size: 10,
-      min_group_size: 10,
+      max_team_size: 10,
+      min_team_size: 10,
       authzData: dangerousFullSystemAuthz(),
     });
     await helperServer.waitForJobSequenceSuccess(job_sequence_id);
   });
 
-  test.sequential('check groups and users', async () => {
-    const groupUserCountsRowCount = await sqldb.execute(
+  test.sequential('check teams and users', async () => {
+    const teamUserCountsRowCount = await sqldb.execute(
       'SELECT count(team_id) FROM team_users GROUP BY team_id',
     );
-    assert.equal(groupUserCountsRowCount, 50);
+    assert.equal(teamUserCountsRowCount, 50);
 
-    const groupUsersRowCount = await sqldb.execute('SELECT DISTINCT(user_id) FROM team_users');
-    assert.equal(groupUsersRowCount, 500);
+    const teamUsersRowCount = await sqldb.execute('SELECT DISTINCT(user_id) FROM team_users');
+    assert.equal(teamUsersRowCount, 500);
   });
 
-  test.sequential('delete groups', async () => {
-    await deleteAllGroups(locals.assessment_id, '1');
+  test.sequential('delete teams', async () => {
+    await deleteAllTeams(locals.assessment_id, '1');
 
-    const groupsRowCount = await sqldb.execute(
+    const teamsRowCount = await sqldb.execute(
       'SELECT deleted_at FROM teams WHERE deleted_at IS NULL',
     );
-    assert.equal(groupsRowCount, 0);
+    assert.equal(teamsRowCount, 0);
 
-    const groupUsersRowCount = await sqldb.execute('SELECT * FROM team_users');
-    assert.equal(groupUsersRowCount, 0);
+    const teamUsersRowCount = await sqldb.execute('SELECT * FROM team_users');
+    assert.equal(teamUsersRowCount, 0);
   });
 });

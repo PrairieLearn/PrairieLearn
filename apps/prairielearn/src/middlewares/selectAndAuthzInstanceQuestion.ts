@@ -12,22 +12,22 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   FileSchema,
-  type GroupConfig,
-  GroupSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
   SprocUsersGetDisplayedRoleSchema,
+  type TeamConfig,
+  TeamSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import {
-  type GroupInfo,
-  type QuestionGroupPermissions,
-  getGroupConfig,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-} from '../lib/groups.js';
+  type QuestionTeamPermissions,
+  type TeamInfo,
+  getQuestionTeamPermissions,
+  getTeamConfig,
+  getTeamInfo,
+} from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -57,7 +57,7 @@ const SelectAndAuthzInstanceQuestionSchema = z.object({
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema.nullable(),
   instance_role: SprocUsersGetDisplayedRoleSchema,
-  instance_group: GroupSchema.nullable(),
+  instance_group: TeamSchema.nullable(),
   instance_group_uid_list: z.array(z.string()),
   instance_question: z.object({
     ...SprocInstanceQuestionsNextAllowedGradeSchema.shape,
@@ -79,11 +79,11 @@ export type ResLocalsInstanceQuestion = z.infer<typeof SelectAndAuthzInstanceQue
   };
 
   /** These are only set if the assessment has group work. */
-  prev_instance_question_role_permissions?: QuestionGroupPermissions;
-  next_instance_question_role_permissions?: QuestionGroupPermissions;
-  group_config?: GroupConfig;
-  group_info?: GroupInfo;
-  group_role_permissions?: QuestionGroupPermissions;
+  prev_instance_question_role_permissions?: QuestionTeamPermissions;
+  next_instance_question_role_permissions?: QuestionTeamPermissions;
+  team_config?: TeamConfig;
+  team_info?: TeamInfo;
+  team_role_permissions?: QuestionTeamPermissions;
 };
 
 export async function selectAndAuthzInstanceQuestion(req: Request, res: Response) {
@@ -105,14 +105,14 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
 
   Object.assign(res.locals, row);
   if (res.locals.assessment.team_work) {
-    res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
-    res.locals.group_info = await getGroupInfo(
+    res.locals.team_config = await getTeamConfig(res.locals.assessment.id);
+    res.locals.team_info = await getTeamInfo(
       res.locals.assessment_instance.team_id,
-      res.locals.group_config,
+      res.locals.team_config,
     );
-    if (res.locals.group_config.has_roles) {
+    if (res.locals.team_config.has_roles) {
       if (
-        !res.locals.group_info.start &&
+        !res.locals.team_info.start &&
         !res.locals.authz_data.has_course_instance_permission_view
       ) {
         throw new error.HttpStatusError(
@@ -125,14 +125,14 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       // permission and is viewing in "Student view without access permissions",
       // then role restrictions don't apply.
       if (res.locals.authz_data.has_course_instance_permission_view) {
-        res.locals.group_role_permissions = { can_view: true, can_submit: true };
+        res.locals.team_role_permissions = { can_view: true, can_submit: true };
       } else {
-        res.locals.group_role_permissions = await getQuestionGroupPermissions(
+        res.locals.team_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question.id,
           res.locals.assessment_instance.team_id,
           res.locals.authz_data.user.id,
         );
-        if (!res.locals.group_role_permissions.can_view) {
+        if (!res.locals.team_role_permissions.can_view) {
           throw new error.HttpStatusError(
             400,
             'Your current group role does not give you permission to see this question.',
