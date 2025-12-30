@@ -216,7 +216,8 @@ router.get(
     }
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-    req.session.show_submissions_assigned_to_me_only = req.session.show_submissions_assigned_to_me_only ?? true;
+    req.session.show_submissions_assigned_to_me_only =
+      req.session.show_submissions_assigned_to_me_only ?? true;
 
     const submissionCredits = await sqldb.queryRows(
       sql.select_submission_credit_values,
@@ -661,7 +662,8 @@ router.post(
       });
 
       req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
-      req.session.show_submissions_assigned_to_me_only = req.session.show_submissions_assigned_to_me_only ?? true;
+      req.session.show_submissions_assigned_to_me_only =
+        req.session.show_submissions_assigned_to_me_only ?? true;
 
       const use_instance_question_groups = await run(async () => {
         const aiGradingMode =

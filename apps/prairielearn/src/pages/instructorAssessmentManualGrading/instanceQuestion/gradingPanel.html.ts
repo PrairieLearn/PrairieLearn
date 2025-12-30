@@ -310,7 +310,9 @@ ${submission.feedback?.manual}</textarea
                       value="true"
                       ${show_submissions_assigned_to_me_only ? 'checked' : ''}
                     />
-                    <label class="form-check-label" for="show_submissions_assigned_to_me_only"> Skip submissions not assigned to me </label>
+                    <label class="form-check-label" for="show_submissions_assigned_to_me_only">
+                      Skip submissions not assigned to me
+                    </label>
                   `
                 : html`
                     <input
