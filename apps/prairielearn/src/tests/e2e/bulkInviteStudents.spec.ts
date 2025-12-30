@@ -71,7 +71,7 @@ async function createTestData() {
     uin: null,
   });
   await ensureUncheckedEnrollment({
-    userId: enrolledUser.user_id,
+    userId: enrolledUser.id,
     courseInstance,
     authzData: dangerousFullSystemAuthz(),
     requiredRole: ['System'],
