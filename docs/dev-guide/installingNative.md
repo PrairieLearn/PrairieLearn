@@ -119,18 +119,6 @@ Most of these prerequisites can be installed using the package manager of your O
   make python-deps
   ```
 
-  After installation, activate the virtual environment:
-
-  ```sh
-  source .venv/bin/activate
-  ```
-
-  You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
-
-  !!! note
-
-      The virtual environment activation is only needed for running Python commands directly.
-
 - Install all dependencies and transpile local packages:
 
   ```sh
