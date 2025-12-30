@@ -55,13 +55,13 @@ LCS_GRADABLE_TYPES = frozenset([
 
 
 GRADING_METHOD_DEFAULT = GradingMethodType.ORDERED
-MAX_INDENTION_DEFAULT = 4
+MAX_INDENTATION_DEFAULT = 4
 DISTRACTOR_FOR_DEFAULT = None
 DISTRACTOR_FEEDBACK_DEFAULT = None
 ANSWER_CORRECT_DEFAULT = True
 ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
-INDENTION_DEFAULT = False
+INDENTATION_DEFAULT = False
 INLINE_DEFAULT = False
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
@@ -268,7 +268,7 @@ class OrderBlocksOptions:
             SOURCE_BLOCKS_ORDER_DEFAULT,
         )
         self.indentation = pl.get_boolean_attrib(
-            html_element, "indentation", INDENTION_DEFAULT
+            html_element, "indentation", INDENTATION_DEFAULT
         )
         self.source_header = pl.get_string_attrib(
             html_element, "source-header", SOURCE_HEADER_DEFAULT
@@ -283,7 +283,7 @@ class OrderBlocksOptions:
             SOLUTION_PLACEMENT_DEFAULT,
         )
         self.max_indent = pl.get_integer_attrib(
-            html_element, "max-indent", MAX_INDENTION_DEFAULT
+            html_element, "max-indent", MAX_INDENTATION_DEFAULT
         )
         self.partial_credit = pl.get_enum_attrib(
             html_element, "partial-credit", PartialCreditType, PARTIAL_CREDIT_DEFAULT
