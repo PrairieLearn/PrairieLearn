@@ -64,9 +64,9 @@ WITH
       ai.number AS assessment_instance_number,
       ai.open,
       format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
-      ti.id AS team_id,
-      ti.name AS team_name,
-      ti.uid_list AS team_uids,
+      ti.id AS group_id,
+      ti.name AS group_name,
+      ti.uid_list AS group_uids,
       CASE
         WHEN ai.open
         AND ai.date_limit IS NOT NULL THEN greatest(
@@ -281,9 +281,9 @@ WITH
       u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.id, ci.id) AS user_role,
-      ti.id AS team_id,
-      ti.name AS team_name,
-      ti.uid_list AS team_uids,
+      ti.id AS group_id,
+      ti.name AS group_name,
+      ti.uid_list AS group_uids,
       a.id AS assessment_id,
       a.tid AS assessment_name,
       (aset.abbreviation || a.number) AS assessment_label,

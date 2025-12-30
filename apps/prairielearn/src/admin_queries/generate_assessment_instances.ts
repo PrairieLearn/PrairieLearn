@@ -43,7 +43,7 @@ const UserRowSchema = z.object({
 });
 type UserRow = z.infer<typeof UserRowSchema>;
 const TeamRowSchema = UserRowSchema.extend({
-  team_name: z.string(),
+  group_name: z.string(),
 });
 type TeamRow = z.infer<typeof TeamRowSchema>;
 

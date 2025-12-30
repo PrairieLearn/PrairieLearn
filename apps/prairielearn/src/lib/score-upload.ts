@@ -285,7 +285,7 @@ async function updateInstanceQuestionFromCsvRow(
   assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
-  const uid_or_team = record.team_name ?? record.uid;
+  const uid_or_team = record.group_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
@@ -361,21 +361,21 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
         IdSchema,
       ),
     };
-  } else if (record.team_name != null) {
+  } else if (record.group_name != null) {
     return {
-      id: record.team_name,
+      id: record.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_team,
         {
           assessment_id,
-          team_name: record.team_name,
+          group_name: record.group_name,
           instance_number: record.instance,
         },
         IdSchema,
       ),
     };
   } else {
-    throw new Error('"uid" or "team_name" not found');
+    throw new Error('"uid" or "group_name" not found');
   }
 }
 

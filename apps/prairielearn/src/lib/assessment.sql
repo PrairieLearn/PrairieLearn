@@ -1545,10 +1545,7 @@ WITH
     SELECT
       least(
         100,
-        greatest(
-          0,
-          avg(question_stats_by_user_or_team.score_perc)
-        )
+        greatest(0, avg(question_stats_by_user_or_team.score_perc))
       ) AS mean_question_score,
       percentile_cont(0.5) WITHIN GROUP (
         ORDER BY
@@ -1650,12 +1647,8 @@ WITH
       array_var (
         question_stats_by_user_or_team.incremental_submission_points_array
       ) AS incremental_submission_points_array_variances,
-      avg(
-        question_stats_by_user_or_team.number_submissions
-      ) AS average_number_submissions,
-      var_pop(
-        question_stats_by_user_or_team.number_submissions
-      ) AS number_submissions_variance,
+      avg(question_stats_by_user_or_team.number_submissions) AS average_number_submissions,
+      var_pop(question_stats_by_user_or_team.number_submissions) AS number_submissions_variance,
       histogram (
         question_stats_by_user_or_team.number_submissions,
         0,

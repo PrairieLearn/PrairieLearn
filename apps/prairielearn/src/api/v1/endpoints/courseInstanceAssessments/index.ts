@@ -83,9 +83,9 @@ export const AssessmentInstanceDataSchema = z.array(
     open: AssessmentInstanceSchema.shape.open,
     modified_at: z.string(),
     // Left join team_info sproc
-    team_id: AssessmentInstanceSchema.shape.team_id.nullable(),
-    team_name: SprocTeamInfoSchema.shape.name.nullable(),
-    team_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
+    group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
+    group_name: SprocTeamInfoSchema.shape.name.nullable(),
+    group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
     time_remaining: z.string(),
     start_date: z.string().nullable(),
     duration_seconds: z.number(),

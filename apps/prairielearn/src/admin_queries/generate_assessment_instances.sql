@@ -23,7 +23,7 @@ SELECT
   u.id,
   u.uid,
   u.name,
-  t.name AS team_name,
+  t.name AS group_name,
   c.id AS course_id,
   c.short_name AS course,
   ci.id AS course_instance_id,
