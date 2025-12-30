@@ -57,6 +57,8 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && mkdir /course{,{2..9}} \
     && mkdir -p /workspace_{main,host}_zips \
     && mkdir -p /jobs \
+    && mkdir -p /var/run/postgresql \
+    && chown -R postgres:postgres /var/run/postgresql \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
