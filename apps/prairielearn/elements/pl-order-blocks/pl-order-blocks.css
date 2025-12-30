@@ -24,8 +24,8 @@ li.pl-order-blocks-code .pl-order-block-handle {
   margin-left: 2px;
 }
 
-.pl-order-blocks-code > .pl-code,
-.pl-order-blocks-code > .pl-code div {
+.pl-order-blocks-code .pl-code,
+.pl-order-blocks-code .pl-code div {
   /* override margins on code block to ensure code is centered properly */
   margin-bottom: 0px !important;
 }
@@ -171,9 +171,13 @@ div.pl-order-blocks-header {
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-left: -10px;
+  margin-left: 0;
   color: var(--bs-secondary);
   touch-action: none;
+}
+
+li.pl-order-block:not(.pl-order-blocks-code) .pl-order-block-handle {
+  margin-left: -10px;
 }
 
 .pl-order-block-content {

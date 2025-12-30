@@ -361,6 +361,13 @@ window.PLOrderBlocks = function (uuid, options) {
   };
 
   $(sortables).sortable(sortableOpts);
+  const resize = new ResizeObserver(() => {
+    markScrollableContent(fullContainer);
+  });
+
+  fullContainer.querySelectorAll('.pl-order-block-content').forEach((el) => {
+    resize.observe(el);
+  });
 
   // If a user is on a touch device, we need to distinguish between
   // touch events that should trigger scrolling vs dragging.
@@ -401,7 +408,10 @@ window.PLOrderBlocks = function (uuid, options) {
   const resizeHandler = () => markScrollableContent(fullContainer);
   window.addEventListener('resize', resizeHandler);
   // after addEventListener
-  this.destroy = () => window.removeEventListener('resize', resizeHandler);
+  this.destroy = () => {
+    window.removeEventListener('resize', resizeHandler);
+    resize.disconnect();
+  };
   initializeKeyboardHandling();
 
   if (enableIndentation) {
