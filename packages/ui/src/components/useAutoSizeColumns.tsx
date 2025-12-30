@@ -81,7 +81,7 @@ export function useAutoSizeColumns<TData>(
     const columnsToMeasure = allColumns.filter((col) => col.columnDef.meta?.autoSize);
 
     if (columnsToMeasure.length === 0) {
-      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect, react-you-might-not-need-an-effect/no-adjust-state-on-prop-change
       setHasMeasured(true);
       return;
     }

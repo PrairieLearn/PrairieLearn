@@ -49,8 +49,8 @@ export function calculateResponseCost({
 
   // TODO: this doesn't take into account cache writes, which some providers
   // (e.g. Anthropic) charge for.
-  const cachedInputTokens = usage.inputTokenDetails?.cacheReadTokens ?? 0;
-  const inputTokens = usage.inputTokenDetails?.noCacheTokens ?? 0;
+  const cachedInputTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
+  const inputTokens = usage.inputTokenDetails.noCacheTokens ?? 0;
   const outputTokens = usage.outputTokens ?? 0;
 
   const cachedInputTokenCost = modelPricing.cachedInput / 10 ** 6;
@@ -89,20 +89,17 @@ export function mergeUsage(
     inputTokens: (a?.inputTokens ?? 0) + (b?.inputTokens ?? 0),
     inputTokenDetails: {
       noCacheTokens:
-        (a?.inputTokenDetails?.noCacheTokens ?? 0) + (b?.inputTokenDetails?.noCacheTokens ?? 0),
+        (a?.inputTokenDetails.noCacheTokens ?? 0) + (b?.inputTokenDetails.noCacheTokens ?? 0),
       cacheReadTokens:
-        (a?.inputTokenDetails?.cacheReadTokens ?? 0) + (b?.inputTokenDetails?.cacheReadTokens ?? 0),
+        (a?.inputTokenDetails.cacheReadTokens ?? 0) + (b?.inputTokenDetails.cacheReadTokens ?? 0),
       cacheWriteTokens:
-        (a?.inputTokenDetails?.cacheWriteTokens ?? 0) +
-        (b?.inputTokenDetails?.cacheWriteTokens ?? 0),
+        (a?.inputTokenDetails.cacheWriteTokens ?? 0) + (b?.inputTokenDetails.cacheWriteTokens ?? 0),
     },
     outputTokens: (a?.outputTokens ?? 0) + (b?.outputTokens ?? 0),
     outputTokenDetails: {
-      textTokens:
-        (a?.outputTokenDetails?.textTokens ?? 0) + (b?.outputTokenDetails?.textTokens ?? 0),
+      textTokens: (a?.outputTokenDetails.textTokens ?? 0) + (b?.outputTokenDetails.textTokens ?? 0),
       reasoningTokens:
-        (a?.outputTokenDetails?.reasoningTokens ?? 0) +
-        (b?.outputTokenDetails?.reasoningTokens ?? 0),
+        (a?.outputTokenDetails.reasoningTokens ?? 0) + (b?.outputTokenDetails.reasoningTokens ?? 0),
     },
     totalTokens: (a?.totalTokens ?? 0) + (b?.totalTokens ?? 0),
   };
