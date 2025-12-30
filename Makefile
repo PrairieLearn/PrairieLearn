@@ -16,13 +16,13 @@ build-sequential:
 # performance the first time things run:
 # https://docs.astral.sh/uv/guides/integration/docker/#compiling-bytecode
 python-deps-core:
-	@uv sync --compile-bytecode
+	@uv sync --no-default-groups --compile-bytecode
 python-deps-docs:
-	@uv sync --group docs --compile-bytecode
+	@uv sync --only-group docs --compile-bytecode
 python-deps-dev:
-	@uv sync --group dev --compile-bytecode
+	@uv sync --only-group dev --compile-bytecode
 python-deps:
-	@uv sync --group docs --group dev --compile-bytecode
+	@uv sync --compile-bytecode
 
 # This is a separate target since we can't currently install the necessary
 # browsers in the development Docker image.
@@ -172,9 +172,9 @@ changeset:
 lint-docs: lint-d2 lint-links lint-markdown
 
 build-docs:
-	@uv run --group docs mkdocs build --strict
+	@uv run mkdocs build --strict
 dev-docs:
-	@uv run --group docs mkdocs serve --livereload
+	@uv run mkdocs serve --livereload
 
 format-d2:
 	@d2 fmt docs/**/*.d2
