@@ -22,11 +22,10 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install -y git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-common
+    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-common
     # Configure Postgres repository
     sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
-    sudo apt-get update
-    sudo apt-get install -y postgresql-17 postgresql-17-pgvector
+    sudo apt install postgresql-17 postgresql-17-pgvector
     # Optional; needed only for some example questions that use LaTeX
     sudo apt install texlive texlive-latex-extra texlive-fonts-extra dvipng
     ```
