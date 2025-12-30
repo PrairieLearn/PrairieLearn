@@ -1,17 +1,12 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import {
-  callRow,
-  loadSqlEquiv,
-  queryRow,
-  queryRows,
-  runInTransactionAsync,
-} from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
+import { updateAssessmentInstanceGrade } from './assessment-grading.js';
 import { updateAssessmentInstance } from './assessment.js';
 import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
@@ -32,11 +27,6 @@ const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
   group_name: z.string().nullable(),
-});
-const AssessmentInstancesGradeSchema = z.object({
-  updated: z.boolean(),
-  new_points: z.number(),
-  new_score_perc: z.number(),
 });
 
 /**
@@ -204,15 +194,12 @@ async function regradeSingleAssessmentInstance({
       QuestionSchema.shape.qid,
     );
 
-    const { updated: gradeUpdated, new_score_perc: newScorePerc } = await callRow(
-      'assessment_instances_grade',
-      [
+    const { updated: gradeUpdated, score_perc: newScorePerc } = await updateAssessmentInstanceGrade(
+      {
         assessment_instance_id,
         authn_user_id,
-        null, // credit
-        true, // only_log_if_score_updated
-      ],
-      AssessmentInstancesGradeSchema,
+        onlyLogIfScoreUpdated: true,
+      },
     );
 
     return {
