@@ -16,7 +16,7 @@ const router = Router({ mergeParams: true });
 
 const GradebookDataSchema = z.array(
   z.object({
-    user_id: UserSchema.shape.user_id,
+    user_id: UserSchema.shape.id,
     user_uid: UserSchema.shape.uid,
     user_uin: UserSchema.shape.uin,
     user_name: UserSchema.shape.name,
