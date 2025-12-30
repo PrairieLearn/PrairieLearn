@@ -175,7 +175,7 @@ def test_networkx_serialization(
     [
         "test",
         "test&gt;test",
-        "some loose text <pl>other <b>bold</b> text</pl>"
+        "some loose text <pl>other <b>bold</b> text</pl>",
         "some <p> other <b>words</b> are </p> here",
         '<p>Some flavor text.</p> <pl-thing some-attribute="4">answers</pl-thing>',
     ],
