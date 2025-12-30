@@ -49,18 +49,18 @@ dev-vite: start-support python-deps-core
 	@yarn dev-vite
 dev-bun: python-deps-core
 	@yarn dev-bun
-dev-workspace-host: start-support
+dev-workspace-host:
 	@yarn dev-workspace-host
 dev-all: start-support python-deps-core
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
-start: start-support python-deps-core
+start: start-support
 	@yarn start
-start-workspace-host: start-support python-deps-core
+start-workspace-host: start-support
 	@yarn start-workspace-host
-start-executor: python-deps-core
+start-executor:
 	@node apps/prairielearn/dist/executor.js
-start-all: start-support python-deps-core
+start-all: start-support
 	@$(MAKE) -s -j2 start start-workspace-host
 
 update-database-description:

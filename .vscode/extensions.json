@@ -7,7 +7,6 @@
     "dbaeumer.vscode-eslint",
     // If you haven't run `make python-deps-dev`, this is going to give you errors.
     "dorzey.vscode-sqlfluff",
-    "github.vscode-github-actions",
     "ms-playwright.playwright",
     "ms-python.python",
     "ms-python.vscode-pylance",
