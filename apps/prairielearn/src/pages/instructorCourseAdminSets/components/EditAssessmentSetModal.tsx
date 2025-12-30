@@ -29,6 +29,7 @@ export function EditAssessmentSetsModal({
   const [assessmentSet, setAssessmentSet] = useState<StaffAssessmentSet | null>(
     assessmentSetToEdit,
   );
+  const [invalidAbbreviation, setInvalidAbbreviation] = useState(false);
   const [invalidName, setInvalidName] = useState(false);
   const [invalidColor, setInvalidColor] = useState(false);
 
@@ -48,13 +49,15 @@ export function EditAssessmentSetsModal({
   function handleSubmit() {
     if (!assessmentSet) return;
 
+    const isAbbreviationValid = !!assessmentSet.abbreviation;
     const isNameValid = !!assessmentSet.name;
     const isColorValid = !!assessmentSet.color;
 
+    setInvalidAbbreviation(!isAbbreviationValid);
     setInvalidName(!isNameValid);
     setInvalidColor(!isColorValid);
 
-    if (isNameValid && isColorValid) {
+    if (isAbbreviationValid && isNameValid && isColorValid) {
       onSave(assessmentSet);
     }
   }
@@ -75,7 +78,9 @@ export function EditAssessmentSetsModal({
         {assessmentSet ? (
           <>
             <div class="d-flex flex-column align-items-center mb-4">
-              <span class={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
+              <span class={`badge color-${assessmentSet.color}`}>
+                {assessmentSet.abbreviation || 'Preview'}
+              </span>
             </div>
             <div class="mb-3">
               <label class="form-label" for="abbreviation">
@@ -83,7 +88,7 @@ export function EditAssessmentSetsModal({
               </label>
               <input
                 type="text"
-                class="form-control"
+                class={clsx('form-control', invalidAbbreviation && 'is-invalid')}
                 id="abbreviation"
                 value={assessmentSet.abbreviation}
                 onChange={(e) =>
@@ -93,6 +98,9 @@ export function EditAssessmentSetsModal({
                   })
                 }
               />
+              {invalidAbbreviation && (
+                <div class="invalid-feedback">Assessment set abbreviation is required</div>
+              )}
             </div>
             <div class="mb-3">
               <label class="form-label" for="name">
@@ -100,13 +108,14 @@ export function EditAssessmentSetsModal({
               </label>
               <input
                 type="text"
-                class="form-control"
+                class={clsx('form-control', invalidName && 'is-invalid')}
                 id="name"
                 value={assessmentSet.name}
                 onChange={(e) =>
                   setAssessmentSet({ ...assessmentSet, name: (e.target as HTMLInputElement).value })
                 }
               />
+              {invalidName && <div class="invalid-feedback">Assessment set name is required</div>}
             </div>
             <div class="mb-3">
               <label class="form-label" for="heading">

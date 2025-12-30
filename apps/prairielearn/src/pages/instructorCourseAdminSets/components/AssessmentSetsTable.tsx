@@ -37,14 +37,12 @@ const emptyAssessmentSet = {
 
 function AssessmentSetRow({
   assessmentSet,
-  index,
   editMode,
   allowEdit,
   onEdit,
   onDelete,
 }: {
   assessmentSet: StaffAssessmentSet;
-  index: number;
   editMode: boolean;
   allowEdit: boolean;
   onEdit: () => void;
@@ -147,7 +145,7 @@ function DraggableTable({
               )}
               <th>Abbreviation</th>
               <th>Name</th>
-              <th>Heading</th>
+              <th class="col-8">Heading</th>
             </tr>
           </thead>
 
@@ -156,7 +154,6 @@ function DraggableTable({
               <AssessmentSetRow
                 key={assessmentSet.id}
                 assessmentSet={assessmentSet}
-                index={index}
                 editMode={editMode}
                 allowEdit={allowEdit}
                 onEdit={() => handleEdit(index)}
@@ -166,7 +163,7 @@ function DraggableTable({
 
             {editMode && allowEdit && (
               <tr>
-                <td colSpan={6}>
+                <td colSpan={4}>
                   <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
                     <i class="fa fa-plus" aria-hidden="true" /> New assessment set
                   </button>
