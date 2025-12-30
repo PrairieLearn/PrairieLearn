@@ -1,5 +1,4 @@
 import {
-  type EmbeddingModel,
   type GenerateObjectResult,
   type GenerateTextResult,
   type LanguageModel,
@@ -37,6 +36,7 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { assertNever } from '../../../lib/types.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 import { type ClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
@@ -749,7 +749,10 @@ export async function correctImagesOrientation({
     };
   }
 
-  const rotatedSubmittedAnswer = { ...submittedAnswer };
+  const rotatedSubmittedAnswer = {
+    ...submittedAnswer,
+    _files: [...submittedAnswer._files],
+  };
 
   const rotationCorrections: Record<
     string,

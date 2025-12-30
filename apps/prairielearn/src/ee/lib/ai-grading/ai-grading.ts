@@ -348,9 +348,8 @@ export async function aiGrade({
             questionAnswer,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
-            grader_guidelines: rubric?.grader_guidelines ?? null,
-            example_submissions,
             rubric_items,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
             model_id,
           });
 
@@ -603,9 +602,8 @@ export async function aiGrade({
             questionAnswer,
             submission_text,
             submitted_answer: rotatedSubmittedAnswer,
-            grader_guidelines: rubric?.grader_guidelines ?? null,
-            example_submissions,
             rubric_items,
+            grader_guidelines: rubric?.grader_guidelines ?? null,
             model_id,
           });
 
