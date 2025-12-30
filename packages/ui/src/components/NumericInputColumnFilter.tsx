@@ -63,9 +63,7 @@ export function NumericInputColumnFilter<TData, TValue>({
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu
-        className="p-0"
-      >
+      <Dropdown.Menu className="p-0">
         <div className="p-3" style={{ minWidth: '240px' }}>
           <div className="d-flex align-items-center justify-content-between mb-2">
             <label className="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>

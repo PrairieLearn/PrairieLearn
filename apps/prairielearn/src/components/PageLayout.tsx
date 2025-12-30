@@ -149,7 +149,10 @@ function UnpublishedBannerComponent({
   });
 
   return (
-    <div className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
       {message}{' '}
       <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
         Configure publishing settings

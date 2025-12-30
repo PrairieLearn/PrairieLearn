@@ -104,7 +104,12 @@ export function InviteStudentModal({
           {errors.uid?.message && <div className="invalid-feedback">{errors.uid.message}</div>}
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" className="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={isSubmitting}
+            onClick={onHide}
+          >
             Cancel
           </button>
           <button type="submit" className="btn btn-primary" disabled={isSubmitting || isValidating}>

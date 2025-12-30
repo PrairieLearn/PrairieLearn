@@ -75,15 +75,22 @@ export function StudentGradebook({
                     )}
                     <tr>
                       <td className="align-middle" style="width: 1%">
-                        <span className={`badge color-${row.assessment_set_color}`}>{row.label}</span>
+                        <span className={`badge color-${row.assessment_set_color}`}>
+                          {row.label}
+                        </span>
                       </td>
                       <td className="align-middle">
                         {row.title}{' '}
-                        {row.assessment_group_work && <i className="fas fa-users" aria-hidden="true" />}
+                        {row.assessment_group_work && (
+                          <i className="fas fa-users" aria-hidden="true" />
+                        )}
                       </td>
                       <td className="text-center align-middle">
                         {row.show_closed_assessment_score ? (
-                          <Scorebar score={row.assessment_instance_score_perc} className="mx-auto" />
+                          <Scorebar
+                            score={row.assessment_instance_score_perc}
+                            className="mx-auto"
+                          />
                         ) : (
                           'Score not shown'
                         )}

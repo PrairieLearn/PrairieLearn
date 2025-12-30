@@ -32,7 +32,9 @@ export function IssueBadge({
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return <span className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}>{count}</span>;
+    return (
+      <span className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}>{count}</span>
+    );
   }
 
   const query = encodeSearchString({ is: 'open', qid: issueQid, assessment: issueAid });
@@ -73,7 +75,9 @@ export function IssueBadgeHtml({
     }
 )) {
   if (suppressLink) {
-    return renderHtml(<IssueBadge count={count} className={className} suppressLink={suppressLink} />);
+    return renderHtml(
+      <IssueBadge count={count} className={className} suppressLink={suppressLink} />,
+    );
   }
 
   return renderHtml(

@@ -405,7 +405,10 @@ export function SelfEnrollmentSettings({
         <input
           type="datetime-local"
           aria-label="Self-enrollment cutoff date"
-          className={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
+          className={clsx(
+            'form-control mt-2',
+            selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
+          )}
           disabled={
             !canEdit ||
             !selfEnrollmentEnabledBeforeDateEnabled ||

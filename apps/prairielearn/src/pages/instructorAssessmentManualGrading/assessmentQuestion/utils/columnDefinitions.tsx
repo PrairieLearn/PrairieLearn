@@ -129,7 +129,9 @@ export function createColumns({
                   ),
                 }}
               >
-                <button className="btn btn-danger badge rounded-pill">{row.open_issue_count}</button>
+                <button className="btn btn-danger badge rounded-pill">
+                  {row.open_issue_count}
+                </button>
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
@@ -183,7 +185,10 @@ export function createColumns({
                 }}
               >
                 <button className="btn btn-xs btn-ghost" aria-label="Group description">
-                  <i className="fas fa-circle-info fa-width-auto text-secondary" aria-hidden="true" />
+                  <i
+                    className="fas fa-circle-info fa-width-auto text-secondary"
+                    aria-hidden="true"
+                  />
                 </button>
               </OverlayTrigger>
             )}
@@ -333,7 +338,9 @@ export function createColumns({
           if (!info.getValue()) return 'Unassigned';
           if (row.instance_question.is_ai_graded) {
             return (
-              <span className="badge rounded-pill text-bg-light border">{generateAiGraderName()}</span>
+              <span className="badge rounded-pill text-bg-light border">
+                {generateAiGraderName()}
+              </span>
             );
           }
           return info.getValue();

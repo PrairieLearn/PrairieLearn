@@ -206,7 +206,11 @@ export function StudentCoursesCard({
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" className="btn btn-secondary" onClick={() => setRemovingCourseId(null)}>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setRemovingCourseId(null)}
+          >
             Cancel
           </button>
           <form method="POST">

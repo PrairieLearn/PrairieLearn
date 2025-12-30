@@ -29,7 +29,13 @@ export function AddInstitutionModal({
             <label className="form-label" for="short_name">
               Short name
             </label>
-            <input type="text" className="form-control" id="short_name" name="short_name" required />
+            <input
+              type="text"
+              className="form-control"
+              id="short_name"
+              name="short_name"
+              required
+            />
             <small id="short_name_help" className="form-text text-muted">
               An abbreviation or short name, e.g. "illinois.edu" or "ubc.ca". Usually this should be
               the institution's domain.

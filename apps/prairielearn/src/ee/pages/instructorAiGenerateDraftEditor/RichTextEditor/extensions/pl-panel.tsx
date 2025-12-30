@@ -68,7 +68,10 @@ export const PlPanel = Node.create({
       return (
         <NodeViewWrapper className="my-2">
           <div className={`d-flex border-start border-4 border-${style.color} rounded-1`}>
-            <div className="d-flex align-items-center justify-content-center" style={{ width: '2em' }}>
+            <div
+              className="d-flex align-items-center justify-content-center"
+              style={{ width: '2em' }}
+            >
               <OverlayTrigger
                 placement="top"
                 tooltip={{ body: style.label, props: { id: `pl-panel-${tag}-tooltip` } }}

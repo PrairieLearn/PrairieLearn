@@ -788,7 +788,9 @@ export function AssessmentQuestionTable({
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
                       <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group ungrouped submissions</span>
-                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.ungrouped}</span>
+                        <span className="badge bg-secondary ms-2">
+                          {aiGroupingCounts.ungrouped}
+                        </span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -828,7 +830,8 @@ export function AssessmentQuestionTable({
                       key={grader.id}
                       onClick={() => handleBatchAction({ assigned_grader: grader.id }, selectedIds)}
                     >
-                      <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid}
+                      )
                     </Dropdown.Item>
                   ))}
                   <Dropdown.Item

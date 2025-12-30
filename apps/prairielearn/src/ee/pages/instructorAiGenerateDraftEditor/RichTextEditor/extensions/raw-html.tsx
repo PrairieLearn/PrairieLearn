@@ -69,7 +69,10 @@ const RawHtmlComponent = (
           <textarea
             rows={textareaRows}
             value={node.attrs.html}
-            className={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
+            className={clsx(
+              'form-control',
+              nodes !== null && nodes.length !== 1 && 'border-danger',
+            )}
             onChange={(e) => {
               const newHtml = e.currentTarget.value;
               const template = document.createElement('template');

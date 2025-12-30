@@ -76,7 +76,10 @@ export function CategoricalColumnFilter<TData, TValue>({
         title={`Filter ${label.toLowerCase()}`}
       >
         <i
-          className={clsx('bi', selected.size > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          className={clsx(
+            'bi',
+            selected.size > 0 ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel',
+          )}
           aria-hidden="true"
         />
       </Dropdown.Toggle>

@@ -147,7 +147,9 @@ export function GroupInfoModal({
             <div className="px-2 py-1 border-top border-end">
               Handwritten submissions with 1 correct answer
             </div>
-            <div className="px-2 py-1 border-top">Handwritten submissions with 2+ correct answers</div>
+            <div className="px-2 py-1 border-top">
+              Handwritten submissions with 2+ correct answers
+            </div>
           </div>
 
           {numOpenInstances > 0 && (

@@ -115,7 +115,10 @@ export function InstructorCourseAdminInstancesInner({
         </div>
         {courseInstances.length > 0 ? (
           <div className="table-responsive">
-            <table className="table table-sm table-hover table-striped" aria-label="Course instances">
+            <table
+              className="table table-sm table-hover table-striped"
+              aria-label="Course instances"
+            >
               <thead>
                 <tr>
                   <th>Long Name</th>

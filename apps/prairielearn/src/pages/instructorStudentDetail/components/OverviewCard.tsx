@@ -180,7 +180,12 @@ export function OverviewCard({
               <h2 className="modal-title h4" id="cancelInvitationModalLabel">
                 Confirm cancel invitation
               </h2>
-              <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+              <button
+                type="button"
+                className="btn-close"
+                data-bs-dismiss="modal"
+                aria-label="Close"
+              />
             </div>
             <div className="modal-body">
               <p>

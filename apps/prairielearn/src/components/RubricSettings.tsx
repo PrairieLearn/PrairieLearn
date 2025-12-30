@@ -761,9 +761,18 @@ export function RubricSettings({
 
         {/* Warnings */}
         {pointsWarnings.map((warning) => (
-          <div key={warning} className="alert alert-warning alert-dismissible fade show" role="alert">
+          <div
+            key={warning}
+            className="alert alert-warning alert-dismissible fade show"
+            role="alert"
+          >
             {warning}
-            <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            <button
+              type="button"
+              className="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            />
           </div>
         ))}
         <div className="mb-3 gap-1 d-flex">
@@ -886,7 +895,12 @@ export function RubricSettings({
             role="alert"
           >
             {settingsError}
-            <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            <button
+              type="button"
+              className="btn-close"
+              data-bs-dismiss="alert"
+              aria-label="Close"
+            />
           </div>
         )}
 
@@ -982,7 +996,12 @@ function RubricRow({
             <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
               <i className="fas fa-arrow-up" />
             </button>
-            <button type="button" className="visually-hidden" aria-label="Move down" onClick={moveDown}>
+            <button
+              type="button"
+              className="visually-hidden"
+              aria-label="Move down"
+              onClick={moveDown}
+            >
               <i className="fas fa-arrow-down" />
             </button>
             <button

@@ -45,10 +45,16 @@ function SelectableCard({
       onKeyDown={handleKeyDown}
     >
       <div className="card-body text-center d-flex flex-column justify-content-center">
-        <div id={`${id}_title`} className={clsx('card-title', { 'text-primary fw-bold': selected })}>
+        <div
+          id={`${id}_title`}
+          className={clsx('card-title', { 'text-primary fw-bold': selected })}
+        >
           {title}
         </div>
-        <div id={`${id}_description`} className={clsx('card-text small', { 'text-muted': !selected })}>
+        <div
+          id={`${id}_description`}
+          className={clsx('card-text small', { 'text-muted': !selected })}
+        >
           {description}
         </div>
       </div>

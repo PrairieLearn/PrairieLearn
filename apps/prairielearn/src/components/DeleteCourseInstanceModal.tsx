@@ -57,7 +57,12 @@ export function DeleteCourseInstanceModal({
             <h2 className="modal-title h4" id={labelId}>
               Delete course instance
             </h2>
-            <button type="button" className="btn-close" data-bs-dismiss="modal" aria-label="Close" />
+            <button
+              type="button"
+              className="btn-close"
+              data-bs-dismiss="modal"
+              aria-label="Close"
+            />
           </div>
           <div className="modal-body">
             {step === 1 && (
