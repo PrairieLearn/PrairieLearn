@@ -7,12 +7,12 @@ CREATE FUNCTION
     ) RETURNS void
 AS $$
 DECLARE
-    old_row pl_courses%ROWTYPE;
-    new_row pl_courses%ROWTYPE;
+    old_row courses%ROWTYPE;
+    new_row courses%ROWTYPE;
 BEGIN
     SELECT c.* INTO old_row
     FROM
-        pl_courses AS c
+        courses AS c
     WHERE
         c.id = course_id
     FOR NO KEY UPDATE;
@@ -23,31 +23,31 @@ BEGIN
 
     CASE column_name
         WHEN 'short_name' THEN
-            UPDATE pl_courses AS c SET short_name = value
+            UPDATE courses AS c SET short_name = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'title' THEN
-            UPDATE pl_courses AS c SET title = value
+            UPDATE courses AS c SET title = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'display_timezone' THEN
-            UPDATE pl_courses AS c SET display_timezone = value
+            UPDATE courses AS c SET display_timezone = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'path' THEN
-            UPDATE pl_courses AS c SET path = value
+            UPDATE courses AS c SET path = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'repository' THEN
-            UPDATE pl_courses AS c SET repository = value
+            UPDATE courses AS c SET repository = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'branch' THEN
-            UPDATE pl_courses AS c SET branch = value
+            UPDATE courses AS c SET branch = value
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         WHEN 'institution_id' THEN
-            UPDATE pl_courses AS c SET institution_id = CAST(value AS BIGINT)
+            UPDATE courses AS c SET institution_id = CAST(value AS BIGINT)
             WHERE c.id = course_id
             RETURNING c.* INTO new_row;
         ELSE
@@ -61,7 +61,7 @@ BEGIN
         old_state, new_state)
     VALUES
         (authn_user_id, course_id,
-        'pl_courses',  column_name, course_id,
+        'courses',  column_name, course_id,
         'update', jsonb_build_object(column_name, value),
         to_jsonb(old_row), to_jsonb(new_row));
 END;

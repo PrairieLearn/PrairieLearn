@@ -1,20 +1,36 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { DateFromISOString } from '@prairielearn/zod';
 
+import {
+  type AuthzData,
+  type CourseRole,
+  type InstructorCourseInstanceRole,
+  type PageAuthzData,
+  assertHasRole,
+} from '../lib/authz-data-lib.js';
+import type { PageContext } from '../lib/client/page-context.js';
 import {
   type Course,
   type CourseInstance,
-  type CourseInstancePermission,
   CourseInstanceSchema,
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
+type CourseContext = Course | PageContext<'course', 'student' | 'instructor'>['course'];
+
 const sql = loadSqlEquiv(import.meta.url);
 
 const CourseInstanceAuthzSchema = CourseInstanceSchema.extend({
+  /** The earliest start date of an access rule. */
+  start_date: DateFromISOString.nullable(),
+  /** The latest end date of an access rule. */
+  end_date: DateFromISOString.nullable(),
+  /** @deprecated Use start_date instead. */
   formatted_start_date: z.string(),
+  /** @deprecated Use end_date instead. */
   formatted_end_date: z.string(),
   has_course_instance_permission_view: z.boolean(),
   has_course_instance_permission_edit: z.boolean(),
@@ -39,26 +55,26 @@ export async function selectOptionalCourseInstanceById(id: string) {
 
 export async function selectCourseInstanceByShortName({
   course,
-  short_name,
+  shortName,
 }: {
   course: Course;
-  short_name: string;
+  shortName: string;
 }): Promise<CourseInstance> {
   return queryRow(
     sql.select_course_instance_by_short_name,
-    { course_id: course.id, short_name },
+    { course_id: course.id, short_name: shortName },
     CourseInstanceSchema,
   );
 }
 
 export async function selectOptionalCourseInstanceIdByEnrollmentCode({
-  enrollment_code,
+  enrollmentCode,
 }: {
-  enrollment_code: string;
+  enrollmentCode: string;
 }): Promise<string | null> {
   const courseInstance = await queryOptionalRow(
     sql.select_course_instance_by_enrollment_code,
-    { enrollment_code },
+    { enrollment_code: enrollmentCode },
     CourseInstanceSchema,
   );
 
@@ -74,30 +90,36 @@ export async function selectOptionalCourseInstanceIdByEnrollmentCode({
  */
 export async function selectCourseInstancesWithStaffAccess({
   course,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  authzData,
+  requiredRole,
 }: {
-  course: Course;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  course: CourseContext;
+  authzData: PageAuthzData;
+  requiredRole: (CourseRole | InstructorCourseInstanceRole)[];
 }) {
+  assertHasRole(authzData, requiredRole);
+
   const authnCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id: authn_user_id, is_administrator: authn_is_administrator, course_id: course.id },
+    {
+      user_id: authzData.user.id,
+      is_administrator: authzData.is_administrator,
+      course_id: course.id,
+    },
     CourseInstanceAuthzSchema,
   );
 
-  if (idsEqual(user_id, authn_user_id)) {
+  if (idsEqual(authzData.user.id, authzData.authn_user.id)) {
     return authnCourseInstances;
   }
 
   const authzCourseInstances = await queryRows(
     sql.select_course_instances_with_staff_access,
-    { user_id, is_administrator, course_id: course.id },
+    {
+      user_id: authzData.user.id,
+      is_administrator: authzData.is_administrator,
+      course_id: course.id,
+    },
     CourseInstanceAuthzSchema,
   );
 
@@ -108,28 +130,53 @@ export async function selectCourseInstancesWithStaffAccess({
   });
 }
 
+/**
+ * Returns all users with at least the given minimal role for the given course instance.
+ *
+ * @param params
+ * @param params.authzData - The authorization data of the user.
+ * @param params.requiredRole - The required role that the model function checks for.
+ * @param params.courseInstance - The course instance to check access for.
+ * @param params.minimalRole - The minimal role to check access for.
+ *
+ * @returns All users with at least the given minimal role for the given course instance.
+ */
 export async function selectUsersWithCourseInstanceAccess({
-  course_instance,
-  minimal_role,
+  courseInstance,
+  authzData,
+  requiredRole,
+  minimalRole,
 }: {
-  course_instance: CourseInstance;
-  minimal_role: Exclude<CourseInstancePermission['course_instance_role'], null>;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
+  requiredRole: ('Student Data Viewer' | 'Student Data Editor')[];
+  minimalRole: 'Student Data Viewer' | 'Student Data Editor';
 }) {
+  assertHasRole(authzData, requiredRole);
+
   return await queryRows(
     sql.select_users_with_course_instance_access,
-    { course_instance_id: course_instance.id, minimal_role },
+    { course_instance_id: courseInstance.id, minimal_role: minimalRole },
     UserSchema,
   );
 }
 
 export async function selectCourseInstanceGraderStaff({
-  course_instance,
+  courseInstance,
+  authzData,
+  requiredRole,
 }: {
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
+  authzData: AuthzData;
+  requiredRole: ('Student Data Viewer' | 'Student Data Editor')[];
 }) {
+  assertHasRole(authzData, requiredRole);
+
   return await selectUsersWithCourseInstanceAccess({
-    course_instance,
-    minimal_role: 'Student Data Editor',
+    authzData,
+    requiredRole,
+    courseInstance,
+    minimalRole: 'Student Data Editor',
   });
 }
 
@@ -139,7 +186,7 @@ export async function selectCourseInstanceGraderStaff({
 export async function selectCourseHasCourseInstances({
   course,
 }: {
-  course: Course;
+  course: CourseContext;
 }): Promise<boolean> {
   return await queryRow(
     sql.select_course_has_course_instances,
@@ -152,7 +199,7 @@ export async function selectCourseInstanceByUuid({
   course,
   uuid,
 }: {
-  course: Course;
+  course: CourseContext;
   uuid: string;
 }): Promise<CourseInstance> {
   return await queryRow(

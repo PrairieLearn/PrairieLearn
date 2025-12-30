@@ -37,6 +37,11 @@ $(function() {
       value="false"
       disabled
     />
+    <input 
+      type="file" 
+      accept="image/jpeg" 
+      class="js-manual-upload-input d-none"
+    />
     {{/editable}}
     <div class="position-relative">
       <div class="js-uploaded-image-container position-relative">
@@ -119,8 +124,17 @@ $(function() {
           <span>Use phone</span>
         </button>
         {{/mobile_capture_enabled}}
+        {{#manual_upload_enabled}}
+        <button 
+          type="button" 
+          class="js-manual-upload-button btn btn-info btn-sm"
+        >
+          <i class="bi bi-upload me-1"></i>
+          <span>Upload image</span>
+        </button>
+        {{/manual_upload_enabled}}
       </div>
-      {{#mobile_capture_enabled}}
+      {{#retake_menu_enabled}}
         <div class="js-capture-buttons-dropdown dropdown d-none">
           <button 
             id="retake-dropdown-button" 
@@ -142,18 +156,31 @@ $(function() {
                 <span>Use webcam</span>
               </button>
             </li>
-            <li>
-              <button 
-                type="button" 
-                class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
-              >
-                <i class="bi bi-qr-code-scan me-1"></i>
-                <span>Use phone</span>
-              </button>
-            </li>
+            {{#mobile_capture_enabled}}
+              <li>
+                <button 
+                  type="button" 
+                  class="js-capture-with-mobile-device-button dropdown-item btn btn-sm"
+                >
+                  <i class="bi bi-qr-code-scan me-1"></i>
+                  <span>Use phone</span>
+                </button>
+              </li>
+            {{/mobile_capture_enabled}}
+            {{#manual_upload_enabled}}
+              <li>
+                <button 
+                  type="button" 
+                  class="js-manual-upload-button dropdown-item btn btn-sm"
+                >
+                  <i class="bi bi-upload me-1"></i>
+                  <span>Upload image</span>
+                </button>
+              </li>
+            {{/manual_upload_enabled}}
           </ul>
         </div>
-      {{/mobile_capture_enabled}}
+      {{/retake_menu_enabled}}
       <button
         type="button"
         class="js-delete-captured-image-button btn btn-sm btn-danger d-none"

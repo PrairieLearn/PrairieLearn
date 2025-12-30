@@ -82,7 +82,7 @@ function getPermission(
   return permissions.find(
     (permission) =>
       permission.assessment_question_id === assessmentQuestion.id &&
-      permission.group_role_id === groupRole.id,
+      permission.team_role_id === groupRole.id,
   );
 }
 
@@ -741,7 +741,7 @@ describe('Assessment syncing', () => {
       groupAssessment;
     await util.writeAndSyncCourseData(courseData);
 
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(syncedRoles.length, 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -795,7 +795,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -893,7 +893,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -991,7 +991,7 @@ describe('Assessment syncing', () => {
     assert.isDefined(secondAssessmentQuestion);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.isTrue(syncedRoles.length === 2);
 
     const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
@@ -1079,7 +1079,7 @@ describe('Assessment syncing', () => {
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
 
     // Check group roles
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(syncedRoles.length, 2);
     const foundRecorder = syncedRoles.find((role) => role.role_name === 'Recorder');
     const foundContributor = syncedRoles.find((role) => role.role_name === 'Contributor');
@@ -1091,11 +1091,8 @@ describe('Assessment syncing', () => {
       'assessment_question_role_permissions',
       AssessmentQuestionRolePermissionSchema,
     );
-    assert.equal(syncedPermissions.filter((p) => p.group_role_id === foundRecorder.id).length, 2);
-    assert.equal(
-      syncedPermissions.filter((p) => p.group_role_id === foundContributor.id).length,
-      2,
-    );
+    assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundRecorder.id).length, 2);
+    assert.equal(syncedPermissions.filter((p) => p.team_role_id === foundContributor.id).length, 2);
 
     // Remove the "Contributor" group role and re-sync
     groupAssessment.groupRoles = [
@@ -1119,7 +1116,7 @@ describe('Assessment syncing', () => {
     ];
 
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(newSyncedRoles.length, 1);
     assert.notEqual(
       newSyncedRoles.find((role) => role.role_name === 'Recorder'),
@@ -1131,12 +1128,9 @@ describe('Assessment syncing', () => {
       'assessment_question_role_permissions',
       AssessmentQuestionRolePermissionSchema,
     );
+    assert.equal(newSyncedPermissions.filter((p) => p.team_role_id === foundRecorder.id).length, 2);
     assert.equal(
-      newSyncedPermissions.filter((p) => p.group_role_id === foundRecorder.id).length,
-      2,
-    );
-    assert.equal(
-      newSyncedPermissions.filter((p) => p.group_role_id === foundContributor.id).length,
+      newSyncedPermissions.filter((p) => p.team_role_id === foundContributor.id).length,
       0,
     );
   });
@@ -1357,7 +1351,7 @@ describe('Assessment syncing', () => {
       groupAssessment;
 
     const { courseDir } = await util.writeAndSyncCourseData(courseData);
-    const syncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
 
     // Ensure both roles are present
     assert.equal(syncedRoles.length, 2);
@@ -1386,7 +1380,7 @@ describe('Assessment syncing', () => {
 
     // Overwrite and ensure that both roles are still present
     await util.overwriteAndSyncCourseData(courseData, courseDir);
-    const newSyncedRoles = await util.dumpTableWithSchema('group_roles', GroupRoleSchema);
+    const newSyncedRoles = await util.dumpTableWithSchema('team_roles', GroupRoleSchema);
     assert.equal(newSyncedRoles.length, 2);
 
     const syncedData = await getSyncedAssessmentData('groupAssessment');
@@ -1408,7 +1402,7 @@ describe('Assessment syncing', () => {
     const firstQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
         p.assessment_question_id === firstAssessmentQuestion.id &&
-        p.group_role_id === foundContributor.id,
+        p.team_role_id === foundContributor.id,
     );
     assert.isDefined(firstQuestionContributorPermission);
     assert.isFalse(firstQuestionContributorPermission.can_view);
@@ -1418,7 +1412,7 @@ describe('Assessment syncing', () => {
     const secondQuestionContributorPermission = newSyncedPermissions.find(
       (p) =>
         p.assessment_question_id === secondAssessmentQuestion.id &&
-        p.group_role_id === foundContributor.id,
+        p.team_role_id === foundContributor.id,
     );
     assert.isDefined(secondQuestionContributorPermission);
     assert.isTrue(secondQuestionContributorPermission.can_view);
@@ -1492,7 +1486,7 @@ describe('Assessment syncing', () => {
     const firstQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === firstAssessmentQuestion.id &&
-        p.group_role_id === firstGroupRole.id
+        p.team_role_id === firstGroupRole.id
       );
     });
     assert.ok(firstQuestionPermission);
@@ -1500,7 +1494,7 @@ describe('Assessment syncing', () => {
     const secondQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === secondAssessmentQuestion.id &&
-        p.group_role_id === secondGroupRole.id
+        p.team_role_id === secondGroupRole.id
       );
     });
     assert.ok(secondQuestionPermission);

@@ -3,11 +3,13 @@ import { z } from 'zod';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
-import { DraftQuestionMetadataSchema, IdSchema } from '../../../lib/db-types.js';
+import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -24,7 +26,7 @@ export function InstructorAIGenerateDrafts({
   resLocals,
   drafts,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   drafts: DraftMetadataWithQid[];
 }) {
   const hasDrafts = drafts.length > 0;

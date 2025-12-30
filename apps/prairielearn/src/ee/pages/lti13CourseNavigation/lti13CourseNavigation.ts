@@ -5,6 +5,8 @@ import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { type PageAuthzData } from '../../../lib/authz-data-lib.js';
+import { extractPageContext } from '../../../lib/client/page-context.js';
 import {
   type Course,
   CourseInstanceSchema,
@@ -23,8 +25,12 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router({ mergeParams: true });
 
-function prettyCourseName(ltiClaim) {
+function prettyCourseName(ltiClaim: Lti13Claim) {
   const context = ltiClaim.context;
+
+  if (!context) {
+    return '(no context)';
+  }
 
   if (context.label && context.title) {
     return `${context.label}: ${context.title}`;
@@ -39,23 +45,15 @@ function prettyCourseName(ltiClaim) {
 
 async function courseInstancesAllowedToLink({
   course,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  authzData,
 }: {
   course: Course;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  authzData: PageAuthzData;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
-    user_id,
-    authn_user_id,
-    is_administrator,
-    authn_is_administrator,
+    authzData,
+    requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
@@ -80,7 +78,7 @@ router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
     const courses = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       is_administrator: res.locals.is_administrator,
     });
 
@@ -96,10 +94,7 @@ router.get(
 
     const course_instances = await courseInstancesAllowedToLink({
       course,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      authzData: res.locals.authz_data,
     });
 
     let options: HtmlSafeString;
@@ -196,7 +191,7 @@ router.get(
         resLocals: res.locals,
         courseName,
         courses: await coursesAllowedToLink({
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
           is_administrator: res.locals.is_administrator,
         }),
         lti13_instance_id: req.params.lti13_instance_id,
@@ -208,6 +203,11 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    const { authz_data: authzData } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
+
     const ltiClaim = new Lti13Claim(req);
 
     // Map passed and auth lti13_instance_id through institution to course instance, or fail
@@ -227,17 +227,14 @@ router.post(
 
     const courseInstancesAllowed = await courseInstancesAllowedToLink({
       course: await selectCourseById(course_instance.course_id),
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      authzData,
     });
     const hasCourseInstanceAllowed = courseInstancesAllowed.some(
       (ci) => ci.id === course_instance.id,
     );
 
     const coursesAllowed = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
+      user_id: authzData.authn_user.id,
       is_administrator: res.locals.is_administrator,
     });
     const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);

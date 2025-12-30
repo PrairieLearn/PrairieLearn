@@ -65,10 +65,10 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.user_id
+    const gradebookRows = student.user?.id
       ? await getGradebookRows({
           course_instance_id: courseInstance.id,
-          user_id: student.user.user_id,
+          user_id: student.user.id,
           authz_data: res.locals.authz_data,
           req_date: res.locals.req_date,
           auth: 'instructor',
@@ -109,6 +109,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
+              hasModernPublishing={courseInstance.modern_publishing}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
@@ -138,7 +139,7 @@ router.post(
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
       courseInstance,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData,
     });
 
@@ -151,7 +152,7 @@ router.post(
           enrollment,
           status: 'blocked',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
@@ -164,20 +165,20 @@ router.post(
           enrollment,
           status: 'joined',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(400, 'Enrollment is not invited');
+        if (!['invited', 'rejected'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
         }
         await deleteEnrollment({
           enrollment,
           actionDetail: 'invitation_deleted',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
@@ -202,7 +203,7 @@ router.post(
           enrollment,
           pendingUid,
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;

@@ -26,7 +26,7 @@ router.get(
     // Generate a signed JWT containing just the user ID. PrairieTest shares a
     // database with PrairieLearn, so it can use the same user ID to look up any
     // relevant information about PrairieTest.
-    const jwt = await new jose.SignJWT({ user_id: res.locals.authn_user.user_id })
+    const jwt = await new jose.SignJWT({ user_id: res.locals.authn_user.id })
       .setProtectedHeader({ alg: 'HS512' })
       .setIssuedAt()
       .setExpirationTime('1m')

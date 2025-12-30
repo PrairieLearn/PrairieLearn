@@ -1,5 +1,7 @@
 import assert from 'node:assert';
 
+import { createAnthropic } from '@ai-sdk/anthropic';
+import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { generateObject } from 'ai';
 import * as async from 'async';
@@ -8,6 +10,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
@@ -16,7 +19,6 @@ import {
   type AssessmentQuestion,
   type Course,
   type CourseInstance,
-  IdSchema,
   type InstanceQuestion,
   type Question,
 } from '../../../lib/db-types.js';
@@ -25,22 +27,19 @@ import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { assertNever } from '../../../lib/types.js';
+import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
+import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
+import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
-  AI_GRADING_OPENAI_MODEL,
   containsImageCapture,
   generatePrompt,
-  generateSubmissionEmbedding,
   insertAiGradingJob,
   parseAiRubricItems,
-  selectClosestSubmissionInfo,
-  selectEmbeddingForSubmission,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastSubmissionId,
   selectLastVariantAndSubmission,
-  selectRubricForGrading,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -65,6 +64,7 @@ export async function aiGrade({
   user_id,
   mode,
   instance_question_ids,
+  model_id,
 }: {
   question: Question;
   course: Course;
@@ -80,29 +80,54 @@ export async function aiGrade({
    * Only use when mode is 'selected'.
    */
   instance_question_ids?: string[];
+  model_id: AiGradingModelId;
 }): Promise<string> {
-  // If OpenAI API Key and Organization are not provided, throw error
-  if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
-    throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
-  }
-
-  const openai = createOpenAI({
-    apiKey: config.aiGradingOpenAiApiKey,
-    organization: config.aiGradingOpenAiOrganization,
+  const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
+  const model = run(() => {
+    if (provider === 'openai') {
+      // If an OpenAI API Key and Organization are not provided, throw an error
+      if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+        throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
+      }
+      const openai = createOpenAI({
+        apiKey: config.aiGradingOpenAiApiKey,
+        organization: config.aiGradingOpenAiOrganization,
+      });
+      return openai(model_id);
+    } else if (provider === 'google') {
+      // If a Google API Key is not provided, throw an error
+      if (!config.aiGradingGoogleApiKey) {
+        throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
+      }
+      const google = createGoogleGenerativeAI({
+        apiKey: config.aiGradingGoogleApiKey,
+      });
+      return google(model_id);
+    } else {
+      // If an Anthropic API Key is not provided, throw an error
+      if (!config.aiGradingAnthropicApiKey) {
+        throw new error.HttpStatusError(
+          403,
+          'Model not available (Anthropic API key not provided)',
+        );
+      }
+      const anthropic = createAnthropic({
+        apiKey: config.aiGradingAnthropicApiKey,
+      });
+      return anthropic(model_id);
+    }
   });
-  const embeddingModel = openai.textEmbeddingModel('text-embedding-3-small');
-  const model = openai(AI_GRADING_OPENAI_MODEL);
 
   const question_course = await getQuestionCourse(question, course);
 
   const serverJob = await createServerJob({
+    type: 'ai_grading',
+    description: 'Perform AI grading',
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    authnUserId: authn_user_id,
-    userId: user_id,
-    type: 'ai_grading',
-    description: 'Perform AI grading',
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -113,28 +138,7 @@ export async function aiGrade({
       assessment_question_id: assessment_question.id,
     });
 
-    job.info('Checking for embeddings for all submissions.');
-    let newEmbeddingsCount = 0;
-    for (const instance_question of all_instance_questions) {
-      // Only checking for instance questions that can be used as RAG data.
-      // They should be graded last by a human.
-      if (instance_question.requires_manual_grading || instance_question.is_ai_graded) {
-        continue;
-      }
-      const submission_id = await selectLastSubmissionId(instance_question.id);
-      const submission_embedding = await selectEmbeddingForSubmission(submission_id);
-      if (!submission_embedding) {
-        await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          embeddingModel,
-        });
-        newEmbeddingsCount++;
-      }
-    }
-    job.info(`Calculated ${newEmbeddingsCount} embeddings.`);
+    job.info(`Using model ${model_id} for AI grading.`);
 
     const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
 
@@ -198,58 +202,29 @@ export async function aiGrade({
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
 
-      let submission_embedding = await selectEmbeddingForSubmission(submission.id);
-      if (!submission_embedding) {
-        submission_embedding = await generateSubmissionEmbedding({
-          course,
-          question,
-          instance_question,
-          urlPrefix,
-          embeddingModel,
-        });
-      }
-      const submission_text = submission_embedding.submission_text;
+      const render_submission_results = await questionModule.render(
+        { question: false, submissions: true, answer: false },
+        variant,
+        question,
+        submission,
+        [submission],
+        question_course,
+        locals,
+      );
+      const submission_text = render_submission_results.data.submissionHtmls[0];
 
       const hasImage = containsImageCapture(submission_text);
 
-      const example_submissions = await run(async () => {
-        // We're currently disabling RAG for submissions that deal with images.
-        // It won't make sense to pull graded examples for such questions until we
-        // have a strategy for finding similar example submissions based on the
-        // contents of the images.
-        //
-        // Note that this means we're still computing and storing the submission
-        // text and embeddings for such submissions, even though they won't be used
-        // for RAG. While this means we're unnecessarily spending money on actually
-        // generating the embeddings, it does mean that we don't have to special-case
-        // image-based questions in the embedding generation code, which keeps things
-        // simpler overall.
-        if (hasImage) return [];
-
-        return await selectClosestSubmissionInfo({
-          submission_id: submission.id,
-          assessment_question_id: assessment_question.id,
-          embedding: submission_embedding.embedding,
-          limit: 5,
-        });
-      });
-
-      // Log things for visibility and auditing.
-      let gradedExampleInfo = `\nInstance question ${instance_question.id}${example_submissions.length > 0 ? '\nThe following instance questions were used as human-graded examples:' : ''}`;
-      for (const example of example_submissions) {
-        gradedExampleInfo += `\n- ${example.instance_question_id}`;
-      }
-      logger.info(gradedExampleInfo);
-
-      const rubric_items = await selectRubricForGrading(assessment_question.id);
+      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,
         submission_text,
         submitted_answer: submission.submitted_answer,
-        example_submissions,
         rubric_items,
+        grader_guidelines: rubric?.grader_guidelines ?? null,
+        model_id,
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information
@@ -315,6 +290,7 @@ export async function aiGrade({
           ai_rubric_items: response.object.rubric_items,
           rubric_items,
         });
+
         if (shouldUpdateScore) {
           // Requires grading: update instance question score
           const manual_rubric_data = {
@@ -340,10 +316,18 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGrading({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              usage: response.usage,
             });
           });
         } else {
@@ -374,13 +358,22 @@ export async function aiGrade({
               },
               IdSchema,
             );
+
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
               course_instance_id: course_instance.id,
+            });
+
+            await updateCourseInstanceUsagesForAiGrading({
+              gradingJobId: grading_job_id,
+              authnUserId: authn_user_id,
+              model: model_id,
+              usage: response.usage,
             });
           });
         }
@@ -445,6 +438,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -473,6 +467,7 @@ export async function aiGrade({
             await insertAiGradingJob({
               grading_job_id,
               job_sequence_id: serverJob.jobSequenceId,
+              model_id,
               prompt: input,
               response,
               course_id: course.id,
@@ -511,7 +506,7 @@ export async function aiGrade({
 
         try {
           return await gradeInstanceQuestion(instance_question, logger);
-        } catch (err) {
+        } catch (err: any) {
           logger.error(err);
           return false;
         } finally {

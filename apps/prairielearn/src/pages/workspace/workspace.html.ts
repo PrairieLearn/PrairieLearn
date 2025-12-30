@@ -4,6 +4,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { assetPath, compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function Workspace({
   pageTitle,
@@ -24,7 +25,7 @@ export function Workspace({
   heartbeatIntervalSec: number;
   visibilityTimeoutSec: number;
   socketToken: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { workspace_id, urlPrefix, __csrf_token } = resLocals;
 
@@ -37,18 +38,16 @@ export function Workspace({
     },
     options: {
       fullWidth: true,
-      pageNote,
       fullHeight: true,
+      pageNote,
       dataAttributes: {
         'socket-token': socketToken,
         'workspace-id': workspace_id,
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
-      enableEnhancedNav: false,
       enableNavbar: false,
-      paddingBottom: false,
-      paddingSides: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />

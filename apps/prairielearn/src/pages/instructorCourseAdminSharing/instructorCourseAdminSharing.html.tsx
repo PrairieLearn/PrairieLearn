@@ -1,12 +1,11 @@
 import { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const SharingSetRowSchema = z.object({
   name: z.string(),
@@ -20,7 +19,7 @@ function AddCourseToSharingSetPopover({
   resLocals,
 }: {
   sharing_set: SharingSetRow;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
@@ -128,7 +127,7 @@ export function InstructorCourseAdminSharing({
   sharingSets: SharingSetRow[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
 
@@ -145,13 +144,6 @@ export function InstructorCourseAdminSharing({
     },
     headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>

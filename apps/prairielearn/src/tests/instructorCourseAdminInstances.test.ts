@@ -22,6 +22,15 @@ const courseInstancesCourseLiveDir = path.join(courseLiveDir, 'courseInstances')
 const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
+const getCourseInstanceFileContents = async (shortName: string) => {
+  const courseInstanceInfoPath = path.join(
+    courseInstancesCourseLiveDir,
+    shortName,
+    'infoCourseInstance.json',
+  );
+  return await fs.readFile(courseInstanceInfoPath, 'utf8');
+};
+
 describe('Creating a course instance', () => {
   beforeAll(async () => {
     // Clone the course template for testing
@@ -59,91 +68,62 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstancePageResponse.status, 200);
 
     // Create the new course instance
-    const courseInstanceCreationResponse = await fetchCheerio(
+    const courseInstanceCreationResponse = await fetch(
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa19',
           long_name: 'Fall 2019',
-          start_access_date: '2021-01-01T00:00:00',
-          end_access_date: '2021-01-02T00:00:00',
-          access_dates_enabled: 'on',
+          start_date: '2021-01-01T00:00:00',
+          end_date: '2021-01-02T00:00:00',
         }),
       },
     );
 
     assert.equal(courseInstanceCreationResponse.status, 200);
 
-    // Verify that the user is redirected to the assessments page for the new course instance
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course_instance/2/instructor/instance_admin/assessments`,
-    );
+    // Verify that the response contains the new course instance ID
+    const responseBody = await courseInstanceCreationResponse.json();
+    assert.equal(responseBody.course_instance_id, '2');
   });
 
   test.sequential('verify course instance has the correct info', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Fa19', // Verify that the short_name has been used as the course instance folder's name
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
+    const courseInstanceInfo = JSON.parse(await getCourseInstanceFileContents('Fa19'));
 
     assert.equal(courseInstanceInfo.longName, 'Fall 2019');
-    assert.equal(courseInstanceInfo.allowAccess.length, 1);
-    assert.equal(courseInstanceInfo.allowAccess[0].startDate, '2021-01-01 00:00:00');
-    assert.equal(courseInstanceInfo.allowAccess[0].endDate, '2021-01-02 00:00:00');
+    assert.equal(courseInstanceInfo.publishing.startDate, '2021-01-01 00:00:00');
+    assert.equal(courseInstanceInfo.publishing.endDate, '2021-01-02 00:00:00');
   });
-
-  test.sequential('add course instance with the same long_name and short_name', async () => {
+  test.sequential('add the same course instance again', async () => {
     const courseInstancePageResponse = await fetchCheerio(
       `${siteUrl}/pl/course/1/course_admin/instances`,
     );
 
     assert.equal(courseInstancePageResponse.status, 200);
 
-    // Create the new course instance with the same short_name and long_name as the first one
-    const courseInstanceCreationResponse = await fetchCheerio(
+    const courseInstanceCreationResponse = await fetch(
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
-          short_name: 'Fa19', // Same short_name as the first course instance
-          long_name: 'Fall 2019', // Same long_name as the first course instance
-          start_access_date: '2021-01-01T00:00:00',
-          end_access_date: '2021-01-02T00:00:00',
-          access_dates_enabled: 'on',
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
+          short_name: 'Fa19',
+          long_name: 'Fall 2019',
+          start_date: '2021-01-01T00:00:00',
+          end_date: '2021-01-02T00:00:00',
         }),
       },
     );
 
-    assert.equal(courseInstanceCreationResponse.status, 200);
-
-    // Verify that the user is redirected to the assessments page for the new course instance
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course_instance/3/instructor/instance_admin/assessments`,
-    );
-  });
-
-  test.sequential('verify that the new course instance names had 2 appended to them', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Fa19_2',
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
-
-    assert.equal(courseInstanceInfo.longName, 'Fall 2019 (2)');
+    assert.equal(courseInstanceCreationResponse.status, 400);
+    const responseBody = await courseInstanceCreationResponse.json();
+    assert.isDefined(responseBody.error);
   });
 
   test.sequential('add course instance without start_access_date and end_access_date', async () => {
@@ -154,31 +134,30 @@ describe('Creating a course instance', () => {
     assert.equal(courseInstancePageResponse.status, 200);
 
     // Create the new course instance without a start_access_date and end_access_date
-    const courseInstanceCreationResponse = await fetchCheerio(
+    const courseInstanceCreationResponse = await fetch(
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           short_name: 'Fa20',
           long_name: 'Fall 2020',
-          access_dates_enabled: 'on',
+          start_date: '',
+          end_date: '',
         }),
       },
     );
 
+    const responseBody = await courseInstanceCreationResponse.json();
+
     assert.equal(courseInstanceCreationResponse.status, 200);
 
-    // Verify that the user is redirected to the assessments page for the new course instance
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course_instance/4/instructor/instance_admin/assessments`,
-    );
+    assert.equal(responseBody.course_instance_id, '3');
   });
 
-  test.sequential('verify course instance is created with an empty allowAccess array', async () => {
+  test.sequential('verify course instance is created without publishing config', async () => {
     const courseInstanceInfoPath = path.join(
       courseInstancesCourseLiveDir,
       'Fa20',
@@ -189,54 +168,7 @@ describe('Creating a course instance', () => {
 
     assert.equal(courseInstanceInfo.longName, 'Fall 2020');
 
-    assert.equal(courseInstanceInfo.allowAccess.length, 0);
-  });
-
-  test.sequential('add course instance with access_dates_enabled unchecked', async () => {
-    const courseInstancePageResponse = await fetchCheerio(
-      `${siteUrl}/pl/course/1/course_admin/instances`,
-    );
-
-    assert.equal(courseInstancePageResponse.status, 200);
-
-    // Create the new course instance with access_dates_enabled not specified (unchecked)
-    const courseInstanceCreationResponse = await fetchCheerio(
-      `${siteUrl}/pl/course/1/course_admin/instances`,
-      {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
-          short_name: 'Sp21',
-          long_name: 'Spring 2021',
-          start_access_date: '2021-01-01T00:00:00',
-          end_access_date: '2021-01-02T00:00:00',
-        }),
-      },
-    );
-
-    assert.equal(courseInstanceCreationResponse.status, 200);
-
-    // Verify that the user is redirected to the assessments page for the new course instance
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course_instance/5/instructor/instance_admin/assessments`,
-    );
-  });
-
-  test.sequential('verify course instance is created with an empty allowAccess array', async () => {
-    const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir,
-      'Sp21',
-      'infoCourseInstance.json',
-    );
-
-    const courseInstanceInfo = JSON.parse(await fs.readFile(courseInstanceInfoPath, 'utf8'));
-
-    assert.equal(courseInstanceInfo.longName, 'Spring 2021');
-
-    assert.equal(courseInstanceInfo.allowAccess.length, 0);
+    assert.isUndefined(courseInstanceInfo.publishing);
   });
 
   test.sequential('should not be able to create course instance with no short_name', async () => {
@@ -246,28 +178,26 @@ describe('Creating a course instance', () => {
 
     assert.equal(courseInstancePageResponse.status, 200);
 
-    const courseInstanceCreationResponse = await fetchCheerio(
+    const courseInstanceCreationResponse = await fetch(
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
           // No short_name specified
+          short_name: '',
           long_name: 'Fall 2019',
-          start_access_date: '2021-01-01T00:00:00',
-          end_access_date: '2021-01-02T00:00:00',
-          access_dates_enabled: 'on',
+          start_date: '2021-01-01T00:00:00',
+          end_date: '2021-01-02T00:00:00',
         }),
       },
     );
 
     assert.equal(courseInstanceCreationResponse.status, 400);
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course/1/course_admin/instances`,
-    );
+    const responseBody = await courseInstanceCreationResponse.json();
+    assert.isDefined(responseBody.error);
   });
 
   test.sequential('should not be able to create course instance with no long_name', async () => {
@@ -277,28 +207,26 @@ describe('Creating a course instance', () => {
 
     assert.equal(courseInstancePageResponse.status, 200);
 
-    const courseInstanceCreationResponse = await fetchCheerio(
+    const courseInstanceCreationResponse = await fetch(
       `${siteUrl}/pl/course/1/course_admin/instances`,
       {
         method: 'POST',
-        body: new URLSearchParams({
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
           __action: 'add_course_instance',
-          __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-          orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
-          short_name: 'Fa19',
+          __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
+          short_name: 'Sp21',
           // No long_name specified
-          start_access_date: '2021-01-01T00:00:00',
-          end_access_date: '2021-01-02T00:00:00',
-          access_dates_enabled: 'on',
+          long_name: '',
+          start_date: '2021-01-01T00:00:00',
+          end_date: '2021-01-02T00:00:00',
         }),
       },
     );
 
     assert.equal(courseInstanceCreationResponse.status, 400);
-    assert.equal(
-      courseInstanceCreationResponse.url,
-      `${siteUrl}/pl/course/1/course_admin/instances`,
-    );
+    const responseBody = await courseInstanceCreationResponse.json();
+    assert.isDefined(responseBody.error);
   });
 
   test.sequential(
@@ -311,23 +239,60 @@ describe('Creating a course instance', () => {
       assert.equal(courseInstancePageResponse.status, 200);
 
       // Create the new course instance with a short_name that falls outside the correct root directory
-      const courseInstanceCreationResponse = await fetchCheerio(
+      const courseInstanceCreationResponse = await fetch(
         `${siteUrl}/pl/course/1/course_admin/instances`,
         {
           method: 'POST',
-          body: new URLSearchParams({
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
             __action: 'add_course_instance',
-            __csrf_token: courseInstancePageResponse.$('input[name=__csrf_token]').val() as string,
-            orig_hash: courseInstancePageResponse.$('input[name=orig_hash]').val() as string,
-            short_name: '../Fa26',
+            __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
+            short_name: '../Fa26', // Try to do a path traversal attack
             long_name: 'Fall 2026',
-            access_dates_enabled: 'on',
+            start_date: '',
+            end_date: '',
           }),
         },
       );
 
-      assert.equal(courseInstanceCreationResponse.status, 200);
-      assert.match(courseInstanceCreationResponse.url, /\/pl\/course\/1\/edit_error\/\d+$/);
+      const responseBody = await courseInstanceCreationResponse.json();
+      assert.equal(courseInstanceCreationResponse.status, 400);
+      assert.isDefined(responseBody.error);
+    },
+  );
+
+  test.sequential(
+    'should not be able to add another course instance that causes an edit error',
+    async () => {
+      const courseInstancePageResponse = await fetchCheerio(
+        `${siteUrl}/pl/course/1/course_admin/instances`,
+      );
+
+      assert.equal(courseInstancePageResponse.status, 200);
+
+      const courseInstanceCreationResponse = await fetch(
+        `${siteUrl}/pl/course/1/course_admin/instances`,
+        {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            __action: 'add_course_instance',
+            __csrf_token: courseInstancePageResponse.$('#test_csrf_token').text(),
+            short_name: 'Fa19_2',
+            long_name: 'Fall 2019 (2)',
+            start_date: '', // It is invalid to specify an end date without a start date
+            end_date: '2021-01-02T00:00:00',
+          }),
+        },
+      );
+      const responseBody = await courseInstanceCreationResponse.json();
+
+      assert.equal(courseInstanceCreationResponse.status, 400);
+
+      // This implies an edit error was thrown, and the client will redirect to it.
+      assert.isDefined(responseBody.job_sequence_id);
+
+      // Any tests after this one are going to also fail with a edit error.
     },
   );
 });

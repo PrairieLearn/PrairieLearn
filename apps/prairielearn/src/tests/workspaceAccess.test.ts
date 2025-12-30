@@ -8,7 +8,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
-import { ensureEnrollment } from '../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
 import { type AuthUser, getOrCreateUser, withUser } from './utils/auth.js';
@@ -48,19 +48,19 @@ describe('Test workspace authorization access', { timeout: 20_000 }, function ()
   beforeAll(async function () {
     const studentOneUser = await getOrCreateUser(studentOne);
     const courseInstance = await selectCourseInstanceById('1');
-    await ensureEnrollment({
-      userId: studentOneUser.user_id,
+    await ensureUncheckedEnrollment({
+      userId: studentOneUser.id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
 
     const studentTwoUser = await getOrCreateUser(studentTwo);
-    await ensureEnrollment({
-      userId: studentTwoUser.user_id,
+    await ensureUncheckedEnrollment({
+      userId: studentTwoUser.id,
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

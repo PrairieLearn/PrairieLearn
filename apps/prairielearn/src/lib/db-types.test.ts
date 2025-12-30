@@ -9,17 +9,23 @@ import * as helperDb from '../tests/helperDb.js';
 import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
-const schemaNameOverrides = {
-  // https://github.com/PrairieLearn/PrairieLearn/issues/12428
-  courses: null,
-  pl_courses: 'CourseSchema',
+const schemaNameOverrides: Record<string, string | null> = {
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
 };
 
 const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
-const unusedSchemas = new Set(['JsonCommentSchema']);
+const unusedSchemas = new Set([
+  'JsonCommentSchema',
+  // TODO: Remove these aliases
+  'GroupSchema',
+  'GroupConfigSchema',
+  'GroupRoleSchema',
+  'GroupUserSchema',
+  'GroupUserRoleSchema',
+  'GroupLogSchema',
+]);
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
@@ -63,7 +69,7 @@ describe('Database Schema Sync Test', () => {
         continue;
       }
 
-      const schema = DbSchemas[schemaName];
+      const schema = (DbSchemas as Record<string, unknown>)[schemaName];
       if (schema === undefined) {
         throw new Error(`No schema mapping for table: ${tableName}`);
       }

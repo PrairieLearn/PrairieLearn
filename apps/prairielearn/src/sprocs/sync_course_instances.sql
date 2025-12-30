@@ -163,7 +163,7 @@ BEGIN
         sync_warnings = src.warnings
     FROM
         disk_course_instances AS src
-        JOIN pl_courses AS c ON (c.id = syncing_course_id)
+        JOIN courses AS c ON (c.id = syncing_course_id)
     WHERE
         dest.short_name = src.short_name
         AND dest.deleted_at IS NULL

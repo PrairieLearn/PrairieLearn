@@ -4,6 +4,7 @@ import { type HtmlValue, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { isEnterprise } from '../lib/license.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { IssueBadgeHtml } from './IssueBadge.js';
 import type { NavPage, NavSubPage } from './Navbar.types.js';
@@ -23,12 +24,12 @@ interface SideNavTabInfo {
   checkActiveSubPageForPages?: NavPage[];
   /** For the side nav tab to be active, the navSubPage must be in activeSubPages. */
   activeSubPages: NavSubPage[];
-  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  urlSuffix: string | ((resLocals: UntypedResLocals) => string);
   iconClasses: string;
   tabLabel: string;
   tabTooltip?: string;
-  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
-  renderCondition?: (resLocals: Record<string, any>) => boolean;
+  htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
+  renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }
 
 const sideNavPagesTabs = {
@@ -150,7 +151,7 @@ const sideNavPagesTabs = {
     },
     {
       activePages: ['instance_admin'],
-      activeSubPages: ['settings', 'access', 'lti', 'billing'],
+      activeSubPages: ['settings', 'publishing', 'lti', 'billing'],
       urlSuffix: '/instance_admin/settings',
       iconClasses: 'fas fa-cog',
       tabLabel: 'Instance settings',
@@ -166,7 +167,7 @@ export function SideNav({
   sideNavExpanded,
   persistToggleState = true,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
   sideNavExpanded: boolean;
@@ -216,7 +217,7 @@ function CourseNav({
   sideNavExpanded,
   persistToggleState,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
@@ -293,7 +294,7 @@ function CourseInstanceNav({
   urlPrefix,
   sideNavExpanded,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   page: NavPage;
   subPage: NavSubPage;
   urlPrefix: string;
@@ -361,7 +362,7 @@ function SideNavLink({
   urlPrefix,
   sideNavExpanded,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
   tabInfo: SideNavTabInfo;

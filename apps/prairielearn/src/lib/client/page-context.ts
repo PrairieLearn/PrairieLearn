@@ -5,15 +5,16 @@ import { run } from '@prairielearn/run';
 import { NavPageSchema, NavbarTypeSchema } from '../../components/Navbar.types.js';
 import { SelectUserSchema } from '../authn.types.js';
 import { PageAuthzDataSchema } from '../authz-data-lib.js';
+import type { UntypedResLocals } from '../res-locals.types.js';
 
 import {
   RawStaffAssessmentSchema,
-  RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
   RawStaffCourseSchema,
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   StaffAssessmentQuestionSchema,
+  StaffAssessmentSetSchema,
   StaffInstitutionSchema,
   StaffQuestionSchema,
   StaffUserSchema,
@@ -71,7 +72,6 @@ const StudentCourseContextSchema = z
         short_name: z.string(),
       })
       .brand('StudentCourse'),
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StudentCourseContext'>();
 type StudentCourseContext = z.infer<typeof StudentCourseContextSchema>;
@@ -86,7 +86,6 @@ const StaffCourseContextSchema = z
       })
       .brand('StaffCourse'),
     institution: StaffInstitutionSchema,
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StaffCourseContext'>();
 type StaffCourseContext = z.infer<typeof StaffCourseContextSchema>;
@@ -128,8 +127,8 @@ const StaffAssessmentContextSchema = z
     assessment: RawStaffAssessmentSchema.extend({
       // `type` will always be one of these values
       type: z.enum(['Exam', 'Homework']),
-    }),
-    assessment_set: RawStaffAssessmentSetSchema,
+    }).brand('StaffAssessment'),
+    assessment_set: StaffAssessmentSetSchema,
   })
   .brand<'StaffAssessmentContext'>();
 type StaffAssessmentContext = z.infer<typeof StaffAssessmentContextSchema>;
@@ -200,7 +199,7 @@ export function extractPageContext<
   AccessType extends 'student' | 'instructor',
   WithAuthz extends boolean = true,
 >(
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   options: {
     pageType: PageType;
     accessType: AccessType;

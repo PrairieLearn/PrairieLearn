@@ -67,8 +67,8 @@ export async function init() {
       'sync_news_items.sql',
       'sync_question_tags.sql',
       'sync_assessments.sql',
-      'group_info.sql',
-      'groups_uid_list.sql',
+      'team_info.sql',
+      'teams_uid_list.sql',
       'workspace_loads_current.sql',
     ],
     async (filename) => {

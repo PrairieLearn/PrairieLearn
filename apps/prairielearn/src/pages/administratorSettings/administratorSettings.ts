@@ -4,12 +4,12 @@ import asyncHandler from 'express-async-handler';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { QUESTION_BENCHMARKING_OPENAI_MODEL } from '../../ee/lib/ai-question-generation-benchmark.js';
 import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGeneration.js';
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
@@ -33,7 +33,7 @@ router.post(
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'generate_chunks') {
       const course_ids_string: string = req.body.course_ids || '';
-      const authn_user_id: string = res.locals.authn_user.user_id;
+      const authn_user_id: string = res.locals.authn_user.id;
 
       let course_ids: string[];
       try {
@@ -62,7 +62,7 @@ router.post(
       const { syncContextDocuments } = await import('../../ee/lib/contextEmbeddings.js');
       const jobSequenceId = await syncContextDocuments(
         openai.textEmbeddingModel('text-embedding-3-small'),
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect('/pl/administrator/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'benchmark_question_generation') {
@@ -81,9 +81,8 @@ router.post(
         organization: config.aiQuestionGenerationOpenAiOrganization,
       });
 
-      const { benchmarkAiQuestionGeneration } = await import(
-        '../../ee/lib/ai-question-generation-benchmark.js'
-      );
+      const { benchmarkAiQuestionGeneration } =
+        await import('../../ee/lib/ai-question-generation-benchmark.js');
       const jobSequenceId = await benchmarkAiQuestionGeneration({
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         generationModel: openai(QUESTION_GENERATION_OPENAI_MODEL),

@@ -2,11 +2,15 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { Hydrate } from '@prairielearn/preact/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import { compiledScriptTag } from '../../lib/assets.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import { InstructorAssessmentQuestions } from './instructorAssessmentQuestions.html.js';
+import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 
 const router = Router();
 
@@ -16,7 +20,46 @@ router.get(
     const questionRows = await selectAssessmentQuestions({
       assessment_id: res.locals.assessment.id,
     });
-    res.send(InstructorAssessmentQuestions({ resLocals: res.locals, questionRows }));
+
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'assessment',
+      accessType: 'instructor',
+    });
+
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Questions',
+        headContent: compiledScriptTag('instructorAssessmentQuestionsClient.ts'),
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'questions',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <InstructorAssessmentQuestionsTable
+              course={pageContext.course}
+              questionRows={questionRows}
+              urlPrefix={pageContext.urlPrefix}
+              assessmentType={pageContext.assessment.type}
+              assessmentSetName={pageContext.assessment_set.name}
+              assessmentNumber={pageContext.assessment.number}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                // TODO: This should never be undefined on this page. Ideally we fix
+                // this up in the `extractPageContext` function types.
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
+              }
+              csrfToken={res.locals.__csrf_token}
+            />
+          </Hydrate>
+        ),
+      }),
+    );
   }),
 );
 
@@ -32,7 +75,7 @@ router.post(
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

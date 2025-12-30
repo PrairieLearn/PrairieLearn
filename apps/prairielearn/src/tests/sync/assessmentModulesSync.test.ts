@@ -23,7 +23,10 @@ function checkAssessmentModule(
 ) {
   assert.isOk(syncedAssessmentModule);
   for (const key of Object.keys(assessmentModule)) {
-    assert.equal(syncedAssessmentModule[key], assessmentModule[key]);
+    assert.equal(
+      syncedAssessmentModule[key as keyof AssessmentModule],
+      assessmentModule[key as keyof AssessmentModule],
+    );
   }
 }
 
@@ -92,7 +95,7 @@ describe('Assessment modules syncing', () => {
       (as) => as.name === newAssessmentModule2.name,
     );
     checkAssessmentModule(syncedAssessmentModule, newAssessmentModule2);
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
     assert.match(syncedCourse?.sync_warnings ?? '', /Found duplicates in 'assessmentModules'/);
   });

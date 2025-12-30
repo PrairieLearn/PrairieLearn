@@ -1,7 +1,7 @@
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
-import { type Response, Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
@@ -25,8 +25,9 @@ import {
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { getGroupConfig } from '../../lib/groups.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getGroupConfig } from '../../lib/teams.js';
 
 import {
   type Filenames,
@@ -111,7 +112,7 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-function getFilenames(locals: Record<string, any>) {
+function getFilenames(locals: UntypedResLocals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -140,7 +141,7 @@ function getFilenames(locals: Record<string, any>) {
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
   };
-  if (locals.assessment.group_work) {
+  if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
     filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
     filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
@@ -293,7 +294,12 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
-async function sendInstancesCsv(res, req, columns, options) {
+async function sendInstancesCsv(
+  res: Response,
+  req: Request,
+  columns: Columns,
+  options: { only_highest: boolean; group_work?: true },
+) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
@@ -357,7 +363,7 @@ router.get(
         ['Role', 'role'],
       ]),
     );
-    if (res.locals.assessment.group_work) {
+    if (res.locals.assessment.team_work) {
       identityColumn = groupNameColumn;
     }
     const instancesColumns = identityColumn.concat(instanceColumn);
@@ -381,12 +387,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        group_work: res.locals.assessment.group_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        group_work: res.locals.assessment.group_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -428,7 +434,7 @@ router.get(
       );
 
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
+      identityColumn = (res.locals.assessment.team_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
@@ -476,7 +482,7 @@ router.get(
       );
 
       let submissionColumn = identityColumn;
-      if (res.locals.assessment.group_work) {
+      if (res.locals.assessment.team_work) {
         submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
       }
       const columns = submissionColumn.concat([

@@ -16,7 +16,6 @@ import * as namedLocks from '@prairielearn/named-locks';
 import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { escapeRegExp } from '@prairielearn/sanitize';
 
 import { selectAssessments } from '../models/assessment.js';
 import {
@@ -31,6 +30,7 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from './base64-util.js';
 import { logChunkChangesToJob, updateChunksForCourse } from './chunks.js';
+import type { StaffCourse } from './client/safe-db-types.js';
 import { config } from './config.js';
 import {
   type Assessment,
@@ -41,6 +41,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
+import { getNamesForCopy } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -281,11 +282,11 @@ export abstract class Editor {
   async prepareServerJob() {
     this.assertCanEdit();
     const serverJob = await createServerJob({
-      courseId: this.course.id,
-      userId: this.user.user_id,
-      authnUserId: this.authz_data.authn_user.user_id,
       type: 'sync',
       description: this.description,
+      userId: this.user.id,
+      authnUserId: this.authz_data.authn_user.id,
+      courseId: this.course.id,
     });
     return serverJob;
   }
@@ -508,7 +509,7 @@ export abstract class Editor {
     const idSplit = id.split(path.sep);
 
     // Start deleting subfolders in reverse order
-    const reverseFolders = idSplit.slice(0, -1).toReversed();
+    const reverseFolders = idSplit.slice(0, -1).reverse();
     debug('Checking folders', reverseFolders);
 
     let seenNonemptyFolder = false;
@@ -576,73 +577,6 @@ async function getExistingShortNames(rootDirectory: string, infoFile: string) {
   await walk('');
   debug('getExistingShortNames() returning', files);
   return files;
-}
-
-function getNamesForCopy(
-  oldShortName: string,
-  shortNames: string[],
-  oldLongName: string | null,
-  longNames: string[],
-): { shortName: string; longName: string } {
-  function getBaseShortName(oldname: string): string {
-    const found = oldname.match(/^(.*)_copy[0-9]+$/);
-    if (found) {
-      return found[1];
-    } else {
-      return oldname;
-    }
-  }
-
-  function getBaseLongName(oldname: string | null): string {
-    if (typeof oldname !== 'string') return 'Unknown';
-    debug(oldname);
-    const found = oldname.match(/^(.*) \(copy [0-9]+\)$/);
-    debug(found);
-    if (found) {
-      return found[1];
-    } else {
-      return oldname;
-    }
-  }
-
-  function getNumberShortName(basename: string, oldnames: string[]): number {
-    let number = 1;
-    oldnames.forEach((oldname) => {
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)}_copy([0-9]+)$`));
-      if (found) {
-        const foundNumber = Number.parseInt(found[1]);
-        if (foundNumber >= number) {
-          number = foundNumber + 1;
-        }
-      }
-    });
-    return number;
-  }
-
-  function getNumberLongName(basename: string, oldnames: string[]): number {
-    let number = 1;
-    oldnames.forEach((oldname) => {
-      if (typeof oldname !== 'string') return;
-      const found = oldname.match(new RegExp(`^${escapeRegExp(basename)} \\(copy ([0-9]+)\\)$`));
-      if (found) {
-        const foundNumber = Number.parseInt(found[1]);
-        if (foundNumber >= number) {
-          number = foundNumber + 1;
-        }
-      }
-    });
-    return number;
-  }
-
-  const baseShortName = getBaseShortName(oldShortName);
-  const baseLongName = getBaseLongName(oldLongName);
-  const numberShortName = getNumberShortName(baseShortName, shortNames);
-  const numberLongName = getNumberLongName(baseLongName, longNames);
-  const number = Math.max(numberShortName, numberLongName);
-  return {
-    shortName: `${baseShortName}_copy${number}`,
-    longName: `${baseLongName} (copy ${number})`,
-  };
 }
 
 export class AssessmentCopyEditor extends Editor {
@@ -946,17 +880,19 @@ export class AssessmentAddEditor extends Editor {
 
 export class CourseInstanceCopyEditor extends Editor {
   private course_instance: CourseInstance;
-  private from_course: Course;
+  private from_course: Course | StaffCourse;
   private from_path: string;
   private is_transfer: boolean;
+  private metadataOverrides?: Record<string, any>;
 
   public readonly uuid: string;
 
   constructor(
     params: BaseEditorOptions & {
-      from_course: Course;
+      from_course: Course | StaffCourse;
       from_path: string;
-      course_instance: any;
+      course_instance: CourseInstance;
+      metadataOverrides?: Record<string, any>;
     },
   ) {
     const is_transfer = !idsEqual(params.locals.course.id, params.from_course.id);
@@ -968,6 +904,7 @@ export class CourseInstanceCopyEditor extends Editor {
     this.from_course = params.from_course;
     this.from_path = params.from_path;
     this.is_transfer = is_transfer;
+    this.metadataOverrides = params.metadataOverrides;
 
     this.uuid = crypto.randomUUID();
   }
@@ -991,6 +928,7 @@ export class CourseInstanceCopyEditor extends Editor {
       'infoCourseInstance.json',
     );
 
+    // NOTE: The public course instance copy page currently does not support customizing these.
     debug('Generate short_name and long_name');
     let shortName = this.course_instance.short_name;
     let longName = this.course_instance.long_name;
@@ -1012,7 +950,13 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
+
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    infoJson.allowAccess = undefined;
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1026,10 +970,6 @@ export class CourseInstanceCopyEditor extends Editor {
         path.join(this.course.path, 'questions'),
         'info.json',
       );
-
-      // Clear access rules to avoid leaking student PII or unexpectedly
-      // making the copied course instance available to users.
-      infoJson.allowAccess = [];
 
       const questionsForCopy = await selectQuestionsForCourseInstanceCopy(this.course_instance.id);
       const questionsToLink = new Set(
@@ -1117,6 +1057,10 @@ export class CourseInstanceCopyEditor extends Editor {
 
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson.shareSourcePublicly;
+
+    if (this.metadataOverrides) {
+      infoJson = { ...infoJson, ...this.metadataOverrides };
+    }
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1314,30 +1258,11 @@ export class CourseInstanceAddEditor extends Editor {
     debug('CourseInstanceAddEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
-    debug('Get all existing long names');
-    const oldNamesLong = await sqldb.queryRows(
-      sql.select_course_instances_with_course,
-      { course_id: this.course.id },
-      // Although `course_instances.long_name` is nullable, we only retrieve non-deleted
-      // course instances, which should always have a non-null long name.
-      z.string(),
-    );
+    // At this point, upstream code should have already validated
+    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
 
-    debug('Get all existing short names');
-    const oldNamesShort = await getExistingShortNames(
-      courseInstancesPath,
-      'infoCourseInstance.json',
-    );
-
-    debug('Generate short_name and long_name');
-    const { shortName, longName } = getUniqueNames({
-      shortNames: oldNamesShort,
-      longNames: oldNamesLong,
-      shortName: this.short_name,
-      longName: this.long_name,
-    });
-
-    const courseInstancePath = path.join(courseInstancesPath, shortName);
+    // If upstream code has not done this, that could lead to a path traversal attack.
+    const courseInstancePath = path.join(courseInstancesPath, this.short_name);
 
     // Ensure that the new course instance folder path is fully contained in the course instances directory
     if (!contains(courseInstancesPath, courseInstancePath)) {
@@ -1357,36 +1282,35 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let allowAccess: { startDate?: string; endDate?: string } | undefined = undefined;
-
-    if (this.start_access_date || this.end_access_date) {
-      allowAccess = {
-        startDate: this.start_access_date
-          ? formatDate(
-              new Date(this.start_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-        endDate: this.end_access_date
-          ? formatDate(
-              new Date(this.end_access_date.epochMilliseconds),
-              this.course.display_timezone,
-              {
-                includeTz: false,
-              },
-            )
-          : undefined,
-      };
-    }
-
-    const infoJson = {
-      uuid: this.uuid,
-      longName,
-      allowAccess: allowAccess !== undefined ? [allowAccess] : [],
+    const publishing = {
+      startDate: this.start_access_date
+        ? formatDate(
+            new Date(this.start_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
+      endDate: this.end_access_date
+        ? formatDate(
+            new Date(this.end_access_date.epochMilliseconds),
+            this.course.display_timezone,
+            {
+              includeTz: false,
+            },
+          )
+        : undefined,
     };
+
+    const infoJson: Record<string, any> = {
+      uuid: this.uuid,
+      longName: this.long_name,
+    };
+
+    if (publishing.startDate || publishing.endDate) {
+      infoJson.publishing = publishing;
+    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
@@ -1398,7 +1322,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     return {
       pathsToAdd: [courseInstancePath],
-      commitMessage: `add course instance ${shortName}`,
+      commitMessage: `add course instance ${this.short_name}`,
     };
   }
 }
@@ -1966,8 +1890,8 @@ async function copyQuestion({
   existingTitles: oldLongNames,
   existingQids: oldShortNames,
 }: {
-  course: Course;
-  from_course: Course;
+  course: Course | StaffCourse;
+  from_course: Course | StaffCourse;
   from_path: string;
   from_qid: string;
   uuid: string;
@@ -2267,7 +2191,7 @@ export class FileUploadEditor extends Editor {
     let contents;
     try {
       contents = await fs.readFile(this.filePath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         debug('no old contents, so continue with upload');
         return true;
