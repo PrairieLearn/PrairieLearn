@@ -50,7 +50,7 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+      LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
       LEFT JOIN teams AS t ON (
         t.id = ai.team_id
         AND t.team_config_id = tc.id
@@ -122,7 +122,7 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  LEFT JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+  LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
   LEFT JOIN teams AS t ON (
     t.id = ai.team_id
     AND t.team_config_id = tc.id
@@ -318,7 +318,7 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+      LEFT JOIN team_configs AS tc ON (tc.assessment_id = a.id)
       LEFT JOIN teams AS t ON (
         t.id = ai.team_id
         AND t.team_config_id = tc.id

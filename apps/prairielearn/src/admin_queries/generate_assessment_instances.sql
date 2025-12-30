@@ -32,7 +32,7 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN courses AS c ON (c.id = ci.course_id)
-  JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS tc ON (tc.assessment_id = a.id)
   JOIN teams AS t ON (t.team_config_id = tc.id)
   JOIN LATERAL (
     SELECT

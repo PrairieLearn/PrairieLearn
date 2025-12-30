@@ -111,7 +111,7 @@ WITH
         tu.team_id = t.id
         AND tu.user_id = $user_id
       )
-      FULL JOIN assessments AS a ON (gc.assessment_id = a.id)
+      FULL JOIN assessments AS a ON (tc.assessment_id = a.id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       -- We use a subquery to find assessment instances by either user_id or

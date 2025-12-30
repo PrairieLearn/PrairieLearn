@@ -4,7 +4,7 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS tc ON (tc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
@@ -18,7 +18,7 @@ SELECT
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN team_configs AS tc ON (gc.assessment_id = a.id)
+  JOIN team_configs AS tc ON (tc.assessment_id = a.id)
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
