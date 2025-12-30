@@ -1,4 +1,5 @@
 FROM prairielearn/workspace-vscode-base:latest
+ARG CACHEBUST=2025-12-30-17-21-51
 
 USER root
 RUN apt-get update && apt-get install -y --no-install-recommends openjdk-25-jdk-headless && apt-get clean && rm -rf /var/lib/apt/lists/*
