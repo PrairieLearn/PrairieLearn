@@ -1,5 +1,11 @@
 # @prairielearn/vite-plugin-express
 
+## 1.0.5
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 1.0.4
 
 ### Patch Changes
