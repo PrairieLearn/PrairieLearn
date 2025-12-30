@@ -43,7 +43,12 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
-    res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
+    const assessmentInstances = await sqldb.queryRows(
+      sql.select_assessment_instances,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentInstanceRowSchema,
+    );
+    res.send(InstructorAssessmentInstances({ resLocals: res.locals, assessmentInstances, req }));
   }),
 );
 
