@@ -13,8 +13,8 @@
     "./hydrated-component": "./dist/hydrated-component/index.js"
   },
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/browser-utils": "workspace:^",
@@ -32,6 +32,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.19.1",
+    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
     "typescript": "^5.9.3"
   }
 }

@@ -17,7 +17,7 @@
     "./jsx-runtime": "./dist/jsx-runtime.js"
   },
   "scripts": {
-    "build": "tsc && rm -rf dist && cp -r src dist"
+    "build": "tsgo && rm -rf dist && cp -r src dist"
   },
   "dependencies": {
     "original-preact": "npm:preact@^10.27.2"
