@@ -8,8 +8,11 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import {
+  type AssessmentInstance,
   AssessmentInstanceSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
+  type Question,
   QuestionSchema,
 } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -19,7 +22,37 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
+const locals = {} as {
+  siteUrl: string;
+  baseUrl: string;
+  courseInstanceBaseUrl: string;
+  questionBaseUrl: string;
+  assessmentsUrl: string;
+  isStudentPage: boolean;
+  totalPoints: number;
+  assessment_id: string;
+  assessmentUrl: string;
+  $: cheerio.CheerioAPI;
+  preStartTime: number;
+  postStartTime: number;
+  assessmentInstanceUrl: string;
+  assessment_instance: AssessmentInstance;
+  instance_questions: (InstanceQuestion & { qid: Question['qid'] })[];
+  shouldHaveButtons: string[];
+  postAction: string;
+  question: TestQuestion;
+  expectedResult: {
+    submission_score: number;
+    submission_correct: boolean;
+    instance_question_points: number;
+    instance_question_score_perc: number;
+    instance_question_auto_points: number;
+    instance_question_manual_points: number;
+    assessment_instance_points: number;
+    assessment_instance_score_perc: number;
+  };
+  getSubmittedAnswer: () => Record<string, string>;
+};
 
 interface TestQuestion {
   qid: string;
@@ -87,7 +120,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
     describe('the locals object', function () {
       it('should be cleared', function () {
         for (const prop in locals) {
-          delete locals[prop];
+          delete locals[prop as keyof typeof locals];
         }
       });
       it('should be initialized', function () {
@@ -231,7 +264,7 @@ describe('Homework assessment with constant question values', { timeout: 60_000 
               locals.shouldHaveButtons = ['grade', 'save'];
               locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
-              locals.question.points += questionTest.sub_points;
+              locals.question.points = (locals.question.points ?? 0) + questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               const submission_score =
                 questionTest.submission_score == null
