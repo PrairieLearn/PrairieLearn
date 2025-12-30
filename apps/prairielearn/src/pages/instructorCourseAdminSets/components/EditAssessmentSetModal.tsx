@@ -1,10 +1,10 @@
+import clsx from 'clsx';
 import { useState } from 'preact/compat';
 import { Modal } from 'react-bootstrap';
 
-import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
-import clsx from 'clsx';
-import { ColorJsonSchema } from '../../../schemas/index.js';
 import { ColorSwatch } from '../../../components/ColorSwatch.js';
+import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
+import { ColorJsonSchema } from '../../../schemas/index.js';
 
 export type EditAssessmentSetsModalState =
   | { type: 'closed' }

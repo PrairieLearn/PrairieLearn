@@ -5,9 +5,9 @@ import { Modal } from 'react-bootstrap';
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
+import { ColorSwatch } from './ColorSwatch.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
-import { ColorSwatch } from './ColorSwatch.js';
 
 export type EditTagsTopicsModalState<Entity extends StaffTopic | StaffTag> =
   | { type: 'closed' }

@@ -1,30 +1,30 @@
-import { useMemo, useState } from 'preact/compat';
 import {
   DndContext,
-  closestCenter,
+  type DragEndEvent,
   KeyboardSensor,
   PointerSensor,
+  closestCenter,
   useSensor,
   useSensors,
-  type DragEndEvent,
 } from '@dnd-kit/core';
 import {
   SortableContext,
-  useSortable,
   arrayMove,
   sortableKeyboardCoordinates,
+  useSortable,
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import { useMemo, useState } from 'preact/compat';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
+import { ColorJsonSchema } from '../../../schemas/index.js';
 
 import {
   EditAssessmentSetsModal,
   type EditAssessmentSetsModalState,
 } from './EditAssessmentSetModal.js';
-import { ColorJsonSchema } from '../../../schemas/index.js';
 
 const emptyAssessmentSet = {
   abbreviation: '',
@@ -60,7 +60,7 @@ function AssessmentSetRow({
   };
 
   return (
-    <tr ref={setNodeRef} style={style} key={assessmentSet.id}>
+    <tr key={assessmentSet.id} ref={setNodeRef} style={style}>
       {editMode && allowEdit && (
         <td class="align-middle">
           <div class="d-flex align-items-center">
