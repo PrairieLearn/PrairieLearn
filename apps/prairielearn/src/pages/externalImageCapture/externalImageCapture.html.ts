@@ -59,7 +59,7 @@ export function ExternalImageCapture({
             <i class="bi bi-x-circle-fill text-danger me-2"></i>
             Upload failed
           </h1>
-          <p>An error occured during the submission of your file.</p>
+          <p>An error occurred during the submission of your file.</p>
         </div>
         <div id="external-image-capture-form-container" class="d-none pb-4">
           <div id="form-items">
