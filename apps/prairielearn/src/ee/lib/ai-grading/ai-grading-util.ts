@@ -474,7 +474,7 @@ export async function insertAiGradingJob({
  * @param params.model_id
  * @param params.prompt
  * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
- * @param params.rotationCorrections - For each image, the amount of clockwise rotation applied and the response of the rotation correction LLM call.
+ * @param params.rotationCorrections - For each image, the amount of degrees clockwise it was rotated and the response of the rotation correction LLM call.
  * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
  * @param params.course_id
  * @param params.course_instance_id
