@@ -17,8 +17,8 @@ interface StudentGradebookTableProps {
 export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTableProps) {
   if (rows.length === 0) {
     return (
-      <div class="card-body">
-        <div class="text-muted">No gradebook entries found.</div>
+      <div className="card-body">
+        <div className="text-muted">No gradebook entries found.</div>
       </div>
     );
   }
@@ -32,18 +32,18 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
   });
 
   return (
-    <table class="table table-sm table-hover" aria-label="Student Assessment Performance">
+    <table className="table table-sm table-hover" aria-label="Student Assessment Performance">
       <thead>
         <tr>
           <th style="width: 1%">
-            <span class="visually-hidden">Label</span>
+            <span className="visually-hidden">Label</span>
           </th>
           <th>
-            <span class="visually-hidden">Assessment</span>
+            <span className="visually-hidden">Assessment</span>
           </th>
-          <th class="text-center">Score</th>
-          <th class="text-center">Points</th>
-          <th class="text-center">Actions</th>
+          <th className="text-center">Score</th>
+          <th className="text-center">Points</th>
+          <th className="text-center">Actions</th>
         </tr>
       </thead>
       <tbody>
@@ -54,7 +54,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
             </tr>
             {setAssessments.map((row) => (
               <tr key={row.assessment.id}>
-                <td class="align-middle" style="width: 1%">
+                <td className="align-middle" style="width: 1%">
                   <AssessmentBadge
                     urlPrefix={urlPrefix}
                     assessment={{
@@ -65,42 +65,42 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                     hideLink
                   />
                 </td>
-                <td class="align-middle">
+                <td className="align-middle">
                   <a
                     href={getAssessmentInstanceUrl({ urlPrefix, assessmentId: row.assessment.id })}
                   >
                     {computeTitle(row)}
                   </a>
                   {row.assessment.team_work && (
-                    <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
+                    <i className="fas fa-users ms-1" aria-hidden="true" title="Group work" />
                   )}
                 </td>
-                <td class="text-center align-middle">
+                <td className="text-center align-middle">
                   {row.assessment_instance.id && row.show_closed_assessment_score ? (
-                    <Scorebar score={row.assessment_instance.score_perc} class="mx-auto" />
+                    <Scorebar score={row.assessment_instance.score_perc} className="mx-auto" />
                   ) : row.assessment_instance.id ? (
                     'In progress'
                   ) : (
-                    <span class="text-muted">Not started</span>
+                    <span className="text-muted">Not started</span>
                   )}
                 </td>
-                <td class="text-center align-middle">
+                <td className="text-center align-middle">
                   {row.assessment_instance.id && row.show_closed_assessment_score ? (
                     `${row.assessment_instance.points?.toFixed(1) || '0.0'} / ${row.assessment_instance.max_points?.toFixed(1) || '0.0'}`
                   ) : (
-                    <span class="text-muted">—</span>
+                    <span className="text-muted">—</span>
                   )}
                 </td>
-                <td class="text-center align-middle">
+                <td className="text-center align-middle">
                   {row.assessment_instance.id ? (
                     <a
                       href={`${urlPrefix}/assessment_instance/${row.assessment_instance.id}`}
-                      class="btn btn-xs btn-outline-primary"
+                      className="btn btn-xs btn-outline-primary"
                     >
                       View instance
                     </a>
                   ) : (
-                    <span class="text-muted">—</span>
+                    <span className="text-muted">—</span>
                   )}
                 </td>
               </tr>

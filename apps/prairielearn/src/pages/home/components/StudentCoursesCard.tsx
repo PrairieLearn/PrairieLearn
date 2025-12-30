@@ -48,61 +48,61 @@ export function StudentCoursesCard({
   const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useState(false);
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
         {canAddCourses &&
           (enrollmentManagementEnabled ? (
             <button
               type="button"
-              class="btn btn-light btn-sm ms-auto"
+              className="btn btn-light btn-sm ms-auto"
               onClick={() => setShowEnrollmentCodeModal(true)}
             >
-              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
-              <span class="d-none d-sm-inline">Add course</span>
+              <i className="bi bi-plus-circle me-sm-1" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course</span>
             </button>
           ) : (
-            <a href={`${urlPrefix}/enroll`} class="btn btn-light btn-sm ms-auto">
-              <i class="bi bi-plus-circle me-sm-1" aria-hidden="true" />
-              <span class="d-none d-sm-inline">Add course</span>
+            <a href={`${urlPrefix}/enroll`} className="btn btn-light btn-sm ms-auto">
+              <i className="bi bi-plus-circle me-sm-1" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course</span>
             </a>
           ))}
       </div>
 
       {studentCourses.length === 0 ? (
         hasInstructorCourses ? (
-          <div class="card-body">
+          <div className="card-body">
             No courses found with student access. Courses with instructor access are found in the
             list above.
             {canAddCourses && ' Use the "Add course" button to add a course as a student.'}
           </div>
         ) : isDevMode ? (
-          <div class="card-body">
+          <div className="card-body">
             No courses loaded. Click <strong>"Load from disk"</strong> above and then click
             <strong>"PrairieLearn"</strong> in the top left corner to come back to this page.
           </div>
         ) : (
-          <div class="card-body">
+          <div className="card-body">
             No courses found.
             {canAddCourses && ' Use the "Add course" button to add one.'}
           </div>
         )
       ) : (
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label={heading}>
+        <div className="table-responsive">
+          <table className="table table-sm table-hover table-striped" aria-label={heading}>
             <tbody>
               {invited.map((entry: StudentHomePageCourse) => (
-                <tr key={`invite-${entry.course_instance.id}`} class="table-warning">
-                  <td class="align-middle">
-                    <div class="d-flex align-items-center justify-content-between gap-2">
+                <tr key={`invite-${entry.course_instance.id}`} className="table-warning">
+                  <td className="align-middle">
+                    <div className="d-flex align-items-center justify-content-between gap-2">
                       <div>
-                        <span class="fw-semibold">
+                        <span className="fw-semibold">
                           {entry.course_short_name}: {entry.course_title},
                           {entry.course_instance.long_name}
                         </span>
-                        <span class="ms-2 badge bg-warning text-dark">Invitation</span>
+                        <span className="ms-2 badge bg-warning text-dark">Invitation</span>
                       </div>
-                      <div class="d-flex gap-2">
+                      <div className="d-flex gap-2">
                         <form method="POST">
                           <input type="hidden" name="__action" value="accept_invitation" />
                           <input type="hidden" name="__csrf_token" value={csrfToken} />
@@ -111,13 +111,13 @@ export function StudentCoursesCard({
                             name="course_instance_id"
                             value={entry.course_instance.id}
                           />
-                          <button type="submit" class="btn btn-primary btn-sm">
+                          <button type="submit" className="btn btn-primary btn-sm">
                             Accept
                           </button>
                         </form>
                         <button
                           type="button"
-                          class="btn btn-danger btn-sm"
+                          className="btn btn-danger btn-sm"
                           onClick={() => setRejectingCourseId(entry.course_instance.id)}
                         >
                           Reject
@@ -129,15 +129,15 @@ export function StudentCoursesCard({
               ))}
               {joined.map((entry) => (
                 <tr key={entry.course_instance.id}>
-                  <td class="align-middle">
-                    <div class="d-flex align-items-center justify-content-between gap-2">
+                  <td className="align-middle">
+                    <div className="d-flex align-items-center justify-content-between gap-2">
                       <a href={`${urlPrefix}/course_instance/${entry.course_instance.id}`}>
                         {entry.course_short_name}: {entry.course_title},
                         {entry.course_instance.long_name}
                       </a>
                       <button
                         type="button"
-                        class="btn btn-danger btn-sm"
+                        className="btn btn-danger btn-sm"
                         onClick={() => setRemovingCourseId(entry.course_instance.id)}
                       >
                         Remove
@@ -174,7 +174,7 @@ export function StudentCoursesCard({
         <Modal.Footer>
           <button
             type="button"
-            class="btn btn-secondary"
+            className="btn btn-secondary"
             onClick={() => setRejectingCourseId(null)}
           >
             Cancel
@@ -183,7 +183,7 @@ export function StudentCoursesCard({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="__action" value="reject_invitation" />
             <input type="hidden" name="course_instance_id" value={rejectingCourseId ?? ''} />
-            <button type="submit" class="btn btn-danger">
+            <button type="submit" className="btn btn-danger">
               Reject invitation
             </button>
           </form>
@@ -206,14 +206,14 @@ export function StudentCoursesCard({
           </p>
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" onClick={() => setRemovingCourseId(null)}>
+          <button type="button" className="btn btn-secondary" onClick={() => setRemovingCourseId(null)}>
             Cancel
           </button>
           <form method="POST">
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="__action" value="unenroll" />
             <input type="hidden" name="course_instance_id" value={removingCourseId ?? ''} />
-            <button type="submit" class="btn btn-danger">
+            <button type="submit" className="btn btn-danger">
               Remove course
             </button>
           </form>

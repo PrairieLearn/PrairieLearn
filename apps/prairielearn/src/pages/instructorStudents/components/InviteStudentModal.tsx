@@ -67,12 +67,12 @@ export function InviteStudentModal({
               {errors.root.serverError.message}
             </Alert>
           )}
-          <label for="invite-uid" class="form-label">
+          <label for="invite-uid" className="form-label">
             UID
           </label>
           <input
             id="invite-uid"
-            class={clsx('form-control', errors.uid && 'is-invalid')}
+            className={clsx('form-control', errors.uid && 'is-invalid')}
             type="email"
             placeholder="student@example.com"
             aria-invalid={errors.uid ? 'true' : 'false'}
@@ -101,13 +101,13 @@ export function InviteStudentModal({
               },
             })}
           />
-          {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
+          {errors.uid?.message && <div className="invalid-feedback">{errors.uid.message}</div>}
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
+          <button type="button" className="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={isSubmitting || isValidating}>
+          <button type="submit" className="btn btn-primary" disabled={isSubmitting || isValidating}>
             Invite
           </button>
         </Modal.Footer>

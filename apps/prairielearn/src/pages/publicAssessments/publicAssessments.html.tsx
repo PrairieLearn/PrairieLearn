@@ -48,11 +48,11 @@ export function PublicAssessments({
   questionsForCopy: SafeQuestionForCopy[];
 }) {
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
         <h1>Assessments</h1>
-        <div class="ms-auto d-flex flex-row gap-1">
-          <div class="btn-group">
+        <div className="ms-auto d-flex flex-row gap-1">
+          <div className="btn-group">
             <Hydrate>
               <CopyCourseInstanceModal
                 course={course}
@@ -65,15 +65,15 @@ export function PublicAssessments({
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover">
+      <div className="table-responsive">
+        <table className="table table-sm table-hover">
           <thead>
             <tr>
               <th style="width: 1%">
-                <span class="visually-hidden">Label</span>
+                <span className="visually-hidden">Label</span>
               </th>
               <th>
-                <span class="visually-hidden">Title</span>
+                <span className="visually-hidden">Title</span>
               </th>
               <th>AID</th>
             </tr>
@@ -93,17 +93,17 @@ export function PublicAssessments({
                   </tr>
                 )}
                 <tr id={`row-${row.id}`}>
-                  <td class="align-middle" style="width: 1%">
-                    <span class={`badge color-${row.assessment_set.color}`}>{row.label}</span>
+                  <td className="align-middle" style="width: 1%">
+                    <span className={`badge color-${row.assessment_set.color}`}>{row.label}</span>
                   </td>
-                  <td class="align-middle">
+                  <td className="align-middle">
                     <a
                       href={`/pl/public/course_instance/${courseInstance.id}/assessment/${row.id}/questions`}
                     >
                       {row.title}
                     </a>
                   </td>
-                  <td class="align-middle">{row.tid}</td>
+                  <td className="align-middle">{row.tid}</td>
                 </tr>
               </Fragment>
             ))}

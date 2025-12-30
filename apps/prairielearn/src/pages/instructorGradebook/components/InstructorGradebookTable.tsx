@@ -260,14 +260,14 @@ function GradebookTable({
           <span>
             Role{' '}
             <button
-              class="btn btn-xs btn-ghost"
+              className="btn btn-xs btn-ghost"
               type="button"
               aria-label="Roles help"
               data-bs-toggle="modal"
               data-bs-target="#role-help"
               onClick={(e) => e.stopPropagation()}
             >
-              <i class="bi-question-circle-fill" aria-hidden="true" />
+              <i className="bi-question-circle-fill" aria-hidden="true" />
             </button>
           </span>
         ),
@@ -319,7 +319,7 @@ function GradebookTable({
                 header: () => (
                   <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
                     <span
-                      class={clsx('badge', `color-${assessment.color}`)}
+                      className={clsx('badge', `color-${assessment.color}`)}
                       title={assessment.label}
                     >
                       {assessment.label}
@@ -337,7 +337,7 @@ function GradebookTable({
                   }
 
                   return (
-                    <span class="text-nowrap">
+                    <span className="text-nowrap">
                       <a
                         href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
                       >

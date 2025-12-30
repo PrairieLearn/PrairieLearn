@@ -58,20 +58,20 @@ export function PublishingExtensions({
     : '—';
   return (
     <>
-      <div class="mb-3">
-        <div class="d-flex align-items-center justify-content-between mb-2">
-          <h5 key={`extensions-header-${extensionsQuery.isFetching}`} class="mb-0">
+      <div className="mb-3">
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h5 key={`extensions-header-${extensionsQuery.isFetching}`} className="mb-0">
             Extensions
             {extensionsQuery.isFetching && (
-              <div class="spinner-border spinner-border-sm" role="status">
-                <span class="visually-hidden">Loading extensions...</span>
+              <div className="spinner-border spinner-border-sm" role="status">
+                <span className="visually-hidden">Loading extensions...</span>
               </div>
             )}
           </h5>
           {canEdit && (
             <button
               type="button"
-              class="btn btn-outline-primary btn-sm text-nowrap"
+              className="btn btn-outline-primary btn-sm text-nowrap"
               onClick={() =>
                 modifyModalState.showWithData({
                   type: 'add',
@@ -88,7 +88,7 @@ export function PublishingExtensions({
             </button>
           )}
         </div>
-        <small class="text-muted">
+        <small className="text-muted">
           Extend access to specific users beyond the original end date. If multiple extensions apply
           to a user, the latest extension date will take effect. If an extension is before the end
           date, it will be ignored.
@@ -96,8 +96,8 @@ export function PublishingExtensions({
       </div>
 
       {hasExtensionsWithoutPublishDate && (
-        <Alert variant="warning" class="mb-3">
-          <i class="fas fa-exclamation-triangle me-2" aria-hidden="true" />
+        <Alert variant="warning" className="mb-3">
+          <i className="fas fa-exclamation-triangle me-2" aria-hidden="true" />
           Extensions will not take effect until you set a publishing end date.
         </Alert>
       )}
@@ -107,18 +107,18 @@ export function PublishingExtensions({
           {extensionsQuery.error.message}
         </Alert>
       ) : extensionsQuery.data.length === 0 ? (
-        <div class="text-center text-muted mb-3">
-          <p class="mb-0">No extensions configured.</p>
+        <div className="text-center text-muted mb-3">
+          <p className="mb-0">No extensions configured.</p>
         </div>
       ) : (
-        <div class="table-responsive">
-          <table class="table table-striped">
+        <div className="table-responsive">
+          <table className="table table-striped">
             <thead>
               <tr>
-                <th class="col-1">Extension name</th>
-                <th class="col-1">End date</th>
-                <th class="col-3">Students</th>
-                <th class="col-1">Actions</th>
+                <th className="col-1">Extension name</th>
+                <th className="col-1">End date</th>
+                <th className="col-3">Students</th>
+                <th className="col-1">Actions</th>
               </tr>
             </thead>
             <tbody>

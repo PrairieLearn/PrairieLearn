@@ -78,7 +78,7 @@ function SampleQuestionSelector({
   onClickNext: () => void;
 }) {
   return (
-    <div style={{ width: '100%' }} class="d-flex align-items-center gap-2 mb-3 flex-wrap">
+    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
       <Dropdown
         style={{ flex: 1 }}
         onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
@@ -87,7 +87,7 @@ function SampleQuestionSelector({
           as="button"
           type="button"
           style={{ width: '100%' }}
-          class="btn dropdown-toggle border d-flex justify-content-between align-items-center bg-white"
+          className="btn dropdown-toggle border d-flex justify-content-between align-items-center bg-white"
         >
           {selectedQuestionName}
         </DropdownToggle>
@@ -103,7 +103,7 @@ function SampleQuestionSelector({
           ))}
         </DropdownMenu>
       </Dropdown>
-      <div class="d-flex align-items-center gap-2">
+      <div className="d-flex align-items-center gap-2">
         <Button disabled={selectedQuestionIndex === 0} onClick={onClickPrevious}>
           Previous
         </Button>
@@ -126,7 +126,7 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
 
   return (
     <>
-      <p class="fw-bold mb-1 mt-3">Prompt</p>
+      <p className="fw-bold mb-1 mt-3">Prompt</p>
       <p>{prompt}</p>
       <OverlayTrigger
         placement="top"

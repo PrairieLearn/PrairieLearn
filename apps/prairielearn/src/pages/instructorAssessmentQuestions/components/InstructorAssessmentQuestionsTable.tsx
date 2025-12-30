@@ -112,18 +112,18 @@ export function InstructorAssessmentQuestionsTable({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Assessment questions">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
                 <th>
-                  <span class="visually-hidden">Name</span>
+                  <span className="visually-hidden">Name</span>
                 </th>
                 <th>QID</th>
                 <th>Topic</th>
@@ -134,7 +134,7 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th class="text-end">Actions</th>
+                <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
@@ -186,7 +186,7 @@ export function InstructorAssessmentQuestionsTable({
                       <td>{assessment_question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol && (
                         <td
-                          class={clsx(
+                          className={clsx(
                             assessment_question.effective_advance_score_perc === 0 && 'text-muted',
                           )}
                           data-testid="advance-score-perc"
@@ -199,7 +199,7 @@ export function InstructorAssessmentQuestionsTable({
                           ? `${assessment_question.mean_question_score.toFixed(3)}%`
                           : ''}
                       </td>
-                      <td class="text-center">
+                      <td className="text-center">
                         {assessment_question.number_submissions_hist ? (
                           <HistMini
                             data={assessment_question.number_submissions_hist}
@@ -214,7 +214,7 @@ export function InstructorAssessmentQuestionsTable({
                           return (
                             <div
                               key={`${question.qid}-${assessment.assessment_id}`}
-                              class="d-inline-block me-1"
+                              className="d-inline-block me-1"
                             >
                               <AssessmentBadge
                                 urlPrefix={urlPrefix}
@@ -228,11 +228,11 @@ export function InstructorAssessmentQuestionsTable({
                           );
                         })}
                       </td>
-                      <td class="text-end">
+                      <td className="text-end">
                         <Dropdown>
                           <Dropdown.Toggle
                             variant="secondary"
-                            class="dropdown-toggle btn-xs"
+                            className="dropdown-toggle btn-xs"
                             id={`question-actions-${question.qid}`}
                           >
                             Action

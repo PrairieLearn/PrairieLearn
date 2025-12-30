@@ -6,7 +6,7 @@ export function TagDescription({ tag }: { tag: Tag }) {
   }
 
   return (
-    <span class="text-muted">
+    <span className="text-muted">
       Auto-generated from use in a question; edit this tag to customize
     </span>
   );

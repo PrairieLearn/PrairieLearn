@@ -10,7 +10,7 @@ export function AssessmentOpenInstancesAlert({
   if (numOpenInstances === 0) return null;
 
   return (
-    <div class="alert alert-warning" role="alert">
+    <div className="alert alert-warning" role="alert">
       This assessment currently has{' '}
       {numOpenInstances === 1 ? 'one open instance.' : `${numOpenInstances} open instances.`} Please
       ensure all students have completed their assessments before grading. You may close all open

@@ -10,10 +10,10 @@ export function IssueBadge({
   issueQid,
   issueAid,
   urlPrefix,
-  class: className,
+  className,
 }: {
   count: number;
-  class?: string;
+  className?: string;
 } & (
   | {
       suppressLink: true;
@@ -32,14 +32,14 @@ export function IssueBadge({
   if (Number(count) === 0) return '';
 
   if (suppressLink) {
-    return <span class={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}>{count}</span>;
+    return <span className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}>{count}</span>;
   }
 
   const query = encodeSearchString({ is: 'open', qid: issueQid, assessment: issueAid });
 
   return (
     <a
-      class={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}
+      className={clsx('badge', 'rounded-pill', 'text-bg-danger', className)}
       href={`${urlPrefix}/course_admin/issues?q=${query}`}
       aria-label={`${count} open ${count === 1 ? 'issue' : 'issues'}`}
     >
@@ -54,10 +54,10 @@ export function IssueBadgeHtml({
   issueQid,
   issueAid,
   urlPrefix,
-  class: className,
+  className,
 }: {
   count: number;
-  class?: string;
+  className?: string;
 } & (
   | {
       suppressLink: true;
@@ -73,13 +73,13 @@ export function IssueBadgeHtml({
     }
 )) {
   if (suppressLink) {
-    return renderHtml(<IssueBadge count={count} class={className} suppressLink={suppressLink} />);
+    return renderHtml(<IssueBadge count={count} className={className} suppressLink={suppressLink} />);
   }
 
   return renderHtml(
     <IssueBadge
       count={count}
-      class={className}
+      className={className}
       urlPrefix={urlPrefix}
       issueQid={issueQid}
       issueAid={issueAid}

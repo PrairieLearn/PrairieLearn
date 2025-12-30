@@ -131,9 +131,9 @@ const RichTextEditor = ({
 
   return (
     <>
-      <Card class="m-3">
+      <Card className="m-3">
         <Card.Header>
-          <div class="d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center justify-content-between">
             Rich Text Editor
             <Form.Check
               type="switch"
@@ -145,24 +145,24 @@ const RichTextEditor = ({
           </div>
         </Card.Header>
         <Card.Body>
-          <div class="d-flex align-items-center gap-2 mb-2" />
-          <div class="mb-3" />
-          <EditorContent editor={editor} class="border" />
+          <div className="d-flex align-items-center gap-2 mb-2" />
+          <div className="mb-3" />
+          <EditorContent editor={editor} className="border" />
           <DragHandleMenu editor={editor} />
           {debugMode && (
             <>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Formatted HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{formattedHtml ?? ''}</code>
                   </pre>
                 </Card.Body>
               </Card>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Internal HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{rawHtml ?? ''}</code>
                   </pre>
                 </Card.Body>

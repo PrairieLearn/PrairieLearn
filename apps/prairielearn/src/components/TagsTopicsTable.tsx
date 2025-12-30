@@ -80,18 +80,18 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>{entityType === 'topic' ? 'Topics' : 'Tags'}</h1>
-          <div class="ms-auto">
+          <div className="ms-auto">
             {allowEdit && origHash ? (
               !editMode ? (
                 <button
-                  class="btn btn-sm btn-light"
+                  className="btn btn-sm btn-light"
                   type="button"
                   onClick={() => setEditMode(true)}
                 >
-                  <i class="fa fa-edit" aria-hidden="true" /> Edit {entityType}s
+                  <i className="fa fa-edit" aria-hidden="true" /> Edit {entityType}s
                 </button>
               ) : (
                 <form method="POST">
@@ -99,12 +99,12 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="orig_hash" value={origHash} />
                   <input type="hidden" name="data" value={JSON.stringify(entitiesState)} />
-                  <span class="js-edit-mode-buttons">
-                    <button class="btn btn-sm btn-light mx-1" type="submit">
-                      <i class="fa fa-save" aria-hidden="true" /> Save and sync
+                  <span className="js-edit-mode-buttons">
+                    <button className="btn btn-sm btn-light mx-1" type="submit">
+                      <i className="fa fa-save" aria-hidden="true" /> Save and sync
                     </button>
                     <button
-                      class="btn btn-sm btn-light"
+                      className="btn btn-sm btn-light"
                       type="button"
                       onClick={() => window.location.reload()}
                     >
@@ -118,20 +118,20 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
             )}
           </div>
         </div>
-        <div class="table-responsive">
+        <div className="table-responsive">
           <table
-            class="table table-sm table-hover table-striped"
+            className="table table-sm table-hover table-striped"
             aria-label={entityType === 'topic' ? 'Topics' : 'Tags'}
           >
             <thead>
               <tr>
                 {editMode && allowEdit && (
                   <th style="width: 1%">
-                    <span class="visually-hidden">Edit and Delete</span>
+                    <span className="visually-hidden">Edit and Delete</span>
                   </th>
                 )}
                 <th>Name</th>
-                <th class="col-9">Description</th>
+                <th className="col-9">Description</th>
               </tr>
             </thead>
             <tbody>
@@ -139,31 +139,31 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                 return (
                   <tr key={row.name}>
                     {editMode && allowEdit && (
-                      <td class="align-middle">
-                        <div class="d-flex align-items-center">
+                      <td className="align-middle">
+                        <div className="d-flex align-items-center">
                           <button
-                            class="btn btn-sm btn-ghost"
+                            className="btn btn-sm btn-ghost"
                             type="button"
                             aria-label={`Edit ${entityType} ${row.name}`}
                             onClick={() => handleEdit(index)}
                           >
-                            <i class="fa fa-edit" aria-hidden="true" />
+                            <i className="fa fa-edit" aria-hidden="true" />
                           </button>
                           <button
-                            class="btn btn-sm btn-ghost"
+                            className="btn btn-sm btn-ghost"
                             type="button"
                             aria-label={`Delete ${entityType} ${row.name}`}
                             onClick={() => handleDelete(row.id)}
                           >
-                            <i class="fa fa-trash text-danger" aria-hidden="true" />
+                            <i className="fa fa-trash text-danger" aria-hidden="true" />
                           </button>
                         </div>
                       </td>
                     )}
-                    <td class="align-middle">
+                    <td className="align-middle">
                       {entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
                     </td>
-                    <td class="align-middle">
+                    <td className="align-middle">
                       {entityType === 'topic' ? (
                         <TopicDescription topic={row} />
                       ) : (
@@ -176,8 +176,8 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
               {editMode ? (
                 <tr>
                   <td colSpan={5}>
-                    <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                      <i class="fa fa-plus" aria-hidden="true" /> New {entityType}
+                    <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                      <i className="fa fa-plus" aria-hidden="true" /> New {entityType}
                     </button>
                   </td>
                 </tr>

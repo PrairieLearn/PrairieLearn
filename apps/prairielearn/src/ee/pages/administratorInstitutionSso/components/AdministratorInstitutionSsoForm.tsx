@@ -58,14 +58,14 @@ export function AdministratorInstitutionSsoForm({
 
   return (
     <form method="POST">
-      <div class="mb-3">
-        <h2 class="h4">Enabled single sign-on providers</h2>
+      <div className="mb-3">
+        <h2 className="h4">Enabled single sign-on providers</h2>
         {supportedAuthenticationProviders.map((provider) => {
           const isEnabled = enabledProviderIds.has(provider.id);
           return (
-            <div key={provider.id} class="form-check">
+            <div key={provider.id} className="form-check">
               <input
-                class="form-check-input js-authentication-provider"
+                className="form-check-input js-authentication-provider"
                 type="checkbox"
                 value={provider.id}
                 id={`provider-${provider.id}-enabled`}
@@ -89,10 +89,10 @@ export function AdministratorInstitutionSsoForm({
                   }
                 }}
               />
-              <label class="form-check-label" for={`provider-${provider.id}-enabled`}>
+              <label className="form-check-label" for={`provider-${provider.id}-enabled`}>
                 {provider.name}
                 {provider.name === 'SAML' && !hasSamlProvider ? (
-                  <small class="d-block">
+                  <small className="d-block">
                     You must <a href={`${urlPrefix}/saml`}>configure SAML</a> before you can enable
                     it.
                   </small>
@@ -104,7 +104,7 @@ export function AdministratorInstitutionSsoForm({
           );
         })}
         {enabledPrimaryProviders.length > 1 && (
-          <div class="alert alert-warning mt-2" role="alert">
+          <div className="alert alert-warning mt-2" role="alert">
             It is <strong>not recommended</strong> to enable{' '}
             {formatProviderList(enabledPrimaryProviders)} at the same time. It may be appropriate in
             situations where students use one sign-on provider and staff use a different one, or
@@ -113,18 +113,18 @@ export function AdministratorInstitutionSsoForm({
           </div>
         )}
         {enabledProviderIds.size === 0 && (
-          <div class="alert alert-warning mt-2" role="alert">
+          <div className="alert alert-warning mt-2" role="alert">
             No single sign-on providers are currently enabled for this institution. Users will not
             be able to log in unless at least one provider is enabled.
           </div>
         )}
       </div>
-      <div class="mb-3">
-        <h2 class="h4" id="defaultProviderLabel">
+      <div className="mb-3">
+        <h2 className="h4" id="defaultProviderLabel">
           Default single sign-on provider
         </h2>
         <select
-          class="form-select js-default-authentication-provider"
+          className="form-select js-default-authentication-provider"
           id="defaultProvider"
           name="default_authn_provider_id"
           aria-labelledby="defaultProviderLabel"
@@ -146,14 +146,14 @@ export function AdministratorInstitutionSsoForm({
             );
           })}
         </select>
-        <div class="form-text">
+        <div className="form-text">
           When a default single sign-on provider is configured, users can click on your
           institution's name on the login screen and be taken directly to the appropriate provider.
           Note that LTI and LTI 1.3 cannot be set as the default provider.
         </div>
       </div>
       <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <button type="submit" class="btn btn-primary">
+      <button type="submit" className="btn btn-primary">
         Save
       </button>
     </form>

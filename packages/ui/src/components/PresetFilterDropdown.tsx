@@ -123,7 +123,7 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
   return (
     <Dropdown as={ButtonGroup}>
       <Dropdown.Toggle variant="tanstack-table">
-        <i class="bi bi-funnel me-2" aria-hidden="true" />
+        <i className="bi bi-funnel me-2" aria-hidden="true" />
         {label}: {displayLabel}
       </Dropdown.Toggle>
       <Dropdown.Menu>
@@ -137,7 +137,7 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
               active={isSelected}
               onClick={() => handleOptionClick(optionName as OptionName)}
             >
-              <i class={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`} />
+              <i className={`bi ${isSelected ? 'bi-check-circle-fill' : 'bi-circle'} me-2`} />
               {optionName}
             </Dropdown.Item>
           );
@@ -145,7 +145,7 @@ export function PresetFilterDropdown<OptionName extends string, TData>({
         {/* Show Custom option only when no preset matches */}
         {selectedOption === null && (
           <Dropdown.Item as="button" type="button" active disabled>
-            <i class="bi bi-check-circle-fill me-2" />
+            <i className="bi bi-check-circle-fill me-2" />
             Custom
           </Dropdown.Item>
         )}

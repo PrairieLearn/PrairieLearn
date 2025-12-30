@@ -98,8 +98,8 @@ export function InstructorCourseAdminInstancesInner({
         onHide={() => setShowCreateModal(false)}
       />
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>Course instances</h1>
           {courseInstances.length > 0 && canCreateInstances && (
             <Button
@@ -108,14 +108,14 @@ export function InstructorCourseAdminInstancesInner({
               type="button"
               onClick={() => setShowCreateModal(true)}
             >
-              <i class="fa fa-plus" aria-hidden="true" />
-              <span class="d-none d-sm-inline">Add course instance</span>
+              <i className="fa fa-plus" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course instance</span>
             </Button>
           )}
         </div>
         {courseInstances.length > 0 ? (
-          <div class="table-responsive">
-            <table class="table table-sm table-hover table-striped" aria-label="Course instances">
+          <div className="table-responsive">
+            <table className="table table-sm table-hover table-striped" aria-label="Course instances">
               <thead>
                 <tr>
                   <th>Long Name</th>
@@ -141,7 +141,7 @@ export function InstructorCourseAdminInstancesInner({
                       : '—';
                   return (
                     <tr key={row.id}>
-                      <td class="align-left">
+                      <td className="align-left">
                         {row.sync_errors ? (
                           <SyncProblemButton type="error" output={row.sync_errors} />
                         ) : row.sync_warnings ? (
@@ -151,8 +151,8 @@ export function InstructorCourseAdminInstancesInner({
                           {row.long_name}
                         </a>
                       </td>
-                      <td class="align-left">{row.short_name}</td>
-                      <td class="align-left">
+                      <td className="align-left">{row.short_name}</td>
+                      <td className="align-left">
                         {startDate}
                         {isLegacyStartDate ? (
                           <OverlayTrigger
@@ -167,15 +167,15 @@ export function InstructorCourseAdminInstancesInner({
                           >
                             <Button
                               variant="ghost"
-                              class="btn-xs"
+                              className="btn-xs"
                               aria-label="Information about start date"
                             >
-                              <i class="far fa-question-circle" aria-hidden="true" />
+                              <i className="far fa-question-circle" aria-hidden="true" />
                             </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
-                      <td class="align-left">
+                      <td className="align-left">
                         {endDate}
                         {isLegacyEndDate ? (
                           <OverlayTrigger
@@ -190,15 +190,15 @@ export function InstructorCourseAdminInstancesInner({
                           >
                             <Button
                               variant="ghost"
-                              class="btn-xs"
+                              className="btn-xs"
                               aria-label="Information about end date"
                             >
-                              <i class="far fa-question-circle" aria-hidden="true" />
+                              <i className="far fa-question-circle" aria-hidden="true" />
                             </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
-                      <td class="align-middle">{row.enrollment_count}</td>
+                      <td className="align-middle">{row.enrollment_count}</td>
                     </tr>
                   );
                 })}

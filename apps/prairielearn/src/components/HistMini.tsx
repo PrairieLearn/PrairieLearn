@@ -110,5 +110,5 @@ export function HistMini({ data, options }: HistMiniProps) {
     }
   }, [data, options]);
 
-  return <div ref={ref} class="histmini" />;
+  return <div ref={ref} className="histmini" />;
 }

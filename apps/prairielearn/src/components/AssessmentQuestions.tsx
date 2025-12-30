@@ -64,7 +64,7 @@ export function AssessmentQuestionNumber({
   return alternativeGroupSize === 1 ? (
     `${alternativeGroup.number}. `
   ) : (
-    <span class="ms-3">
+    <span className="ms-3">
       {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
     </span>
   );

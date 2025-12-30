@@ -43,7 +43,7 @@ export function NumericInputColumnFilter<TData, TValue>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class={clsx(
+        className={clsx(
           'text-muted p-0',
           hasActiveFilter && (isInvalid ? 'text-warning' : 'text-primary'),
         )}
@@ -52,7 +52,7 @@ export function NumericInputColumnFilter<TData, TValue>({
         title={`Filter ${label.toLowerCase()}`}
       >
         <i
-          class={clsx(
+          className={clsx(
             'bi',
             isInvalid
               ? 'bi-exclamation-triangle'
@@ -67,14 +67,14 @@ export function NumericInputColumnFilter<TData, TValue>({
         // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="p-0"
       >
-        <div class="p-3" style={{ minWidth: '240px' }}>
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <label class="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
+        <div className="p-3" style={{ minWidth: '240px' }}>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <label className="form-label fw-semibold mb-0" id={`${columnId}-filter-label`}>
               {label}
             </label>
             <button
               type="button"
-              class={clsx(
+              className={clsx(
                 'btn btn-link btn-sm text-decoration-none',
                 !hasActiveFilter && 'invisible',
               )}
@@ -87,7 +87,7 @@ export function NumericInputColumnFilter<TData, TValue>({
           </div>
           <input
             type="text"
-            class={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
+            className={clsx('form-control form-control-sm', isInvalid && 'is-invalid')}
             placeholder="e.g., >0, <5, =10"
             aria-labelledby={`${columnId}-filter-label`}
             value={filterValue}
@@ -102,19 +102,19 @@ export function NumericInputColumnFilter<TData, TValue>({
             onClick={(e) => e.stopPropagation()}
           />
           {isInvalid && (
-            <div class="invalid-feedback d-block">
+            <div className="invalid-feedback d-block">
               Invalid filter format. Use operators like <code>&gt;5</code> or <code>&lt;=10</code>
             </div>
           )}
           {!isInvalid && (
-            <small class="form-text text-nowrap" id={`${columnId}-filter-description`}>
+            <small className="form-text text-nowrap" id={`${columnId}-filter-description`}>
               Operators: <code>&lt;</code>, <code>&gt;</code>, <code>&lt;=</code>,{' '}
               <code>&gt;=</code>, <code>=</code>
             </small>
           )}
-          <div class="form-check mt-2">
+          <div className="form-check mt-2">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="checkbox"
               checked={emptyOnly}
               id={`${columnId}-empty-filter`}
@@ -126,7 +126,7 @@ export function NumericInputColumnFilter<TData, TValue>({
                 );
               }}
             />
-            <label class="form-check-label" for={`${columnId}-empty-filter`}>
+            <label className="form-check-label" for={`${columnId}-empty-filter`}>
               Empty values
             </label>
           </div>

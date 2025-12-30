@@ -129,32 +129,32 @@ export function GroupInfoModal({
           <p>Examples of what can and can't be grouped:</p>
 
           <div
-            class="d-grid border rounded overflow-hidden"
+            className="d-grid border rounded overflow-hidden"
             style={{ gridTemplateColumns: '1fr 1fr' }}
           >
-            <div class="px-2 py-1 bg-light fw-bold border-end">Can group</div>
-            <div class="px-2 py-1 bg-light fw-bold">Can't group</div>
+            <div className="px-2 py-1 bg-light fw-bold border-end">Can group</div>
+            <div className="px-2 py-1 bg-light fw-bold">Can't group</div>
 
-            <div class="px-2 py-1 border-top border-end">Mathematical Equations</div>
-            <div class="px-2 py-1 border-top">Essays</div>
+            <div className="px-2 py-1 border-top border-end">Mathematical Equations</div>
+            <div className="px-2 py-1 border-top">Essays</div>
 
-            <div class="px-2 py-1 border-top border-end">Mechanical Formulas</div>
-            <div class="px-2 py-1 border-top">Free Response Questions</div>
+            <div className="px-2 py-1 border-top border-end">Mechanical Formulas</div>
+            <div className="px-2 py-1 border-top">Free Response Questions</div>
 
-            <div class="px-2 py-1 border-top border-end">Exact String Inputs</div>
-            <div class="px-2 py-1 border-top">Freeform Code</div>
+            <div className="px-2 py-1 border-top border-end">Exact String Inputs</div>
+            <div className="px-2 py-1 border-top">Freeform Code</div>
 
-            <div class="px-2 py-1 border-top border-end">
+            <div className="px-2 py-1 border-top border-end">
               Handwritten submissions with 1 correct answer
             </div>
-            <div class="px-2 py-1 border-top">Handwritten submissions with 2+ correct answers</div>
+            <div className="px-2 py-1 border-top">Handwritten submissions with 2+ correct answers</div>
           </div>
 
           {numOpenInstances > 0 && (
-            <Alert variant="warning" class="mt-3">
-              <div class="row g-2">
-                <div class="col-12 col-md-6">
-                  <p class="my-0">
+            <Alert variant="warning" className="mt-3">
+              <div className="row g-2">
+                <div className="col-12 col-md-6">
+                  <p className="my-0">
                     This assessment has{' '}
                     {numOpenInstances === 1
                       ? '1 open instance that '
@@ -162,13 +162,13 @@ export function GroupInfoModal({
                     may contain submissions selected for grouping.
                   </p>
                 </div>
-                <div class="col-12 col-md-6 d-flex flex-column gap-2">
-                  <label for="grouping-application-select" class="my-0">
+                <div className="col-12 col-md-6 d-flex flex-column gap-2">
+                  <label for="grouping-application-select" className="my-0">
                     Choose how to apply grouping:
                   </label>
                   <select
                     id="grouping-application-select"
-                    class="form-select w-auto flex-shrink-0"
+                    className="form-select w-auto flex-shrink-0"
                     value={closedSubmissionsOnly ? 'true' : 'false'}
                     onChange={(e) => setClosedSubmissionsOnly(e.currentTarget.value === 'true')}
                   >
@@ -182,13 +182,13 @@ export function GroupInfoModal({
         </Modal.Body>
 
         <Modal.Footer>
-          <div class="m-0 w-100">
+          <div className="m-0 w-100">
             {mutation.isError && (
-              <Alert variant="danger" class="mb-2" dismissible onClose={() => mutation.reset()}>
+              <Alert variant="danger" className="mb-2" dismissible onClose={() => mutation.reset()}>
                 <strong>Error:</strong> {mutation.error.message}
               </Alert>
             )}
-            <div class="d-flex align-items-center justify-content-end gap-2 mb-1">
+            <div className="d-flex align-items-center justify-content-end gap-2 mb-1">
               <Button variant="secondary" disabled={mutation.isPending} onClick={handleClose}>
                 Cancel
               </Button>
@@ -196,7 +196,7 @@ export function GroupInfoModal({
                 {mutation.isPending ? 'Submitting...' : 'Group submissions'}
               </Button>
             </div>
-            <small class="text-muted my-0 text-end d-block">
+            <small className="text-muted my-0 text-end d-block">
               AI can make mistakes. Review groups before grading.
             </small>
           </div>

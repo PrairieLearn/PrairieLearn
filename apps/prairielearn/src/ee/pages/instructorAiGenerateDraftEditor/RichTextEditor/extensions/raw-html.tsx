@@ -23,10 +23,10 @@ const RawHtmlComponent = (
   const [nodes, setNodes] = useState<string[] | null>(null);
   const textareaRows = Math.min(10, node.attrs.html.split('\n').length);
   return (
-    <NodeViewWrapper class="p-0" contentEditable={false}>
-      <Card class="border-warning">
-        <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
-          <div class="d-flex gap-2">
+    <NodeViewWrapper className="p-0" contentEditable={false}>
+      <Card className="border-warning">
+        <Card.Header className="bg-warning-subtle d-flex align-items-center justify-content-between">
+          <div className="d-flex gap-2">
             Raw HTML
             {nodes !== null && nodes.length !== 1 ? (
               <OverlayTrigger
@@ -43,7 +43,7 @@ const RawHtmlComponent = (
                 }}
               >
                 <i
-                  class="bi bi-exclamation-triangle text-danger"
+                  className="bi bi-exclamation-triangle text-danger"
                   aria-label="Raw HTML warning"
                   role="img"
                 />
@@ -62,14 +62,14 @@ const RawHtmlComponent = (
               props: { id: 'raw-html-help-tooltip' },
             }}
           >
-            <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
+            <i className="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
           </OverlayTrigger>
         </Card.Header>
         <Card.Body>
           <textarea
             rows={textareaRows}
             value={node.attrs.html}
-            class={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
+            className={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
             onChange={(e) => {
               const newHtml = e.currentTarget.value;
               const template = document.createElement('template');

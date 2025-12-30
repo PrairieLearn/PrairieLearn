@@ -50,7 +50,7 @@ export function RubricItemsFilter({
         variant="tanstack-table"
       >
         <i
-          class={rubricItemsFilter.length > 0 ? 'bi bi-funnel-fill me-2' : 'bi bi-funnel me-2'}
+          className={rubricItemsFilter.length > 0 ? 'bi bi-funnel-fill me-2' : 'bi bi-funnel me-2'}
           aria-hidden="true"
         />
         Filter by rubric items
@@ -63,7 +63,7 @@ export function RubricItemsFilter({
             style={{ cursor: 'pointer', whiteSpace: 'normal' }}
             onClick={(e) => e.stopPropagation()}
           >
-            <div class="d-flex align-items-center gap-2">
+            <div className="d-flex align-items-center gap-2">
               <input
                 type="checkbox"
                 checked={rubricItemsFilter.includes(item.rubric_item.id)}
@@ -79,13 +79,13 @@ export function RubricItemsFilter({
                 }}
               />
               <div>{item.rubric_item.description}</div>
-              <small class="text-muted text-nowrap">
+              <small className="text-muted text-nowrap">
                 {item.rubric_item.points > 0
                   ? `+${item.rubric_item.points}`
                   : item.rubric_item.points}{' '}
                 pts
               </small>
-              <span class="ms-auto badge bg-secondary">
+              <span className="ms-auto badge bg-secondary">
                 {rubricItemUsage.get(item.rubric_item.id) ?? 0}
               </span>
             </div>

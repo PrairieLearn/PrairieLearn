@@ -21,8 +21,8 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
     enrollmentCode.slice(0, 3) + '-' + enrollmentCode.slice(3, 6) + '-' + enrollmentCode.slice(6);
 
   return (
-    <div class="mb-3">
-      <label class="form-label" for="self_enrollment_code">
+    <div className="mb-3">
+      <label className="form-label" for="self_enrollment_code">
         Self-enrollment code
       </label>
       <InputGroup>
@@ -48,11 +48,11 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
               setTimeout(() => setCopied(false), 1500);
             }}
           >
-            <i class="bi bi-clipboard" />
+            <i className="bi bi-clipboard" />
           </Button>
         </OverlayTrigger>
       </InputGroup>
-      <small class="form-text text-muted">
+      <small className="form-text text-muted">
         Students can use this code to enroll in the course by entering it on the homepage or after
         clicking on any link to the course instance.
       </small>
@@ -74,8 +74,8 @@ function SelfEnrollmentLink({
   const [showConfirm, setShowConfirm] = useState(false);
   return (
     <>
-      <div class="mb-3">
-        <label class="form-label" for="self_enrollment_link">
+      <div className="mb-3">
+        <label className="form-label" for="self_enrollment_link">
           Self-enrollment link
         </label>
         <InputGroup>
@@ -96,7 +96,7 @@ function SelfEnrollmentLink({
                 setTimeout(() => setCopied(false), 1500);
               }}
             >
-              <i class="bi bi-clipboard" />
+              <i className="bi bi-clipboard" />
             </Button>
           </OverlayTrigger>
           <OverlayTrigger
@@ -111,7 +111,7 @@ function SelfEnrollmentLink({
               aria-label="Self-enrollment Link QR Code"
               onClick={() => setShowQR(true)}
             >
-              <i class="bi bi-qr-code-scan" />
+              <i className="bi bi-qr-code-scan" />
             </Button>
           </OverlayTrigger>
           {canEdit && (
@@ -127,12 +127,12 @@ function SelfEnrollmentLink({
                 aria-label="Generate new self-enrollment link"
                 onClick={() => setShowConfirm(true)}
               >
-                <i class="bi bi-arrow-repeat" />
+                <i className="bi bi-arrow-repeat" />
               </Button>
             </OverlayTrigger>
           )}
         </InputGroup>
-        <small class="form-text text-muted">
+        <small className="form-text text-muted">
           Students can use this link to immediately enroll in the course. Students can also enroll
           by entering the enrollment code on any link to the course instance.
         </small>
@@ -223,10 +223,10 @@ export function SelfEnrollmentSettings({
 
   return (
     <>
-      <h2 class="h4">Self-enrollment</h2>
+      <h2 className="h4">Self-enrollment</h2>
 
       {!hasModernPublishing && enrollmentManagementEnabled ? (
-        <div class="alert alert-warning">
+        <div className="alert alert-warning">
           You are using access rules to control who can access the course instance. To change the
           self-enrollment settings, you must first{' '}
           <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
@@ -236,9 +236,9 @@ export function SelfEnrollmentSettings({
         </div>
       ) : null}
 
-      <div class={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
+      <div className={clsx('mb-3 form-check', !enrollmentManagementEnabled && 'd-none')}>
         <input
-          class="form-check-input"
+          className="form-check-input"
           type="checkbox"
           id="self_enrollment_enabled"
           disabled={!canEdit || !hasModernPublishing || !enrollmentManagementEnabled}
@@ -254,17 +254,17 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabled ? 'checked' : ''}
           />
         )}
-        <label class="form-check-label" for="self_enrollment_enabled">
+        <label className="form-check-label" for="self_enrollment_enabled">
           Allow self-enrollment
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If not checked, students will need to be invited to this course instance.
         </div>
       </div>
 
-      <div class={clsx('mb-3 form-check', enrollmentManagementEnabled && 'd-none')}>
+      <div className={clsx('mb-3 form-check', enrollmentManagementEnabled && 'd-none')}>
         <input
-          class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
+          className={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
           type="checkbox"
           id="show_in_enroll_page"
           {...control.register('show_in_enroll_page', {
@@ -276,26 +276,26 @@ export function SelfEnrollmentSettings({
             },
           })}
         />
-        <label class="form-check-label" for="show_in_enroll_page">
+        <label className="form-check-label" for="show_in_enroll_page">
           Show on enrollment page
         </label>
         {showInEnrollPageError ? (
-          <div class="invalid-feedback">{showInEnrollPageError.message}</div>
+          <div className="invalid-feedback">{showInEnrollPageError.message}</div>
         ) : (
-          <div class="small text-muted">
+          <div className="small text-muted">
             If not checked, students will need a direct link to the course instance to enroll.
           </div>
         )}
       </div>
 
       <div
-        class={clsx(
+        className={clsx(
           'mb-3 form-check',
           (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
         )}
       >
         <input
-          class={clsx('form-check-input')}
+          className={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_use_enrollment_code"
           disabled={
@@ -316,22 +316,22 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
           />
         )}
-        <label class="form-check-label" for="self_enrollment_use_enrollment_code">
+        <label className="form-check-label" for="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If not checked, any link to to anything in the course instance will allow self-enrollment.
         </div>
       </div>
 
       <div
-        class={clsx(
+        className={clsx(
           'mb-3 form-check',
           (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
         )}
       >
         <input
-          class={clsx('form-check-input')}
+          className={clsx('form-check-input')}
           type="checkbox"
           id="self_enrollment_restrict_to_institution"
           disabled={
@@ -352,22 +352,22 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentRestrictToInstitution ? 'checked' : ''}
           />
         )}
-        <label class="form-check-label" for="self_enrollment_restrict_to_institution">
+        <label className="form-check-label" for="self_enrollment_restrict_to_institution">
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If not checked, users from any institution can self-enroll.
         </div>
       </div>
 
       <div
-        class={clsx(
+        className={clsx(
           'mb-3 form-check',
           (!enrollmentManagementEnabled || !selfEnrollmentEnabled) && 'd-none',
         )}
       >
         <input
-          class={clsx('form-check-input')}
+          className={clsx('form-check-input')}
           type="checkbox"
           id="disable_self_enrollment_after_date"
           disabled={
@@ -394,10 +394,10 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabledBeforeDateEnabled ? 'checked' : ''}
           />
         )}
-        <label class="form-check-label" for="disable_self_enrollment_after_date">
+        <label className="form-check-label" for="disable_self_enrollment_after_date">
           Self-enrollment cutoff date
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If set, self-enrollment will be disabled after this date. We recommend setting this to the
           University-imposed deadline for students to add courses.
         </div>
@@ -405,7 +405,7 @@ export function SelfEnrollmentSettings({
         <input
           type="datetime-local"
           aria-label="Self-enrollment cutoff date"
-          class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
+          className={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
           disabled={
             !canEdit ||
             !selfEnrollmentEnabledBeforeDateEnabled ||
@@ -435,7 +435,7 @@ export function SelfEnrollmentSettings({
           />
         )}
         {selfEnrollmentEnabledBeforeDateError && (
-          <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+          <div className="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
         )}
       </div>
 

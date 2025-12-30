@@ -170,19 +170,19 @@ export function InstructorInstanceAdminBillingForm({
       : 'bg-primary';
 
   return (
-    <form method="POST" class="js-billing-form">
-      <h2 class="h4">Enrollments</h2>
-      <div class="mb-3">
-        <div class="d-flex flex-row align-items-center">
-          <span class="me-2">
+    <form method="POST" className="js-billing-form">
+      <h2 className="h4">Enrollments</h2>
+      <div className="mb-3">
+        <div className="d-flex flex-row align-items-center">
+          <span className="me-2">
             {formatEnrollmentCount(enrollmentCount, enrollmentLimit, studentBillingEnabled)}
           </span>
           <div
-            class={clsx('progress flex-grow-1', { 'd-none': studentBillingEnabled })}
+            className={clsx('progress flex-grow-1', { 'd-none': studentBillingEnabled })}
             style="max-width: 100px"
           >
             <div
-              class={clsx('progress-bar', enrollmentLimitProgressBarColor)}
+              className={clsx('progress-bar', enrollmentLimitProgressBarColor)}
               role="progressbar"
               style={{ width: `${enrollmentLimitProgressBarPercentage}%` }}
               aria-valuenow={enrollmentCount}
@@ -191,7 +191,7 @@ export function InstructorInstanceAdminBillingForm({
             />
           </div>
         </div>
-        <div class="small text-muted">
+        <div className="small text-muted">
           {enrollmentLimitExplanation({
             studentBillingEnabled,
             enrollmentLimit,
@@ -200,9 +200,9 @@ export function InstructorInstanceAdminBillingForm({
         </div>
       </div>
 
-      <div class="form-check">
+      <div className="form-check">
         <input
-          class="form-check-input"
+          className="form-check-input"
           type="checkbox"
           name="student_billing_enabled"
           checked={studentBillingEnabled}
@@ -211,10 +211,10 @@ export function InstructorInstanceAdminBillingForm({
           id="studentBillingEnabled"
           onChange={(e) => setBasicPlanEnabled(e.currentTarget.checked)}
         />
-        <label class="form-check-label" for="studentBillingEnabled">
+        <label className="form-check-label" for="studentBillingEnabled">
           Enable student billing for enrollments
         </label>
-        <p class="small text-muted">
+        <p className="small text-muted">
           When student billing is enabled, students pay for access to your course instance. Enabling
           student billing will allow your course instance to exceed any enrollment limits that would
           otherwise apply.
@@ -222,15 +222,15 @@ export function InstructorInstanceAdminBillingForm({
         {studentBillingAlert && <Alert {...studentBillingAlert} />}
       </div>
 
-      <h2 class="h4">Features</h2>
+      <h2 className="h4">Features</h2>
       <p>
         If your course requires certain features, you can enable them so that students can pay for
         them.
       </p>
 
-      <div class="form-check">
+      <div className="form-check">
         <input
-          class="form-check-input"
+          className="form-check-input"
           type="checkbox"
           name="compute_enabled"
           checked={computeEnabled}
@@ -239,10 +239,10 @@ export function InstructorInstanceAdminBillingForm({
           id="computeEnabled"
           onChange={(e) => setComputePlanEnabled(e.currentTarget.checked)}
         />
-        <label class="form-check-label" for="computeEnabled">
+        <label className="form-check-label" for="computeEnabled">
           External grading and workspaces
         </label>
-        <p class="small text-muted">
+        <p className="small text-muted">
           Students will be able to use questions that utilize external grading and/or workspaces.
           This course has <strong>{pluralizeQuestionCount(externalGradingQuestionCount)}</strong>{' '}
           that use external grading and{' '}
@@ -252,7 +252,7 @@ export function InstructorInstanceAdminBillingForm({
       </div>
 
       {showEnableAlert && (
-        <div class="alert alert-warning" role="alert">
+        <div className="alert alert-warning" role="alert">
           Any students currently enrolled in your course will lose access until they have paid for
           the above features. If your course is currently in session, you should carefully consider
           the impact of enabling student billing. Before proceeding, you should communicate this
@@ -261,7 +261,7 @@ export function InstructorInstanceAdminBillingForm({
       )}
 
       <input type="hidden" name="__csrf_token" value={csrfToken} />
-      <button type="submit" class="btn btn-primary" disabled={!editable}>
+      <button type="submit" className="btn btn-primary" disabled={!editable}>
         Save
       </button>
     </form>
@@ -271,7 +271,7 @@ export function InstructorInstanceAdminBillingForm({
 InstructorInstanceAdminBillingForm.displayName = 'InstructorInstanceAdminBillingForm';
 
 function Alert(props: AlertProps) {
-  return <div class={clsx('alert', `alert-${props.color}`)}>{props.message}</div>;
+  return <div className={clsx('alert', `alert-${props.color}`)}>{props.message}</div>;
 }
 
 function enrollmentLimitExplanation({

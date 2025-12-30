@@ -64,7 +64,7 @@ export function ExtensionDeleteModal({
             </p>
             <details>
               <summary>Show affected students</summary>
-              <table class="table table-bordered table-sm mb-0">
+              <table className="table table-bordered table-sm mb-0">
                 <thead>
                   <tr>
                     <th>UID</th>
@@ -87,7 +87,7 @@ export function ExtensionDeleteModal({
       <Modal.Footer>
         <button
           type="button"
-          class="btn btn-outline-secondary"
+          className="btn btn-outline-secondary"
           disabled={deleteMutation.isPending}
           onClick={onHide}
         >
@@ -95,7 +95,7 @@ export function ExtensionDeleteModal({
         </button>
         <button
           type="button"
-          class="btn btn-danger"
+          className="btn btn-danger"
           disabled={deleteMutation.isPending}
           onClick={() => {
             if (!data) return;

@@ -508,37 +508,37 @@ export function RubricSettings({
   };
 
   return (
-    <div id="rubric-editor" class="card overflow-hidden mb-3">
+    <div id="rubric-editor" className="card overflow-hidden mb-3">
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="__action" value="modify_rubric_settings" />
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
       <input type="hidden" name="min_points" value={minPoints} />
-      <div class="card-header collapsible-card-header d-flex align-items-center">
+      <div className="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button
           type="button"
-          class="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto collapsed"
+          className="expand-icon-container btn btn-secondary btn-sm text-nowrap ms-auto collapsed"
           data-bs-toggle="collapse"
           data-bs-target="#rubric-setting"
           aria-expanded="false"
           aria-controls="rubric-setting"
         >
-          <i class="fa fa-angle-up ms-1 expand-icon" />
+          <i className="fa fa-angle-up ms-1 expand-icon" />
         </button>
       </div>
-      <div id="rubric-setting" class="js-collapsible-card-body p-2 collapse">
+      <div id="rubric-setting" className="js-collapsible-card-body p-2 collapse">
         {/* Settings */}
         <div>
           {assessmentQuestion.max_auto_points != null && assessmentQuestion.max_auto_points > 0 && (
             <>
-              <div class="row">
-                <div class="col-12 col-lg-6">
-                  <div class="form-check">
-                    <label class="form-check-label">
+              <div className="row">
+                <div className="col-12 col-lg-6">
+                  <div className="form-check">
+                    <label className="form-check-label">
                       <input
-                        class="form-check-input"
+                        className="form-check-input"
                         type="radio"
                         checked={!replaceAutoPoints}
                         disabled={!hasCourseInstancePermissionEdit}
@@ -554,20 +554,20 @@ export function RubricSettings({
                     </label>
                     <button
                       type="button"
-                      class="btn btn-sm btn-ghost"
+                      className="btn btn-sm btn-ghost"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
                     >
-                      <i class="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" />
                     </button>
                   </div>
                 </div>
-                <div class="col-12 col-lg-6">
-                  <div class="form-check">
-                    <label class="form-check-label">
+                <div className="col-12 col-lg-6">
+                  <div className="form-check">
+                    <label className="form-check-label">
                       <input
-                        class="form-check-input"
+                        className="form-check-input"
                         type="radio"
                         checked={replaceAutoPoints}
                         disabled={!hasCourseInstancePermissionEdit}
@@ -583,12 +583,12 @@ export function RubricSettings({
                     </label>
                     <button
                       type="button"
-                      class="btn btn-sm btn-ghost"
+                      className="btn btn-sm btn-ghost"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessmentQuestion.max_points} points).`}
                     >
-                      <i class="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" />
                     </button>
                   </div>
                 </div>
@@ -597,12 +597,12 @@ export function RubricSettings({
             </>
           )}
 
-          <div class="row">
-            <div class="col-12 col-xl-4">
-              <div class="form-check">
-                <label class="form-check-label">
+          <div className="row">
+            <div className="col-12 col-xl-4">
+              <div className="form-check">
+                <label className="form-check-label">
                   <input
-                    class="form-check-input"
+                    className="form-check-input"
                     type="radio"
                     checked={startingPoints === 0}
                     disabled={!hasCourseInstancePermissionEdit}
@@ -611,10 +611,10 @@ export function RubricSettings({
                   Positive grading (start at zero, add points)
                 </label>
               </div>
-              <div class="form-check">
-                <label class="form-check-label">
+              <div className="form-check">
+                <label className="form-check-label">
                   <input
-                    class="form-check-input"
+                    className="form-check-input"
                     type="radio"
                     checked={startingPoints !== 0}
                     disabled={!hasCourseInstancePermissionEdit}
@@ -634,32 +634,32 @@ export function RubricSettings({
                 </label>
                 <button
                   type="button"
-                  class="btn btn-sm btn-ghost"
+                  className="btn btn-sm btn-ghost"
                   data-bs-toggle="tooltip"
                   data-bs-placement="bottom"
                   data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
                 >
-                  <i class="fas fa-circle-info" />
+                  <i className="fas fa-circle-info" />
                 </button>
               </div>
             </div>
 
-            <div class="mb-3 col-12 col-md-6 col-xl-3">
-              <div class="row">
-                <div class="col-6 col-md-12">
-                  <label class="form-label w-100">
+            <div className="mb-3 col-12 col-md-6 col-xl-3">
+              <div className="row">
+                <div className="col-6 col-md-12">
+                  <label className="form-label w-100">
                     Minimum rubric score
                     <button
                       type="button"
-                      class="btn btn-sm btn-ghost"
+                      className="btn btn-sm btn-ghost"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
                     >
-                      <i class="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" />
                     </button>
                     <input
-                      class="form-control"
+                      className="form-control"
                       type="number"
                       value={minPoints}
                       disabled={!hasCourseInstancePermissionEdit}
@@ -667,20 +667,20 @@ export function RubricSettings({
                     />
                   </label>
                 </div>
-                <div class="col-6 col-md-12">
-                  <label class="form-label w-100">
+                <div className="col-6 col-md-12">
+                  <label className="form-label w-100">
                     Maximum extra credit
                     <button
                       type="button"
-                      class="btn btn-sm btn-ghost"
+                      className="btn btn-sm btn-ghost"
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
                     >
-                      <i class="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" />
                     </button>
                     <input
-                      class="form-control"
+                      className="form-control"
                       type="number"
                       value={maxExtraPoints}
                       disabled={!hasCourseInstancePermissionEdit}
@@ -690,14 +690,14 @@ export function RubricSettings({
                 </div>
               </div>
             </div>
-            <div class="mb-3 col-12 col-md-6 col-xl-5">
-              <label class="form-label" for="grader_guidelines">
+            <div className="mb-3 col-12 col-md-6 col-xl-5">
+              <label className="form-label" for="grader_guidelines">
                 Grader guidelines (not shown to students)
               </label>
               <textarea
                 id="grader_guidelines"
                 name="grader_guidelines"
-                class="form-control"
+                className="form-control"
                 rows={5}
                 value={graderGuidelines}
                 disabled={!hasCourseInstancePermissionEdit}
@@ -708,10 +708,10 @@ export function RubricSettings({
         </div>
 
         {/* Rubric table */}
-        <div class="table-responsive">
-          <table class="table table-sm border-bottom mb-3" aria-label="Rubric items">
+        <div className="table-responsive">
+          <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
             <thead>
-              <tr class="table-light fw-bold">
+              <tr className="table-light fw-bold">
                 <td style="width:1px" />
                 <td>Points</td>
                 <td>Description</td>
@@ -761,29 +761,29 @@ export function RubricSettings({
 
         {/* Warnings */}
         {pointsWarnings.map((warning) => (
-          <div key={warning} class="alert alert-warning alert-dismissible fade show" role="alert">
+          <div key={warning} className="alert alert-warning alert-dismissible fade show" role="alert">
             {warning}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close" />
           </div>
         ))}
-        <div class="mb-3 gap-1 d-flex">
+        <div className="mb-3 gap-1 d-flex">
           {hasCourseInstancePermissionEdit && (
-            <button type="button" class="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
+            <button type="button" className="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
               Add item
             </button>
           )}
-          <button type="button" class="btn btn-sm btn-primary" onClick={exportRubric}>
-            <i class="fas fa-download" />
+          <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
+            <i className="fas fa-download" />
             Export rubric
           </button>
           {hasCourseInstancePermissionEdit && (
             <button
               id="import-rubric-button"
               type="button"
-              class="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary"
               onClick={() => setShowImportModal(!showImportModal)}
             >
-              <i class="fas fa-upload" />
+              <i className="fas fa-upload" />
               Import rubric
             </button>
           )}
@@ -797,14 +797,14 @@ export function RubricSettings({
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <label class="form-label" for="rubric-settings-file-input">
+              <label className="form-label" for="rubric-settings-file-input">
                 Choose file
               </label>
               <input
                 ref={rubricFile}
                 type="file"
                 name="file"
-                class="form-control"
+                className="form-control"
                 id="rubric-settings-file-input"
                 accept="application/json,.json"
                 required
@@ -812,13 +812,13 @@ export function RubricSettings({
               {importModalWarning && (
                 <div
                   key={importModalWarning}
-                  class="alert alert-warning alert-dismissible fade show"
+                  className="alert alert-warning alert-dismissible fade show"
                   role="alert"
                 >
                   {importModalWarning}
                   <button
                     type="button"
-                    class="btn-close"
+                    className="btn-close"
                     aria-label="Close"
                     onClick={() => setImportModalWarning(null)}
                   />
@@ -826,13 +826,13 @@ export function RubricSettings({
               )}
             </Modal.Body>
             <Modal.Footer>
-              <button type="button" class="btn btn-secondary" onClick={closeImportModal}>
+              <button type="button" className="btn btn-secondary" onClick={closeImportModal}>
                 Cancel
               </button>
               <button
                 id="upload-rubric-file-button"
                 type="button"
-                class="btn btn-primary"
+                className="btn btn-primary"
                 onClick={() => importRubric()}
               >
                 Upload file
@@ -842,17 +842,17 @@ export function RubricSettings({
           {hasCourseInstancePermissionEdit && (
             <button
               type="button"
-              class="btn btn-sm btn-ghost"
+              className="btn btn-sm btn-ghost"
               data-bs-toggle="tooltip"
               data-bs-placement="bottom"
               data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
             >
-              <i class="fas fa-circle-info" />
+              <i className="fas fa-circle-info" />
             </button>
           )}
         </div>
         {params.length > 0 && (
-          <div class="small form-text text-muted">
+          <div className="small form-text text-muted">
             Rubric items may use these entries, which are replaced with the corresponding values for
             the student variant (click to copy):
             <ul style="max-height: 7rem; overflow-y: auto;">
@@ -860,7 +860,7 @@ export function RubricSettings({
                 <li key={`${param}`}>
                   <button
                     type="button"
-                    class="btn btn-sm"
+                    className="btn btn-sm"
                     onClick={(e) => copyMustachePattern(e, param)}
                   >
                     <code>{param}</code>
@@ -882,19 +882,19 @@ export function RubricSettings({
         {settingsError && (
           <div
             key={settingsError}
-            class="alert alert-danger alert-dismissible fade show"
+            className="alert alert-danger alert-dismissible fade show"
             role="alert"
           >
             {settingsError}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close" />
+            <button type="button" className="btn-close" data-bs-dismiss="alert" aria-label="Close" />
           </div>
         )}
 
         {/* Footer actions */}
-        <div class="form-check">
-          <label class="form-check-label">
+        <div className="form-check">
+          <label className="form-check-label">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="checkbox"
               checked={tagForGrading}
               disabled={!hasCourseInstancePermissionEdit}
@@ -904,29 +904,29 @@ export function RubricSettings({
           </label>
           <button
             type="button"
-            class="btn btn-sm btn-ghost"
+            className="btn btn-sm btn-ghost"
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
             data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
           >
-            <i class="fas fa-circle-info" />
+            <i className="fas fa-circle-info" />
           </button>
         </div>
         {hasCourseInstancePermissionEdit && (
-          <div class="text-end">
+          <div className="text-end">
             {wasUsingRubric && (
               <button
                 type="button"
-                class="btn btn-link btn-sm me-auto text-danger"
+                className="btn btn-link btn-sm me-auto text-danger"
                 onClick={() => submitSettings(false)}
               >
                 Delete rubric
               </button>
             )}
-            <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
+            <button type="button" className="btn btn-secondary me-2" onClick={onCancel}>
               Discard changes
             </button>
-            <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+            <button type="button" className="btn btn-primary" onClick={() => submitSettings(true)}>
               Save
             </button>
           </div>
@@ -967,31 +967,31 @@ function RubricRow({
         onDragOver();
       }}
     >
-      <td class="text-nowrap align-middle">
+      <td className="text-nowrap align-middle">
         {hasCourseInstancePermissionEdit && (
           <>
             <button
               type="button"
-              class="btn btn-sm btn-ghost"
+              className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab' }}
               draggable
               onDragStart={onDragStart}
             >
-              <i class="fas fa-arrows-up-down" />
+              <i className="fas fa-arrows-up-down" />
             </button>
-            <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
-              <i class="fas fa-arrow-up" />
+            <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
+              <i className="fas fa-arrow-up" />
             </button>
-            <button type="button" class="visually-hidden" aria-label="Move down" onClick={moveDown}>
-              <i class="fas fa-arrow-down" />
+            <button type="button" className="visually-hidden" aria-label="Move down" onClick={moveDown}>
+              <i className="fas fa-arrow-down" />
             </button>
             <button
               type="button"
-              class="btn btn-sm btn-ghost text-danger"
+              className="btn btn-sm btn-ghost text-danger"
               aria-label="Delete"
               onClick={deleteRow}
             >
-              <i class="fas fa-trash text-danger" />
+              <i className="fas fa-trash text-danger" />
             </button>
           </>
         )}
@@ -1031,10 +1031,10 @@ function RubricRow({
         )}
       </td>
 
-      <td class="align-middle">
+      <td className="align-middle">
         <input
           type="number"
-          class="form-control"
+          className="form-control"
           style="width:5rem"
           step="any"
           value={item.rubric_item.points}
@@ -1045,10 +1045,10 @@ function RubricRow({
         />
       </td>
 
-      <td class="align-middle">
+      <td className="align-middle">
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           maxLength={100}
           style="min-width:15rem"
           value={item.rubric_item.description}
@@ -1059,9 +1059,9 @@ function RubricRow({
         />
       </td>
 
-      <td class="align-middle">
+      <td className="align-middle">
         <textarea
-          class="form-control"
+          className="form-control"
           /**
            * In one of the previous versions, explanation wasn't displayed correctly
            * when used this way. We fixed it by making the textarea uncontrolled and
@@ -1078,9 +1078,9 @@ function RubricRow({
         />
       </td>
 
-      <td class="align-middle">
+      <td className="align-middle">
         <textarea
-          class="form-control"
+          className="form-control"
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
           style="min-width:15rem"
@@ -1090,12 +1090,12 @@ function RubricRow({
         />
       </td>
 
-      <td class="align-middle">
-        <div class="form-check form-check-inline">
-          <label class="form-check-label text-nowrap">
+      <td className="align-middle">
+        <div className="form-check form-check-inline">
+          <label className="form-check-label text-nowrap">
             <input
               type="radio"
-              class="form-check-input"
+              className="form-check-input"
               checked={item.rubric_item.always_show_to_students}
               disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
@@ -1103,11 +1103,11 @@ function RubricRow({
             Always
           </label>
         </div>
-        <div class="form-check form-check-inline">
-          <label class="form-check-label text-nowrap">
+        <div className="form-check form-check-inline">
+          <label className="form-check-label text-nowrap">
             <input
               type="radio"
-              class="form-check-input"
+              className="form-check-input"
               checked={!item.rubric_item.always_show_to_students}
               disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
@@ -1118,24 +1118,24 @@ function RubricRow({
       </td>
 
       {showAiGradingStats ? (
-        <td class="align-middle">
+        <td className="align-middle">
           {submissionCount === 0 ? (
             <span>&mdash;</span>
           ) : item.disagreement_count == null ? (
             <span>New</span>
           ) : item.disagreement_count ? (
             <>
-              <i class="bi bi-x-square-fill text-danger" />{' '}
-              <span class="text-muted">
+              <i className="bi bi-x-square-fill text-danger" />{' '}
+              <span className="text-muted">
                 ({item.disagreement_count}/{submissionCount} disagree)
               </span>
             </>
           ) : (
-            <i class="bi bi-check-square-fill text-success" />
+            <i className="bi bi-check-square-fill text-success" />
           )}
         </td>
       ) : (
-        <td class="text-nowrap align-middle">
+        <td className="text-nowrap align-middle">
           {item.num_submissions == null
             ? 'New'
             : item.num_submissions === 0
