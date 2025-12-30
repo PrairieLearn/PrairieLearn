@@ -203,7 +203,7 @@ SELECT
     WHERE
       s2.variant_id = s.variant_id
   ) AS submission_count,
-  to_jsonb(gc) AS team_config
+  to_jsonb(tc) AS team_config
 FROM
   submissions AS s
   JOIN variants AS v ON (v.id = s.variant_id)

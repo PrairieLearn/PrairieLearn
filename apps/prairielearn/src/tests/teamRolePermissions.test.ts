@@ -307,7 +307,7 @@ describe('Assessment instance with team roles & permissions - Homework', functio
         const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
-          'Your current team role (Manager) restricts access to this question.',
+          'Your current group role (Manager) restricts access to this question.',
         );
       });
 

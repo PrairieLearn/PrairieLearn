@@ -806,13 +806,13 @@ WITH
     -- assessment log that didn't include any `page_view_logs` events,
     -- which would be undesirable for the instructor.
     SELECT
-      gl.user_id
+      tl.user_id
     FROM
       assessment_instances AS ai
-      JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
+      JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
     WHERE
       ai.id = $assessment_instance_id
-      AND gl.action = 'join'
+      AND tl.action = 'join'
   ),
   user_page_view_logs AS (
     SELECT
@@ -1379,9 +1379,9 @@ WITH
     (
       SELECT
         10 AS event_order,
-        ('Group ' || gl.action)::text AS event_name,
+        ('Group ' || tl.action)::text AS event_name,
         'gray2'::text AS event_color,
-        gl.date,
+        tl.date,
         u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
@@ -1390,16 +1390,16 @@ WITH
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
         NULL::integer AS submission_id,
-        gl.id AS log_id,
+        tl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
         jsonb_strip_nulls(
-          jsonb_build_object('user', tu.uid, 'roles', gl.roles)
+          jsonb_build_object('user', tu.uid, 'roles', tl.roles)
         ) AS data
       FROM
         assessment_instances AS ai
-        JOIN team_logs AS gl ON (gl.team_id = ai.team_id)
-        JOIN users AS u ON (u.id = gl.authn_user_id)
-        LEFT JOIN users AS gu ON (tu.id = gl.user_id)
+        JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
+        JOIN users AS u ON (u.id = tl.authn_user_id)
+        LEFT JOIN users AS tu ON (tu.id = tl.user_id)
       WHERE
         ai.id = $assessment_instance_id
     )

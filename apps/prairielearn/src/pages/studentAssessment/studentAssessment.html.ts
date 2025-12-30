@@ -69,7 +69,7 @@ export function StudentAssessment({
               `
             : ''}
           ${assessment.team_work
-            ? StudentGroupControls({ teamConfig, teamInfo, userCanAssignRoles, resLocals })
+            ? StudentTeamControls({ teamConfig, teamInfo, userCanAssignRoles, resLocals })
             : StartAssessmentForm({
                 assessment,
                 user,
@@ -162,7 +162,7 @@ function HonorPledge({
   `;
 }
 
-function StudentGroupControls({
+function StudentTeamControls({
   teamConfig,
   teamInfo,
   userCanAssignRoles = false,
@@ -177,7 +177,7 @@ function StudentGroupControls({
 
   const { user, __csrf_token, assessment } = resLocals;
   if (teamInfo == null) {
-    return GroupCreationJoinForm({ teamConfig, __csrf_token });
+    return TeamCreationJoinForm({ teamConfig, __csrf_token });
   }
 
   return html`
@@ -199,7 +199,7 @@ function StudentGroupControls({
   `;
 }
 
-function GroupCreationJoinForm({
+function TeamCreationJoinForm({
   teamConfig,
   __csrf_token,
 }: {

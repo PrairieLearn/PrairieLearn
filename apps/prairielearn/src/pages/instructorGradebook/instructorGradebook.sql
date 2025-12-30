@@ -124,7 +124,7 @@ WITH
                   json_build_object('uid', ou.uid, 'enrollment_id', e.id)
                 )
               FROM
-                team_users AS ogu
+                team_users AS otu
                 LEFT JOIN course_users AS ou ON (ou.id = otu.user_id)
                 LEFT JOIN enrollments AS e ON (
                   ou.id = e.user_id

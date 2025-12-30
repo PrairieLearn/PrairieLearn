@@ -112,7 +112,7 @@ SELECT
   DATE_PART('epoch', iq.duration) AS duration_seconds,
   t.name AS team_name,
   teams_uid_list (t.id) AS uid_list,
-  atu.uid AS assigned_grader,
+  agu.uid AS assigned_grader,
   lgu.uid AS last_grader
 FROM
   instance_questions AS iq

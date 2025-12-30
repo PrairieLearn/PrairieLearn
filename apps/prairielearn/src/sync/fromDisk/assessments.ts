@@ -349,13 +349,16 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
+    // TODO: Fix up schemas to refer to teams and not
+    // groups
     team_work: assessment.groupWork,
-    group_max_size: assessment.groupMaxSize ?? null,
-    group_min_size: assessment.groupMinSize ?? null,
-    student_group_create: assessment.studentGroupCreate,
-    student_group_choose_name: assessment.studentGroupChooseName,
-    student_group_join: assessment.studentGroupJoin,
-    student_group_leave: assessment.studentGroupLeave,
+    team_max_size: assessment.groupMaxSize ?? null,
+    team_min_size: assessment.groupMinSize ?? null,
+    student_team_create: assessment.studentGroupCreate,
+    student_team_choose_name: assessment.studentGroupChooseName,
+    student_team_join: assessment.studentGroupJoin,
+    student_team_leave: assessment.studentGroupLeave,
+
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: assessment.groupRoles.length > 0,

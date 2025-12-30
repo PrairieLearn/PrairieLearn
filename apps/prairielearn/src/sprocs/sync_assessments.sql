@@ -207,12 +207,12 @@ BEGIN
             ) VALUES (
                 syncing_course_instance_id,
                 new_assessment_id,
-                (valid_assessment.data->>'group_max_size')::bigint,
-                (valid_assessment.data->>'group_min_size')::bigint,
-                (valid_assessment.data->>'student_group_create')::boolean,
-                (valid_assessment.data->>'student_group_choose_name')::boolean,
-                (valid_assessment.data->>'student_group_join')::boolean,
-                (valid_assessment.data->>'student_group_leave')::boolean,
+                (valid_assessment.data->>'team_max_size')::bigint,
+                (valid_assessment.data->>'team_min_size')::bigint,
+                (valid_assessment.data->>'student_team_create')::boolean,
+                (valid_assessment.data->>'student_team_choose_name')::boolean,
+                (valid_assessment.data->>'student_team_join')::boolean,
+                (valid_assessment.data->>'student_team_leave')::boolean,
                 (valid_assessment.data->>'has_roles')::boolean
             ) ON CONFLICT (assessment_id)
             DO UPDATE

@@ -180,7 +180,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
         }),
       });
       assert.equal(response.status, 200);
-      assertAlert(response.$, 'already in another team');
+      assertAlert(response.$, 'already in another group');
     });
   });
 
@@ -416,7 +416,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-      assertAlert(locals.$, 'You are already in another team');
+      assertAlert(locals.$, 'You are already in another group');
     });
   });
 

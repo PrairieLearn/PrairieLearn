@@ -1165,7 +1165,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone question's "canView" permission contains the non-existent team role name "Invalid"./,
+      /The zone question's "canView" permission contains the non-existent group role name "Invalid"./,
     );
   });
 
@@ -1200,7 +1200,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone's "canView" permission contains the non-existent team role name "Invalid"./,
+      /The zone's "canView" permission contains the non-existent group role name "Invalid"./,
     );
   });
 
@@ -1235,7 +1235,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The assessment's "canView" permission contains the non-existent team role name "Invalid"./,
+      /The assessment's "canView" permission contains the non-existent group role name "Invalid"./,
     );
   });
 

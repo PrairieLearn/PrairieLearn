@@ -32,15 +32,15 @@ WITH
       t.id
   )
 SELECT
-  ag.id AS team_id,
-  ag.name,
+  at.id AS team_id,
+  at.name,
   COALESCE(atu.size, 0) AS size,
   COALESCE(atu.users, '[]'::jsonb) AS users
 FROM
   assessment_teams AS at
   LEFT JOIN assessment_team_users AS atu ON (atu.team_id = at.id)
 ORDER BY
-  ag.id;
+  at.id;
 
 -- BLOCK select_not_in_team
 SELECT
