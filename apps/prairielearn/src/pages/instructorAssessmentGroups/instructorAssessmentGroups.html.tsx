@@ -1,18 +1,19 @@
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
-import { type GroupConfig, IdSchema, UserSchema } from '../../lib/db-types.js';
+import { type GroupConfig, UserSchema } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const GroupUsersRowSchema = z.object({
   group_id: IdSchema,
   name: z.string(),
   size: z.number(),
-  users: z.array(UserSchema.pick({ user_id: true, uid: true })),
+  users: z.array(UserSchema.pick({ id: true, uid: true })),
 });
 type GroupUsersRow = z.infer<typeof GroupUsersRowSchema>;
 
@@ -345,7 +346,7 @@ function RemoveMembersForm({ row, csrfToken }: { row: GroupUsersRow; csrfToken: 
         <label class="form-label" for="delete-member-form-${row.group_id}">UID:</label>
         <select class="form-select" name="user_id" id="delete-member-form-${row.group_id}">
           ${row.users.map((user) => {
-            return html` <option value="${user.user_id}">${user.uid}</option> `;
+            return html` <option value="${user.id}">${user.uid}</option> `;
           })}
         </select>
       </div>

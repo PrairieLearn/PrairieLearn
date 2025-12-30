@@ -85,8 +85,6 @@ function AssessmentSetRow({
           </div>
         </td>
       )}
-
-      <td class="align-middle">{index + 1}</td>
       <td class="align-middle">
         <span class={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
       </td>
@@ -94,7 +92,6 @@ function AssessmentSetRow({
       <td class="align-middle">
         <AssessmentSetHeading assessmentSet={assessmentSet} />
       </td>
-      <td class="align-middle">{assessmentSet.color}</td>
     </tr>
   );
 }
@@ -148,11 +145,9 @@ function DraggableTable({
                   <span class="visually-hidden">Drag, Edit and Delete</span>
                 </th>
               )}
-              <th>Number</th>
               <th>Abbreviation</th>
               <th>Name</th>
               <th>Heading</th>
-              <th>Color</th>
             </tr>
           </thead>
 

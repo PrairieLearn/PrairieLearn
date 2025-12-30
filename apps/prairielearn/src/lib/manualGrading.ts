@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
@@ -16,7 +17,6 @@ import {
   type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
-  IdSchema,
   RubricItemSchema,
   RubricSchema,
   SprocAssessmentInstancesGradeSchema,

@@ -20,11 +20,11 @@ BEGIN
     FROM
         users AS u
         JOIN course_instances AS ci ON ci.id = users_is_instructor_in_course_instance.course_instance_id
-        LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-        LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id AND cp.course_id = ci.course_id)
+        LEFT JOIN administrators AS adm ON adm.user_id = u.id
+        LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id AND cp.course_id = ci.course_id)
         LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id AND cip.course_instance_id = ci.id)
     WHERE
-        u.user_id = users_is_instructor_in_course_instance.user_id
+        u.id = users_is_instructor_in_course_instance.user_id
         AND (
             adm.id IS NOT NULL
             OR cp.course_role > 'None'

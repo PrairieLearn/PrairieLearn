@@ -6,6 +6,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { calculateAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import {
@@ -22,9 +23,7 @@ import {
 } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import {
   AiGradingJobSchema,
-  DateFromISOString,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
 } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
@@ -427,7 +426,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
       if (modified_at_conflict) {
@@ -438,7 +437,7 @@ router.post(
         await sqldb.execute(sql.close_issues_for_instance_question, {
           issue_ids: body.unsafe_issue_ids_close,
           instance_question_id: res.locals.instance_question.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         });
       }
 
@@ -459,7 +458,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,
@@ -485,7 +484,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,
@@ -573,7 +572,7 @@ router.post(
             feedback: { manual: body.submission_note },
             manual_rubric_data,
           },
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
 
         if (modified_at_conflict) {
@@ -592,7 +591,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups: true,
@@ -611,7 +610,7 @@ router.post(
           body.rubric_items,
           body.tag_for_manual_grading,
           body.grader_guidelines,
-          res.locals.authn_user.user_id,
+          res.locals.authn_user.id,
         );
         res.redirect(req.baseUrl + '/grading_rubric_panels');
       } catch (err) {
@@ -626,7 +625,7 @@ router.post(
           authzData: res.locals.authz_data,
           requiredRole: ['Student Data Editor'],
         });
-        if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+        if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
           throw new error.HttpStatusError(
             400,
             'Assigned grader does not have Student Data Editor permission',
@@ -658,7 +657,7 @@ router.post(
           urlPrefix: res.locals.urlPrefix,
           assessment_id: res.locals.assessment.id,
           assessment_question_id: res.locals.assessment_question.id,
-          user_id: res.locals.authz_data.user.user_id,
+          user_id: res.locals.authz_data.user.id,
           prior_instance_question_id: res.locals.instance_question.id,
           skip_graded_submissions: req.session.skip_graded_submissions,
           use_instance_question_groups,
