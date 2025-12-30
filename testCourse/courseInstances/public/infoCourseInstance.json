@@ -3,6 +3,6 @@
   "longName": "Public",
   "shareSourcePublicly": true,
   "allowAccess": [
-    { "institution": "Any", "startDate": "1900-01-01T00:00:01", "endDate": "2400-05-13T23:59:59" }
+    { "institution": "Any", "startDate": "1920-01-01T00:00:01", "endDate": "2400-05-13T23:59:59" }
   ]
 }
