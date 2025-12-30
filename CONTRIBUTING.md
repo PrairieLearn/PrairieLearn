@@ -29,6 +29,7 @@ If you get stuck, reach out to the friendly folks in the `#pl-dev` channel on th
 We follow the [GitHub flow](https://docs.github.com/en/get-started/quickstart/github-flow) for all changes:
 
 - You should work on a distinct branch, not `master`. While this isn't strictly necessary for forks, it's helpful if you want to be working on multiple independent changes at the same time.
+- Make sure you use a recent version of `master` as the base for your branch. You can do this by syncing your fork's `master` branch with the upstream `master` branch, then rebasing or merging `master` into your feature branch.
 - When committing your changes, use a short but meaningful commit message, e.g. `fix rate limiting` instead of `fix`.
 - Once you're happy with your changes, [open a pull request (PR)](https://docs.github.com/en/articles/creating-a-pull-request).
   - You should include a reasonable amount of information with your pull request, such as a summary of what changes you made and why they were made. The [pull request template](.github/PULL_REQUEST_TEMPLATE.md) should be used as a guide for what to include.
