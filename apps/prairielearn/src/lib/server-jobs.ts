@@ -580,6 +580,6 @@ export async function getJobSequenceIds({
       status: status ?? null,
       type: type ?? null,
     },
-    z.string(),
+    IdSchema
   );
 }
