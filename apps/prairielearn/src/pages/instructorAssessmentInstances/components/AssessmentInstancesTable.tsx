@@ -61,7 +61,7 @@ function RoleFilter({ header }: { header: FilterHeader }) {
 type HelpModalType = 'role' | 'duration' | 'time-remaining' | 'fingerprint' | null;
 type ActionModalType = 'delete-all' | 'grade-all' | 'close-all' | 'time-limit-all' | null;
 
-function HelpButton({ label, onClick }: { label: string; onClick: (e: React.MouseEvent) => void }) {
+function HelpButton({ label, onClick }: { label: string; onClick: () => void }) {
   return (
     <button
       aria-label={label}
@@ -69,7 +69,7 @@ function HelpButton({ label, onClick }: { label: string; onClick: (e: React.Mous
       type="button"
       onClick={(e) => {
         e.stopPropagation();
-        onClick(e);
+        onClick();
       }}
     >
       <i aria-hidden="true" class="bi-question-circle-fill" />
