@@ -21,10 +21,11 @@ COPY --chmod=0644 --chown=coder:coder settings.json /tmp/new_settings.json
 # which would not be appropriate in a containerized environment with restricted
 # network access.
 RUN arch="$(uname -m)" && \
-    if [ "$arch" = "x86_64" ]; then arch="x64"; \
-    elif [ "$arch" = "aarch64" ]; then arch="arm64"; \
+    if [ "$arch" = "x86_64" ]; then arch="x64"; hash="5d3cdacc4c6f338468ddfc129d740fafb9d856358831810df717d05fd309600a"; \
+    elif [ "$arch" = "aarch64" ]; then arch="arm64"; hash="eddb73528c8fe843b24e71a15a60a21367c2b001c1b55af91cec2dcf5dc8cf73"; \
     else echo "Unsupported architecture: $arch"; exit 1; fi && \
     curl -fsSL "https://github.com/vadimcn/codelldb/releases/download/v1.12.1/codelldb-linux-${arch}.vsix" -o /tmp/codelldb-linux.vsix && \
+    echo "${hash}  /tmp/codelldb-linux.vsix" | sha256sum -c - && \
     code-server --disable-telemetry --force  \
     --install-extension jeff-hykin.better-cpp-syntax \
     --install-extension ms-vscode.cpptools-themes \
