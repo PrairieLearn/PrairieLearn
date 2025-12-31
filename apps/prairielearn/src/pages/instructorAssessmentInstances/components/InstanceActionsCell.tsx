@@ -95,13 +95,14 @@ export function InstanceActionsCell({
 
   const timeLimitRowData = {
     assessment_instance_id: row.assessment_instance_id,
-    // `assessment_instances.date` is nullable in the database, but in practice is never null.
-    date: row.date!.toISOString(),
+    date: row.date.toISOString(),
     total_time: row.total_time,
     total_time_sec: row.total_time_sec,
     time_remaining: row.time_remaining,
     time_remaining_sec: row.time_remaining_sec,
-    open: row.open,
+    // There are only a small number of very old assessment instances without
+    // an explicit open/closed state. Treat them as not open.
+    open: row.open ?? false,
   };
 
   return (

@@ -17,10 +17,8 @@ type TimeLimitAction =
   | 'remove'
   | 'expire';
 
-export interface TimeLimitRowData {
-  action?: string | null;
+export interface BaseTimeLimitRowData {
   assessment_instance_id?: string;
-  date?: string;
   has_closed_instance?: boolean;
   has_open_instance?: boolean;
   total_time: string;
@@ -29,6 +27,20 @@ export interface TimeLimitRowData {
   time_remaining_sec: number | null;
   open?: boolean | null;
 }
+
+export interface TimeLimitRowData extends BaseTimeLimitRowData {
+  action?: undefined;
+  date: string;
+  open: boolean;
+}
+
+export interface TimeLimitAllData extends BaseTimeLimitRowData {
+  action: 'set_time_limit_all';
+  date?: undefined;
+  open?: undefined;
+}
+
+export type TimeLimitData = TimeLimitRowData | TimeLimitAllData;
 
 function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   let explanation = '';
@@ -64,7 +76,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
 }
 
 export interface TimeLimitEditFormProps {
-  row: TimeLimitRowData;
+  row: TimeLimitData;
   csrfToken: string;
   timezone: string;
   onSuccess: () => void;
@@ -117,12 +129,10 @@ export function TimeLimitEditForm({
     });
   }
 
-  function proposedClosingTime() {
+  function proposedClosingTime(date: string) {
     const totalTime = Math.round(row.total_time_sec ?? 0);
 
-    let startDate = Temporal.Instant.from(row.date ?? new Date().toISOString()).toZonedDateTimeISO(
-      timezone,
-    );
+    let startDate = Temporal.Instant.from(date).toZonedDateTimeISO(timezone);
     if (form.action === 'set_total') {
       startDate = startDate.add({ minutes: form.time_add });
     } else if (form.action === 'set_rem') {
@@ -258,12 +268,13 @@ export function TimeLimitEditForm({
         </InputGroup>
       ) : null}
 
-      {(row.open || !form.reopen_without_limit) &&
+      {row.date &&
+      (row.open || !form.reopen_without_limit) &&
       (form.action === 'set_total' ||
         form.action === 'set_rem' ||
         form.action === 'add' ||
         form.action === 'subtract') ? (
-        <p class="mb-2">Proposed closing time: {proposedClosingTime()}</p>
+        <p class="mb-2">Proposed closing time: {proposedClosingTime(row.date)}</p>
       ) : null}
 
       {row.has_closed_instance ? (
@@ -297,7 +308,7 @@ export function TimeLimitEditForm({
 }
 
 interface TimeLimitPopoverProps {
-  row: TimeLimitRowData;
+  row: TimeLimitData;
   csrfToken: string;
   timezone: string;
   onSuccess: () => void;

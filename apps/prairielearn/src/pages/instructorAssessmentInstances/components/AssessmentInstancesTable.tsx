@@ -36,7 +36,7 @@ import {
 } from '../instructorAssessmentInstances.types.js';
 
 import { InstanceActionsCell } from './InstanceActionsCell.js';
-import { TimeLimitEditForm, TimeLimitPopover, type TimeLimitRowData } from './TimeLimitEditForm.js';
+import { type TimeLimitAllData, TimeLimitEditForm, TimeLimitPopover } from './TimeLimitEditForm.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'assessment_instance_id', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['assessment_instance_id'], right: [] };
@@ -408,7 +408,7 @@ function CloseAllModal({
 interface TimeLimitAllModalProps {
   show: boolean;
   onHide: () => void;
-  row: TimeLimitRowData;
+  row: TimeLimitAllData;
   csrfToken: string;
   timezone: string;
   onSuccess: () => void;
@@ -518,7 +518,7 @@ function AssessmentInstancesTableInner({
   }, [queryClient, urlPrefix, assessmentId]);
 
   // Compute time limit totals for bulk actions
-  const timeLimitTotals = useMemo<TimeLimitRowData>(() => {
+  const timeLimitTotals = useMemo<TimeLimitAllData>(() => {
     const timeLimitList: Record<number, string> = {};
     let remainingTimeMin = 0;
     let remainingTimeMax = 0;
@@ -741,10 +741,7 @@ function AssessmentInstancesTableInner({
         meta: { label: 'Date started' },
         minSize: 230,
         sortingFn: (rowA, rowB) => {
-          const dateA = rowA.original.date;
-          const dateB = rowB.original.date;
-          if (!dateA || !dateB) return 0;
-          return new Date(dateA).getTime() - new Date(dateB).getTime();
+          return new Date(rowA.original.date).getTime() - new Date(rowB.original.date).getTime();
         },
       }),
 
@@ -788,12 +785,14 @@ function AssessmentInstancesTableInner({
                   placement="bottom"
                   row={{
                     assessment_instance_id: row.assessment_instance_id,
-                    date: row.date?.toISOString(),
+                    date: row.date.toISOString(),
                     total_time: row.total_time,
                     total_time_sec: row.total_time_sec,
                     time_remaining: row.time_remaining,
                     time_remaining_sec: row.time_remaining_sec,
-                    open: row.open,
+                    // There are only a small number of very old assessment instances without
+                    // an explicit open/closed state. Treat them as open.
+                    open: row.open ?? false,
                   }}
                   timezone={timezone}
                   onSuccess={invalidateQuery}

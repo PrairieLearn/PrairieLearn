@@ -14,7 +14,7 @@ import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 export function checkStudentAssessmentAccess(req: Request, res: Response): boolean {
   const showClosedAssessment = res.locals.authz_result?.show_closed_assessment ?? true;
-  const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
+  const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? false;
   const assessmentActive = res.locals.authz_result?.active ?? true;
 
   if (!showClosedAssessment && (!assessmentInstanceOpen || !assessmentActive)) {
