@@ -80,7 +80,13 @@ export interface TimeLimitFormProps {
   onCancel: () => void;
 }
 
-export function TimeLimitForm({ row, csrfToken, timezone, onSuccess, onCancel }: TimeLimitFormProps) {
+export function TimeLimitForm({
+  row,
+  csrfToken,
+  timezone,
+  onSuccess,
+  onCancel,
+}: TimeLimitFormProps) {
   const [form, setForm] = useState<{
     action: TimeLimitAction;
     time_add: number;
