@@ -95,7 +95,8 @@ export function InstanceActionsCell({
 
   const timeLimitRowData = {
     assessment_instance_id: row.assessment_instance_id,
-    date: row.date?.toISOString() ?? new Date().toISOString(),
+    // `assessment_instances.date` is nullable in the database, but in practice is never null.
+    date: row.date!.toISOString(),
     total_time: row.total_time,
     total_time_sec: row.total_time_sec,
     time_remaining: row.time_remaining,
