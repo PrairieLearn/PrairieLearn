@@ -24,7 +24,7 @@ RUN arch="$(uname -m)" && \
     if [ "$arch" = "x86_64" ]; then arch="x64"; \
     elif [ "$arch" = "aarch64" ]; then arch="arm64"; \
     else echo "Unsupported architecture: $arch"; exit 1; fi && \
-    curl -fsSL "https://github.com/vadimcn/codelldb/releases/download/v1.11.8/codelldb-linux-${arch}.vsix" -o /tmp/codelldb-linux.vsix && \
+    curl -fsSL "https://github.com/vadimcn/codelldb/releases/download/v1.12.1/codelldb-linux-${arch}.vsix" -o /tmp/codelldb-linux.vsix && \
     code-server --disable-telemetry --force  \
     --install-extension jeff-hykin.better-cpp-syntax \
     --install-extension ms-vscode.cpptools-themes \
