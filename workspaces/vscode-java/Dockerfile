@@ -21,5 +21,4 @@ RUN curl -fsSL https://open-vsx.org/api/redhat/java/1.50.0/file/redhat.java-1.50
   --install-extension vscjava.vscode-java-test \
   # Java projects view
   --install-extension vscjava.vscode-java-dependency \
-  && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/redhat.java-1.50.0.vsix \
-  && code-server --list-extensions --show-versions
+  && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs /tmp/redhat.java-1.50.0.vsix
