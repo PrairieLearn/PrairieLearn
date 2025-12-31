@@ -411,6 +411,9 @@ window.PLOrderBlocks = function (uuid, options) {
   this.destroy = () => {
     window.removeEventListener('resize', resizeHandler);
     resize.disconnect();
+    try {
+      $(sortables).sortable('destroy');
+    } catch (e) {}
   };
   initializeKeyboardHandling();
 
