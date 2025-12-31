@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 3.1.13
+
+### Patch Changes
+
+- 5496156: Fix `repository` field in `package.json`
+
 ## 3.1.12
 
 ### Patch Changes
