@@ -1,4 +1,4 @@
-import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type Column,
   type ColumnPinningState,
@@ -245,13 +245,8 @@ function DeleteAllModal({
   csrfToken,
   onSuccess,
 }: ActionModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
+  const mutation = useMutation({
+    mutationFn: async () => {
       const formData = new URLSearchParams({
         __action: 'delete_all',
         __csrf_token: csrfToken,
@@ -262,14 +257,12 @@ function DeleteAllModal({
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       if (!res.ok) throw new Error('Failed to delete all instances');
+    },
+    onSuccess: () => {
       onSuccess();
       onHide();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -282,9 +275,9 @@ function DeleteAllModal({
           {assessmentSetName} {assessmentNumber}
         </strong>
         ? This cannot be undone.
-        {error && (
+        {mutation.isError && (
           <div class="alert alert-danger mt-3" role="alert">
-            {error}
+            {mutation.error.message}
           </div>
         )}
       </Modal.Body>
@@ -292,8 +285,8 @@ function DeleteAllModal({
         <Button variant="secondary" onClick={onHide}>
           Cancel
         </Button>
-        <Button variant="danger" disabled={isSubmitting} onClick={handleSubmit}>
-          {isSubmitting ? 'Deleting...' : 'Delete all'}
+        <Button variant="danger" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+          {mutation.isPending ? 'Deleting...' : 'Delete all'}
         </Button>
       </Modal.Footer>
     </Modal>
@@ -308,13 +301,8 @@ function GradeAllModal({
   csrfToken,
   onSuccess,
 }: ActionModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
+  const mutation = useMutation({
+    mutationFn: async () => {
       const formData = new URLSearchParams({
         __action: 'grade_all',
         __csrf_token: csrfToken,
@@ -325,14 +313,12 @@ function GradeAllModal({
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       if (!res.ok) throw new Error('Failed to grade all instances');
+    },
+    onSuccess: () => {
       onSuccess();
       onHide();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -345,9 +331,9 @@ function GradeAllModal({
           {assessmentSetName} {assessmentNumber}
         </strong>
         ? This cannot be undone.
-        {error && (
+        {mutation.isError && (
           <div class="alert alert-danger mt-3" role="alert">
-            {error}
+            {mutation.error.message}
           </div>
         )}
       </Modal.Body>
@@ -355,8 +341,8 @@ function GradeAllModal({
         <Button variant="secondary" onClick={onHide}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={isSubmitting} onClick={handleSubmit}>
-          {isSubmitting ? 'Grading...' : 'Grade all'}
+        <Button variant="primary" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+          {mutation.isPending ? 'Grading...' : 'Grade all'}
         </Button>
       </Modal.Footer>
     </Modal>
@@ -371,13 +357,8 @@ function CloseAllModal({
   csrfToken,
   onSuccess,
 }: ActionModalProps) {
-  const [isSubmitting, setIsSubmitting] = useState(false);
-  const [error, setError] = useState<string | null>(null);
-
-  const handleSubmit = async () => {
-    setIsSubmitting(true);
-    setError(null);
-    try {
+  const mutation = useMutation({
+    mutationFn: async () => {
       const formData = new URLSearchParams({
         __action: 'close_all',
         __csrf_token: csrfToken,
@@ -388,14 +369,12 @@ function CloseAllModal({
         headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
       });
       if (!res.ok) throw new Error('Failed to close all instances');
+    },
+    onSuccess: () => {
       onSuccess();
       onHide();
-    } catch (err) {
-      setError(err instanceof Error ? err.message : 'An error occurred');
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
+    },
+  });
 
   return (
     <Modal show={show} onHide={onHide}>
@@ -408,9 +387,9 @@ function CloseAllModal({
           {assessmentSetName} {assessmentNumber}
         </strong>
         ? This cannot be undone.
-        {error && (
+        {mutation.isError && (
           <div class="alert alert-danger mt-3" role="alert">
-            {error}
+            {mutation.error.message}
           </div>
         )}
       </Modal.Body>
@@ -418,8 +397,8 @@ function CloseAllModal({
         <Button variant="secondary" onClick={onHide}>
           Cancel
         </Button>
-        <Button variant="primary" disabled={isSubmitting} onClick={handleSubmit}>
-          {isSubmitting ? 'Processing...' : 'Grade and close all'}
+        <Button variant="primary" disabled={mutation.isPending} onClick={() => mutation.mutate()}>
+          {mutation.isPending ? 'Processing...' : 'Grade and close all'}
         </Button>
       </Modal.Footer>
     </Modal>
