@@ -36,7 +36,7 @@ import {
 } from '../instructorAssessmentInstances.types.js';
 
 import { InstanceActionsCell } from './InstanceActionsCell.js';
-import { TimeLimitForm, TimeLimitPopover, type TimeLimitRowData } from './TimeLimitPopover.js';
+import { TimeLimitEditForm, TimeLimitPopover, type TimeLimitRowData } from './TimeLimitEditForm.js';
 
 const DEFAULT_SORT: SortingState = [{ id: 'assessment_instance_id', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['assessment_instance_id'], right: [] };
@@ -428,7 +428,7 @@ function TimeLimitAllModal({
         <Modal.Title>Change time limits</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        <TimeLimitForm
+        <TimeLimitEditForm
           csrfToken={csrfToken}
           row={row}
           timezone={timezone}

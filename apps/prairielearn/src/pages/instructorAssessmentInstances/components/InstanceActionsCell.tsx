@@ -6,7 +6,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import type { AssessmentInstanceRow } from '../instructorAssessmentInstances.types.js';
 
-import { TimeLimitPopover } from './TimeLimitPopover.js';
+import { TimeLimitPopover } from './TimeLimitEditForm.js';
 
 interface InstanceActionsCellProps {
   row: AssessmentInstanceRow;

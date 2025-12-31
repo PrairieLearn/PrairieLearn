@@ -30,15 +30,6 @@ export interface TimeLimitRowData {
   open?: boolean | null;
 }
 
-interface TimeLimitPopoverProps {
-  row: TimeLimitRowData;
-  csrfToken: string;
-  timezone: string;
-  onSuccess: () => void;
-  children: React.ReactNode;
-  placement?: 'auto' | 'top' | 'bottom' | 'left' | 'right';
-}
-
 function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   let explanation = '';
   switch (action) {
@@ -72,7 +63,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
   return <Form.Text class="text-muted">{explanation}</Form.Text>;
 }
 
-export interface TimeLimitFormProps {
+export interface TimeLimitEditFormProps {
   row: TimeLimitRowData;
   csrfToken: string;
   timezone: string;
@@ -80,13 +71,13 @@ export interface TimeLimitFormProps {
   onCancel: () => void;
 }
 
-export function TimeLimitForm({
+export function TimeLimitEditForm({
   row,
   csrfToken,
   timezone,
   onSuccess,
   onCancel,
-}: TimeLimitFormProps) {
+}: TimeLimitEditFormProps) {
   const [form, setForm] = useState<{
     action: TimeLimitAction;
     time_add: number;
@@ -308,6 +299,15 @@ export function TimeLimitForm({
   );
 }
 
+interface TimeLimitPopoverProps {
+  row: TimeLimitRowData;
+  csrfToken: string;
+  timezone: string;
+  onSuccess: () => void;
+  children: React.ReactNode;
+  placement?: 'auto' | 'top' | 'bottom' | 'left' | 'right';
+}
+
 export function TimeLimitPopover({
   row,
   csrfToken,
@@ -331,7 +331,7 @@ export function TimeLimitPopover({
       popover={{
         header: title,
         body: (
-          <TimeLimitForm
+          <TimeLimitEditForm
             csrfToken={csrfToken}
             row={row}
             timezone={timezone}
