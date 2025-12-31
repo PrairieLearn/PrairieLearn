@@ -2,6 +2,11 @@
   "name": "@prairielearn/config",
   "version": "3.1.12",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/config"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
