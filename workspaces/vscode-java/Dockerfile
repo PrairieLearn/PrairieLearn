@@ -11,6 +11,7 @@ USER coder
 # the wrong version of the extension (see
 # https://github.com/coder/code-server/discussions/7613).
 RUN curl -fsSL https://open-vsx.org/api/redhat/java/1.50.0/file/redhat.java-1.50.0.vsix -o /tmp/redhat.java-1.50.0.vsix && \
+  echo "405f424df861c2af8b777337d5545a65a014b010e251335d6db3b08e513ae999  /tmp/redhat.java-1.50.0.vsix" | sha256sum -c - && \
   code-server --disable-telemetry --force --verbose \
   # Java language support
   --install-extension /tmp/redhat.java-1.50.0.vsix \
