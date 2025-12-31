@@ -251,7 +251,7 @@ function extractFromResponse(
 }
 
 /**
- * Returns the AI question generation cache used for rate limiting.
+ * Returns the cache used for AI question generation rate limiting.
  */
 const getAiQuestionGenerationCache = memoize(async () => {
   // This function is memoized to ensure that only one Cache instance is created.
@@ -325,16 +325,9 @@ export async function addCompletionCostToIntervalUsage({
       AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS -
       (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
 
-    cache.set(
-      key,
-      responseCost,
-      timeRemainingInInterval
-    );
+    cache.set(key, responseCost, timeRemainingInInterval);
   } else {
-    cache.incrementByFloat(
-      key,
-      responseCost
-    );
+    cache.incrementByFloat(key, responseCost);
   }
 }
 

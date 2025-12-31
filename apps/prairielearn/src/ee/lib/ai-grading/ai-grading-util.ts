@@ -481,7 +481,7 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 }
 
 /**
- * Returns the AI grading cache used for rate limiting.
+ * Returns the cache for AI grading rate limiting.
  */
 const getAiGradingCache = memoize(async () => {
   // This function is memoized to ensure that only one Cache instance is created.
@@ -497,7 +497,7 @@ const getAiGradingCache = memoize(async () => {
 const AI_GRADING_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
 
 /**
- * Retrieve the Redis key for a user's current AI grading interval usage
+ * Retrieve the Redis key for the current AI grading interval usage of a course instance
  */
 function getIntervalUsageKey(courseInstance: CourseInstance) {
   const intervalStart = Date.now() - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
@@ -505,7 +505,7 @@ function getIntervalUsageKey(courseInstance: CourseInstance) {
 }
 
 /**
- * Retrieve the user's AI grading usage in the last hour interval, in US dollars
+ * Retrieve the AI grading usage for the course instance in the last hour interval, in US dollars
  */
 export async function getIntervalUsage({ courseInstance }: { courseInstance: CourseInstance }) {
   const cache = await getAiGradingCache();
@@ -513,7 +513,7 @@ export async function getIntervalUsage({ courseInstance }: { courseInstance: Cou
 }
 
 /**
- * Add the cost of an AI grading to the usage of the user for the current interval.
+ * Add the cost of an AI grading to the usage of the course instance for the current interval.
  */
 export async function addAiGradingCostToIntervalUsage({
   courseInstance,
@@ -524,23 +524,15 @@ export async function addAiGradingCostToIntervalUsage({
   model: keyof (typeof config)['costPerMillionTokens'];
   usage: LanguageModelUsage;
 }) {
-  
   const cache = await getAiGradingCache();
   const key = getIntervalUsageKey(courseInstance);
   const responseCost = calculateResponseCost({ model, usage });
-  
+
   if (!(await cache.get(key))) {
     const timeRemainingInInterval =
       AI_GRADING_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
-    cache.set(
-      key,
-      responseCost,
-      timeRemainingInInterval
-    );
+    cache.set(key, responseCost, timeRemainingInInterval);
   } else {
-    cache.incrementByFloat(
-      key,
-      responseCost,
-    );
+    cache.incrementByFloat(key, responseCost);
   }
 }
