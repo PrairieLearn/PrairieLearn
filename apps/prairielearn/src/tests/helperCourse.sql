@@ -1,6 +1,6 @@
 -- BLOCK update_course_repo
 UPDATE courses
 SET
-  repository = $repo
+  repository = $repository
 WHERE
-  id = 1;
+  id = $courseId;

@@ -1,5 +1,19 @@
 # @prairielearn/config
 
+## 3.1.13
+
+### Patch Changes
+
+- 5496156: Fix `repository` field in `package.json`
+
+## 3.1.12
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/aws-imds@2.0.23
+
 ## 3.1.11
 
 ### Patch Changes

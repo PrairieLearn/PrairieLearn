@@ -1,5 +1,18 @@
 # @prairielearn/preact
 
+## 1.0.6
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [926403c]
+- Updated dependencies [70a8029]
+  - @prairielearn/compiled-assets@3.3.1
+  - @prairielearn/preact-cjs@1.1.7
+  - @prairielearn/error@2.0.23
+  - @prairielearn/utils@2.0.4
+  - @prairielearn/html@4.0.23
+
 ## 1.0.5
 
 ### Patch Changes
