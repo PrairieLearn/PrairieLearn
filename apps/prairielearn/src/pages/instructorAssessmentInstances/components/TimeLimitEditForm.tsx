@@ -104,10 +104,7 @@ export function TimeLimitEditForm({
       if (!res.ok) throw new Error('Failed to update time limit');
       return res.json();
     },
-    onSuccess: () => {
-      onSuccess();
-      onCancel();
-    },
+    onSuccess,
   });
 
   const showTimeLimitOptions =
@@ -336,7 +333,10 @@ export function TimeLimitPopover({
             row={row}
             timezone={timezone}
             onCancel={() => setShow(false)}
-            onSuccess={onSuccess}
+            onSuccess={() => {
+              onSuccess();
+              setShow(false);
+            }}
           />
         ),
         props: {

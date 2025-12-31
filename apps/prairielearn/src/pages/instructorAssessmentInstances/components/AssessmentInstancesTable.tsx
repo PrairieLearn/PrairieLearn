@@ -433,7 +433,10 @@ function TimeLimitAllModal({
           row={row}
           timezone={timezone}
           onCancel={onHide}
-          onSuccess={onSuccess}
+          onSuccess={() => {
+            onSuccess();
+            onHide();
+          }}
         />
       </Modal.Body>
     </Modal>
