@@ -1,4 +1,4 @@
-import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
+import { type GenerateObjectResult, type GenerateTextResult, type LanguageModel, type ModelMessage, type UserContent, generateObject } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
@@ -179,6 +179,70 @@ export async function generatePrompt({
   );
 
   return input;
+}
+
+export const RubricQuestionSchema = z.object({
+  question: z.string(),
+  relevant_part_of_rubric: z.string(),
+  relevant_part_of_submission: z.string(),
+  how_impacts_selection: z.string()
+});
+
+const SummarizedQuestion = z.object({
+  question: z.string(),
+});
+
+export type RubricQuestion = z.infer<typeof RubricQuestionSchema>;
+
+export async function generateSummarizedQuestions({
+  questionsPerRubricItem,
+  model
+}: {
+  questionsPerRubricItem: Record<string, RubricQuestion[]>;
+  model: LanguageModel;
+}) {
+  let SummarizedQuestions = z.object({});
+
+  for (const itemDescription of Object.keys(questionsPerRubricItem)) {
+    SummarizedQuestions = SummarizedQuestions.merge(
+      z.object({
+        [itemDescription]: z.array(SummarizedQuestion),
+      }),
+    );
+  }
+  
+  const input: ModelMessage[] = [
+    {
+      role: 'system',
+      content: formatPrompt([
+        'You are part of a grading system.',
+        'You are provided questions a grader asked about rubric items while grading.',
+        'Summarize them into a total of 10 specific questions.',
+        'Questions within rubric items should be summarized together.',
+        'Do not mix questions from different rubric items.',
+        'The instructor will respond to these questions.',
+        'The answers will be provided to the grader to help them regrade the submissions.'
+      ])
+    },
+    {
+      role: 'system',
+      content: 'Here were the questions asked per rubric item:'
+    },
+    {
+      role: 'user',
+      content: Object.entries(questionsPerRubricItem).map(([itemDescription, questions]) => {
+        return `Rubric item: ${itemDescription}\n\nQuestions:\n${questions.map((q, idx) => `${idx + 1}. ${q.question}`).join('\n')}`;
+      }).join('\n\n---\n\n')
+    }
+  ];
+
+  const response = await generateObject({
+    model,
+    schema: SummarizedQuestions,
+    messages: input
+  });
+
+  return response.object;
 }
 
 /**
