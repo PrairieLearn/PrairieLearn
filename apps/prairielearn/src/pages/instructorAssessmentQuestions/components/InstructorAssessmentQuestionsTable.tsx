@@ -232,7 +232,7 @@ export function InstructorAssessmentQuestionsTable({
                         <Dropdown>
                           <Dropdown.Toggle
                             variant="secondary"
-                            className="dropdown-toggle btn-xs"
+                            size="sm"
                             id={`question-actions-${question.qid}`}
                           >
                             Action
