@@ -110,7 +110,6 @@ export function InstanceActionsCell({
           Action
         </Dropdown.Toggle>
         <Dropdown.Menu
-          renderOnMount
           popperConfig={{
             strategy: 'fixed',
             modifiers: [
@@ -123,6 +122,7 @@ export function InstanceActionsCell({
               },
             ],
           }}
+          renderOnMount
         >
           {hasCourseInstancePermissionEdit ? (
             <>
