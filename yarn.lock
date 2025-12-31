@@ -4522,7 +4522,6 @@ __metadata:
     pg: "npm:^8.16.3"
     popper.js: "npm:^1.16.1"
     preact: "npm:^10.28.1"
-    preact-render-to-string: "npm:^6.6.4"
     prettier: "npm:3.7.4"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.1"
@@ -4608,7 +4607,7 @@ __metadata:
     "@types/node": "npm:^22.19.3"
     clsx: "npm:^2.1.1"
     preact: "npm:^10.28.1"
-    preact-render-to-string: "npm:^6.6.4"
+    preact-render-to-string: "npm:^6.6.5"
     selector-observer: "npm:^2.1.6"
     superjson: "npm:^2.2.6"
     typescript: "npm:^5.9.3"
@@ -15819,12 +15818,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"preact-render-to-string@npm:^6.6.4":
-  version: 6.6.4
-  resolution: "preact-render-to-string@npm:6.6.4"
+"preact-render-to-string@npm:^6.6.5":
+  version: 6.6.5
+  resolution: "preact-render-to-string@npm:6.6.5"
   peerDependencies:
     preact: ">=10 || >= 11.0.0-0"
-  checksum: 10c0/e546532224345682019d07f114065255b3475cd882ad3d66869f11c46833394fa3a6a56af06f04f307d3803d9d0f29cf05b7d3bf8739a60716453174bda9acc5
+  checksum: 10c0/1cb0bd147a88899c3cf3f458d87173bf57d6b44aded92dd9bb1ea63e82915b1dc328ec12949b8e6868fbcc711d9993669b55172b7429d21c1740faad3578399b
   languageName: node
   linkType: hard
 

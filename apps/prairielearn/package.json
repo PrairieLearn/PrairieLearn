@@ -208,7 +208,6 @@
     "pg": "^8.16.3",
     "popper.js": "^1.16.1",
     "preact": "^10.28.1",
-    "preact-render-to-string": "^6.6.4",
     "prettier": "3.7.4",
     "qrcode-svg": "^1.1.0",
     "qs": "^6.14.1",

@@ -79,7 +79,7 @@ async function loadHomeworkPage(user: User): Promise<string> {
   const hm9InternalExternalManualUrl =
     siteUrl + $courseInstancePage(`a:contains("${assessmentTitle}")`).attr('href');
   const res = await fetch(hm9InternalExternalManualUrl);
-  assert.equal(res.ok, true);
+  assert.isTrue(res.ok);
   return res.text();
 }
 
@@ -566,9 +566,8 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         setUser(defaultUser);
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
-        const token =
-          $instancesBody('#grade-all-form').find('input[name=__csrf_token]').attr('value') || '';
-        await fetch(instancesAssessmentUrl, {
+        const token = $instancesBody('#test_csrf_token').text() || '';
+        const res = await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
           body: new URLSearchParams({
@@ -576,6 +575,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
             __csrf_token: token,
           }).toString(),
         });
+        assert.isTrue(res.ok);
       });
 
       test.sequential('manual grading page should NOT warn about an open instance', async () => {
@@ -1110,7 +1110,7 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         setUser(defaultUser);
         const instancesBody = await (await fetch(instancesAssessmentUrl)).text();
         const $instancesBody = cheerio.load(instancesBody);
-        const token = $instancesBody('input[name=__csrf_token]').attr('value') || '';
+        const token = $instancesBody('#test_csrf_token').text() || '';
         const response = await fetch(instancesAssessmentUrl, {
           method: 'POST',
           headers: { 'Content-type': 'application/x-www-form-urlencoded' },
