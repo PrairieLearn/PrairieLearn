@@ -6,7 +6,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends openjdk-25-jdk-
 USER coder
 RUN code-server --disable-telemetry --force \
     # Java language support
-    --install-extension redhat.java@1.50.0 \
+    --install-extension redhat.java \
     # Java debugger
     --install-extension vscjava.vscode-java-debug \
     # Support for JUnit testing
