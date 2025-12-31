@@ -34,6 +34,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup = null,
   instanceQuestionGroups,
   skip_graded_submissions,
+  show_submissions_assigned_to_me_only,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   context: 'main' | 'existing' | 'conflicting';
@@ -49,6 +50,7 @@ export function GradingPanel({
   selectedInstanceQuestionGroup?: InstanceQuestionGroup | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skip_graded_submissions?: boolean;
+  show_submissions_assigned_to_me_only?: boolean;
 }) {
   const auto_points = custom_auto_points ?? resLocals.instance_question.auto_points ?? 0;
   const manual_points = custom_manual_points ?? resLocals.instance_question.manual_points ?? 0;
@@ -63,7 +65,15 @@ export function GradingPanel({
   disable = disable || !resLocals.authz_data.has_course_instance_permission_edit;
   skip_text = skip_text || 'Next';
 
+  // Users are only assigned to grade submissions if they have edit permissions.
+  // If the user has no edit permissions (view only), we set show_submissions_assigned_to_me_only to false so
+  // the next button does not filter by assigned grader.
+  show_submissions_assigned_to_me_only = !resLocals.authz_data.has_course_instance_permission_edit
+    ? false
+    : show_submissions_assigned_to_me_only;
+
   const showSkipGradedSubmissionsButton = !disable && context === 'main';
+  const showAssignedToMeButton = !disable && context === 'main';
 
   const emptyGroup = {
     assessment_question_id: resLocals.assessment_question.id,
@@ -263,30 +273,58 @@ ${submission.feedback?.manual}</textarea
             `
           : ''}
         <li class="list-group-item d-flex align-items-center justify-content-end flex-wrap gap-2">
-          <div class="form-check">
-            ${showSkipGradedSubmissionsButton
-              ? html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="checkbox"
-                    class="form-check-input"
-                    name="skip_graded_submissions"
-                    value="true"
-                    ${skip_graded_submissions ? 'checked' : ''}
-                  />
-                  <label class="form-check-label" for="skip_graded_submissions">
-                    Skip graded submissions
-                  </label>
-                `
-              : html`
-                  <input
-                    id="skip_graded_submissions"
-                    type="hidden"
-                    name="skip_graded_submissions"
-                    value="${skip_graded_submissions ? 'true' : 'false'}"
-                  />
-                `}
+          <div>
+            <div class="form-check">
+              ${showSkipGradedSubmissionsButton
+                ? html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="skip_graded_submissions"
+                      value="true"
+                      ${skip_graded_submissions ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="skip_graded_submissions">
+                      Skip graded submissions
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="skip_graded_submissions"
+                      type="hidden"
+                      name="skip_graded_submissions"
+                      value="${skip_graded_submissions ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
+
+            <div class="form-check">
+              ${showAssignedToMeButton
+                ? html`
+                    <input
+                      id="show_submissions_assigned_to_me_only"
+                      type="checkbox"
+                      class="form-check-input"
+                      name="show_submissions_assigned_to_me_only"
+                      value="true"
+                      ${show_submissions_assigned_to_me_only ? 'checked' : ''}
+                    />
+                    <label class="form-check-label" for="show_submissions_assigned_to_me_only">
+                      Skip submissions not assigned to me
+                    </label>
+                  `
+                : html`
+                    <input
+                      id="show_submissions_assigned_to_me_only"
+                      type="hidden"
+                      name="show_submissions_assigned_to_me_only"
+                      value="${show_submissions_assigned_to_me_only ? 'true' : 'false'}"
+                    />
+                  `}
+            </div>
           </div>
+
           <span class="ms-auto">
             ${!disable
               ? html`
