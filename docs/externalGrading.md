@@ -265,6 +265,6 @@ For a working example of this, see [the implementation of `pl-file-upload`](http
 
 ## Running locally for development
 
-In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](installing.md#support-for-external-graders-and-workspaces).
+In order to run external graders in a local Docker environment, the `docker` command must include options that support the creation of local "sibling" containers. Detailed instructions on how to run Docker can be found in the [installation instructions](installing.md#support-for-external-graders-and-workspaces). More details on testing custom images locally can be found in the [Docker images documentation](dockerImages.md).
 
 When not running in Docker, things are easier. The Docker socket can be used normally, and we're able to store job files automatically without setting `HOST_JOBS_DIR`. By default, they are stored in `$HOME/.pljobs`. However, if you run PrairieLearn with an environment variable `JOBS_DIR=/abs/path/to/my/custom/jobs/directory/`, that directory will be used instead. Note that this environment variable has no effect when running on Docker, in which case the jobs directory is specified using `HOST_JOBS_DIR` instead of `JOBS_DIR`.
