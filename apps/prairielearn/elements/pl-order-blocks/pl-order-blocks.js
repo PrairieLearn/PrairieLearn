@@ -413,7 +413,9 @@ window.PLOrderBlocks = function (uuid, options) {
     resize.disconnect();
     try {
       $(sortables).sortable('destroy');
-    } catch (e) {}
+    } catch {
+      // sortable may already be destroyed or not yet initialized
+    }
   };
   initializeKeyboardHandling();
 
