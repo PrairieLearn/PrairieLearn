@@ -398,8 +398,8 @@ window.PLOrderBlocks = function (uuid, options) {
       passive: true,
     });
 
-    // Mouse devices (for devices that support both touch and mouse)
-    // Re-enable drag-and-drop when using mouse
+    // Mouse events (for hybrid devices that support both touch and mouse)
+    // Apply same gating logic to mouse interactions
     fullContainer.addEventListener('mousedown', gateDragVsScroll, {
       capture: true,
     });

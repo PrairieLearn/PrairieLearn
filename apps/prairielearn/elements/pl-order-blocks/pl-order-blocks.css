@@ -148,7 +148,7 @@ div.pl-order-blocks-header {
   padding: 6px;
   margin-top: 5px;
   margin-bottom: 5px;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .pl-order-blocks-pairing-indicator li:last-child {
