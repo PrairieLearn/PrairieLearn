@@ -113,7 +113,7 @@ export function InstructorAssessmentGroups({
                 ? html`
                     <div class="container-fluid">
                       <div class="row">
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"
@@ -124,7 +124,7 @@ export function InstructorAssessmentGroups({
                           </button>
                           <div class="mt-2">Upload a CSV file with group assignments.</div>
                         </div>
-                        <div class="col-sm bg-light py-4 border" align="center">
+                        <div class="col-sm bg-light py-4 border text-center">
                           <button
                             type="button"
                             class="btn btn-primary text-nowrap"

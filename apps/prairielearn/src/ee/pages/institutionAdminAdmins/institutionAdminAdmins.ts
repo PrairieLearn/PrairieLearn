@@ -71,7 +71,7 @@ router.post(
 
           // Specifically check that the user is in the institution to prevent
           // someone from enumerating users in other institutions.
-          if (!user || user.institution_id !== institution.id) {
+          if (user?.institution_id !== institution.id) {
             invalidUids.push(uid);
             continue;
           }

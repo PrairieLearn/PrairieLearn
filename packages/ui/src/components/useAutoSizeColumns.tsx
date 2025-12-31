@@ -1,7 +1,7 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
 import type { RefObject } from 'preact';
 import { render } from 'preact/compat';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
@@ -67,22 +67,20 @@ export function useAutoSizeColumns<TData>(
   tableRef: RefObject<HTMLDivElement>,
   filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>,
 ): boolean {
-  const [hasMeasured, setHasMeasured] = useState(false);
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
+
+  // Compute columns that need measuring
+  const columnsToMeasure = useMemo(() => {
+    const allColumns = table.getAllLeafColumns();
+    return allColumns.filter((col) => col.columnDef.meta?.autoSize);
+  }, [table]);
+
+  // Initialize hasMeasured to true if there's nothing to measure
+  const [hasMeasured, setHasMeasured] = useState(() => columnsToMeasure.length === 0);
 
   // Perform measurement
   useEffect(() => {
-    if (hasMeasured || !tableRef.current) {
-      return;
-    }
-
-    const allColumns = table.getAllLeafColumns();
-
-    const columnsToMeasure = allColumns.filter((col) => col.columnDef.meta?.autoSize);
-
-    if (columnsToMeasure.length === 0) {
-      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-      setHasMeasured(true);
+    if (hasMeasured || !tableRef.current || columnsToMeasure.length === 0) {
       return;
     }
 
@@ -150,7 +148,7 @@ export function useAutoSizeColumns<TData>(
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [table, tableRef, filters, hasMeasured]);
+  }, [table, tableRef, filters, hasMeasured, columnsToMeasure]);
 
   // Clean up measurement container on unmount
   useEffect(() => {
