@@ -1,5 +1,14 @@
 # @prairielearn/compiled-assets
 
+## 3.3.1
+
+### Patch Changes
+
+- 926403c: Upgrade `globby` to latest version
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/html@4.0.23
+
 ## 3.3.0
 
 ### Minor Changes
