@@ -524,9 +524,23 @@ export async function addAiGradingCostToIntervalUsage({
   model: keyof (typeof config)['costPerMillionTokens'];
   usage: LanguageModelUsage;
 }) {
+  
   const cache = await getAiGradingCache();
-  cache.incrementByFloat(
-    getIntervalUsageKey(courseInstance),
-    calculateResponseCost({ model, usage }),
-  );
+  const key = getIntervalUsageKey(courseInstance);
+  const responseCost = calculateResponseCost({ model, usage });
+  
+  if (!(await cache.get(key))) {
+    const timeRemainingInInterval =
+      AI_GRADING_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
+    cache.set(
+      key,
+      responseCost,
+      timeRemainingInInterval
+    );
+  } else {
+    cache.incrementByFloat(
+      key,
+      responseCost,
+    );
+  }
 }

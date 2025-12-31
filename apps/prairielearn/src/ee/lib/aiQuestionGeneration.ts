@@ -317,10 +317,25 @@ export async function addCompletionCostToIntervalUsage({
   usage: LanguageModelUsage | undefined;
 }) {
   const cache = await getAiQuestionGenerationCache();
-  cache.incrementByFloat(
-    getIntervalUsageKey(authnUser),
-    calculateResponseCost({ model: QUESTION_GENERATION_OPENAI_MODEL, usage }),
-  );
+  const key = getIntervalUsageKey(authnUser);
+  const responseCost = calculateResponseCost({ model: QUESTION_GENERATION_OPENAI_MODEL, usage });
+
+  if (!(await cache.get(key))) {
+    const timeRemainingInInterval =
+      AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS -
+      (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
+
+    cache.set(
+      key,
+      responseCost,
+      timeRemainingInInterval
+    );
+  } else {
+    cache.incrementByFloat(
+      key,
+      responseCost
+    );
+  }
 }
 
 /**

@@ -76,6 +76,9 @@ export class Cache {
 
   /**
    * Increments a numeric value stored in the cache by a float increment.
+   * 
+   * If the key does not exist, it is initialized to the increment value
+   * with an infinite time-to-live.
    */
   incrementByFloat(key: string, increment: number) {
     if (!this.enabled) return;
@@ -105,7 +108,7 @@ export class Cache {
       }
       case 'redis': {
         assert(this.redisClient, 'Redis client is enabled but not configured');
-        this.redisClient.incrbyfloat(scopedKey, increment).catch((err) => {
+        this.redisClient.incrbyfloat(scopedKey, increment.toString()).catch((err) => {
           logger.error('Cache incrementByFloat error', { key, scopedKey, increment, err });
         });
         break;
