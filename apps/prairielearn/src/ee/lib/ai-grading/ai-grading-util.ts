@@ -501,7 +501,7 @@ const AI_GRADING_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
  */
 function getIntervalUsageKey(courseInstance: CourseInstance) {
   const intervalStart = Date.now() - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
-  return `ai-grading-usage:user:${courseInstance.id}:interval:${intervalStart}`;
+  return `ai-grading-usage:course-instance:${courseInstance.id}:interval:${intervalStart}`;
 }
 
 /**
