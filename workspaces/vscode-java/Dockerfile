@@ -4,7 +4,7 @@ USER root
 RUN apt-get update && apt-get install -y --no-install-recommends openjdk-25-jdk-headless && apt-get clean && rm -rf /var/lib/apt/lists/*
 
 USER coder
-RUN code-server --disable-telemetry --force \
+RUN code-server --disable-telemetry --force --verbose \
     # Java language support
     --install-extension redhat.java \
     # Java debugger
