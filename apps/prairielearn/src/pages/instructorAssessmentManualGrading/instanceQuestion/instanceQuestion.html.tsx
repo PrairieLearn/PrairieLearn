@@ -175,6 +175,9 @@ export function InstanceQuestion({
       <div class="mb-3">
         ${hydrateHtml(
           <RubricSettings
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
             assessmentQuestion={StaffAssessmentQuestionSchema.parse(resLocals.assessment_question)}
             rubricData={rubric_data}
             csrfToken={__csrf_token}

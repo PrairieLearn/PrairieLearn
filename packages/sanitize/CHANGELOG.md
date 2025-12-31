@@ -1,5 +1,11 @@
 # @prairielearn/sanitize
 
+## 2.1.1
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 2.1.0
 
 ### Minor Changes
