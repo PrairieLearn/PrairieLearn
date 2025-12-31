@@ -53,13 +53,12 @@ export function QRCodeModal({
         <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {/* eslint-disable @eslint-react/dom/no-dangerously-set-innerhtml */}
         <div
           className="d-flex"
           style="max-height: 80vh;"
+          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: svg }}
         />
-        {/* eslint-enable @eslint-react/dom/no-dangerously-set-innerhtml */}
       </Modal.Body>
     </Modal>
   );
