@@ -135,7 +135,7 @@ export async function aiGrade({
   serverJob.executeInBackground(async (job) => {
     let rateLimitExceeded =
       (await getIntervalUsage({
-        authnUserId: authn_user_id,
+        courseInstance: course_instance,
       })) > config.aiGradingRateLimitDollars;
 
     // If the rate limit has already been exceeded, log it and exit early.
@@ -193,7 +193,7 @@ export async function aiGrade({
       }
 
       const intervalCost = await getIntervalUsage({
-        authnUserId: authn_user_id,
+        courseInstance: course_instance,
       });
 
       if (intervalCost > config.aiGradingRateLimitDollars) {
@@ -413,14 +413,10 @@ export async function aiGrade({
           });
         }
 
-        const intervalCost = await getIntervalUsage({
-          authnUserId: authn_user_id,
-        });
         await addAiGradingCostToIntervalUsage({
-          authnUserId: authn_user_id,
+          courseInstance: course_instance,
           model: model_id,
           usage: response.usage,
-          intervalCost,
         });
 
         logger.info('AI rubric items:');
@@ -521,14 +517,10 @@ export async function aiGrade({
           });
         }
 
-        const intervalCost = await getIntervalUsage({
-          authnUserId: authn_user_id,
-        });
         await addAiGradingCostToIntervalUsage({
-          authnUserId: authn_user_id,
+          courseInstance: course_instance,
           model: model_id,
           usage: response.usage,
-          intervalCost,
         });
 
         logger.info(`AI score: ${response.object.score}`);

@@ -74,6 +74,45 @@ export class Cache {
     }
   }
 
+  /**
+   * Increments a numeric value stored in the cache by a float increment.
+   */
+  incrementByFloat(key: string, increment: number) {
+    if (!this.enabled) return;
+
+    const scopedKey = this.keyPrefix + key;
+
+    switch (this.type) {
+      case 'memory': {
+        assert(this.memoryCache, 'Memory cache is enabled but not configured');
+        const currentValue = this.memoryCache.get(scopedKey);
+        if (currentValue) {
+          const parsedValue = Number.parseFloat(currentValue);
+          if (!Number.isNaN(parsedValue)) {
+            this.memoryCache.set(scopedKey, JSON.stringify(parsedValue + increment));
+          } else {
+            logger.warn('Cache incrementByFloat error: current value is not a number', {
+              key,
+              scopedKey,
+              currentValue,
+            });
+            break;
+          }
+        } else {
+          this.memoryCache.set(scopedKey, JSON.stringify(increment));
+        }
+        break;
+      }
+      case 'redis': {
+        assert(this.redisClient, 'Redis client is enabled but not configured');
+        this.redisClient.incrbyfloat(scopedKey, increment).catch((err) => {
+          logger.error('Cache incrementByFloat error', { key, scopedKey, increment, err });
+        });
+        break;
+      }
+    }
+  }
+
   async del(key: string) {
     if (!this.enabled) return;
 

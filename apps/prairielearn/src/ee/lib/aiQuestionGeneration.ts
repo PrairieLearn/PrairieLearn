@@ -6,6 +6,7 @@ import {
   type LanguageModelUsage,
   generateText,
 } from 'ai';
+import memoize from 'p-memoize';
 import * as parse5 from 'parse5';
 
 import { Cache } from '@prairielearn/cache';
@@ -30,7 +31,11 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+  type User,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
@@ -248,18 +253,16 @@ function extractFromResponse(
 /**
  * Returns the AI question generation cache used for rate limiting.
  */
-let aiQuestionGenerationCache: Cache | undefined;
-export async function getAiQuestionGenerationCache() {
-  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
-  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
-  aiQuestionGenerationCache = new Cache();
+const getAiQuestionGenerationCache = memoize(async () => {
+  // This function is memoized to ensure that only one Cache instance is created.
+  const aiQuestionGenerationCache = new Cache();
   await aiQuestionGenerationCache.init({
     type: config.nonVolatileCacheType,
     keyPrefix: config.cacheKeyPrefix,
     redisUrl: config.nonVolatileRedisUrl,
   });
   return aiQuestionGenerationCache;
-}
+});
 
 /**
  * Approximate the cost of the prompt, in US dollars.
@@ -290,44 +293,34 @@ const AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
 /**
  * Retrieve the Redis key for a user's current AI question generation interval usage
  */
-function getIntervalUsageKey(userId: number) {
+function getIntervalUsageKey(authnUser: User) {
   const intervalStart = Date.now() - (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
-  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+  return `ai-question-generation-usage:user:${authnUser.id}:interval:${intervalStart}`;
 }
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
+export async function getIntervalUsage({ authnUser }: { authnUser: User }) {
   const cache = await getAiQuestionGenerationCache();
-  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
+  return (await cache.get<number>(getIntervalUsageKey(authnUser))) ?? 0;
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  userId,
+  authnUser,
   usage,
-  intervalCost,
 }: {
-  userId: number;
+  authnUser: User;
   usage: LanguageModelUsage | undefined;
-  intervalCost: number;
 }) {
   const cache = await getAiQuestionGenerationCache();
-
-  const completionCost = calculateResponseCost({
-    model: QUESTION_GENERATION_OPENAI_MODEL,
-    usage,
-  });
-
-  // Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval =
-    AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS -
-    (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
-
-  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
+  cache.incrementByFloat(
+    getIntervalUsageKey(authnUser),
+    calculateResponseCost({ model: QUESTION_GENERATION_OPENAI_MODEL, usage }),
+  );
 }
 
 /**

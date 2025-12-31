@@ -6,6 +6,7 @@ import type {
   UserContent,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import memoize from 'p-memoize';
 import { z } from 'zod';
 
 import { Cache } from '@prairielearn/cache';
@@ -24,6 +25,7 @@ import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
+  type CourseInstance,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -478,60 +480,53 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
 
-let aiGradingCache: Cache | undefined;
-export async function getAiGradingCache() {
-  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
-  if (aiGradingCache) return aiGradingCache;
-  aiGradingCache = new Cache();
+/**
+ * Returns the AI grading cache used for rate limiting.
+ */
+const getAiGradingCache = memoize(async () => {
+  // This function is memoized to ensure that only one Cache instance is created.
+  const aiGradingCache = new Cache();
   await aiGradingCache.init({
     type: config.nonVolatileCacheType,
     keyPrefix: config.cacheKeyPrefix,
     redisUrl: config.nonVolatileRedisUrl,
   });
   return aiGradingCache;
-}
+});
 
 const AI_GRADING_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
 
 /**
  * Retrieve the Redis key for a user's current AI grading interval usage
  */
-function getIntervalUsageKey(authnUserId: string) {
+function getIntervalUsageKey(courseInstance: CourseInstance) {
   const intervalStart = Date.now() - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
-  return `ai-grading-usage:user:${authnUserId}:interval:${intervalStart}`;
+  return `ai-grading-usage:user:${courseInstance.id}:interval:${intervalStart}`;
 }
 
 /**
  * Retrieve the user's AI grading usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ authnUserId }: { authnUserId: string }) {
+export async function getIntervalUsage({ courseInstance }: { courseInstance: CourseInstance }) {
   const cache = await getAiGradingCache();
-  return (await cache.get<number>(getIntervalUsageKey(authnUserId))) ?? 0;
+  return (await cache.get<number>(getIntervalUsageKey(courseInstance))) ?? 0;
 }
 
 /**
  * Add the cost of an AI grading to the usage of the user for the current interval.
  */
 export async function addAiGradingCostToIntervalUsage({
-  authnUserId,
+  courseInstance,
   model,
   usage,
-  intervalCost,
 }: {
-  authnUserId: string;
+  courseInstance: CourseInstance;
   model: keyof (typeof config)['costPerMillionTokens'];
   usage: LanguageModelUsage;
-  intervalCost: number;
 }) {
   const cache = await getAiGradingCache();
-
-  // Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval =
-    AI_GRADING_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
-
-  cache.set(
-    getIntervalUsageKey(authnUserId),
-    intervalCost + calculateResponseCost({ model, usage }),
-    timeRemainingInInterval,
+  cache.incrementByFloat(
+    getIntervalUsageKey(courseInstance),
+    calculateResponseCost({ model, usage }),
   );
 }
