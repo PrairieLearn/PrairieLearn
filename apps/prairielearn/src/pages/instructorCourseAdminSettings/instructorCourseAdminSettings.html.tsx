@@ -175,7 +175,7 @@ export function InstructorCourseAdminSettings({
                 </button>
               </span>
               <small class="form-text text-muted">
-                The Github repository that can be used to sync course files.
+                The GitHub repository that can be used to sync course files.
               </small>
             </div>
             <div class="form-check mb-3">
@@ -257,7 +257,7 @@ function CourseDirectoryMissingAlert({
         <button
           name="__action"
           value="add_configuration"
-          class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+          class="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
         </button>

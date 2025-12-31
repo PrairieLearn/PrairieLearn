@@ -490,6 +490,8 @@ export function AssessmentQuestionTable({
 
   // Update column visibility when AI grading mode changes
   useEffect(() => {
+    // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
     void setColumnVisibility((prev) => ({
       ...prev,
       // Hide these columns in AI grading mode
@@ -626,6 +628,7 @@ export function AssessmentQuestionTable({
     <>
       <div class="mb-3">
         <RubricSettings
+          hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
           rubricData={rubricData}
           csrfToken={csrfToken}
@@ -746,8 +749,8 @@ export function AssessmentQuestionTable({
           ),
         }}
         headerButtons={
-          <>
-            {aiGradingMode ? (
+          hasCourseInstancePermissionEdit ? (
+            aiGradingMode ? (
               <>
                 <Dropdown>
                   <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
@@ -831,69 +834,67 @@ export function AssessmentQuestionTable({
                 </Dropdown>
               </>
             ) : (
-              hasCourseInstancePermissionEdit && (
-                <Dropdown>
-                  <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                    <i class="fas fa-tags" aria-hidden="true" />{' '}
-                    <span class="d-none d-sm-inline">Tag for grading</span>
-                  </Dropdown.Toggle>
-                  <Dropdown.Menu align="end">
-                    <Dropdown.Header class="d-flex align-items-center gap-1">
-                      Assign for grading
-                      <OverlayTrigger
-                        tooltip={{
-                          body: (
-                            <>
-                              Only staff with <strong>Student Data Editor</strong> permissions or
-                              higher can be assigned as graders
-                            </>
-                          ),
-                          props: { id: 'assign-for-grading-tooltip' },
-                        }}
-                      >
-                        <span>
-                          <i class="fas fa-question-circle text-secondary" />
-                        </span>
-                      </OverlayTrigger>
-                    </Dropdown.Header>
-                    {courseStaff.map((grader) => (
-                      <Dropdown.Item
-                        key={grader.id}
-                        onClick={() =>
-                          handleBatchAction({ assigned_grader: grader.id }, selectedIds)
-                        }
-                      >
-                        <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
-                      </Dropdown.Item>
-                    ))}
-                    <Dropdown.Item
-                      key="remove-grader-assignment"
-                      onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
+              <Dropdown>
+                <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
+                  <i class="fas fa-tags" aria-hidden="true" />{' '}
+                  <span class="d-none d-sm-inline">Tag for grading</span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu align="end">
+                  <Dropdown.Header class="d-flex align-items-center gap-1">
+                    Assign for grading
+                    <OverlayTrigger
+                      tooltip={{
+                        body: (
+                          <>
+                            Only staff with <strong>Student Data Editor</strong> permissions or
+                            higher can be assigned as graders
+                          </>
+                        ),
+                        props: { id: 'assign-for-grading-tooltip' },
+                      }}
                     >
-                      <i class="fas fa-user-slash" /> Remove grader assignment
-                    </Dropdown.Item>
-                    <Dropdown.Divider />
+                      <span>
+                        <i class="fas fa-question-circle text-secondary" />
+                      </span>
+                    </OverlayTrigger>
+                  </Dropdown.Header>
+                  {courseStaff.map((grader) => (
                     <Dropdown.Item
-                      key="tag-as-required-grading"
-                      onClick={() =>
-                        handleBatchAction({ requires_manual_grading: true }, selectedIds)
-                      }
+                      key={grader.id}
+                      onClick={() => handleBatchAction({ assigned_grader: grader.id }, selectedIds)}
                     >
-                      <i class="fas fa-tag" /> Tag as required grading
+                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
                     </Dropdown.Item>
-                    <Dropdown.Item
-                      key="tag-as-graded"
-                      onClick={() =>
-                        handleBatchAction({ requires_manual_grading: false }, selectedIds)
-                      }
-                    >
-                      <i class="fas fa-check-square" /> Tag as graded
-                    </Dropdown.Item>
-                  </Dropdown.Menu>
-                </Dropdown>
-              )
-            )}
-          </>
+                  ))}
+                  <Dropdown.Item
+                    key="remove-grader-assignment"
+                    onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
+                  >
+                    <i class="fas fa-user-slash" /> Remove grader assignment
+                  </Dropdown.Item>
+                  <Dropdown.Divider />
+                  <Dropdown.Item
+                    key="tag-as-required-grading"
+                    onClick={() =>
+                      handleBatchAction({ requires_manual_grading: true }, selectedIds)
+                    }
+                  >
+                    <i class="fas fa-tag" /> Tag as required grading
+                  </Dropdown.Item>
+                  <Dropdown.Item
+                    key="tag-as-graded"
+                    onClick={() =>
+                      handleBatchAction({ requires_manual_grading: false }, selectedIds)
+                    }
+                  >
+                    <i class="fas fa-check-square" /> Tag as graded
+                  </Dropdown.Item>
+                </Dropdown.Menu>
+              </Dropdown>
+            )
+          ) : (
+            <></>
+          )
         }
         globalFilter={{
           placeholder: 'Search by name, UID...',

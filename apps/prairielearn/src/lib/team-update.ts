@@ -9,8 +9,8 @@ import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import type { AuthzData } from './authz-data-lib.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
-import { GroupOperationError, createGroup, createOrAddToGroup } from './groups.js';
 import { createServerJob } from './server-jobs.js';
+import { GroupOperationError, createGroup, createOrAddToGroup } from './teams.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 

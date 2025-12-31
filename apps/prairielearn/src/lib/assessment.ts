@@ -19,10 +19,10 @@ import {
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
-import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
+import { getGroupId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
