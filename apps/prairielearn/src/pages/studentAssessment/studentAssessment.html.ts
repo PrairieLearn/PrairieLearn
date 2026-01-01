@@ -4,8 +4,8 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Assessment, type GroupConfig, type User } from '../../lib/db-types.js';
-import { type GroupInfo } from '../../lib/groups.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type GroupInfo } from '../../lib/teams.js';
 
 export function StudentAssessment({
   resLocals,
