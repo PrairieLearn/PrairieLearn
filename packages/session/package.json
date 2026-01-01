@@ -14,7 +14,7 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@types/express": "^4.17.25",
+    "@types/express": "^5.0.6",
     "cookie": "^0.7.2",
     "cookie-signature": "^1.2.2",
     "express-async-handler": "^1.2.0",
@@ -32,7 +32,7 @@
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
     "@vitest/coverage-v8": "^4.0.16",
-    "express": "^4.22.1",
+    "express": "^5.2.1",
     "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
     "set-cookie-parser": "^2.7.2",
