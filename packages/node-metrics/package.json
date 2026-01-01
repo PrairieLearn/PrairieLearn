@@ -19,7 +19,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
-    "@types/node": "^22.19.3",
+    "@types/node": "^25.0.3",
     "typescript": "^5.9.3"
   }
 }

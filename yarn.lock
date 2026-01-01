@@ -3769,7 +3769,7 @@ __metadata:
     "@actions/core": "npm:^1.11.1"
     "@actions/github": "npm:^6.0.1"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     typescript: "npm:^5.9.3"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -3780,7 +3780,7 @@ __metadata:
   resolution: "@prairielearn/aws-imds@workspace:packages/aws-imds"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.9.3"
     zod: "npm:^3.25.76"
@@ -3794,7 +3794,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@smithy/property-provider": "npm:^4.2.7"
     "@smithy/types": "npm:^4.11.0"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
@@ -3805,7 +3805,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/bindings": "npm:^1.5.5"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.24.0"
     node-gyp: "npm:^12.1.0"
@@ -3845,7 +3845,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     commander: "npm:^14.0.2"
     esbuild: "npm:^0.27.2"
@@ -3875,7 +3875,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.21"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     fs-extra: "npm:^11.3.3"
     lodash: "npm:^4.17.21"
@@ -3893,7 +3893,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     csv-stringify: "npm:^6.6.0"
     multipipe: "npm:^4.0.0"
@@ -3911,7 +3911,7 @@ __metadata:
     "@aws-sdk/client-ecr": "npm:^3.958.0"
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     date-fns: "npm:^4.1.0"
     tsx: "npm:^4.21.0"
@@ -3926,7 +3926,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     lodash: "npm:^4.17.21"
     tsx: "npm:^4.21.0"
@@ -3940,7 +3940,7 @@ __metadata:
   resolution: "@prairielearn/eslint-plugin@workspace:packages/eslint-plugin-prairielearn"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@typescript-eslint/rule-tester": "npm:^8.51.0"
     "@typescript-eslint/types": "npm:^8.51.0"
     "@typescript-eslint/utils": "npm:^8.51.0"
@@ -3963,7 +3963,7 @@ __metadata:
   resolution: "@prairielearn/express-list-endpoints@workspace:packages/express-list-endpoints"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     express: "npm:^4.22.1"
     tsx: "npm:^4.21.0"
@@ -3987,7 +3987,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.25"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4001,7 +4001,7 @@ __metadata:
   dependencies:
     "@js-temporal/polyfill": "npm:^0.5.1"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     lodash: "npm:^4.17.21"
     tsx: "npm:^4.21.0"
@@ -4032,7 +4032,7 @@ __metadata:
     "@types/async": "npm:^3.2.25"
     "@types/dockerode": "npm:^3.3.47"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@types/tmp": "npm:^0.2.6"
     "@vitest/coverage-v8": "npm:^4.0.16"
     async: "npm:^3.2.6"
@@ -4061,7 +4061,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/ejs": "npm:^3.1.5"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     ejs: "npm:^3.1.10"
     tsx: "npm:^4.21.0"
@@ -4075,7 +4075,7 @@ __metadata:
   resolution: "@prairielearn/html@workspace:packages/html"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4088,7 +4088,7 @@ __metadata:
   resolution: "@prairielearn/logger@workspace:packages/logger"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     logform: "npm:^2.7.0"
     typescript: "npm:^5.9.3"
     winston: "npm:^3.19.0"
@@ -4103,7 +4103,7 @@ __metadata:
     "@prairielearn/marked-mathjax": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/jsdom": "npm:^27.0.0"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     dompurify: "npm:^3.3.1"
     jsdom: "npm:^27.4.0"
@@ -4139,7 +4139,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     fs-extra: "npm:^11.3.3"
     serialize-error: "npm:^12.0.0"
@@ -4158,7 +4158,7 @@ __metadata:
   dependencies:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     pg: "npm:^8.16.3"
     typescript: "npm:^5.9.3"
   languageName: unknown
@@ -4171,7 +4171,7 @@ __metadata:
     "@aws-sdk/client-cloudwatch": "npm:^3.958.0"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/loopbench": "npm:^1.2.4"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     loopbench: "npm:^2.0.0"
     typescript: "npm:^5.9.3"
   languageName: unknown
@@ -4205,7 +4205,7 @@ __metadata:
     "@opentelemetry/sdk-trace-node": "npm:^2.2.0"
     "@opentelemetry/semantic-conventions": "npm:^1.38.0"
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4218,7 +4218,7 @@ __metadata:
   resolution: "@prairielearn/path-utils@workspace:packages/path-utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4234,7 +4234,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/lodash": "npm:^4.17.21"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
     commander: "npm:^14.0.2"
@@ -4258,7 +4258,7 @@ __metadata:
     "@types/debug": "npm:^4.1.12"
     "@types/lodash": "npm:^4.17.21"
     "@types/multipipe": "npm:^3.0.5"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@types/pg-cursor": "npm:^2.7.2"
     "@vitest/coverage-v8": "npm:^4.0.16"
     multipipe: "npm:^4.0.0"
@@ -4395,7 +4395,7 @@ __metadata:
     "@types/minimist": "npm:^1.2.5"
     "@types/multer": "npm:^2.0.0"
     "@types/mustache": "npm:^4.2.6"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@types/node-fetch": "npm:^2.6.13"
     "@types/node-jose": "npm:^1.1.13"
     "@types/oauth-signature": "npm:^1.5.2"
@@ -4605,7 +4605,7 @@ __metadata:
     "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/utils": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     clsx: "npm:^2.1.1"
     preact: "npm:^10.28.1"
     preact-render-to-string: "npm:^6.6.4"
@@ -4620,7 +4620,7 @@ __metadata:
   resolution: "@prairielearn/run@workspace:packages/run"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4633,7 +4633,7 @@ __metadata:
   resolution: "@prairielearn/sanitize@workspace:packages/sanitize"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4648,7 +4648,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@sentry/core": "npm:^10.32.1"
     "@sentry/node-core": "npm:^10.32.1"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     execa: "npm:^9.6.1"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4664,7 +4664,7 @@ __metadata:
     "@types/cookie": "npm:^0.6.0"
     "@types/cookie-signature": "npm:^1.1.2"
     "@types/express": "npm:^4.17.25"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@types/node-fetch": "npm:^2.6.13"
     "@types/on-headers": "npm:^1.0.4"
     "@types/set-cookie-parser": "npm:^2.4.10"
@@ -4692,7 +4692,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
     lodash: "npm:^4.17.21"
@@ -4716,7 +4716,7 @@ __metadata:
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.13"
     "@tanstack/table-core": "npm:^8.21.3"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     clsx: "npm:^2.1.1"
     nuqs: "npm:^2.8.6"
     react-bootstrap: "npm:3.0.0-beta.5"
@@ -4732,7 +4732,7 @@ __metadata:
   resolution: "@prairielearn/utils@workspace:packages/utils"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4745,7 +4745,7 @@ __metadata:
   resolution: "@prairielearn/vite-plugin-express@workspace:packages/vite-plugin-express"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@types/picomatch": "npm:^4.0.2"
     debounce: "npm:^3.0.0"
     picomatch: "npm:^4.0.3"
@@ -4776,7 +4776,7 @@ __metadata:
     "@socket.io/redis-adapter": "npm:^8.3.0"
     "@socket.io/redis-emitter": "npm:^5.1.0"
     "@types/minimist": "npm:^1.2.5"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
@@ -4810,7 +4810,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/zod": "workspace:^"
     "@socket.io/redis-emitter": "npm:^5.1.0"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     fast-glob: "npm:^3.3.3"
     filesize: "npm:^11.0.13"
     socket.io: "npm:^4.8.3"
@@ -4824,7 +4824,7 @@ __metadata:
   resolution: "@prairielearn/zod@workspace:packages/zod"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@types/node": "npm:^22.19.3"
+    "@types/node": "npm:^25.0.3"
     "@vitest/coverage-v8": "npm:^4.0.16"
     postgres-interval: "npm:^4.0.2"
     tsx: "npm:^4.21.0"
@@ -7089,7 +7089,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0, @types/node@npm:^22.19.3":
+"@types/node@npm:*, @types/node@npm:>=10.0.0, @types/node@npm:>=13.7.0":
   version: 22.19.3
   resolution: "@types/node@npm:22.19.3"
   dependencies:
@@ -7102,6 +7102,15 @@ __metadata:
   version: 12.20.55
   resolution: "@types/node@npm:12.20.55"
   checksum: 10c0/3b190bb0410047d489c49bbaab592d2e6630de6a50f00ba3d7d513d59401d279972a8f5a598b5bb8ddc1702f8a2f4ec57a65d93852f9c329639738e7053637d1
+  languageName: node
+  linkType: hard
+
+"@types/node@npm:^25.0.3":
+  version: 25.0.3
+  resolution: "@types/node@npm:25.0.3"
+  dependencies:
+    undici-types: "npm:~7.16.0"
+  checksum: 10c0/b7568f0d765d9469621615e2bb257c7fd1953d95e9acbdb58dffb6627a2c4150d405a4600aa1ad8a40182a94fe5f903cafd3c0a2f5132814debd0e3bfd61f835
   languageName: node
   linkType: hard
 
@@ -18373,6 +18382,13 @@ __metadata:
   version: 6.21.0
   resolution: "undici-types@npm:6.21.0"
   checksum: 10c0/c01ed51829b10aa72fc3ce64b747f8e74ae9b60eafa19a7b46ef624403508a54c526ffab06a14a26b3120d055e1104d7abe7c9017e83ced038ea5cf52f8d5e04
+  languageName: node
+  linkType: hard
+
+"undici-types@npm:~7.16.0":
+  version: 7.16.0
+  resolution: "undici-types@npm:7.16.0"
+  checksum: 10c0/3033e2f2b5c9f1504bdc5934646cb54e37ecaca0f9249c983f7b1fc2e87c6d18399ebb05dc7fd5419e02b2e915f734d872a65da2e3eeed1813951c427d33cc9a
   languageName: node
   linkType: hard
 
