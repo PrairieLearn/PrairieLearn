@@ -36,9 +36,10 @@ import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   type RubricQuestion,
   RubricQuestionSchema,
+  type RubricQuestionWithInstanceQuestionId,
   containsImageCapture,
+  generatePrioritizedRubricQuestions,
   generatePrompt,
-  generateSummarizedQuestions,
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
@@ -164,7 +165,7 @@ export async function aiGrade({
 
     const rubricItemQuestions: Record<string, any> = {};
 
-    const questionsPerRubricItem: Record<string, RubricQuestion[]> = {};
+    const questionsPerRubricItem: Record<string, RubricQuestionWithInstanceQuestionId[]> = {};
 
     /**
      * Grade an individual instance question.
@@ -276,7 +277,13 @@ export async function aiGrade({
 
           RubricQuestionsSchema = RubricQuestionsSchema.merge(
             z.object({
-              [item.description]: RubricQuestionSchema
+              [item.description]: RubricQuestionSchema.describe(
+                formatPrompt([
+                  'Your question about this rubric item. Be very curious and skeptical about the rubric item; it may be underspecified or imperfect.',
+                  'Assume that the reader does not have access to the rubric item or submission; include any necessary context in your question.',
+                  'Avoid asking questions that were answered before by the instructor.'
+                ])
+              )
             }),
           );
         }
@@ -314,10 +321,16 @@ export async function aiGrade({
         rubricItemQuestions[instance_question.id] = response.object.rubric_questions;
 
         for (const [itemDescription, rubricQuestion] of Object.entries(response.object.rubric_questions)) {
+          if (!rubricQuestion) {
+            continue;
+          }
           if (!(itemDescription in questionsPerRubricItem)) {
             questionsPerRubricItem[itemDescription] = [];
           }
-          questionsPerRubricItem[itemDescription].push(rubricQuestion as RubricQuestion);
+          questionsPerRubricItem[itemDescription].push({
+            ...rubricQuestion as RubricQuestion,
+            instance_question_id: instance_question.id,
+          });
         }
 
         logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
@@ -567,12 +580,25 @@ export async function aiGrade({
 
     job.info(`questionsPerRubricItem: ${JSON.stringify(questionsPerRubricItem, null, 2)}`);
 
-    const summarizedQuestions = await generateSummarizedQuestions({
+    const prioritizedQuestions = await generatePrioritizedRubricQuestions({
       questionsPerRubricItem,
       model
     });
 
-    job.info(`Summarized questions: ${JSON.stringify(summarizedQuestions, null, 2)}`);
+    job.info(`Prioritized questions: ${JSON.stringify(prioritizedQuestions, null, 2)}`);
+    let promptTemplate = '';
+    for (const [_, questions] of Object.entries(prioritizedQuestions)) {
+      for (const question of questions) {
+        promptTemplate += `
+Question: ${question.question}
+Instance question ID: ${question.instance_question_id}
+Answer: [COMPLETE]
+
+`;
+      }
+    }
+
+    job.info(`Final prompt template for instructor: ${promptTemplate}`);
 
     if (error_count > 0) {
       job.error('\nNumber of errors: ' + error_count);
