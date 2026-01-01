@@ -1,10 +1,3 @@
--- BLOCK update_course_repo
-UPDATE courses
-SET
-  repository = $repo
-WHERE
-  id = 1;
-
 -- BLOCK select_assessment_by_id
 SELECT
   a.*,
