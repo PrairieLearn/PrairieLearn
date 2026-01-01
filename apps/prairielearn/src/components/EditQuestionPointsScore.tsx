@@ -389,7 +389,6 @@ export function EditQuestionPointsScoreButton({
       }
     };
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);

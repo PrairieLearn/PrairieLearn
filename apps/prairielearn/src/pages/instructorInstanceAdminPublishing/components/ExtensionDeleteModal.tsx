@@ -42,38 +42,6 @@ export function ExtensionDeleteModal({
     onSuccess,
   });
 
-  const ModalBody = () => {
-    if (!data) return null;
-    return (
-      <>
-        <p>
-          Are you sure you want to delete{' '}
-          {data.extensionName === null ? 'this extension' : `the extension "${data.extensionName}"`}
-          ?
-        </p>
-        <details>
-          <summary>Show affected students</summary>
-          <table class="table table-bordered table-sm mb-0">
-            <thead>
-              <tr>
-                <th>UID</th>
-                <th>Name</th>
-              </tr>
-            </thead>
-            <tbody>
-              {data.userData.map((user) => (
-                <tr key={user.enrollment_id}>
-                  <td>{user.uid}</td>
-                  <td>{user.name ?? '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
-        </details>
-      </>
-    );
-  };
-
   return (
     <Modal backdrop="static" show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
@@ -85,7 +53,36 @@ export function ExtensionDeleteModal({
             {deleteMutation.error.message}
           </Alert>
         )}
-        <ModalBody />
+        {data && (
+          <>
+            <p>
+              Are you sure you want to delete{' '}
+              {data.extensionName === null
+                ? 'this extension'
+                : `the extension "${data.extensionName}"`}
+              ?
+            </p>
+            <details>
+              <summary>Show affected students</summary>
+              <table class="table table-bordered table-sm mb-0">
+                <thead>
+                  <tr>
+                    <th>UID</th>
+                    <th>Name</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {data.userData.map((user) => (
+                    <tr key={user.enrollment_id}>
+                      <td>{user.uid}</td>
+                      <td>{user.name ?? '—'}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </details>
+          </>
+        )}
       </Modal.Body>
       <Modal.Footer>
         <button
