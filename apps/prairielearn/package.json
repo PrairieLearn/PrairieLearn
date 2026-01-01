@@ -180,7 +180,7 @@
     "loopbench": "^2.0.0",
     "lru-cache": "^11.2.4",
     "marked": "^17.0.1",
-    "mathjax": "^3.2.2",
+    "mathjax": "^4.1.0",
     "mathlive": "^0.108.2",
     "memorystream": "^0.3.1",
     "mersenne": "0.0.4",
