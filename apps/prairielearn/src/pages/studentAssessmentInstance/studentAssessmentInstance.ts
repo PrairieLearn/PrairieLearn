@@ -7,6 +7,8 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as assessment from '../../lib/assessment.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
+import { idsEqual } from '../../lib/id.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -14,9 +16,7 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups.js';
-import { idsEqual } from '../../lib/id.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+} from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';

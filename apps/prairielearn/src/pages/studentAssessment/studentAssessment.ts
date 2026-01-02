@@ -17,7 +17,7 @@ import {
   joinGroup,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups.js';
+} from '../../lib/teams.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';
