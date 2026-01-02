@@ -64,11 +64,11 @@ docs = [
   "mkdocs-exclude==1.0.2",
   "mkdocs-gen-files==0.6.0",
   "mkdocs-literate-nav==0.6.2",
-  "mkdocs-material==9.7.0",
+  "mkdocs-material==9.7.1",
   "mkdocs==1.6.1",
   "mkdocstrings-python==2.0.1",
   "mkdocstrings==1.0.0",
-  "pymdown-extensions==10.17.2",
+  "pymdown-extensions==10.20",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
   "ruff==0.14.10",
