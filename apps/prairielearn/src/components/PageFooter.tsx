@@ -1,12 +1,12 @@
 export function PageFooter() {
   return (
-    <footer class="footer py-3 bg-light border-top">
-      <div class="container">
-        <div class="row align-items-center">
-          <div class="col-6">
+    <footer className="footer py-3 bg-light border-top">
+      <div className="container">
+        <div className="row align-items-center">
+          <div className="col-6">
             <a
               href="https://prairielearn.com"
-              class="text-decoration-none me-3 page-footer-text"
+              className="text-decoration-none me-3 page-footer-text"
               aria-label="Company"
             >
               <svg
@@ -81,18 +81,18 @@ export function PageFooter() {
               </svg>
             </a>
           </div>
-          <div class="col-6 d-flex justify-content-end">
+          <div className="col-6 d-flex justify-content-end">
             <a
               href="https://prairielearn.com"
-              class="text-decoration-none me-3 page-footer-text d-none d-md-inline"
+              className="text-decoration-none me-3 page-footer-text d-none d-md-inline"
             >
               Company
             </a>
             <a
               href="https://github.com/PrairieLearn/PrairieLearn"
-              class="text-decoration-none page-footer-text"
+              className="text-decoration-none page-footer-text"
             >
-              <i class="fab fa-github" /> <span>GitHub</span>
+              <i className="fab fa-github" /> <span>GitHub</span>
             </a>
           </div>
         </div>

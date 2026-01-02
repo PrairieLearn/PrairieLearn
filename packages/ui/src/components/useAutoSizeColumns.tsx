@@ -27,7 +27,7 @@ function HiddenMeasurementHeader<TData>({
         top: '-9999px',
       }}
     >
-      <table class="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
+      <table className="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
         <thead style={{ display: 'grid' }}>
           <tr style={{ display: 'flex' }}>
             {columnsToMeasure.map((col) => {

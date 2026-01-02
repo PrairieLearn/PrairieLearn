@@ -4,29 +4,29 @@ import { renderHtml } from '@prairielearn/preact';
 
 export function Scorebar({
   score,
-  class: className = '',
+  className = '',
   minWidth = '5em',
   maxWidth = '20em',
 }: {
   score: number | null;
   minWidth?: string;
   maxWidth?: string;
-  class?: string;
+  className?: string;
 }) {
   if (score == null) return '';
   return (
     <div
-      class={clsx('progress', 'border', 'border-success', className)}
+      className={clsx('progress', 'border', 'border-success', className)}
       style={{ minWidth, maxWidth }}
     >
       <div
-        class="progress-bar bg-success"
+        className="progress-bar bg-success"
         style={{ width: `${Math.floor(Math.min(100, score))}%` }}
       >
         {score >= 50 ? `${Math.floor(score)}%` : ''}
       </div>
       <div
-        class="d-flex flex-column justify-content-center text-center"
+        className="d-flex flex-column justify-content-center text-center"
         style={{ width: `${100 - Math.floor(Math.min(100, score))}%` }}
       >
         {score >= 50 ? '' : `${Math.floor(score)}%`}
@@ -44,6 +44,6 @@ export function ScorebarHtml(
   }: { minWidth?: string; maxWidth?: string; classes?: string } = {},
 ) {
   return renderHtml(
-    <Scorebar score={score} class={classes} minWidth={minWidth} maxWidth={maxWidth} />,
+    <Scorebar score={score} className={classes} minWidth={minWidth} maxWidth={maxWidth} />,
   );
 }

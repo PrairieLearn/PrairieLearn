@@ -240,7 +240,7 @@ function EditQuestionPointsScoreForm({
           This question is configured to use rubrics for grading. Changes must be performed in{' '}
           <a href={manualGradingUrl}>the manual grading page</a>.
         </p>
-        <div class="text-end">
+        <div className="text-end">
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
@@ -280,24 +280,24 @@ function EditQuestionPointsScoreForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div class="mb-3">
-        <div class="input-group">
+      <div className="mb-3">
+        <div className="input-group">
           <input
             type="number"
             step="any"
-            class="form-control"
+            className="form-control"
             value={value}
             aria-label={findLabel(field)}
             required
             onChange={(e) => setValue(e.currentTarget.value)}
           />
-          <span class="input-group-text">
+          <span className="input-group-text">
             {field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
           </span>
         </div>
-        {error && <div class="text-danger mt-2">{error}</div>}
+        {error && <div className="text-danger mt-2">{error}</div>}
         {mutation.isError && (
-          <Alert variant="danger" class="mt-2" dismissible onClose={() => mutation.reset()}>
+          <Alert variant="danger" className="mt-2" dismissible onClose={() => mutation.reset()}>
             {mutation.error.message}
           </Alert>
         )}
@@ -315,7 +315,7 @@ function EditQuestionPointsScoreForm({
           )}
         </small>
       </p>
-      <div class="text-end">
+      <div className="text-end">
         <Button disabled={mutation.isPending} variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -421,10 +421,10 @@ export function EditQuestionPointsScoreButton({
       <button
         ref={buttonRef}
         type="button"
-        class="btn btn-xs btn-ghost text-muted"
+        className="btn btn-xs btn-ghost text-muted"
         aria-label={`Change question ${findLabel(field)}`}
       >
-        <i class="bi bi-pencil-square" aria-hidden="true" />
+        <i className="bi bi-pencil-square" aria-hidden="true" />
       </button>
     </OverlayTrigger>
   );

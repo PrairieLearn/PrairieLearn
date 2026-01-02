@@ -107,24 +107,24 @@ export function CreateCourseInstanceModal({
               </Alert>
             )}
 
-            <div class="mb-3">
-              <label class="form-label" for="create-long-name">
+            <div className="mb-3">
+              <label className="form-label" for="create-long-name">
                 Long name
               </label>
               <input
                 id="create-long-name"
                 type="text"
-                class="form-control"
+                className="form-control"
                 aria-describedby="create-long-name-help"
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
               />
               {errors.long_name && (
-                <div class="text-danger small mt-1">{errors.long_name.message}</div>
+                <div className="text-danger small mt-1">{errors.long_name.message}</div>
               )}
               {!errors.long_name && (
-                <small id="create-long-name-help" class="form-text text-muted">
+                <small id="create-long-name-help" className="form-text text-muted">
                   The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined
                   to the course name, e.g. &quot;
                   {course.short_name} Fall 2025&quot;.
@@ -132,14 +132,14 @@ export function CreateCourseInstanceModal({
               )}
             </div>
 
-            <div class="mb-3">
-              <label class="form-label" for="create-short-name">
+            <div className="mb-3">
+              <label className="form-label" for="create-short-name">
                 Short name
               </label>
               <input
                 id="create-short-name"
                 type="text"
-                class="form-control font-monospace"
+                className="form-control font-monospace"
                 aria-describedby="create-short-name-help"
                 {...register('short_name', {
                   required: 'Short name is required',
@@ -150,10 +150,10 @@ export function CreateCourseInstanceModal({
                 })}
               />
               {errors.short_name && (
-                <div class="text-danger small mt-1">{errors.short_name.message}</div>
+                <div className="text-danger small mt-1">{errors.short_name.message}</div>
               )}
               {!errors.short_name && (
-                <small id="create-short-name-help" class="form-text text-muted">
+                <small id="create-short-name-help" className="form-text text-muted">
                   A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
                   and headers where a short description is required. Use only letters, numbers,
                   dashes, and underscores, with no spaces.
@@ -163,8 +163,8 @@ export function CreateCourseInstanceModal({
 
             <hr />
 
-            <h3 class="h5">Publishing settings</h3>
-            <p class="text-muted small">
+            <h3 className="h5">Publishing settings</h3>
+            <p className="text-muted small">
               Choose the initial publishing status for your new course instance. This can be changed
               later.
             </p>
@@ -181,7 +181,7 @@ export function CreateCourseInstanceModal({
           <Modal.Footer>
             <button
               type="button"
-              class="btn btn-secondary"
+              className="btn btn-secondary"
               disabled={createMutation.isPending}
               onClick={() => {
                 createMutation.reset();
@@ -191,7 +191,7 @@ export function CreateCourseInstanceModal({
             >
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary" disabled={createMutation.isPending}>
+            <button type="submit" className="btn btn-primary" disabled={createMutation.isPending}>
               {createMutation.isPending ? 'Creating...' : 'Create'}
             </button>
           </Modal.Footer>

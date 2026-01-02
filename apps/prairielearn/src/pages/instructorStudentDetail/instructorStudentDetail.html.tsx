@@ -79,16 +79,16 @@ export function InstructorStudentDetail({
         hasModernPublishing={hasModernPublishing}
       />
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h2 class="mb-0">Gradebook</h2>
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h2 className="mb-0">Gradebook</h2>
           {user && (
             <button
               type="button"
-              class="btn btn-sm btn-light d-flex flex-row align-items-center gap-1"
+              className="btn btn-sm btn-light d-flex flex-row align-items-center gap-1"
               onClick={handleViewGradebookAsStudent}
             >
-              <i class="fas fa-book" aria-hidden="true" />
+              <i className="fas fa-book" aria-hidden="true" />
               <span>View gradebook as student</span>
             </button>
           )}
@@ -96,9 +96,9 @@ export function InstructorStudentDetail({
         <StudentGradebookTable rows={gradebookRows} urlPrefix={urlPrefix} />
       </div>
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h2 class="mb-0">Enrollment events</h2>
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h2 className="mb-0">Enrollment events</h2>
         </div>
         <StudentAuditEventsTable events={auditEvents} />
       </div>
