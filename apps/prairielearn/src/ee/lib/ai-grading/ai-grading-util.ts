@@ -1,4 +1,4 @@
-import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
+import { type GenerateObjectResult, type GenerateTextResult, type LanguageModel, type ModelMessage, type UserContent, generateObject } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
@@ -179,6 +179,87 @@ export async function generatePrompt({
   );
 
   return input;
+}
+
+export const RubricQuestionSchema = z.object({
+  question: z.string(),
+  relevant_part_of_rubric: z.string(),
+  relevant_part_of_submission: z.string(),
+  how_impacts_selection: z.string()
+})
+
+const RubricQuestionWithInstanceQuestionIdSchema = RubricQuestionSchema.extend({
+  instance_question_id: z.string(),
+});
+
+export type RubricQuestion = z.infer<typeof RubricQuestionSchema>;
+
+export type RubricQuestionWithInstanceQuestionId = z.infer<typeof RubricQuestionWithInstanceQuestionIdSchema>;
+
+export async function generatePrioritizedRubricQuestions({
+  questionsPerRubricItem,
+  model
+}: {
+  questionsPerRubricItem: Record<string, RubricQuestionWithInstanceQuestionId[]>;
+  model: LanguageModel;
+}): Promise<Record<string, RubricQuestionWithInstanceQuestionId[]>> {
+  let PrioritizedQuestions = z.object({});
+
+  for (const itemDescription of Object.keys(questionsPerRubricItem)) {
+    PrioritizedQuestions = PrioritizedQuestions.merge(
+      z.object({
+        [itemDescription]: z.array(RubricQuestionWithInstanceQuestionIdSchema),
+      }),
+    );
+  }
+
+  const questionsContent: string[] = [];
+
+  for (const [itemDescription, questions] of Object.entries(questionsPerRubricItem)) {
+    for (const question of questions) {
+      questionsContent.push(`
+Rubric item: ${itemDescription}
+Instance question id: ${question.instance_question_id}
+
+Question: ${question.question}
+Relevant part of rubric: ${question.relevant_part_of_rubric}
+Relevant part of submission: ${question.relevant_part_of_submission}
+How impacts selection: ${question.how_impacts_selection}   
+      `)
+    }
+  }
+  
+  const input: ModelMessage[] = [
+    {
+      role: 'system',
+      content: formatPrompt([
+        'You are part of a grading system.',
+        'You are provided questions a grader asked about rubric items while grading.',
+        'Select the 10 of the questions that are the most important.',
+        'Copy questions verbatim from the provided list.',
+        'Group the questions you select by their relevant rubric item description.',
+        'Avoid asking redundant questions; try to select questions that cover different aspects of the rubric items.',
+        'The instructor will respond to these questions.',
+        'The answers will be provided to the grader to help them regrade the submissions.'
+      ])
+    },
+    {
+      role: 'system',
+      content: 'Here were the questions asked per rubric item:'
+    },
+    {
+      role: 'user',
+      content: formatPrompt(questionsContent)
+    }
+  ];
+
+  const response = await generateObject({
+    model,
+    schema: PrioritizedQuestions,
+    messages: input
+  });
+
+  return response.object;
 }
 
 /**
