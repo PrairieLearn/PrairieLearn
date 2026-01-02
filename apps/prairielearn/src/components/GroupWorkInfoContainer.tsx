@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
 import type { GroupConfig } from '../lib/db-types.js';
-import type { GroupInfo } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { GroupInfo } from '../lib/teams.js';
 
 import { Modal } from './Modal.js';
 

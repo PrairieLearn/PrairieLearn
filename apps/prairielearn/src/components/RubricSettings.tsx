@@ -51,12 +51,14 @@ declare global {
 }
 
 export function RubricSettings({
+  hasCourseInstancePermissionEdit,
   assessmentQuestion,
   rubricData,
   csrfToken,
   aiGradingStats,
   context,
 }: {
+  hasCourseInstancePermissionEdit: boolean;
   assessmentQuestion: StaffAssessmentQuestion;
   rubricData: RubricData | null;
   csrfToken: string;
@@ -104,20 +106,20 @@ export function RubricSettings({
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
-  const rubricFile = useRef<HTMLInputElement>(null);
+  const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
-  const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
-  const defaultReplaceAutoPoints = useRef<boolean>(
+  const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
+  const defaultReplaceAutoPointsRef = useRef<boolean>(
     rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const defaultStartingPoints = useRef<number>(rubricData?.rubric.starting_points ?? 0);
-  const defaultMinPoints = useRef<number>(rubricData?.rubric.min_points ?? 0);
-  const defaultMaxExtraPoints = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
-  const defaultGraderGuidelines = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
+  const defaultStartingPointsRef = useRef<number>(rubricData?.rubric.starting_points ?? 0);
+  const defaultMinPointsRef = useRef<number>(rubricData?.rubric.min_points ?? 0);
+  const defaultMaxExtraPointsRef = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
+  const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -225,12 +227,12 @@ export function RubricSettings({
   };
 
   const onCancel = () => {
-    setRubricItems(defaultRubricItems.current);
-    setReplaceAutoPoints(defaultReplaceAutoPoints.current);
-    setStartingPoints(defaultStartingPoints.current);
-    setMinPoints(defaultMinPoints.current);
-    setMaxExtraPoints(defaultMaxExtraPoints.current);
-    setGraderGuidelines(defaultGraderGuidelines.current);
+    setRubricItems(defaultRubricItemsRef.current);
+    setReplaceAutoPoints(defaultReplaceAutoPointsRef.current);
+    setStartingPoints(defaultStartingPointsRef.current);
+    setMinPoints(defaultMinPointsRef.current);
+    setMaxExtraPoints(defaultMaxExtraPointsRef.current);
+    setGraderGuidelines(defaultGraderGuidelinesRef.current);
     setSettingsError(null);
   };
 
@@ -281,7 +283,7 @@ export function RubricSettings({
   };
 
   const importRubric = async () => {
-    const input = rubricFile.current;
+    const input = rubricFileRef.current;
     if (!input?.files || input.files.length === 0) {
       setImportModalWarning('Please select a file to import.');
       return;
@@ -490,13 +492,13 @@ export function RubricSettings({
             : null,
       }));
 
-      defaultRubricItems.current = rubricItemDataMerged;
-      defaultReplaceAutoPoints.current =
+      defaultRubricItemsRef.current = rubricItemDataMerged;
+      defaultReplaceAutoPointsRef.current =
         rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPoints.current = rubric?.starting_points ?? 0;
-      defaultMinPoints.current = rubric?.min_points ?? 0;
-      defaultMaxExtraPoints.current = rubric?.max_extra_points ?? 0;
-      defaultGraderGuidelines.current = rubric?.grader_guidelines ?? '';
+      defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
+      defaultMinPointsRef.current = rubric?.min_points ?? 0;
+      defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
+      defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
@@ -539,6 +541,7 @@ export function RubricSettings({
                         class="form-check-input"
                         type="radio"
                         checked={!replaceAutoPoints}
+                        disabled={!hasCourseInstancePermissionEdit}
                         onChange={() => {
                           setReplaceAutoPoints(false);
                           if (startingPoints !== 0) {
@@ -567,6 +570,7 @@ export function RubricSettings({
                         class="form-check-input"
                         type="radio"
                         checked={replaceAutoPoints}
+                        disabled={!hasCourseInstancePermissionEdit}
                         onChange={() => {
                           setReplaceAutoPoints(true);
                           if (startingPoints !== 0) {
@@ -601,6 +605,7 @@ export function RubricSettings({
                     class="form-check-input"
                     type="radio"
                     checked={startingPoints === 0}
+                    disabled={!hasCourseInstancePermissionEdit}
                     onChange={() => setStartingPoints(0)}
                   />
                   Positive grading (start at zero, add points)
@@ -612,6 +617,7 @@ export function RubricSettings({
                     class="form-check-input"
                     type="radio"
                     checked={startingPoints !== 0}
+                    disabled={!hasCourseInstancePermissionEdit}
                     onChange={() =>
                       setStartingPoints(
                         replaceAutoPoints
@@ -656,6 +662,7 @@ export function RubricSettings({
                       class="form-control"
                       type="number"
                       value={minPoints}
+                      disabled={!hasCourseInstancePermissionEdit}
                       onInput={(e: any) => setMinPoints(Number(e.target.value))}
                     />
                   </label>
@@ -676,6 +683,7 @@ export function RubricSettings({
                       class="form-control"
                       type="number"
                       value={maxExtraPoints}
+                      disabled={!hasCourseInstancePermissionEdit}
                       onInput={(e: any) => setMaxExtraPoints(Number(e.target.value))}
                     />
                   </label>
@@ -692,6 +700,7 @@ export function RubricSettings({
                 class="form-control"
                 rows={5}
                 value={graderGuidelines}
+                disabled={!hasCourseInstancePermissionEdit}
                 onChange={(e) => setGraderGuidelines((e.target as HTMLTextAreaElement).value)}
               />
             </div>
@@ -720,6 +729,7 @@ export function RubricSettings({
                     item={it}
                     showAiGradingStats={showAiGradingStats}
                     submissionCount={aiGradingStats?.submission_rubric_count ?? 0}
+                    hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
                     deleteRow={() => deleteRow(idx)}
                     moveUp={() => moveUp(idx)}
                     moveDown={() => moveDown(idx)}
@@ -757,22 +767,26 @@ export function RubricSettings({
           </div>
         ))}
         <div class="mb-3 gap-1 d-flex">
-          <button type="button" class="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
-            Add item
-          </button>
+          {hasCourseInstancePermissionEdit && (
+            <button type="button" class="btn btn-sm btn-secondary" onClick={addRubricItemRow}>
+              Add item
+            </button>
+          )}
           <button type="button" class="btn btn-sm btn-primary" onClick={exportRubric}>
             <i class="fas fa-download" />
             Export rubric
           </button>
-          <button
-            id="import-rubric-button"
-            type="button"
-            class="btn btn-sm btn-primary"
-            onClick={() => setShowImportModal(!showImportModal)}
-          >
-            <i class="fas fa-upload" />
-            Import rubric
-          </button>
+          {hasCourseInstancePermissionEdit && (
+            <button
+              id="import-rubric-button"
+              type="button"
+              class="btn btn-sm btn-primary"
+              onClick={() => setShowImportModal(!showImportModal)}
+            >
+              <i class="fas fa-upload" />
+              Import rubric
+            </button>
+          )}
           <Modal
             show={showImportModal}
             size="lg"
@@ -787,7 +801,7 @@ export function RubricSettings({
                 Choose file
               </label>
               <input
-                ref={rubricFile}
+                ref={rubricFileRef}
                 type="file"
                 name="file"
                 class="form-control"
@@ -825,15 +839,17 @@ export function RubricSettings({
               </button>
             </Modal.Footer>
           </Modal>
-          <button
-            type="button"
-            class="btn btn-sm btn-ghost"
-            data-bs-toggle="tooltip"
-            data-bs-placement="bottom"
-            data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
-          >
-            <i class="fas fa-circle-info" />
-          </button>
+          {hasCourseInstancePermissionEdit && (
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost"
+              data-bs-toggle="tooltip"
+              data-bs-placement="bottom"
+              data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+            >
+              <i class="fas fa-circle-info" />
+            </button>
+          )}
         </div>
         {params.length > 0 && (
           <div class="small form-text text-muted">
@@ -881,6 +897,7 @@ export function RubricSettings({
               class="form-check-input"
               type="checkbox"
               checked={tagForGrading}
+              disabled={!hasCourseInstancePermissionEdit}
               onChange={() => setTagForGrading(!tagForGrading)}
             />
             Require all graded submissions to be manually graded/reviewed
@@ -895,23 +912,25 @@ export function RubricSettings({
             <i class="fas fa-circle-info" />
           </button>
         </div>
-        <div class="text-end">
-          {wasUsingRubric && (
-            <button
-              type="button"
-              class="btn btn-link btn-sm me-auto text-danger"
-              onClick={() => submitSettings(false)}
-            >
-              Delete rubric
+        {hasCourseInstancePermissionEdit && (
+          <div class="text-end">
+            {wasUsingRubric && (
+              <button
+                type="button"
+                class="btn btn-link btn-sm me-auto text-danger"
+                onClick={() => submitSettings(false)}
+              >
+                Delete rubric
+              </button>
+            )}
+            <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
+              Discard changes
             </button>
-          )}
-          <button type="button" class="btn btn-secondary me-2" onClick={onCancel}>
-            Discard changes
-          </button>
-          <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
-            Save
-          </button>
-        </div>
+            <button type="button" class="btn btn-primary" onClick={() => submitSettings(true)}>
+              Save
+            </button>
+          </div>
+        )}
       </div>
     </div>
   );
@@ -927,6 +946,7 @@ function RubricRow({
   updateRubricItem,
   onDragStart,
   onDragOver,
+  hasCourseInstancePermissionEdit,
 }: {
   item: RubricItemData;
   showAiGradingStats: boolean;
@@ -937,39 +957,44 @@ function RubricRow({
   updateRubricItem: (patch: Partial<RubricItem>) => void;
   onDragStart: () => void;
   onDragOver: () => void;
+  hasCourseInstancePermissionEdit: boolean;
 }) {
   return (
     <tr
       onDragOver={(e) => {
+        if (!hasCourseInstancePermissionEdit) return;
         e.preventDefault();
         onDragOver();
       }}
     >
       <td class="text-nowrap align-middle">
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost"
-          style={{ cursor: 'grab' }}
-          // @ts-expect-error See https://github.com/preactjs/preact-render-to-string/issues/429
-          draggable="true"
-          onDragStart={onDragStart}
-        >
-          <i class="fas fa-arrows-up-down" />
-        </button>
-        <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
-          <i class="fas fa-arrow-up" />
-        </button>
-        <button type="button" class="visually-hidden" aria-label="Move down" onClick={moveDown}>
-          <i class="fas fa-arrow-down" />
-        </button>
-        <button
-          type="button"
-          class="btn btn-sm btn-ghost text-danger"
-          aria-label="Delete"
-          onClick={deleteRow}
-        >
-          <i class="fas fa-trash text-danger" />
-        </button>
+        {hasCourseInstancePermissionEdit && (
+          <>
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost"
+              style={{ cursor: 'grab' }}
+              draggable
+              onDragStart={onDragStart}
+            >
+              <i class="fas fa-arrows-up-down" />
+            </button>
+            <button type="button" class="visually-hidden" aria-label="Move up" onClick={moveUp}>
+              <i class="fas fa-arrow-up" />
+            </button>
+            <button type="button" class="visually-hidden" aria-label="Move down" onClick={moveDown}>
+              <i class="fas fa-arrow-down" />
+            </button>
+            <button
+              type="button"
+              class="btn btn-sm btn-ghost text-danger"
+              aria-label="Delete"
+              onClick={deleteRow}
+            >
+              <i class="fas fa-trash text-danger" />
+            </button>
+          </>
+        )}
         {item.rubric_item.id && (
           <>
             <input
@@ -1014,6 +1039,7 @@ function RubricRow({
           step="any"
           value={item.rubric_item.points}
           aria-label="Points"
+          disabled={!hasCourseInstancePermissionEdit}
           required
           onInput={(e) => updateRubricItem({ points: Number(e.currentTarget.value) })}
         />
@@ -1027,6 +1053,7 @@ function RubricRow({
           style="min-width:15rem"
           value={item.rubric_item.description}
           aria-label="Description"
+          disabled={!hasCourseInstancePermissionEdit}
           required
           onInput={(e) => updateRubricItem({ description: e.currentTarget.value })}
         />
@@ -1046,6 +1073,7 @@ function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Explanation"
+          disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
         />
       </td>
@@ -1057,6 +1085,7 @@ function RubricRow({
           maxLength={10000}
           style="min-width:15rem"
           aria-label="Grader note"
+          disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
         />
       </td>
@@ -1068,6 +1097,7 @@ function RubricRow({
               type="radio"
               class="form-check-input"
               checked={item.rubric_item.always_show_to_students}
+              disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: true })}
             />
             Always
@@ -1079,6 +1109,7 @@ function RubricRow({
               type="radio"
               class="form-check-input"
               checked={!item.rubric_item.always_show_to_students}
+              disabled={!hasCourseInstancePermissionEdit}
               onChange={() => updateRubricItem({ always_show_to_students: false })}
             />
             If selected
