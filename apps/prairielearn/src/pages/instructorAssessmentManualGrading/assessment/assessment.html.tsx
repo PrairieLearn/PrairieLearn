@@ -6,7 +6,6 @@ import { renderHtml } from '@prairielearn/preact';
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
@@ -23,10 +22,10 @@ export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   num_instance_questions_assigned: z.coerce.number(),
   num_instance_questions_unassigned: z.coerce.number(),
   assigned_graders: z
-    .array(z.object({ user_id: z.number(), name: z.string().nullable(), uid: z.string() }))
+    .array(z.object({ id: z.number(), name: z.string().nullable(), uid: z.string() }))
     .nullable(),
   actual_graders: z
-    .array(z.object({ user_id: z.number(), name: z.string().nullable(), uid: z.string() }))
+    .array(z.object({ id: z.number(), name: z.string().nullable(), uid: z.string() }))
     .nullable(),
   num_open_instances: z.coerce.number(),
 });
@@ -66,13 +65,6 @@ export function ManualGradingAssessment({
     `,
     content: (
       <>
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />
         <AssessmentOpenInstancesAlert
           numOpenInstances={num_open_instances}
           assessmentId={resLocals.assessment.id}
@@ -186,7 +178,7 @@ function AssessmentQuestionRow({
     question.num_instance_questions_assigned + question.num_instance_questions_unassigned > 0;
   const currentUserName = resLocals.authz_data.user.name ?? resLocals.authz_data.user.uid;
   const otherAssignedGraders = (question.assigned_graders || [])
-    .filter((u) => !idsEqual(u.user_id, resLocals.authz_data.user.user_id))
+    .filter((u) => !idsEqual(u.id, resLocals.authz_data.user.id))
     .map((u) => u.name ?? u.uid);
   const gradingUrl = `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${question.id}`;
 
@@ -299,15 +291,15 @@ function GraderAssignmentModal({
         <>
           <p>Assign instances to the following graders:</p>
           {courseStaff.map((staff) => (
-            <div key={staff.user_id} class="form-check">
+            <div key={staff.id} class="form-check">
               <input
                 type="checkbox"
-                id={`grader-assignment-${staff.user_id}`}
+                id={`grader-assignment-${staff.id}`}
                 name="assigned_grader"
-                value={staff.user_id}
+                value={staff.id}
                 class="form-check-input"
               />
-              <label class="form-check-label" for={`grader-assignment-${staff.user_id}`}>
+              <label class="form-check-label" for={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>

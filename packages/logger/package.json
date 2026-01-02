@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/logger",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "type": "module",
   "repository": {
     "type": "git",
@@ -14,12 +14,12 @@
   },
   "dependencies": {
     "logform": "^2.7.0",
-    "winston": "^3.18.3",
+    "winston": "^3.19.0",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.1",
+    "@types/node": "^22.19.3",
     "typescript": "^5.9.3"
   }
 }

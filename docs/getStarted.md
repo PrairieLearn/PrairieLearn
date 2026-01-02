@@ -239,7 +239,7 @@ Before you create an assessment, make sure you are in the desired course instanc
 
 - change the number of the assessment (within its set). This number will be used to sort the assessments in the `Assessment` page.
 
-- in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn about the different configurations available. In this example, we will use:
+- in `allowAccess` you should set the dates in which you want the assessment to be available. Read the documentation about [Access controls](assessment/accessControl.md) to learn about the different configurations available. In this example, we will use:
 
   ```json title="infoAssessment.json"
   {

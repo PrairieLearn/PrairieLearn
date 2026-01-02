@@ -5,7 +5,9 @@
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
+    // If you haven't run `make python-deps`, this is going to give you errors.
     "dorzey.vscode-sqlfluff",
+    "ms-playwright.playwright",
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",

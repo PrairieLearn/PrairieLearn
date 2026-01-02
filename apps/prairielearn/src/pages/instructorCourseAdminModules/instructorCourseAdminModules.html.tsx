@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type AssessmentModule } from '../../lib/db-types.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -26,13 +24,6 @@ export function InstructorCourseAdminModules({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>Modules</h1>
@@ -41,7 +32,6 @@ export function InstructorCourseAdminModules({
           <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
             <thead>
               <tr>
-                <th>Number</th>
                 <th>Name</th>
                 <th>Heading</th>
               </tr>
@@ -50,7 +40,6 @@ export function InstructorCourseAdminModules({
               ${modules.map(function (module) {
                 return html`
                   <tr>
-                    <td class="align-middle">${module.number}</td>
                     <td>${module.name}</td>
                     <td class="align-middle">
                       ${AssessmentModuleHeadingHtml({ assessment_module: module })}

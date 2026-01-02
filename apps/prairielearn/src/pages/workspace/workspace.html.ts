@@ -38,18 +38,16 @@ export function Workspace({
     },
     options: {
       fullWidth: true,
-      pageNote,
       fullHeight: true,
+      pageNote,
       dataAttributes: {
         'socket-token': socketToken,
         'workspace-id': workspace_id,
         'heartbeat-interval-sec': heartbeatIntervalSec.toString(),
         'visibility-timeout-sec': visibilityTimeoutSec.toString(),
       },
-      enableEnhancedNav: false,
       enableNavbar: false,
-      paddingBottom: false,
-      paddingSides: false,
+      contentPadding: false,
     },
     headContent: html`
       <link href="${assetPath('stylesheets/workspace.css')}" rel="stylesheet" />

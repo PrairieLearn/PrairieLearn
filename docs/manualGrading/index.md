@@ -44,6 +44,8 @@ student2@example.com,2,explainMax,0,,0,0,42984,{},{},{"ans": "gives the set of l
 student2@example.com,2,describeFibonacci,100,,10,0,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,,,
 ```
 
+For group assessments, the `uid` column is replaced with the `group_name` and `uid_list` columns, containing, respectively, the name of the group and a list of the user IDs of all group members.
+
 This CSV file has three blank columns at the end, ready for the percentage score (0 to 100) and optional feedback and partial scores. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, while `old_auto_points` and `old_manual_points` show the auto-graded and manually graded points already submitted. If feedback was already provided in a previous upload, the `old_feedback` column will contain the feedback the student currently has.
 
 If the students uploaded files then you may also download `<assessment>_files_for_manual_grading.zip` from the "Downloads" tab. The scores and feedback should still be entered into the CSV file.
@@ -61,6 +63,13 @@ The `<assessment>_files_for_manual_grading.zip` file contains all files uploaded
 ### Uploading the scores and feedback
 
 After editing the percentage score and/or feedback for each submitted answer, upload the CSV file by going to the assessment page, then the "Uploads" tab, and selecting "Upload new question scores". If you leave either `score_perc` or `feedback` (or both) blank for any student, then the corresponding entry will not be updated.
+
+The submission associated with each row in the CSV file is identified through one of the following methods (in order of precedence):
+
+1. If the row includes a `submission_id` column that is not left blank, this is used to identify the submission to be updated. In this case, the `uid`, `group_name` and `qid` columns, if they are provided, are used for verification only, and any mismatches are listed in the upload output as errors.
+2. If the `submission_id` column is left blank or not present, the submission is identified by matching the `uid` (or `group_name` for group assessments), `instance`, and `qid` columns. In this case, all of these columns must be provided.
+
+Graders are encouraged to keep both the `submission_id` column for identification, as well as the `uid` (or `group_name`) and `qid` columns for verification, to avoid any ambiguity. Other columns not involved in the identification of the submission, such as `params`, `old_score_perc` or `submitted_answer`, will be ignored if present.
 
 Each question will have its score and/or feedback updated and the total assessment score will be recalculated. All updates are done with `credit` of 100%, so students get exactly the scores as uploaded.
 

@@ -249,6 +249,8 @@ export function TanstackTable<RowDataModel>({
   // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
     if (hasAutoSized) {
+      // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
@@ -586,8 +588,7 @@ export function TanstackTableCard<RowDataModel>({
             value={inputValue}
             autoComplete="off"
             onInput={(e) => {
-              if (!(e.target instanceof HTMLInputElement)) return;
-              const value = e.target.value;
+              const value = e.currentTarget.value;
               setInputValue(value);
               debouncedSetFilter(value);
             }}

@@ -889,7 +889,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
     ],
   );
   app.use(
@@ -1910,17 +1910,6 @@ export async function initExpress(): Promise<Express> {
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
 
   app.use(
-    '/pl/administrator',
-    asyncHandler(async (req, res, next) => {
-      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-        user_id: res.locals.authn_user.user_id,
-      });
-      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
-      next();
-    }),
-  );
-
-  app.use(
     '/pl/administrator/admins',
     (await import('./pages/administratorAdmins/administratorAdmins.js')).default,
   );
@@ -2159,8 +2148,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +

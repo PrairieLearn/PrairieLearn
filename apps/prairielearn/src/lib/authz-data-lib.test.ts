@@ -12,7 +12,7 @@ describe('authzData', () => {
           name: 'Test User',
           uid: 'test@example.com',
           uin: '123456789',
-          user_id: 'test-user-id',
+          id: 'test-user-id',
         },
         user: {
           email: 'test@example.com',
@@ -20,7 +20,7 @@ describe('authzData', () => {
           name: 'Test User',
           uid: 'test@example.com',
           uin: '123456789',
-          user_id: 'test-user-id',
+          id: 'test-user-id',
         },
         authn_is_administrator: false,
         authn_has_course_permission_preview: false,

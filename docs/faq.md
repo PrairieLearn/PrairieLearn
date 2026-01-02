@@ -38,9 +38,9 @@ Note that when granting access via `"active": false`, students can still access 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
-2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
+2. Some questions in the pool are [tagged](question/overview.md#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
 3. Every semester a small number of secret questions are written, and some older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
-4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
+4. For homeworks, the [`maxPoints`](assessment/configuration.md#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
 
 As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and moved to the homework pool.
@@ -74,7 +74,7 @@ For example, suppose Fall 2017 is the completed semester, and it is now Spring 2
 First, for the course instance, create a extension for the student:
 
 1. Go to the course instance's **Publishing** page (Admin → Publishing)
-2. Click **Add Extension** to create a new extension
+2. Click **Add extension** to create a new extension
 3. Enter the student's UID and set the new end date to February 28th, 2018.
 4. Save the extension
 
@@ -173,7 +173,7 @@ use the relative path from the base of the question.
 The same pattern holds for referencing material in any subdirectory of the question directory.
 
 To learn more about where files are stored, please see
-[clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
+[clientFiles and serverFiles](clientServerFiles.md).
 
 ## Why is my QID invalid?
 
@@ -302,7 +302,7 @@ The HTML specification disallows inserting special characters onto the page (i.e
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
-Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
+Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](installing.md).
 
 ## How can I make a block that can be re-used in many questions?
 
@@ -353,7 +353,7 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
-For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](assessment/regrading.md).
 
 ## When I open some CSV downloads, some data is in the wrong columns
 

@@ -289,9 +289,7 @@ function EditQuestionPointsScoreForm({
             value={value}
             aria-label={findLabel(field)}
             required
-            onChange={(e) => {
-              setValue((e.target as HTMLInputElement).value);
-            }}
+            onChange={(e) => setValue(e.currentTarget.value)}
           />
           <span class="input-group-text">
             {field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
@@ -391,7 +389,6 @@ export function EditQuestionPointsScoreButton({
       }
     };
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);

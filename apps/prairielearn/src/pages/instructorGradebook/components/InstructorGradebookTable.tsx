@@ -30,6 +30,7 @@ import {
   NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
+  type TanstackTableCsvCell,
   numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
@@ -49,7 +50,7 @@ import {
 
 import { EditScoreButton } from './EditScoreModal.js';
 
-const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
+const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
@@ -472,16 +473,19 @@ function GradebookTable({
         downloadButtonOptions={{
           filenameBase,
           mapRowToData: (row: GradebookRow) => {
-            const data: Record<string, string | number | null> = {
-              UID: row.uid,
-              Name: row.user_name,
-              UIN: row.uin,
-              Role: row.role,
-              Enrollment: row.enrollment?.status ?? null,
-            };
+            const data: TanstackTableCsvCell[] = [
+              { name: 'UID', value: row.uid },
+              { name: 'Name', value: row.user_name },
+              { name: 'UIN', value: row.uin },
+              { name: 'Role', value: row.role },
+              { name: 'Enrollment', value: row.enrollment?.status ?? null },
+            ];
             for (const assessment of courseAssessments) {
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              data[assessment.label] = row.scores[assessment.assessment_id]?.score_perc ?? null;
+              data.push({
+                name: assessment.label,
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                value: row.scores[assessment.assessment_id]?.score_perc ?? null,
+              });
             }
             return data;
           },

@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
+
 import { QuestionAddEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { selectQuestionByUuid } from '../../../../models/question.js';

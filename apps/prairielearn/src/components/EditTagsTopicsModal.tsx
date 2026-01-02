@@ -110,7 +110,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                 onChange={(e) =>
                   setEntity({
                     ...entity,
-                    name: (e.target as HTMLInputElement).value,
+                    name: e.currentTarget.value,
                   })
                 }
               />
@@ -133,7 +133,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                   onChange={(e) =>
                     setEntity({
                       ...entity,
-                      color: (e.target as HTMLSelectElement).value,
+                      color: e.currentTarget.value,
                     })
                   }
                 >
@@ -182,7 +182,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
                 onChange={(e) =>
                   setEntity({
                     ...entity,
-                    description: (e.target as HTMLInputElement).value,
+                    description: e.currentTarget.value,
                   })
                 }
               />

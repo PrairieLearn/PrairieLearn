@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
@@ -38,21 +36,12 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Untype
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentGroupWork: resLocals.assessment.group_work,
+              assessmentGroupWork: resLocals.assessment.team_work,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({
@@ -166,7 +155,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Untype
           data-smart-display="false"
           data-show-extended-pagination="true"
           data-sticky-header="true"
-          data-assessment-group-work="${resLocals.assessment.group_work}"
+          data-assessment-group-work="${resLocals.assessment.team_work}"
           data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
           data-assessment-number="${resLocals.assessment.number}"
           data-url-prefix="${resLocals.urlPrefix}"

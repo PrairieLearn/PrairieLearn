@@ -177,6 +177,19 @@ interface ColumnManagerProps<RowDataModel> {
   topContent?: JSX.Element;
 }
 
+/**
+ * Ponyfill for `Array.prototype.findLastIndex`, which is not available in the
+ * `ES2022` TypeScript lib that we're currently using.
+ */
+function findLastIndex<T>(arr: T[], predicate: (value: T, index: number) => boolean): number {
+  for (let i = arr.length - 1; i >= 0; i--) {
+    if (predicate(arr[i], i)) {
+      return i;
+    }
+  }
+  return -1;
+}
+
 export function ColumnManager<RowDataModel>({
   table,
   topContent,
@@ -193,7 +206,8 @@ export function ColumnManager<RowDataModel>({
     if (isPinned) {
       // Get the previous column that can be set to unpinned.
       // This is useful since we want to unpin/pin columns that are not shown in the view manager.
-      const previousFrozenColumnIndex = allLeafColumns.findLastIndex(
+      const previousFrozenColumnIndex = findLastIndex(
+        allLeafColumns,
         (c, index) => c.getCanHide() && index < currentColumnIndex,
       );
       newLeft = allLeafColumns.slice(0, previousFrozenColumnIndex + 1).map((c) => c.id);

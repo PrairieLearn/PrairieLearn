@@ -56,7 +56,7 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
       env: process.env,
     });
     return stdout.trim();
-  } catch (err) {
+  } catch (err: any) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
       data: {
         stdout: err.stdout,
@@ -188,7 +188,7 @@ export async function deleteCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course_id,
       new_state: deletedCourse,
       course_id,
@@ -229,7 +229,7 @@ export async function insertCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course.id,
       new_state: course,
       institution_id,

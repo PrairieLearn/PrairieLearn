@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id;
 
@@ -11,12 +11,12 @@ SELECT
   c.*
 FROM
   course_instances AS ci
-  JOIN pl_courses AS c ON ci.course_id = c.id
+  JOIN courses AS c ON ci.course_id = c.id
 WHERE
   ci.id = $course_instance_id;
 
 -- BLOCK update_course_commit_hash
-UPDATE pl_courses
+UPDATE courses
 SET
   commit_hash = $commit_hash
 WHERE
@@ -27,7 +27,7 @@ SELECT
   c.*,
   to_jsonb(permissions_course) AS permissions_course
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN authz_course ($user_id, c.id) AS permissions_course ON TRUE
 WHERE
   c.deleted_at IS NULL
@@ -50,7 +50,7 @@ WITH
     SELECT
       c.*
     FROM
-      pl_courses AS c
+      courses AS c
     WHERE
       path = $path
     ORDER BY
@@ -60,7 +60,7 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      pl_courses AS c (path, display_timezone, institution_id)
+      courses AS c (path, display_timezone, institution_id)
     SELECT
       $path,
       i.display_timezone,
@@ -89,7 +89,7 @@ FROM
   inserted_course;
 
 -- BLOCK delete_course
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   deleted_at = current_timestamp
 WHERE
@@ -99,7 +99,7 @@ RETURNING
 
 -- BLOCK insert_course
 INSERT INTO
-  pl_courses AS c (
+  courses AS c (
     short_name,
     title,
     display_timezone,
@@ -124,14 +124,14 @@ RETURNING
   *;
 
 -- BLOCK update_course_show_getting_started
-UPDATE pl_courses
+UPDATE courses
 SET
   show_getting_started = $show_getting_started
 WHERE
   id = $course_id;
 
 -- BLOCK update_course_sharing_name
-UPDATE pl_courses
+UPDATE courses
 SET
   sharing_name = $sharing_name
 WHERE
@@ -141,6 +141,6 @@ WHERE
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   sharing_name = ANY ($sharing_names::text[]);

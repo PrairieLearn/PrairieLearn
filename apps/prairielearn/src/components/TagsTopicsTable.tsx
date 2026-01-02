@@ -130,9 +130,7 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                     <span class="visually-hidden">Edit and Delete</span>
                   </th>
                 )}
-                <th>Number</th>
                 <th>Name</th>
-                <th>Color</th>
                 <th class="col-9">Description</th>
               </tr>
             </thead>
@@ -162,11 +160,9 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
                         </div>
                       </td>
                     )}
-                    <td class="align-middle">{index + 1}</td>
                     <td class="align-middle">
                       {entityType === 'topic' ? <TopicBadge topic={row} /> : <TagBadge tag={row} />}
                     </td>
-                    <td class="align-middle">{row.color}</td>
                     <td class="align-middle">
                       {entityType === 'topic' ? (
                         <TopicDescription topic={row} />

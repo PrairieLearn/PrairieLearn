@@ -8,13 +8,13 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);

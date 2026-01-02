@@ -48,7 +48,7 @@ jobs:
         run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -57,16 +57,8 @@ jobs:
 
       - name: Build all code
         run: make build
-      - name: Set up Prettier and ESLint cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules/.cache/prettier/.prettier-cache
-            .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
-
       - name: Run the JavaScript linter
-        run: make lint-js-cached
+        run: make lint-js
       - name: Run the links linter
         run: make lint-links
 
@@ -145,6 +137,7 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
       - name: Install all Python dependencies
+        # This will also check that uv.lock is up to date.
         run: make python-deps
 
       - name: Set up Node
@@ -172,7 +165,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python

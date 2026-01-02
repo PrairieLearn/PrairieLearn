@@ -247,7 +247,7 @@ export function CreateQuestionModalContents({
             aria-describedby="template_help"
             value={selectedTemplate?.qid ?? ''}
             required
-            onChange={(e) => setSelectedTemplateQid((e.target as HTMLSelectElement).value)}
+            onChange={(e) => setSelectedTemplateQid(e.currentTarget.value)}
           >
             <option value="">Select a template...</option>
             {filteredTemplateQuestions.map((question) => (

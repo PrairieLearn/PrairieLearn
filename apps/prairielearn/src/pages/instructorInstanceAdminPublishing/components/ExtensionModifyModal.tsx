@@ -8,10 +8,10 @@ import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
-export type ExtensionModifyModalState =
-  | null
+export type ExtensionModifyModalData =
   | { type: 'add'; endDate: string }
   | { type: 'edit'; endDate: string; extensionId: string; name: string; uids: string };
 
@@ -21,21 +21,27 @@ interface ExtensionFormValues {
   uids: string;
 }
 
+const MAX_UIDS = 1000;
+
 export function ExtensionModifyModal({
-  modalState,
+  data,
   currentUnpublishText,
-  onHide,
   courseInstanceEndDate,
   courseInstanceTimezone,
   csrfToken,
+  show,
+  onHide,
+  onExited,
   onSuccess,
 }: {
-  modalState: ExtensionModifyModalState;
+  data: ExtensionModifyModalData | null;
   currentUnpublishText: string;
-  onHide: () => void;
   courseInstanceEndDate: Date | null;
   courseInstanceTimezone: string;
   csrfToken: string;
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
   onSuccess: () => void;
 }) {
   const [stage, setStage] = useState<
@@ -43,9 +49,9 @@ export function ExtensionModifyModal({
   >({ type: 'editing' });
 
   const defaultValues = run(() => {
-    if (modalState === null) return { end_date: '', name: '', uids: '' };
-    if (modalState.type === 'add') return { end_date: modalState.endDate, name: '', uids: '' };
-    return { end_date: modalState.endDate, name: modalState.name, uids: modalState.uids };
+    if (data === null) return { end_date: '', name: '', uids: '' };
+    if (data.type === 'add') return { end_date: data.endDate, name: '', uids: '' };
+    return { end_date: data.endDate, name: data.name, uids: data.uids };
   });
 
   const {
@@ -71,14 +77,12 @@ export function ExtensionModifyModal({
   };
 
   const validateEmails = async (value: string) => {
-    const uids = [
-      ...new Set(
-        value
-          .split(/[\n,\s]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid.length > 0),
-      ),
-    ];
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value, MAX_UIDS);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Failed to parse UIDs';
+    }
 
     if (uids.length === 0) {
       return 'At least one UID is required';
@@ -119,14 +123,14 @@ export function ExtensionModifyModal({
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (data: ExtensionFormValues) => {
+    mutationFn: async (formData: ExtensionFormValues) => {
       const body = {
         __csrf_token: csrfToken,
-        __action: modalState?.type === 'edit' ? 'edit_extension' : 'add_extension',
-        name: data.name.trim(),
-        end_date: data.end_date,
-        extension_id: modalState?.type === 'edit' ? modalState.extensionId : undefined,
-        uids: data.uids.trim(),
+        __action: data?.type === 'edit' ? 'edit_extension' : 'add_extension',
+        name: formData.name.trim(),
+        end_date: formData.end_date,
+        extension_id: data?.type === 'edit' ? data.extensionId : undefined,
+        uids: formData.uids.trim(),
       };
       const resp = await fetch(window.location.pathname, {
         method: 'POST',
@@ -138,10 +142,7 @@ export function ExtensionModifyModal({
         throw new Error(body.error);
       }
     },
-    onSuccess: () => {
-      setStage({ type: 'editing' });
-      onSuccess();
-    },
+    onSuccess,
   });
 
   const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
@@ -151,13 +152,9 @@ export function ExtensionModifyModal({
 
   if (stage.type === 'confirming') {
     return (
-      <Modal
-        show={modalState !== null}
-        backdrop="static"
-        onHide={() => setStage({ type: 'editing' })}
-      >
+      <Modal show={data !== null} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
         <Modal.Header closeButton>
-          <Modal.Title>Confirm Unenrolled Students</Modal.Title>
+          <Modal.Title>Confirm unenrolled students</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           <p>The following UIDs are not enrolled in this course instance:</p>
@@ -178,7 +175,7 @@ export function ExtensionModifyModal({
             disabled={saveMutation.isPending}
             onClick={() => setStage({ type: 'editing' })}
           >
-            Continue Editing
+            Continue editing
           </button>
           <button
             type="button"
@@ -189,7 +186,7 @@ export function ExtensionModifyModal({
               void saveMutation.mutate(data);
             })}
           >
-            {saveMutation.isPending ? 'Saving...' : 'Save Anyway'}
+            {saveMutation.isPending ? 'Saving...' : 'Save anyway'}
           </button>
         </Modal.Footer>
       </Modal>
@@ -198,16 +195,17 @@ export function ExtensionModifyModal({
 
   return (
     <Modal
-      show={modalState !== null}
+      show={show}
       backdrop="static"
-      onHide={() => {
+      onHide={onHide}
+      onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
-        onHide();
+        onExited();
       }}
     >
       <Modal.Header closeButton>
-        <Modal.Title>{modalState?.type === 'add' ? 'Add Extension' : 'Edit Extension'}</Modal.Title>
+        <Modal.Title>{data?.type === 'add' ? 'Add extension' : 'Edit extension'}</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
@@ -242,7 +240,7 @@ export function ExtensionModifyModal({
                   const enteredDate = plainDateTimeStringToDate(value, courseInstanceTimezone);
                   // edit mode has no validation on the end date
                   return (
-                    modalState?.type === 'edit' ||
+                    data?.type === 'edit' ||
                     enteredDate > courseInstanceEndDate ||
                     'End date must be after the course end date'
                   );
@@ -252,7 +250,7 @@ export function ExtensionModifyModal({
             {errors.end_date && (
               <div class="text-danger small">{String(errors.end_date.message)}</div>
             )}
-            <small class="text-muted">Current course end date: {currentUnpublishText}</small>
+            <small class="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
@@ -266,8 +264,8 @@ export function ExtensionModifyModal({
             <textarea
               id="ext-uids"
               class="form-control"
+              aria-describedby="ext-uids-help"
               rows={5}
-              placeholder="One UID per line, or comma/space separated"
               {...register('uids', {
                 validate: validateEmails,
               })}
@@ -275,6 +273,9 @@ export function ExtensionModifyModal({
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
               <div class="text-danger small">{String(errors.uids.message)}</div>
             )}
+            <small id="ext-uids-help" class="form-text">
+              Enter UIDs separated by commas, whitespace, or new lines.
+            </small>
           </div>
         </Modal.Body>
         <Modal.Footer>
