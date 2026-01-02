@@ -587,7 +587,7 @@ export async function aiGrade({
 
     job.info(`Prioritized questions: ${JSON.stringify(prioritizedQuestions, null, 2)}`);
     let promptTemplate = '';
-    for (const [_, questions] of Object.entries(prioritizedQuestions)) {
+    for (const questions of Object.values(prioritizedQuestions)) {
       for (const question of questions) {
         promptTemplate += `
 Question: ${question.question}
