@@ -9,7 +9,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
   - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
-  - [PostgreSQL 16](https://www.postgresql.org)
+  - [PostgreSQL 17](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
   - [d2](https://d2lang.com)
@@ -22,7 +22,10 @@ Most of these prerequisites can be installed using the package manager of your O
     On Ubuntu, use `apt` for the main prerequisites:
 
     ```sh
-    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql postgresql-contrib postgresql-server-dev-all
+    sudo apt install git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-common
+    # Configure Postgres repository
+    sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh
+    sudo apt install postgresql-17 postgresql-17-pgvector
     # Optional; needed only for some example questions that use LaTeX
     sudo apt install texlive texlive-latex-extra texlive-fonts-extra dvipng
     ```
@@ -70,7 +73,7 @@ Most of these prerequisites can be installed using the package manager of your O
 
     ```sh
     cd /tmp
-    git clone --branch v0.8.0 https://github.com/pgvector/pgvector.git
+    git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
     cd pgvector
     make
     sudo make install
@@ -87,7 +90,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector
+    brew install git graphviz postgresql@17 redis uv d2 node pgvector
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -96,8 +99,8 @@ Most of these prerequisites can be installed using the package manager of your O
     You may want to start up the `postgresql` server on boot, and add binaries to your path:
 
     ```sh
-    brew services start postgresql@16
-    brew link postgresql@16
+    brew services start postgresql@17
+    brew link postgresql@17
     ```
 
     Enable `corepack` to make `yarn` available:
