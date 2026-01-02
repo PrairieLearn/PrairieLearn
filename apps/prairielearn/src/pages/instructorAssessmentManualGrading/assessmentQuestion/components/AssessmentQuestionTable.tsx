@@ -83,7 +83,7 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
-  ongoingJobSequenceTokens: Record<string, string> | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -163,7 +163,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
-  ongoingJobSequenceTokens,
+  initialOngoingJobSequenceTokens,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -391,7 +391,7 @@ export function AssessmentQuestionTable({
 
   const serverJobProgress = useServerJobProgress({
     enabled: aiGradingMode,
-    ongoingJobSequenceTokens,
+    initialOngoingJobSequenceTokens,
     onProgressChange: () => {
       // Refresh the displayed table data when server job progress updates, since
       // instance question grading data (e.g. AI agreements, grading status)
@@ -766,6 +766,18 @@ export function AssessmentQuestionTable({
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_graded',
                           modelId,
+                        }, {
+                          onSuccess: (data) => {
+                            if (!data) {
+                              return;
+                            }
+                            if ('job_sequence_token' in data) {
+                              serverJobProgress.handleAddJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token
+                              )
+                            }
+                          }
                         });
                       }}
                     />
@@ -777,7 +789,19 @@ export function AssessmentQuestionTable({
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
+                          (data) => {
+                            if (!data) {
+                              return;
+                            }
+                            if ('job_sequence_token' in data) {
+                              serverJobProgress.handleAddJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token
+                              )
+                            }
+                          }
                         );
+                        table.resetRowSelection();
                       }}
                     />
                     <AiGradingOption
@@ -787,7 +811,19 @@ export function AssessmentQuestionTable({
                       onSelectModel={(modelId) => {
                         batchActionMutation.mutate({
                           action: 'ai_grade_assessment_all',
-                          modelId,
+                          modelId
+                        }, {
+                          onSuccess: (data) => {
+                            if (!data) {
+                              return;
+                            }
+                            if ('job_sequence_token' in data) {
+                              serverJobProgress.handleAddJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token
+                              )
+                            }
+                          }
                         });
                       }}
                     />

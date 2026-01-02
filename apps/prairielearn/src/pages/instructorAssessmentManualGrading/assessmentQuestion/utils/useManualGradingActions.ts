@@ -31,6 +31,14 @@ export type BatchActionParams =
       modelId: AiGradingModelId;
     };
 
+type BatchActionResponse = 
+    {
+      job_sequence_id: string, 
+      job_sequence_token: string
+    } | { 
+      job_sequence_id: string 
+    } | null;
+
 interface UseManualGradingActionsParams {
   csrfToken: string;
   courseInstanceId: string;
@@ -43,7 +51,7 @@ export function useManualGradingActions({
   const queryClient = useQueryClient();
 
   const batchActionMutation = useMutation<
-    { job_sequence_id: string } | null,
+    BatchActionResponse,
     Error,
     BatchActionParams
   >({
@@ -97,6 +105,9 @@ export function useManualGradingActions({
 
       return data;
     },
+    onError: (error: Error) => {
+      console.error(error);
+    },
     onSuccess: (data) => {
       if (!data) {
         void queryClient.invalidateQueries({
@@ -106,7 +117,7 @@ export function useManualGradingActions({
     },
   });
 
-  const handleBatchAction = (actionData: BatchActionData, instanceQuestionIds: string[]) => {
+  const handleBatchAction = (actionData: BatchActionData, instanceQuestionIds: string[], onSuccess?: (data: BatchActionResponse) => void) => {
     if (instanceQuestionIds.length === 0) return;
 
     batchActionMutation.mutate(
@@ -117,12 +128,13 @@ export function useManualGradingActions({
       },
       {
         onSuccess: (data) => {
-          if (data) {
-            window.location.reload();
-          } else {
+          if (!data) {
             void queryClient.invalidateQueries({
               queryKey: ['instance-questions'],
             });
+          }
+          if (onSuccess) {
+            onSuccess(data);
           }
         },
       },

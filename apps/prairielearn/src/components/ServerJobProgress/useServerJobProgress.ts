@@ -20,20 +20,21 @@ import type {
  * E.g. For the assessment questions page, if AI grading mode is off but AI grading jobs are ongoing in the background,
  * progress updates won't be displayed, so we can skip connecting to the WebSocket.
  *
- * @param params.ongoingJobSequenceTokens A mapping of ongoing job sequence IDs to their server-generated tokens. Used to authenticate the WebSocket connection for each job.
+ * @param params.initialOngoingJobSequenceTokens A mapping of ongoing job sequence IDs to their server-generated tokens. Used to authenticate the WebSocket connection for each job.
  *
  * @param params.onProgressChange Callback invoked whenever there is a change in any server job progress data
  */
 export function useServerJobProgress({
   enabled,
-  ongoingJobSequenceTokens,
+  initialOngoingJobSequenceTokens,
   onProgressChange,
 }: {
   enabled: boolean;
-  ongoingJobSequenceTokens: Record<string, string> | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   onProgressChange: () => void;
 }) {
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
+  const [ongoingJobSequenceTokens, setOngoingJobSequenceTokens] = useState<Record<string, string> | null>(initialOngoingJobSequenceTokens);
 
   /**
    * The status to display for a specific job item across all ongoing jobs.
@@ -106,6 +107,16 @@ export function useServerJobProgress({
     };
   }, [ongoingJobSequenceTokens, enabled]);
 
+  /** 
+   * Add a new job sequence to track its progress.
+   */
+  function handleAddJobSequence(jobSequenceId: string, jobSequenceToken: string) {
+    setOngoingJobSequenceTokens((prev => ({
+      ...prev,
+      [jobSequenceId]: jobSequenceToken,
+    })));
+  }
+
   /**
    * When the user dismisses a completed job progress alert, remove the job from state.
    */
@@ -134,6 +145,7 @@ export function useServerJobProgress({
   return {
     jobsProgress,
     displayedStatuses,
+    handleAddJobSequence,
     handleDismissCompleteJobSequence,
   };
 }

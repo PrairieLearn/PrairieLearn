@@ -59,13 +59,13 @@ export class Cache {
       }
 
       case 'redis': {
-        // We don't log the error because it contains the cached value,
-        // which can be huge and which fills up the logs.
         assert(this.redisClient, 'Redis client is enabled but not configured');
+        
         try {
-          await this.redisClient
-            .set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
+          await this.redisClient.set(scopedKey, JSON.stringify(value), 'PX', maxAgeMS)
         } catch {
+          // We don't log the error because it contains the cached value,
+          // which can be huge and which fills up the logs.
           logger.error('Cache set error', { key, scopedKey, maxAgeMS })
         }
         break;
