@@ -4,7 +4,9 @@ import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
 
+import { PageLayout } from '../../components/PageLayout.js';
 import {
   checkBelongs,
   deleteAllAssessmentInstancesForAssessment,
@@ -13,9 +15,10 @@ import {
   gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
+import { getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
-import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
+import { AssessmentInstancesTable } from './components/AssessmentInstancesTable.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
 
 const router = Router();
@@ -43,7 +46,47 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
-    res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
+    const assessmentInstances = await sqldb.queryRows(
+      sql.select_assessment_instances,
+      { assessment_id: res.locals.assessment.id },
+      AssessmentInstanceRowSchema,
+    );
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Instances',
+        navContext: {
+          type: 'instructor',
+          page: 'assessment',
+          subPage: 'instances',
+        },
+        options: {
+          fullWidth: true,
+          fullHeight: true,
+        },
+        content: (
+          <Hydrate fullHeight>
+            <AssessmentInstancesTable
+              csrfToken={res.locals.__csrf_token}
+              urlPrefix={res.locals.urlPrefix}
+              assessmentId={res.locals.assessment.id}
+              assessmentSetName={res.locals.assessment_set.name}
+              assessmentSetAbbr={res.locals.assessment_set.abbreviation}
+              assessmentNumber={res.locals.assessment.number}
+              assessmentGroupWork={res.locals.assessment.team_work}
+              assessmentMultipleInstance={res.locals.assessment.multiple_instance}
+              hasCourseInstancePermissionEdit={
+                res.locals.authz_data.has_course_instance_permission_edit
+              }
+              timezone={res.locals.course_instance.display_timezone}
+              initialData={assessmentInstances}
+              search={getUrl(req).search}
+              isDevMode={process.env.NODE_ENV === 'development'}
+            />
+          </Hydrate>
+        ),
+      }),
+    );
   }),
 );
 
