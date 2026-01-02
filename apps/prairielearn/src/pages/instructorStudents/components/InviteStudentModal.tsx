@@ -75,7 +75,8 @@ export function InviteStudentModal({
             class={clsx('form-control', errors.uid && 'is-invalid')}
             type="email"
             placeholder="student@example.com"
-            aria-invalid={errors.uid ? 'true' : 'false'}
+            aria-invalid={!!errors.uid}
+            aria-errormessage={errors.uid ? 'invite-uid-error' : undefined}
             {...register('uid', {
               validate: async (uid) => {
                 if (!uid) return 'UID is required';
@@ -101,7 +102,11 @@ export function InviteStudentModal({
               },
             })}
           />
-          {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
+          {errors.uid?.message && (
+            <div class="form-text text-danger" id="invite-uid-error">
+              {errors.uid.message}
+            </div>
+          )}
         </Modal.Body>
         <Modal.Footer>
           <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>

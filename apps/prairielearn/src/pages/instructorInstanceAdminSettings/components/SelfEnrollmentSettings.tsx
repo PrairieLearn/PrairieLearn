@@ -267,6 +267,8 @@ export function SelfEnrollmentSettings({
           class={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
           type="checkbox"
           id="show_in_enroll_page"
+          aria-invalid={showInEnrollPageInvalid}
+          aria-errormessage={showInEnrollPageInvalid ? 'show-in-enroll-page-error' : undefined}
           {...control.register('show_in_enroll_page', {
             validate: (value, { self_enrollment_enabled }) => {
               if (!self_enrollment_enabled && value) {
@@ -280,7 +282,9 @@ export function SelfEnrollmentSettings({
           Show on enrollment page
         </label>
         {showInEnrollPageError ? (
-          <div class="invalid-feedback">{showInEnrollPageError.message}</div>
+          <div class="invalid-feedback" id="show-in-enroll-page-error">
+            {showInEnrollPageError.message}
+          </div>
         ) : (
           <div class="small text-muted">
             If not checked, students will need a direct link to the course instance to enroll.
@@ -406,6 +410,12 @@ export function SelfEnrollmentSettings({
           type="datetime-local"
           aria-label="Self-enrollment cutoff date"
           class={clsx('form-control mt-2', selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid')}
+          aria-invalid={selfEnrollmentEnabledBeforeDateInvalid}
+          aria-errormessage={
+            selfEnrollmentEnabledBeforeDateInvalid
+              ? 'self-enrollment-enabled-before-date-error'
+              : undefined
+          }
           disabled={
             !canEdit ||
             !selfEnrollmentEnabledBeforeDateEnabled ||
@@ -435,7 +445,9 @@ export function SelfEnrollmentSettings({
           />
         )}
         {selfEnrollmentEnabledBeforeDateError && (
-          <div class="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+          <div class="invalid-feedback" id="self-enrollment-enabled-before-date-error">
+            {selfEnrollmentEnabledBeforeDateError.message}
+          </div>
         )}
       </div>
 
