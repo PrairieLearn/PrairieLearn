@@ -160,6 +160,8 @@ jobs:
           cache-dependency-glob: 'pyproject.toml'
           cache-suffix: core
       - name: Install core Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps-core
 
       - name: Set up Turborepo cache
