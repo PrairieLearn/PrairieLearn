@@ -39,6 +39,7 @@ def generate(data):
 | `size`           | integer                 | 35              | Size of the input box.                                                                                                                                               |
 | `show-help-text` | boolean                 | true            | Show the question mark at the end of the input displaying required input parameters.                                                                                 |
 | `placeholder`    | string                  | See description | Custom placeholder text. If not set, defaults to `"integer"` if `base` is 10, otherwise `"integer in base <base>"`.                                                  |
+| `initial-value`  | string                  | —               | Initial value to prefill the input box the first time it is rendered.                                                                                                |
 | `show-score`     | boolean                 | true            | Whether to show the score badge next to this element.                                                                                                                |
 
 ## Specifying a non-trivial base
