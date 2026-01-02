@@ -269,7 +269,7 @@ router.post(
       }
 
       const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.id,
+        authnUser: res.locals.authn_user,
       });
 
       const approxPromptCost = approximatePromptCost({
@@ -306,9 +306,8 @@ router.post(
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.id,
+        authnUser: res.locals.authn_user,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {
