@@ -37,7 +37,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
-    "@eslint-react/eslint-plugin": "^2.4.0",
+    "@eslint-react/eslint-plugin": "^2.5.0",
     "@html-eslint/eslint-plugin": "^0.52.1",
     "@playwright/test": "^1.57.0",
     "@postgres-language-server/cli": "^0.18.0",
@@ -52,7 +52,7 @@
     "eslint-plugin-jsdoc": "^61.5.0",
     "eslint-plugin-jsx-a11y-x": "^0.1.1",
     "eslint-plugin-no-floating-promise": "^2.0.0",
-    "eslint-plugin-perfectionist": "^5.1.0",
+    "eslint-plugin-perfectionist": "^5.2.0",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-you-might-not-need-an-effect": "^0.8.3",
     "eslint-plugin-unicorn": "^62.0.0",
