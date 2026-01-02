@@ -14,7 +14,7 @@
     </div>
     {{/errors}}
     {{#show_widget}}
-    <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}"/>
+    <input type="hidden" name="{{name}}" id="excalidraw-input-{{uuid}}" data-deferred-init="true"/>
     <div class="excalidraw-root">
         <div id="excalidraw-{{uuid}}"></div>
     </div>
