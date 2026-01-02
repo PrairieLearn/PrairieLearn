@@ -129,3 +129,12 @@ WHERE
   ci.uuid = $uuid
   AND ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
+
+-- BLOCK update_course_instance_modern_publishing
+UPDATE course_instances
+SET
+  modern_publishing = $modern_publishing
+WHERE
+  id = $course_instance_id
+RETURNING
+  *;

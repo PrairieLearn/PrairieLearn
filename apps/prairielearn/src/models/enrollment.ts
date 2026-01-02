@@ -441,7 +441,7 @@ async function _inviteExistingEnrollment({
   lockedEnrollment: Enrollment;
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
@@ -476,7 +476,7 @@ async function inviteNewEnrollment({
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -513,7 +513,7 @@ export async function inviteStudentByUid({
   requiredRole,
 }: {
   uid: string;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {
