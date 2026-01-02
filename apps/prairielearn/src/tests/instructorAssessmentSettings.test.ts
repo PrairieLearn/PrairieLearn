@@ -84,6 +84,8 @@ describe('Editing assessment settings', () => {
           number: '1',
           module: 'Module2',
           aid: 'HW2',
+          text: 'Test Text',
+          max_points: '100',
         }),
       },
     );
@@ -100,6 +102,8 @@ describe('Editing assessment settings', () => {
     assert.equal(assessmentLiveInfo.set, 'Practice Quiz');
     assert.equal(assessmentLiveInfo.number, '1');
     assert.equal(assessmentLiveInfo.module, 'Module2');
+    assert.equal(assessmentLiveInfo.text, 'Test Text');
+    assert.equal(assessmentLiveInfo.maxPoints, 100);
   });
 
   test.sequential('verify nesting an assessment id', async () => {
