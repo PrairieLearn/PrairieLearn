@@ -331,7 +331,7 @@ router.post(
           instance_question_ids,
         });
 
-        res.send({ 
+        res.send({
           job_sequence_id,
           job_sequence_token: generateJobSequenceToken(job_sequence_id),
         });
@@ -462,8 +462,8 @@ router.post(
       });
 
       res.json({
-        job_sequence_id, 
-        job_sequence_token: generateJobSequenceToken(job_sequence_id)
+        job_sequence_id,
+        job_sequence_token: generateJobSequenceToken(job_sequence_id),
       });
     } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {

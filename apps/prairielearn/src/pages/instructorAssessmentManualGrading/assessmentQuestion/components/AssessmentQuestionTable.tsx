@@ -763,22 +763,25 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.humanGraded}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_graded',
-                          modelId,
-                        }, {
-                          onSuccess: (data) => {
-                            if (!data) {
-                              return;
-                            }
-                            if ('job_sequence_token' in data) {
-                              serverJobProgress.handleAddJobSequence(
-                                data.job_sequence_id,
-                                data.job_sequence_token
-                              )
-                            }
-                          }
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_graded',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (!data) {
+                                return;
+                              }
+                              if ('job_sequence_token' in data) {
+                                serverJobProgress.handleAddJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <AiGradingOption
@@ -796,10 +799,10 @@ export function AssessmentQuestionTable({
                             if ('job_sequence_token' in data) {
                               serverJobProgress.handleAddJobSequence(
                                 data.job_sequence_id,
-                                data.job_sequence_token
-                              )
+                                data.job_sequence_token,
+                              );
                             }
-                          }
+                          },
                         );
                         table.resetRowSelection();
                       }}
@@ -809,22 +812,25 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.all}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_all',
-                          modelId
-                        }, {
-                          onSuccess: (data) => {
-                            if (!data) {
-                              return;
-                            }
-                            if ('job_sequence_token' in data) {
-                              serverJobProgress.handleAddJobSequence(
-                                data.job_sequence_id,
-                                data.job_sequence_token
-                              )
-                            }
-                          }
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_all',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (!data) {
+                                return;
+                              }
+                              if ('job_sequence_token' in data) {
+                                serverJobProgress.handleAddJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <Dropdown.Divider />

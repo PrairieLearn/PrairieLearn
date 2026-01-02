@@ -30,7 +30,7 @@ WHERE
       AND iq.manual_instance_question_group_id IS NULL
     )
   )
-ORDER BY 
+ORDER BY
   -- Ensures that the submissions are graded in the same order
   -- they are presented to the instructor.
   iq_stable_order,

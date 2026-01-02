@@ -34,7 +34,10 @@ export function useServerJobProgress({
   onProgressChange: () => void;
 }) {
   const [jobsProgress, setJobsProgress] = useState<Record<string, JobProgress>>({});
-  const [ongoingJobSequenceTokens, setOngoingJobSequenceTokens] = useState<Record<string, string> | null>(initialOngoingJobSequenceTokens);
+  const [ongoingJobSequenceTokens, setOngoingJobSequenceTokens] = useState<Record<
+    string,
+    string
+  > | null>(initialOngoingJobSequenceTokens);
 
   /**
    * The status to display for a specific job item across all ongoing jobs.
@@ -107,14 +110,14 @@ export function useServerJobProgress({
     };
   }, [ongoingJobSequenceTokens, enabled]);
 
-  /** 
+  /**
    * Add a new job sequence to track its progress.
    */
   function handleAddJobSequence(jobSequenceId: string, jobSequenceToken: string) {
-    setOngoingJobSequenceTokens((prev => ({
+    setOngoingJobSequenceTokens((prev) => ({
       ...prev,
       [jobSequenceId]: jobSequenceToken,
-    })));
+    }));
   }
 
   /**

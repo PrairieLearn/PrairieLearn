@@ -31,13 +31,15 @@ export type BatchActionParams =
       modelId: AiGradingModelId;
     };
 
-type BatchActionResponse = 
-    {
-      job_sequence_id: string, 
-      job_sequence_token: string
-    } | { 
-      job_sequence_id: string 
-    } | null;
+type BatchActionResponse =
+  | {
+      job_sequence_id: string;
+      job_sequence_token: string;
+    }
+  | {
+      job_sequence_id: string;
+    }
+  | null;
 
 interface UseManualGradingActionsParams {
   csrfToken: string;
@@ -50,11 +52,7 @@ export function useManualGradingActions({
 }: UseManualGradingActionsParams) {
   const queryClient = useQueryClient();
 
-  const batchActionMutation = useMutation<
-    BatchActionResponse,
-    Error,
-    BatchActionParams
-  >({
+  const batchActionMutation = useMutation<BatchActionResponse, Error, BatchActionParams>({
     mutationFn: async (params: BatchActionParams) => {
       // TODO: Once we use Zod on the backend, we should improve how this is constructed.
       const requestBody: Record<string, any> = {
@@ -117,7 +115,11 @@ export function useManualGradingActions({
     },
   });
 
-  const handleBatchAction = (actionData: BatchActionData, instanceQuestionIds: string[], onSuccess?: (data: BatchActionResponse) => void) => {
+  const handleBatchAction = (
+    actionData: BatchActionData,
+    instanceQuestionIds: string[],
+    onSuccess?: (data: BatchActionResponse) => void,
+  ) => {
     if (instanceQuestionIds.length === 0) return;
 
     batchActionMutation.mutate(
