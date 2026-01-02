@@ -118,7 +118,7 @@ function AssessmentQuestionManualGradingInner({
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending}
+                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
                 onChange={() =>
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {

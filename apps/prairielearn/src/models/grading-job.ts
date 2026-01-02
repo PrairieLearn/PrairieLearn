@@ -7,11 +7,11 @@ import {
   queryRow,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type GradingJob,
   GradingJobSchema,
-  IdSchema,
   SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,

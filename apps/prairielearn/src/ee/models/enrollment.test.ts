@@ -73,21 +73,21 @@ describe('getEnrollmentCountsForInstitution', () => {
 
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: freeUser.user_id,
+      userId: freeUser.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: paidUser1.user_id,
+      userId: paidUser1.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
     await ensureUncheckedEnrollment({
       courseInstance,
-      userId: paidUser2.user_id,
+      userId: paidUser2.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -97,7 +97,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: freeUser.user_id,
+        user_id: freeUser.id,
         // This plan grant should not make this user count as a paid enrollment.
         plan_name: 'compute',
         type: 'stripe',
@@ -109,7 +109,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: paidUser1.user_id,
+        user_id: paidUser1.id,
         plan_name: 'basic',
         type: 'stripe',
       },
@@ -120,7 +120,7 @@ describe('getEnrollmentCountsForInstitution', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: courseInstance.id,
-        user_id: paidUser2.user_id,
+        user_id: paidUser2.id,
         plan_name: 'basic',
         type: 'stripe',
       },
@@ -164,7 +164,7 @@ describe('getEnrollmentCountsForCourse', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -187,7 +187,7 @@ describe('getEnrollmentCountsForCourse', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -197,7 +197,7 @@ describe('getEnrollmentCountsForCourse', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: user.user_id,
+        user_id: user.id,
         plan_name: 'basic',
         type: 'stripe',
       },
@@ -220,7 +220,7 @@ describe('getEnrollmentCountsForCourse', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -230,7 +230,7 @@ describe('getEnrollmentCountsForCourse', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: user.user_id,
+        user_id: user.id,
         plan_name: 'compute',
         type: 'stripe',
       },
@@ -270,7 +270,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -293,7 +293,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -303,7 +303,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: user.user_id,
+        user_id: user.id,
         plan_name: 'basic',
         type: 'stripe',
       },
@@ -326,7 +326,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
     const firstCourseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       courseInstance: firstCourseInstance,
-      userId: user.user_id,
+      userId: user.id,
       requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
@@ -336,7 +336,7 @@ describe('getEnrollmentCountsForCourseInstance', () => {
       plan_grant: {
         institution_id: '1',
         course_instance_id: '1',
-        user_id: user.user_id,
+        user_id: user.id,
         plan_name: 'compute',
         type: 'stripe',
       },

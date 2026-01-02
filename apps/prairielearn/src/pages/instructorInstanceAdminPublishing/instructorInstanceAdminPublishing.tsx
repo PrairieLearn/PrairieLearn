@@ -11,6 +11,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { type AuthzData, assertHasRole } from '../../lib/authz-data-lib.js';
@@ -251,15 +252,8 @@ router.post(
 
       const parsedBody = z
         .object({
-          // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
-          // We would normally solve this on the client side, but this page does a HTML POST, so transformations
-          // done via react-hook-form don't work.
-
-          // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
-          // https://issues.chromium.org/issues/41159420
-
-          start_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
-          end_date: z.string().transform((v) => (v.length === 16 ? `${v}:00` : v)),
+          start_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
+          end_date: z.union([z.literal(''), DatetimeLocalStringSchema]),
         })
         .parse(req.body);
 

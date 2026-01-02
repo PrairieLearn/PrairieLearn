@@ -209,6 +209,8 @@ router.get(
     }
 
     req.session.skip_graded_submissions = req.session.skip_graded_submissions ?? true;
+    req.session.show_submissions_assigned_to_me_only =
+      req.session.show_submissions_assigned_to_me_only ?? true;
 
     const use_instance_question_groups = await run(async () => {
       const aiGradingMode =
@@ -227,9 +229,10 @@ router.get(
         urlPrefix: res.locals.urlPrefix,
         assessment_id: res.locals.assessment.id,
         assessment_question_id: res.locals.assessment_question.id,
-        user_id: res.locals.authz_data.user.user_id,
+        user_id: res.locals.authz_data.user.id,
         prior_instance_question_id: req.query.prior_instance_question_id ?? null,
         skip_graded_submissions: true,
+        show_submissions_assigned_to_me_only: req.session.show_submissions_assigned_to_me_only,
         use_instance_question_groups,
       }),
     );
@@ -288,6 +291,7 @@ router.post(
         const instance_question_ids = Array.isArray(req.body.instance_question_id)
           ? req.body.instance_question_id
           : [req.body.instance_question_id];
+
         const job_sequence_id = await aiGrade({
           question: res.locals.question,
           course: res.locals.course,
@@ -295,8 +299,8 @@ router.post(
           assessment: res.locals.assessment,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
           model_id,
           mode: 'selected',
           instance_question_ids,
@@ -323,8 +327,8 @@ router.post(
           course_instance_id: res.locals.course_instance.id,
           assessment_question: res.locals.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
           instance_question_ids,
           closed_instance_questions_only: req.body.closed_instance_questions_only,
           ungrouped_instance_questions_only: false,
@@ -343,7 +347,7 @@ router.post(
             authzData: res.locals.authz_data,
             requiredRole: ['Student Data Editor'],
           });
-          if (!courseStaff.some((staff) => idsEqual(staff.user_id, action_data.assigned_grader))) {
+          if (!courseStaff.some((staff) => idsEqual(staff.id, action_data.assigned_grader))) {
             throw new error.HttpStatusError(
               400,
               'Assigned grader does not have Student Data Editor permission',
@@ -372,7 +376,7 @@ router.post(
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       if (result.modified_at_conflict) {
         res.send({
@@ -419,8 +423,8 @@ router.post(
         assessment: res.locals.assessment,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.id,
+        user_id: res.locals.user.id,
         model_id,
         mode: run(() => {
           if (req.body.__action === 'ai_grade_assessment_graded') return 'human_graded';
@@ -441,8 +445,8 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.id,
+        user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: false,
       });
@@ -460,8 +464,8 @@ router.post(
         course_instance_id: res.locals.course_instance.id,
         assessment_question: res.locals.assessment_question,
         urlPrefix: res.locals.urlPrefix,
-        authn_user_id: res.locals.authn_user.user_id,
-        user_id: res.locals.user.user_id,
+        authn_user_id: res.locals.authn_user.id,
+        user_id: res.locals.user.id,
         closed_instance_questions_only: req.body.closed_instance_questions_only,
         ungrouped_instance_questions_only: true,
       });
@@ -474,7 +478,7 @@ router.post(
 
       const iqs = await deleteAiGradingJobs({
         assessment_question_ids: [res.locals.assessment_question.id],
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       res.json({ num_deleted: iqs.length });
@@ -501,7 +505,8 @@ router.post(
           req.body.max_extra_points,
           req.body.rubric_items,
           req.body.tag_for_manual_grading,
-          res.locals.authn_user.user_id,
+          req.body.grader_guidelines,
+          res.locals.authn_user.id,
         );
         res.redirect(req.originalUrl);
       } catch (err) {

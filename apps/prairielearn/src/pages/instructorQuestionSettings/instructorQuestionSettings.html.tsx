@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/preact';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
@@ -16,7 +17,6 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Question,
   type Tag,
   type Topic,

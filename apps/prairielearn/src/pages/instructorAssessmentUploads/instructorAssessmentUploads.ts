@@ -47,16 +47,16 @@ router.post(
       const jobSequenceId = await uploadInstanceQuestionScores(
         res.locals.assessment,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
       const jobSequenceId = await uploadAssessmentInstanceScores(
         res.locals.assessment.id,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_submissions') {
@@ -67,8 +67,8 @@ router.post(
       const jobSequenceId = await uploadSubmissions(
         res.locals.assessment,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {

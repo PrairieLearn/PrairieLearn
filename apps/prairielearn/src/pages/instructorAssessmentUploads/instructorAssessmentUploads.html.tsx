@@ -39,11 +39,11 @@ export function InstructorAssessmentUploads({
         ? html`
             ${UploadInstanceQuestionScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.group_work,
+              groupWork: resLocals.assessment.team_work,
             })}
             ${UploadAssessmentInstanceScoresModal({
               csrfToken: resLocals.__csrf_token,
-              groupWork: resLocals.assessment.group_work,
+              groupWork: resLocals.assessment.team_work,
             })}
             ${config.devMode
               ? UploadSubmissionsCsvModal({ csrfToken: resLocals.__csrf_token })
@@ -51,7 +51,7 @@ export function InstructorAssessmentUploads({
           `
         : ''}
       ${AssessmentUploadCard({
-        groupWork: resLocals.assessment.group_work,
+        groupWork: resLocals.assessment.team_work,
         assessmentSetName: resLocals.assessment_set.name,
         assessmentNumber: resLocals.assessment.number,
         authzHasPermissionEdit: resLocals.authz_data.has_course_instance_permission_edit,

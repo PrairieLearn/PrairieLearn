@@ -3,7 +3,7 @@ beautifulsoup4==4.14.3
 bokeh==3.8.1
 colormath==3.0.0
 defusedxml==0.7.1
-Faker==38.2.0
+Faker==40.1.0
 folium==0.20.0
 ipython==8.37.0
 matplotlib==3.10.8
@@ -20,7 +20,7 @@ Pygments==2.19.2
 pyarrow==22.0.0
 pygraphviz==1.14
 requests==2.32.5
-scikit-image==0.25.2
+scikit-image==0.26.0
 scikit-learn==1.8.0
 scipy==1.16.3
 seaborn==0.13.2

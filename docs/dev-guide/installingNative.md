@@ -8,7 +8,7 @@ This page describes the procedure to install and run PrairieLearn fully natively
   - [Git](https://git-scm.com)
   - [Node.js 22](https://nodejs.org)
   - [Yarn](https://yarnpkg.com)
-  - [Python 3.13](https://www.python.org)
+  - [uv](https://docs.astral.sh/uv/) (Python version manager and package installer)
   - [PostgreSQL 16](https://www.postgresql.org)
   - [Redis 6](https://redis.io)
   - [Graphviz](https://graphviz.org)
@@ -39,18 +39,12 @@ Most of these prerequisites can be installed using the package manager of your O
     > sudo service postgresql start
     > ```
 
-    Python 3.13 is not available in the default Ubuntu repositories -- you can install it through the [deadsnakes PPA](https://launchpad.net/~deadsnakes/+archive/ubuntu/ppa):
+Install `uv` using the standalone installer:
 
     ```sh
-    sudo add-apt-repository ppa:deadsnakes/ppa
-    sudo apt update
-    sudo apt install python3.13 python3.13-dev
-    ```
+    curl -LsSf https://astral.sh/uv/install.sh | sh
+    source $HOME/.local/bin/env  # Add uv to PATH for current shell
 
-    Install `uv`:
-
-    ```sh
-    pip install uv
     ```
 
     Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
@@ -94,7 +88,7 @@ Most of these prerequisites can be installed using the package manager of your O
     The main prerequisites can be installed with [Homebrew](http://brew.sh/):
 
     ```sh
-    brew install git graphviz postgresql@16 redis uv d2 node pgvector python@3.13
+    brew install git graphviz postgresql@16 redis uv d2 node pgvector
 
     # Optional; needed only for some example questions that use LaTeX
     brew install texlive
@@ -113,10 +107,6 @@ Most of these prerequisites can be installed using the package manager of your O
     corepack enable
     ```
 
-    !!! bug
-
-        See [astral-sh/python-build-standalone/issues/146](https://github.com/astral-sh/python-build-standalone/issues/146#issuecomment-2981797869) for why we use the system Python version.
-
 - Clone the latest code:
 
   ```sh
@@ -124,33 +114,10 @@ Most of these prerequisites can be installed using the package manager of your O
   cd PrairieLearn
   ```
 
-- Set up a Python virtual environment in the root of the cloned repository:
-
-  === "uv"
-
-        ```sh
-        uv venv --python-preference only-system --python 3.13 --seed
-        source .venv/bin/activate
-        ```
-
-  === "Native"
-
-        ```sh
-        python3.13 -m venv .venv
-        source .venv/bin/activate
-        ```
-
-  You can run `deactivate` to exit the virtual environment, and `source .venv/bin/activate` to re-enter it.
-
-- On macOS, set the following environment variables so that `pygraphviz` can [find the necessary headers](https://github.com/pygraphviz/pygraphviz/blob/main/INSTALL.txt):
+- Install Python dependencies (this will automatically create a virtual environment at `.venv` if needed):
 
   ```sh
-  cat << EOF >> .venv/bin/activate
-  export CFLAGS="-I$(brew --prefix graphviz)/include"
-  export LDFLAGS="-L$(brew --prefix graphviz)/lib"
-  EOF
-  
-  source .venv/bin/activate
+  make python-deps
   ```
 
 - Install all dependencies and transpile local packages:

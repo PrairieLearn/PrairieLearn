@@ -16,11 +16,12 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
+import { FileEditSchema } from '../../lib/db-types.js';
 import { getFileMetadataForPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
@@ -118,8 +119,8 @@ router.get(
     };
 
     const draftEdit = await readDraftEdit({
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.user.id,
+      authn_user_id: res.locals.authn_user.id,
       course_id: res.locals.course.id,
       dir_name: path.dirname(relPath),
       file_name: editorData.fileName,
@@ -198,8 +199,8 @@ router.post(
 
     if (req.body.__action === 'save_and_sync') {
       const editID = await writeDraftEdit({
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         course_id: res.locals.course.id,
         dir_name: paths.workingDirectory,
         file_name: paths.workingFilename,

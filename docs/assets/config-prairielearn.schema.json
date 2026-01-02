@@ -939,18 +939,6 @@
       "type": "string",
       "default": "development"
     },
-    "titleOverride": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterText": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterTextHref": {
-      "type": ["string", "null"],
-      "default": null
-    },
     "announcementHtml": {
       "type": ["string", "null"],
       "default": null
