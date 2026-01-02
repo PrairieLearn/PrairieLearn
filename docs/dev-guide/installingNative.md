@@ -39,12 +39,11 @@ Most of these prerequisites can be installed using the package manager of your O
     > sudo service postgresql start
     > ```
 
-Install `uv` using the standalone installer:
+    Install `uv` using the standalone installer:
 
     ```sh
     curl -LsSf https://astral.sh/uv/install.sh | sh
     source $HOME/.local/bin/env  # Add uv to PATH for current shell
-
     ```
 
     Node.js 22 is not available in the default Ubuntu repositories -- you can install it through [nvm](https://github.com/nvm-sh/nvm).
