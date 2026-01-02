@@ -26,13 +26,13 @@ import subprocess
 import sys
 import time
 import types
+import warnings
 from collections.abc import Iterable, Sequence
 from importlib.abc import MetaPathFinder
 from inspect import signature
 from typing import Any
 
 import prairielearn.internal.zygote_utils as zu
-from prairielearn.internal import question_phases
 
 saved_path = copy.copy(sys.path)
 
@@ -79,6 +79,19 @@ if drop_privileges:
 import logging
 
 logging.getLogger("matplotlib.font_manager").disabled = True
+
+# As part of our Python 3.13 upgrade strategy, we'll silence warnings that complain
+# about invalid escape sequences in string literals. We're going to defer forcing
+# courses to do anything about them until we have automated tooling in place to help
+# with the fixes.
+#
+# This won't cause problems for first-party code, since we have Ruff checking for
+# these issues as part of our linting process.
+warnings.filterwarnings(
+    "ignore",
+    category=SyntaxWarning,
+    message=r"invalid escape sequence .*",
+)
 
 # Pre-load commonly used modules
 import html
@@ -164,6 +177,12 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
 
 
 def worker_loop() -> None:
+
+    # The prairielearn.internal module is only needed in the worker process.
+    # Because it makes use of threading, we only import it after forking to
+    # avoid warnings about inheriting threads from the parent process.
+    from prairielearn.internal import question_phases
+
     # Whether the PRNGs have already been seeded in this worker_loop() call
     seeded = False
 
