@@ -1,5 +1,7 @@
 version: 2
 
+# The Python strategy comes from this comment:
+# https://github.com/dependabot/dependabot-core/issues/12609#issuecomment-3407284321
 multi-ecosystem-groups:
   python:
     schedule:
