@@ -45,6 +45,10 @@ updates:
       - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
       - dependency-name: 'react'
       - dependency-name: 'react-dom'
+      # Express 5 made significant breaking changes, and we are not yet
+      # ready to upgrade to it.
+      - dependency-name: 'express'
+        versions: ['>=5']
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
