@@ -8,38 +8,33 @@ ARG CACHEBUST=2025-12-15-14-21-51
 # installed, as a separate step below.
 SHELL ["/bin/bash", "-lc"]
 
-# Install Python and required packages via miniconda.
+# Ensure that running Python in the container will use the correct Python version.
+ENV PATH="/home/coder/.venv/bin:$PATH"
+
+# - Ensure that all `uv` commands compile Python source files to bytecode.
+# - Ensure that all `uv` commands do not use any caching.
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+
+USER root
+WORKDIR "/"
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends gcc libc6-dev graphviz graphviz-dev \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    # Install uv
+    && curl -LO https://astral.sh/uv/install.sh \
+    && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
+
 # This is a prerequisite for the VS Code extensions in the following steps.
 USER coder
-COPY requirements.txt /
-# SC1091: `source` an unknown file is required to activate Conda.
-# hadolint ignore=SC1091
-RUN arch="$(uname -m)" \
-    && curl -sfLO "https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-${arch}.sh" \
-    && chmod +x "Miniforge3-Linux-${arch}.sh" \
-    && ./"Miniforge3-Linux-${arch}.sh" -b -p /home/coder/conda \
-    # Install conda and mamba hooks for future interactive bash sessions:
-    && /home/coder/conda/bin/conda init bash \
-    # Activate hooks in the current noninteractive session:
-    && . "/home/coder/conda/etc/profile.d/conda.sh" \
-    && . "/home/coder/conda/etc/profile.d/mamba.sh" \
-    && mamba activate \
-    # Installing `pygraphviz` with pip would require `build-essentials`, `graphviz`,
-    # and `graphviz-dev` to be installed at the OS level, which would increase the
-    # image size. Instead, we install it from Conda, which prebuilds it and also
-    # automatically installs a Conda-specific `graphviz` dependency.
-    && mamba install --yes "$(grep pygraphviz /requirements.txt | head -n 1)" \
-    && pip install --no-cache-dir -r /requirements.txt \
-    && rm "Miniforge3-Linux-${arch}.sh" \
-    && mamba clean --all --yes --quiet \
-    && pip cache purge
+WORKDIR "/home/coder"
 
-# Also add conda init to /etc/profile.d/ so that noninteractive login shells
-# can use "pip install" (e.g. during additional Docker RUN commands). This is
-# necessary because the bash hook installed with "init bash" above will only
-# activate for interactive shells.
-USER 0
-RUN /home/coder/conda/bin/conda init --system
+# Create the virtual environment as the coder user
+RUN uv venv --python-preference managed --python 3.12 /home/coder/.venv
+
+COPY requirements.txt /home/coder/requirements.txt
+RUN uv pip install -r /home/coder/requirements.txt
 
 # After installing Python we install some VS Code extensions.
 USER coder
@@ -50,3 +45,5 @@ RUN code-server --disable-telemetry --force \
     --install-extension KevinRose.vsc-python-indent \
     # Clear the extension cache to reduce image size.
     && rm -rf /home/coder/.local/share/code-server/CachedExtensionVSIXs
+
+WORKDIR "/home/coder/workspace"

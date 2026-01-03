@@ -257,7 +257,7 @@ function CourseDirectoryMissingAlert({
         <button
           name="__action"
           value="add_configuration"
-          class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+          class="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
         </button>
