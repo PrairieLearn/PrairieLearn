@@ -40,6 +40,7 @@ export function InstanceQuestion({
   aiGradingStats,
   instanceQuestionGroups,
   skipGradedSubmissions,
+  showSubmissionsAssignedToMeOnly,
   submissionCredits,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
@@ -59,6 +60,7 @@ export function InstanceQuestion({
   aiGradingStats: AiGradingGeneralStats | null;
   instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
   submissionCredits: number[];
 }) {
   const instanceQuestionGroupsExist = instanceQuestionGroups
@@ -173,6 +175,9 @@ export function InstanceQuestion({
       <div class="mb-3">
         ${hydrateHtml(
           <RubricSettings
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
             assessmentQuestion={StaffAssessmentQuestionSchema.parse(resLocals.assessment_question)}
             rubricData={rubric_data}
             csrfToken={__csrf_token}
@@ -196,6 +201,7 @@ export function InstanceQuestion({
             graders,
             lastGrader,
             skipGradedSubmissions,
+            showSubmissionsAssignedToMeOnly,
           })
         : ''}
       <div class="row">
@@ -221,6 +227,7 @@ export function InstanceQuestion({
                 showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
                 instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
+                show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
               })}
             </div>
           </div>
@@ -267,12 +274,14 @@ function ConflictGradingJobModal({
   graders,
   lastGrader,
   skipGradedSubmissions,
+  showSubmissionsAssignedToMeOnly,
 }: {
   resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
   skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -312,6 +321,7 @@ function ConflictGradingJobModal({
                     context: 'existing',
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
+                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
                   })}
                 </div>
               </div>
@@ -339,6 +349,7 @@ function ConflictGradingJobModal({
                     graders,
                     showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
+                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
                   })}
                 </div>
               </div>
