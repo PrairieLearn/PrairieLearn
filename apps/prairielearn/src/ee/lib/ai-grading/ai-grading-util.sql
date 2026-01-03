@@ -10,8 +10,8 @@ WHERE
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
   iq.*,
-  -- Pseudo-random deterministic stable order of instance questions used on 
-  -- the instructor assessment question manual grading page. 
+  -- Pseudo-random deterministic stable order of instance questions identical
+  -- to that used in the instructor assessment question manual grading page.
   ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order
 FROM
   instance_questions AS iq
@@ -31,8 +31,10 @@ WHERE
     )
   )
 ORDER BY
-  -- Ensures that the submissions are graded in the same order
-  -- they are presented to the instructor.
+  -- Sorting by iq_stable_order makes AI grading look more organized by 
+  -- ensuring the submissions are graded in the same order they are 
+  -- presented to the instructor (if the instructor didn't apply a custom
+  -- filter or sort).
   iq_stable_order,
   iq.id;
 

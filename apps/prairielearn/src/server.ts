@@ -922,7 +922,9 @@ export async function initExpress(): Promise<Express> {
         next();
       },
       (
-        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
+        await import(
+          './pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js'
+        )
       ).default,
     ],
   );
@@ -991,7 +993,9 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
       (
-        await import('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js')
+        await import(
+          './pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js'
+        )
       ).default,
     ],
   );
@@ -1004,7 +1008,9 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (
-        await import('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js')
+        await import(
+          './pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js'
+        )
       ).default,
     ],
   );
@@ -1200,14 +1206,18 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
     (
-      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
     ).default,
   );
   if (isEnterprise()) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
       (
-        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
       ).default,
     );
     app.use(
@@ -1460,7 +1470,9 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
     (
-      await import('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js')
+      await import(
+        './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
+      )
     ).default,
   );
   app.use(
@@ -1663,7 +1675,9 @@ export async function initExpress(): Promise<Express> {
   );
   app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
     (
-      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
+      await import(
+        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
+      )
     ).default,
   ]);
   app.use(
@@ -1678,7 +1692,9 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
       (
-        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
+        await import(
+          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
+        )
       ).default,
     );
     app.use(
@@ -1739,7 +1755,9 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_course_instance',
     (
-      await import('./pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js')
+      await import(
+        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
+      )
     ).default,
   );
 

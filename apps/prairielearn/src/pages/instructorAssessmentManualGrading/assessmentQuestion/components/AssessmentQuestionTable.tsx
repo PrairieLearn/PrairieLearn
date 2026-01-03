@@ -770,11 +770,8 @@ export function AssessmentQuestionTable({
                           },
                           {
                             onSuccess: (data) => {
-                              if (!data) {
-                                return;
-                              }
-                              if ('job_sequence_token' in data) {
-                                serverJobProgress.handleAddJobSequence(
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
                                   data.job_sequence_id,
                                   data.job_sequence_token,
                                 );
@@ -793,11 +790,8 @@ export function AssessmentQuestionTable({
                           { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
                           (data) => {
-                            if (!data) {
-                              return;
-                            }
-                            if ('job_sequence_token' in data) {
-                              serverJobProgress.handleAddJobSequence(
+                            if (data && 'job_sequence_token' in data) {
+                              serverJobProgress.handleAddOngoingJobSequence(
                                 data.job_sequence_id,
                                 data.job_sequence_token,
                               );
@@ -819,11 +813,8 @@ export function AssessmentQuestionTable({
                           },
                           {
                             onSuccess: (data) => {
-                              if (!data) {
-                                return;
-                              }
-                              if ('job_sequence_token' in data) {
-                                serverJobProgress.handleAddJobSequence(
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
                                   data.job_sequence_id,
                                   data.job_sequence_token,
                                 );

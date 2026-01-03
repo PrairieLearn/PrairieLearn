@@ -110,10 +110,7 @@ export function useServerJobProgress({
     };
   }, [ongoingJobSequenceTokens, enabled]);
 
-  /**
-   * Add a new job sequence to track its progress.
-   */
-  function handleAddJobSequence(jobSequenceId: string, jobSequenceToken: string) {
+  function handleAddOngoingJobSequence(jobSequenceId: string, jobSequenceToken: string) {
     setOngoingJobSequenceTokens((prev) => ({
       ...prev,
       [jobSequenceId]: jobSequenceToken,
@@ -148,7 +145,7 @@ export function useServerJobProgress({
   return {
     jobsProgress,
     displayedStatuses,
-    handleAddJobSequence,
+    handleAddOngoingJobSequence,
     handleDismissCompleteJobSequence,
   };
 }

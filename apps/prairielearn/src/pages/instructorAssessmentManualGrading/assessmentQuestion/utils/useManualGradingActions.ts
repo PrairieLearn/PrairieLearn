@@ -103,9 +103,6 @@ export function useManualGradingActions({
 
       return data;
     },
-    onError: (error: Error) => {
-      console.error(error);
-    },
     onSuccess: (data) => {
       if (!data) {
         void queryClient.invalidateQueries({
