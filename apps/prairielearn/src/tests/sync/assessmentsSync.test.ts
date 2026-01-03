@@ -1474,19 +1474,19 @@ describe('Assessment syncing', () => {
     assert.lengthOf(syncedPermissions, 2);
 
     const firstAssessmentQuestion = firstSyncedAssessment.assessment_questions[0];
-    const firstGroupRole = firstSyncedAssessment.team_roles[0];
+    const firstTeamRole = firstSyncedAssessment.team_roles[0];
     assert.ok(firstAssessmentQuestion);
-    assert.ok(firstGroupRole);
+    assert.ok(firstTeamRole);
 
     const secondAssessmentQuestion = secondSyncedAssessment.assessment_questions[0];
-    const secondGroupRole = secondSyncedAssessment.team_roles[0];
+    const secondTeamRole = secondSyncedAssessment.team_roles[0];
     assert.ok(secondAssessmentQuestion);
-    assert.ok(secondGroupRole);
+    assert.ok(secondTeamRole);
 
     const firstQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === firstAssessmentQuestion.id &&
-        p.team_role_id === firstGroupRole.id
+        p.team_role_id === firstTeamRole.id
       );
     });
     assert.ok(firstQuestionPermission);
@@ -1494,7 +1494,7 @@ describe('Assessment syncing', () => {
     const secondQuestionPermission = syncedPermissions.find((p) => {
       return (
         p.assessment_question_id === secondAssessmentQuestion.id &&
-        p.team_role_id === secondGroupRole.id
+        p.team_role_id === secondTeamRole.id
       );
     });
     assert.ok(secondQuestionPermission);

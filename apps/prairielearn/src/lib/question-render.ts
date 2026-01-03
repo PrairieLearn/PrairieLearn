@@ -853,11 +853,11 @@ export async function renderPanelsForSubmission({
       // is disabled, so it does not need to be replaced.
       if (variant.instance_question_id == null || next_instance_question.id == null) return;
 
-      let nextQuestionGroupRolePermissions: { can_view: boolean } | null = null;
+      let nextQuestionTeamRolePermissions: { can_view: boolean } | null = null;
       let userTeamRoles = 'None';
 
       if (assessment_instance?.team_id && team_config?.has_roles) {
-        nextQuestionGroupRolePermissions = await getQuestionTeamPermissions(
+        nextQuestionTeamRolePermissions = await getQuestionTeamPermissions(
           next_instance_question.id,
           assessment_instance.team_id,
           user.id,
@@ -873,7 +873,7 @@ export async function renderPanelsForSubmission({
         sequenceLocked: next_instance_question.sequence_locked,
         urlPrefix,
         whichButton: 'next',
-        teamRolePermissions: nextQuestionGroupRolePermissions,
+        teamRolePermissions: nextQuestionTeamRolePermissions,
         advanceScorePerc: assessment_question?.advance_score_perc,
         userTeamRoles,
       }).toString();
