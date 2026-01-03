@@ -2,6 +2,7 @@ import { resolve } from 'node:path';
 
 import * as sqldb from '@prairielearn/postgres';
 
+import { config } from '../../lib/config.js';
 import { CourseSchema } from '../../lib/db-types.js';
 import { REPOSITORY_ROOT_PATH } from '../../lib/paths.js';
 import { type CourseData } from '../course-db.js';
@@ -11,7 +12,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 function isExampleCourse(courseDir: string): boolean {
   return (
-    resolve(REPOSITORY_ROOT_PATH, 'exampleCourse') === resolve(REPOSITORY_ROOT_PATH, courseDir)
+    resolve(REPOSITORY_ROOT_PATH, config.exampleCoursePathIdentifier) ===
+    resolve(REPOSITORY_ROOT_PATH, courseDir)
   );
 }
 
