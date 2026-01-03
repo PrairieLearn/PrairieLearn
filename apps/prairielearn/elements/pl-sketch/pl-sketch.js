@@ -1,6 +1,6 @@
 window.SketchInput = function (id) {
   function prepareData() {
-    const si = new window.SketchInput.default(
+    const si = new window.sketchresponse.default(
       document.getElementById(id + '-si-container'),
       id,
       config,

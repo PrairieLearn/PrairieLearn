@@ -551,9 +551,9 @@ def check_grader(gd, name, data):
         return validate_ltgt(gd, name, tool_info)
 
 
-def check_initial(ind, name, tool_info, ranges):
+def check_initial(tid, name, tool_info, ranges):
     # check that toolid parameter there for all
-    tool_id = ind["toolid"]
+    tool_id = tid["toolid"]
     if tool_id is None:
         raise ValueError(name + ': Missing required parameter for initial: "toolid".')
     all_ids = list(tool_info.keys())
@@ -561,7 +561,7 @@ def check_initial(ind, name, tool_info, ranges):
         raise ValueError(
             name
             + ": "
-            + id
+            + tid
             + " is not a valid tool id. Possible tool ids are: "
             + str(all_ids)
             + "."
@@ -570,14 +570,14 @@ def check_initial(ind, name, tool_info, ranges):
     # NOTE: SketchResponse original names, not PL versions.
     n_point_tools = ["spline", "freeform", "polyline", "polygon"]
 
-    tool = tool_info[id]["type"]
+    tool = tool_info[tool_id]["type"]
     if tool in n_point_tools:
-        return validate_initial_n_points(ind, name, tool, ranges)
+        return validate_initial_n_points(tid, name, tool, ranges)
     else:
-        return validate_initial_set_points(ind, name, tool)
+        return validate_initial_set_points(tid, name, tool)
 
 
-def format_initials(all_initials, id, tool_dict, data, name):
+def format_initials(all_initials, tid, tool_dict, data, name):
 
     x_s = data["params"][name]["sketch_config"]["ranges"]["x_start"]
     x_e = data["params"][name]["sketch_config"]["ranges"]["x_end"]
@@ -589,25 +589,25 @@ def format_initials(all_initials, id, tool_dict, data, name):
     n_point_tools = ["spline", "freeform", "polyline", "polygon"]
 
     new_format = []
-    if tool_dict[id]["type"] == "horizontal-line":
+    if tool_dict[tid]["type"] == "horizontal-line":
         for initial in all_initials:
-            if initial["toolid"] == id:
+            if initial["toolid"] == tid:
                 coordinates = initial["coordinates"]
                 new_format = [
                     {"y": graph_to_screen_y(y_s, y_e, height, float(coord))}
                     for coord in coordinates
                 ]
-    elif tool_dict[id]["type"] == "vertical-line":
+    elif tool_dict[tid]["type"] == "vertical-line":
         for initial in all_initials:
-            if initial["toolid"] == id:
+            if initial["toolid"] == tid:
                 coordinates = initial["coordinates"]
                 new_format = [
                     {"x": graph_to_screen_x(x_s, x_e, width, float(coord))}
                     for coord in coordinates
                 ]
-    elif tool_dict[id]["type"] in n_point_tools:
+    elif tool_dict[tid]["type"] in n_point_tools:
         for initial in all_initials:
-            if initial["toolid"] == id:
+            if initial["toolid"] == tid:
                 if "coordinates" in initial:
                     coordinates = initial["coordinates"]
                     x_y_vals = [
@@ -617,13 +617,13 @@ def format_initials(all_initials, id, tool_dict, data, name):
                         ]
                         for i in range(0, len(coordinates), 2)
                     ]
-                    if tool_dict[id]["type"] == "freeform":
+                    if tool_dict[tid]["type"] == "freeform":
                         x_y_vals = fitCurve(x_y_vals, 5)
                     formatted_x_y_vals = [
                         {"x": val[0], "y": val[1]} for val in x_y_vals
                     ]
                     if (
-                        tool_dict[id]["type"] == "polygon"
+                        tool_dict[tid]["type"] == "polygon"
                         and len(formatted_x_y_vals) > 30
                     ):
                         raise ValueError(
@@ -667,7 +667,7 @@ def format_initials(all_initials, id, tool_dict, data, name):
                             data["params"][name]["sketch_config"]["ranges"],
                         )
                         if len(x_y_vals) > 0:
-                            if tool_dict[id]["type"] == "freeform":
+                            if tool_dict[tid]["type"] == "freeform":
                                 x_y_vals = fitCurve(x_y_vals, 5)
                             formatted_x_y_vals = [
                                 {"x": val[0], "y": val[1]} for val in x_y_vals
@@ -682,7 +682,7 @@ def format_initials(all_initials, id, tool_dict, data, name):
     else:  # one and two point tools
         new_format = []
         for initial in all_initials:
-            if initial["toolid"] == id:
+            if initial["toolid"] == tid:
                 coordinates = initial["coordinates"]
                 new_format += [
                     {
