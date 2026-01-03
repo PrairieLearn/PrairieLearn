@@ -15,9 +15,7 @@ export const specs: AdministratorQuerySpecs = {
   // ...
 };
 
-export default async function (params: {
-  /* types */
-}): Promise<AdministratorQueryResult> {
+export default async function (params: { /* types */ }): Promise<AdministratorQueryResult> {
   // Perform some actions, including potentially running SQL queries
   // Return an array of column names and an array of row objects
   return { columns, rows };
