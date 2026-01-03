@@ -45,6 +45,21 @@
             </div>
         {{/feedback}}
     </div>
+    {{#correct}}
+        <div class="pl-drawing-sidebar">
+            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+        </div>
+    {{/correct}}
+    {{#partial}}
+        <div class="pl-drawing-sidebar">
+            <span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>
+        </div>
+    {{/partial}}
+    {{#incorrect}}
+        <div class="pl-drawing-sidebar">
+            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+        </div>
+    {{/incorrect}}
     {{#show_buttons}}
         <div class="pl-drawing-sidebar">
             <input type="hidden" name="{{name}}">
