@@ -78,6 +78,7 @@ export interface ResLocalsBuildLocals {
   variantAttemptsTotal: number;
   submissions: SubmissionForRender[];
   variantToken: string;
+  jobSequenceTokens: Record<string, string>;
 }
 
 export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;
