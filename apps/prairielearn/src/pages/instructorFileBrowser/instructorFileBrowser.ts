@@ -42,7 +42,7 @@ router.get(
       return;
     }
 
-    const paths = getPaths(req.params[0], res.locals);
+    const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
 
     try {
       const fileBrowser = await createFileBrowser({
@@ -69,7 +69,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
 
-    const paths = getPaths(req.params[0], res.locals);
+    const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
     const container = {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,

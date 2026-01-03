@@ -32,7 +32,7 @@ router.get(
   asyncHandler(async (req, res) => {
     await setLocals(req, res);
 
-    const paths = getPaths(req.params[0], res.locals);
+    const paths = getPaths(req.params[0], res.locals, 'public_question');
 
     try {
       const fileBrowser = await createFileBrowser({
