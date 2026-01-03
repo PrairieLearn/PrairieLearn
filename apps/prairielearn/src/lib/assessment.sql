@@ -1512,11 +1512,11 @@ WITH
     FROM
       relevant_instance_questions AS iq
     GROUP BY
-      iq.u_gr_id
+      iq.u_tm_id
   ),
   user_quintiles AS (
     SELECT
-      assessment_scores_by_user_or_team.u_gr_id,
+      assessment_scores_by_user_or_team.u_tm_id,
       ntile(5) OVER (
         ORDER BY
           assessment_scores_by_user_or_team.score_perc
@@ -1529,7 +1529,7 @@ WITH
       avg(question_stats_by_user_or_team.score_perc) AS quintile_score
     FROM
       question_stats_by_user_or_team
-      JOIN user_quintiles USING (u_gr_id)
+      JOIN user_quintiles USING (u_tm_id)
     GROUP BY
       user_quintiles.quintile
     ORDER BY
@@ -1657,7 +1657,7 @@ WITH
       ) AS number_submissions_hist
     FROM
       question_stats_by_user_or_team
-      JOIN assessment_scores_by_user_or_team USING (u_gr_id)
+      JOIN assessment_scores_by_user_or_team USING (u_tm_id)
   )
 UPDATE assessment_questions AS aq
 SET
