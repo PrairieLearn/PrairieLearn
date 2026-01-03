@@ -5,7 +5,7 @@ import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 
-import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import type {
   AssessmentQuestion,

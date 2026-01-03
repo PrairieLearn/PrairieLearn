@@ -25,7 +25,7 @@ import {
   formatPrompt,
   logResponseUsage,
   mergeUsage,
-} from '../../lib/ai.js';
+} from '../../lib/ai-util.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
