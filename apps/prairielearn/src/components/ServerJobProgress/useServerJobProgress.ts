@@ -140,7 +140,8 @@ export function useServerJobProgress({
 
   useEffect(() => {
     onProgressChange();
-  }, [jobsProgress, onProgressChange]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [jobsProgress]);
 
   return {
     jobsProgress,
