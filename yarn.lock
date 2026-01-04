@@ -2440,6 +2440,21 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@google/genai@npm:^1.34.0":
+  version: 1.34.0
+  resolution: "@google/genai@npm:1.34.0"
+  dependencies:
+    google-auth-library: "npm:^10.3.0"
+    ws: "npm:^8.18.0"
+  peerDependencies:
+    "@modelcontextprotocol/sdk": ^1.24.0
+  peerDependenciesMeta:
+    "@modelcontextprotocol/sdk":
+      optional: true
+  checksum: 10c0/4fe3681f99a9e104568466cd260a1fdf58e9bc0aac0db9e7048791845c359373c729a2176cff6e1a795f77ef88592708e82acbdcf1c3aca0ce8046c8d24ba2ba
+  languageName: node
+  linkType: hard
+
 "@grpc/grpc-js@npm:^1.11.1, @grpc/grpc-js@npm:^1.14.3, @grpc/grpc-js@npm:^1.7.1":
   version: 1.14.3
   resolution: "@grpc/grpc-js@npm:1.14.3"
@@ -11932,7 +11947,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"google-auth-library@npm:^10.5.0":
+"google-auth-library@npm:^10.3.0, google-auth-library@npm:^10.5.0":
   version: 10.5.0
   resolution: "google-auth-library@npm:10.5.0"
   dependencies:
@@ -15740,6 +15755,7 @@ __metadata:
   dependencies:
     "@changesets/cli": "npm:^2.29.8"
     "@eslint-react/eslint-plugin": "npm:^2.5.0"
+    "@google/genai": "npm:^1.34.0"
     "@html-eslint/eslint-plugin": "npm:^0.52.1"
     "@playwright/test": "npm:^1.57.0"
     "@postgres-language-server/cli": "npm:^0.18.0"

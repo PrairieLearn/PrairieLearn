@@ -115,6 +115,18 @@ export function ManualGradingAssessment({
                   <i class="bi bi-stars" aria-hidden="true" />
                   AI grade all questions
                 </button>
+
+                <button
+                  type="button"
+                  class="btn btn-sm btn-light grading-tag-button"
+                  name="ai-test"
+                  aria-label="Test completion"
+                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
+                  onclick="$('#ai-test').submit();"
+                >
+                  <i class="bi bi-stars" aria-hidden="true" />
+                  Test completion
+                </button>
                 <button
                   type="button"
                   class="btn btn-sm btn-light grading-tag-button"

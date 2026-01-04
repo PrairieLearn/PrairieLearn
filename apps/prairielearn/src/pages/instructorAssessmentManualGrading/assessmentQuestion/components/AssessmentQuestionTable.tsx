@@ -756,6 +756,18 @@ export function AssessmentQuestionTable({
                         });
                       }}
                     />
+
+                    <AiGradingOption
+                      text="AI test"
+                      numToGrade={1}
+                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+                      onSelectModel={(modelId) => {
+                        batchActionMutation.mutate({
+                          action: 'ai_test',
+                          modelId,
+                        });
+                      }}
+                    />
                     <Dropdown.Divider />
                     <Dropdown.Item onClick={() => setShowDeleteAiGradingModal(true)}>
                       Delete all AI grading results

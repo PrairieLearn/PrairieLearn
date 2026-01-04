@@ -1,3 +1,4 @@
+import { GoogleGenAI } from '@google/genai';
 import { Router } from 'express';
 import z from 'zod';
 
@@ -11,7 +12,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import {
   AI_GRADING_MODEL_IDS,
   type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
+  DEFAULT_AI_GRADING_MODEL
 } from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import {
   calculateAiGradingStats,
@@ -33,6 +34,7 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -386,6 +388,91 @@ router.post(
       } else {
         res.sendStatus(204);
       }
+    } else if (req.body.__action === 'ai_test') {
+
+      if (!config.aiGradingGoogleApiKey) {
+        throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
+      }
+
+      const ai = new GoogleGenAI({
+        apiKey: config.aiGradingGoogleApiKey
+      })
+
+      const prompt = 'Generate an object with a single boolean field set to true.';
+
+
+
+
+
+      
+      
+      // const model_id = req.body.model_id as AiGradingModelId | undefined;
+      // if (!model_id) {
+      //   throw new error.HttpStatusError(400, 'No AI grading model specified');
+      // }
+
+      // const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
+
+      // const model = run(() => {
+      //   if (provider === 'openai') {
+      //     // If an OpenAI API Key and Organization are not provided, throw an error
+      //     if (!config.aiGradingOpenAiApiKey || !config.aiGradingOpenAiOrganization) {
+      //       throw new error.HttpStatusError(403, 'Model not available (OpenAI API key not provided)');
+      //     }
+      //     const openai = createOpenAI({
+      //       apiKey: config.aiGradingOpenAiApiKey,
+      //       organization: config.aiGradingOpenAiOrganization,
+      //     });
+      //     return openai(model_id);
+      //   } else if (provider === 'google') {
+      //     // If a Google API Key is not provided, throw an error
+      //     if (!config.aiGradingGoogleApiKey) {
+      //       throw new error.HttpStatusError(403, 'Model not available (Google API key not provided)');
+      //     }
+      //     const google = createGoogleGenerativeAI({
+      //       apiKey: config.aiGradingGoogleApiKey,
+      //     });
+      //     return google(model_id);
+      //   } else {
+      //     // If an Anthropic API Key is not provided, throw an error
+      //     if (!config.aiGradingAnthropicApiKey) {
+      //       throw new error.HttpStatusError(
+      //         403,
+      //         'Model not available (Anthropic API key not provided)',
+      //       );
+      //     }
+      //     const anthropic = createAnthropic({
+      //       apiKey: config.aiGradingAnthropicApiKey,
+      //     });
+      //     return anthropic(model_id);
+      //   }
+      // });
+
+      // const TestSchema = z.object({'Correctly solves for $__mathbf{x}$': z.boolean()});
+
+      // try {
+      //   const response = await generateObject({
+      //     model,
+      //     schema: TestSchema,
+      //     messages: [
+      //       {
+      //         role: 'user',
+      //         content: 'Generate the schema, setting the boolean to true.',
+      //       },
+      //     ],
+      //     providerOptions: {
+      //       openai: {
+      //         strictJsonSchema: true,
+      //       },
+      //     }
+      //   });
+      //   console.log('Response object', response.object);
+      // } catch (err: any) {
+      //   console.error(err.text);
+      // }
+
+
+      res.redirect(req.originalUrl);
     } else if (
       ['ai_grade_assessment', 'ai_grade_assessment_graded', 'ai_grade_assessment_all'].includes(
         req.body.__action,

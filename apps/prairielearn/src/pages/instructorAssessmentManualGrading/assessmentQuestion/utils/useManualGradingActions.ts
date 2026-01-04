@@ -27,7 +27,8 @@ export type BatchActionParams =
         | 'ai_grade_assessment_graded'
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
-        | 'ai_instance_question_group_assessment_ungrouped';
+        | 'ai_instance_question_group_assessment_ungrouped'
+        | 'ai_test';
       modelId: AiGradingModelId;
     };
 

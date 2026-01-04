@@ -217,6 +217,8 @@ export async function aiGrade({
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
+      console.log('rubric_items', rubric_items);
+
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,
@@ -259,6 +261,7 @@ export async function aiGrade({
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        console.log('rubric_items', rubric_items);
         for (const item of rubric_items) {
           RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
@@ -507,6 +510,9 @@ export async function aiGrade({
         try {
           return await gradeInstanceQuestion(instance_question, logger);
         } catch (err: any) {
+          if (err.text) {
+            logger.error(err.text);
+          }
           logger.error(err);
           return false;
         } finally {

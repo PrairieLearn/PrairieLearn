@@ -27,6 +27,7 @@
     "version": "changeset version && YARN_ENABLE_IMMUTABLE_INSTALLS=false yarn"
   },
   "dependencies": {
+    "@google/genai": "^1.34.0",
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
     "node-gyp": "^12.1.0",
