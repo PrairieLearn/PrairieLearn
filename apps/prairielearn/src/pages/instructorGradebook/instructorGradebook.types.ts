@@ -29,11 +29,11 @@ export const AssessmentInstanceScoreResultSchema = z.object({
 });
 export type AssessmentInstanceScoreResult = z.infer<typeof AssessmentInstanceScoreResultSchema>;
 
-export const OtherGroupUserSchema = z.object({
+export const OtherTeamUserSchema = z.object({
   uid: UserSchema.shape.uid,
   enrollment_id: EnrollmentSchema.shape.id.nullable(),
 });
-export type OtherGroupUser = z.infer<typeof OtherGroupUserSchema>;
+export type OtherTeamUser = z.infer<typeof OtherTeamUserSchema>;
 
 export const GradebookRowSchema = z.object({
   user_id: UserSchema.shape.id,
@@ -47,7 +47,7 @@ export const GradebookRowSchema = z.object({
     z.object({
       score_perc: AssessmentInstanceSchema.shape.score_perc.nullable(),
       assessment_instance_id: AssessmentInstanceSchema.shape.id.nullable(),
-      uid_other_users_group: OtherGroupUserSchema.array(),
+      uid_other_users_team: OtherTeamUserSchema.array(),
     }),
   ),
 });

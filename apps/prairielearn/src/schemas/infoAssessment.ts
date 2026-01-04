@@ -8,6 +8,7 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
   });
 }
 
+// TODO: This schema is being deprecated
 export const GroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),

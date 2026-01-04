@@ -16,16 +16,7 @@ const schemaNameOverrides: Record<string, string | null> = {
 };
 
 const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
-const unusedSchemas = new Set([
-  'JsonCommentSchema',
-  // TODO: Remove these aliases
-  'GroupSchema',
-  'GroupConfigSchema',
-  'GroupRoleSchema',
-  'GroupUserSchema',
-  'GroupUserRoleSchema',
-  'GroupLogSchema',
-]);
+const unusedSchemas = new Set(['JsonCommentSchema']);
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {

@@ -7,7 +7,7 @@ import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 export interface StudentGradebookTableRow {
   assessment_id: string;
   assessment_instance_id: string;
-  assessment_group_work: boolean;
+  assessment_team_work: boolean;
   title: string;
   assessment_set_heading: string;
   assessment_set_color: string;
@@ -79,7 +79,7 @@ export function StudentGradebook({
                       </td>
                       <td class="align-middle">
                         {row.title}{' '}
-                        {row.assessment_group_work && <i class="fas fa-users" aria-hidden="true" />}
+                        {row.assessment_team_work && <i class="fas fa-users" aria-hidden="true" />}
                       </td>
                       <td class="text-center align-middle">
                         {row.show_closed_assessment_score ? (

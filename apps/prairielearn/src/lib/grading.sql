@@ -82,7 +82,7 @@ WITH
       (
         CASE
           WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
-          ELSE la.team_id = $group_id
+          ELSE la.team_id = $team_id
         END
       )
   ),
@@ -94,7 +94,7 @@ WITH
       (
         CASE
           WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
-          ELSE la.team_id = $group_id
+          ELSE la.team_id = $team_id
         END
       )
   )

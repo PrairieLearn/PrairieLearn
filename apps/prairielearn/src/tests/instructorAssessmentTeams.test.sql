@@ -1,4 +1,4 @@
--- BLOCK select_group_work_assessment
+-- BLOCK select_team_work_assessment
 SELECT
   a.id
 FROM
@@ -7,4 +7,6 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.team_work IS TRUE;
+  AND a.team_work IS TRUE
+LIMIT
+  1;

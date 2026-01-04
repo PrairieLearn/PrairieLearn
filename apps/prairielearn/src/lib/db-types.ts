@@ -891,19 +891,6 @@ export const TeamUserRoleSchema = z.object({
 });
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
 
-// Backwards compatibility aliases for renamed group/team tables
-export const GroupSchema = TeamSchema;
-export type Group = Team;
-export const GroupConfigSchema = TeamConfigSchema;
-export type GroupConfig = TeamConfig;
-export const GroupRoleSchema = TeamRoleSchema;
-export type GroupRole = TeamRole;
-export const GroupUserSchema = TeamUserSchema;
-export type GroupUser = TeamUser;
-export const GroupUserRoleSchema = TeamUserRoleSchema;
-export type GroupUserRole = TeamUserRole;
-export const GroupLogSchema = TeamLogSchema;
-
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
