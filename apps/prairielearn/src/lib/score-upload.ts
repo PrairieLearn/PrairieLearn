@@ -368,7 +368,7 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
         sql.select_assessment_instance_team,
         {
           assessment_id,
-          group_name: record.group_name,
+          team_name: record.group_name,
           instance_number: record.instance,
         },
         IdSchema,
