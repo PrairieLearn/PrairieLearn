@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.team_name AS group_name, -- user-facing
+      ai.group_name, -- user-facing
       ai.uid_list
     FROM
       submissions AS s
