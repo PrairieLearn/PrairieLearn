@@ -86,6 +86,7 @@ export const AssessmentInstanceDataSchema = z.array(
     group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
     group_name: SprocTeamInfoSchema.shape.name.nullable(),
     group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
+
     time_remaining: z.string(),
     start_date: z.string().nullable(),
     duration_seconds: z.number(),
