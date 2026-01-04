@@ -257,6 +257,7 @@ nav:
           - '<span class="muted">pl-</span>python-variable': 'elements/pl-python-variable.md'
           - '<span class="muted">pl-</span>question-panel': 'elements/pl-question-panel.md'
           - '<span class="muted">pl-</span>rich-text-editor': 'elements/pl-rich-text-editor.md'
+          - '<span class="muted">pl-</span>sketch': 'elements/pl-sketch.md'
           - '<span class="muted">pl-</span>string-input': 'elements/pl-string-input.md'
           - '<span class="muted">pl-</span>submission-panel': 'elements/pl-submission-panel.md'
           - '<span class="muted">pl-</span>symbolic-input': 'elements/pl-symbolic-input.md'
