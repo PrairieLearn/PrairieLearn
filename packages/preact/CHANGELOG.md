@@ -1,5 +1,11 @@
 # @prairielearn/preact
 
+## 1.0.7
+
+### Patch Changes
+
+- f404bb4: Upgrade all JavaScript dependencies
+
 ## 1.0.6
 
 ### Patch Changes

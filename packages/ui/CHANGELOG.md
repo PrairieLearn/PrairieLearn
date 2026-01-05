@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 1.9.1
+
+### Patch Changes
+
+- f404bb4: Upgrade all JavaScript dependencies
+
 ## 1.9.0
 
 ### Minor Changes
