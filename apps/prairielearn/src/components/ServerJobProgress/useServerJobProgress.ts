@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState } from 'preact/compat';
+import { useCallback, useEffect, useMemo, useState } from 'preact/compat';
+import type { StateUpdater } from 'preact/hooks';
 import { io } from 'socket.io-client';
 
 import type {
@@ -38,6 +39,18 @@ export function useServerJobProgress({
     string,
     string
   > | null>(initialOngoingJobSequenceTokens);
+
+  const setJobsProgressAndEmit = useCallback(
+    (stateUpdater: StateUpdater<Record<string, JobProgress>>) => {
+      setJobsProgress(stateUpdater);
+      onProgressChange();
+
+      // We do not include onProgressChange in the dependency array because it
+      // would cause an infinite loop if the callback is not memoized.
+      // eslint-disable-next-line react-hooks/exhaustive-deps
+    },
+    [],
+  );
 
   /**
    * The status to display for a specific job item across all ongoing jobs.
@@ -87,7 +100,8 @@ export function useServerJobProgress({
           if (!response.has_progress_data) {
             return;
           }
-          setJobsProgress((prev) => ({
+
+          setJobsProgressAndEmit((prev) => ({
             ...prev,
             [jobSequenceId]: response,
           }));
@@ -99,7 +113,8 @@ export function useServerJobProgress({
         if (msg.job_sequence_id !== jobSequenceId || !msg.has_progress_data) {
           return;
         }
-        setJobsProgress((prev) => ({
+
+        setJobsProgressAndEmit((prev) => ({
           ...prev,
           [jobSequenceId]: msg,
         }));
@@ -108,7 +123,7 @@ export function useServerJobProgress({
     return () => {
       socket.disconnect();
     };
-  }, [ongoingJobSequenceTokens, enabled]);
+  }, [ongoingJobSequenceTokens, enabled, setJobsProgressAndEmit]);
 
   function handleAddOngoingJobSequence(jobSequenceId: string, jobSequenceToken: string) {
     setOngoingJobSequenceTokens((prev) => ({
@@ -132,16 +147,11 @@ export function useServerJobProgress({
       return;
     }
 
-    setJobsProgress((prev) => {
+    setJobsProgressAndEmit((prev) => {
       const { [jobSequenceId]: _removed, ...newJobsProgress } = prev;
       return newJobsProgress;
     });
   }
-
-  useEffect(() => {
-    onProgressChange();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [jobsProgress]);
 
   return {
     jobsProgress,
