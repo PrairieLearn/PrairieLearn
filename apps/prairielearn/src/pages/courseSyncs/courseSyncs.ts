@@ -24,6 +24,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
 const DEFAULT_SYNC_LIMIT = 100;
+const NO_LIMIT = 2147483647;
 
 router.get(
   '/',
@@ -33,7 +34,7 @@ router.get(
   }),
   asyncHandler(async (req, res) => {
     const showAll = 'all' in req.query;
-    const limit = showAll ? null : DEFAULT_SYNC_LIMIT;
+    const limit = showAll ? NO_LIMIT : DEFAULT_SYNC_LIMIT;
 
     const jobSequences = await queryRows(
       sql.select_sync_job_sequences,

@@ -159,7 +159,7 @@ export function CourseSyncs({
           ? html`
               <div class="card-footer">
                 Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
-                <a href="?all">View all</a>
+                <a href="?all" aria-label="View all sync jobs">View all</a>
               </div>
             `
           : ''}
