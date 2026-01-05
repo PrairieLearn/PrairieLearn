@@ -28,10 +28,6 @@ export const JobSequenceRowSchema = JobSequenceSchema.extend({
 });
 type JobSequenceRow = z.infer<typeof JobSequenceRowSchema>;
 
-export const JobSequenceCountSchema = z.object({
-  count: z.number(),
-});
-
 export function CourseSyncs({
   resLocals,
   images,

@@ -2,6 +2,7 @@ import { type DescribeImagesCommandOutput, ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { DockerName } from '@prairielearn/docker-utils';
 import { HttpStatusError } from '@prairielearn/error';
@@ -13,12 +14,7 @@ import { config } from '../../lib/config.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
-import {
-  CourseSyncs,
-  ImageRowSchema,
-  JobSequenceCountSchema,
-  JobSequenceRowSchema,
-} from './courseSyncs.html.js';
+import { CourseSyncs, ImageRowSchema, JobSequenceRowSchema } from './courseSyncs.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -42,10 +38,10 @@ router.get(
       JobSequenceRowSchema,
     );
 
-    const { count: totalCount } = await queryRow(
+    const totalCount = await queryRow(
       sql.count_sync_job_sequences,
       { course_id: res.locals.course.id },
-      JobSequenceCountSchema,
+      z.number(),
     );
 
     const images = await queryRows(
