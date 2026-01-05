@@ -1,6 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { Router } from 'express';
 import z from 'zod';
+import zodToJsonSchema from 'zod-to-json-schema';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
@@ -400,6 +401,46 @@ router.post(
 
       const prompt = 'Generate an object with a single boolean field set to true.';
 
+      for (const key_test of [
+        '\\a',
+        '\\\\a',
+        'Correctly solves for $\\mathbf{x}$',
+        'Correctly solves for $\\\\mathbf{x}$',
+        'Correctly solves for $__mathbf{x}$'
+      ]) {
+        try {
+          const TestSchema = z.object({[key_test]: z.boolean()});
+    
+          const response = await ai.models.generateContent({
+            model: 'gemini-3-flash-preview',
+            contents: prompt,
+            config: {
+              responseMimeType: 'application/json',
+              responseJsonSchema: zodToJsonSchema(TestSchema),
+            },
+          });
+    
+          if (!response.text) {
+            throw new error.HttpStatusError(500, 'No response text from AI model');
+          }
+
+          console.log('Raw response text', response.text);
+    
+          const output = TestSchema.parse(JSON.parse(response.text));
+    
+          console.log('Response object', output);
+        } catch {
+          console.error(`Error parsing response for key test: ${key_test}`);
+        }
+
+      }  
+
+
+
+
+
+
+
 
 
 
@@ -448,7 +489,7 @@ router.post(
       //   }
       // });
 
-      // const TestSchema = z.object({'Correctly solves for $__mathbf{x}$': z.boolean()});
+
 
       // try {
       //   const response = await generateObject({
