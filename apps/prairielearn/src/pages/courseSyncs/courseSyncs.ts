@@ -5,7 +5,7 @@ import asyncHandler from 'express-async-handler';
 
 import { DockerName } from '@prairielearn/docker-utils';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
@@ -13,10 +13,17 @@ import { config } from '../../lib/config.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
-import { CourseSyncs, ImageRowSchema, JobSequenceRowSchema } from './courseSyncs.html.js';
+import {
+  CourseSyncs,
+  ImageRowSchema,
+  JobSequenceCountSchema,
+  JobSequenceRowSchema,
+} from './courseSyncs.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
+
+const DEFAULT_SYNC_LIMIT = 100;
 
 router.get(
   '/',
@@ -25,10 +32,19 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
+    const showAll = 'all' in req.query;
+    const limit = showAll ? null : DEFAULT_SYNC_LIMIT;
+
     const jobSequences = await queryRows(
       sql.select_sync_job_sequences,
-      { course_id: res.locals.course.id },
+      { course_id: res.locals.course.id, limit },
       JobSequenceRowSchema,
+    );
+
+    const { count: totalCount } = await queryRow(
+      sql.count_sync_job_sequences,
+      { course_id: res.locals.course.id },
+      JobSequenceCountSchema,
     );
 
     const images = await queryRows(
@@ -77,7 +93,15 @@ router.get(
       });
     }
 
-    res.send(CourseSyncs({ resLocals: res.locals, images, jobSequences }));
+    res.send(
+      CourseSyncs({
+        resLocals: res.locals,
+        images,
+        jobSequences,
+        jobSequenceCount: totalCount,
+        showAllJobSequences: showAll,
+      }),
+    );
   }),
 );
 
