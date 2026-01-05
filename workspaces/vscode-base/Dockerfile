@@ -1,7 +1,5 @@
 # noble is the codename for Ubuntu 24.04 LTS
-# We pin to 4.104.3 because newer versions (e.g., 4.105.1) have enabled AI despite settings to disable it.
-# See: https://github.com/coder/code-server/issues/7540
-FROM codercom/code-server:4.106.2-noble
+FROM codercom/code-server:4.107.0-noble
 ARG CACHEBUST=2025-12-15-14-21-51
 
 # On PL, we want to standardize on using 1001:1001 for the user. We change the
