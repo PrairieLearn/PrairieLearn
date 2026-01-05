@@ -1,7 +1,7 @@
 import { GoogleGenAI } from '@google/genai';
 import { Router } from 'express';
 import z from 'zod';
-import zodToJsonSchema from 'zod-to-json-schema';
+import {zodToJsonSchema} from 'zod-to-json-schema';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
