@@ -38,7 +38,7 @@ router.get(
       JobSequenceRowSchema,
     );
 
-    const totalCount = await queryRow(
+    const jobSequenceCount = await queryRow(
       sql.count_sync_job_sequences,
       { course_id: res.locals.course.id },
       z.number(),
@@ -95,7 +95,7 @@ router.get(
         resLocals: res.locals,
         images,
         jobSequences,
-        jobSequenceCount: totalCount,
+        jobSequenceCount,
         showAllJobSequences: showAll,
       }),
     );
