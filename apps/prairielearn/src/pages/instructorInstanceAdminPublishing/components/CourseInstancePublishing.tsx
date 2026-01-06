@@ -111,8 +111,7 @@ export function CourseInstancePublishing({
               <>
                 <h5 className="mb-3">Extensions</h5>
                 <div className="alert alert-info" role="alert">
-                  You do not have permission to view extensions. Extensions require student data
-                  permissions.
+                  You must have student data permission to view and edit extensions.
                 </div>
               </>
             )}
