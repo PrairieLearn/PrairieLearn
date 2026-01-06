@@ -26,6 +26,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.21",
     "@types/node": "^22.19.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.16",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.21.0",

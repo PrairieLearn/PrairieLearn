@@ -20,6 +20,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/loopbench": "^1.2.4",
     "@types/node": "^22.19.3",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3"
   }
 }

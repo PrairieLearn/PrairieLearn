@@ -305,6 +305,7 @@
     "@types/tmp": "^0.2.6",
     "@types/ua-parser-js": "^0.7.39",
     "@types/unzipper": "^0.10.11",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.16",
     "axe-core": "^4.11.0",
     "get-port": "^7.1.0",
