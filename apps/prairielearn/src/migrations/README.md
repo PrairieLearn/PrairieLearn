@@ -107,3 +107,13 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
 - Fifth PR: Fully remove the old column
   - Remove the old column from the database
   - Remove the old column from the zod schema
+
+### Drop column
+
+- First PR: Remove column
+  - Update all code to not read from the column
+  - Update all code to not write to the column
+  - Mark the column in the zod schema as `z.unknown()`
+
+- Second PR: Finalize
+  - Remove the column from the database

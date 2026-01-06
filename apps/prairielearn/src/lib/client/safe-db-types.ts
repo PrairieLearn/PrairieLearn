@@ -257,7 +257,6 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   course_id: true,
   deleted_at: true,
   display_timezone: true,
-  hide_in_enroll_page: true,
   id: true,
   long_name: true,
   publishing_end_date: true,

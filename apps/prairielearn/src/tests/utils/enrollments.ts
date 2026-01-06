@@ -1,31 +1,72 @@
 import fetch from 'node-fetch';
-import { assert } from 'vitest';
 import { z } from 'zod';
 
 import { queryRow } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
 import '../helperServer';
+import {
+  PotentialEnterpriseEnrollmentStatus,
+  checkPotentialEnterpriseEnrollment,
+} from '../../ee/models/enrollment.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 
-import { type AuthUser, withUser } from './auth.js';
+import { type AuthUser, getOrCreateUser, withUser } from './auth.js';
 import { getCsrfToken } from './csrf.js';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
-const baseUrl = siteUrl + '/pl';
 
-export async function enrollUser(courseInstanceId: string, user: AuthUser) {
-  return await withUser(user, async () => {
-    const url = baseUrl + '/enroll';
-    return await fetch(url, {
-      method: 'POST',
-      body: new URLSearchParams({
-        course_instance_id: courseInstanceId,
-        __action: 'enroll',
-        __csrf_token: await getCsrfToken(url),
-      }),
-    });
+/**
+ * Enroll a user in a course instance similar to how a user would via the UI.
+ *
+ * Returns the potential enterprise enrollment status.
+ */
+export async function enrollUser(
+  courseInstanceId: string,
+  user: AuthUser,
+): Promise<PotentialEnterpriseEnrollmentStatus> {
+  const dbUser = await getOrCreateUser(user);
+
+  const context = await constructCourseOrInstanceContext({
+    user: dbUser,
+    course_id: null,
+    course_instance_id: courseInstanceId,
+    ip: null,
+    req_date: new Date(),
+    is_administrator: false,
   });
+
+  if (context.courseInstance === null) {
+    throw new Error(`Course instance ${courseInstanceId} not found`);
+  }
+
+  const { course, institution, courseInstance } = context;
+
+  let status = PotentialEnterpriseEnrollmentStatus.ALLOWED;
+
+  if (config.isEnterprise) {
+    status = await checkPotentialEnterpriseEnrollment({
+      institution,
+      course,
+      courseInstance,
+      authzData: { user: dbUser },
+    });
+  }
+
+  if (status === PotentialEnterpriseEnrollmentStatus.ALLOWED) {
+    await ensureUncheckedEnrollment({
+      courseInstance,
+      userId: dbUser.id,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'explicit_joined',
+    });
+  }
+
+  return status;
 }
 
 export async function unenrollUser(courseInstanceId: string, user: AuthUser) {
@@ -51,12 +92,11 @@ export async function enrollRandomUsers(courseInstanceId: string, count: number)
   );
   for (let i = 0; i < count; i++) {
     const number = currentCount + i + 1;
-    const res = await enrollUser(courseInstanceId, {
+    await enrollUser(courseInstanceId, {
       name: `Student ${i}`,
       uid: `student${number}@example.com`,
       uin: `student-${i}`,
       email: `student${number}@example.com`,
     });
-    assert.isOk(res.ok);
   }
 }

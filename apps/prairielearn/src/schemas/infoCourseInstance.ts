@@ -99,9 +99,7 @@ export const CourseInstanceJsonSchema = z
       .default({}),
     hideInEnrollPage: z
       .boolean()
-      .describe(
-        'If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.',
-      )
+      .describe('DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.')
       .optional()
       .default(false),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),

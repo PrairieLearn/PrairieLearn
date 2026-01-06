@@ -59,9 +59,10 @@
       "default": {}
     },
     "hideInEnrollPage": {
-      "description": "If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.",
+      "description": "DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "userRoles": {
       "description": "DEPRECATED -- do not use.",
