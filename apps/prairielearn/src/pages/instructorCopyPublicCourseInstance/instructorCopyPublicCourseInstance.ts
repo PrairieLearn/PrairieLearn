@@ -5,6 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { BooleanFromCheckboxSchema, DatetimeLocalStringSchema } from '@prairielearn/zod';
 
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
 import { propertyValueWithDefault } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -16,9 +17,15 @@ const router = Router();
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    // Note that this context is for the course we are copying INTO (this route is just a POST handler).
+    const { institution, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: res.locals.institution.id,
-      course_id: res.locals.course.id,
+      institution_id: institution.id,
+      course_id: course.id,
     });
 
     const {
@@ -37,13 +44,15 @@ router.post(
       })
       .parse(req.body);
 
-    const courseInstance = await selectOptionalCourseInstanceById(course_instance_id);
-    if (!courseInstance?.share_source_publicly) {
+    // The ID of the course instance we are copying
+    const fromCourseInstance = await selectOptionalCourseInstanceById(course_instance_id);
+    if (!fromCourseInstance?.share_source_publicly) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
-    const course = await selectCourseById(courseInstance.course_id);
+    const fromCourse = await selectCourseById(fromCourseInstance.course_id);
 
-    const toCourseId = res.locals.course.id;
+    // The ID of the course to copy the instance into
+    const toCourseId = course.id;
 
     const startDate = start_date.length > 0 ? start_date : undefined;
     const endDate = end_date.length > 0 ? end_date : undefined;
@@ -60,7 +69,6 @@ router.post(
       undefined,
       self_enrollment_enabled,
       true,
-      { isUIBoolean: true },
     );
     const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
       undefined,
@@ -78,8 +86,8 @@ router.post(
         : undefined;
 
     const fileTransferId = await copyCourseInstanceBetweenCourses({
-      fromCourse: course,
-      fromCourseInstance: courseInstance,
+      fromCourse,
+      fromCourseInstance,
       toCourseId,
       userId: res.locals.user.id,
       metadataOverrides: {
