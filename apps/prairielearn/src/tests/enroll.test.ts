@@ -620,6 +620,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     // Set up course instance with institution restriction enabled
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
+      // NOTE: You can only do this in the UI when you are using modern publishing.
       restrictToInstitution: true,
       selfEnrollmentUseEnrollmentCode: false,
     });
