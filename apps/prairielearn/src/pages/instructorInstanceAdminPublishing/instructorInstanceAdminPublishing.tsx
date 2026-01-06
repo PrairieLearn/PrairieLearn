@@ -23,6 +23,7 @@ import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/d
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   addEnrollmentToPublishingExtension,
   createPublishingExtensionWithEnrollments,
@@ -129,24 +130,34 @@ router.get(
 
 router.get(
   '/',
+  // To view the publishing page, need either course or course instance view permissions
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    const publishingExtensions = await selectPublishingExtensionsWithUsersByCourseInstance({
-      courseInstance: res.locals.course_instance,
-      authzData: res.locals.authz_data,
-      requiredRole: ['Student Data Viewer'],
-    });
-
     const {
       authz_data: {
+        has_course_permission_edit: hasCoursePermissionEdit,
         has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
         has_course_instance_permission_view: hasCourseInstancePermissionView,
       },
       __csrf_token: csrfToken,
       course_instance: courseInstance,
+      course,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
+
+    // Only fetch extensions if user has student data view permission
+    const publishingExtensions = hasCourseInstancePermissionView
+      ? await selectPublishingExtensionsWithUsersByCourseInstance({
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          requiredRole: ['Student Data Viewer'],
+        })
+      : [];
 
     assert(hasCourseInstancePermissionEdit !== undefined);
     assert(hasCourseInstancePermissionView !== undefined);
@@ -189,7 +200,11 @@ router.get(
           <Hydrate>
             <CourseInstancePublishing
               courseInstance={courseInstance}
-              canEdit={hasCourseInstancePermissionEdit && origHash !== null}
+              canEditPublishing={
+                hasCoursePermissionEdit && !course.example_course && origHash !== null
+              }
+              canViewExtensions={hasCourseInstancePermissionView}
+              canEditExtensions={hasCourseInstancePermissionEdit}
               csrfToken={csrfToken}
               origHash={origHash}
               extensions={publishingExtensions}
@@ -220,10 +235,16 @@ router.post(
       },
     );
 
-    const { has_course_instance_permission_edit: hasCourseInstancePermissionEdit } = authzData;
+    const {
+      has_course_permission_edit: hasCoursePermissionEdit,
+      has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
+    } = authzData;
 
-    if (!hasCourseInstancePermissionEdit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be course instance editor)');
+    if (!hasCoursePermissionEdit && !hasCourseInstancePermissionEdit) {
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course or course instance editor)',
+      );
     }
 
     if (req.body.__action === 'update_publishing') {
@@ -308,6 +329,11 @@ router.post(
 
     if (req.accepts('html')) {
       throw new error.HttpStatusError(406, 'Not acceptable');
+    }
+
+    // Extension actions require student data edit permission
+    if (!hasCourseInstancePermissionEdit) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'add_extension') {

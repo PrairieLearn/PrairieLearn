@@ -15,14 +15,18 @@ import { PublishingExtensions } from './PublishingExtensions.js';
 
 export function CourseInstancePublishing({
   courseInstance,
-  canEdit,
+  canEditPublishing,
+  canViewExtensions,
+  canEditExtensions,
   csrfToken,
   origHash,
   extensions,
   isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
-  canEdit: boolean;
+  canEditPublishing: boolean;
+  canViewExtensions: boolean;
+  canEditExtensions: boolean;
   csrfToken: string;
   origHash: string | null;
   extensions: CourseInstancePublishingExtensionRow[];
@@ -63,12 +67,12 @@ export function CourseInstancePublishing({
       <div class="mb-4">
         <h4 class="mb-4">Publishing</h4>
 
-        {!canEdit && origHash !== null && (
+        {!canEditPublishing && origHash !== null && (
           <div class="alert alert-info" role="alert">
             You do not have permission to edit publishing settings.
           </div>
         )}
-        {!canEdit && origHash === null && (
+        {!canEditPublishing && origHash === null && (
           <div class="alert alert-warning" role="alert">
             You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
             file does not exist.
@@ -83,7 +87,7 @@ export function CourseInstancePublishing({
           <FormProvider {...methods}>
             <CourseInstancePublishingForm
               displayTimezone={courseInstance.display_timezone}
-              canEdit={canEdit}
+              canEdit={canEditPublishing}
               originalStartDate={courseInstance.publishing_start_date}
               originalEndDate={courseInstance.publishing_end_date}
             />
@@ -93,14 +97,24 @@ export function CourseInstancePublishing({
         {startDate && (
           <>
             <hr class="my-4" />
-            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-              <PublishingExtensions
-                courseInstance={courseInstance}
-                initialExtensions={extensions}
-                canEdit={canEdit}
-                csrfToken={csrfToken}
-              />
-            </QueryClientProviderDebug>
+            {canViewExtensions ? (
+              <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+                <PublishingExtensions
+                  courseInstance={courseInstance}
+                  initialExtensions={extensions}
+                  canEdit={canEditExtensions}
+                  csrfToken={csrfToken}
+                />
+              </QueryClientProviderDebug>
+            ) : (
+              <>
+                <h5 class="mb-3">Extensions</h5>
+                <div class="alert alert-info" role="alert">
+                  You do not have permission to view extensions. Extensions require student data
+                  permissions.
+                </div>
+              </>
+            )}
           </>
         )}
       </div>
