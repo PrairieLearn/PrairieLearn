@@ -292,6 +292,11 @@ export async function aiGrade({
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
+          // rubric_items must be the last property in the schema.
+          //
+          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
+          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
+          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -313,6 +318,7 @@ export async function aiGrade({
             // unescaped backslashes in the rubric item keys of the response.
 
             // TODO: Remove this temporary fix once Google fixes the underlying issue.
+            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
             return correctGeminiMalformedRubricGradingJson(options.text);
           },
         });

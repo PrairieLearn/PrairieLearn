@@ -474,6 +474,7 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *
  * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
+ * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
  *
  * If a rubric item key contains escaped backslashes, Google Gemini generates
  * unescaped backslashes in the JSON response, leading to a JSON parsing error.
@@ -483,7 +484,9 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
  *
  * This function escapes all backslashes of rubric item keys in the JSON response.
  *
- * @param rawResponseText - The raw AI grading response returned from the Gemini model. It is expected to contain a "rubric_items" key which has the rubric grading results.
+ * @param rawResponseText - The raw AI grading response returned from the Gemini model.
+ * - The response must be a JSON string containing a "rubric_items" key.
+ * - The "rubric_items" key must be the last key in the JSON object.
  *
  * @returns The corrected JSON as a string, or null if it could not be corrected.
  */
