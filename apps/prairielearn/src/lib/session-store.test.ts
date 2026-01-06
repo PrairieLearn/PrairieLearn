@@ -65,12 +65,12 @@ describe('PostgresSessionStore', () => {
 
       const user = await generateUser();
 
-      await store.set('1', { foo: 'bar', user_id: user.user_id }, expiresAt);
+      await store.set('1', { foo: 'bar', user_id: user.id }, expiresAt);
 
       const session = await store.get('1');
 
       assert(session);
-      assert.deepEqual(session.data, { foo: 'bar', user_id: user.user_id });
+      assert.deepEqual(session.data, { foo: 'bar', user_id: user.id });
       assert.deepEqual(session.expiresAt, expiresAt);
 
       const userSession = await queryRow(
@@ -79,7 +79,7 @@ describe('PostgresSessionStore', () => {
         UserSessionSchema,
       );
 
-      assert.equal(userSession.user_id, user.user_id);
+      assert.equal(userSession.user_id, user.id);
     });
   });
 });

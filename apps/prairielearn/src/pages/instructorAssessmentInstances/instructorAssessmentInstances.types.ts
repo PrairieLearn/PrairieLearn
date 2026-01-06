@@ -19,7 +19,7 @@ export const AssessmentInstanceRowSchema = z.object({
   duration_mins: z.number(),
   duration_secs: z.number(),
   duration: z.string(),
-  group_id: AssessmentInstanceSchema.shape.group_id,
+  group_id: AssessmentInstanceSchema.shape.team_id,
   group_name: GroupSchema.shape.name.nullable(),
   group_roles: z.array(z.string()).nullable(),
   highest_score: z.boolean(),
@@ -36,7 +36,7 @@ export const AssessmentInstanceRowSchema = z.object({
   total_time: z.string(),
   uid_list: z.array(UserSchema.shape.uid).nullable(),
   uid: UserSchema.shape.uid.nullable(),
-  user_id: UserSchema.shape.user_id.nullable(),
+  user_id: UserSchema.shape.id.nullable(),
   user_name_list: z.array(UserSchema.shape.name).nullable(),
   username: z.string().nullable(),
 });

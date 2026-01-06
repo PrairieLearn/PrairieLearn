@@ -171,7 +171,7 @@ router.post(
         institution_id: institution?.id ?? null,
         course_id: course?.id ?? null,
         course_instance_id: course_instance?.id ?? null,
-        user_id: user?.user_id ?? null,
+        user_id: user?.id ?? null,
       });
 
       if (params.enabled) {

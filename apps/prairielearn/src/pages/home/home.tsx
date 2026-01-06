@@ -7,7 +7,6 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
@@ -16,6 +15,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
 import {
   ensureEnrollment,
@@ -46,7 +46,7 @@ router.get(
     const instructorCourses = await queryRows(
       sql.select_instructor_courses,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         is_administrator: res.locals.is_administrator,
         // Example courses are only shown to users who are either instructors of
         // at least one other course, or who are admins. They're also shown
@@ -59,7 +59,7 @@ router.get(
     // Query parameters for student courses
     const studentCourseParams = {
       // Use the authenticated user, not the authorized user.
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       pending_uid: res.locals.authn_user.uid,
       // This is a somewhat ugly escape hatch specifically for load testing. In
       // general, we don't want to clutter the home page with example course
@@ -114,7 +114,7 @@ router.get(
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       StaffInstitutionSchema,
     );
 
@@ -137,7 +137,7 @@ router.get(
           page: 'home',
         },
         options: {
-          fullHeight: true,
+          showFooter: true,
         },
         content: (
           <Home
@@ -151,7 +151,6 @@ router.get(
             enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
-        postContent: <PageFooter />,
       }),
     );
   }),
@@ -186,6 +185,29 @@ router.post(
 
     if (authzData === null || courseInstance === null) {
       throw new HttpStatusError(403, 'Access denied');
+    }
+
+    // Invitations and rejections are only supported for modern publishing courses.
+    if (
+      !courseInstance.modern_publishing &&
+      ['accept_invitation', 'reject_invitation'].includes(body.__action)
+    ) {
+      flash(
+        'error',
+        'Invitations and rejections are only supported for courses using modern publishing.',
+      );
+      res.redirect(req.originalUrl);
+      return;
+    }
+
+    if (
+      courseInstance.modern_publishing &&
+      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
+        'published'
+    ) {
+      flash('error', 'This course instance is not accessible to students');
+      res.redirect(req.originalUrl);
+      return;
     }
 
     switch (body.__action) {

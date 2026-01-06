@@ -349,7 +349,7 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    group_work: assessment.groupWork,
+    team_work: assessment.groupWork,
     group_max_size: assessment.groupMaxSize ?? null,
     group_min_size: assessment.groupMinSize ?? null,
     student_group_create: assessment.studentGroupCreate,

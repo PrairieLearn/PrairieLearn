@@ -45,7 +45,7 @@ router.post(
       fromCourse: course,
       fromCourseInstance: courseInstance,
       toCourseId,
-      userId: res.locals.user.user_id,
+      userId: res.locals.user.id,
       metadataOverrides: {
         publishing: resolvedPublishing,
       },

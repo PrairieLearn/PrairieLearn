@@ -65,7 +65,7 @@ FROM
 SELECT
   c.path
 FROM
-  pl_courses AS c
+  courses AS c
 WHERE
   c.id = $course_id;
 

@@ -16,12 +16,11 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20251227.1",
-    "@vitest/coverage-v8": "^4.0.14",
+    "@vitest/coverage-v8": "^4.0.16",
     "marked": "^17.0.1",
     "mathjax": "^3.2.2",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.16"
   }
 }

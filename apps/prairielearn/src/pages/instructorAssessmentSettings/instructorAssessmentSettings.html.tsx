@@ -44,12 +44,12 @@ export function InstructorAssessmentSettings({
     content: html`
       ${QRCodeModalHtml({
         id: 'studentLinkModal',
-        title: 'Student Link QR Code',
+        title: 'Student link QR code',
         content: studentLink,
       })}
       ${QRCodeModalHtml({
         id: 'publicLinkModal',
-        title: 'Public Link QR Code',
+        title: 'Public link QR code',
         content: publicLink,
       })}
       <div class="card mb-4">

@@ -12,12 +12,12 @@ import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
 import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
-import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getQuestionGroupPermissions } from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -85,8 +85,8 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -122,8 +122,8 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -164,7 +164,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 
   return variant.id;
 }
@@ -229,8 +229,8 @@ router.post(
 
       await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         requireOpen: true,
         close: true,
         ignoreGradeRateLimit: false,
@@ -358,21 +358,21 @@ router.get(
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       assert(
-        res.locals.assessment_instance.group_id !== null,
-        'assessment_instance.group_id is null',
+        res.locals.assessment_instance.team_id !== null,
+        'assessment_instance.team_id is null',
       );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
         res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
         res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question_info.next_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
     }
