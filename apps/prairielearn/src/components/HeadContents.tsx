@@ -72,9 +72,6 @@ function displayFriendlyPage(page: string) {
  * 5. The string "PrairieLearn" (fixed).
  */
 function getTitle({ resLocals, pageTitle, pageNote }: TitleOptions) {
-  if (config.titleOverride) {
-    return config.titleOverride;
-  }
   const {
     assessment,
     assessment_set,

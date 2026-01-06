@@ -164,7 +164,7 @@ router.post(
     await updateRequiredPlansForCourseInstance(
       res.locals.course_instance.id,
       desiredRequiredPlans,
-      res.locals.authn_user.user_id,
+      res.locals.authn_user.id,
     );
     res.redirect(req.originalUrl);
   }),

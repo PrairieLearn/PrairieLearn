@@ -62,8 +62,11 @@ export function EditScoreButton({
   };
 
   const handleClose = () => {
-    editScoreMutation.reset();
     setShow(false);
+  };
+
+  const resetModalState = () => {
+    editScoreMutation.reset();
   };
 
   return (
@@ -77,7 +80,7 @@ export function EditScoreButton({
         <i class="bi-pencil-square" aria-hidden="true" />
       </button>
       {show && (
-        <Modal show={true} onHide={handleClose}>
+        <Modal show={true} onHide={handleClose} onExited={resetModalState}>
           <Modal.Header closeButton>
             <Modal.Title>Change total percentage score</Modal.Title>
           </Modal.Header>

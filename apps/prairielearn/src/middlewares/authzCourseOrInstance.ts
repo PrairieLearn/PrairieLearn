@@ -173,7 +173,7 @@ function canBecomeEffectiveUser({
       // authenticated user, since an instructor may want to view their course
       // as a student without enrolling in their own course.
       hasFailedCheck:
-        !idsEqual(effectiveAuthzData.user.user_id, authnAuthzData.user.user_id) &&
+        !idsEqual(effectiveAuthzData.user.id, authnAuthzData.user.id) &&
         !effectiveAuthzData.has_course_permission_preview &&
         !effectiveAuthzData.has_course_instance_permission_view &&
         !effectiveAuthzData.has_student_access_with_enrollment &&
@@ -586,7 +586,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
       // important because we no longer automatically enroll instructors in their
       // own course instances when they view them.
       if (
-        idsEqual(effectiveAuthResult.user.user_id, authnAuthzData.user.user_id) &&
+        idsEqual(effectiveAuthResult.user.id, authnAuthzData.user.id) &&
         !effectiveAuthResult.has_course_instance_permission_view &&
         !effectiveAuthResult.has_course_permission_view
       ) {

@@ -31,14 +31,13 @@ export function InviteStudentModal({
     defaultValues: { uid: '' },
   });
 
-  const onClose = () => {
+  const resetModalState = () => {
     reset();
     clearErrors();
-    onHide();
   };
 
   return (
-    <Modal show={show} backdrop="static" onHide={onClose}>
+    <Modal show={show} backdrop="static" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
         <Modal.Title>Invite student</Modal.Title>
       </Modal.Header>
@@ -68,46 +67,44 @@ export function InviteStudentModal({
               {errors.root.serverError.message}
             </Alert>
           )}
-          <div class="mb-3">
-            <label for="invite-uid" class="form-label">
-              UID
-            </label>
-            <input
-              id="invite-uid"
-              class={clsx('form-control', errors.uid && 'is-invalid')}
-              type="email"
-              placeholder="Enter UID"
-              aria-invalid={errors.uid ? 'true' : 'false'}
-              {...register('uid', {
-                validate: async (uid) => {
-                  if (!uid) return 'UID is required';
-                  if (!z.string().email().safeParse(uid).success) return 'Invalid UID';
+          <label for="invite-uid" class="form-label">
+            UID
+          </label>
+          <input
+            id="invite-uid"
+            class={clsx('form-control', errors.uid && 'is-invalid')}
+            type="email"
+            placeholder="student@example.com"
+            aria-invalid={errors.uid ? 'true' : 'false'}
+            {...register('uid', {
+              validate: async (uid) => {
+                if (!uid) return 'UID is required';
+                if (!z.string().email().safeParse(uid).success) return 'Invalid UID';
 
-                  const params = new URLSearchParams({ uid });
-                  const res = await fetch(
-                    `${window.location.pathname}/enrollment.json?${params.toString()}`,
-                    {
-                      headers: {
-                        Accept: 'application/json',
-                      },
+                const params = new URLSearchParams({ uid });
+                const res = await fetch(
+                  `${window.location.pathname}/enrollment.json?${params.toString()}`,
+                  {
+                    headers: {
+                      Accept: 'application/json',
                     },
-                  );
-                  if (!res.ok) return 'Failed to fetch enrollment';
-                  const data: StaffEnrollment | null = await res.json();
-                  if (data) {
-                    if (data.status === 'joined') return 'This student is already enrolled';
-                    if (data.status === 'invited') return 'This student has a pending invitation';
-                  }
+                  },
+                );
+                if (!res.ok) return 'Failed to fetch enrollment';
+                const data: StaffEnrollment | null = await res.json();
+                if (data) {
+                  if (data.status === 'joined') return 'This student is already enrolled';
+                  if (data.status === 'invited') return 'This student has a pending invitation';
+                }
 
-                  return true;
-                },
-              })}
-            />
-            {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
-          </div>
+                return true;
+              },
+            })}
+          />
+          {errors.uid?.message && <div class="invalid-feedback">{errors.uid.message}</div>}
         </Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onClose}>
+          <button type="button" class="btn btn-secondary" disabled={isSubmitting} onClick={onHide}>
             Cancel
           </button>
           <button type="submit" class="btn btn-primary" disabled={isSubmitting || isValidating}>

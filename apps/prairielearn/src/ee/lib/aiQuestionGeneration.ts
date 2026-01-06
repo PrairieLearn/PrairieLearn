@@ -16,6 +16,7 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type OpenAIModelId,
@@ -29,11 +30,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import {
-  IdSchema,
-  type Issue,
-  QuestionGenerationContextEmbeddingSchema,
-} from '../../lib/db-types.js';
+import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
@@ -377,10 +374,11 @@ export async function generateQuestion({
   usage: LanguageModelUsage;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_generate',
     description: 'Generate a question with AI',
+    userId,
     authnUserId,
+    courseId,
   });
 
   let usage = emptyUsage();
@@ -796,10 +794,11 @@ export async function regenerateQuestion({
   usage: LanguageModelUsage | undefined;
 }> {
   const serverJob = await createServerJob({
-    courseId,
     type: 'ai_question_regenerate',
     description: 'Revise a question using the LLM',
+    userId,
     authnUserId,
+    courseId,
   });
 
   const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });

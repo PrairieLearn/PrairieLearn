@@ -201,7 +201,7 @@ export function AuthzAccessMismatch({
   );
 
   // Use special messaging if there is an effective role but the effective user remains the same
-  const hasEffectiveUser = authzUser?.user_id !== authnUser.user_id;
+  const hasEffectiveUser = authzUser?.id !== authnUser.id;
   const isStudentViewActive =
     !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
 

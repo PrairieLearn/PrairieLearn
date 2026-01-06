@@ -359,7 +359,7 @@ function CoursePermissionsRemoveStaffForm({
     <form method="POST">
       <input type="hidden" name="__action" value="course_permissions_delete" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.id}" />
 
       <div class="mb-3">
         <p class="form-text">
@@ -414,8 +414,7 @@ function StaffTable({
                     // Cannot change the course role of yourself (or of the
                     // user you are emulating) unless you are an administrator.
                     canChangeCourseRole:
-                      (courseUser.user.user_id !== authnUser.user_id &&
-                        courseUser.user.user_id !== user.user_id) ||
+                      (courseUser.user.id !== authnUser.id && courseUser.user.id !== user.id) ||
                       isAdministrator,
                     courseUser,
                     csrfToken,
@@ -428,7 +427,7 @@ function StaffTable({
                   ${courseUser.other_course_instances?.length
                     ? html`
                         <form
-                          name="student-data-access-add-${courseUser.user.user_id}"
+                          name="student-data-access-add-${courseUser.user.id}"
                           method="POST"
                           class="d-inline"
                         >
@@ -438,10 +437,10 @@ function StaffTable({
                             value="course_instance_permissions_insert"
                           />
                           <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-                          <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+                          <input type="hidden" name="user_id" value="${courseUser.user.id}" />
                           <div class="btn-group btn-group-sm" role="group">
                             <button
-                              id="addCIPDrop-${courseUser.user.user_id}"
+                              id="addCIPDrop-${courseUser.user.id}"
                               type="button"
                               class="btn btn-sm btn-outline-dark dropdown-toggle"
                               data-bs-toggle="dropdown"
@@ -453,7 +452,7 @@ function StaffTable({
                             </button>
                             <div
                               class="dropdown-menu"
-                              aria-labelledby="addCIPDrop-${courseUser.user.user_id}"
+                              aria-labelledby="addCIPDrop-${courseUser.user.id}"
                             >
                               ${courseUser.other_course_instances.map((ci) => {
                                 return html`
@@ -521,7 +520,7 @@ function CoursePermissionButton({
   if (!canChangeCourseRole) {
     return html`
       <button
-        id="course-permission-button-${courseUser.user.user_id}"
+        id="course-permission-button-${courseUser.user.id}"
         type="button"
         class="btn btn-sm btn-outline-primary disabled"
         disabled
@@ -532,10 +531,10 @@ function CoursePermissionButton({
   }
 
   const popoverContent = html`
-    <form name="course-content-access-form-${courseUser.user.user_id}" method="POST">
+    <form name="course-content-access-form-${courseUser.user.id}" method="POST">
       <input type="hidden" name="__action" value="course_permissions_update_role" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.id}" />
       <p class="d-none d-sm-block">
         Users with course content access can see aggregate student data (e.g., mean scores), but
         cannot see the names or scores of individual students without also having student data
@@ -547,13 +546,10 @@ function CoursePermissionButton({
           type="radio"
           name="course_role"
           value="None"
-          id="course-permission-input-${courseUser.user.user_id}-None"
+          id="course-permission-input-${courseUser.user.id}-None"
           ${currentRole === 'None' ? 'checked' : ''}
         />
-        <label
-          class="form-check-label"
-          for="course-permission-input-${courseUser.user.user_id}-None"
-        >
+        <label class="form-check-label" for="course-permission-input-${courseUser.user.id}-None">
           <h6>None</h6>
           <p class="small text-muted d-none d-sm-block">Cannot see any course content.</p>
         </label>
@@ -564,12 +560,12 @@ function CoursePermissionButton({
           type="radio"
           name="course_role"
           value="Previewer"
-          id="course-permission-input-${courseUser.user.user_id}-Previewer"
+          id="course-permission-input-${courseUser.user.id}-Previewer"
           ${currentRole === 'Previewer' ? 'checked' : ''}
         />
         <label
           class="form-check-label"
-          for="course-permission-input-${courseUser.user.user_id}-Previewer"
+          for="course-permission-input-${courseUser.user.id}-Previewer"
         >
           <h6>Previewer</h6>
           <p class="small text-muted d-none d-sm-block">
@@ -584,13 +580,10 @@ function CoursePermissionButton({
           type="radio"
           name="course_role"
           value="Viewer"
-          id="course-permission-input-${courseUser.user.user_id}-Viewer"
+          id="course-permission-input-${courseUser.user.id}-Viewer"
           ${currentRole === 'Viewer' ? 'checked' : ''}
         />
-        <label
-          class="form-check-label"
-          for="course-permission-input-${courseUser.user.user_id}-Viewer"
-        >
+        <label class="form-check-label" for="course-permission-input-${courseUser.user.id}-Viewer">
           <h6>Viewer</h6>
           <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see but not close issues.
@@ -604,13 +597,10 @@ function CoursePermissionButton({
           type="radio"
           name="course_role"
           value="Editor"
-          id="course-permission-input-${courseUser.user.user_id}-Editor"
+          id="course-permission-input-${courseUser.user.id}-Editor"
           ${currentRole === 'Editor' ? 'checked' : ''}
         />
-        <label
-          class="form-check-label"
-          for="course-permission-input-${courseUser.user.user_id}-Editor"
-        >
+        <label class="form-check-label" for="course-permission-input-${courseUser.user.id}-Editor">
           <h6>Editor</h6>
           <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see and close issues. Can
@@ -625,13 +615,10 @@ function CoursePermissionButton({
           type="radio"
           name="course_role"
           value="Owner"
-          id="course-permission-input-${courseUser.user.user_id}-Owner"
+          id="course-permission-input-${courseUser.user.id}-Owner"
           ${currentRole === 'Owner' ? 'checked' : ''}
         />
-        <label
-          class="form-check-label"
-          for="course-permission-input-${courseUser.user.user_id}-Owner"
-        >
+        <label class="form-check-label" for="course-permission-input-${courseUser.user.id}-Owner">
           <h6>Owner</h6>
           <p class="small text-muted d-none d-sm-block">
             Can see all questions, course instances, and assessments. Can see and close issues. Can
@@ -649,7 +636,7 @@ function CoursePermissionButton({
 
   return html`
     <button
-      id="course-permission-button-${courseUser.user.user_id}"
+      id="course-permission-button-${courseUser.user.id}"
       type="button"
       class="btn btn-sm btn-outline-primary dropdown-toggle"
       data-bs-toggle="popover"
@@ -677,14 +664,14 @@ function CourseInstancePermissionButton({
   csrfToken: string;
 }) {
   const popoverContent = html`
-    <form name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}" method="POST">
+    <form name="course-instance-access-form-${courseUser.user.id}-${cir.id}" method="POST">
       <input
         type="hidden"
         name="__action"
         value="course_instance_permissions_update_role_or_delete"
       />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.id}" />
       <input type="hidden" name="course_instance_id" value="${cir.id}" />
       <p class="d-none d-sm-block">
         Users with student data access can see all assessments in the course instance
@@ -697,11 +684,11 @@ function CourseInstancePermissionButton({
           type="radio"
           name="course_instance_role"
           value="None"
-          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+          id="course-instance-permission-input-${courseUser.user.id}-${cir.id}-None"
         />
         <label
           class="form-check-label"
-          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-None"
+          for="course-instance-permission-input-${courseUser.user.id}-${cir.id}-None"
         >
           <h6>None</h6>
           <p class="small text-muted d-none d-sm-block">
@@ -715,12 +702,12 @@ function CourseInstancePermissionButton({
           type="radio"
           name="course_instance_role"
           value="Student Data Viewer"
-          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+          id="course-instance-permission-input-${courseUser.user.id}-${cir.id}-Viewer"
           ${cir.course_instance_role === 'Student Data Viewer' ? 'checked' : ''}
         />
         <label
           class="form-check-label"
-          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Viewer"
+          for="course-instance-permission-input-${courseUser.user.id}-${cir.id}-Viewer"
         >
           <h6>Viewer</h6>
           <p class="small text-muted d-none d-sm-block">
@@ -735,12 +722,12 @@ function CourseInstancePermissionButton({
           type="radio"
           name="course_instance_role"
           value="Student Data Editor"
-          id="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+          id="course-instance-permission-input-${courseUser.user.id}-${cir.id}-Editor"
           ${cir.course_instance_role === 'Student Data Editor' ? 'checked' : ''}
         />
         <label
           class="form-check-label"
-          for="course-instance-permission-input-${courseUser.user.user_id}-${cir.id}-Editor"
+          for="course-instance-permission-input-${courseUser.user.id}-${cir.id}-Editor"
         >
           <h6>Editor</h6>
           <p class="small text-muted d-none d-sm-block">
@@ -757,22 +744,19 @@ function CourseInstancePermissionButton({
   `;
 
   return html`
-    <form
-      name="course-instance-access-form-${courseUser.user.user_id}-${cir.id}-delete"
-      method="POST"
-    >
+    <form name="course-instance-access-form-${courseUser.user.id}-${cir.id}-delete" method="POST">
       <input
         type="hidden"
         name="__action"
         value="course_instance_permissions_update_role_or_delete"
       />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="user_id" value="${courseUser.user.user_id}" />
+      <input type="hidden" name="user_id" value="${courseUser.user.id}" />
       <input type="hidden" name="course_instance_id" value="${cir.id}" />
       <div class="btn-group btn-group-sm" role="group">
         <div class="btn-group btn-group-sm">
           <button
-            id="course-instance-permission-button-${courseUser.user.user_id}-${cir.id}"
+            id="course-instance-permission-button-${courseUser.user.id}-${cir.id}"
             type="button"
             class="btn btn-sm btn-outline-primary dropdown-toggle"
             data-bs-toggle="popover"

@@ -116,7 +116,7 @@ router.post(
         institution_id: institutionId,
         enabled_authn_provider_ids: enabledProviders,
         default_authn_provider_id: null,
-        authn_user_id: res.locals.authn_user.user_id.toString(),
+        authn_user_id: res.locals.authn_user.id.toString(),
       });
 
       flash('success', `Institution "${body.short_name}" created successfully.`);

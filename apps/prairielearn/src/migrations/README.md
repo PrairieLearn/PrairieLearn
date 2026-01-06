@@ -72,7 +72,7 @@ This is a collection of how to sequence some common migrations. Bullet points ar
 
 ### Rename column with a default value, no data preservation
 
-If you have no meaningful reads/writes to the old column, you can combie the first and second PRs into a single PR.
+If you have no meaningful reads/writes to the old column, you can combine the first and second PRs into a single PR.
 
 - First PR: Add new column
   - Add new column with default value

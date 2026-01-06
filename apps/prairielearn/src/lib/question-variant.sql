@@ -1,7 +1,7 @@
 -- BLOCK select_instance_question_data
 SELECT
   aq.question_id,
-  ai.group_id,
+  ai.team_id,
   ai.user_id,
   iq.assessment_instance_id,
   a.course_instance_id,
@@ -39,7 +39,7 @@ WITH
         question_id,
         course_instance_id,
         user_id,
-        group_id,
+        team_id,
         number,
         variant_seed,
         params,
@@ -85,7 +85,7 @@ SELECT
   ) AS formatted_date
 FROM
   new_variant AS v
-  JOIN pl_courses AS c ON (c.id = v.course_id)
+  JOIN courses AS c ON (c.id = v.course_id)
   LEFT JOIN course_instances AS ci ON (ci.id = v.course_instance_id);
 
 -- BLOCK select_and_lock_assessment_instance_for_instance_question

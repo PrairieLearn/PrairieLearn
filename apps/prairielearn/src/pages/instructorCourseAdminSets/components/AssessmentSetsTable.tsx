@@ -11,18 +11,15 @@ export function AssessmentSetsTable({ assessmentSets }: { assessmentSets: StaffA
         <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
           <thead>
             <tr>
-              <th>Number</th>
               <th>Abbreviation</th>
               <th>Name</th>
               <th>Heading</th>
-              <th>Color</th>
             </tr>
           </thead>
           <tbody>
             {assessmentSets.map((assessmentSet) => {
               return (
                 <tr key={assessmentSet.id}>
-                  <td class="align-middle">{assessmentSet.number}</td>
                   <td class="align-middle">
                     <span class={`badge color-${assessmentSet.color}`}>
                       {assessmentSet.abbreviation}
@@ -32,7 +29,6 @@ export function AssessmentSetsTable({ assessmentSets }: { assessmentSets: StaffA
                   <td class="align-middle">
                     <AssessmentSetHeading assessmentSet={assessmentSet} />
                   </td>
-                  <td class="align-middle">{assessmentSet.color}</td>
                 </tr>
               );
             })}

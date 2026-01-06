@@ -8,9 +8,9 @@ import type { TableName } from '../lib/db-types.js';
  */
 export const requiredTableFields = {
   course_instances: ['course_instance_id'],
-  pl_courses: ['course_id'],
+  courses: ['course_id'],
   users: ['subject_user_id'],
-  groups: ['group_id'],
+  teams: ['team_id'],
   assessment_instances: ['assessment_instance_id'],
   assessment_questions: ['assessment_question_id'],
   assessments: ['assessment_id'],
@@ -27,7 +27,7 @@ export type SupportedTableActionCombination =
       actionDetail?: null;
     }
   | {
-      tableName: 'pl_courses';
+      tableName: 'courses';
       actionDetail?: null;
     }
   | {
@@ -35,7 +35,7 @@ export type SupportedTableActionCombination =
       actionDetail?: null;
     }
   | {
-      tableName: 'groups';
+      tableName: 'teams';
       actionDetail?: null;
     }
   | {

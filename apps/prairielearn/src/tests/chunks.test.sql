@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   path = $course_path;
 

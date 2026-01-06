@@ -5,9 +5,10 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, IdSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -286,7 +287,7 @@ describe('Group based exam assessments', { timeout: 20_000 }, function () {
         AssessmentInstanceSchema,
       );
       assert.lengthOf(assessmentInstancesResult, 1);
-      assert.equal(assessmentInstancesResult[0].group_id, '1');
+      assert.equal(assessmentInstancesResult[0].team_id, '1');
       const assessmentInstanceId = assessmentInstancesResult[0].id;
       const assessmentInstanceURL =
         courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;
@@ -366,7 +367,7 @@ describe('cross group exam access', { timeout: 20_000 }, function () {
       sql.select_all_assessment_instance,
       AssessmentInstanceSchema,
     );
-    assert.equal(assessmentInstancesResult.group_id, '1');
+    assert.equal(assessmentInstancesResult.team_id, '1');
     const assessmentInstanceId = assessmentInstancesResult.id;
     const assessmentInstanceURL =
       courseInstanceUrl + '/assessment_instance/' + assessmentInstanceId;

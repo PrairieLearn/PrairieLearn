@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -12,7 +13,6 @@ import {
   AssessmentQuestionSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,

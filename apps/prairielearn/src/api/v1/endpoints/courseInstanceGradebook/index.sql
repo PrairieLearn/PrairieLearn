@@ -20,7 +20,7 @@ WITH
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
-      ai.group_id,
+      ai.team_id,
       ai.assessment_id,
       ai.score_perc,
       ai.max_points,
@@ -30,8 +30,8 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       a.course_instance_id = $course_instance_id
       AND (
@@ -77,18 +77,18 @@ WITH
   ),
   course_users AS (
     SELECT
-      u.user_id,
+      u.id,
       u.uid,
       u.uin,
       u.name,
-      users_get_displayed_role (u.user_id, $course_instance_id) AS role
+      users_get_displayed_role (u.id, $course_instance_id) AS role
     FROM
       user_ids
-      JOIN users AS u ON (u.user_id = user_ids.user_id)
+      JOIN users AS u ON (u.id = user_ids.user_id)
   ),
   scores AS (
     SELECT
-      u.user_id,
+      u.id AS user_id,
       u.uid AS user_uid,
       u.uin AS user_uin,
       u.name AS user_name,
@@ -110,7 +110,7 @@ WITH
       course_users AS u
       CROSS JOIN course_assessments AS a
       LEFT JOIN course_scores AS s ON (
-        s.user_id = u.user_id
+        s.user_id = u.id
         AND s.assessment_id = a.assessment_id
       )
   ),

@@ -141,7 +141,7 @@ router.post(
       await updateAssessmentInstanceScore(
         req.body.assessment_instance_id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
 
       const updatedScores = await queryRows(

@@ -15,10 +15,11 @@ import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { withResolvers } from '@prairielearn/utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig, makeS3ClientConfig } from './aws.js';
 import { config } from './config.js';
-import { GradingJobSchema, IdSchema } from './db-types.js';
+import { GradingJobSchema } from './db-types.js';
 import { processGradingResult } from './externalGrader.js';
 import * as externalGraderCommon from './externalGraderCommon.js';
 import { gradingJobStatusUpdated } from './externalGradingSocket.js';

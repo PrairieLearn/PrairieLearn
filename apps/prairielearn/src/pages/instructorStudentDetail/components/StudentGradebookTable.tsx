@@ -71,7 +71,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                   >
                     {computeTitle(row)}
                   </a>
-                  {row.assessment.group_work && (
+                  {row.assessment.team_work && (
                     <i class="fas fa-users ms-1" aria-hidden="true" title="Group work" />
                   )}
                 </td>

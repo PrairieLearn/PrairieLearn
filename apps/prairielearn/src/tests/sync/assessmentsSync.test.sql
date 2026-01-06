@@ -75,7 +75,7 @@ WITH
     SELECT
       coalesce(jsonb_agg(to_jsonb(gr)), '[]'::jsonb) AS group_roles
     FROM
-      group_roles AS gr,
+      team_roles AS gr,
       assessment
     WHERE
       gr.assessment_id = assessment.id

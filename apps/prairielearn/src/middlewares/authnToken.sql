@@ -5,8 +5,8 @@ SELECT
   a.id AS token_id
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
-  JOIN access_tokens AS a ON (a.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
+  JOIN access_tokens AS a ON (a.user_id = u.id)
 WHERE
   a.token_hash = $token_hash;
 

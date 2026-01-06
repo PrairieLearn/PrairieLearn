@@ -3,7 +3,7 @@ SELECT
   to_jsonb(c.*) AS course,
   to_jsonb(ci.*) AS course_instance
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN course_instances AS ci ON (ci.course_id = c.id)
 WHERE
   c.institution_id = $institution_id

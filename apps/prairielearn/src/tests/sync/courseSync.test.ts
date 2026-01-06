@@ -28,7 +28,7 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
     assert.isNotOk(syncedCourse.sync_warnings);
     assert.isNotOk(syncedCourse.sync_errors);
@@ -43,7 +43,7 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
     assert.isNotOk(syncedCourse.sync_warnings);
     assert.isNotOk(syncedCourse.sync_errors);
@@ -58,7 +58,7 @@ describe('Course syncing', () => {
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
 
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     const syncedCourse = syncedCourses[0];
     assert.isNotNull(syncedCourse.sync_warnings);
     assert.match(
@@ -93,7 +93,7 @@ describe('Course syncing', () => {
 
       await util.syncCourseData(courseDir);
 
-      const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+      const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
       const syncedCourse = syncedCourses[0];
       assert.isNotNull(syncedCourse.sync_warnings);
       assert.match(
@@ -114,7 +114,7 @@ describe('Course syncing', () => {
     courseData.course.comment = 'Course comment';
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.equal(syncedCourses[0].json_comment, 'Course comment');
   });
@@ -124,7 +124,7 @@ describe('Course syncing', () => {
     courseData.course.comment = ['Course comment 1', 'Course comment 2'];
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.deepEqual(syncedCourses[0].json_comment, ['Course comment 1', 'Course comment 2']);
   });
@@ -134,7 +134,7 @@ describe('Course syncing', () => {
     courseData.course.comment = { comment: 'Course comment', comment2: 'Course comment 2' };
     const courseDir = await util.writeCourseToTempDirectory(courseData);
     await util.syncCourseData(courseDir);
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     assert.lengthOf(syncedCourses, 1);
     assert.deepEqual(syncedCourses[0].json_comment, {
       comment: 'Course comment',
@@ -151,7 +151,7 @@ describe('Course syncing', () => {
       await util.syncCourseData(courseDir);
     });
 
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
 
     assert.lengthOf(syncedCourses, 1);
     const syncedCourse = syncedCourses[0];

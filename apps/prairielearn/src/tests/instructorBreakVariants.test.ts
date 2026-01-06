@@ -1,9 +1,10 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { type Assessment, type AssessmentQuestion, IdSchema } from '../lib/db-types.js';
+import { type Assessment, type AssessmentQuestion } from '../lib/db-types.js';
 import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';

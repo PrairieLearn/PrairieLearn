@@ -45,7 +45,7 @@ def solve_dag(
 
     Returns:
         - A list that is a topological sort of the input DAG with blocks in the
-          same group occuring contiguously, making it a solution to the given
+          same group occurring contiguously, making it a solution to the given
           problem
     """
     graph = dag_to_nx(depends_graph, group_belonging)

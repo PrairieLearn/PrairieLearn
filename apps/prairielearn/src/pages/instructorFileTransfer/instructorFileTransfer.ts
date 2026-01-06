@@ -48,7 +48,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
 
   await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
   });
 }
 
@@ -61,10 +61,7 @@ export function getContentDir(fullPath: string, parentDir: string): string {
 router.get(
   '/:file_transfer_id',
   asyncHandler(async (req, res) => {
-    const file_transfer = await getFileTransfer(
-      req.params.file_transfer_id,
-      res.locals.user.user_id,
-    );
+    const file_transfer = await getFileTransfer(req.params.file_transfer_id, res.locals.user.id);
     const from_course = await selectCourseById(file_transfer.from_course_id);
 
     switch (file_transfer.transfer_type) {

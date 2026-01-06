@@ -74,10 +74,10 @@ router.get(
     }
 
     const [gradebookRows, studentGroupsForEnrollment, allStudentGroups] = await Promise.all([
-      student.user?.user_id
+      student.user?.id
         ? getGradebookRows({
             course_instance_id: courseInstance.id,
-            user_id: student.user.user_id,
+            user_id: student.user.id,
             authz_data: res.locals.authz_data,
             req_date: res.locals.req_date,
             auth: 'instructor',
@@ -236,7 +236,7 @@ router.post(
         }
 
         await addEnrollmentToStudentGroup({
-          enrollment_id: enrollment_id,
+          enrollment_id,
           student_group_id,
         });
         res.redirect(req.originalUrl);
@@ -252,7 +252,7 @@ router.post(
         }
 
         await removeEnrollmentFromStudentGroup({
-          enrollment_id: enrollment_id,
+          enrollment_id,
           student_group_id,
         });
         res.redirect(req.originalUrl);

@@ -45,7 +45,7 @@ Students will calculate the convective heat transfer based on the data described
 
 ## Auto grader
 
-Take a look at the documentation for the [python auto grader](https://prairielearn.readthedocs.io/en/latest/python-grader/) first.
+Take a look at the documentation for the [python auto grader](../python-grader/index.md) first.
 
 ### Example 4
 

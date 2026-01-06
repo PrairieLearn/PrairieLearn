@@ -103,7 +103,7 @@ router.post(
           public_key: publicKey,
           private_key: privateKey,
           // For audit logs
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         });
       });
       res.redirect(req.originalUrl);
@@ -111,7 +111,7 @@ router.post(
       await execute(sql.delete_institution_saml_provider, {
         institution_id: req.params.institution_id,
         // For audit logs
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'decode_assertion') {

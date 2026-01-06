@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
@@ -10,7 +11,6 @@ import {
   AssessmentSetSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,

@@ -56,9 +56,9 @@ WHERE
       SELECT
         user_id
       FROM
-        group_users
+        team_users
       WHERE
-        group_id = ai.group_id
+        team_id = ai.team_id
     )
   );
 

@@ -3,12 +3,13 @@ import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { type Assessment, IdSchema } from './db-types.js';
+import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -39,13 +40,13 @@ export async function uploadInstanceQuestionScores(
   );
 
   const serverJob = await createServerJob({
+    type: 'upload_instance_question_scores',
+    description: 'Upload question scores for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_instance_question_scores',
-    description: 'Upload question scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -153,13 +154,13 @@ export async function uploadAssessmentInstanceScores(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'upload_assessment_instance_scores',
+    description: 'Upload total scores for ' + assessment_label,
+    authnUserId: authn_user_id,
+    userId: user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_assessment_instance_scores',
-    description: 'Upload total scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {

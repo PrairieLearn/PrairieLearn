@@ -75,7 +75,7 @@ router.post(
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

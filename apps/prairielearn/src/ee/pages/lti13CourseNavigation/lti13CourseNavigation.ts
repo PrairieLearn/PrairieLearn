@@ -78,7 +78,7 @@ router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
     const courses = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       is_administrator: res.locals.is_administrator,
     });
 
@@ -191,7 +191,7 @@ router.get(
         resLocals: res.locals,
         courseName,
         courses: await coursesAllowedToLink({
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
           is_administrator: res.locals.is_administrator,
         }),
         lti13_instance_id: req.params.lti13_instance_id,
@@ -234,7 +234,7 @@ router.post(
     );
 
     const coursesAllowed = await coursesAllowedToLink({
-      user_id: authzData.authn_user.user_id,
+      user_id: authzData.authn_user.id,
       is_administrator: res.locals.is_administrator,
     });
     const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);

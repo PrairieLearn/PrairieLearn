@@ -7,13 +7,14 @@ import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
-import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
+import { updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -53,7 +54,7 @@ describe('Editing assessment settings', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await execute(sql.update_course_repo, { repo: courseOriginDir });
+    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
   });
 
   afterAll(helperServer.after);

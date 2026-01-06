@@ -8,7 +8,7 @@ SELECT
   permissions_course.*,
   permissions_course_instance.*
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN course_instances AS ci ON (
     (c.id = ci.course_id)

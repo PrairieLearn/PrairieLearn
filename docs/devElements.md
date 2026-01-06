@@ -2,7 +2,7 @@
 
 See [`elements/`](https://github.com/PrairieLearn/PrairieLearn/tree/master/apps/prairielearn/elements) for example elements.
 
-Element code uses the [`prairielearn` module](https://prairielearn.readthedocs.io/en/latest/python-reference/) for common functionality like parsing attributes and computing scores.
+Element code uses the [`prairielearn` module](./python-reference/index.md) for common functionality like parsing attributes and computing scores.
 
 !!! info
 

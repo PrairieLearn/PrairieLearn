@@ -9,5 +9,5 @@ indexes
     sharing_set_courses_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
-    sharing_set_courses_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    sharing_set_courses_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
     sharing_set_courses_sharing_set_id_fkey: FOREIGN KEY (sharing_set_id) REFERENCES sharing_sets(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -7,7 +7,6 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
-import { PageFooter } from '../../components/PageFooter.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
@@ -46,7 +45,7 @@ router.get(
     const instructorCourses = await queryRows(
       sql.select_instructor_courses,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         is_administrator: res.locals.is_administrator,
         // Example courses are only shown to users who are either instructors of
         // at least one other course, or who are admins. They're also shown
@@ -59,7 +58,7 @@ router.get(
     // Query parameters for student courses
     const studentCourseParams = {
       // Use the authenticated user, not the authorized user.
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       pending_uid: res.locals.authn_user.uid,
       // This is a somewhat ugly escape hatch specifically for load testing. In
       // general, we don't want to clutter the home page with example course
@@ -114,7 +113,7 @@ router.get(
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       StaffInstitutionSchema,
     );
 
@@ -137,7 +136,7 @@ router.get(
           page: 'home',
         },
         options: {
-          fullHeight: true,
+          showFooter: true,
         },
         content: (
           <Home
@@ -151,18 +150,6 @@ router.get(
             enrollmentManagementEnabled={enrollmentManagementEnabled}
           />
         ),
-        postContent:
-          config.homepageFooterText && config.homepageFooterTextHref ? (
-            <footer class="footer fw-light text-light text-center small">
-              <div class="bg-secondary p-1">
-                <a class="text-light" href={config.homepageFooterTextHref}>
-                  {config.homepageFooterText}
-                </a>
-              </div>
-            </footer>
-          ) : (
-            <PageFooter />
-          ),
       }),
     );
   }),

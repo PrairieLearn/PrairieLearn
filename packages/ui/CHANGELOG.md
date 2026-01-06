@@ -1,5 +1,34 @@
 # @prairielearn/ui
 
+## 1.9.1
+
+### Patch Changes
+
+- f404bb4: Upgrade all JavaScript dependencies
+
+## 1.9.0
+
+### Minor Changes
+
+- 3954e02: Allow for duplicate column names in CSV export
+
+### Patch Changes
+
+- 926403c: Refactor `useAutoSizeColumns` hook
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/preact-cjs@1.1.7
+
+## 1.8.0
+
+### Minor Changes
+
+- e279b47: Add `useModalState` hook
+
+### Patch Changes
+
+- 230c3a3: Replace usage of `findLastIndex` with ponyfill
+
 ## 1.7.2
 
 ### Patch Changes

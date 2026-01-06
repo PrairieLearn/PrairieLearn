@@ -1,7 +1,12 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.1.11",
+  "version": "3.1.13",
   "type": "module",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/config"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsc",
@@ -9,10 +14,10 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ec2": "^3.940.0",
-    "@aws-sdk/client-secrets-manager": "^3.940.0",
+    "@aws-sdk/client-ec2": "^3.958.0",
+    "@aws-sdk/client-secrets-manager": "^3.958.0",
     "@prairielearn/aws-imds": "workspace:^",
-    "fs-extra": "^11.3.2",
+    "fs-extra": "^11.3.3",
     "lodash": "^4.17.21",
     "zod": "^3.25.76"
   },
@@ -20,11 +25,11 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.21",
-    "@types/node": "^22.19.1",
-    "@vitest/coverage-v8": "^4.0.14",
+    "@types/node": "^22.19.3",
+    "@vitest/coverage-v8": "^4.0.16",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.14"
+    "vitest": "^4.0.16"
   }
 }

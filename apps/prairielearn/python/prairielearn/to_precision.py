@@ -136,7 +136,7 @@ def eng_notation(value: float, precision: int, filler: str) -> str:
         120E-3
 
     Returns:
-        string of value with the proper precision and 10s exponent that is divisable by 3
+        string of value with the proper precision and 10s exponent that is divisible by 3
 
     created by William Rusnack
         github.com/BebeSparkelSparkel

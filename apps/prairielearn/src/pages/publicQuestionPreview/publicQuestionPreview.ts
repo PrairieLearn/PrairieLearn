@@ -3,9 +3,10 @@ import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema, UserSchema } from '../../lib/db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';

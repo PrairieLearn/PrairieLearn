@@ -16,6 +16,7 @@ import {
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInstanceLastSubmissionDate } from '../../lib/assessment.js';
 import type { AuthzData } from '../../lib/authz-data-lib.js';
@@ -23,8 +24,6 @@ import { config } from '../../lib/config.js';
 import {
   AssessmentSchema,
   type CourseInstance,
-  DateFromISOString,
-  IdSchema,
   Lti13CourseInstanceSchema,
   type Lti13Instance,
   Lti13InstanceSchema,

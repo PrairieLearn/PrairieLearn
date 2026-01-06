@@ -2,10 +2,16 @@ import type { Table } from '@tanstack/react-table';
 
 import { downloadAsCSV, downloadAsJSON } from '@prairielearn/browser-utils';
 
+export interface TanstackTableCsvCell {
+  value: string | number | null;
+  /** The name of the column in the CSV file. */
+  name: string;
+}
+
 export interface TanstackTableDownloadButtonProps<RowDataModel> {
   table: Table<RowDataModel>;
   filenameBase: string;
-  mapRowToData: (row: RowDataModel) => Record<string, string | number | null> | null;
+  mapRowToData: (row: RowDataModel) => TanstackTableCsvCell[] | null;
   singularLabel: string;
   pluralLabel: string;
   hasSelection: boolean;
@@ -37,16 +43,13 @@ export function TanstackTableDownloadButton<RowDataModel>({
   const selectedRows = table.getSelectedRowModel().rows.map((row) => row.original);
   const selectedRowsJSON = selectedRows.map(mapRowToData).filter((row) => row !== null);
 
-  function downloadJSONAsCSV(
-    jsonRows: Record<string, string | number | null>[],
-    filename: string,
-  ): void {
+  function downloadJSONAsCSV(jsonRows: TanstackTableCsvCell[][], filename: string): void {
     if (jsonRows.length === 0) {
       throw new Error('No rows to download');
     }
 
-    const header = Object.keys(jsonRows[0]);
-    const csvRows = jsonRows.map((row) => Object.values(row));
+    const header = jsonRows[0].map((cell) => cell.name);
+    const csvRows = jsonRows.map((row) => row.map((cell) => cell.value));
     downloadAsCSV(header, csvRows, filename);
   }
 

@@ -20,7 +20,7 @@ WITH
       JOIN variants AS v ON (w.id = v.workspace_id)
       JOIN questions AS q ON (v.question_id = q.id)
       LEFT JOIN course_instances AS ci ON (v.course_instance_id = ci.id)
-      JOIN pl_courses AS c ON (v.course_id = c.id)
+      JOIN courses AS c ON (v.course_id = c.id)
       JOIN institutions AS i ON (c.institution_id = i.id)
     WHERE
       w.state IN ('launching', 'running')

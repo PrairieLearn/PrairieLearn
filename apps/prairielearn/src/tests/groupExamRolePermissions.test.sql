@@ -13,7 +13,7 @@ SELECT
   gr.minimum,
   gr.maximum
 FROM
-  group_roles AS gr
+  team_roles AS gr
 WHERE
   gr.assessment_id = $assessment_id;
 

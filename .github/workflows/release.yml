@@ -12,6 +12,9 @@ jobs:
     permissions:
       # Needed for OIDC trusted publishing
       id-token: write
+      # Needed to be able to commit/push/PR the versioning PRs
+      contents: write
+      pull-requests: write
     steps:
       - name: Checkout Repo
         uses: actions/checkout@v6

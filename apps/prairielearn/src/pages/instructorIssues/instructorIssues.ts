@@ -8,9 +8,9 @@ import { z } from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
@@ -233,7 +233,7 @@ router.post(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
@@ -241,7 +241,7 @@ router.post(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
@@ -251,7 +251,7 @@ router.post(
         {
           issue_ids: issueIds,
           course_id: res.locals.course.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         },
         z.number(),
       );

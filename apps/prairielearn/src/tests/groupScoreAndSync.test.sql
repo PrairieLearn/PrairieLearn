@@ -7,15 +7,15 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work IS TRUE;
+  AND a.team_work IS TRUE;
 
 -- BLOCK select_group_users
 SELECT
   *
 FROM
-  group_configs AS gc
-  LEFT JOIN groups AS g ON (g.group_config_id = gc.id)
-  LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+  team_configs AS gc
+  LEFT JOIN teams AS g ON (g.team_config_id = gc.id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   gc.assessment_id = $assessment_id
   AND gc.deleted_at IS NULL

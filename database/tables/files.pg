@@ -23,7 +23,7 @@ indexes
 foreign-key constraints
     files_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE CASCADE
     files_assessment_instance_id_fkey: FOREIGN KEY (assessment_instance_id) REFERENCES assessment_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
-    files_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    files_deleted_by_fkey: FOREIGN KEY (deleted_by) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    files_created_by_fkey: FOREIGN KEY (created_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    files_deleted_by_fkey: FOREIGN KEY (deleted_by) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     files_instance_question_id_fkey: FOREIGN KEY (instance_question_id) REFERENCES instance_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
-    files_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    files_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
