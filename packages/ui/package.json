@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/ui",
-  "version": "1.9.0",
+  "version": "1.9.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -20,7 +20,7 @@
     "@prairielearn/browser-utils": "workspace:^",
     "@prairielearn/preact-cjs": "workspace:^",
     "@tanstack/react-table": "^8.21.3",
-    "@tanstack/react-virtual": "^3.13.13",
+    "@tanstack/react-virtual": "^3.13.14",
     "@tanstack/table-core": "^8.21.3",
     "clsx": "^2.1.1",
     "nuqs": "^2.8.6",

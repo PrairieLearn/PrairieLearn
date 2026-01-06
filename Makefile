@@ -43,15 +43,15 @@ refresh-workspace-hosts:
 refresh-workspace-hosts-dev:
 	@yarn refresh-workspace-hosts-dev
 
-dev: start-support python-deps-core
+dev: start-support python-deps
 	@yarn dev
-dev-vite: start-support python-deps-core
+dev-vite: start-support python-deps
 	@yarn dev-vite
-dev-bun: python-deps-core
+dev-bun: python-deps
 	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
-dev-all: start-support python-deps-core
+dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
