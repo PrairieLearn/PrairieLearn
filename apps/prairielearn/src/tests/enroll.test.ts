@@ -50,7 +50,7 @@ const USER_3 = {
   email: 'student3@example.com',
 };
 
-describe('Enroll page removed', function () {
+describe('Enrollment status pages', function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
