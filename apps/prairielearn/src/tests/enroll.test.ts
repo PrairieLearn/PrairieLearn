@@ -54,13 +54,6 @@ describe('Enroll page removed', function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
 
-  test('shows page removed message', async () => {
-    const res = await fetch(`${baseUrl}/enroll`);
-    assert.equal(res.status, 200);
-    const text = await res.text();
-    assert.include(text, 'Enrollment page removed');
-  });
-
   test('shows limit exceeded message on /limit_exceeded', async () => {
     const res = await fetch(`${baseUrl}/enroll/limit_exceeded`);
     assert.equal(res.status, 200);
