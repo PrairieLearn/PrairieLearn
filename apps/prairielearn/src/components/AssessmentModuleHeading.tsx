@@ -32,7 +32,7 @@ export function AssessmentModuleHeading({
   return (
     <>
       {assessmentModule.name}
-      <span class="text-muted">
+      <span className="text-muted">
         {' '}
         (Auto-generated from use in an assessment; add this assessment module to your
         infoCourse.json file to customize)
