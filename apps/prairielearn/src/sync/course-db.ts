@@ -1464,10 +1464,6 @@ function validateCourseInstance({
     }
   }
 
-  if (courseInstance.hideInEnrollPage != null) {
-    warnings.push('"hideInEnrollPage" should be deleted as the enrollment page has been removed.');
-  }
-
   if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
     errors.push(
       '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',
@@ -1562,6 +1558,14 @@ function validateCourseInstance({
     // but we'll warn about it for any active or future course instances.
     if (courseInstance.shortName) {
       warnings.push('The property "shortName" is not used and should be deleted.');
+    }
+
+    // As of January 2026, the enrollment page has been removed from PrairieLearn.
+    // We'll warn about this property for course instances that are active in the future.
+    if (courseInstance.hideInEnrollPage != null) {
+      warnings.push(
+        '"hideInEnrollPage" should be deleted as the enrollment page has been removed.',
+      );
     }
   }
 
