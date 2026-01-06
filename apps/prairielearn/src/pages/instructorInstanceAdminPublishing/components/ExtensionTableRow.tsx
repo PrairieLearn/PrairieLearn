@@ -28,15 +28,15 @@ export function ExtensionTableRow({
 
   return (
     <tr>
-      <td class="col-1 align-middle">
+      <td className="col-1 align-middle">
         {extension.course_instance_publishing_extension.name ? (
           <strong>{extension.course_instance_publishing_extension.name}</strong>
         ) : (
-          <span class="text-muted">Unnamed</span>
+          <span className="text-muted">Unnamed</span>
         )}
       </td>
-      <td class="col-1 align-middle text-nowrap">
-        <div class="d-flex align-items-center gap-1">
+      <td className="col-1 align-middle text-nowrap">
+        <div className="d-flex align-items-center gap-1">
           {formatDateFriendly(
             extension.course_instance_publishing_extension.end_date,
             courseInstance.display_timezone,
@@ -52,16 +52,16 @@ export function ExtensionTableRow({
             >
               <button
                 type="button"
-                class="btn btn-xs btn-ghost"
+                className="btn btn-xs btn-ghost"
                 aria-label="Extension will be ignored"
               >
-                <i class="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
+                <i className="fas fa-exclamation-triangle text-warning" aria-hidden="true" />
               </button>
             </OverlayTrigger>
           )}
         </div>
       </td>
-      <td class="col-3 align-middle">
+      <td className="col-3 align-middle">
         <div>
           {(() => {
             const studentsToShow = showAllStudents
@@ -72,12 +72,12 @@ export function ExtensionTableRow({
             return (
               <>
                 {extension.user_data.length > 0 && (
-                  <div class="d-flex flex-wrap align-items-center gap-2">
+                  <div className="d-flex flex-wrap align-items-center gap-2">
                     {studentsToShow.map((user, index) => (
                       <div key={user.uid}>
                         <a
                           href={getStudentEnrollmentUrl(courseInstance.id, user.enrollment_id)}
-                          class="text-decoration-none"
+                          className="text-decoration-none"
                         >
                           {user.name || '—'}
                         </a>
@@ -88,16 +88,16 @@ export function ExtensionTableRow({
                       <button
                         key={`button-${showAllStudents ? 'show-less' : 'show-more'}`}
                         type="button"
-                        class="btn btn-sm btn-outline-secondary"
+                        className="btn btn-sm btn-outline-secondary"
                         onClick={() => setShowAllStudents(!showAllStudents)}
                       >
                         {showAllStudents ? (
                           <>
-                            <i class="fas fa-chevron-up" aria-hidden="true" /> Show Less
+                            <i className="fas fa-chevron-up" aria-hidden="true" /> Show Less
                           </>
                         ) : (
                           <>
-                            <i class="fas fa-chevron-down" aria-hidden="true" /> +
+                            <i className="fas fa-chevron-down" aria-hidden="true" /> +
                             {extension.user_data.length - 3} More
                           </>
                         )}
@@ -110,20 +110,20 @@ export function ExtensionTableRow({
           })()}
         </div>
       </td>
-      <td class="col-1 align-middle">
-        <div class="d-flex gap-1">
+      <td className="col-1 align-middle">
+        <div className="d-flex gap-1">
           {canEdit && (
             <>
               <button
                 type="button"
-                class="btn btn-sm btn-outline-primary"
+                className="btn btn-sm btn-outline-primary"
                 onClick={() => onEdit(extension)}
               >
                 Edit
               </button>
               <button
                 type="button"
-                class="btn btn-sm btn-outline-danger"
+                className="btn btn-sm btn-outline-danger"
                 onClick={() => onDelete(extension)}
               >
                 Delete
