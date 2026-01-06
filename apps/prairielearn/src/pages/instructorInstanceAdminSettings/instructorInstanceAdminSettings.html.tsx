@@ -312,6 +312,7 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
+          enrollmentManagementEnabled={enrollmentManagementEnabled}
           onHide={() => setShowCopyModal(false)}
         />
       </div>
