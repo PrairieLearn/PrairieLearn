@@ -1,0 +1,65 @@
+{
+  "uuid": "f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f",
+  "type": "Homework",
+  "title": "Access Control Test",
+  "set": "Homework",
+  "number": "14",
+  "accessControl": [
+    {
+      "enabled": true,
+      "blockAccess": false,
+      "listBeforeRelease": true,
+      "dateControl": {
+        "enabled": true,
+        "releaseDate": "2025-03-14T00:01",
+        "dueDate": "2025-03-21T23:59",
+        "earlyDeadlines": [
+          { "date": "2025-03-17T23:59", "credit": 120 },
+          { "date": "2025-03-20T23:59", "credit": 110 }
+        ],
+        "lateDeadlines": [
+          { "date": "2025-03-23T23:59", "credit": 80 },
+          { "date": "2025-03-30T23:59", "credit": 50 }
+        ],
+        "afterLastDeadline": {
+          "allowSubmissions": true,
+          "credit": 30
+        },
+        "durationMinutes": 60,
+        "password": "superSecret"
+      },
+      "prairieTestControl": {
+        "enabled": true,
+        "exams": [
+          { "examUuid": "11e89892-3eff-4d7f-90a2-221372f14e5c" },
+          { "examUuid": "896c088c-7468-4045-965b-e8ae134086c2", "readOnly": true }
+        ]
+      },
+      "afterComplete": {
+        "hideQuestions": true,
+        "showQuestionsAgainDate": true,
+        "hideQuestionsAgainDate": true,
+        "hideScore": true,
+        "showScoreAgainDate": true
+      }
+    },
+    {
+      "targets": ["sectionB"],
+      "enabled": true,
+      "blockAccess": false,
+      "listBeforeRelease": true,
+      "dateControl": {
+        "enabled": false
+      },
+      "prairieTestControl": {
+        "enabled": false
+      }
+    }
+  ],
+  "zones": [
+    {
+      "title": "Access Control Test Zone",
+      "questions": [{ "id": "addNumbers", "points": 1 }]
+    }
+  ]
+}

@@ -8,7 +8,7 @@ import {
   StaffEnrollmentSchema,
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
-import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
+import { IdSchema, SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
 import { type StaffGradebookRow } from '../../lib/gradebook.shared.js';
 
 import { OverviewCard } from './components/OverviewCard.js';
@@ -24,14 +24,22 @@ export const UserDetailSchema = z.object({
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
+export const StudentGroupInfoSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+});
+export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
+  studentGroups: StudentGroupInfo[];
+  availableStudentGroups: StudentGroupInfo[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
-  hasCourseInstancePermissionEdit?: boolean;
+  hasCourseInstancePermissionEdit: boolean;
   enrollmentManagementEnabled: boolean;
   hasModernPublishing: boolean;
 }
@@ -40,6 +48,8 @@ export function InstructorStudentDetail({
   auditEvents,
   gradebookRows,
   student,
+  studentGroups,
+  availableStudentGroups,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -72,9 +82,11 @@ export function InstructorStudentDetail({
     <TimezoneContext.Provider value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
+        studentGroups={studentGroups}
+        availableStudentGroups={availableStudentGroups}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
-        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
+        hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
         enrollmentManagementEnabled={enrollmentManagementEnabled}
         hasModernPublishing={hasModernPublishing}
       />
