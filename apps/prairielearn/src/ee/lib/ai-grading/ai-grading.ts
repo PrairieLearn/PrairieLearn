@@ -12,7 +12,7 @@ import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/pos
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
-import { logResponseUsage } from '../../../lib/ai.js';
+import { formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -36,18 +36,22 @@ import * as questionServers from '../../../question-servers/index.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  type RubricQuestion,
+  RubricQuestionSchema,
+  type RubricQuestionWithInstanceQuestionId,
   containsImageCapture,
+  generatePrioritizedRubricQuestions,
   generatePrompt,
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastVariantAndSubmission,
+  selectLastVariantAndSubmission
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 10;
 
 /**
  * Grade instance questions using AI.
@@ -179,6 +183,10 @@ export async function aiGrade({
     job.info(`Using model ${model_id} for AI grading.`);
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
+    const rubricItemQuestions: Record<string, any> = {};
+
+    const questionsPerRubricItem: Record<string, RubricQuestionWithInstanceQuestionId[]> = {};
+
     /**
      * Grade an individual instance question.
      *
@@ -279,19 +287,44 @@ export async function aiGrade({
       if (rubric_items.length > 0) {
         // Dynamically generate the rubric schema based on the rubric items.
         let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+        let RubricQuestionsSchema = z.object({});
         for (const item of rubric_items) {
           RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
             z.object({
               [item.description]: z.boolean(),
             }),
           );
+
+          RubricQuestionsSchema = RubricQuestionsSchema.merge(
+            z.object({
+              [item.description]: RubricQuestionSchema.describe(
+                formatPrompt([
+                  'Your question about this rubric item. Be very curious and skeptical about the rubric item; it may be underspecified or imperfect.',
+                  'Assume that the reader does not have access to the rubric item or submission; include any necessary context in your question.',
+                  'Avoid asking questions that were answered before by the instructor.'
+                ])
+              )
+            }),
+          );
         }
+
 
         // OpenAI will take the property descriptions into account. See the
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
           rubric_items: RubricGradingItemsSchema,
+          rubric_questions: RubricQuestionsSchema.describe(
+            formatPrompt([
+              'The rubric may be underspecified or imperfect, and will be iteratively improved through the grading process.',
+              'For each rubric item, provide any questions you have about the rubric item.',
+              'An instructor will answer the question.',
+              'You will get to use the instructor\'s answer to re-grade the submission later.',
+              'Additionally, cite verbatim the relevant part of the rubric item,',
+              'and cite verbatim the part of the student submission that this question relates to.',
+              'Also briefly explain how this would impact the selection or deselection of this rubric item.'
+            ])
+          )
         });
 
         const response = await generateObject({
@@ -304,6 +337,21 @@ export async function aiGrade({
         });
 
         logResponseUsage({ response, logger });
+
+        rubricItemQuestions[instance_question.id] = response.object.rubric_questions;
+
+        for (const [itemDescription, rubricQuestion] of Object.entries(response.object.rubric_questions)) {
+          if (!rubricQuestion) {
+            continue;
+          }
+          if (!(itemDescription in questionsPerRubricItem)) {
+            questionsPerRubricItem[itemDescription] = [];
+          }
+          questionsPerRubricItem[itemDescription].push({
+            ...rubricQuestion as RubricQuestion,
+            instance_question_id: instance_question.id,
+          });
+        }
 
         logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
         const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
@@ -579,6 +627,30 @@ export async function aiGrade({
     );
 
     const error_count = instance_question_grading_successes.filter((success) => !success).length;
+
+    job.info(`Rubric item questions: ${JSON.stringify(rubricItemQuestions, null, 2)}`);
+
+    job.info(`questionsPerRubricItem: ${JSON.stringify(questionsPerRubricItem, null, 2)}`);
+
+    const prioritizedQuestions = await generatePrioritizedRubricQuestions({
+      questionsPerRubricItem,
+      model
+    });
+
+    job.info(`Prioritized questions: ${JSON.stringify(prioritizedQuestions, null, 2)}`);
+    let promptTemplate = '';
+    for (const questions of Object.values(prioritizedQuestions)) {
+      for (const question of questions) {
+        promptTemplate += `
+Question: ${question.question}
+Instance question ID: ${question.instance_question_id}
+Answer: [COMPLETE]
+
+`;
+      }
+    }
+
+    job.info(`Final prompt template for instructor: ${promptTemplate}`);
 
     if (error_count > 0) {
       job.error('\nNumber of errors: ' + error_count);
