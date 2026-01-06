@@ -87,7 +87,7 @@ export function InviteStudentsModal({
             computeStatus(
               courseInstance.publishing_start_date,
               courseInstance.publishing_end_date,
-            ) === 'unpublished' && (
+            ) !== 'published' && (
               <Alert variant="warning">
                 Students will not be able to accept the invitation until the course instance is
                 published.
