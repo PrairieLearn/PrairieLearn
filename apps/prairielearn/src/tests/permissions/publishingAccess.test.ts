@@ -1,44 +1,47 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-
 import { getCourseInstancePublishingUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
-import { SprocUsersSelectOrInsertSchema } from '../../lib/db-types.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../../models/course-permissions.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
+import { getOrCreateUser } from '../utils/auth.js';
+
+const courseId = '1';
+const courseInstanceId = '1';
 
 describe('publishing page access', { timeout: 60_000 }, function () {
-  const publishingUrl = `http://localhost:${config.serverPort}${getCourseInstancePublishingUrl('1')}`;
+  const publishingUrl = `http://localhost:${config.serverPort}${getCourseInstancePublishingUrl(courseInstanceId)}`;
 
   beforeAll(helperServer.before());
 
   beforeAll(async function () {
     // Set up test users
-    await sqldb.callRow(
-      'users_select_or_insert',
-      ['instructor@example.com', 'Instructor User', '100000000', 'instructor@example.com', 'dev'],
-      SprocUsersSelectOrInsertSchema,
-    );
+    const instructor = await getOrCreateUser({
+      uid: 'instructor@example.com',
+      name: 'Test Instructor',
+      uin: '100000000',
+      email: 'instructor@example.com',
+    });
+
     // Give the instructor course owner permissions
     await insertCoursePermissionsByUserUid({
-      course_id: '1',
-      uid: 'instructor@example.com',
+      course_id: courseId,
+      uid: instructor.uid,
       course_role: 'Owner',
-      authn_user_id: '1',
+      authn_user_id: instructor.id,
     });
     // Give the instructor course instance editor permissions (student data editor)
     // This allows testing course instance permission scenarios
     await insertCourseInstancePermissions({
-      course_id: '1',
-      user_id: '2', // instructor@example.com user_id
-      course_instance_id: '1',
+      course_id: courseId,
+      user_id: instructor.id,
+      course_instance_id: courseInstanceId,
       course_instance_role: 'Student Data Editor',
-      authn_user_id: '1',
+      authn_user_id: instructor.id,
     });
   });
 
