@@ -27,19 +27,19 @@ function ColumnLeafItem<RowDataModel>({
   return (
     <div
       key={column.id}
-      class={clsx('px-2 py-1 d-flex align-items-center justify-content-between', className)}
+      className={clsx('px-2 py-1 d-flex align-items-center justify-content-between', className)}
     >
-      <label class="form-check me-auto text-nowrap d-flex align-items-stretch">
+      <label className="form-check me-auto text-nowrap d-flex align-items-stretch">
         <input
           type="checkbox"
-          class="form-check-input"
+          className="form-check-input"
           checked={column.getIsVisible()}
           disabled={!column.getCanHide()}
           aria-label={column.getIsVisible() ? `Hide '${header}' column` : `Show '${header}' column`}
           aria-describedby={`${column.id}-label`}
           onChange={column.getToggleVisibilityHandler()}
         />
-        <span class="form-check-label ms-2" id={`${column.id}-label`}>
+        <span className="form-check-label ms-2" id={`${column.id}-label`}>
           {header}
         </span>
       </label>
@@ -48,7 +48,7 @@ function ColumnLeafItem<RowDataModel>({
         // Since the HTML changes, but we want to refocus the pin button, we track
         // the active pin button and refocuses it when the column manager is rerendered.
         id={`${column.id}-pin`}
-        class={clsx(
+        className={clsx(
           'btn btn-sm btn-ghost ms-2',
           (!column.getCanPin() || !onPinningBoundary) && 'invisible',
         )}
@@ -59,7 +59,7 @@ function ColumnLeafItem<RowDataModel>({
         data-bs-toggle="tooltip"
         onClick={() => onTogglePin(column.id)}
       >
-        <i class={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
+        <i className={`bi ${column.getIsPinned() ? 'bi-x' : 'bi-snow'}`} aria-hidden="true" />
       </button>
     </div>
   );
@@ -98,12 +98,12 @@ function ColumnGroupItem<RowDataModel>({
     (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
 
   return (
-    <div class="d-flex flex-column">
-      <div class="px-2 py-1 d-flex align-items-center justify-content-between">
-        <div class="d-flex align-items-center flex-grow-1">
+    <div className="d-flex flex-column">
+      <div className="px-2 py-1 d-flex align-items-center justify-content-between">
+        <div className="d-flex align-items-center flex-grow-1">
           <input
             type="checkbox"
-            class="form-check-input flex-shrink-0"
+            className="form-check-input flex-shrink-0"
             checked={isAllVisible}
             indeterminate={isSomeVisible}
             aria-label={`Toggle visibility for group '${header}'`}
@@ -111,16 +111,16 @@ function ColumnGroupItem<RowDataModel>({
           />
           <button
             type="button"
-            class="btn btn-link text-decoration-none text-reset w-100 text-start d-flex align-items-center justify-content-between ps-2 py-0 pe-0"
+            className="btn btn-link text-decoration-none text-reset w-100 text-start d-flex align-items-center justify-content-between ps-2 py-0 pe-0"
             aria-expanded={isExpanded}
             onClick={(e) => {
               e.stopPropagation();
               setIsExpanded(!isExpanded);
             }}
           >
-            <span class="fw-bold text-truncate">{header}</span>
+            <span className="fw-bold text-truncate">{header}</span>
             <i
-              class={clsx(
+              className={clsx(
                 'bi ms-2 text-muted',
                 isExpanded ? 'bi-chevron-down' : 'bi-chevron-right',
               )}
@@ -130,7 +130,7 @@ function ColumnGroupItem<RowDataModel>({
         </div>
       </div>
       {isExpanded && (
-        <div class="ps-3 border-start ms-3 mb-1">
+        <div className="ps-3 border-start ms-3 mb-1">
           {column.columns.map((childCol) => (
             <ColumnItem
               key={childCol.id}
@@ -310,7 +310,7 @@ export function ColumnManager<RowDataModel>({
         id="column-manager"
         variant="tanstack-table"
       >
-        <i class="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
+        <i className="bi bi-view-list me-2" aria-hidden="true" /> View{' '}
       </Dropdown.Toggle>
       <Dropdown.Menu style={{ maxHeight: '60vh', overflowY: 'auto' }}>
         {topContent && (
@@ -321,7 +321,7 @@ export function ColumnManager<RowDataModel>({
         )}
         {pinnedMenuColumns.length > 0 && (
           <>
-            <div class="px-2 py-1 text-muted small" role="presentation">
+            <div className="px-2 py-1 text-muted small" role="presentation">
               Frozen columns
             </div>
             <div role="group">
@@ -358,11 +358,11 @@ export function ColumnManager<RowDataModel>({
           </>
         )}
         {showResetButton && (
-          <div class="px-2 py-1">
+          <div className="px-2 py-1">
             <Button
               variant="secondary"
               size="sm"
-              class="w-100"
+              className="w-100"
               aria-label="Reset all columns to default visibility and pinning"
               onClick={() => {
                 table.resetColumnVisibility();
@@ -371,7 +371,7 @@ export function ColumnManager<RowDataModel>({
                 setActiveElementId('column-manager');
               }}
             >
-              <i class="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
+              <i className="bi bi-arrow-counterclockwise me-2" aria-hidden="true" />
               Reset view
             </Button>
           </div>
