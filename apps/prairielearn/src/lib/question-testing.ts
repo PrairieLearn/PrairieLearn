@@ -1,5 +1,5 @@
+import { isEqual, pick } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -108,7 +108,7 @@ function compareTestResults(
   const checkEqual = (name: string, var1: any, var2: any) => {
     const json1 = jsonStringifySafe(var1);
     const json2 = jsonStringifySafe(var2);
-    if (!_.isEqual(var1, var2)) {
+    if (!isEqual(var1, var2)) {
       courseIssues.push(new Error(`"${name}" mismatch: expected "${json1}" but got "${json2}"`));
     }
   };
@@ -371,37 +371,36 @@ async function runTest({
   );
 
   if (showDetails) {
-    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'];
+    const variantKeys = ['broken_at', 'options', 'params', 'true_answer', 'variant_seed'] as const;
     const expectedDataKeys = [
       'format_errors',
       'gradable',
       'partial_scores',
       'raw_submitted_answer',
       'score',
-    ];
+    ] as const;
     const submissionKeys = [
       'broken',
       'correct',
       'feedback',
       'format_errors',
       'gradable',
-      'grading_method',
       'partial_scores',
       'raw_submitted_answer',
       'score',
       'submitted_answer',
       'true_answer',
-    ];
-    logger.verbose('variant:\n' + jsonStringifySafe(_.pick(variant, variantKeys), null, '    '));
+    ] as const;
+    logger.verbose('variant:\n' + jsonStringifySafe(pick(variant, variantKeys), null, '    '));
     if (expectedTestData) {
       logger.verbose(
         'expectedTestData:\n' +
-          jsonStringifySafe(_.pick(expectedTestData, expectedDataKeys), null, '    '),
+          jsonStringifySafe(pick(expectedTestData, expectedDataKeys), null, '    '),
       );
     }
     if (submission) {
       logger.verbose(
-        'submission:\n' + jsonStringifySafe(_.pick(submission, submissionKeys), null, '    '),
+        'submission:\n' + jsonStringifySafe(pick(submission, submissionKeys), null, '    '),
       );
     }
   }

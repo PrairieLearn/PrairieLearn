@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { groupBy, sum } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -133,7 +133,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
     { group_id: groupId },
     RoleAssignmentSchema,
   );
-  const roleAssignments = _.groupBy(result, 'uid');
+  const roleAssignments = groupBy(result, (result) => result.uid);
 
   // Get info on all group roles for the assessment
   const groupRoles = await sqldb.queryRows(
@@ -149,7 +149,7 @@ async function getRolesInfo(groupId: string, groupMembers: User[]): Promise<Role
   );
 
   // Identify any disabled roles based on group size, role minimums
-  const minimumRolesToFill = _.sum(groupRoles.map((role) => role.minimum ?? 0));
+  const minimumRolesToFill = sum(groupRoles.map((role) => role.minimum ?? 0));
   const optionalRoleNames = groupRoles
     .filter((role) => (role.minimum ?? 0) === 0)
     .map((role) => role.role_name);
@@ -611,8 +611,8 @@ export async function leaveGroup(
         });
 
         // Groups with low enough size should only use required roles
-        const minRolesToFill = _.sum(
-          groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0),
+        const minRolesToFill = sum(
+          groupInfo.rolesInfo?.groupRoles.map((role) => role.minimum ?? 0) ?? [],
         );
         if (currentSize - 1 <= minRolesToFill) {
           await sqldb.execute(sql.delete_non_required_roles, {

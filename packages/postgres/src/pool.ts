@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Readable, Transform } from 'node:stream';
 
 import debugfn from 'debug';
-import _ from 'lodash';
+import { difference } from 'es-toolkit';
 import multipipe from 'multipipe';
 import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
@@ -112,9 +112,9 @@ function paramsToArray(
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
-    const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length > 0) {
-      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
+    const unusedKeys = difference(Object.keys(params), Object.keys(map));
+    if (unusedKeys.length > 0) {
+      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(unusedKeys)}`);
     }
   }
   return { processedSql, paramsArray };

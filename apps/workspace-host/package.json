@@ -36,7 +36,6 @@
     "express": "^4.22.1",
     "express-async-handler": "^1.2.0",
     "ioredis": "^5.8.2",
-    "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
     "shlex": "^3.0.0",

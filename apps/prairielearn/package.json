@@ -143,6 +143,7 @@
     "dropzone": "^5.9.3",
     "ejs": "^3.1.10",
     "es-main": "^1.4.0",
+    "es-toolkit": "^1.43.0",
     "execa": "^9.6.1",
     "express": "^4.22.1",
     "express-async-handler": "^1.2.0",

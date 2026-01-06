@@ -23,13 +23,11 @@
     "commander": "^14.0.2",
     "diff": "^8.0.2",
     "fs-extra": "^11.3.3",
-    "lodash": "^4.17.21",
     "postgres-array": "^3.0.4"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/lodash": "^4.17.21",
     "@types/node": "^22.19.3",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"

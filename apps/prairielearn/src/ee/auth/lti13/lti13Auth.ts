@@ -41,7 +41,7 @@ function getClaimUserAttributes({
   let email: string | null = null;
 
   if (lti13_instance.uin_attribute) {
-    // Here and below, we use `lodash.get` to expand path representation in text to the object, like 'a[0].b.c'
+    // Here and below, we use es-toolkit's get to expand path representation in text to the object, like 'a[0].b.c'
     // Might look like ["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]
     uin = claim.get(lti13_instance.uin_attribute);
   }

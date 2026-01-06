@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { keyBy } from 'es-toolkit';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -24,7 +24,7 @@ let page: string;
 let elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
-const questions = _.keyBy(question, 'qid');
+const questions = keyBy(question, (question) => question.qid);
 
 describe('assessment instance group synchronization test', function () {
   const storedConfig: Record<string, any> = {};
