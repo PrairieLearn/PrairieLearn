@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import { correctGeminiMalformedRubricGradingJson } from './ai-grading-util.js';
 
-describe('Gemini malformed output JSON correction', function () {
+describe('correctGeminiMalformedRubricGradingJson', function () {
   it('should escape unescaped backslashes before unescapable characters', () => {
     // Example with unescaped backslash before 'm' in \mathbb{x}. m is not escapable.
     // Note that in JavaScript strings, \\ represents a single backslash \.
