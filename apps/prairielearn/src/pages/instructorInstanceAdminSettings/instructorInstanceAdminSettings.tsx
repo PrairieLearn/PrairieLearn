@@ -348,12 +348,6 @@ router.post(
         parsedBody.group_assessments_by,
         'Set',
       );
-      courseInstanceInfo.hideInEnrollPage = propertyValueWithDefault(
-        courseInstanceInfo.hideInEnrollPage,
-        !parsedBody.show_in_enroll_page,
-        false,
-      );
-
       // dates from 'datetime-local' inputs are in the format 'YYYY-MM-DDTHH:MM', and we need them to include seconds.
       const parseDateTime = (date: string) => {
         if (date === '') return undefined;
