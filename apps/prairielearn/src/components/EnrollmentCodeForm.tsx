@@ -20,28 +20,28 @@ interface EnrollmentCodeFormData {
  * @param params.show - If the form is shown (only used for modal style)
  * @param params.onHide - The function to call when the form is hidden (only used for modal style)
  * @param params.courseInstanceId - The ID of the course instance the code is for (optional)
- * @param params.showHelp - Whether to show the help tooltip (optional)
+ * @param params.showInstructorHelp - Whether to show the instructor help text
  */
 export function EnrollmentCodeForm({
   style,
   show,
   onHide,
   courseInstanceId,
-  showHelp,
+  showInstructorHelp = false,
 }:
   | {
       style: 'raw-form';
       show?: undefined;
       onHide?: undefined;
       courseInstanceId?: string;
-      showHelp?: boolean;
+      showInstructorHelp?: boolean;
     }
   | {
       style: 'modal';
       show: boolean;
       onHide: () => void;
       courseInstanceId?: string;
-      showHelp?: boolean;
+      showInstructorHelp?: boolean;
     }) {
   const {
     register,
@@ -338,7 +338,7 @@ export function EnrollmentCodeForm({
           Don't have an enrollment code? Your instructor may have given you a link to your course or
           asked you to access it from another learning management system.
         </div>
-        {showHelp && (
+        {showInstructorHelp && (
           <div className="form-text mt-2">
             <b>Instructors: </b>
             You can find both the enrollment code and a self-enrollment link on the settings page of
