@@ -80,13 +80,13 @@ export function InviteStudentsModal({
                 : 'An error occurred'}
             </Alert>
           )}
-          <div class="mb-0">
-            <label for="invite-uids" class="form-label">
+          <div className="mb-0">
+            <label for="invite-uids" className="form-label">
               UIDs
             </label>
             <textarea
               id="invite-uids"
-              class={clsx('form-control', errors.uids && 'is-invalid')}
+              className={clsx('form-control', errors.uids && 'is-invalid')}
               rows={5}
               placeholder="student@example.com"
               aria-invalid={!!errors.uids}
@@ -97,11 +97,11 @@ export function InviteStudentsModal({
               })}
             />
             {errors.uids?.message && (
-              <div class="invalid-feedback" id="invite-uids-error">
+              <div className="invalid-feedback" id="invite-uids-error">
                 {errors.uids.message}
               </div>
             )}
-            <div class="form-text" id="invite-uids-help">
+            <div className="form-text" id="invite-uids-help">
               One UID per line, or comma/space separated.
             </div>
           </div>
@@ -109,13 +109,13 @@ export function InviteStudentsModal({
         <Modal.Footer>
           <button
             type="button"
-            class="btn btn-secondary"
+            className="btn btn-secondary"
             disabled={saveMutation.isPending}
             onClick={onHide}
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={saveMutation.isPending}>
+          <button type="submit" className="btn btn-primary" disabled={saveMutation.isPending}>
             {saveMutation.isPending ? 'Inviting...' : 'Invite'}
           </button>
         </Modal.Footer>

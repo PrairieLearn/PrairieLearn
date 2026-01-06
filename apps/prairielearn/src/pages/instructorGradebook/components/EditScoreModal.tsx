@@ -73,11 +73,11 @@ export function EditScoreButton({
     <>
       <button
         type="button"
-        class="btn btn-xs btn-ghost edit-score ms-1"
+        className="btn btn-xs btn-ghost edit-score ms-1"
         aria-label="Edit score"
         onClick={handleOpen}
       >
-        <i class="bi-pencil-square" aria-hidden="true" />
+        <i className="bi-pencil-square" aria-hidden="true" />
       </button>
       {show && (
         <Modal show={true} onHide={handleClose} onExited={resetModalState}>
@@ -91,7 +91,7 @@ export function EditScoreButton({
             }}
           >
             <Modal.Body>
-              <Form.Group class="mb-3">
+              <Form.Group className="mb-3">
                 <InputGroup>
                   <Form.Control
                     type="text"
@@ -109,7 +109,7 @@ export function EditScoreButton({
                   <small>
                     This is a group assessment. Updating this grade will also update grades for:
                   </small>
-                  <ul class="mb-0">
+                  <ul className="mb-0">
                     {otherUsers.map(({ uid, enrollment_id }) => (
                       <li key={uid}>
                         <small>
@@ -127,7 +127,7 @@ export function EditScoreButton({
                 </Alert>
               )}
 
-              <p class="text-muted">
+              <p className="text-muted">
                 <small>
                   This change will be overwritten if further questions are answered by the student.
                 </small>
@@ -136,7 +136,7 @@ export function EditScoreButton({
               {editScoreMutation.isError && (
                 <Alert
                   variant="danger"
-                  class="mb-2"
+                  className="mb-2"
                   dismissible
                   onClose={() => editScoreMutation.reset()}
                 >
