@@ -102,6 +102,7 @@ const minimalStudentCourseInstance: z.input<typeof StudentCourseInstanceSchema> 
   display_timezone: 'UTC',
   id: '3',
   long_name: null,
+  modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
   short_name: null,

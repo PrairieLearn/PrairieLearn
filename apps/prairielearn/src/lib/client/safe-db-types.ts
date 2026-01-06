@@ -259,6 +259,7 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   display_timezone: true,
   id: true,
   long_name: true,
+  modern_publishing: true,
   publishing_end_date: true,
   publishing_start_date: true,
   short_name: true,

@@ -56,6 +56,7 @@ export function HomeCardsInner({
       <EnrollmentCodeForm
         style="modal"
         show={showJoinModal}
+        showInstructorHelp={hasInstructorCourses}
         onHide={() => setShowJoinModal(false)}
       />
     </>

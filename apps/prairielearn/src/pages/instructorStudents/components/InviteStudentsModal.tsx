@@ -4,6 +4,8 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 
 interface InviteStudentForm {
@@ -14,10 +16,12 @@ const MAX_UIDS = 1000;
 
 export function InviteStudentsModal({
   show,
+  courseInstance,
   onHide,
   onSubmit,
 }: {
   show: boolean;
+  courseInstance: StaffCourseInstance;
   onHide: () => void;
   onSubmit: (uids: string[]) => Promise<void>;
 }) {
@@ -79,6 +83,16 @@ export function InviteStudentsModal({
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
+          {courseInstance.modern_publishing &&
+            computeStatus(
+              courseInstance.publishing_start_date,
+              courseInstance.publishing_end_date,
+            ) !== 'published' && (
+              <Alert variant="warning">
+                Students will not be able to accept the invitation until the course instance is
+                published.
+              </Alert>
+            )}
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error instanceof Error

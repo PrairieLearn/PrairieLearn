@@ -9,6 +9,7 @@ import {
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
 
@@ -63,9 +64,21 @@ export function Home({
   enrollmentManagementEnabled: boolean;
   search: string;
 }) {
-  const listedStudentCourses = studentCourses.filter(
-    (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
-  );
+  const listedStudentCourses = studentCourses.filter((ci) => {
+    if (ci.enrollment.status === 'joined') return true;
+    if (ci.enrollment.status === 'invited') {
+      if (!ci.course_instance.modern_publishing) {
+        return false;
+      }
+      return (
+        computeStatus(
+          ci.course_instance.publishing_start_date,
+          ci.course_instance.publishing_end_date,
+        ) === 'published'
+      );
+    }
+    return false;
+  });
 
   return (
     <div className="pt-5">
