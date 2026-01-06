@@ -310,10 +310,9 @@ export async function aiGrade({
               return null;
             }
             // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // malformed output from the model.
+            // unescaped backslashes in the rubric item keys of the response.
 
             // TODO: Remove this temporary fix once Google fixes the underlying issue.
-
             return correctGeminiMalformedRubricGradingJson(options.text);
           },
         });

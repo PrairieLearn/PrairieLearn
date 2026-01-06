@@ -471,7 +471,7 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
 }
 
 /**
- * Correct malformed AI rubric grading responses from Google Gemini.
+ * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *
  * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
  *
