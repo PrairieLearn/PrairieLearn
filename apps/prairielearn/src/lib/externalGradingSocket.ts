@@ -12,6 +12,7 @@ import { gradingJobStatus } from '../models/grading-job.js';
 
 import { checkVariantToken } from './checkVariantToken.js';
 import { GradingJobSchema } from './db-types.js';
+import { ensureProps } from './ensureProps.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
 
@@ -39,7 +40,13 @@ export function init() {
 
 export function connection(socket: Socket) {
   socket.on('init', (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['variant_id', 'variant_token'],
+        socketName: 'external grader',
+      })
+    ) {
       return callback(null);
     }
     if (!checkVariantToken(msg.variant_token, msg.variant_id)) {
@@ -98,17 +105,4 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
     logger.error('Error selecting submission for grading job', err);
     Sentry.captureException(err);
   }
-}
-
-function ensureProps(data: Record<string, any>, props: string[]): boolean {
-  for (const prop of props) {
-    if (!Object.hasOwn(data, prop)) {
-      logger.error(`socket.io external grader connected without ${prop}`);
-      Sentry.captureException(
-        new Error(`socket.io external grader connected without property ${prop}`),
-      );
-      return false;
-    }
-  }
-  return true;
 }

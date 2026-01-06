@@ -27,6 +27,8 @@ import {
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
+import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
@@ -81,6 +83,7 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -160,6 +163,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -354,6 +358,7 @@ export function AssessmentQuestionTable({
       points: setTotalPointsFilter,
       score_perc: setScoreFilter,
       rubric_grading_item_ids: setRubricItemsFilter,
+      ai_grading_status: undefined,
       uid: undefined,
       user_or_group_name: undefined,
       select: undefined,
@@ -384,12 +389,26 @@ export function AssessmentQuestionTable({
     [columnFilters, columnFilterSetters],
   );
 
+  const serverJobProgress = useServerJobProgress({
+    enabled: aiGradingMode,
+    initialOngoingJobSequenceTokens,
+    onProgressChange: () => {
+      // Refresh the displayed table data when server job progress updates, since
+      // instance question grading data (e.g. AI agreements, grading status)
+      // may have changed.
+      void queryClientInstance.invalidateQueries({
+        queryKey: ['instance-questions'],
+      });
+    },
+  });
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
       createColumns({
         aiGradingMode,
         instanceQuestionGroups,
+        displayedStatuses: serverJobProgress.displayedStatuses,
         assessment,
         assessmentQuestion,
         hasCourseInstancePermissionEdit,
@@ -410,6 +429,7 @@ export function AssessmentQuestionTable({
     [
       aiGradingMode,
       instanceQuestionGroups,
+      serverJobProgress.displayedStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -435,7 +455,8 @@ export function AssessmentQuestionTable({
           return [col.id, false];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-        if (['requires_manual_grading', 'assigned_grader_name', 'score_perc'].includes(col.id!)) {
+
+        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
           return [col.id, !aiGradingMode];
         }
         if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
@@ -474,7 +495,6 @@ export function AssessmentQuestionTable({
     void setColumnVisibility((prev) => ({
       ...prev,
       // Hide these columns in AI grading mode
-      requires_manual_grading: !aiGradingMode,
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
       // Show these columns in AI grading mode
@@ -621,6 +641,21 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
+      {aiGradingMode && (
+        <ServerJobsProgressInfo
+          statusIcons={{
+            inProgress: 'bi-stars',
+          }}
+          statusText={{
+            inProgress: 'AI grading in progress',
+            complete: 'AI grading complete',
+            failed: 'AI grading failed',
+          }}
+          itemNames="submissions graded"
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+        />
+      )}
       {batchActionMutation.isError && (
         <Alert
           variant="danger"
@@ -728,10 +763,22 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.humanGraded}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_graded',
-                          modelId,
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_graded',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <AiGradingOption
@@ -742,7 +789,16 @@ export function AssessmentQuestionTable({
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
+                          (data) => {
+                            if (data && 'job_sequence_token' in data) {
+                              serverJobProgress.handleAddOngoingJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token,
+                              );
+                            }
+                          },
                         );
+                        table.resetRowSelection();
                       }}
                     />
                     <AiGradingOption
@@ -750,10 +806,22 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.all}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_all',
-                          modelId,
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_all',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <Dropdown.Divider />
