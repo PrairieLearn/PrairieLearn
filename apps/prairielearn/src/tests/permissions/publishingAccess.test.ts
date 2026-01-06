@@ -3,6 +3,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getCourseInstancePublishingUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import { SprocUsersSelectOrInsertSchema } from '../../lib/db-types.js';
 import {
   insertCourseInstancePermissions,
@@ -12,7 +13,7 @@ import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 
 describe('publishing page access', { timeout: 60_000 }, function () {
-  const publishingUrl = getCourseInstancePublishingUrl('1');
+  const publishingUrl = `http://localhost:${config.serverPort}${getCourseInstancePublishingUrl('1')}`;
 
   beforeAll(helperServer.before());
 
