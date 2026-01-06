@@ -469,3 +469,39 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
+
+/**
+ * Correct Google Gemini malformed rubric grading responses.
+ * 
+ * In returned rubric items keys, Google Gemini sometimes returns unescaped backslashes.
+ * This particularly impacts rubric descriptions containing LaTex with backslashes, e.g.
+ * \mathbb{x}.
+ * 
+ * @param rawResponseText - The raw response returned from the Gemini model. It is expected to contain a "rubric_items" key.
+ * 
+ * @returns The corrected JSON as a string, or null if it could not be corrected.
+ */
+export function correctGeminiMalformedRubricGradingJson(
+  rawResponseText: string
+): string | null {
+  const RUBRIC_ITEMS_KEY = '"rubric_items":';
+
+  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
+  if (startRubric === -1) return null;
+
+  // All characters after the rubric items key
+  let rubricItemsRaw = rawResponseText
+    .slice(startRubric + RUBRIC_ITEMS_KEY.length)
+    .trim();
+  rubricItemsRaw = rubricItemsRaw.slice(0, -1);
+
+  // Gemini sometimes returns unescaped backslashes in the JSON string.
+  // We need to escape them properly.
+  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
+
+  // Replace only the rubric_items value portion, leaving the rest untouched
+  const prefix = rawResponseText.slice(0, startRubric + RUBRIC_ITEMS_KEY.length);
+  const suffix = rawResponseText.endsWith('}') ? '}' : '';
+
+  return `${prefix} ${correctedRubricItems} ${suffix}`;
+}

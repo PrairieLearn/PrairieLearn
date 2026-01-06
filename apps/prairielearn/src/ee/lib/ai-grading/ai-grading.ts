@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -37,11 +37,12 @@ import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  correctGeminiMalformedRubricGradingJson,
   generatePrompt,
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastVariantAndSubmission,
+  selectLastVariantAndSubmission
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -301,6 +302,13 @@ export async function aiGrade({
           providerOptions: {
             openai: openaiProviderOptions,
           },
+          experimental_repairText: async (options: {text: string, error: JSONParseError | TypeValidationError}) => {
+            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
+              return null;
+            }
+            const correctedText = correctGeminiMalformedRubricGradingJson(options.text);
+            return correctedText;
+          }
         });
 
         logResponseUsage({ response, logger });
