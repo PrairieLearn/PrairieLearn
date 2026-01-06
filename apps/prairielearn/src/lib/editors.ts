@@ -935,23 +935,7 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    const fileContents = await fs.readJson(
-      path.join(courseInstancePath, 'infoCourseInstance.json'),
-    );
-
-    const infoJson = {
-      ...fileContents,
-      longName,
-      uuid: this.uuid,
-      // We do not want to preserve sharing settings when copying a course instance
-      shareSourcePublicly: undefined,
-      // Clear access rules to avoid leaking student PII or unexpectedly
-      // making the copied course instance available to users.
-      // Note: this means that copied course instances will be switched to the modern publishing
-      // system.
-      allowAccess: undefined,
-      ...this.metadataOverrides,
-    };
+    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1045,6 +1029,21 @@ export class CourseInstanceCopyEditor extends Editor {
         newQids,
       );
     }
+
+    debug('Write infoCourseInstance.json with new longName and uuid');
+    infoJson.longName = longName;
+    infoJson.uuid = this.uuid;
+
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    delete infoJson.allowAccess;
+
+    // We do not want to preserve sharing settings when copying a course instance
+    delete infoJson.shareSourcePublicly;
+
+    Object.assign(infoJson, this.metadataOverrides ?? {});
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1254,14 +1253,11 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    let infoJson: Record<string, any> = {
+    const infoJson: Record<string, any> = {
       uuid: this.uuid,
       longName: this.long_name,
+      ...this.metadataOverrides,
     };
-
-    if (this.metadataOverrides) {
-      infoJson = { ...infoJson, ...this.metadataOverrides };
-    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
