@@ -62,32 +62,32 @@ function AssessmentSetRow({
   return (
     <tr key={assessmentSet.id} ref={setNodeRef} style={style}>
       {editMode && allowEdit && (
-        <td class="align-middle">
-          <div class="d-flex align-items-center">
+        <td className="align-middle">
+          <div className="d-flex align-items-center">
             <button
               type="button"
-              class="btn btn-sm btn-ghost"
+              className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag row"
               {...listeners}
             >
-              <i class="fa fa-grip-vertical" aria-hidden="true" />
+              <i className="fa fa-grip-vertical" aria-hidden="true" />
             </button>
 
-            <button class="btn btn-sm btn-ghost" type="button" onClick={onEdit}>
-              <i class="fa fa-edit" aria-hidden="true" />
+            <button className="btn btn-sm btn-ghost" type="button" onClick={onEdit}>
+              <i className="fa fa-edit" aria-hidden="true" />
             </button>
-            <button class="btn btn-sm btn-ghost" type="button" onClick={onDelete}>
-              <i class="fa fa-trash text-danger" aria-hidden="true" />
+            <button className="btn btn-sm btn-ghost" type="button" onClick={onDelete}>
+              <i className="fa fa-trash text-danger" aria-hidden="true" />
             </button>
           </div>
         </td>
       )}
-      <td class="align-middle">
-        <span class={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
+      <td className="align-middle">
+        <span className={`badge color-${assessmentSet.color}`}>{assessmentSet.abbreviation}</span>
       </td>
-      <td class="align-middle">{assessmentSet.name}</td>
-      <td class="align-middle">
+      <td className="align-middle">{assessmentSet.name}</td>
+      <td className="align-middle">
         <AssessmentSetHeading assessmentSet={assessmentSet} />
       </td>
     </tr>
@@ -135,17 +135,17 @@ function DraggableTable({
       }}
     >
       <SortableContext items={ids} strategy={verticalListSortingStrategy}>
-        <table class="table table-sm table-hover table-striped" aria-label="Assessment sets">
+        <table className="table table-sm table-hover table-striped" aria-label="Assessment sets">
           <thead>
             <tr>
               {editMode && allowEdit && (
                 <th style="width: 1%">
-                  <span class="visually-hidden">Drag, Edit and Delete</span>
+                  <span className="visually-hidden">Drag, Edit and Delete</span>
                 </th>
               )}
               <th>Abbreviation</th>
               <th>Name</th>
-              <th class="col-8">Heading</th>
+              <th className="col-8">Heading</th>
             </tr>
           </thead>
 
@@ -164,8 +164,8 @@ function DraggableTable({
             {editMode && allowEdit && (
               <tr>
                 <td colSpan={4}>
-                  <button class="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
-                    <i class="fa fa-plus" aria-hidden="true" /> New assessment set
+                  <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
+                    <i className="fa fa-plus" aria-hidden="true" /> New assessment set
                   </button>
                 </td>
               </tr>
@@ -233,18 +233,18 @@ export function AssessmentSetsTable({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>Assessment sets</h1>
-          <div class="ms-auto">
+          <div className="ms-auto">
             {allowEdit && origHash ? (
               !editMode ? (
                 <button
-                  class="btn btn-sm btn-light mx-1"
+                  className="btn btn-sm btn-light mx-1"
                   type="button"
                   onClick={() => setEditMode(true)}
                 >
-                  <i class="fa fa-edit" aria-hidden="true" /> Edit assessment sets
+                  <i className="fa fa-edit" aria-hidden="true" /> Edit assessment sets
                 </button>
               ) : (
                 <form method="POST">
@@ -256,12 +256,12 @@ export function AssessmentSetsTable({
                     name="assessment_sets"
                     value={JSON.stringify(assessmentSetsState)}
                   />
-                  <button class="btn btn-sm btn-light mx-1" type="submit">
-                    <i class="fa fa-save" aria-hidden="true" />
+                  <button className="btn btn-sm btn-light mx-1" type="submit">
+                    <i className="fa fa-save" aria-hidden="true" />
                     Save and sync
                   </button>
                   <button
-                    class="btn btn-sm btn-light"
+                    className="btn btn-sm btn-light"
                     type="button"
                     onClick={() => window.location.reload()}
                   >
@@ -275,7 +275,7 @@ export function AssessmentSetsTable({
           </div>
         </div>
 
-        <div class="table-responsive">
+        <div className="table-responsive">
           <DraggableTable
             assessmentSetsState={assessmentSetsState}
             setAssessmentSetsState={setAssessmentSetsState}
