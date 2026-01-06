@@ -252,7 +252,6 @@ router.post(
         undefined,
         self_enrollment_enabled,
         true,
-        { isUIBoolean: true },
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         undefined,
@@ -365,7 +364,6 @@ router.post(
         courseInstanceInfo.selfEnrollment?.enabled,
         parsedBody.self_enrollment_enabled,
         true,
-        { isUIBoolean: true },
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
