@@ -55,23 +55,23 @@ export function MultiSelectColumnFilter<TData, TValue>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class="text-muted p-0"
+        className="text-muted p-0"
         id={`filter-${columnId}`}
         aria-label={`Filter ${label.toLowerCase()}`}
         title={`Filter ${label.toLowerCase()}`}
       >
         <i
-          class={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          className={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu class="p-0">
-        <div class="p-3 pb-0" style={{ minWidth: '250px' }}>
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{label}</div>
+      <Dropdown.Menu className="p-0">
+        <div className="p-3 pb-0" style={{ minWidth: '250px' }}>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <div className="fw-semibold">{label}</div>
             <button
               type="button"
-              class="btn btn-link btn-sm text-decoration-none p-0"
+              className="btn btn-link btn-sm text-decoration-none p-0"
               onClick={() => column.setFilterValue([])}
             >
               Clear
@@ -80,7 +80,7 @@ export function MultiSelectColumnFilter<TData, TValue>({
         </div>
 
         <div
-          class="list-group list-group-flush"
+          className="list-group list-group-flush"
           style={{
             // This is needed to prevent the last item's background from covering
             // the dropdown's border radius.
@@ -90,16 +90,16 @@ export function MultiSelectColumnFilter<TData, TValue>({
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={value} class="list-group-item d-flex align-items-center gap-3">
-                <div class="form-check">
+              <div key={value} className="list-group-item d-flex align-items-center gap-3">
+                <div className="form-check">
                   <input
-                    class="form-check-input"
+                    className="form-check-input"
                     type="checkbox"
                     checked={isSelected}
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" for={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,
