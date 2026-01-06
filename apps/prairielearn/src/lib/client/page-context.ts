@@ -72,7 +72,6 @@ const StudentCourseContextSchema = z
         short_name: z.string(),
       })
       .brand('StudentCourse'),
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StudentCourseContext'>();
 type StudentCourseContext = z.infer<typeof StudentCourseContextSchema>;
@@ -87,7 +86,6 @@ const StaffCourseContextSchema = z
       })
       .brand('StaffCourse'),
     institution: StaffInstitutionSchema,
-    has_enhanced_navigation: z.boolean(),
   })
   .brand<'StaffCourseContext'>();
 type StaffCourseContext = z.infer<typeof StaffCourseContextSchema>;

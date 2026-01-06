@@ -4,14 +4,10 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import {
-  AssessmentInstanceSchema,
-  IdSchema,
-  SubmissionSchema,
-  VariantSchema,
-} from '../lib/db-types.js';
+import { AssessmentInstanceSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -149,7 +145,7 @@ describe('assessment instance group synchronization test', function () {
       locals.assessment_instance = assessment_instance;
       locals.assessmentInstanceUrl =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(assessment_instance.group_id, '1');
+      assert.equal(assessment_instance.team_id, '1');
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);

@@ -42,6 +42,7 @@ def generate(data):
 | `imaginary-unit-for-display`    | string                  | `"i"`                   | The imaginary unit that is used for display. It must be either `"i"` or `"j"`. Again, this is _only_ for display. Both `i` and `j` can be used by the student in their submitted answer, when `allow-complex="true"`.                                                                                                                           |
 | `display-log-as-ln`             | boolean                 | `false`                 | Whether `ln` rather than `log` should be used when displaying submissions and correct answers. Both are considered equivalent and can be used by the student in their submitted answer.                                                                                                                                                         |
 | `display-simplified-expression` | boolean                 | `true`                  | Whether expressions submitted by students should be displayed in their simplified form. Setting `display-simplified-expression="false"` can prevent unintended simplifications that might confuse students. Note that, regardless of this setting, answers are always simplified for grading purposes.                                          |
+| `additional-simplifications`    | string                  | -                       | Simplifications that should be applied during grading before using SymPy's built-in equality checker. Using this attribute can prevent rare cases of non-convergence during grading. See [the non-convergence section](#non-convergence-in-grading) for more details before using this attribute.                                               |
 | `allow-trig-functions`          | boolean                 | true                    | Whether trigonometric functions (`cos`, `atanh`, ...) are allowed.                                                                                                                                                                                                                                                                              |
 | `allow-blank`                   | boolean                 | false                   | Whether an empty input box is allowed. By default, an empty input box will not be graded (invalid format).                                                                                                                                                                                                                                      |
 | `blank-value`                   | string                  | 0 (zero)                | Expression to be used as an answer if the answer is left blank. Only applied if `allow-blank` is `true`. Must be `""` (empty string) or follow the same format as an expected user input (e.g., same variables, etc.).                                                                                                                          |
@@ -72,6 +73,46 @@ See example question for details.
 - [`pl-number-input` for numeric input](pl-number-input.md)
 - [`pl-integer-input` for integer input](pl-integer-input.md)
 - [`pl-string-input` for string input](pl-string-input.md)
+
+### Non-convergence in grading
+
+In rare cases, the `pl-symbolic-input` question element can produce grading results that mark a student answer as "non-converging" during grading. In these cases, answers are marked as invalid, since it could not be determined if they are correct or incorrect.
+
+#### Why grading might not converge
+
+The `pl-symbolic-input` question element uses the Python library [SymPy](https://www.sympy.org) to represent and grade expressions. During grading, the correct answer and the student submission are parsed into SymPy expressions and then compared using the library's built-in equality checker.
+
+Checking for equality is non-trivial as it accounts for a wide range of mathematical equivalences (e.g., `log(10*x)` is considered equal to `log(10)+log(x)`, or `(x+1)**2` is equal to `x**2+2*x+1`). To account for all possible combinations of equivalence rules, [SymPy applies simplifications heuristically](https://docs.sympy.org/latest/tutorials/intro-tutorial/simplification.html) and potentially repeatedly. Unfortunately this means that there is no bound on how long the equality checker might take to finish, and in rare cases it might even get stuck in a non-terminating simplification cycle.
+
+PrairieLearn automatically terminates SymPy's equality check after a few seconds have passed. This check is applied in two cases. The element then marks student submission as invalid during grading if their submission caused a timeout. Note that both correct and incorrect answers can potentially trigger timeouts. Students are presented with an error message that tells them `Your answer did not converge, try a simpler expression.`. If desired, this behavior can be replaced with custom grading code in the [`server.py` file](../question/server.md#step-5-grade) of the question.
+
+#### Preventing non-convergence by adding `additional-simplifications`
+
+Terminating SymPy's equality check is a last resort to ensure that the normal grading process (including custom question grading defined in `server.py`) can complete. When presented with a non-convergence error, students might misinterpret it as a sign that the question is faulty, although even small changes to their answer (e.g., manually expanding a term) might resolve the issue and it is very rare that correct answers trigger non-convergence errors.
+
+SymPy is less likely to experience issues if both the correct and submitted answer share the same structure. As an instructor, it therefore _might_ be possible to prevent timeouts by "guiding" SymPy's equality checking process. This can be achieved by providing SymPy with a list of simplification steps that it should execute before relying on its built-in heuristics. For example, the `trigsimp` simplification step can convert `sin(x)/cos(x)` into `tan(x)`, and `expand` can convert expressions like `(x+1)**2` into `x**2+2*x+1`.
+
+!!! warning
+
+    Applying `additional-simplifications` is not guaranteed to work around all timeout issues. The optimal simplification order for a specific question depends on the complexity and domain of the question (e.g., whether it uses trigonometric functions). If a question experiences non-convergence issues, it might be easier to change the expected answer rather than experimenting with this parameter.
+
+The table below lists the possible simplifications that can be provided to the attribute `additional-simplifications`, and are applied in the order they are listed:
+
+| Simplification | Description                   | Example                          |
+| -------------- | ----------------------------- | -------------------------------- |
+| `expand`       | Expanding polynomials         | `(x + 1)**2` => `x**2 + 2*x + 1` |
+| `powsimp`      | Power simplifications         | `x**a*x**b` => `x**(a + b)`      |
+| `trigsimp`     | Trigonometric simplifications | `sin(x)/cos(x)` => `tan(x)`      |
+| `expand_log`   | Logarithmic simplifications   | `log(x*y)` => `log(x) + log(y)`  |
+
+Some specific examples of successful uses of `additional-simplifications` are:
+
+- `(-8*x*sin(8*x)/cos(8*x) + log(cos(8*x)))*cos(8*x)**x` benefitted from `additional-simplifications="trigsimp"`.
+- `7**(x + 8)*log(7)` benefitted from `additional-simplifications="expand"`
+
+!!! note
+
+    All of the simplifications above are already considered in SymPy's built-in heuristics, so listing them in `additional-simplifications` does not affect the display of expressions or the grading results _except_ in cases where a timeout occurs. Also note that simplifications are always applied to both the correct and the submitted answer, because the goal is to increase their similarity (e.g., both are fully expanded) rather than aiming for a specific form (e.g., expanding vs. factoring).
 
 ---
 

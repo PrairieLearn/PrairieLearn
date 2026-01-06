@@ -9,9 +9,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { type Course, CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
@@ -31,7 +30,7 @@ router.get(
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         needToSync = true;
       } else {
@@ -39,17 +38,25 @@ router.get(
       }
     }
 
+    const {
+      authz_data: authzData,
+      course,
+      __csrf_token,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
     const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course: res.locals.course,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      course,
+      authzData,
+      requiredRole: ['Previewer', 'Student Data Viewer'],
     });
 
     const enrollmentCounts = await sqldb.queryRows(
       sql.select_enrollment_counts,
-      { course_id: res.locals.course.id },
+      { course_id: course.id },
       z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
     );
 
@@ -64,12 +71,6 @@ router.get(
         })),
       );
 
-    // TODO: We need to land the refactor so I can add the course context as an option.
-    const { course, __csrf_token, authz_data, urlPrefix } = extractPageContext(res.locals, {
-      pageType: 'course',
-      accessType: 'instructor',
-    });
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -83,23 +84,16 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
+          <Hydrate>
+            <InstructorCourseAdminInstances
+              courseInstances={safeCourseInstancesWithEnrollmentCounts}
               course={course}
+              canEditCourse={authzData.has_course_permission_edit}
+              needToSync={needToSync}
+              csrfToken={__csrf_token}
               urlPrefix={urlPrefix}
             />
-            <Hydrate>
-              <InstructorCourseAdminInstances
-                courseInstances={safeCourseInstancesWithEnrollmentCounts}
-                course={course}
-                canEditCourse={authz_data.has_course_permission_edit}
-                needToSync={needToSync}
-                csrfToken={__csrf_token}
-                urlPrefix={urlPrefix}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
@@ -204,7 +198,7 @@ router.post(
 
       const courseInstance = await selectCourseInstanceByUuid({
         uuid: editor.uuid,
-        course: course as unknown as Course, // TODO: We need to write up proper model functions for Courses.
+        course,
       });
 
       res.json({ course_instance_id: courseInstance.id });

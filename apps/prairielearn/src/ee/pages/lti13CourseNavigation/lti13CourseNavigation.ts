@@ -5,13 +5,15 @@ import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
+import { type PageAuthzData, hasRole, makePageAuthzData } from '../../../lib/authz-data-lib.js';
+import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import {
   type Course,
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
-import { selectCourseById, selectCoursesWithEditAccess } from '../../../models/course.js';
+import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
 
 import {
@@ -43,23 +45,15 @@ function prettyCourseName(ltiClaim: Lti13Claim) {
 
 async function courseInstancesAllowedToLink({
   course,
-  user_id,
-  authn_user_id,
-  is_administrator,
-  authn_is_administrator,
+  authzData,
 }: {
   course: Course;
-  user_id: string;
-  authn_user_id: string;
-  is_administrator: boolean;
-  authn_is_administrator: boolean;
+  authzData: PageAuthzData;
 }) {
   const course_instances = await selectCourseInstancesWithStaffAccess({
     course,
-    user_id,
-    authn_user_id,
-    is_administrator,
-    authn_is_administrator,
+    authzData,
+    requiredRole: ['Previewer', 'Student Data Viewer'],
   });
 
   return course_instances.filter((ci) => ci.has_course_instance_permission_edit);
@@ -83,27 +77,30 @@ async function coursesAllowedToLink({
 router.get(
   '/course_instances',
   asyncHandler(async (req, res) => {
-    const courses = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-    });
-
     const unsafe_course_id = req.query.unsafe_course_id?.toString();
     if (!unsafe_course_id) {
       throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
     }
 
-    const course = courses.find((c) => c.id === unsafe_course_id);
-    if (!course) {
+    const { authzData, course } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: unsafe_course_id,
+      course_instance_id: null,
+      ip: req.ip || null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
+
+    if (!authzData || !hasRole(authzData, ['Editor'])) {
       throw new HttpStatusError(403, 'Access denied');
     }
 
     const course_instances = await courseInstancesAllowedToLink({
       course,
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
+      authzData: makePageAuthzData({
+        authzData,
+        is_administrator: res.locals.is_administrator,
+      }),
     });
 
     let options: HtmlSafeString;
@@ -200,7 +197,7 @@ router.get(
         resLocals: res.locals,
         courseName,
         courses: await coursesAllowedToLink({
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
           is_administrator: res.locals.is_administrator,
         }),
         lti13_instance_id: req.params.lti13_instance_id,
@@ -212,13 +209,25 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const ltiClaim = new Lti13Claim(req);
+    const { authzData, courseInstance } = await constructCourseOrInstanceContext({
+      user: res.locals.authn_user,
+      course_id: null,
+      course_instance_id: req.body.unsafe_course_instance_id,
+      ip: req.ip || null,
+      req_date: res.locals.req_date,
+      is_administrator: res.locals.is_administrator,
+    });
 
-    // Map passed and auth lti13_instance_id through institution to course instance, or fail
+    if (!authzData || !hasRole(authzData, ['Editor', 'Student Data Editor']) || !courseInstance) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
+    // Ensure that the selected course instance transitively belongs to the institution
+    // to which the LTI 1.3 instance belongs.
     const course_instance = await queryOptionalRow(
       sql.select_lti13_institution_course_instance,
       {
-        course_instance_id: req.body.unsafe_course_instance_id,
+        course_instance_id: courseInstance.id,
         lti13_instance_id: req.params.lti13_instance_id,
         authn_lti13_instance_id: req.session.authn_lti13_instance_id,
       },
@@ -229,24 +238,8 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
-    const courseInstancesAllowed = await courseInstancesAllowedToLink({
-      course: await selectCourseById(course_instance.course_id),
-      user_id: res.locals.authn_user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authn_is_administrator,
-    });
-    const hasCourseInstanceAllowed = courseInstancesAllowed.some(
-      (ci) => ci.id === course_instance.id,
-    );
-
-    const coursesAllowed = await coursesAllowedToLink({
-      user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-    });
-    const hasCourseAllowed = coursesAllowed.some((c) => c.id === course_instance.course_id);
-
-    if (ltiClaim.isRoleInstructor() && hasCourseAllowed && hasCourseInstanceAllowed) {
+    const ltiClaim = new Lti13Claim(req);
+    if (ltiClaim.isRoleInstructor()) {
       await execute(sql.insert_lci, {
         lti13_instance_id: req.params.lti13_instance_id,
         deployment_id: ltiClaim.deployment_id,

@@ -8,7 +8,7 @@ import {
 } from '../../../components/CourseInstancePublishingForm.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
-import type { CourseInstancePublishingExtensionWithUsers } from '../instructorInstanceAdminPublishing.types.js';
+import type { CourseInstancePublishingExtensionRow } from '../instructorInstanceAdminPublishing.types.js';
 import { dateToPlainDateTime } from '../utils/dateUtils.js';
 
 import { PublishingExtensions } from './PublishingExtensions.js';
@@ -18,14 +18,14 @@ export function CourseInstancePublishing({
   canEdit,
   csrfToken,
   origHash,
-  publishingExtensions,
+  extensions,
   isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
   canEdit: boolean;
   csrfToken: string;
   origHash: string | null;
-  publishingExtensions: CourseInstancePublishingExtensionWithUsers[];
+  extensions: CourseInstancePublishingExtensionRow[];
   isDevMode: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
@@ -60,16 +60,16 @@ export function CourseInstancePublishing({
 
   return (
     <>
-      <div class="mb-4">
-        <h4 class="mb-4">Publishing</h4>
+      <div className="mb-4">
+        <h4 className="mb-4">Publishing</h4>
 
         {!canEdit && origHash !== null && (
-          <div class="alert alert-info" role="alert">
+          <div className="alert alert-info" role="alert">
             You do not have permission to edit publishing settings.
           </div>
         )}
         {!canEdit && origHash === null && (
-          <div class="alert alert-warning" role="alert">
+          <div className="alert alert-warning" role="alert">
             You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
             file does not exist.
           </div>
@@ -92,11 +92,11 @@ export function CourseInstancePublishing({
 
         {startDate && (
           <>
-            <hr class="my-4" />
+            <hr className="my-4" />
             <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
               <PublishingExtensions
                 courseInstance={courseInstance}
-                initialExtensions={publishingExtensions}
+                initialExtensions={extensions}
                 canEdit={canEdit}
                 csrfToken={csrfToken}
               />

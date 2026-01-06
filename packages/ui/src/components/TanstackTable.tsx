@@ -43,7 +43,7 @@ function TableCell<RowDataModel>({
       tabIndex={0}
       data-grid-cell-row={rowIdx}
       data-grid-cell-col={colIdx}
-      class={clsx(!canSort && !canFilter && 'text-center')}
+      className={clsx(!canSort && !canFilter && 'text-center')}
       style={{
         display: 'flex',
         width: cell.column.getSize(),
@@ -249,6 +249,8 @@ export function TanstackTable<RowDataModel>({
   // Re-measure the virtualizer when auto-sizing completes
   useEffect(() => {
     if (hasAutoSized) {
+      // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);
@@ -257,7 +259,7 @@ export function TanstackTable<RowDataModel>({
   const totalCount = table.getCoreRowModel().rows.length;
 
   return (
-    <div style={{ position: 'relative' }} class="d-flex flex-column h-100">
+    <div style={{ position: 'relative' }} className="d-flex flex-column h-100">
       <div
         ref={scrollContainerRef}
         style={{
@@ -278,22 +280,23 @@ export function TanstackTable<RowDataModel>({
           }}
         >
           <table
-            class="table table-hover mb-0"
+            className="table table-hover mb-0"
             style={{ display: 'grid', tableLayout: 'fixed' }}
             aria-label={title}
             role="grid"
           >
             <thead
+              className="position-sticky top-0 w-100 border-top"
               style={{
                 display: 'grid',
-                position: 'sticky',
-                top: 0,
                 zIndex: 1,
+                borderBottom: 'var(--bs-border-width) solid black',
               }}
             >
               <tr
                 key={leafHeaderGroup.id}
-                style={{ display: 'flex', width: `${table.getTotalSize()}px` }}
+                className="d-flex w-100"
+                style={{ minWidth: `${table.getTotalSize()}px` }}
               >
                 {/* Left pinned columns */}
                 {leftPinnedHeaders.map((header) => {
@@ -335,13 +338,21 @@ export function TanstackTable<RowDataModel>({
                 {virtualPaddingRight ? (
                   <th style={{ display: 'flex', width: virtualPaddingRight }} />
                 ) : null}
+
+                {/* Filler to span remaining width */}
+                <th
+                  tabIndex={-1}
+                  className="d-flex flex-grow-1 p-0"
+                  style={{ minWidth: 0 }}
+                  aria-hidden="true"
+                />
               </tr>
             </thead>
             <tbody
+              className="position-relative w-100"
               style={{
                 display: 'grid',
                 height: `${rowVirtualizer.getTotalSize()}px`,
-                position: 'relative',
               }}
             >
               {virtualRows.map((virtualRow) => {
@@ -357,11 +368,10 @@ export function TanstackTable<RowDataModel>({
                     key={row.id}
                     ref={(node) => rowVirtualizer.measureElement(node)}
                     data-index={virtualRow.index}
+                    className="d-flex position-absolute w-100"
                     style={{
-                      display: 'flex',
-                      position: 'absolute',
                       transform: `translateY(${virtualRow.start}px)`,
-                      width: `${table.getTotalSize()}px`,
+                      minWidth: `${table.getTotalSize()}px`,
                     }}
                   >
                     {leftPinnedCells.map((cell) => {
@@ -414,6 +424,14 @@ export function TanstackTable<RowDataModel>({
                     {virtualPaddingRight ? (
                       <td style={{ display: 'flex', width: virtualPaddingRight }} />
                     ) : null}
+
+                    {/* Filler to span remaining width */}
+                    <td
+                      tabIndex={-1}
+                      className="d-flex flex-grow-1 p-0"
+                      style={{ minWidth: 0 }}
+                      aria-hidden="true"
+                    />
                   </tr>
                 );
               })}
@@ -424,7 +442,7 @@ export function TanstackTable<RowDataModel>({
       {table.getVisibleLeafColumns().length === 0 || displayedCount === 0 ? (
         <div>
           <div
-            class="d-flex flex-column justify-content-center align-items-center p-4"
+            className="d-flex flex-column justify-content-center align-items-center p-4"
             style={{
               position: 'absolute',
               top: 0,
@@ -438,7 +456,7 @@ export function TanstackTable<RowDataModel>({
             aria-live="polite"
           >
             <div
-              class="col-lg-6"
+              className="col-lg-6"
               style={{
                 // Allow selecting and interacting with the empty state content.
                 pointerEvents: 'auto',
@@ -541,11 +559,11 @@ export function TanstackTableCard<RowDataModel>({
   const totalCount = table.getCoreRowModel().rows.length;
 
   return (
-    <div class={clsx('card d-flex flex-column', className)} {...divProps}>
-      <div class="card-header bg-primary text-white">
-        <div class="d-flex align-items-center justify-content-between gap-2">
+    <div className={clsx('card d-flex flex-column', className)} {...divProps}>
+      <div className="card-header bg-primary text-white">
+        <div className="d-flex align-items-center justify-content-between gap-2">
           <div>{title}</div>
-          <div class="d-flex gap-2">
+          <div className="d-flex gap-2">
             {headerButtons}
 
             {downloadButtonOptions && (
@@ -559,19 +577,18 @@ export function TanstackTableCard<RowDataModel>({
           </div>
         </div>
       </div>
-      <div class="card-body d-flex flex-row flex-wrap flex-grow-0 align-items-center gap-2">
-        <div class="position-relative w-100" style={{ maxWidth: 'min(400px, 100%)' }}>
+      <div className="card-body d-flex flex-row flex-wrap flex-grow-0 align-items-center gap-2">
+        <div className="position-relative w-100" style={{ maxWidth: 'min(400px, 100%)' }}>
           <input
             ref={searchInputRef}
             type="text"
-            class="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
+            className="form-control pl-ui-tanstack-table-search-input pl-ui-tanstack-table-focusable-shadow"
             aria-label={globalFilter.placeholder}
             placeholder={globalFilter.placeholder}
             value={inputValue}
             autoComplete="off"
             onInput={(e) => {
-              if (!(e.target instanceof HTMLInputElement)) return;
-              const value = e.target.value;
+              const value = e.currentTarget.value;
               setInputValue(value);
               debouncedSetFilter(value);
             }}
@@ -580,7 +597,7 @@ export function TanstackTableCard<RowDataModel>({
             <OverlayTrigger overlay={<Tooltip>Clear search</Tooltip>}>
               <button
                 type="button"
-                class="btn btn-floating-icon"
+                className="btn btn-floating-icon"
                 aria-label="Clear search"
                 onClick={() => {
                   setInputValue('');
@@ -588,20 +605,20 @@ export function TanstackTableCard<RowDataModel>({
                   table.setGlobalFilter('');
                 }}
               >
-                <i class="bi bi-x-circle-fill" aria-hidden="true" />
+                <i className="bi bi-x-circle-fill" aria-hidden="true" />
               </button>
             </OverlayTrigger>
           )}
         </div>
-        <div class="d-flex flex-wrap flex-row align-items-center gap-2">
+        <div className="d-flex flex-wrap flex-row align-items-center gap-2">
           <ColumnManager table={table} topContent={columnManager?.topContent} />
           {columnManager?.buttons}
         </div>
-        <div class="ms-auto text-muted text-nowrap">
+        <div className="ms-auto text-muted text-nowrap">
           Showing {displayedCount} of {totalCount} {totalCount === 1 ? singularLabel : pluralLabel}
         </div>
       </div>
-      <div class="flex-grow-1">
+      <div className="flex-grow-1">
         <TanstackTable table={table} title={title} {...tableOptions} />
       </div>
     </div>
@@ -616,8 +633,8 @@ export function TanstackTableEmptyState({
   children: ComponentChildren;
 }) {
   return (
-    <div class="d-flex flex-column justify-content-center align-items-center text-muted">
-      <i class={clsx('bi', iconName, 'display-4 mb-2')} aria-hidden="true" />
+    <div className="d-flex flex-column justify-content-center align-items-center text-muted">
+      <i className={clsx('bi', iconName, 'display-4 mb-2')} aria-hidden="true" />
       <div>{children}</div>
     </div>
   );

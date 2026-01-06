@@ -22,7 +22,6 @@ export function InstructorInstanceAdminSettings({
   csrfToken,
   urlPrefix,
   navPage,
-  hasEnhancedNavigation,
   canEdit,
   course,
   courseInstance,
@@ -41,7 +40,6 @@ export function InstructorInstanceAdminSettings({
   csrfToken: string;
   urlPrefix: string;
   navPage: NavPage;
-  hasEnhancedNavigation: boolean;
   canEdit: boolean;
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
@@ -98,16 +96,12 @@ export function InstructorInstanceAdminSettings({
 
   return (
     <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
-          <h1>
-            {hasEnhancedNavigation
-              ? 'General course instance settings'
-              : 'Course instance settings'}
-          </h1>
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+          <h1>General course instance settings</h1>
           <GitHubButton gitHubLink={instanceGHLink ?? null} />
         </div>
-        <div class="card-body">
+        <div className="card-body">
           <form
             method="POST"
             name="edit-course-instance-settings-form"
@@ -122,13 +116,13 @@ export function InstructorInstanceAdminSettings({
           >
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="orig_hash" value={origHash} />
-            <div class="mb-3">
-              <label class="form-label" for="ciid">
+            <div className="mb-3">
+              <label className="form-label" for="ciid">
                 CIID
               </label>
               <input
                 type="text"
-                class={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
+                className={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
                 pattern={SHORT_NAME_PATTERN}
@@ -148,10 +142,10 @@ export function InstructorInstanceAdminSettings({
                 })}
               />
               {errors.ciid?.type !== 'pattern' && (
-                <div class="invalid-feedback">{errors.ciid?.message}</div>
+                <div className="invalid-feedback">{errors.ciid?.message}</div>
               )}
-              <small class="form-text text-muted">
-                <span class={clsx(errors.ciid?.type === 'pattern' && 'text-danger')}>
+              <small className="form-text text-muted">
+                <span className={clsx(errors.ciid?.type === 'pattern' && 'text-danger')}>
                   Use only letters, numbers, dashes, and underscores, with no spaces.
                 </span>{' '}
                 You may use forward slashes to separate directories. The recommended format is{' '}
@@ -159,13 +153,13 @@ export function InstructorInstanceAdminSettings({
                 versions, like <code>Fa19honors</code>.
               </small>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="long_name">
+            <div className="mb-3">
+              <label className="form-label" for="long_name">
                 Long Name
               </label>
               <input
                 type="text"
-                class="form-control"
+                className="form-control"
                 id="long_name"
                 disabled={!canEdit}
                 aria-describedby="long_name-help"
@@ -173,12 +167,12 @@ export function InstructorInstanceAdminSettings({
                 {...register('long_name')}
                 name="long_name"
               />
-              <small class="form-text text-muted">
+              <small className="form-text text-muted">
                 The long name of this course instance (e.g., 'Spring 2015').
               </small>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="display_timezone">
+            <div className="mb-3">
+              <label className="form-label" for="display_timezone">
                 Timezone
               </label>
               <Form.Select
@@ -197,7 +191,7 @@ export function InstructorInstanceAdminSettings({
                   </option>
                 ))}
               </Form.Select>
-              <small class="form-text text-muted">
+              <small className="form-text text-muted">
                 The allowable timezones are from the{' '}
                 <a
                   href="https://en.wikipedia.org/wiki/List_of_tz_database_time_zones"
@@ -209,8 +203,8 @@ export function InstructorInstanceAdminSettings({
                 . It's best to use a city-based timezone that has the same times as you.
               </small>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="group_assessments_by">
+            <div className="mb-3">
+              <label className="form-label" for="group_assessments_by">
                 Group assessments by
               </label>
               <Form.Select
@@ -226,7 +220,7 @@ export function InstructorInstanceAdminSettings({
                   Module
                 </option>
               </Form.Select>
-              <small class="form-text text-muted">
+              <small className="form-text text-muted">
                 Determines how assessments will be grouped on the student assessments page.
               </small>
             </div>
@@ -244,7 +238,7 @@ export function InstructorInstanceAdminSettings({
               institution={institution}
             />
 
-            <h2 class="h4">Sharing</h2>
+            <h2 className="h4">Sharing</h2>
             {courseInstance.share_source_publicly ? (
               <PublicLinkSharing
                 publicLink={publicLink}
@@ -260,7 +254,7 @@ export function InstructorInstanceAdminSettings({
                 <button
                   id="save-button"
                   type="submit"
-                  class="btn btn-primary mb-2"
+                  className="btn btn-primary mb-2"
                   name="__action"
                   value="update_configuration"
                   disabled={!isDirty}
@@ -270,12 +264,12 @@ export function InstructorInstanceAdminSettings({
                 <button
                   id="cancel-button"
                   type="button"
-                  class="btn btn-secondary mb-2 ms-2"
+                  className="btn btn-secondary mb-2 ms-2"
                   onClick={() => reset()}
                 >
                   Cancel
                 </button>
-                <p class="mb-0">
+                <p className="mb-0">
                   <a
                     data-testid="edit-course-instance-configuration-link"
                     href={encodePathNoNormalize(
@@ -288,7 +282,7 @@ export function InstructorInstanceAdminSettings({
                 </p>
               </>
             ) : (
-              <p class="mb-0">
+              <p className="mb-0">
                 <a href={`${urlPrefix}/${navPage}/file_view/${infoCourseInstancePath}`}>
                   View course instance configuration
                 </a>{' '}
@@ -298,21 +292,21 @@ export function InstructorInstanceAdminSettings({
           </form>
         </div>
         {canEdit && (
-          <div class="card-footer d-flex flex-wrap gap-2">
+          <div className="card-footer d-flex flex-wrap gap-2">
             <button
               type="button"
-              class="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary"
               onClick={() => setShowCopyModal(true)}
             >
-              <i class="fa fa-clone" /> Make a copy of this course instance
+              <i className="fa fa-clone" /> Make a copy of this course instance
             </button>
             <button
               type="button"
-              class="btn btn-sm btn-primary"
+              className="btn btn-sm btn-primary"
               data-bs-toggle="modal"
               data-bs-target="#deleteCourseInstanceModal"
             >
-              <i class="fa fa-times" aria-hidden="true" /> Delete this course instance
+              <i className="fa fa-times" aria-hidden="true" /> Delete this course instance
             </button>
           </div>
         )}

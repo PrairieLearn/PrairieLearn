@@ -11,7 +11,6 @@ import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -62,22 +61,15 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              course={pageContext.course}
-              urlPrefix={pageContext.urlPrefix}
+          <Hydrate>
+            <TagsTopicsTable
+              entities={z.array(StaffTopicSchema).parse(topics)}
+              entityType="topic"
+              allowEdit={allowEdit}
+              origHash={origHash}
+              csrfToken={pageContext.__csrf_token}
             />
-            <Hydrate>
-              <TagsTopicsTable
-                entities={z.array(StaffTopicSchema).parse(topics)}
-                entityType="topic"
-                allowEdit={allowEdit}
-                origHash={origHash}
-                csrfToken={pageContext.__csrf_token}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

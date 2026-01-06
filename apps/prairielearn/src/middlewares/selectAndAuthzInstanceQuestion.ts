@@ -4,6 +4,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   AssessmentInstanceSchema,
@@ -13,7 +14,6 @@ import {
   FileSchema,
   type GroupConfig,
   GroupSchema,
-  IdSchema,
   InstanceQuestionSchema,
   QuestionSchema,
   SprocAuthzAssessmentInstanceSchema,
@@ -27,7 +27,7 @@ import {
   getGroupConfig,
   getGroupInfo,
   getQuestionGroupPermissions,
-} from '../lib/groups.js';
+} from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -100,11 +100,14 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
 
+  // TODO: consider row.assessment.modern_access_control
+  if (!row.authz_result.authorized) throw new error.HttpStatusError(403, 'Access denied');
+
   Object.assign(res.locals, row);
-  if (res.locals.assessment.group_work) {
+  if (res.locals.assessment.team_work) {
     res.locals.group_config = await getGroupConfig(res.locals.assessment.id);
     res.locals.group_info = await getGroupInfo(
-      res.locals.assessment_instance.group_id,
+      res.locals.assessment_instance.team_id,
       res.locals.group_config,
     );
     if (res.locals.group_config.has_roles) {
@@ -126,8 +129,8 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       } else {
         res.locals.group_role_permissions = await getQuestionGroupPermissions(
           res.locals.instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
         if (!res.locals.group_role_permissions.can_view) {
           throw new error.HttpStatusError(

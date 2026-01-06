@@ -12,6 +12,7 @@ from typing_extensions import assert_never
 
 from prairielearn.internal.check_data import Phase, check_data
 from prairielearn.internal.traverse import traverse_and_execute, traverse_and_replace
+from prairielearn.internal.zygote_utils import get_module_function
 
 PYTHON_PATH = pathlib.Path(__file__).parent.parent.parent.resolve()
 CORE_ELEMENTS_PATH = (PYTHON_PATH.parent / "elements").resolve()
@@ -135,7 +136,8 @@ def process(
                 exec(code, mod)
                 mod_cache[element_controller_path] = mod
 
-            if phase not in mod:
+            method = get_module_function(mod, phase)
+            if method is None:
                 return None
 
             # Add element-specific or phase-specific information to the data.
@@ -152,12 +154,11 @@ def process(
             # We need to support legacy element functions, which take three arguments.
             # The second argument is `element_index`; we'll pass `None`. This is
             # consistent with the same backwards-compatibility logic in `zygote.py`.
-            arg_names = list(signature(mod[phase]).parameters.keys())
+            arg_names = list(signature(method).parameters.keys())
             if arg_names == ["element_html", "element_index", "data"]:
                 args.insert(1, None)
 
-            element_value = mod[phase](*args)
-
+            element_value = method(*args)
             # Restore the tail text.
             element.tail = temp_tail
 

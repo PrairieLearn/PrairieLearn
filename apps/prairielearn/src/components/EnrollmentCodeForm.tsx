@@ -63,11 +63,10 @@ export function EnrollmentCodeForm({
   const input3Ref = useRef<HTMLInputElement>(null);
 
   const watchedValues = watch();
-  // Handle modal close - reset form and clear errors
-  const handleClose = () => {
+  // Handle modal close - reset form and clear errors on exit
+  const resetModalState = () => {
     reset();
     clearErrors();
-    onHide?.();
   };
 
   // Validate and format input - only alphanumeric, uppercase
@@ -276,14 +275,14 @@ export function EnrollmentCodeForm({
           {errors.root.serverError.message}
         </Alert>
       )}
-      <div class="mb-3">
-        <label for="enrollment-code" class="form-label">
+      <div className="mb-3">
+        <label for="enrollment-code" className="form-label">
           Enter your enrollment code
         </label>
-        <div class="d-flex gap-2 align-items-center">
+        <div className="d-flex gap-2 align-items-center">
           <input
             type="text"
-            class="form-control text-center"
+            className="form-control text-center"
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="ABC"
@@ -295,10 +294,10 @@ export function EnrollmentCodeForm({
             onKeyDown={(e) => handleKeyDown(e, 'code1')}
             onPaste={handlePaste}
           />
-          <span class="text-muted">-</span>
+          <span className="text-muted">-</span>
           <input
             type="text"
-            class="form-control text-center"
+            className="form-control text-center"
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={3}
             placeholder="DEF"
@@ -310,10 +309,10 @@ export function EnrollmentCodeForm({
             onKeyDown={(e) => handleKeyDown(e, 'code2')}
             onPaste={handlePaste}
           />
-          <span class="text-muted">-</span>
+          <span className="text-muted">-</span>
           <input
             type="text"
-            class="form-control text-center"
+            className="form-control text-center"
             style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
             maxLength={4}
             placeholder="GHIJ"
@@ -327,11 +326,11 @@ export function EnrollmentCodeForm({
           />
         </div>
         {(errors.code1 || errors.code2 || errors.code3) && (
-          <div class="form-text text-danger">
+          <div className="form-text text-danger">
             {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
           </div>
         )}
-        <div class="form-text">
+        <div className="form-text">
           If you don't have a code, ask your instructor for the enrollment code or link to the
           course.
         </div>
@@ -340,7 +339,7 @@ export function EnrollmentCodeForm({
   );
 
   const submitButton = (
-    <button type="submit" class="btn btn-primary" disabled={isSubmitting}>
+    <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
       {isSubmitting ? 'Looking up code...' : 'Join Course'}
     </button>
   );
@@ -349,20 +348,26 @@ export function EnrollmentCodeForm({
     return (
       <form onSubmit={handleSubmit(onSubmit)}>
         {formContent}
-        <div class="d-grid">{submitButton}</div>
+        <div className="d-grid">{submitButton}</div>
       </form>
     );
   }
 
   return (
-    <Modal key={show ? 'open' : 'closed'} show={show} size="md" onHide={handleClose}>
+    <Modal
+      key={show ? 'open' : 'closed'}
+      show={show}
+      size="md"
+      onHide={onHide}
+      onExited={resetModalState}
+    >
       <Modal.Header closeButton>
         <Modal.Title>Join a course</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onSubmit)}>
         <Modal.Body>{formContent}</Modal.Body>
         <Modal.Footer>
-          <button type="button" class="btn btn-secondary" onClick={handleClose}>
+          <button type="button" className="btn btn-secondary" onClick={onHide}>
             Cancel
           </button>
           {submitButton}

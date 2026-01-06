@@ -593,7 +593,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
+        if (
+            grading_method is GradingMethodType.RANKING
+            or grading_method is GradingMethodType.ORDERED
+        ):
             if grading_method is GradingMethodType.ORDERED:
                 for index, answer in enumerate(true_answer_list):
                     answer["ranking"] = index
@@ -620,27 +623,23 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif (
-            grading_method is GradingMethodType.DAG
-            and not order_blocks_options.has_optional_blocks
-        ):
-            depends_graph, group_belonging = extract_dag(true_answer_list)
-            num_initial_correct, true_answer_length = grade_dag(
-                submission, depends_graph, group_belonging
-            )
-        elif (
-            grading_method is GradingMethodType.DAG
-            and order_blocks_options.has_optional_blocks
-        ):
-            depends_multigraph, final = extract_multigraph(true_answer_list)
-            num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
-                submission, depends_multigraph, final
+        elif grading_method is GradingMethodType.DAG:
+            if order_blocks_options.has_optional_blocks:
+                depends_multigraph, final = extract_multigraph(true_answer_list)
+                num_initial_correct, true_answer_length, depends_graph = (
+                    grade_multigraph(submission, depends_multigraph, final)
+                )
+            else:
+                depends_graph, group_belonging = extract_dag(true_answer_list)
+                num_initial_correct, true_answer_length = grade_dag(
+                    submission, depends_graph, group_belonging
+                )
+        elif grading_method is GradingMethodType.EXTERNAL:
+            raise NotImplementedError(
+                "grade function should never be called for EXTERNAL grading method"
             )
         else:
-            # this is so num_initial_correct and true_answer_length is not possibly unbound
-            num_initial_correct, true_answer_length = grade_dag(
-                submission, depends_graph, group_belonging
-            )
+            assert_never(grading_method)
 
         first_wrong = (
             None if num_initial_correct == len(submission) else num_initial_correct

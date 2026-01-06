@@ -68,13 +68,14 @@ export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
   authn_user: StaffUserSchema,
 }).brand<'PageAuthzData'>();
 export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
+type PageAuthzDataInput = z.input<typeof PageAuthzDataSchema>;
 
 export interface DangerousSystemAuthzData {
   authn_user: {
-    user_id: null;
+    id: null;
   };
   user: {
-    user_id: null;
+    id: null;
   };
 }
 
@@ -134,25 +135,40 @@ export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContext
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
-export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+export type AuthzDataWithEffectiveUser =
+  | RawPageAuthzData
+  | PageAuthzData
+  | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
-export type CourseInstanceRole =
-  | 'System'
-  | 'Student'
-  | 'Student Data Viewer'
-  | 'Student Data Editor';
+// More information about these roles can be found in the "Permission checking" section of the developer guide.
+
+export type SystemRole = 'System';
+
+export type StudentCourseInstanceRole = 'Student';
+
+export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+
+export type CourseInstanceRole = StudentCourseInstanceRole | InstructorCourseInstanceRole;
+
+export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
+
+export type Role =
+  | SystemRole
+  | StudentCourseInstanceRole
+  | InstructorCourseInstanceRole
+  | CourseRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
-      // We use this structure with a user_id of null to indicate that the user is the system.
-      // Inserts into the audit_events table as a system user have a user_id of null.
-      user_id: null,
+      // We use this structure with a id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a id of null.
+      id: null,
     },
     user: {
-      user_id: null,
+      id: null,
     },
   };
 }
@@ -160,16 +176,17 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.user.user_id === null;
+  return authzData.user.id === null;
 }
 
-export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): boolean {
-  // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
-  const hasSystemAuthz = isDangerousFullSystemAuthz(authzData);
-  if (hasSystemAuthz) {
+export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
+  /* System roles */
+  if (isDangerousFullSystemAuthz(authzData)) {
+    // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
     return requiredRole.includes('System');
   }
 
+  /* Student course instance roles */
   if (
     requiredRole.includes('Student') &&
     authzData.has_student_access &&
@@ -182,6 +199,7 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
     return true;
   }
 
+  /* Instructor course instance roles */
   if (
     requiredRole.includes('Student Data Viewer') &&
     authzData.has_course_instance_permission_view
@@ -193,6 +211,23 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
     requiredRole.includes('Student Data Editor') &&
     authzData.has_course_instance_permission_edit
   ) {
+    return true;
+  }
+
+  /* Course roles */
+  if (requiredRole.includes('Previewer') && authzData.has_course_permission_preview) {
+    return true;
+  }
+
+  if (requiredRole.includes('Viewer') && authzData.has_course_permission_view) {
+    return true;
+  }
+
+  if (requiredRole.includes('Editor') && authzData.has_course_permission_edit) {
+    return true;
+  }
+
+  if (requiredRole.includes('Owner') && authzData.has_course_permission_own) {
     return true;
   }
 
@@ -211,10 +246,7 @@ export function hasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]
  * @param requiredRole The potential roles.
  * @param permittedRoles The roles permitted for the action.
  */
-export function assertRoleIsPermitted(
-  requiredRole: CourseInstanceRole[],
-  permittedRoles: CourseInstanceRole[],
-): void {
+export function assertRoleIsPermitted(requiredRole: Role[], permittedRoles: Role[]): void {
   // Assert that requiredRole is a subset of allowedRoles
   for (const role of requiredRole) {
     if (!permittedRoles.includes(role)) {
@@ -258,7 +290,7 @@ export function assertRoleIsPermitted(
  * @param authzData - The authorization data of the user.
  * @param requiredRole - The required role by the model function. Provided by the caller of the model function.
  */
-export function assertHasRole(authzData: AuthzData, requiredRole: CourseInstanceRole[]): void {
+export function assertHasRole(authzData: AuthzData, requiredRole: Role[]): void {
   if (!hasRole(authzData, requiredRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
@@ -280,4 +312,47 @@ export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceR
     ),
     has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
   };
+}
+
+/**
+ * Converts a `PlainAuthzData` into a `PageAuthzData`. Assumes that the context
+ * in which this is called does not differentiate between authenticated user and
+ * effective user.
+ *
+ * This function is a temporary solution until we can add `is_administrator` to
+ * `PlainAuthzData` directly, and teach model functions how to work with both
+ * `PlainAuthzData` and `PageAuthzData`.
+ */
+export function makePageAuthzData({
+  authzData,
+  is_administrator,
+}: {
+  authzData: PlainAuthzData;
+  is_administrator: boolean;
+}): PageAuthzData {
+  const input: PageAuthzDataInput = {
+    ...authzData,
+    is_administrator,
+
+    authn_user: authzData.user,
+    authn_is_administrator: is_administrator,
+
+    authn_has_course_permission_preview: authzData.has_course_permission_preview,
+    authn_has_course_permission_view: authzData.has_course_permission_view,
+    authn_has_course_permission_edit: authzData.has_course_permission_edit,
+    authn_has_course_permission_own: authzData.has_course_permission_own,
+    authn_course_role: authzData.course_role,
+  };
+
+  if (authzData.course_instance_role != null) {
+    Object.assign(input, {
+      authn_course_instance_role: authzData.course_instance_role,
+      authn_has_course_instance_permission_view: authzData.has_course_instance_permission_view,
+      authn_has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
+      authn_has_student_access: authzData.has_student_access,
+      authn_has_student_access_with_enrollment: authzData.has_student_access_with_enrollment,
+    } satisfies Partial<PageAuthzDataInput>);
+  }
+
+  return PageAuthzDataSchema.parse(input);
 }
