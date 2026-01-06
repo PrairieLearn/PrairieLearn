@@ -643,9 +643,9 @@ export function AssessmentQuestionTable({
       </div>
       {aiGradingMode && (
         <ServerJobsProgressInfo
-          courseInstanceId={courseInstance.id}
           itemNames="submissions graded"
           jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          courseInstanceId={courseInstance.id}
           statusIcons={{
             inProgress: 'bi-stars',
           }}

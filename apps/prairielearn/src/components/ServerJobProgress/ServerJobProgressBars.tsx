@@ -12,9 +12,9 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  *
  * @param params
  *
- * @param params.courseInstanceId The current course instance ID.
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  * @param params.jobsProgress Progress information for each server job.
+ * @param params.courseInstanceId The course instance ID of the server jobs.
  *
  * @param params.statusIcons Icons for indicating the server job status.
  * @param params.statusIcons.inProgress Icon for in-progress jobs.
@@ -29,16 +29,16 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 export function ServerJobsProgressInfo({
-  courseInstanceId,
   itemNames,
   jobsProgress,
+  courseInstanceId,
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
 }: {
-  courseInstanceId: string;
   itemNames: string;
   jobsProgress: JobProgress[];
+  courseInstanceId: string;
   statusIcons?: {
     inProgress?: string;
     complete?: string;
@@ -68,8 +68,8 @@ export function ServerJobsProgressInfo({
       {jobsProgress.map((jobProgress) => (
         <ServerJobProgressInfo
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
-          courseInstanceId={courseInstanceId}
           jobSequenceId={jobProgress.job_sequence_id}
+          courseInstanceId={courseInstanceId}
           nums={{
             complete: jobProgress.num_complete,
             failed: jobProgress.num_failed,
@@ -89,8 +89,8 @@ export function ServerJobsProgressInfo({
  * Displays progress information for a single server job.
  *
  * @param params
- * @param params.courseInstanceId The current course instance ID.
  * @param params.jobSequenceId The server job sequence ID to display progress info for.
+ * @param params.courseInstanceId The course instance ID of the server job to display.
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  *
  * @param params.nums
@@ -111,16 +111,16 @@ export function ServerJobsProgressInfo({
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 function ServerJobProgressInfo({
-  courseInstanceId,
   jobSequenceId,
+  courseInstanceId,
   itemNames,
   nums,
   statusIcons,
   statusText,
   onDismissCompleteJobSequence,
 }: {
-  courseInstanceId: string;
   jobSequenceId: string;
+  courseInstanceId: string;
   itemNames: string;
   nums: {
     complete: number;
@@ -168,7 +168,7 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
-  const progressInfoContent = useMemo(() => {
+  const progressInfo = useMemo(() => {
     switch (jobStatus) {
       case 'inProgress':
         return (
@@ -217,7 +217,7 @@ function ServerJobProgressInfo({
         )}
 
         <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
-          <div class="text-muted small">{progressInfoContent}</div>
+          <div class="text-muted small">{progressInfo}</div>
           <a
             href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
             class="text-decoration-none small"
