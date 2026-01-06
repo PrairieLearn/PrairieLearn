@@ -341,9 +341,7 @@ export function EnrollmentCodeForm({
         {showHelp && (
           <div className="form-text mt-2">
             <b>Instructors: </b>
-            The enrollment code can be found after enabling "Use enrollment code for
-            self-enrollment" on the course instance settings page. Students can also enroll by
-            visiting the "Student link" (also found on the course instance settings page).
+            You can find both the enrollment code and a self-enrollment link on the settings page of your course instance.
           </div>
         )}
       </div>
