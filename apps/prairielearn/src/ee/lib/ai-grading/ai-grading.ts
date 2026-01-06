@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -37,6 +37,7 @@ import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  correctGeminiMalformedRubricGradingJson,
   generatePrompt,
   insertAiGradingJob,
   parseAiRubricItems,
@@ -291,6 +292,10 @@ export async function aiGrade({
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
+          // rubric_items must be the last property in the schema.
+          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
+          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
+          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -300,6 +305,20 @@ export async function aiGrade({
           messages: input,
           providerOptions: {
             openai: openaiProviderOptions,
+          },
+          experimental_repairText: async (options: {
+            text: string;
+            error: JSONParseError | TypeValidationError;
+          }) => {
+            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
+              return null;
+            }
+            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
+            // unescaped backslashes in the rubric item keys of the response.
+
+            // TODO: Remove this temporary fix once Google fixes the underlying issue.
+            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
+            return correctGeminiMalformedRubricGradingJson(options.text);
           },
         });
 
