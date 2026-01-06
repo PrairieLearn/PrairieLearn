@@ -109,6 +109,7 @@ const STUDENT_COURSE_INSTANCE = {
   id: '1',
   long_name: 'Example Student Course Instance',
   short_name: 'Example Student Course',
+  modern_publishing: false,
   publishing_end_date: null,
   publishing_start_date: null,
 };
