@@ -72,7 +72,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
     default:
       assertNever(action);
   }
-  return <Form.Text class="text-muted">{explanation}</Form.Text>;
+  return <Form.Text className="text-muted">{explanation}</Form.Text>;
 }
 
 export interface TimeLimitEditFormProps {
@@ -178,7 +178,7 @@ export function TimeLimitEditForm({
   return (
     <Form onSubmit={handleSubmit}>
       {row.action !== 'set_time_limit_all' && !row.open ? (
-        <div class="mb-3">
+        <div className="mb-3">
           <Form.Check
             checked={form.reopen_without_limit}
             id="reopen_without_limit"
@@ -198,14 +198,14 @@ export function TimeLimitEditForm({
         </div>
       ) : null}
 
-      <p class="mb-2">
+      <p className="mb-2">
         Total time limit: {row.total_time}
         <br />
         Remaining time: {row.time_remaining}
       </p>
 
       {showTimeLimitOptions ? (
-        <Form.Group class="mb-3">
+        <Form.Group className="mb-3">
           <Form.Select
             aria-label="Time limit options"
             name="action"
@@ -244,7 +244,7 @@ export function TimeLimitEditForm({
       form.action !== 'set_exact' &&
       form.action !== 'remove' &&
       form.action !== 'expire' ? (
-        <InputGroup class="mb-3">
+        <InputGroup className="mb-3">
           <Form.Control
             aria-label="Time value"
             name="time_add"
@@ -257,7 +257,7 @@ export function TimeLimitEditForm({
       ) : null}
 
       {showTimeLimitOptions && form.action === 'set_exact' ? (
-        <InputGroup class="mb-3">
+        <InputGroup className="mb-3">
           <Form.Control
             name="date"
             type="datetime-local"
@@ -274,13 +274,13 @@ export function TimeLimitEditForm({
         form.action === 'set_rem' ||
         form.action === 'add' ||
         form.action === 'subtract') ? (
-        <p class="mb-2">Proposed closing time: {proposedClosingTime(row.date)}</p>
+        <p className="mb-2">Proposed closing time: {proposedClosingTime(row.date)}</p>
       ) : null}
 
       {row.has_closed_instance ? (
         <Form.Check
           checked={form.reopen_closed}
-          class="mb-3"
+          className="mb-3"
           id="reopen_closed"
           label="Also re-open closed instances"
           name="reopen_closed"
@@ -290,12 +290,12 @@ export function TimeLimitEditForm({
       ) : null}
 
       {mutation.isError && (
-        <div class="alert alert-danger mb-3" role="alert">
+        <div className="alert alert-danger mb-3" role="alert">
           {mutation.error.message}
         </div>
       )}
 
-      <div class="d-flex justify-content-end gap-2">
+      <div className="d-flex justify-content-end gap-2">
         <Button disabled={mutation.isPending} variant="secondary" onClick={onCancel}>
           Cancel
         </Button>

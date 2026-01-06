@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
-// @ts-expect-error No types for better-ajv-errors (see https://github.com/atlassian/better-ajv-errors/issues/176)
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
 import fs from 'fs-extra';
