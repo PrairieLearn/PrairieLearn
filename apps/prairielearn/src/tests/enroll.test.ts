@@ -209,7 +209,6 @@ describe('Self-enrollment settings transitions', () => {
     });
 
     await withUser(studentUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
         userId: studentUser.id,
         courseInstance,
@@ -250,7 +249,6 @@ describe('Self-enrollment settings transitions', () => {
     });
 
     await withUser(studentUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
         userId: studentUser.id,
         courseInstance,
@@ -579,9 +577,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       user_id: sameInstitutionUser.id,
     });
 
-    // Use withUser helper to perform actions as the same institution user
     await withUser(sameInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: sameInstitutionUser.id, course_instance_id: '1' },
@@ -636,9 +632,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       email: 'student@example.com',
     });
 
-    // Use withUser helper to perform actions as the default institution user
     await withUser(defaultInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
@@ -646,8 +640,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       );
       assert.isNull(initialEnrollment);
 
-      // Hit the assessments endpoint with the enrollment management feature enabled.
-      // This should NOT trigger auto-enrollment.
+      // Hit the assessments endpoint - this should NOT trigger auto-enrollment
       const response = await fetch(assessmentsUrl);
       assert.equal(response.status, 403);
 
@@ -675,7 +668,6 @@ describe('Self-enrollment institution restriction transitions', () => {
       selfEnrollmentUseEnrollmentCode: false,
     });
 
-    // Create user from different institution
     const differentInstitutionUser = await getOrCreateUser({
       uid: 'student@other.com',
       name: 'Different Institution Student',
@@ -689,9 +681,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       user_id: differentInstitutionUser.id,
     });
 
-    // Use withUser helper to perform actions as the different institution user
     await withUser(differentInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: differentInstitutionUser.id, course_instance_id: '1' },
@@ -754,9 +744,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       EnrollmentSchema,
     );
 
-    // Use withUser helper to perform actions as the invited user
     await withUser(differentInstitutionUser, async () => {
-      // Check that user has an invited enrollment initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE pending_uid = $pending_uid AND course_instance_id = $course_instance_id',
         { pending_uid: differentInstitutionUser.uid, course_instance_id: '1' },
