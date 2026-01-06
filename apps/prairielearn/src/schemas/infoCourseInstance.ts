@@ -99,9 +99,12 @@ export const CourseInstanceJsonSchema = z
       .default({}),
     hideInEnrollPage: z
       .boolean()
-      .describe('DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.')
+      .describe(
+        'DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.',
+      )
+      .nullable()
       .optional()
-      .default(false),
+      .default(null),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
     publishing: PublishingJsonSchema.optional(),
     allowAccess: AllowAccessJsonSchema.optional(),

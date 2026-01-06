@@ -60,8 +60,8 @@
     },
     "hideInEnrollPage": {
       "description": "DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.",
-      "type": "boolean",
-      "default": false,
+      "type": ["boolean", "null"],
+      "default": null,
       "deprecated": true
     },
     "userRoles": {

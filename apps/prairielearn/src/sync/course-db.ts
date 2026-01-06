@@ -1464,6 +1464,10 @@ function validateCourseInstance({
     }
   }
 
+  if (courseInstance.hideInEnrollPage != null) {
+    warnings.push('"hideInEnrollPage" should be deleted as the enrollment page has been removed.');
+  }
+
   if (courseInstance.selfEnrollment.enabled !== true && courseInstance.allowAccess != null) {
     errors.push(
       '"selfEnrollment.enabled" is not configurable when you have access control rules ("allowAccess" is set).',

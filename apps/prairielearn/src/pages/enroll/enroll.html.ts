@@ -15,7 +15,6 @@ export function EnrollPageRemoved({ resLocals }: { resLocals: UntypedResLocals }
       <div class="card mb-4">
         <div class="card-header bg-danger text-white">Enrollment page removed</div>
         <div class="card-body">
-          <p>The course listing page has been removed from PrairieLearn.</p>
           <p>To enroll in a course, your instructor must either:</p>
           <ul>
             <li>

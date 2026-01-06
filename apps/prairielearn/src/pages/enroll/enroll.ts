@@ -7,6 +7,8 @@ const router = Router();
 
 router.get('/', [
   asyncHandler(async (_req, res) => {
+    // This page is temporarily kept to help migrate instructors and students
+    // away from using the course listing page.
     res.send(EnrollPageRemoved({ resLocals: res.locals }));
   }),
 ]);

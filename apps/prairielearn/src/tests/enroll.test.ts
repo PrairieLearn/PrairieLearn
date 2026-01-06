@@ -59,7 +59,6 @@ describe('Enroll page removed', function () {
     assert.equal(res.status, 200);
     const text = await res.text();
     assert.include(text, 'Enrollment page removed');
-    assert.include(text, 'course listing page has been removed');
   });
 
   test('shows limit exceeded message on /limit_exceeded', async () => {
