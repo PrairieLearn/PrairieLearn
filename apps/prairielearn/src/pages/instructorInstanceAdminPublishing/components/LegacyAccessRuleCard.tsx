@@ -17,7 +17,7 @@ export function LegacyAccessRuleCard({
 }) {
   return (
     <>
-      <div class="alert alert-warning" role="alert">
+      <div className="alert alert-warning" role="alert">
         <strong>Legacy Access Rules Active:</strong> This course instance is using the legacy
         <code>allowAccess</code> system. To use the new publishing system, you must first remove the{' '}
         <code>allowAccess</code> section from your course instance configuration. For more
@@ -27,18 +27,18 @@ export function LegacyAccessRuleCard({
         </a>
         .
       </div>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>Access rules</h1>
         </div>
 
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Access rules">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover" aria-label="Access rules">
             <thead>
               <tr>
                 {showComments && (
                   <th style="width: 1%">
-                    <span class="visually-hidden">Comments</span>
+                    <span className="visually-hidden">Comments</span>
                   </th>
                 )}
                 <th>UIDs</th>
@@ -94,7 +94,7 @@ function AccessRuleRow({
     return (
       <button
         type="button"
-        class="btn btn-xs btn-warning"
+        className="btn btn-xs btn-warning"
         data-bs-toggle="popover"
         data-bs-container="body"
         data-bs-placement="auto"
