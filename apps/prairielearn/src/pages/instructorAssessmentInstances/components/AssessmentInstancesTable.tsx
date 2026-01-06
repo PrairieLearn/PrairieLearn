@@ -65,14 +65,14 @@ function HelpButton({ label, onClick }: { label: string; onClick: () => void }) 
   return (
     <button
       aria-label={label}
-      class="btn btn-xs btn-ghost"
+      className="btn btn-xs btn-ghost"
       type="button"
       onClick={(e) => {
         e.stopPropagation();
         onClick();
       }}
     >
-      <i aria-hidden="true" class="bi-question-circle-fill" />
+      <i aria-hidden="true" className="bi-question-circle-fill" />
     </button>
   );
 }
@@ -276,7 +276,7 @@ function DeleteAllModal({
         </strong>
         ? This cannot be undone.
         {mutation.isError && (
-          <div class="alert alert-danger mt-3" role="alert">
+          <div className="alert alert-danger mt-3" role="alert">
             {mutation.error.message}
           </div>
         )}
@@ -332,7 +332,7 @@ function GradeAllModal({
         </strong>
         ? This cannot be undone.
         {mutation.isError && (
-          <div class="alert alert-danger mt-3" role="alert">
+          <div className="alert alert-danger mt-3" role="alert">
             {mutation.error.message}
           </div>
         )}
@@ -388,7 +388,7 @@ function CloseAllModal({
         </strong>
         ? This cannot be undone.
         {mutation.isError && (
-          <div class="alert alert-danger mt-3" role="alert">
+          <div className="alert alert-danger mt-3" role="alert">
             {mutation.error.message}
           </div>
         )}
@@ -728,7 +728,7 @@ function AssessmentInstancesTableInner({
         header: 'Score',
         meta: { label: 'Score' },
         cell: (info) => (
-          <div class="d-flex align-items-center h-100">
+          <div className="d-flex align-items-center h-100">
             <Scorebar score={info.getValue()} />
           </div>
         ),
@@ -778,7 +778,7 @@ function AssessmentInstancesTableInner({
         cell: (info) => {
           const row = info.row.original;
           return (
-            <span class="d-flex flex-row align-items-center text-nowrap">
+            <span className="d-flex flex-row align-items-center text-nowrap">
               {hasCourseInstancePermissionEdit && (
                 <TimeLimitPopover
                   csrfToken={csrfToken}
@@ -799,10 +799,10 @@ function AssessmentInstancesTableInner({
                 >
                   <button
                     aria-label="Change time limit"
-                    class="btn btn-secondary btn-xs me-1"
+                    className="btn btn-secondary btn-xs me-1"
                     type="button"
                   >
-                    <i aria-hidden="true" class="bi-pencil-square" />
+                    <i aria-hidden="true" className="bi-pencil-square" />
                   </button>
                 </TimeLimitPopover>
               )}
@@ -973,7 +973,6 @@ function AssessmentInstancesTableInner({
         title={`${assessmentSetName} ${assessmentNumber}: Students`}
         singularLabel="instance"
         pluralLabel="instances"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         headerButtons={
           hasCourseInstancePermissionEdit ? (
@@ -983,19 +982,19 @@ function AssessmentInstancesTableInner({
               </Dropdown.Toggle>
               <Dropdown.Menu align="end">
                 <Dropdown.Item as="button" onClick={() => setActionModal('delete-all')}>
-                  <i aria-hidden="true" class="fas fa-times me-2" />
+                  <i aria-hidden="true" className="fas fa-times me-2" />
                   Delete all instances
                 </Dropdown.Item>
                 <Dropdown.Item as="button" onClick={() => setActionModal('grade-all')}>
-                  <i aria-hidden="true" class="fas fa-clipboard-check me-2" />
+                  <i aria-hidden="true" className="fas fa-clipboard-check me-2" />
                   Grade all instances
                 </Dropdown.Item>
                 <Dropdown.Item as="button" onClick={() => setActionModal('close-all')}>
-                  <i aria-hidden="true" class="fas fa-ban me-2" />
+                  <i aria-hidden="true" className="fas fa-ban me-2" />
                   Grade and close all instances
                 </Dropdown.Item>
                 <Dropdown.Item as="button" onClick={() => setActionModal('time-limit-all')}>
-                  <i aria-hidden="true" class="far fa-clock me-2" />
+                  <i aria-hidden="true" className="far fa-clock me-2" />
                   Change time limit for all instances
                 </Dropdown.Item>
               </Dropdown.Menu>
@@ -1060,7 +1059,7 @@ function AssessmentInstancesTableInner({
                 variant={autoRefresh ? 'primary' : 'outline-secondary'}
                 onClick={() => setAutoRefresh(!autoRefresh)}
               >
-                <i aria-hidden="true" class="fa fa-clock me-1" />
+                <i aria-hidden="true" className="fa fa-clock me-1" />
                 Auto Refresh
               </Button>
             </>

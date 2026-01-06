@@ -72,7 +72,7 @@ export function InstanceActionsCell({
 
   const closeConfirmPopoverBody = (
     <>
-      <div class="d-flex gap-2">
+      <div className="d-flex gap-2">
         <Button size="sm" variant="secondary" onClick={() => setShowCloseConfirm(false)}>
           Cancel
         </Button>
@@ -86,7 +86,7 @@ export function InstanceActionsCell({
         </Button>
       </div>
       {closeMutation.isError && (
-        <div class="alert alert-danger mt-2 mb-0 p-2" role="alert">
+        <div className="alert alert-danger mt-2 mb-0 p-2" role="alert">
           {closeMutation.error.message}
         </div>
       )}
@@ -129,7 +129,7 @@ export function InstanceActionsCell({
           {hasCourseInstancePermissionEdit ? (
             <>
               <Dropdown.Item onClick={() => setShowDeleteModal(true)}>
-                <i aria-hidden="true" class="fas fa-times me-2" />
+                <i aria-hidden="true" className="fas fa-times me-2" />
                 Delete
               </Dropdown.Item>
 
@@ -155,7 +155,7 @@ export function InstanceActionsCell({
                     }
                   }}
                 >
-                  <i aria-hidden="true" class="fas fa-ban me-2" />
+                  <i aria-hidden="true" className="fas fa-ban me-2" />
                   Grade &amp; Close
                 </Dropdown.Item>
               </OverlayTrigger>
@@ -168,7 +168,7 @@ export function InstanceActionsCell({
                 onSuccess={onActionComplete}
               >
                 <Dropdown.Item as="button" disabled={row.open ?? false}>
-                  <i aria-hidden="true" class="fas fa-clock me-2" />
+                  <i aria-hidden="true" className="fas fa-clock me-2" />
                   Re-open
                 </Dropdown.Item>
               </TimeLimitPopover>
@@ -182,7 +182,7 @@ export function InstanceActionsCell({
                   value={row.assessment_instance_id}
                 />
                 <Dropdown.Item as="button" type="submit">
-                  <i aria-hidden="true" class="fas fa-sync me-2" />
+                  <i aria-hidden="true" className="fas fa-sync me-2" />
                   Regrade
                 </Dropdown.Item>
               </form>
@@ -211,7 +211,7 @@ export function InstanceActionsCell({
           started at <strong>{row.date_formatted}</strong> with a score of{' '}
           <strong>{Math.floor(row.score_perc ?? 0)}%</strong>?
           {deleteMutation.isError && (
-            <div class="alert alert-danger mt-3" role="alert">
+            <div className="alert alert-danger mt-3" role="alert">
               {deleteMutation.error.message}
             </div>
           )}
