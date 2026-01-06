@@ -105,7 +105,7 @@ router.post(
 
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.id,
+        authnUser: res.locals.authn_user,
       });
 
       const approxPromptCost = approximatePromptCost({
@@ -138,9 +138,8 @@ router.post(
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.id,
+        authnUser: res.locals.authn_user,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {

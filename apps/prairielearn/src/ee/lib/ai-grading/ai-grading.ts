@@ -36,8 +36,10 @@ import * as questionServers from '../../../question-servers/index.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  addAiGradingCostToIntervalUsage,
   containsImageCapture,
   generatePrompt,
+  getIntervalUsage,
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
@@ -172,6 +174,17 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    let rateLimitExceeded =
+      (await getIntervalUsage({
+        courseInstance: course_instance,
+      })) > config.aiGradingRateLimitDollars;
+
+    // If the rate limit has already been exceeded, log it and exit early.
+    if (rateLimitExceeded) {
+      job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
+      return;
+    }
+
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
@@ -192,6 +205,28 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ): Promise<boolean> => {
+      if (rateLimitExceeded) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        return false;
+      }
+
+      const intervalCost = await getIntervalUsage({
+        courseInstance: course_instance,
+      });
+
+      if (intervalCost > config.aiGradingRateLimitDollars) {
+        logger.error(
+          "You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.",
+        );
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        rateLimitExceeded = true;
+        return false;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -398,6 +433,12 @@ export async function aiGrade({
           });
         }
 
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: model_id,
+          usage: response.usage,
+        });
+
         logger.info('AI rubric items:');
 
         for (const item of appliedRubricDescription) {
@@ -495,6 +536,12 @@ export async function aiGrade({
             });
           });
         }
+
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: model_id,
+          usage: response.usage,
+        });
 
         logger.info(`AI score: ${response.object.score}`);
       }

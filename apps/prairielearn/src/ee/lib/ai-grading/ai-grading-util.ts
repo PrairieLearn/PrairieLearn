@@ -1,7 +1,15 @@
-import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
+import type {
+  GenerateObjectResult,
+  GenerateTextResult,
+  LanguageModelUsage,
+  ModelMessage,
+  UserContent,
+} from 'ai';
 import * as cheerio from 'cheerio';
+import memoize from 'p-memoize';
 import { z } from 'zod';
 
+import { Cache } from '@prairielearn/cache';
 import {
   callRow,
   execute,
@@ -14,8 +22,10 @@ import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
+  type CourseInstance,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -468,4 +478,61 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+/**
+ * Returns the cache for AI grading rate limiting.
+ */
+const getAiGradingCache = memoize(async () => {
+  // This function is memoized to ensure that only one Cache instance is created.
+  const aiGradingCache = new Cache();
+  await aiGradingCache.init({
+    type: config.nonVolatileCacheType,
+    keyPrefix: config.cacheKeyPrefix,
+    redisUrl: config.nonVolatileRedisUrl,
+  });
+  return aiGradingCache;
+});
+
+const AI_GRADING_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
+
+/**
+ * Retrieve the Redis key for the current AI grading interval usage of a course instance
+ */
+function getIntervalUsageKey(courseInstance: CourseInstance) {
+  const intervalStart = Date.now() - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
+  return `ai-grading-usage:course-instance:${courseInstance.id}:interval:${intervalStart}`;
+}
+
+/**
+ * Retrieve the AI grading usage for the course instance in the last hour interval, in US dollars
+ */
+export async function getIntervalUsage({ courseInstance }: { courseInstance: CourseInstance }) {
+  const cache = await getAiGradingCache();
+  return (await cache.get<number>(getIntervalUsageKey(courseInstance))) ?? 0;
+}
+
+/**
+ * Add the cost of an AI grading to the usage of the course instance for the current interval.
+ */
+export async function addAiGradingCostToIntervalUsage({
+  courseInstance,
+  model,
+  usage,
+}: {
+  courseInstance: CourseInstance;
+  model: keyof (typeof config)['costPerMillionTokens'];
+  usage: LanguageModelUsage;
+}) {
+  const cache = await getAiGradingCache();
+  const key = getIntervalUsageKey(courseInstance);
+  const responseCost = calculateResponseCost({ model, usage });
+
+  if (!(await cache.get(key))) {
+    const timeRemainingInInterval =
+      AI_GRADING_RATE_LIMIT_INTERVAL_MS - (Date.now() % AI_GRADING_RATE_LIMIT_INTERVAL_MS);
+    cache.set(key, responseCost, timeRemainingInInterval);
+  } else {
+    cache.incrementByFloat(key, responseCost);
+  }
 }
