@@ -32,7 +32,7 @@ def square(x):
 
 ## Details
 
-The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports the any of the built-in supported languages, be found in the [Pygments documentation](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
+The `pl-code` element uses the _Pygments_ library for syntax highlighting. It supports any of the built-in supported languages found in the [Pygments documentation](https://pygments.org/languages/), as well as the custom [`ansi-color` custom language](https://github.com/chriskuehl/pygments-ansi-color) that can be used to display terminal output. If the language is not provided, no syntax highlighting is done.
 
 ### Common Pitfalls
 

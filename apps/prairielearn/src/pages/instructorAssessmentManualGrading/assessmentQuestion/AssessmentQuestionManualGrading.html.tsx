@@ -41,6 +41,7 @@ export interface AssessmentQuestionManualGradingProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
@@ -70,6 +71,7 @@ function AssessmentQuestionManualGradingInner({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
@@ -118,7 +120,7 @@ function AssessmentQuestionManualGradingInner({
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending}
+                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
                 onChange={() =>
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
@@ -152,6 +154,7 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
+        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />
