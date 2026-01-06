@@ -150,6 +150,9 @@ router.get(
       accessType: 'instructor',
     });
 
+    assert(hasCourseInstancePermissionEdit !== undefined);
+    assert(hasCourseInstancePermissionView !== undefined);
+
     // Only fetch extensions if user has student data view permission
     const publishingExtensions = hasCourseInstancePermissionView
       ? await selectPublishingExtensionsWithUsersByCourseInstance({
@@ -158,9 +161,6 @@ router.get(
           requiredRole: ['Student Data Viewer'],
         })
       : [];
-
-    assert(hasCourseInstancePermissionEdit !== undefined);
-    assert(hasCourseInstancePermissionView !== undefined);
 
     // Calculate orig_hash for the infoCourseInstance.json file
     const infoCourseInstancePath = path.join(
@@ -201,7 +201,9 @@ router.get(
             <CourseInstancePublishing
               courseInstance={courseInstance}
               canEditPublishing={
-                hasCoursePermissionEdit && !course.example_course && origHash !== null
+                (hasCoursePermissionEdit || hasCourseInstancePermissionEdit) &&
+                !course.example_course &&
+                origHash !== null
               }
               canViewExtensions={hasCourseInstancePermissionView}
               canEditExtensions={hasCourseInstancePermissionEdit}
