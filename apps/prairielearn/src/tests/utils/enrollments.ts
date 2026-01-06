@@ -5,7 +5,7 @@ import { queryRow } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
 import '../helperServer';
-import { type PotentialEnterpriseEnrollmentStatus } from '../../ee/models/enrollment.js';
+import { type PotentialEnrollmentStatus } from '../../ee/models/enrollment.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import { ensureEnrollment } from '../../models/enrollment.js';
@@ -23,7 +23,7 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 export async function enrollUser(
   courseInstanceId: string,
   user: AuthUser,
-): Promise<PotentialEnterpriseEnrollmentStatus> {
+): Promise<PotentialEnrollmentStatus> {
   const dbUser = await getOrCreateUser(user);
 
   const context = await constructCourseOrInstanceContext({
@@ -41,7 +41,7 @@ export async function enrollUser(
 
   const { authzData, course, institution, courseInstance } = context;
 
-  const status = await ensureEnrollment({
+  return ensureEnrollment({
     institution,
     course,
     courseInstance,
@@ -50,12 +50,6 @@ export async function enrollUser(
     throwOnIneligible: false,
     actionDetail: 'implicit_joined',
   });
-
-  if (status === undefined) {
-    throw new Error('Enrollment failed for unknown reasons');
-  }
-
-  return status;
 }
 
 export async function unenrollUser(courseInstanceId: string, user: AuthUser) {
