@@ -5,14 +5,10 @@ import { queryRow } from '@prairielearn/postgres';
 
 // Must be imported so that `config.serverPort` is set.
 import '../helperServer';
-import {
-  PotentialEnterpriseEnrollmentStatus,
-  checkPotentialEnterpriseEnrollment,
-} from '../../ee/models/enrollment.js';
-import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { type PotentialEnterpriseEnrollmentStatus } from '../../ee/models/enrollment.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
-import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 
 import { type AuthUser, getOrCreateUser, withUser } from './auth.js';
 import { getCsrfToken } from './csrf.js';
@@ -20,7 +16,7 @@ import { getCsrfToken } from './csrf.js';
 const siteUrl = 'http://localhost:' + config.serverPort;
 
 /**
- * Enroll a user in a course instance similar to how a user would via the UI.
+ * Enroll a user in a course instance.
  *
  * Returns the potential enterprise enrollment status.
  */
@@ -43,27 +39,20 @@ export async function enrollUser(
     throw new Error(`Course instance ${courseInstanceId} not found`);
   }
 
-  const { course, institution, courseInstance } = context;
+  const { authzData, course, institution, courseInstance } = context;
 
-  let status = PotentialEnterpriseEnrollmentStatus.ALLOWED;
+  const status = await ensureEnrollment({
+    institution,
+    course,
+    courseInstance,
+    requiredRole: ['Student'],
+    authzData,
+    throwOnIneligible: false,
+    actionDetail: 'implicit_joined',
+  });
 
-  if (config.isEnterprise) {
-    status = await checkPotentialEnterpriseEnrollment({
-      institution,
-      course,
-      courseInstance,
-      authzData: { user: dbUser },
-    });
-  }
-
-  if (status === PotentialEnterpriseEnrollmentStatus.ALLOWED) {
-    await ensureUncheckedEnrollment({
-      courseInstance,
-      userId: dbUser.id,
-      requiredRole: ['System'],
-      authzData: dangerousFullSystemAuthz(),
-      actionDetail: 'explicit_joined',
-    });
+  if (status === undefined) {
+    throw new Error('Enrollment failed for unknown reasons');
   }
 
   return status;
