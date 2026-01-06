@@ -791,7 +791,7 @@ function AssessmentInstancesTableInner({
                     time_remaining: row.time_remaining,
                     time_remaining_sec: row.time_remaining_sec,
                     // There are only a small number of very old assessment instances without
-                    // an explicit open/closed state. Treat them as open.
+                    // an explicit open/closed state. Treat them as closed.
                     open: row.open ?? false,
                   }}
                   timezone={timezone}
