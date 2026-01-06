@@ -1,6 +1,7 @@
 import type { Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
 import { features } from '../../lib/features/index.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
@@ -55,7 +56,7 @@ const INVITED_STUDENT: AuthUser = {
   name: 'Invited Student',
 };
 
-let studentsPageUrl: string;
+let courseInstanceId: string;
 
 /**
  * Creates test users and sets up the database for testing bulk invitations.
@@ -63,7 +64,7 @@ let studentsPageUrl: string;
 async function createTestData() {
   const course = await selectCourseByShortName('QA 101');
   const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
-  studentsPageUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`;
+  courseInstanceId = courseInstance.id;
 
   // Enable the enrollment-management feature flag
   await features.enable('enrollment-management', { institution_id: '1' });
@@ -106,7 +107,7 @@ test.describe('Bulk invite students', () => {
   });
 
   test('can invite a single valid student', async ({ page }) => {
-    await page.goto(studentsPageUrl);
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
     // Click the invite button
@@ -132,7 +133,7 @@ test.describe('Bulk invite students', () => {
   });
 
   test('can invite multiple valid students', async ({ page }) => {
-    await page.goto(studentsPageUrl);
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -156,7 +157,7 @@ test.describe('Bulk invite students', () => {
     // Create a fresh valid student for this test
     await getOrCreateUser({ uid: 'fresh_student@test.com', name: 'Fresh Student', uin: null });
 
-    await page.goto(studentsPageUrl);
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -178,7 +179,7 @@ test.describe('Bulk invite students', () => {
   });
 
   test('shows error for invalid email format', async ({ page }) => {
-    await page.goto(studentsPageUrl);
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
