@@ -98,23 +98,15 @@ export function CourseInstancePublishing({
         {startDate && (
           <>
             <hr className="my-4" />
-            {canViewExtensions ? (
-              <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-                <PublishingExtensions
-                  courseInstance={courseInstance}
-                  initialExtensions={extensions}
-                  canEdit={canEditExtensions}
-                  csrfToken={csrfToken}
-                />
-              </QueryClientProviderDebug>
-            ) : (
-              <>
-                <h5 className="mb-3">Extensions</h5>
-                <div className="alert alert-info" role="alert">
-                  You must have student data permission to view and edit extensions.
-                </div>
-              </>
-            )}
+            <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
+              <PublishingExtensions
+                courseInstance={courseInstance}
+                initialExtensions={extensions}
+                canView={canViewExtensions}
+                canEdit={canEditExtensions}
+                csrfToken={csrfToken}
+              />
+            </QueryClientProviderDebug>
           </>
         )}
       </div>

@@ -20,11 +20,13 @@ export function PublishingExtensions({
   courseInstance,
   initialExtensions,
   canEdit,
+  canView,
   csrfToken,
 }: {
   courseInstance: StaffCourseInstance;
   initialExtensions: CourseInstancePublishingExtensionRow[];
   canEdit: boolean;
+  canView: boolean;
   csrfToken: string;
 }) {
   const queryClient = useQueryClient();
@@ -102,7 +104,11 @@ export function PublishingExtensions({
         </Alert>
       )}
 
-      {extensionsQuery.isError ? (
+      {!canView ? (
+        <div className="alert alert-danger" role="alert">
+          You must have student data permission to view and edit extensions.
+        </div>
+      ) : extensionsQuery.isError ? (
         <Alert variant="danger" dismissible onClose={() => void extensionsQuery.refetch()}>
           {extensionsQuery.error.message}
         </Alert>
