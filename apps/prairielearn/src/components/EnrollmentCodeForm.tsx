@@ -279,7 +279,7 @@ export function EnrollmentCodeForm({
           {errors.root.serverError.message}
         </Alert>
       )}
-      <div className="mb-3">
+      <div>
         <label for="enrollment-code" className="form-label">
           Enter your enrollment code
         </label>
@@ -341,7 +341,8 @@ export function EnrollmentCodeForm({
         {showHelp && (
           <div className="form-text mt-2">
             <b>Instructors: </b>
-            You can find both the enrollment code and a self-enrollment link on the settings page of your course instance.
+            You can find both the enrollment code and a self-enrollment link on the settings page of
+            your course instance.
           </div>
         )}
       </div>
