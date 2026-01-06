@@ -37,20 +37,20 @@ export function CollapsibleCard({
   const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6', borderColor: '#dee2e6' };
 
   return (
-    <Card class={`mb-3 ${className}`} style={cardStyle}>
+    <Card className={`mb-3 ${className}`} style={cardStyle}>
       <Card.Header
-        class="d-flex justify-content-between align-items-center"
+        className="d-flex justify-content-between align-items-center"
         style={{ cursor: collapsible ? 'pointer' : 'default' }}
         onClick={toggleExpanded}
       >
-        <div class="d-flex align-items-center">
-          <span class="me-2">{title}</span>
-          {description && <small class="text-muted d-block">{description}</small>}
+        <div className="d-flex align-items-center">
+          <span className="me-2">{title}</span>
+          {description && <small className="text-muted d-block">{description}</small>}
         </div>
-        <div class="d-flex align-items-center">
+        <div className="d-flex align-items-center">
           {headerActions}
           {collapsible && (
-            <i class={`bi bi-chevron-${isExpanded ? 'up' : 'down'} ms-2`} aria-hidden="true" />
+            <i className={`bi bi-chevron-${isExpanded ? 'up' : 'down'} ms-2`} aria-hidden="true" />
           )}
         </div>
       </Card.Header>

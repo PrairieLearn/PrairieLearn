@@ -210,7 +210,7 @@ export function DeadlineArrayField({
           onOverride={() => enableOverride([])}
           onRemoveOverride={removeOverride}
         >
-          <div class="text-muted">
+          <div className="text-muted">
             {isEarly
               ? 'Enable release date to configure early deadlines'
               : 'Enable due date to configure late deadlines'}
@@ -222,11 +222,11 @@ export function DeadlineArrayField({
   }
 
   const headerContent = (
-    <div class="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
-      <div class="d-flex align-items-center">
+    <div className="d-flex justify-content-between align-items-center" style={{ flex: 1 }}>
+      <div className="d-flex align-items-center">
         <Form.Check
           type="checkbox"
-          class="me-2"
+          className="me-2"
           checked={field.isEnabled}
           onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
         />
@@ -242,8 +242,8 @@ export function DeadlineArrayField({
     <div>
       {field.isEnabled &&
         deadlineFields.map((deadlineField, index) => (
-          <div key={deadlineField.id} class="mb-3">
-            <Row class="mb-1">
+          <div key={deadlineField.id} className="mb-3">
+            <Row className="mb-1">
               <Col md={6}>
                 <Form.Control
                   type="datetime-local"
@@ -253,7 +253,7 @@ export function DeadlineArrayField({
                   })}
                 />
                 {getDateError(index) && (
-                  <Form.Text class="text-danger">{getDateError(index)}</Form.Text>
+                  <Form.Text className="text-danger">{getDateError(index)}</Form.Text>
                 )}
               </Col>
               <Col md={4}>
@@ -271,16 +271,16 @@ export function DeadlineArrayField({
                   <InputGroup.Text>%</InputGroup.Text>
                 </InputGroup>
                 {getCreditError(index) && (
-                  <Form.Text class="text-danger">{getCreditError(index)}</Form.Text>
+                  <Form.Text className="text-danger">{getCreditError(index)}</Form.Text>
                 )}
               </Col>
-              <Col md={2} class="d-flex align-items-start">
+              <Col md={2} className="d-flex align-items-start">
                 <Button size="sm" variant="outline-danger" onClick={() => removeDeadline(index)}>
-                  <i class="bi bi-trash" aria-hidden="true" />
+                  <i className="bi bi-trash" aria-hidden="true" />
                 </Button>
               </Col>
             </Row>
-            <Form.Text class="text-muted">{getTimeRangeText(index)}</Form.Text>
+            <Form.Text className="text-muted">{getTimeRangeText(index)}</Form.Text>
           </div>
         ))}
     </div>

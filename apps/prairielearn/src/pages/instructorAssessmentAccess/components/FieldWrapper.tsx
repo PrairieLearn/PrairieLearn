@@ -39,14 +39,14 @@ export function FieldWrapper({
     if (noCardForMainRule) {
       return (
         <>
-          {headerContent && <div class="mb-2">{headerContent}</div>}
+          {headerContent && <div className="mb-2">{headerContent}</div>}
           {children}
         </>
       );
     }
     return (
-      <div class="mb-3">
-        {headerContent && <div class="mb-2">{headerContent}</div>}
+      <div className="mb-3">
+        {headerContent && <div className="mb-2">{headerContent}</div>}
         {children}
       </div>
     );
@@ -56,13 +56,13 @@ export function FieldWrapper({
   const cardStyle = isOverridden ? {} : { border: '2px dashed #dee2e6' };
 
   return (
-    <Card class="mb-3" style={cardStyle}>
+    <Card className="mb-3" style={cardStyle}>
       <Card.Body>
         {!isOverridden ? (
-          <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted">{label}</span>
+          <div className="d-flex justify-content-between align-items-center">
+            <span className="text-muted">{label}</span>
             {onOverride && (
-              <Button size="sm" variant="outline-primary" class="ms-3" onClick={onOverride}>
+              <Button size="sm" variant="outline-primary" className="ms-3" onClick={onOverride}>
                 Override
               </Button>
             )}
@@ -70,7 +70,7 @@ export function FieldWrapper({
         ) : (
           <>
             {(headerContent || onRemoveOverride) && (
-              <div class="d-flex justify-content-between align-items-start mb-2">
+              <div className="d-flex justify-content-between align-items-start mb-2">
                 {headerContent}
                 {onRemoveOverride && (
                   <Button size="sm" variant="outline-danger" onClick={onRemoveOverride}>

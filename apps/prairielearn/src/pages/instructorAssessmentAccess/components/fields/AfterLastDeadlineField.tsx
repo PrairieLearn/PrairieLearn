@@ -77,7 +77,7 @@ export function AfterLastDeadlineField({
 
   const content = (
     <Form.Group>
-      <div class="mb-2">
+      <div className="mb-2">
         <Form.Check
           type="radio"
           name={`${namePrefix}-afterLastDeadlineMode`}
@@ -102,7 +102,9 @@ export function AfterLastDeadlineField({
             }
           }}
         />
-        <Form.Text class="text-muted ms-4">No credit is given for practice submissions</Form.Text>
+        <Form.Text className="text-muted ms-4">
+          No credit is given for practice submissions
+        </Form.Text>
         <Form.Check
           type="radio"
           name={`${namePrefix}-afterLastDeadlineMode`}
@@ -118,7 +120,7 @@ export function AfterLastDeadlineField({
       </div>
 
       {mode === 'partial_credit' && (
-        <div class="ms-4">
+        <div className="ms-4">
           <InputGroup>
             <Form.Control
               type="number"
@@ -137,7 +139,7 @@ export function AfterLastDeadlineField({
             />
             <InputGroup.Text>%</InputGroup.Text>
           </InputGroup>
-          <Form.Text class="text-muted">
+          <Form.Text className="text-muted">
             Students will receive this percentage of credit for submissions after the deadline
           </Form.Text>
         </div>
@@ -150,7 +152,7 @@ export function AfterLastDeadlineField({
     <div>
       <strong>After last deadline</strong>
       <br />
-      <small class="text-muted">{getLastDeadlineText()}</small>
+      <small className="text-muted">{getLastDeadlineText()}</small>
     </div>
   );
 

@@ -24,10 +24,10 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
     });
 
   const headerContent = (
-    <div class="d-flex align-items-center">
+    <div className="d-flex align-items-center">
       <Form.Check
         type="checkbox"
-        class="me-2"
+        className="me-2"
         checked={field.isEnabled}
         onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
       />
@@ -51,7 +51,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>
       )}
-      <Form.Text class="text-muted">
+      <Form.Text className="text-muted">
         {field.isEnabled
           ? `Students will have ${field.value || 60} minutes to complete the assessment.`
           : 'Add a time limit to the assessment.'}

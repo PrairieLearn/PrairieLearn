@@ -27,10 +27,10 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
     });
 
   const headerContent = (
-    <div class="d-flex align-items-center">
+    <div className="d-flex align-items-center">
       <Form.Check
         type="checkbox"
-        class="me-2"
+        className="me-2"
         checked={field.isEnabled}
         onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
       />
@@ -49,11 +49,11 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
             onChange={(e) => setField({ value: (e.target as HTMLInputElement).value })}
           />
           <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
-            <i class={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
+            <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />
           </Button>
         </InputGroup>
       )}
-      <Form.Text class="text-muted">
+      <Form.Text className="text-muted">
         {field.isEnabled
           ? 'This password will be required to start the assessment.'
           : 'Require a password in order to start the assessment.'}

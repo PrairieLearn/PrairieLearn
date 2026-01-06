@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { IdSchema } from '../../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 
 export const StudentGroupRowSchema = z.object({
   id: IdSchema,

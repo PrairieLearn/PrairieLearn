@@ -557,11 +557,11 @@ function StudentsCard({
           return (
             <a
               href={studentGroupsUrl}
-              class="text-decoration-none d-inline-flex align-items-center gap-1"
+              className="text-decoration-none d-inline-flex align-items-center gap-1"
               onClick={(e) => e.stopPropagation()}
             >
               <span>Groups</span>
-              <i class="fas fa-users" />
+              <i className="fas fa-users" />
             </a>
           );
         },
@@ -569,11 +569,11 @@ function StudentsCard({
           const groups = info.getValue();
           if (groups.length === 0) return '—';
           return (
-            <div class="d-flex flex-wrap gap-1">
+            <div className="d-flex flex-wrap gap-1">
               {groups.map((group) => {
                 const color = getStudentGroupColor(group.id);
                 return (
-                  <span key={group.id} class={`badge color-${color}`}>
+                  <span key={group.id} className={`badge color-${color}`}>
                     {group.name}
                   </span>
                 );
@@ -743,10 +743,10 @@ function StudentsCard({
                     {selectedEnrollmentIds.length > 0 && (
                       <Dropdown.Item
                         as="div"
-                        class="p-2 bg-transparent"
+                        className="p-2 bg-transparent"
                         onClick={(e) => e.stopPropagation()}
                       >
-                        <div class="d-flex gap-2 align-items-center">
+                        <div className="d-flex gap-2 align-items-center">
                           <Form.Control
                             type="text"
                             size="sm"
@@ -783,7 +783,7 @@ function StudentsCard({
                               }
                             }}
                           >
-                            <i class="bi bi-plus" />
+                            <i className="bi bi-plus" />
                           </Button>
                         </div>
                       </Dropdown.Item>

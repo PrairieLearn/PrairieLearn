@@ -243,9 +243,9 @@ export function RuleSummaryCard({
   const dateTableRows = generateDateTableRows(rule);
 
   return (
-    <Card class="mb-3">
-      <Card.Header class="d-flex justify-content-between align-items-center">
-        <div class="d-flex align-items-center gap-2">
+    <Card className="mb-3">
+      <Card.Header className="d-flex justify-content-between align-items-center">
+        <div className="d-flex align-items-center gap-2">
           <strong>{title}</strong>
           {!rule.enabled && <Badge bg="secondary">Disabled</Badge>}
           {rule.enabled && rule.blockAccess && (
@@ -254,18 +254,18 @@ export function RuleSummaryCard({
             </Badge>
           )}
         </div>
-        <div class="d-flex gap-2">
+        <div className="d-flex gap-2">
           {onEditStudentGroups && (
             <Button variant="outline-secondary" size="sm" onClick={onEditStudentGroups}>
-              <i class="fa fa-users me-1" /> Groups
+              <i className="fa fa-users me-1" /> Groups
             </Button>
           )}
           <Button variant="outline-primary" size="sm" onClick={onEdit}>
-            <i class="fa fa-pencil me-1" /> Edit
+            <i className="fa fa-pencil me-1" /> Edit
           </Button>
           {onRemove && (
             <Button variant="outline-danger" size="sm" onClick={onRemove}>
-              <i class="fa fa-trash me-1" /> Remove
+              <i className="fa fa-trash me-1" /> Remove
             </Button>
           )}
         </div>
@@ -273,10 +273,10 @@ export function RuleSummaryCard({
       <Card.Body>
         {/* Date summary table */}
         {dateTableRows.length > 0 && (
-          <div class="mb-3">
-            <strong class="d-block mb-2">Deadlines</strong>
-            <Table size="sm" class="mb-0" bordered>
-              <thead class="table-light">
+          <div className="mb-3">
+            <strong className="d-block mb-2">Deadlines</strong>
+            <Table size="sm" className="mb-0" bordered>
+              <thead className="table-light">
                 <tr>
                   <th>Date</th>
                   <th>Credit</th>
@@ -287,7 +287,7 @@ export function RuleSummaryCard({
                 {dateTableRows.map((row) => (
                   <tr key={`${row.date}-${row.label}-${row.credit}-${row.visibility}`}>
                     <td>
-                      {row.label && <span class="text-muted me-1">{row.label}:</span>}
+                      {row.label && <span className="text-muted me-1">{row.label}:</span>}
                       {row.date}
                     </td>
                     <td>{row.credit}</td>
@@ -301,7 +301,7 @@ export function RuleSummaryCard({
 
         {/* Other settings list */}
         {summaryLines.length > 0 && (
-          <ul class="mb-0 ps-3">
+          <ul className="mb-0 ps-3">
             {summaryLines.map((line) => (
               <li key={line}>{line}</li>
             ))}
@@ -310,7 +310,7 @@ export function RuleSummaryCard({
 
         {/* Show message if nothing configured */}
         {dateTableRows.length === 0 && summaryLines.length === 0 && (
-          <p class="text-muted mb-0">No specific settings configured</p>
+          <p className="text-muted mb-0">No specific settings configured</p>
         )}
       </Card.Body>
     </Card>

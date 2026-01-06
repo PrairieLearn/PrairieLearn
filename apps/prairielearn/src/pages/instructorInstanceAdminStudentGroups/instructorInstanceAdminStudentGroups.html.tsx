@@ -51,8 +51,8 @@ function EditableGroupName({
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
       setIsEditing(false);
     },
   });
@@ -82,7 +82,7 @@ function EditableGroupName({
 
   if (isEditing) {
     return (
-      <div class="d-flex align-items-center gap-2">
+      <div className="d-flex align-items-center gap-2">
         <Form.Control
           type="text"
           size="sm"
@@ -93,7 +93,7 @@ function EditableGroupName({
           onBlur={handleSave}
           onKeyDown={handleKeyDown}
         />
-        {renameMutation.isPending && <i class="fas fa-spinner fa-spin" />}
+        {renameMutation.isPending && <i className="fas fa-spinner fa-spin" />}
       </div>
     );
   }
@@ -101,7 +101,7 @@ function EditableGroupName({
   return (
     <button
       type="button"
-      class="btn btn-link p-0 text-start text-decoration-none"
+      className="btn btn-link p-0 text-start text-decoration-none"
       title="Click to rename"
       onClick={() => {
         setEditValue(group.name);
@@ -109,7 +109,7 @@ function EditableGroupName({
       }}
     >
       {group.name}
-      <i class="fas fa-pencil-alt ms-2 text-muted small" />
+      <i className="fas fa-pencil-alt ms-2 text-muted small" />
     </button>
   );
 }
@@ -158,8 +158,8 @@ function StudentGroupsCard({
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
       setNewGroupName('');
       setError(null);
     },
@@ -186,8 +186,8 @@ function StudentGroupsCard({
       }
       return res.json();
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+    onSuccess: async () => {
+      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
       setDeleteModalGroup(null);
     },
   });
@@ -204,11 +204,11 @@ function StudentGroupsCard({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">
           <h1>Student groups</h1>
         </div>
-        <div class="card-body">
+        <div className="card-body">
           {error && (
             <Alert variant="danger" dismissible onClose={() => setError(null)}>
               {error}
@@ -216,9 +216,9 @@ function StudentGroupsCard({
           )}
 
           {canEdit && (
-            <form class="mb-4" onSubmit={handleCreateGroup}>
-              <div class="row g-2 align-items-center">
-                <div class="col-auto">
+            <form className="mb-4" onSubmit={handleCreateGroup}>
+              <div className="row g-2 align-items-center">
+                <div className="col-auto">
                   <Form.Control
                     type="text"
                     placeholder="New group name"
@@ -227,7 +227,7 @@ function StudentGroupsCard({
                     onChange={(e) => setNewGroupName((e.target as HTMLInputElement).value)}
                   />
                 </div>
-                <div class="col-auto">
+                <div className="col-auto">
                   <Button
                     type="submit"
                     variant="primary"
@@ -235,12 +235,12 @@ function StudentGroupsCard({
                   >
                     {createMutation.isPending ? (
                       <>
-                        <i class="fas fa-spinner fa-spin me-1" />
+                        <i className="fas fa-spinner fa-spin me-1" />
                         Creating...
                       </>
                     ) : (
                       <>
-                        <i class="fas fa-plus me-1" />
+                        <i className="fas fa-plus me-1" />
                         Create group
                       </>
                     )}
@@ -251,13 +251,13 @@ function StudentGroupsCard({
           )}
 
           {groups.length === 0 ? (
-            <p class="text-muted mb-0">
+            <p className="text-muted mb-0">
               No student groups have been created yet.
               {canEdit && ' Use the form above to create your first group.'}
             </p>
           ) : (
-            <div class="table-responsive">
-              <table class="table table-hover mb-0">
+            <div className="table-responsive">
+              <table className="table table-hover mb-0">
                 <thead>
                   <tr>
                     <th>Name</th>
@@ -277,7 +277,7 @@ function StudentGroupsCard({
                             {group.student_count} student{group.student_count !== 1 ? 's' : ''}
                           </a>
                         ) : (
-                          <span class="text-muted">0 students</span>
+                          <span className="text-muted">0 students</span>
                         )}
                       </td>
                       {canEdit && (
@@ -288,7 +288,7 @@ function StudentGroupsCard({
                             disabled={deleteMutation.isPending}
                             onClick={() => setDeleteModalGroup(group)}
                           >
-                            <i class="fas fa-trash" />
+                            <i className="fas fa-trash" />
                           </Button>
                         </td>
                       )}
@@ -328,7 +328,7 @@ function StudentGroupsCard({
           >
             {deleteMutation.isPending ? (
               <>
-                <i class="fas fa-spinner fa-spin me-1" />
+                <i className="fas fa-spinner fa-spin me-1" />
                 Deleting...
               </>
             ) : (

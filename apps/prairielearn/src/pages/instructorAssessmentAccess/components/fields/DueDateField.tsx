@@ -80,7 +80,7 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
 
   const content = (
     <Form.Group>
-      <div class="mb-2">
+      <div className="mb-2">
         <Form.Check
           type="radio"
           name={`${namePrefix}-dueMode`}
@@ -113,7 +113,7 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
             value={field.value}
             onChange={(e) => setField({ value: (e.target as HTMLInputElement).value })}
           />
-          {field.value && <Form.Text class="text-muted">{getCreditPeriodText()}</Form.Text>}
+          {field.value && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
         </>
       )}
     </Form.Group>

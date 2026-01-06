@@ -24,7 +24,7 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
 
   const content = (
     <Form.Group>
-      <div class="mb-2">
+      <div className="mb-2">
         <Form.Check
           type="radio"
           name={`${namePrefix}-releaseMode`}
