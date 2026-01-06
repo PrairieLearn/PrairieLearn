@@ -2,13 +2,7 @@ import { useState } from 'preact/compat';
 
 import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 
-export function EmptyStateCards({
-  urlPrefix,
-  enrollmentManagementEnabled,
-}: {
-  urlPrefix: string;
-  enrollmentManagementEnabled: boolean;
-}) {
+export function EmptyStateCards({ urlPrefix }: { urlPrefix: string }) {
   const [show, setShow] = useState(false);
 
   return (
@@ -23,24 +17,14 @@ export function EmptyStateCards({
               <h3 className="card-title mb-3">Students</h3>
               <p className="card-text mb-4">Add a course and start learning.</p>
               <div className="mt-auto">
-                {enrollmentManagementEnabled ? (
-                  <button
-                    type="button"
-                    className="btn btn-primary w-100 d-flex gap-2 justify-content-center"
-                    onClick={() => setShow(true)}
-                  >
-                    <i className="bi bi-plus-circle" />
-                    Add course
-                  </button>
-                ) : (
-                  <a
-                    href={`${urlPrefix}/enroll`}
-                    className="btn btn-primary d-flex gap-2 justify-content-center"
-                  >
-                    <i className="bi bi-plus-circle" />
-                    Add course
-                  </a>
-                )}
+                <button
+                  type="button"
+                  className="btn btn-primary w-100 d-flex gap-2 justify-content-center"
+                  onClick={() => setShow(true)}
+                >
+                  <i className="bi bi-plus-circle" />
+                  Add course
+                </button>
               </div>
             </div>
           </div>

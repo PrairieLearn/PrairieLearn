@@ -9,7 +9,6 @@ import { run } from '@prairielearn/run';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
-import { features } from '../../lib/features/index.js';
 import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -96,10 +95,6 @@ router.post('/', [
         });
       });
 
-      const enrollmentManagementEnabled = await features.enabledFromLocals(
-        'enrollment-management',
-        res.locals,
-      );
       const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
       const selfEnrollmentExpired =
         courseInstance.self_enrollment_enabled_before_date != null &&
@@ -107,7 +102,6 @@ router.post('/', [
 
       const institutionRestrictionSatisfied =
         res.locals.authn_user.institution_id === institution.id ||
-        !enrollmentManagementEnabled ||
         !courseInstance.self_enrollment_restrict_to_institution ||
         !courseInstance.modern_publishing;
 

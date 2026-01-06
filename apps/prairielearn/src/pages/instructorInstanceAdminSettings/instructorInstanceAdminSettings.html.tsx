@@ -32,7 +32,6 @@ export function InstructorInstanceAdminSettings({
   studentLink,
   publicLink,
   selfEnrollLink,
-  enrollmentManagementEnabled,
   infoCourseInstancePath,
   isDevMode,
 }: {
@@ -50,7 +49,6 @@ export function InstructorInstanceAdminSettings({
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
   isDevMode: boolean;
 }) {
@@ -229,7 +227,6 @@ export function InstructorInstanceAdminSettings({
               hasModernPublishing={courseInstance.modern_publishing}
               control={control}
               trigger={trigger}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               studentLink={studentLink}
               selfEnrollLink={selfEnrollLink}
               enrollmentCode={courseInstance.enrollment_code}

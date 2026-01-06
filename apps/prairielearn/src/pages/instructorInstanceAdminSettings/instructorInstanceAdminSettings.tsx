@@ -26,7 +26,6 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
@@ -103,12 +102,6 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-    });
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -136,7 +129,6 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
               />
@@ -161,7 +153,6 @@ router.post(
     const {
       course_instance: courseInstance,
       course,
-      institution,
       urlPrefix,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
@@ -358,20 +349,9 @@ router.post(
           selfEnrollmentRestrictToInstitution ??
           selfEnrollmentBeforeDate) !== undefined;
 
-      const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-        institution_id: institution.id,
-        course_id: course.id,
-        course_instance_id: courseInstance.id,
-      });
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
       if (hasSelfEnrollmentSettings) {
-        if (!enrollmentManagementEnabled) {
-          throw new error.HttpStatusError(
-            400,
-            'Self enrollment settings cannot be changed when enrollment management is not enabled.',
-          );
-        }
         if (!courseInstance.modern_publishing) {
           throw new error.HttpStatusError(
             400,

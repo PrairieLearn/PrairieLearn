@@ -6,7 +6,6 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -647,36 +646,18 @@ describe('Self-enrollment institution restriction transitions', () => {
       );
       assert.isNull(initialEnrollment);
 
-      await features.runWithGlobalOverrides({ 'enrollment-management': true }, async () => {
-        // Hit the assessments endpoint with the enrollment management feature enabled.
-        // This should NOT trigger auto-enrollment.
-        const response = await fetch(assessmentsUrl);
-        assert.equal(response.status, 403);
+      // Hit the assessments endpoint with the enrollment management feature enabled.
+      // This should NOT trigger auto-enrollment.
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
 
-        // Check that user is still not enrolled.
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isNull(finalEnrollment);
-      });
-
-      await features.runWithGlobalOverrides({ 'enrollment-management': false }, async () => {
-        // Hit the assessments endpoint with the enrollment management feature disabled.
-        // This SHOULD trigger auto-enrollment.
-        const response = await fetch(assessmentsUrl);
-        assert.equal(response.status, 200);
-
-        // Check that user is now enrolled.
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isOk(finalEnrollment);
-        assert.equal(finalEnrollment.status, 'joined');
-      });
+      // Check that user is still not enrolled.
+      const finalEnrollment = await queryOptionalRow(
+        'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+        { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
+        EnrollmentSchema,
+      );
+      assert.isNull(finalEnrollment);
     });
   });
   it('allows user from different institution when restrictToInstitution is false', async () => {

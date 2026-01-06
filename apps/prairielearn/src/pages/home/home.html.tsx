@@ -52,7 +52,6 @@ export function Home({
   adminInstitutions,
   urlPrefix,
   isDevMode,
-  enrollmentManagementEnabled,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -61,7 +60,6 @@ export function Home({
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -97,16 +95,12 @@ export function Home({
               csrfToken={csrfToken}
               urlPrefix={urlPrefix}
               isDevMode={isDevMode}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
         </>
       ) : (
         <Hydrate>
-          <EmptyStateCards
-            urlPrefix={urlPrefix}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
-          />
+          <EmptyStateCards urlPrefix={urlPrefix} />
         </Hydrate>
       )}
     </div>
