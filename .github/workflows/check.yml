@@ -137,7 +137,8 @@ jobs:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
       - name: Install all Python dependencies
-        # This will also check that uv.lock is up to date.
+        env:
+          UV_LOCKED: 1
         run: make python-deps
 
       - name: Set up Node
@@ -197,6 +198,8 @@ jobs:
           cache-dependency-glob: 'pyproject.toml'
           cache-suffix: 'dev'
       - name: Install Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps-dev
 
       - name: Run the Dockerfile linter

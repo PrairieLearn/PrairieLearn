@@ -106,20 +106,20 @@ export function RubricSettings({
   const [settingsError, setSettingsError] = useState<string | null>(null);
   const [showImportModal, setShowImportModal] = useState<boolean>(false);
   const [importModalWarning, setImportModalWarning] = useState<string | null>(null);
-  const rubricFile = useRef<HTMLInputElement>(null);
+  const rubricFileRef = useRef<HTMLInputElement>(null);
   const [wasUsingRubric, setWasUsingRubric] = useState<boolean>(Boolean(rubricData?.rubric));
   const [modifiedAt, setModifiedAt] = useState<Date | null>(rubricData?.rubric.modified_at ?? null);
   const [copyPopoverTarget, setCopyPopoverTarget] = useState<HTMLElement | null>(null);
 
   // Also define default for rubric-related variables
-  const defaultRubricItems = useRef<RubricItemData[]>(rubricItemDataMerged);
-  const defaultReplaceAutoPoints = useRef<boolean>(
+  const defaultRubricItemsRef = useRef<RubricItemData[]>(rubricItemDataMerged);
+  const defaultReplaceAutoPointsRef = useRef<boolean>(
     rubricData?.rubric.replace_auto_points ?? !assessmentQuestion.max_manual_points,
   );
-  const defaultStartingPoints = useRef<number>(rubricData?.rubric.starting_points ?? 0);
-  const defaultMinPoints = useRef<number>(rubricData?.rubric.min_points ?? 0);
-  const defaultMaxExtraPoints = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
-  const defaultGraderGuidelines = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
+  const defaultStartingPointsRef = useRef<number>(rubricData?.rubric.starting_points ?? 0);
+  const defaultMinPointsRef = useRef<number>(rubricData?.rubric.min_points ?? 0);
+  const defaultMaxExtraPointsRef = useRef<number>(rubricData?.rubric.max_extra_points ?? 0);
+  const defaultGraderGuidelinesRef = useRef<string>(rubricData?.rubric.grader_guidelines ?? '');
 
   // Derived totals/warnings
   const { totalPositive, totalNegative } = useMemo(() => {
@@ -227,12 +227,12 @@ export function RubricSettings({
   };
 
   const onCancel = () => {
-    setRubricItems(defaultRubricItems.current);
-    setReplaceAutoPoints(defaultReplaceAutoPoints.current);
-    setStartingPoints(defaultStartingPoints.current);
-    setMinPoints(defaultMinPoints.current);
-    setMaxExtraPoints(defaultMaxExtraPoints.current);
-    setGraderGuidelines(defaultGraderGuidelines.current);
+    setRubricItems(defaultRubricItemsRef.current);
+    setReplaceAutoPoints(defaultReplaceAutoPointsRef.current);
+    setStartingPoints(defaultStartingPointsRef.current);
+    setMinPoints(defaultMinPointsRef.current);
+    setMaxExtraPoints(defaultMaxExtraPointsRef.current);
+    setGraderGuidelines(defaultGraderGuidelinesRef.current);
     setSettingsError(null);
   };
 
@@ -283,7 +283,7 @@ export function RubricSettings({
   };
 
   const importRubric = async () => {
-    const input = rubricFile.current;
+    const input = rubricFileRef.current;
     if (!input?.files || input.files.length === 0) {
       setImportModalWarning('Please select a file to import.');
       return;
@@ -492,13 +492,13 @@ export function RubricSettings({
             : null,
       }));
 
-      defaultRubricItems.current = rubricItemDataMerged;
-      defaultReplaceAutoPoints.current =
+      defaultRubricItemsRef.current = rubricItemDataMerged;
+      defaultReplaceAutoPointsRef.current =
         rubric?.replace_auto_points ?? !assessmentQuestion.max_manual_points;
-      defaultStartingPoints.current = rubric?.starting_points ?? 0;
-      defaultMinPoints.current = rubric?.min_points ?? 0;
-      defaultMaxExtraPoints.current = rubric?.max_extra_points ?? 0;
-      defaultGraderGuidelines.current = rubric?.grader_guidelines ?? '';
+      defaultStartingPointsRef.current = rubric?.starting_points ?? 0;
+      defaultMinPointsRef.current = rubric?.min_points ?? 0;
+      defaultMaxExtraPointsRef.current = rubric?.max_extra_points ?? 0;
+      defaultGraderGuidelinesRef.current = rubric?.grader_guidelines ?? '';
       setWasUsingRubric(Boolean(rubric));
       setModifiedAt(rubric ? new Date(rubric.modified_at) : null);
       onCancel();
@@ -810,7 +810,7 @@ export function RubricSettings({
                 Choose file
               </label>
               <input
-                ref={rubricFile}
+                ref={rubricFileRef}
                 type="file"
                 name="file"
                 className="form-control"

@@ -75,7 +75,7 @@ interface RadioCardGroupProps {
 }
 
 function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps) {
-  const cardRefs = useRef<(HTMLElement | null)[]>([]);
+  const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
   const handleKeyDown = (e: KeyboardEvent, currentIndex: number) => {
     let newIndex = currentIndex;
@@ -107,7 +107,7 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
 
     // Focus the newly selected element, but only after a rerender.
     setTimeout(() => {
-      cardRefs.current[newIndex]?.focus();
+      cardsRef.current[newIndex]?.focus();
     }, 0);
   };
 
@@ -133,7 +133,7 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
             description={option.description}
             selected={value === option.id}
             cardRef={(el) => {
-              cardRefs.current[index] = el;
+              cardsRef.current[index] = el;
             }}
             onClick={() => onChange(option.id)}
             onKeyDown={(e) => handleKeyDown(e, index)}
