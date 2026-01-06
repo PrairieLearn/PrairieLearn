@@ -113,7 +113,7 @@ export function AfterCompleteForm({
   // Question visibility form content
   const questionVisibilityContent = (
     <Form.Group>
-      <div class="mb-2">
+      <div className="mb-2">
         <Form.Check
           type="radio"
           name={`${namePrefix}-hideQuestionsMode`}
@@ -126,7 +126,7 @@ export function AfterCompleteForm({
             }
           }}
         />
-        <Form.Text class="text-muted ms-4">
+        <Form.Text className="text-muted ms-4">
           Students can see questions and answers immediately after completing the assessment
         </Form.Text>
 
@@ -142,7 +142,7 @@ export function AfterCompleteForm({
             }
           }}
         />
-        <Form.Text class="text-muted ms-4">
+        <Form.Text className="text-muted ms-4">
           Questions will never be visible after completion
         </Form.Text>
 
@@ -159,7 +159,7 @@ export function AfterCompleteForm({
           }}
         />
         {hideQuestionsMode === 'hide_questions_until_date' && (
-          <div class="ms-4 mt-2">
+          <div className="ms-4 mt-2">
             <Form.Label>Show questions again on:</Form.Label>
             <Form.Control
               type="datetime-local"
@@ -173,7 +173,7 @@ export function AfterCompleteForm({
                 })
               }
             />
-            <Form.Text class="text-muted">
+            <Form.Text className="text-muted">
               Questions will be hidden after completion and become visible again on this date
             </Form.Text>
           </div>
@@ -194,8 +194,8 @@ export function AfterCompleteForm({
           }}
         />
         {hideQuestionsMode === 'hide_questions_between_dates' && (
-          <div class="ms-4 mt-2">
-            <Row class="mb-2">
+          <div className="ms-4 mt-2">
+            <Row className="mb-2">
               <Col md={6}>
                 <Form.Label>Show questions again on:</Form.Label>
                 <Form.Control
@@ -229,7 +229,7 @@ export function AfterCompleteForm({
                 />
               </Col>
             </Row>
-            <Form.Text class="text-muted">
+            <Form.Text className="text-muted">
               Questions will be visible between these dates, hidden before and after
             </Form.Text>
           </div>
@@ -241,7 +241,7 @@ export function AfterCompleteForm({
   // Score visibility form content
   const scoreVisibilityContent = (
     <Form.Group>
-      <div class="mb-2">
+      <div className="mb-2">
         <Form.Check
           type="radio"
           name={`${namePrefix}-hideScoreMode`}
@@ -254,7 +254,7 @@ export function AfterCompleteForm({
             }
           }}
         />
-        <Form.Text class="text-muted ms-4">
+        <Form.Text className="text-muted ms-4">
           Students can see their score immediately after completing the assessment
         </Form.Text>
 
@@ -270,7 +270,9 @@ export function AfterCompleteForm({
             }
           }}
         />
-        <Form.Text class="text-muted ms-4">Score will never be visible after completion</Form.Text>
+        <Form.Text className="text-muted ms-4">
+          Score will never be visible after completion
+        </Form.Text>
 
         <Form.Check
           type="radio"
@@ -285,7 +287,7 @@ export function AfterCompleteForm({
           }}
         />
         {hideScoreMode === 'hide_score_until_date' && (
-          <div class="ms-4 mt-2">
+          <div className="ms-4 mt-2">
             <Form.Label>Show score again on:</Form.Label>
             <Form.Control
               type="datetime-local"
@@ -299,7 +301,7 @@ export function AfterCompleteForm({
                 })
               }
             />
-            <Form.Text class="text-muted">
+            <Form.Text className="text-muted">
               Score will be hidden after completion and become visible again on this date
             </Form.Text>
           </div>
@@ -309,18 +311,18 @@ export function AfterCompleteForm({
   );
 
   return (
-    <Card class="mb-4">
+    <Card className="mb-4">
       <Card.Header>
         <div>
-          <div class="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             <span>{title}</span>
             <OverlayTrigger trigger="click" placement="right" popover={infoPopoverConfig}>
-              <Button variant="link" size="sm" class="ms-2 p-0">
-                <i class="bi bi-info-circle" aria-hidden="true" />
+              <Button variant="link" size="sm" className="ms-2 p-0">
+                <i className="bi bi-info-circle" aria-hidden="true" />
               </Button>
             </OverlayTrigger>
           </div>
-          <Form.Text class="text-muted">{description}</Form.Text>
+          <Form.Text className="text-muted">{description}</Form.Text>
         </div>
       </Card.Header>
       <Card.Body>
@@ -350,8 +352,8 @@ export function AfterCompleteForm({
           </FieldWrapper>
 
           {assessmentType === 'Exam' && (
-            <div class="alert alert-info">
-              <i class="bi bi-info-circle me-2" aria-hidden="true" />
+            <div className="alert alert-info">
+              <i className="bi bi-info-circle me-2" aria-hidden="true" />
               <strong>Note for exams:</strong> Consider hiding questions and scores until after all
               students have completed to maintain fairness. You can use the "until date" options to
               reveal them after the exam window closes.

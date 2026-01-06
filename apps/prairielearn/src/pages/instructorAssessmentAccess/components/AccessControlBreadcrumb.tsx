@@ -27,18 +27,18 @@ export function AccessControlBreadcrumb({
   };
 
   return (
-    <nav aria-label="breadcrumb" class="mb-3">
-      <ol class="breadcrumb mb-0">
+    <nav aria-label="breadcrumb" className="mb-3">
+      <ol className="breadcrumb mb-0">
         {currentView.type === 'summary' ? (
-          <li class="breadcrumb-item active" aria-current="page">
+          <li className="breadcrumb-item active" aria-current="page">
             Access rules
           </li>
         ) : (
           <>
-            <li class="breadcrumb-item">
+            <li className="breadcrumb-item">
               <button
                 type="button"
-                class="btn btn-link"
+                className="btn btn-link"
                 onClick={(e) => {
                   e.preventDefault();
                   goToSummary();
@@ -47,7 +47,7 @@ export function AccessControlBreadcrumb({
                 Access rules
               </button>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">
+            <li className="breadcrumb-item active" aria-current="page">
               {getCurrentPageName()}
             </li>
           </>

@@ -153,14 +153,14 @@ export function AccessControlForm({
         return (
           <div>
             {/* Rule header with name and actions */}
-            <div class="d-flex align-items-center justify-content-between mb-3">
-              <h5 class="mb-0">Main access control rule</h5>
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <h5 className="mb-0">Main access control rule</h5>
               <Button
                 variant={watchedData.mainRule.enabled ? 'success' : 'outline-secondary'}
                 size="sm"
                 onClick={() => setValue('mainRule.enabled', !watchedData.mainRule.enabled)}
               >
-                <i class={`fa fa-${watchedData.mainRule.enabled ? 'check' : 'times'} me-1`} />
+                <i className={`fa fa-${watchedData.mainRule.enabled ? 'check' : 'times'} me-1`} />
                 {watchedData.mainRule.enabled ? 'Enabled' : 'Disabled'}
               </Button>
             </div>
@@ -179,17 +179,17 @@ export function AccessControlForm({
         return (
           <div>
             {/* Rule header with name and actions */}
-            <div class="d-flex align-items-center justify-content-between mb-3">
-              <h5 class="mb-0">{getOverrideName(index)}</h5>
+            <div className="d-flex align-items-center justify-content-between mb-3">
+              <h5 className="mb-0">{getOverrideName(index)}</h5>
 
-              <div class="d-flex gap-2">
+              <div className="d-flex gap-2">
                 {/* Enable/Disable toggle */}
                 <Button
                   variant={isEnabled ? 'success' : 'outline-secondary'}
                   size="sm"
                   onClick={() => setValue(`overrides.${index}.enabled`, !isEnabled)}
                 >
-                  <i class={`fa fa-${isEnabled ? 'check' : 'times'} me-1`} />
+                  <i className={`fa fa-${isEnabled ? 'check' : 'times'} me-1`} />
                   {isEnabled ? 'Enabled' : 'Disabled'}
                 </Button>
 
@@ -199,18 +199,18 @@ export function AccessControlForm({
                   size="sm"
                   onClick={() => setStudentGroupsModalState({ show: true, overrideIndex: index })}
                 >
-                  <i class="fa fa-users me-1" /> Configure student groups
+                  <i className="fa fa-users me-1" /> Configure student groups
                 </Button>
 
                 {/* Delete button */}
                 <Button variant="outline-danger" size="sm" onClick={() => handleDeleteClick(index)}>
-                  <i class="fa fa-trash me-1" /> Delete
+                  <i className="fa fa-trash me-1" /> Delete
                 </Button>
               </div>
             </div>
 
             {/* "Applies to" text */}
-            <p class="text-muted small mb-3">
+            <p className="text-muted small mb-3">
               {studentGroupsList.length > 0
                 ? `This override applies to ${studentGroupsList.join(', ')}`
                 : 'This override has no groups configured'}
@@ -234,10 +234,10 @@ export function AccessControlForm({
         />
 
         {/* Main content area */}
-        <div class="mb-4">{renderContent()}</div>
+        <div className="mb-4">{renderContent()}</div>
 
         {/* Form actions */}
-        <div class="mt-4 d-flex gap-2">
+        <div className="mt-4 d-flex gap-2">
           <Button type="submit" variant="primary" disabled={!isDirty || !isValid || isSaving}>
             {isSaving ? 'Saving...' : 'Save changes'}
           </Button>
@@ -269,7 +269,7 @@ export function AccessControlForm({
                 placeholder="Enter target identifiers separated by commas"
                 {...control.register(`overrides.${studentGroupsModalState.overrideIndex}.groups`)}
               />
-              <Form.Text class="text-muted">
+              <Form.Text className="text-muted">
                 Comma-separated list of student group names (e.g., sectionA, sectionB).
               </Form.Text>
             </Form.Group>
@@ -297,15 +297,15 @@ export function AccessControlForm({
       />
 
       {/* Debug display - show both form state and JSON output */}
-      <Card class="mt-4">
+      <Card className="mt-4">
         <Card.Header>
           <strong>Form state (debug)</strong>
         </Card.Header>
         <Card.Body>
-          <div class="mb-3">
+          <div className="mb-3">
             <strong>Internal form data:</strong>
             <pre
-              class="mb-0 mt-2"
+              className="mb-0 mt-2"
               style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}
             >
               <code>{JSON.stringify(watchedData, null, 2)}</code>
@@ -314,7 +314,7 @@ export function AccessControlForm({
           <div>
             <strong>JSON output (what will be saved):</strong>
             <pre
-              class="mb-0 mt-2"
+              className="mb-0 mt-2"
               style={{ fontSize: '0.8rem', maxHeight: '400px', overflow: 'auto' }}
             >
               <code>{JSON.stringify(formDataToJson(watchedData), null, 2)}</code>

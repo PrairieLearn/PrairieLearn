@@ -53,29 +53,29 @@ export function MainRuleForm({
   return (
     <div>
       {ruleEnabled && (
-        <Form.Group class="mb-3">
+        <Form.Group className="mb-3">
           <Form.Check
             type="checkbox"
             label="Block access"
             {...control.register('mainRule.blockAccess')}
           />
-          <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
+          <Form.Text className="text-muted">Deny access if this rule applies</Form.Text>
         </Form.Group>
       )}
 
       {ruleEnabled && !blockAccess && (
         <>
           {(hasDateRelease || hasPrairieTestRelease) && (
-            <Form.Group class="mb-3">
-              <div class="d-flex align-items-center mb-2">
+            <Form.Group className="mb-3">
+              <div className="d-flex align-items-center mb-2">
                 <Form.Check
                   type="checkbox"
-                  class="me-2"
+                  className="me-2"
                   {...control.register('mainRule.listBeforeRelease')}
                 />
                 <span>List before release</span>
               </div>
-              <Form.Text class="text-muted">
+              <Form.Text className="text-muted">
                 Students can see the title and click into assessment before release
               </Form.Text>
             </Form.Group>

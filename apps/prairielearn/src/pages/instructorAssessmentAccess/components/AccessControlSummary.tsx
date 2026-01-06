@@ -26,8 +26,8 @@ export function AccessControlSummary({
   return (
     <div>
       {/* Main Rule Section */}
-      <section class="mb-4">
-        <h5 class="mb-3">Main Rule</h5>
+      <section className="mb-4">
+        <h5 className="mb-3">Main Rule</h5>
         <RuleSummaryCard
           rule={mainRule}
           isMainRule={true}
@@ -38,15 +38,15 @@ export function AccessControlSummary({
 
       {/* Overrides Section */}
       <section>
-        <div class="d-flex justify-content-between align-items-center mb-3">
-          <h5 class="mb-0">Overrides</h5>
+        <div className="d-flex justify-content-between align-items-center mb-3">
+          <h5 className="mb-0">Overrides</h5>
           <Button variant="success" size="sm" onClick={onAddOverride}>
-            <i class="fa fa-plus me-1" /> Add override
+            <i className="fa fa-plus me-1" /> Add override
           </Button>
         </div>
 
         {overrides.length === 0 ? (
-          <p class="text-muted">
+          <p className="text-muted">
             No overrides configured. Overrides allow you to customize access rules for specific
             groups of students.
           </p>

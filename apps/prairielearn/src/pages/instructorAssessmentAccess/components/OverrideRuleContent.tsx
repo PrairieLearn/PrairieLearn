@@ -22,19 +22,19 @@ export function OverrideRuleContent({ control, index, setValue }: OverrideRuleCo
   return (
     <div>
       {isEnabled && (
-        <Form.Group class="mb-3">
+        <Form.Group className="mb-3">
           <Form.Check
             type="checkbox"
             label="Block access"
             {...control.register(`overrides.${index}.blockAccess`)}
           />
-          <Form.Text class="text-muted">Deny access if this rule applies</Form.Text>
+          <Form.Text className="text-muted">Deny access if this rule applies</Form.Text>
         </Form.Group>
       )}
 
       {/* Effects section - only show if rule is enabled and doesn't block access */}
       {isEnabled && !blockAccess && (
-        <div class="mb-3">
+        <div className="mb-3">
           {/* Date control section */}
           <DateControlForm
             control={control}

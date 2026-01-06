@@ -94,20 +94,20 @@ export function DateControlForm({
   }
 
   return (
-    <Card class="mb-4">
+    <Card className="mb-4">
       <Card.Header>
         <div>
-          <div class="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             {!isOverrideRule && (
               <Form.Check
                 type="checkbox"
-                class="me-2"
+                className="me-2"
                 {...control.register(`${namePrefix}.dateControl.enabled` as any)}
               />
             )}
             <span>{title}</span>
           </div>
-          <Form.Text class="text-muted">
+          <Form.Text className="text-muted">
             {isOverrideRule
               ? 'Override date settings from the main rule by clicking "Override" on individual fields'
               : description}
@@ -123,7 +123,7 @@ export function DateControlForm({
       >
         <div>
           {/* Release Date and Due Date */}
-          <Row class="mb-3">
+          <Row className="mb-3">
             <Col md={6}>
               <ReleaseDateField control={control} setValue={setValue} namePrefix={namePrefix} />
             </Col>
@@ -133,7 +133,7 @@ export function DateControlForm({
           </Row>
 
           {/* Early and Late Deadlines */}
-          <Row class="mb-4">
+          <Row className="mb-4">
             <Col md={6}>
               <DeadlineArrayField
                 control={control}
@@ -152,11 +152,11 @@ export function DateControlForm({
             </Col>
           </Row>
 
-          {!isOverrideRule && <hr class="my-4" />}
+          {!isOverrideRule && <hr className="my-4" />}
 
           {/* After Last Deadline - show when dates are configured or it's an override rule */}
           {(isOverrideRule || hasAnyDateControl) && (
-            <div class="mb-3">
+            <div className="mb-3">
               <AfterLastDeadlineField
                 control={control}
                 setValue={setValue}
@@ -165,10 +165,10 @@ export function DateControlForm({
             </div>
           )}
 
-          {!isOverrideRule && <hr class="my-4" />}
+          {!isOverrideRule && <hr className="my-4" />}
 
           {/* Duration and Password */}
-          <Row class="mb-3">
+          <Row className="mb-3">
             <Col md={6}>
               <DurationField control={control} setValue={setValue} namePrefix={namePrefix} />
             </Col>

@@ -71,16 +71,16 @@ export function PrairieTestControlForm({
   };
 
   return (
-    <Card class="mb-4" style={getCardStyle()}>
+    <Card className="mb-4" style={getCardStyle()}>
       <Card.Header
-        class="d-flex justify-content-between align-items-center"
+        className="d-flex justify-content-between align-items-center"
         style={{ cursor: collapsible ? 'pointer' : 'default' }}
       >
         <div>
-          <div class="d-flex align-items-center">
+          <div className="d-flex align-items-center">
             <Form.Check
               type="checkbox"
-              class="me-2"
+              className="me-2"
               {...control.register(`${namePrefix}.prairieTestControl.enabled` as any, {
                 onChange: (e) => {
                   e.stopPropagation();
@@ -96,7 +96,7 @@ export function PrairieTestControlForm({
             {collapsible ? (
               <button
                 type="button"
-                class="btn btn-link p-0 text-decoration-none text-body"
+                className="btn btn-link p-0 text-decoration-none text-body"
                 onClick={toggleExpanded}
               >
                 {title}
@@ -105,17 +105,17 @@ export function PrairieTestControlForm({
               <span>{title}</span>
             )}
           </div>
-          <Form.Text class="text-muted">{description}</Form.Text>
+          <Form.Text className="text-muted">{description}</Form.Text>
         </div>
-        <div class="d-flex align-items-center">
+        <div className="d-flex align-items-center">
           {showOverrideButton && onOverride && (
-            <Button size="sm" variant="outline-primary" class="me-2" onClick={onOverride}>
+            <Button size="sm" variant="outline-primary" className="me-2" onClick={onOverride}>
               Override
             </Button>
           )}
           {collapsible && (
             <i
-              class={`bi bi-chevron-${isExpanded ? 'up' : 'down'}`}
+              className={`bi bi-chevron-${isExpanded ? 'up' : 'down'}`}
               aria-hidden="true"
               style={{ cursor: 'pointer' }}
               onClick={toggleExpanded}
@@ -131,27 +131,27 @@ export function PrairieTestControlForm({
           }}
         >
           <div>
-            <div class="d-flex justify-content-between align-items-center mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-3">
               <strong>PrairieTest Exams</strong>
               <Button size="sm" variant="outline-primary" onClick={addExam}>
-                <i class="bi bi-plus-circle me-1" aria-hidden="true" />
+                <i className="bi bi-plus-circle me-1" aria-hidden="true" />
                 Add Exam
               </Button>
             </div>
 
             {examFields.length === 0 ? (
-              <div class="alert alert-info">
-                <i class="bi bi-info-circle me-2" aria-hidden="true" />
+              <div className="alert alert-info">
+                <i className="bi bi-info-circle me-2" aria-hidden="true" />
                 No PrairieTest exams configured. Click "Add Exam" to link an exam.
               </div>
             ) : (
               <div>
                 {examFields.map((field, index) => (
-                  <Card key={field.id} class="mb-3">
+                  <Card key={field.id} className="mb-3">
                     <Card.Body>
                       <Row>
                         <Col md={8}>
-                          <Form.Group class="mb-2">
+                          <Form.Group className="mb-2">
                             <Form.Label>Exam UUID</Form.Label>
                             <Form.Control
                               type="text"
@@ -170,13 +170,13 @@ export function PrairieTestControlForm({
                                 },
                               )}
                             />
-                            <Form.Text class="text-muted">
+                            <Form.Text className="text-muted">
                               You can find this UUID in the PrairieTest exam settings
                             </Form.Text>
                           </Form.Group>
                         </Col>
-                        <Col md={4} class="d-flex flex-column justify-content-center">
-                          <Form.Group class="mb-2">
+                        <Col md={4} className="d-flex flex-column justify-content-center">
+                          <Form.Group className="mb-2">
                             <Form.Check
                               type="checkbox"
                               label="Read-only mode"
@@ -184,17 +184,17 @@ export function PrairieTestControlForm({
                                 `${namePrefix}.prairieTestControl.exams.${index}.readOnly` as any,
                               )}
                             />
-                            <Form.Text class="text-muted">
+                            <Form.Text className="text-muted">
                               Students can view but not submit answers
                             </Form.Text>
                           </Form.Group>
                           <Button
                             size="sm"
                             variant="outline-danger"
-                            class="mt-2"
+                            className="mt-2"
                             onClick={() => removeExam(index)}
                           >
-                            <i class="bi bi-trash me-1" aria-hidden="true" />
+                            <i className="bi bi-trash me-1" aria-hidden="true" />
                             Remove
                           </Button>
                         </Col>
@@ -205,8 +205,8 @@ export function PrairieTestControlForm({
               </div>
             )}
 
-            <div class="alert alert-warning">
-              <i class="bi bi-exclamation-triangle me-2" aria-hidden="true" />
+            <div className="alert alert-warning">
+              <i className="bi bi-exclamation-triangle me-2" aria-hidden="true" />
               <strong>Important:</strong> Make sure the exam UUIDs are correct. Invalid UUIDs will
               be ignored during sync. You can find exam UUIDs in your PrairieTest course settings.
             </div>
