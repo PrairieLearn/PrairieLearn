@@ -167,7 +167,7 @@ Students can enroll in a course instance through a few different ways:
 
 !!! tip "Course listing page has been removed"
 
-    The courses listing page was removed in January 2026 in favor of the new self-enrollment system. Instructors should transition to providing a direct link to their course instance or a self-enrollment code to students. You can find this link in your course instance settings.
+    The courses listing page was removed in January 2026 in favor of the new self-enrollment system. Instructors should provide their students with either an enrollment code or a direct link to their course instance. Both of these can be found on the course instance settings page.
 
 ### Enrollment security
 
