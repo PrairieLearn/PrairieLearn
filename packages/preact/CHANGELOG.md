@@ -1,5 +1,22 @@
 # @prairielearn/preact
 
+## 1.1.0
+
+### Minor Changes
+
+- e2bffd9: Prefer `className` instead of `class`
+
+### Patch Changes
+
+- Updated dependencies [e2bffd9]
+  - @prairielearn/preact-cjs@2.0.0
+
+## 1.0.7
+
+### Patch Changes
+
+- f404bb4: Upgrade all JavaScript dependencies
+
 ## 1.0.6
 
 ### Patch Changes

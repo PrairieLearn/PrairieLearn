@@ -1002,6 +1002,7 @@ export type Issue = z.infer<typeof IssueSchema>;
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   command: z.string().nullable(),
   course_id: IdSchema.nullable(),
@@ -1031,6 +1032,7 @@ export type Job = z.infer<typeof JobSchema>;
 
 export const JobSequenceSchema = z.object({
   assessment_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
