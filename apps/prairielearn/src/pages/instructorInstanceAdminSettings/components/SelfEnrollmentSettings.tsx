@@ -377,6 +377,12 @@ export function SelfEnrollmentSettings({
             'form-control mt-2',
             selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
           )}
+          aria-invalid={selfEnrollmentEnabledBeforeDateInvalid}
+          aria-errormessage={
+            selfEnrollmentEnabledBeforeDateInvalid
+              ? 'self-enrollment-enabled-before-date-error'
+              : undefined
+          }
           disabled={
             !canEdit ||
             !selfEnrollmentEnabledBeforeDateEnabled ||
@@ -406,7 +412,9 @@ export function SelfEnrollmentSettings({
           />
         )}
         {selfEnrollmentEnabledBeforeDateError && (
-          <div className="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+          <div className="invalid-feedback" id="self-enrollment-enabled-before-date-error">
+            {selfEnrollmentEnabledBeforeDateError.message}
+          </div>
         )}
       </div>
 
