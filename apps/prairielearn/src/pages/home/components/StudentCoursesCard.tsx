@@ -154,6 +154,7 @@ export function StudentCoursesCard({
       <EnrollmentCodeForm
         style="modal"
         show={showEnrollmentCodeModal}
+        showInstructorHelp={hasInstructorCourses}
         onHide={() => setShowEnrollmentCodeModal(false)}
       />
 
