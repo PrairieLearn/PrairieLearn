@@ -4,9 +4,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import * as groupUpdate from '../lib/group-update.js';
-import { deleteAllGroups } from '../lib/groups.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import * as groupUpdate from '../lib/team-update.js';
+import { deleteAllGroups } from '../lib/teams.js';
 import { selectAssessmentById } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -49,11 +49,11 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
 
   test.sequential('check groups and users', async () => {
     const groupUserCountsRowCount = await sqldb.execute(
-      'SELECT count(group_id) FROM group_users GROUP BY group_id',
+      'SELECT count(team_id) FROM team_users GROUP BY team_id',
     );
     assert.equal(groupUserCountsRowCount, 50);
 
-    const groupUsersRowCount = await sqldb.execute('SELECT DISTINCT(user_id) FROM group_users');
+    const groupUsersRowCount = await sqldb.execute('SELECT DISTINCT(user_id) FROM team_users');
     assert.equal(groupUsersRowCount, 500);
   });
 
@@ -61,11 +61,11 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
     await deleteAllGroups(locals.assessment_id, '1');
 
     const groupsRowCount = await sqldb.execute(
-      'SELECT deleted_at FROM groups WHERE deleted_at IS NULL',
+      'SELECT deleted_at FROM teams WHERE deleted_at IS NULL',
     );
     assert.equal(groupsRowCount, 0);
 
-    const groupUsersRowCount = await sqldb.execute('SELECT * FROM group_users');
+    const groupUsersRowCount = await sqldb.execute('SELECT * FROM team_users');
     assert.equal(groupUsersRowCount, 0);
   });
 });

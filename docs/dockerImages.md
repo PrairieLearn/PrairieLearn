@@ -23,7 +23,7 @@ Some questions may require additional customization of existing images, such as 
 
    ```dockerfile
    FROM prairielearn/workspace-vscode-python
-   RUN pip install datascience
+   RUN uv pip install datascience
    ```
 
 5. In a terminal, change to the directory that contains the `Dockerfile` above and build the new image (replacing `yourdockerhubaccount` with your Docker Hub account name, and `yourimagename` with an image name of your choice):
@@ -53,7 +53,7 @@ However, for more complex images or more elaborate changes to existing custom im
 
 By default, a local installation of PrairieLearn will pull the latest version of the grader/workspace image every time it is used. However, it is possible to change PrairieLearn's configuration to use the local version of an image. This can be done by creating a `config.json` file in any directory of your choice with the following content:
 
-```json
+```json title="config.json"
 {
   "externalGradingPullImagesFromDockerHub": false,
   "workspacePullImagesFromDockerHub": false
@@ -72,5 +72,9 @@ docker run -it --rm -p 3000:3000 \
 !!! note
 
     With the configuration above, the local PrairieLearn environment will use the local version of any grader or workspace image when it is needed. This means it is your responsibility to ensure the local version of any image you use is up-to-date, by calling `docker pull IMAGENAME` for any images you are using, including provided and custom images.
+
+!!! note "Testing natively on macOS"
+
+    The configuration reference has a section on [running workspaces / external graders natively on macOS](./dev-guide/configJson.md#running-workspaces-external-graders-natively-on-macos). You will run into permissions errors if you don't do this. This does not apply to users running PrairieLearn via Docker.
 
 Once the configuration above is set, you can modify the `Dockerfile` and related files, then run step 5 from the list above. You can then test the questions that use your custom image to ensure they work as expected. Once you are satisfied that the questions work as expected, proceed with steps 6-8 above. If you made any changes in your questions to account for the changes in the image, make sure your questions are properly synchronized with the production environment as well.

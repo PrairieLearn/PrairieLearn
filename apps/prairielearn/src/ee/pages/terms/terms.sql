@@ -3,4 +3,4 @@ UPDATE users
 SET
   terms_accepted_at = NOW()
 WHERE
-  user_id = $user_id;
+  id = $user_id;

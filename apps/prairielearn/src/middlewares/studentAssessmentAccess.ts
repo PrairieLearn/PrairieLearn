@@ -72,7 +72,7 @@ export default asyncHandler(async (req, res, next) => {
     await deleteAssessmentInstance(
       res.locals.assessment.id,
       res.locals.assessment_instance.id,
-      res.locals.authn_user.user_id,
+      res.locals.authn_user.id,
     );
 
     flash('success', 'Your previous assessment instance was deleted.');

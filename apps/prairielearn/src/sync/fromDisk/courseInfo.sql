@@ -1,5 +1,5 @@
 -- BLOCK update_course
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   short_name = $short_name,
   title = $title,
@@ -18,7 +18,7 @@ RETURNING
   c.*;
 
 -- BLOCK update_course_errors
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   sync_errors = $sync_errors,
   sync_warnings = $sync_warnings

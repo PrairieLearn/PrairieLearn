@@ -31,7 +31,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       access_as_administrator: res.locals.access_as_administrator,
     });
 
@@ -57,7 +57,7 @@ router.post(
   asyncHandler(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
       access_as_administrator: res.locals.access_as_administrator,
     });
 
@@ -71,15 +71,15 @@ router.post(
 
           // Specifically check that the user is in the institution to prevent
           // someone from enumerating users in other institutions.
-          if (!user || user.institution_id !== institution.id) {
+          if (user?.institution_id !== institution.id) {
             invalidUids.push(uid);
             continue;
           }
 
           await ensureInstitutionAdministrator({
-            user_id: user.user_id,
+            user_id: user.id,
             institution_id: institution.id,
-            authn_user_id: res.locals.authn_user.user_id,
+            authn_user_id: res.locals.authn_user.id,
           });
 
           validUids.push(uid);
@@ -102,7 +102,7 @@ router.post(
       await deleteInstitutionAdministrator({
         institution_id: institution.id,
         unsafe_institution_administrator_id: req.body.unsafe_institution_administrator_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       flash('notice', 'Removed institution administrator.');
       res.redirect(req.originalUrl);

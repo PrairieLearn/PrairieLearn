@@ -24,9 +24,9 @@ WITH
         'Student' AS role
       FROM
         selected_users AS u
-        JOIN enrollments AS e ON (e.user_id = u.user_id)
+        JOIN enrollments AS e ON (e.user_id = u.id)
         JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
-        JOIN pl_courses AS c ON (c.id = ci.course_id)
+        JOIN courses AS c ON (c.id = ci.course_id)
         JOIN institutions AS i ON (i.id = c.institution_id)
       LIMIT
         500
@@ -45,10 +45,10 @@ WITH
         cip.course_instance_role::text AS role
       FROM
         selected_users AS u
-        JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+        JOIN course_permissions AS cp ON (cp.user_id = u.id)
         JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
         JOIN course_instances AS ci ON (ci.id = cip.course_instance_id)
-        JOIN pl_courses AS c ON (c.id = cp.course_id)
+        JOIN courses AS c ON (c.id = cp.course_id)
         JOIN institutions AS i ON (i.id = c.institution_id)
       WHERE
         cip.course_instance_role > 'None'
@@ -69,8 +69,8 @@ WITH
         'Course Content ' || cp.course_role AS role
       FROM
         selected_users AS u
-        JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
-        JOIN pl_courses AS c ON (c.id = cp.course_id)
+        JOIN course_permissions AS cp ON (cp.user_id = u.id)
+        JOIN courses AS c ON (c.id = cp.course_id)
         JOIN institutions AS i ON (i.id = c.institution_id)
       WHERE
         cp.course_role > 'None'

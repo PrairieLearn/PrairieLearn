@@ -253,7 +253,7 @@ router.post(
         });
 
         if (user && user.uid !== uid) {
-          await updateUserUid({ user_id: user.user_id, uid });
+          await updateUserUid({ user_id: user.id, uid });
         }
 
         // We still have a valid UID; pass it back.
@@ -323,7 +323,7 @@ router.post(
 
     // Record the LTI 1.3 user's subject id.
     await updateLti13UserSub({
-      user_id: authedUser.user.user_id,
+      user_id: authedUser.user.id,
       lti13_instance_id: lti13_instance.id,
       sub: ltiClaim.get('sub'),
     });

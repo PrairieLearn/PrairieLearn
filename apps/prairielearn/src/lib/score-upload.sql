@@ -3,7 +3,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  JOIN users AS u ON (u.user_id = ai.user_id)
+  JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = $instance_number
@@ -16,7 +16,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  JOIN groups AS g ON (g.id = ai.group_id)
+  JOIN teams AS g ON (g.id = ai.team_id)
 WHERE
   ai.assessment_id = $assessment_id
   AND ai.number = $instance_number
@@ -35,11 +35,11 @@ FROM
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
   JOIN questions AS q ON (q.id = aq.question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
     AND g.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   LEFT JOIN variants AS v ON (v.instance_question_id = iq.id)
   LEFT JOIN submissions AS s ON (s.variant_id = v.id)
 WHERE
