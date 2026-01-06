@@ -114,14 +114,14 @@ export function CopyCourseInstanceModal({
               </Alert>
             )}
 
-            <div class="mb-3">
-              <label class="form-label" for="copy-long-name">
+            <div className="mb-3">
+              <label className="form-label" for="copy-long-name">
                 Long name
               </label>
               <input
                 id="copy-long-name"
                 type="text"
-                class="form-control"
+                className="form-control"
                 aria-describedby="copy-long-name-help"
                 placeholder={courseInstance.long_name ?? undefined}
                 {...register('long_name', {
@@ -129,10 +129,10 @@ export function CopyCourseInstanceModal({
                 })}
               />
               {errors.long_name && (
-                <div class="text-danger small mt-1">{errors.long_name.message}</div>
+                <div className="text-danger small mt-1">{errors.long_name.message}</div>
               )}
               {!errors.long_name && (
-                <small id="copy-long-name-help" class="form-text text-muted">
+                <small id="copy-long-name-help" className="form-text text-muted">
                   The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined
                   to the course name, e.g. &quot;
                   {courseShortName} Fall 2025&quot;.
@@ -140,14 +140,14 @@ export function CopyCourseInstanceModal({
               )}
             </div>
 
-            <div class="mb-3">
-              <label class="form-label" for="copy-short-name">
+            <div className="mb-3">
+              <label className="form-label" for="copy-short-name">
                 Short name
               </label>
               <input
                 id="copy-short-name"
                 type="text"
-                class="form-control font-monospace"
+                className="form-control font-monospace"
                 aria-describedby="copy-short-name-help"
                 placeholder={courseInstance.short_name}
                 {...register('short_name', {
@@ -159,10 +159,10 @@ export function CopyCourseInstanceModal({
                 })}
               />
               {errors.short_name && (
-                <div class="text-danger small mt-1">{errors.short_name.message}</div>
+                <div className="text-danger small mt-1">{errors.short_name.message}</div>
               )}
               {!errors.short_name && (
-                <small id="copy-short-name-help" class="form-text text-muted">
+                <small id="copy-short-name-help" className="form-text text-muted">
                   A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
                   and headers where a short description is required. Use only letters, numbers,
                   dashes, and underscores, with no spaces.
@@ -172,8 +172,8 @@ export function CopyCourseInstanceModal({
 
             <hr />
 
-            <h3 class="h5">Publishing settings</h3>
-            <p class="text-muted small">
+            <h3 className="h5">Publishing settings</h3>
+            <p className="text-muted small">
               Choose the initial publishing status for your new course instance. This can be changed
               later.
             </p>
@@ -190,7 +190,7 @@ export function CopyCourseInstanceModal({
           <Modal.Footer>
             <button
               type="button"
-              class="btn btn-secondary"
+              className="btn btn-secondary"
               disabled={copyMutation.isPending}
               onClick={() => {
                 copyMutation.reset();
@@ -200,7 +200,7 @@ export function CopyCourseInstanceModal({
             >
               Cancel
             </button>
-            <button type="submit" class="btn btn-primary" disabled={copyMutation.isPending}>
+            <button type="submit" className="btn btn-primary" disabled={copyMutation.isPending}>
               {copyMutation.isPending ? 'Copying...' : 'Copy course instance'}
             </button>
           </Modal.Footer>
