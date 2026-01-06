@@ -293,7 +293,6 @@ export async function aiGrade({
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
           // rubric_items must be the last property in the schema.
-          //
           // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
           // the function that attempts to repair the JSON, depends on rubric_items being at the end of
           // generated response.
