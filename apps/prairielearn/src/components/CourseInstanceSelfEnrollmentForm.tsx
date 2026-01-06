@@ -33,24 +33,24 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
 
   return (
     <>
-      <div class="mb-3 form-check">
+      <div className="mb-3 form-check">
         <input
-          class="form-check-input"
+          className="form-check-input"
           type="checkbox"
           id={`${formId}-self-enrollment-enabled`}
           {...register('self_enrollment_enabled')}
         />
-        <label class="form-check-label" for={`${formId}-self-enrollment-enabled`}>
+        <label className="form-check-label" for={`${formId}-self-enrollment-enabled`}>
           Allow self-enrollment
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If not checked, students will need to be invited to this course instance.
         </div>
       </div>
 
-      <div class="mb-3 form-check">
+      <div className="mb-3 form-check">
         <input
-          class="form-check-input"
+          className="form-check-input"
           type="checkbox"
           id={`${formId}-self-enrollment-use-enrollment-code`}
           disabled={!selfEnrollmentEnabled}
@@ -61,10 +61,10 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           name="self-enrollment-use-enrollment-code"
           value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
         />
-        <label class="form-check-label" for={`${formId}-self-enrollment-use-enrollment-code`}>
+        <label className="form-check-label" for={`${formId}-self-enrollment-use-enrollment-code`}>
           Use enrollment code for self-enrollment
         </label>
-        <div class="small text-muted">
+        <div className="small text-muted">
           If not checked, any link to anything in the course instance will allow self-enrollment.
         </div>
       </div>

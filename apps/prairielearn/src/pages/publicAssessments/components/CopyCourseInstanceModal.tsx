@@ -161,8 +161,8 @@ export function CopyCourseInstanceModal({
                   <>
                     <hr />
 
-                    <h3 class="h5">Self-enrollment settings</h3>
-                    <p class="text-muted small">
+                    <h3 className="h5">Self-enrollment settings</h3>
+                    <p className="text-muted small">
                       Configure self-enrollment for your new course instance. This can be changed
                       later.
                     </p>
