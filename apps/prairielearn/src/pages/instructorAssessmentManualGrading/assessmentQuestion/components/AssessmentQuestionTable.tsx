@@ -643,6 +643,9 @@ export function AssessmentQuestionTable({
       </div>
       {aiGradingMode && (
         <ServerJobsProgressInfo
+          courseInstanceId={courseInstance.id}
+          itemNames="submissions graded"
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
           statusIcons={{
             inProgress: 'bi-stars',
           }}
@@ -651,8 +654,6 @@ export function AssessmentQuestionTable({
             complete: 'AI grading complete',
             failed: 'AI grading failed',
           }}
-          itemNames="submissions graded"
-          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}

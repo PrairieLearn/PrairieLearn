@@ -1,6 +1,7 @@
 import { useMemo } from 'preact/compat';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
+import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
 /**
@@ -11,6 +12,7 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  *
  * @param params
  *
+ * @param params.courseInstanceId The current course instance ID.
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  * @param params.jobsProgress Progress information for each server job.
  *
@@ -27,12 +29,14 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 export function ServerJobsProgressInfo({
+  courseInstanceId,
   itemNames,
   jobsProgress,
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
 }: {
+  courseInstanceId: string;
   itemNames: string;
   jobsProgress: JobProgress[];
   statusIcons?: {
@@ -64,6 +68,7 @@ export function ServerJobsProgressInfo({
       {jobsProgress.map((jobProgress) => (
         <ServerJobProgressInfo
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
+          courseInstanceId={courseInstanceId}
           jobSequenceId={jobProgress.job_sequence_id}
           nums={{
             complete: jobProgress.num_complete,
@@ -84,6 +89,7 @@ export function ServerJobsProgressInfo({
  * Displays progress information for a single server job.
  *
  * @param params
+ * @param params.courseInstanceId The current course instance ID.
  * @param params.jobSequenceId The server job sequence ID to display progress info for.
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  *
@@ -105,13 +111,15 @@ export function ServerJobsProgressInfo({
  * @param params.onDismissCompleteJobSequence Callback when the user dismisses a completed job progress alert. Used to remove the job from state.
  */
 function ServerJobProgressInfo({
+  courseInstanceId,
   jobSequenceId,
+  itemNames,
   nums,
   statusIcons,
   statusText,
-  itemNames,
   onDismissCompleteJobSequence,
 }: {
+  courseInstanceId: string;
   jobSequenceId: string;
   itemNames: string;
   nums: {
@@ -160,6 +168,24 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
+  const progressInfoContent = useMemo(() => {
+    switch (jobStatus) {
+      case 'inProgress':
+        return (
+          <>
+            {`${nums.complete}/${nums.total} ${itemNames}`}
+            <span class="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
+          </>
+        );
+      case 'failed':
+        return `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`;
+      case 'complete':
+        return `${nums.total} ${itemNames}`;
+      default:
+        return <></>;
+    }
+  }, [jobStatus, nums, itemNames]);
+
   return (
     <Alert
       variant={variant}
@@ -167,37 +193,41 @@ function ServerJobProgressInfo({
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
-      <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
+      <div class="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-3">
         <div class="d-flex align-items-center gap-2">
           <i class={`bi ${icon} fs-5`} aria-hidden="true" />
           <strong>{text}</strong>
         </div>
+
         {jobStatus === 'inProgress' ? (
-          <>
-            <div class="flex-grow-1">
-              <ProgressBar
-                now={
-                  nums.total !== 0 // Prevent division by 0
-                    ? (nums.complete / nums.total) * 100
-                    : 0
-                }
-                variant="primary"
-                striped
-                animated
-              />
-            </div>
-            <div class="text-muted small">
-              {`${nums.complete}/${nums.total} ${itemNames}`}
-              <span class="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
-            </div>
-          </>
-        ) : (
-          <div class="text-muted small">
-            {jobStatus === 'failed'
-              ? `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`
-              : `${nums.total} ${itemNames}`}
+          <div class="flex-grow-1">
+            <ProgressBar
+              now={
+                nums.total !== 0 // Prevent division by 0
+                  ? (nums.complete / nums.total) * 100
+                  : 0
+              }
+              variant="primary"
+              striped
+              animated
+            />
           </div>
+        ) : (
+          <></>
         )}
+
+        <div class="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+          <div class="text-muted small">{progressInfoContent}</div>
+          <a
+            href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
+            class="text-decoration-none small"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View job logs"
+          >
+            View logs
+          </a>
+        </div>
       </div>
     </Alert>
   );
