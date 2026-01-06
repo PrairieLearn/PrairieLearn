@@ -60,16 +60,16 @@ export function CourseInstancePublishing({
 
   return (
     <>
-      <div class="mb-4">
-        <h4 class="mb-4">Publishing</h4>
+      <div className="mb-4">
+        <h4 className="mb-4">Publishing</h4>
 
         {!canEdit && origHash !== null && (
-          <div class="alert alert-info" role="alert">
+          <div className="alert alert-info" role="alert">
             You do not have permission to edit publishing settings.
           </div>
         )}
         {!canEdit && origHash === null && (
-          <div class="alert alert-warning" role="alert">
+          <div className="alert alert-warning" role="alert">
             You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
             file does not exist.
           </div>
@@ -92,7 +92,7 @@ export function CourseInstancePublishing({
 
         {startDate && (
           <>
-            <hr class="my-4" />
+            <hr className="my-4" />
             <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
               <PublishingExtensions
                 courseInstance={courseInstance}

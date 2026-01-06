@@ -42,8 +42,8 @@ function AiGradingStatusCell({
             props: { id: `ai-status-${rowId}-queued-tooltip` },
           }}
         >
-          <span class="d-flex align-items-center gap-2">
-            <i class="bi bi-clock text-secondary" aria-hidden="true" />
+          <span className="d-flex align-items-center gap-2">
+            <i className="bi bi-clock text-secondary" aria-hidden="true" />
             <span>Queued</span>
           </span>
         </OverlayTrigger>
@@ -56,9 +56,9 @@ function AiGradingStatusCell({
             props: { id: `ai-status-${rowId}-progress-tooltip` },
           }}
         >
-          <span class="d-flex align-items-center gap-2">
-            <div class="spinner-grow spinner-grow-sm text-secondary bg-secondary" role="status">
-              <span class="visually-hidden">Loading...</span>
+          <span className="d-flex align-items-center gap-2">
+            <div className="spinner-grow spinner-grow-sm text-secondary bg-secondary" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
             <span>AI grading...</span>
           </span>
@@ -72,8 +72,8 @@ function AiGradingStatusCell({
             props: { id: `ai-status-${rowId}-failed-tooltip` },
           }}
         >
-          <span class="d-flex align-items-center gap-2">
-            <i class="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
+          <span className="d-flex align-items-center gap-2">
+            <i className="bi bi-exclamation-octagon-fill text-danger" aria-hidden="true" />
             <span>Failed</span>
           </span>
         </OverlayTrigger>
@@ -86,8 +86,8 @@ function AiGradingStatusCell({
             props: { id: `ai-status-${rowId}-success-tooltip` },
           }}
         >
-          <span class="d-flex align-items-center gap-2">
-            <i class="bi bi-check-circle-fill text-success" aria-hidden="true" />
+          <span className="d-flex align-items-center gap-2">
+            <i className="bi bi-check-circle-fill text-success" aria-hidden="true" />
             <span>Graded</span>
           </span>
         </OverlayTrigger>

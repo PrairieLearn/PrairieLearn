@@ -21,12 +21,12 @@ def square(x):
 const PLCodeBlockComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   const updateAttributes = props.updateAttributes as (attrs: Partial<PlCodeAttrs>) => void;
   return (
-    <NodeViewWrapper class="react-component">
+    <NodeViewWrapper className="react-component">
       <button type="button" onClick={() => updateAttributes({ language: 'python' })}>
         Python
       </button>
       <div contenteditable="false">This is a code block</div>
-      <NodeViewContent class="content" />
+      <NodeViewContent className="content" />
     </NodeViewWrapper>
   );
 };

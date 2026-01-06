@@ -72,10 +72,10 @@ export function PublicLinkSharing({
   return (
     <>
       <p>
-        <span class="badge color-green3 me-1">Public source</span>
+        <span className="badge color-green3 me-1">Public source</span>
         {sharingMessage}
       </p>
-      <div class="mb-3">
+      <div className="mb-3">
         <label for="publicLink">Public link</label>
         <InputGroup>
           <Form.Control type="text" id="publicLink" value={publicLink} disabled />
@@ -95,7 +95,7 @@ export function PublicLinkSharing({
                 setTimeout(() => setCopied(false), 1500);
               }}
             >
-              <i class="far fa-clipboard" />
+              <i className="far fa-clipboard" />
             </Button>
           </OverlayTrigger>
           <Button
@@ -104,10 +104,10 @@ export function PublicLinkSharing({
             aria-label="Public Link QR Code"
             onClick={() => setShowQR(true)}
           >
-            <i class="fas fa-qrcode" />
+            <i className="fas fa-qrcode" />
           </Button>
         </InputGroup>
-        <small class="form-text text-muted">{publicLinkMessage}</small>
+        <small className="form-text text-muted">{publicLinkMessage}</small>
       </div>
       <QRCodeModal
         id="publicLinkModal"
@@ -130,8 +130,8 @@ export function StudentLinkSharing({
   const [showQR, setShowQR] = useState(false);
   const [copied, setCopied] = useState(false);
   return (
-    <div class="mb-3">
-      <label class="form-label" for="student_link">
+    <div className="mb-3">
+      <label className="form-label" for="student_link">
         Student Link
       </label>
       <InputGroup>
@@ -152,7 +152,7 @@ export function StudentLinkSharing({
               setTimeout(() => setCopied(false), 1500);
             }}
           >
-            <i class="bi bi-clipboard" />
+            <i className="bi bi-clipboard" />
           </Button>
         </OverlayTrigger>
         <OverlayTrigger
@@ -167,11 +167,11 @@ export function StudentLinkSharing({
             aria-label="Student Link QR Code"
             onClick={() => setShowQR(true)}
           >
-            <i class="bi bi-qr-code-scan" />
+            <i className="bi bi-qr-code-scan" />
           </Button>
         </OverlayTrigger>
       </InputGroup>
-      <small class="form-text text-muted">{studentLinkMessage}</small>
+      <small className="form-text text-muted">{studentLinkMessage}</small>
       <QRCodeModal
         id="studentLinkModal"
         title="Student Link QR Code"

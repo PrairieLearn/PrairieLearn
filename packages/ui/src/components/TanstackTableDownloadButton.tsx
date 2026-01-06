@@ -54,22 +54,22 @@ export function TanstackTableDownloadButton<RowDataModel>({
   }
 
   return (
-    <div class="btn-group">
+    <div className="btn-group">
       <button
         type="button"
         data-bs-toggle="dropdown"
         aria-expanded="false"
         aria-haspopup="true"
         aria-label={`Download ${pluralLabel} data in various formats`}
-        class="btn btn-light btn-sm dropdown-toggle"
+        className="btn btn-light btn-sm dropdown-toggle"
       >
-        <i aria-hidden="true" class="pe-2 bi bi-download" />
-        <span class="d-none d-sm-inline">Download</span>
+        <i aria-hidden="true" className="pe-2 bi bi-download" />
+        <span className="d-none d-sm-inline">Download</span>
       </button>
-      <ul class="dropdown-menu" role="menu" aria-label="Download options">
+      <ul className="dropdown-menu" role="menu" aria-label="Download options">
         <li role="presentation">
           <button
-            class="dropdown-item"
+            className="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download all ${pluralLabel} as CSV file`}
@@ -81,7 +81,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
         </li>
         <li role="presentation">
           <button
-            class="dropdown-item"
+            className="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download all ${pluralLabel} as JSON file`}
@@ -95,7 +95,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
           <>
             <li role="presentation">
               <button
-                class="dropdown-item"
+                className="dropdown-item"
                 type="button"
                 role="menuitem"
                 aria-label={`Download selected ${pluralLabel} as CSV file`}
@@ -108,7 +108,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
             </li>
             <li role="presentation">
               <button
-                class="dropdown-item"
+                className="dropdown-item"
                 type="button"
                 role="menuitem"
                 aria-label={`Download selected ${pluralLabel} as JSON file`}
@@ -123,7 +123,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
         )}
         <li role="presentation">
           <button
-            class="dropdown-item"
+            className="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download filtered ${pluralLabel} as CSV file`}
@@ -136,7 +136,7 @@ export function TanstackTableDownloadButton<RowDataModel>({
         </li>
         <li role="presentation">
           <button
-            class="dropdown-item"
+            className="dropdown-item"
             type="button"
             role="menuitem"
             aria-label={`Download filtered ${pluralLabel} as JSON file`}

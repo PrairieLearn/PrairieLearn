@@ -6,7 +6,7 @@ export function TopicDescription({ topic }: { topic: Topic }) {
   }
 
   return (
-    <span class="text-muted">
+    <span className="text-muted">
       Auto-generated from use in a question; edit this topic to customize
     </span>
   );

@@ -10,7 +10,18 @@ WHERE
   AND js.type IN ('sync', 'git_status', 'images_sync')
 ORDER BY
   js.start_date DESC,
-  js.id ASC;
+  js.id ASC
+LIMIT
+  $limit;
+
+-- BLOCK count_sync_job_sequences
+SELECT
+  COUNT(*)::integer AS count
+FROM
+  job_sequences AS js
+WHERE
+  js.course_id = $course_id
+  AND js.type IN ('sync', 'git_status', 'images_sync');
 
 -- BLOCK question_images
 WITH

@@ -60,7 +60,7 @@ export function ServerJobsProgressInfo({
   };
 
   return (
-    <div class={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
+    <div className={`d-flex flex-column gap-3 ${jobsProgress.length > 0 ? 'mb-3' : ''}`}>
       {jobsProgress.map((jobProgress) => (
         <ServerJobProgressInfo
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
@@ -163,18 +163,18 @@ function ServerJobProgressInfo({
   return (
     <Alert
       variant={variant}
-      class="mb-0"
+      className="mb-0"
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
-      <div class="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
-        <div class="d-flex align-items-center gap-2">
-          <i class={`bi ${icon} fs-5`} aria-hidden="true" />
+      <div className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
+        <div className="d-flex align-items-center gap-2">
+          <i className={`bi ${icon} fs-5`} aria-hidden="true" />
           <strong>{text}</strong>
         </div>
         {jobStatus === 'inProgress' ? (
           <>
-            <div class="flex-grow-1">
+            <div className="flex-grow-1">
               <ProgressBar
                 now={
                   nums.total !== 0 // Prevent division by 0
@@ -186,13 +186,15 @@ function ServerJobProgressInfo({
                 animated
               />
             </div>
-            <div class="text-muted small">
+            <div className="text-muted small">
               {`${nums.complete}/${nums.total} ${itemNames}`}
-              <span class="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
+              <span className="text-danger">
+                {nums.failed > 0 ? ` (${nums.failed} failed)` : ''}
+              </span>
             </div>
           </>
         ) : (
-          <div class="text-muted small">
+          <div className="text-muted small">
             {jobStatus === 'failed'
               ? `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`
               : `${nums.total} ${itemNames}`}

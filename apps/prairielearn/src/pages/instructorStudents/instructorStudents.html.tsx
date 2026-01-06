@@ -156,7 +156,7 @@ function CopyEnrollmentLinkButton({
           show={copiedCode ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-            <i class="bi bi-key me-2" />
+            <i className="bi bi-key me-2" />
             Copy enrollment code
           </Dropdown.Item>
         </OverlayTrigger>
@@ -172,13 +172,13 @@ function CopyEnrollmentLinkButton({
           show={copiedLink ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-            <i class="bi bi-link-45deg me-2" />
+            <i className="bi bi-link-45deg me-2" />
             Copy enrollment link
           </Dropdown.Item>
         </OverlayTrigger>
       )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i class="bi bi-gear me-2" />
+        <i className="bi bi-gear me-2" />
         Manage settings
       </Dropdown.Item>
     </DropdownButton>
@@ -502,7 +502,7 @@ function StudentsCard({
                 props: { id: 'students-name-tooltip' },
               }}
             >
-              <i class="bi bi-question-circle" />
+              <i className="bi bi-question-circle" />
             </OverlayTrigger>
           );
         },
@@ -531,7 +531,7 @@ function StudentsCard({
                 props: { id: 'students-email-tooltip' },
               }}
             >
-              <i class="bi bi-question-circle" />
+              <i className="bi bi-question-circle" />
             </OverlayTrigger>
           );
         },
@@ -684,7 +684,6 @@ function StudentsCard({
       <TanstackTableCard
         table={table}
         title="Students"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         singularLabel="student"
         pluralLabel="students"
@@ -826,7 +825,7 @@ function StudentsCard({
                   disabled={!authzData.has_course_instance_permission_edit}
                   onClick={() => setShowInvite(true)}
                 >
-                  <i class="bi bi-person-plus me-2" aria-hidden="true" />
+                  <i className="bi bi-person-plus me-2" aria-hidden="true" />
                   Invite student
                 </Button>
                 <CopyEnrollmentLinkButton courseInstance={courseInstance} />

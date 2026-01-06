@@ -5,11 +5,11 @@ import type { JSX } from 'preact/jsx-runtime';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
-    return <i class="bi bi-sort-up-alt" aria-hidden="true" />;
+    return <i className="bi bi-sort-up-alt" aria-hidden="true" />;
   } else if (sortMethod === 'desc') {
-    return <i class="bi bi-sort-down" aria-hidden="true" />;
+    return <i className="bi bi-sort-down" aria-hidden="true" />;
   } else {
-    return <i class="bi bi-arrow-down-up opacity-75 text-muted" aria-hidden="true" />;
+    return <i className="bi bi-arrow-down-up opacity-75 text-muted" aria-hidden="true" />;
   }
 }
 
@@ -50,7 +50,7 @@ function ResizeHandle<RowDataModel>({
       : header.column.id;
 
   return (
-    <div class="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
+    <div className="py-1 h-100" style={{ position: 'absolute', right: 0, top: 0, width: '4px' }}>
       {/* separator role is focusable, so these jsx-a11y-x rules are false positives.
         https://developer.mozilla.org/en-US/docs/Web/Accessibility/ARIA/Reference/Roles/separator_role#focusable_separator
       */}
@@ -65,7 +65,7 @@ function ResizeHandle<RowDataModel>({
         aria-valuenow={header.getSize()}
         // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
         tabIndex={0}
-        class="h-100"
+        className="h-100"
         style={{
           background: header.column.getIsResizing() ? 'var(--bs-primary)' : 'var(--bs-gray-400)',
           cursor: 'col-resize',
@@ -139,13 +139,13 @@ export function TanstackTableHeaderCell<RowDataModel>({
     <th
       key={header.id}
       data-column-id={header.column.id}
-      class={clsx(isPinned === 'left' && 'bg-light')}
+      className={clsx(isPinned === 'left' && 'bg-light')}
       style={style}
       aria-sort={canSort ? getAriaSort(sortDirection) : undefined}
       role="columnheader"
     >
       <div
-        class={clsx(
+        className={clsx(
           'd-flex align-items-center flex-grow-1',
           isNormalColumn ? 'justify-content-between' : 'justify-content-center',
         )}
@@ -154,7 +154,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
         }}
       >
         <div
-          class={clsx(
+          className={clsx(
             'text-nowrap text-start',
             // e.g. checkboxes
             !isNormalColumn && 'd-flex align-items-center justify-content-center',
@@ -172,16 +172,16 @@ export function TanstackTableHeaderCell<RowDataModel>({
             ? null
             : flexRender(header.column.columnDef.header, header.getContext())}
           {canSort && (
-            <span class="visually-hidden">, {getAriaSort(sortDirection)}, click to sort</span>
+            <span className="visually-hidden">, {getAriaSort(sortDirection)}, click to sort</span>
           )}
         </div>
 
         {(canSort || canFilter) && (
-          <div class="d-flex align-items-center" style={{ flexShrink: 0 }}>
+          <div className="d-flex align-items-center" style={{ flexShrink: 0 }}>
             {canSort && (
               <button
                 type="button"
-                class="btn btn-link text-muted p-0"
+                className="btn btn-link text-muted p-0"
                 aria-label={`Sort ${columnName.toLowerCase()}, current sort is ${getAriaSort(sortDirection)}`}
                 title={`Sort ${columnName.toLowerCase()}`}
                 onClick={header.column.getToggleSortingHandler()}

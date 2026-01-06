@@ -101,7 +101,7 @@ onDocumentReady(() => {
     if (question.open_issue_count > 0) {
       text += IssueBadgeHtml({
         count: question.open_issue_count,
-        class: 'ms-1',
+        className: 'ms-1',
         issueQid: question.qid,
         urlPrefix,
       }).toString();

@@ -95,7 +95,7 @@ export const PERMISSIONS_META = [
 
 function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
   return (
-    <table class="table table-sm border" style={{ tableLayout: 'fixed' }}>
+    <table className="table table-sm border" style={{ tableLayout: 'fixed' }}>
       <thead>
         <tr>
           <th>Permission</th>
@@ -109,7 +109,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
             <td>{permission.label}</td>
             <td>
               {permission.type === 'boolean' ? (
-                <span class={`badge ${permission.value ? 'bg-success' : 'bg-danger'}`}>
+                <span className={`badge ${permission.value ? 'bg-success' : 'bg-danger'}`}>
                   {permission.value ? 'Yes' : 'No'}
                 </span>
               ) : (
@@ -118,7 +118,7 @@ function PermissionsTable({ permissions }: { permissions: PermissionData[] }) {
             </td>
             <td>
               {permission.type === 'boolean' ? (
-                <span class={`badge ${permission.authnValue ? 'bg-success' : 'bg-danger'}`}>
+                <span className={`badge ${permission.authnValue ? 'bg-success' : 'bg-danger'}`}>
                   {permission.authnValue ? 'Yes' : 'No'}
                 </span>
               ) : (
@@ -206,12 +206,12 @@ export function AuthzAccessMismatch({
     !authzData.has_course_permission_preview && !authzData.has_course_instance_permission_view;
 
   return (
-    <main id="content" class="container">
-      <div class="card mb-4">
-        <div class="card-header bg-danger text-white">
+    <main id="content" className="container">
+      <div className="card mb-4">
+        <div className="card-header bg-danger text-white">
           <h1>Effective user has insufficient access</h1>
         </div>
-        <div class="card-body">
+        <div className="card-body">
           <p>{errorExplanation ?? getErrorExplanation(oneOfPermissionKeys)}</p>
           {hasEffectiveUser ? (
             <p>
@@ -231,18 +231,18 @@ export function AuthzAccessMismatch({
             </p>
           )}
 
-          <details class="mb-3">
-            <summary class="mb-1">View missing permissions</summary>
+          <details className="mb-3">
+            <summary className="mb-1">View missing permissions</summary>
             <PermissionsTable permissions={oneOfPermissions} />
             {otherPermissions.length > 0 && (
               <details>
-                <summary class="mb-1">Other permission differences</summary>
+                <summary className="mb-1">Other permission differences</summary>
                 <PermissionsTable permissions={otherPermissions} />
               </details>
             )}
           </details>
 
-          <button type="button" class="btn btn-primary" onClick={clearEffectiveUserCookies}>
+          <button type="button" className="btn btn-primary" onClick={clearEffectiveUserCookies}>
             Clear effective {hasEffectiveUser ? 'user' : 'role'}
           </button>
         </div>

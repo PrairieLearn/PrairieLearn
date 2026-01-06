@@ -47,7 +47,7 @@ const sideNavPagesTabs = {
         ProgressCircle({
           value: navbarCompleteGettingStartedTasksCount,
           maxValue: navbarTotalGettingStartedTasksCount,
-          class: 'ms-auto',
+          className: 'ms-auto',
         }),
       renderCondition: ({ authz_data, course }) =>
         authz_data.has_course_permission_edit && course.show_getting_started,
@@ -74,7 +74,7 @@ const sideNavPagesTabs = {
       iconClasses: 'fas fa-bug',
       tabLabel: 'Issues',
       htmlSuffix: ({ navbarOpenIssueCount }) =>
-        IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true, class: 'ms-auto' }),
+        IssueBadgeHtml({ count: navbarOpenIssueCount, suppressLink: true, className: 'ms-auto' }),
     },
     {
       activePages: ['course_admin'],

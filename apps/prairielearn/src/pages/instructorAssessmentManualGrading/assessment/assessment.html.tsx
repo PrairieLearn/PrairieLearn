@@ -86,38 +86,38 @@ export function ManualGradingAssessment({
             </form>
           </>
         )}
-        <div class="card mb-4">
-          <div class="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2">
+        <div className="card mb-4">
+          <div className="card-header bg-primary text-white align-items-center justify-content-between d-flex gap-2">
             <h1>
               {resLocals.assessment_set.name} {resLocals.assessment.number}: Manual Grading Queue
             </h1>
             {adminFeaturesEnabled && questions.length > 0 && (
-              <div class="d-flex align-items-center gap-2">
+              <div className="d-flex align-items-center gap-2">
                 <button
                   type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
+                  className="btn btn-sm btn-light grading-tag-button"
                   name="export-ai-grading-statistics"
                   aria-label="Export AI grading statistics"
                   // @ts-expect-error -- We don't want to hydrate this part of the DOM
                   onclick="$('#export-ai-grading-statistics').submit();"
                 >
-                  <i class="bi bi-download" aria-hidden="true" />
+                  <i className="bi bi-download" aria-hidden="true" />
                   Export AI grading statistics
                 </button>
                 <button
                   type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
+                  className="btn btn-sm btn-light grading-tag-button"
                   name="ai-grade-all-questions"
                   aria-label="AI grade all questions"
                   // @ts-expect-error -- We don't want to hydrate this part of the DOM
                   onclick="$('#ai-grade-all').submit();"
                 >
-                  <i class="bi bi-stars" aria-hidden="true" />
+                  <i className="bi bi-stars" aria-hidden="true" />
                   AI grade all questions
                 </button>
                 <button
                   type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
+                  className="btn btn-sm btn-light grading-tag-button"
                   name="delete-ai-grading-data"
                   aria-label="Delete all AI grading data"
                   data-bs-toggle="tooltip"
@@ -131,10 +131,10 @@ export function ManualGradingAssessment({
             )}
           </div>
 
-          <div class="table-responsive">
+          <div className="table-responsive">
             <table
               id="instanceQuestionGradingTable"
-              class="table table-sm table-hover"
+              className="table table-sm table-hover"
               aria-label="Questions for manual grading"
             >
               <thead>
@@ -184,7 +184,7 @@ function AssessmentQuestionRow({
 
   return (
     <tr>
-      <td class="align-middle">
+      <td className="align-middle">
         <a href={gradingUrl}>
           {question.alternative_group_number}.
           {question.alternative_group_size === 1 ? '' : `${question.number_in_alternative_group}.`}{' '}
@@ -195,16 +195,16 @@ function AssessmentQuestionRow({
           // eslint-disable-next-line jsx-a11y-x/anchor-is-valid
           <a
             href="#"
-            class="ms-2 text-info"
+            className="ms-2 text-info"
             data-bs-toggle="tooltip"
             data-bs-title="This question uses a rubric"
           >
-            <i class="fas fa-list-check" />
+            <i className="fas fa-list-check" />
           </a>
         )}
       </td>
-      <td class="align-middle">{question.qid}</td>
-      <td class="text-center align-middle">
+      <td className="align-middle">{question.qid}</td>
+      <td className="text-center align-middle">
         {question.max_auto_points
           ? resLocals.assessment.type === 'Exam'
             ? (question.points_list || [question.max_manual_points ?? 0])
@@ -213,50 +213,50 @@ function AssessmentQuestionRow({
             : (question.init_points ?? 0) - (question.max_manual_points ?? 0)
           : '—'}
       </td>
-      <td class="text-center align-middle">{question.max_manual_points || '—'}</td>
-      <td class="text-center align-middle" data-testid="iq-to-grade-count">
+      <td className="text-center align-middle">{question.max_manual_points || '—'}</td>
+      <td className="text-center align-middle" data-testid="iq-to-grade-count">
         {question.num_instance_questions_to_grade} / {question.num_instance_questions}
       </td>
-      <td class="align-middle">
+      <td className="align-middle">
         <ProgressBar
           partial={question.num_instance_questions_to_grade}
           total={question.num_instance_questions}
         />
       </td>
-      <td class="align-middle">
+      <td className="align-middle">
         {question.num_instance_questions_assigned > 0 && (
           <>
-            <strong class="bg-warning rounded px-1">{currentUserName}</strong>
+            <strong className="bg-warning rounded px-1">{currentUserName}</strong>
             {otherAssignedGraders.length > 0 && ', '}
           </>
         )}
         {otherAssignedGraders.join(', ')}
         {question.num_instance_questions_unassigned > 0 && (
           <>
-            <small class="text-muted">
+            <small className="text-muted">
               ({question.num_instance_questions_unassigned} unassigned)
             </small>
             {resLocals.authz_data.has_course_instance_permission_edit && (
               <button
                 type="button"
-                class="btn btn-sm btn-ghost"
+                className="btn btn-sm btn-ghost"
                 data-bs-toggle="modal"
                 data-bs-target="#grader-assignment-modal"
                 data-assessment-question-id={question.id}
                 aria-label="Assign to graders"
               >
-                <i class="fas fa-pencil" />
+                <i className="fas fa-pencil" />
               </button>
             )}
           </>
         )}
       </td>
-      <td class="align-middle">
+      <td className="align-middle">
         {(question.actual_graders || []).map((u) => u.name ?? u.uid).join(', ')}
       </td>
-      <td class="align-middle">
+      <td className="align-middle">
         {showGradingButton && (
-          <a class="btn btn-xs btn-primary" href={`${gradingUrl}/next_ungraded`}>
+          <a className="btn btn-xs btn-primary" href={`${gradingUrl}/next_ungraded`}>
             Grade next submission
           </a>
         )}
@@ -269,9 +269,9 @@ function ProgressBar({ partial, total }: { partial: number | null; total: number
   if (total == null || total <= 0) return null;
   const progress = Math.floor(100 * (1 - (partial ?? 0) / total));
   return (
-    <div class="progress border" style={{ minWidth: '4em', maxWidth: '10em' }}>
-      <div class="progress-bar bg-light" style={{ width: `${progress}%` }} />
-      <div class="progress-bar bg-danger" style={{ width: `${100 - progress}%` }} />
+    <div className="progress border" style={{ minWidth: '4em', maxWidth: '10em' }}>
+      <div className="progress-bar bg-light" style={{ width: `${progress}%` }} />
+      <div className="progress-bar bg-danger" style={{ width: `${100 - progress}%` }} />
     </div>
   );
 }
@@ -291,20 +291,20 @@ function GraderAssignmentModal({
         <>
           <p>Assign instances to the following graders:</p>
           {courseStaff.map((staff) => (
-            <div key={staff.id} class="form-check">
+            <div key={staff.id} className="form-check">
               <input
                 type="checkbox"
                 id={`grader-assignment-${staff.id}`}
                 name="assigned_grader"
                 value={staff.id}
-                class="form-check-input"
+                className="form-check-input"
               />
-              <label class="form-check-label" for={`grader-assignment-${staff.id}`}>
+              <label className="form-check-label" for={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>
           ))}
-          <div class="mt-3 mb-0 small alert alert-info">
+          <div className="mt-3 mb-0 small alert alert-info">
             Only instances that require grading and are not yet assigned to a grader will be
             affected. If more than one grader is selected, the instances will be randomly split
             between the graders.
@@ -322,10 +322,10 @@ function GraderAssignmentModal({
         <input type="hidden" name="unsafe_assessment_question_id" value="" />
         <input type="hidden" name="__csrf_token" value={csrfToken} />
         <input type="hidden" name="__action" value="assign_graders" />
-        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+        <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary" disabled={courseStaff.length === 0}>
+        <button type="submit" className="btn btn-primary" disabled={courseStaff.length === 0}>
           Assign
         </button>
       </>,
