@@ -335,8 +335,8 @@ export function EnrollmentCodeForm({
           </div>
         )}
         <div class="form-text">
-          If you don't have a code, ask your instructor for the enrollment code or link to the
-          course.
+          Don't have an enrollment code? Your instructor may have given you a link to your course or
+          asked you to access it from another learning management system.
         </div>
         {showHelp && (
           <div class="form-text mt-2">
