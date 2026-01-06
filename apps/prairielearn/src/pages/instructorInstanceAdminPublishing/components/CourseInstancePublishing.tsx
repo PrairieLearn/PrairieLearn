@@ -90,6 +90,7 @@ export function CourseInstancePublishing({
               canEdit={canEditPublishing}
               originalStartDate={courseInstance.publishing_start_date}
               originalEndDate={courseInstance.publishing_end_date}
+              formId="course-instance-publishing"
             />
           </FormProvider>
         </form>
