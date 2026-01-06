@@ -2,16 +2,18 @@ import type { Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { features } from '../../lib/features/index.js';
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
-import {
-  selectCourseInstanceById,
-  updateCourseInstanceModernPublishing,
-} from '../../models/course-instances.js';
+import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseByShortName } from '../../models/course.js';
 import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
-import { syncCourse } from '../helperCourse.js';
-import { getOrCreateUser } from '../utils/auth.js';
+import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
+
+async function syncAllCourses(page: Page) {
+  await page.goto('/pl/loadFromDisk');
+  await expect(page).toHaveURL(/\/jobSequence\//);
+  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
+}
 
 /**
  * Waits for the job sequence page to show completion and checks for expected text in the job output.
@@ -30,38 +32,45 @@ async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
   }
 }
 
-interface TestUser {
-  uid: string;
-  name: string;
-}
-
 // Test users for various scenarios
-const VALID_STUDENT: TestUser = { uid: 'valid_student@test.com', name: 'Valid Student' };
-const VALID_STUDENT_2: TestUser = { uid: 'valid_student2@test.com', name: 'Valid Student 2' };
-const VALID_STUDENT_3: TestUser = { uid: 'valid_student3@test.com', name: 'Valid Student 3' };
-const ENROLLED_STUDENT: TestUser = { uid: 'enrolled_student@test.com', name: 'Enrolled Student' };
-const INVITED_STUDENT: TestUser = { uid: 'invited_student@test.com', name: 'Invited Student' };
+const VALID_STUDENT: AuthUser = { uid: 'valid_student@test.com', uin: null, name: 'Valid Student' };
+const VALID_STUDENT_2: AuthUser = {
+  uid: 'valid_student2@test.com',
+  uin: null,
+  name: 'Valid Student 2',
+};
+const VALID_STUDENT_3: AuthUser = {
+  uid: 'valid_student3@test.com',
+  uin: null,
+  name: 'Valid Student 3',
+};
+const ENROLLED_STUDENT: AuthUser = {
+  uid: 'enrolled_student@test.com',
+  uin: null,
+  name: 'Enrolled Student',
+};
+const INVITED_STUDENT: AuthUser = {
+  uid: 'invited_student@test.com',
+  uin: null,
+  name: 'Invited Student',
+};
+
+let studentsPageUrl: string;
 
 /**
  * Creates test users and sets up the database for testing bulk invitations.
  */
 async function createTestData() {
-  const courseInstance = await selectCourseInstanceById('1');
-
-  // Enable modern publishing for the course instance
-  await updateCourseInstanceModernPublishing({
-    courseInstanceId: courseInstance.id,
-    modernPublishing: true,
-    authzData: dangerousFullSystemAuthz(),
-    requiredRole: ['System'],
-  });
+  const course = await selectCourseByShortName('QA 101');
+  const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
+  studentsPageUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`;
 
   // Enable the enrollment-management feature flag
   await features.enable('enrollment-management', { institution_id: '1' });
 
   // Create valid students (not enrolled)
   for (const student of [VALID_STUDENT, VALID_STUDENT_2, VALID_STUDENT_3]) {
-    await getOrCreateUser({ uid: student.uid, name: student.name, uin: null });
+    await getOrCreateUser(student);
   }
 
   // Create an already enrolled student
@@ -70,6 +79,7 @@ async function createTestData() {
     name: ENROLLED_STUDENT.name,
     uin: null,
   });
+
   await ensureUncheckedEnrollment({
     userId: enrolledUser.id,
     courseInstance,
@@ -88,13 +98,15 @@ async function createTestData() {
 }
 
 test.describe('Bulk invite students', () => {
-  test.beforeAll(async () => {
-    await syncCourse(EXAMPLE_COURSE_PATH);
+  test.beforeAll(async ({ browser, workerPort }) => {
+    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
+    await syncAllCourses(page);
+    await page.close();
     await createTestData();
   });
 
   test('can invite a single valid student', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+    await page.goto(studentsPageUrl);
     await expect(page).toHaveTitle(/Students/);
 
     // Click the invite button
@@ -120,7 +132,7 @@ test.describe('Bulk invite students', () => {
   });
 
   test('can invite multiple valid students', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+    await page.goto(studentsPageUrl);
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -144,7 +156,7 @@ test.describe('Bulk invite students', () => {
     // Create a fresh valid student for this test
     await getOrCreateUser({ uid: 'fresh_student@test.com', name: 'Fresh Student', uin: null });
 
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+    await page.goto(studentsPageUrl);
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -166,7 +178,7 @@ test.describe('Bulk invite students', () => {
   });
 
   test('shows error for invalid email format', async ({ page }) => {
-    await page.goto('/pl/course_instance/1/instructor/instance_admin/students');
+    await page.goto(studentsPageUrl);
 
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
