@@ -18,6 +18,7 @@ import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
+import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 
 import { InstructorCourseAdminInstances } from './InstructorCourseAdminInstances.html.js';
 import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
@@ -129,6 +130,7 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        course_instance_permission,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -137,6 +139,9 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
+          course_instance_permission: z
+            .enum(['None', 'Student Data Viewer', 'Student Data Editor'])
+            .optional(),
         })
         .parse(req.body);
 
@@ -245,6 +250,27 @@ router.post(
         uuid: editor.uuid,
         course,
       });
+
+      // Assign course instance permissions if a non-None permission was selected.
+      // This requires the user to have a course_permissions record; administrators
+      // may not have one (they have access via their admin role instead).
+      if (course_instance_permission && course_instance_permission !== 'None') {
+        try {
+          await insertCourseInstancePermissions({
+            course_id: course.id,
+            course_instance_id: courseInstance.id,
+            user_id: res.locals.authn_user.user_id,
+            course_instance_role: course_instance_permission,
+            authn_user_id: res.locals.authn_user.user_id,
+          });
+        } catch (err) {
+          // If the user doesn't have course permissions (e.g., they're an admin),
+          // skip adding course instance permissions - they already have access.
+          if (!(err instanceof error.HttpStatusError && err.status === 404)) {
+            throw err;
+          }
+        }
+      }
 
       res.json({ course_instance_id: courseInstance.id });
     } else {

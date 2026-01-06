@@ -4,6 +4,10 @@ import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
+  CourseInstancePermissionsForm,
+  type PermissionsFormValues,
+} from '../../../components/CourseInstancePermissionsForm.js';
+import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
@@ -17,7 +21,10 @@ import {
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
 
-interface CopyFormValues extends PublishingFormValues, SelfEnrollmentFormValues {
+interface CopyFormValues
+  extends PublishingFormValues,
+    SelfEnrollmentFormValues,
+    PermissionsFormValues {
   short_name: string;
   long_name: string;
 }
@@ -45,6 +52,7 @@ export function CopyCourseInstanceModal({
       end_date: '',
       self_enrollment_enabled: courseInstance.self_enrollment_enabled,
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+      course_instance_permission: 'Student Data Editor',
     },
     mode: 'onSubmit',
   });
@@ -67,6 +75,7 @@ export function CopyCourseInstanceModal({
         end_date: data.end_date,
         self_enrollment_enabled: data.self_enrollment_enabled,
         self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
+        course_instance_permission: data.course_instance_permission,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -214,6 +223,15 @@ export function CopyCourseInstanceModal({
                 <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
               </>
             )}
+
+            <hr />
+
+            <h3 className="h5">Course instance permissions</h3>
+            <p className="text-muted small">
+              Choose your initial permissions for this course instance. This can be changed later.
+            </p>
+
+            <CourseInstancePermissionsForm formId="copy-course-instance" />
           </Modal.Body>
 
           <Modal.Footer>

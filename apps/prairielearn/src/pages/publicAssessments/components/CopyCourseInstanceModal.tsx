@@ -4,6 +4,10 @@ import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
 
 import {
+  CourseInstancePermissionsForm,
+  type PermissionsFormValues,
+} from '../../../components/CourseInstancePermissionsForm.js';
+import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
@@ -55,13 +59,17 @@ export function CopyCourseInstanceModal({
   // Find the selected course data
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
-  interface CopyFormValues extends PublishingFormValues, SelfEnrollmentFormValues {}
+  interface CopyFormValues
+    extends PublishingFormValues,
+      SelfEnrollmentFormValues,
+      PermissionsFormValues {}
 
   const defaultValues: CopyFormValues = {
     start_date: '',
     end_date: '',
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    course_instance_permission: 'Student Data Editor',
   };
 
   const methods = useForm<CopyFormValues>({
@@ -169,6 +177,15 @@ export function CopyCourseInstanceModal({
                     <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
                   </>
                 )}
+
+                <hr />
+
+                <h3 className="h5">Course instance permissions</h3>
+                <p className="text-muted small">
+                  Choose your initial permissions for this course instance. This can be changed
+                  later.
+                </p>
+                <CourseInstancePermissionsForm formId="copy-course-instance" />
               </FormProvider>
             </Modal.Body>
 
