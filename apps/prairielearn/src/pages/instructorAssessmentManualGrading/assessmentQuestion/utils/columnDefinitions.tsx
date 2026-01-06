@@ -7,7 +7,9 @@ import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
+import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
@@ -26,10 +28,12 @@ interface CreateColumnsParams {
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement> | null;
+  displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
 
 export type ColumnId =
   | 'select'
+  | 'ai_grading_status'
   | 'index'
   | 'instance_question_group_name'
   | 'user_or_group_name'
@@ -47,6 +51,7 @@ export type ColumnId =
 export function createColumns({
   aiGradingMode,
   instanceQuestionGroups,
+  displayedStatuses,
   assessment,
   assessmentQuestion,
   hasCourseInstancePermissionEdit,
@@ -229,7 +234,16 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
-      cell: (info) => (info.getValue() ? 'Requires grading' : 'Graded'),
+      cell: (info) => {
+        return (
+          <GradingStatusCell
+            aiGradingMode={aiGradingMode}
+            instanceQuestionId={info.row.original.instance_question.id}
+            requiresGrading={info.getValue()}
+            displayedStatuses={displayedStatuses}
+          />
+        );
+      },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const requiresGrading = getValue(columnId);

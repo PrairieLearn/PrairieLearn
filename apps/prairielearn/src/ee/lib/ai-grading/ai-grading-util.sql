@@ -9,7 +9,10 @@ WHERE
 
 -- BLOCK select_instance_questions_for_assessment_question
 SELECT
-  iq.*
+  iq.*,
+  -- Pseudo-random deterministic stable order of instance questions identical
+  -- to that used in the instructor assessment question manual grading page.
+  ((iq.id % 21317) * 45989) % 3767 AS iq_stable_order
 FROM
   instance_questions AS iq
   JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
@@ -26,7 +29,14 @@ WHERE
       iq.ai_instance_question_group_id IS NULL
       AND iq.manual_instance_question_group_id IS NULL
     )
-  );
+  )
+ORDER BY
+  -- Sorting by iq_stable_order makes AI grading look more organized by 
+  -- ensuring the submissions are graded in the same order they are 
+  -- presented to the instructor (if the instructor didn't apply a custom
+  -- filter or sort).
+  iq_stable_order,
+  iq.id;
 
 -- BLOCK insert_ai_grading_job
 INSERT INTO
