@@ -12,7 +12,6 @@ import {
   getSortedRowModel,
   useReactTable,
 } from '@tanstack/react-table';
-import clsx from 'clsx';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'preact/compat';
 import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
@@ -254,17 +253,15 @@ function StudentsCard({
   };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
-    const body = new URLSearchParams({
+    const body = {
       __action: 'invite_uids',
       __csrf_token: csrfToken,
       uids: uids.join(','),
-    });
+    };
     const res = await fetch(window.location.href, {
       method: 'POST',
-      body,
-      headers: {
-        Accept: 'application/json',
-      },
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
     });
     const json = await res.json();
     if (!res.ok) {
@@ -505,9 +502,9 @@ function StudentsCard({
                     )}
                     {courseInstance.modern_publishing && (
                       <Button
-                        variant={clsx(
-                          courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary',
-                        )}
+                        variant={
+                          courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary'
+                        }
                         onClick={() => setShowInvite(true)}
                       >
                         <i class="bi bi-person-plus me-2" aria-hidden="true" />

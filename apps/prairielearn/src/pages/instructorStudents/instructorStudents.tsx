@@ -95,9 +95,9 @@ router.post(
 
     const { course_instance: courseInstance, course, authz_data: authzData } = pageContext;
     const {
-      authn_user: { user_id: authnUserId },
-      user: { user_id: userId },
-    } = res.locals;
+      authn_user: { id: authnUserId },
+      user: { id: userId },
+    } = authzData;
 
     if (!courseInstance.modern_publishing) {
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
