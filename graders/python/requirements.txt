@@ -5,7 +5,7 @@ colormath==3.0.0
 defusedxml==0.7.1
 Faker==40.1.0
 folium==0.20.0
-ipython==8.37.0
+ipython==9.8.0
 matplotlib==3.10.8
 nbconvert==7.16.6
 nbformat==5.10.4
