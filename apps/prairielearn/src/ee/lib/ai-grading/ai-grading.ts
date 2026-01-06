@@ -42,7 +42,7 @@ import {
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastVariantAndSubmission
+  selectLastVariantAndSubmission,
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -302,13 +302,20 @@ export async function aiGrade({
           providerOptions: {
             openai: openaiProviderOptions,
           },
-          experimental_repairText: async (options: {text: string, error: JSONParseError | TypeValidationError}) => {
+          experimental_repairText: async (options: {
+            text: string;
+            error: JSONParseError | TypeValidationError;
+          }) => {
             if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
               return null;
             }
-            const correctedText = correctGeminiMalformedRubricGradingJson(options.text);
-            return correctedText;
-          }
+            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
+            // malformed output from the model.
+
+            // TODO: Remove this temporary fix once Google fixes the underlying issue.
+
+            return correctGeminiMalformedRubricGradingJson(options.text);
+          },
         });
 
         logResponseUsage({ response, logger });
