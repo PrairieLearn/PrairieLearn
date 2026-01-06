@@ -13,8 +13,7 @@ This is a monorepo that contains both applications (in `apps/*`) and libraries (
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset.
-Create a changeset using `yarn changeset`.
+Libraries live in `packages/`. If you update a package, you MUST add a changeset using `yarn changeset`.
 
 ## Building and type checking
 
