@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type GenerateObjectResult, generateObject } from 'ai';
+import { type JSONParseError, type TypeValidationError, type GenerateObjectResult, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -39,6 +39,7 @@ import {
   containsImageCapture,
   correctImagesOrientation,
   extractSubmissionImages,
+  correctGeminiMalformedRubricGradingJson,
   generatePrompt,
   insertAiGradingJob,
   insertAiGradingJobWithRotationCorrection,
@@ -306,6 +307,10 @@ export async function aiGrade({
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
+          // rubric_items must be the last property in the schema.
+          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
+          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
+          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 

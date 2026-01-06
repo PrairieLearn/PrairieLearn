@@ -260,6 +260,7 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   hide_in_enroll_page: true,
   id: true,
   long_name: true,
+  modern_publishing: true,
   publishing_end_date: true,
   publishing_start_date: true,
   short_name: true,
@@ -268,11 +269,13 @@ export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
-export const RawPublicCourseInstanceSchema = RawStudentCourseInstanceSchema.pick({
+export const RawPublicCourseInstanceSchema = RawStaffCourseInstanceSchema.pick({
   assessments_group_by: true,
   display_timezone: true,
   id: true,
   long_name: true,
+  self_enrollment_enabled: true,
+  self_enrollment_use_enrollment_code: true,
   short_name: true,
 });
 export const PublicCourseInstanceSchema =
