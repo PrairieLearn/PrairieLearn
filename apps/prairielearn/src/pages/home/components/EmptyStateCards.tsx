@@ -1,4 +1,4 @@
-import { useState } from 'preact/compat';
+import { parseAsBoolean, useQueryState } from 'nuqs';
 
 import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 
@@ -9,7 +9,7 @@ export function EmptyStateCards({
   urlPrefix: string;
   enrollmentManagementEnabled: boolean;
 }) {
-  const [show, setShow] = useState(false);
+  const [show, setShow] = useQueryState('enroll', parseAsBoolean.withDefault(false));
 
   return (
     <>

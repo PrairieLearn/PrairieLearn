@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
+import { NuqsAdapter } from '@prairielearn/ui';
 
 import {
   RawStudentCourseInstanceSchema,
@@ -52,6 +53,7 @@ export function Home({
   urlPrefix,
   isDevMode,
   enrollmentManagementEnabled,
+  search,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -61,6 +63,7 @@ export function Home({
   urlPrefix: string;
   isDevMode: boolean;
   enrollmentManagementEnabled: boolean;
+  search: string;
 }) {
   const listedStudentCourses = studentCourses.filter(
     (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
@@ -77,23 +80,27 @@ export function Home({
         <>
           <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
           <Hydrate>
-            <StudentCoursesCard
-              studentCourses={listedStudentCourses}
-              hasInstructorCourses={instructorCourses.length > 0}
-              canAddCourses={canAddCourses}
-              csrfToken={csrfToken}
-              urlPrefix={urlPrefix}
-              isDevMode={isDevMode}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
-            />
+            <NuqsAdapter search={search}>
+              <StudentCoursesCard
+                studentCourses={listedStudentCourses}
+                hasInstructorCourses={instructorCourses.length > 0}
+                canAddCourses={canAddCourses}
+                csrfToken={csrfToken}
+                urlPrefix={urlPrefix}
+                isDevMode={isDevMode}
+                enrollmentManagementEnabled={enrollmentManagementEnabled}
+              />
+            </NuqsAdapter>
           </Hydrate>
         </>
       ) : (
         <Hydrate>
-          <EmptyStateCards
-            urlPrefix={urlPrefix}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
-          />
+          <NuqsAdapter search={search}>
+            <EmptyStateCards
+              urlPrefix={urlPrefix}
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+            />
+          </NuqsAdapter>
         </Hydrate>
       )}
     </div>

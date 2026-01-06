@@ -1,3 +1,4 @@
+import { parseAsBoolean, useQueryState } from 'nuqs';
 import { useState } from 'preact/hooks';
 import { Modal } from 'react-bootstrap';
 import z from 'zod';
@@ -45,7 +46,10 @@ export function StudentCoursesCard({
     (ci) => ci.enrollment.status === 'joined',
   );
 
-  const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useState(false);
+  const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useQueryState(
+    'enroll',
+    parseAsBoolean.withDefault(false),
+  );
 
   return (
     <div className="card mb-4">
