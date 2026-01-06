@@ -100,9 +100,9 @@ export interface AssessmentQuestionTableProps {
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
   return (
-    <div class="d-flex justify-content-between align-items-center w-100">
+    <div className="d-flex justify-content-between align-items-center w-100">
       <span>{text}</span>
-      <span class="badge bg-secondary ms-2">{numToGrade}</span>
+      <span className="badge bg-secondary ms-2">{numToGrade}</span>
     </div>
   );
 }
@@ -131,11 +131,11 @@ function AiGradingOption({
 
   return (
     <Dropdown drop="end">
-      <Dropdown.Toggle class={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
+      <Dropdown.Toggle className={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        <p class="my-0 text-muted px-3">AI grader model</p>
+        <p className="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
         {AI_GRADING_MODELS.map((model) => (
           <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
@@ -626,7 +626,7 @@ export function AssessmentQuestionTable({
 
   return (
     <>
-      <div class="mb-3">
+      <div className="mb-3">
         <RubricSettings
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
@@ -659,7 +659,7 @@ export function AssessmentQuestionTable({
       {batchActionMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => batchActionMutation.reset()}
         >
@@ -669,7 +669,7 @@ export function AssessmentQuestionTable({
       {deleteAiGradingJobsMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGradingJobsMutation.reset()}
         >
@@ -679,7 +679,7 @@ export function AssessmentQuestionTable({
       {deleteAiGroupingsMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGroupingsMutation.reset()}
         >
@@ -689,7 +689,7 @@ export function AssessmentQuestionTable({
       {deleteAiGradingJobsMutation.isSuccess && (
         <Alert
           variant="success"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGradingJobsMutation.reset()}
         >
@@ -700,7 +700,7 @@ export function AssessmentQuestionTable({
       {deleteAiGroupingsMutation.isSuccess && (
         <Alert
           variant="success"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGroupingsMutation.reset()}
         >
@@ -711,7 +711,7 @@ export function AssessmentQuestionTable({
       {isInstanceQuestionsError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => {
             void queryClientInstance.refetchQueries({ queryKey: ['instance-questions'] });
@@ -726,16 +726,16 @@ export function AssessmentQuestionTable({
         style={{ height: '90vh' }}
         columnManager={{
           topContent: (
-            <div class="px-2 py-1 d-flex align-items-center">
-              <label class="form-check text-nowrap d-flex align-items-stretch">
+            <div className="px-2 py-1 d-flex align-items-center">
+              <label className="form-check text-nowrap d-flex align-items-stretch">
                 <input
                   type="checkbox"
                   checked={studentInfoCheckboxState === 'checked'}
                   indeterminate={studentInfoCheckboxState === 'indeterminate'}
-                  class="form-check-input"
+                  className="form-check-input"
                   onChange={handleStudentInfoCheckboxClick}
                 />
-                <span class="form-check-label ms-2">Show student info</span>
+                <span className="form-check-label ms-2">Show student info</span>
               </label>
             </div>
           ),
@@ -754,7 +754,7 @@ export function AssessmentQuestionTable({
               <>
                 <Dropdown>
                   <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" />
+                    <i className="bi bi-stars" aria-hidden="true" />
                     <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
@@ -832,8 +832,8 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">AI submission grouping</span>
+                    <i className="bi bi-stars" aria-hidden="true" />
+                    <span className="d-none d-sm-inline">AI submission grouping</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
@@ -842,21 +842,23 @@ export function AssessmentQuestionTable({
                         onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
                       }
                     >
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group selected submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
+                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group all submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group ungrouped submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.ungrouped}</span>
+                        <span className="badge bg-secondary ms-2">
+                          {aiGroupingCounts.ungrouped}
+                        </span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -869,11 +871,11 @@ export function AssessmentQuestionTable({
             ) : (
               <Dropdown>
                 <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i class="fas fa-tags" aria-hidden="true" />{' '}
-                  <span class="d-none d-sm-inline">Tag for grading</span>
+                  <i className="fas fa-tags" aria-hidden="true" />{' '}
+                  <span className="d-none d-sm-inline">Tag for grading</span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu align="end">
-                  <Dropdown.Header class="d-flex align-items-center gap-1">
+                  <Dropdown.Header className="d-flex align-items-center gap-1">
                     Assign for grading
                     <OverlayTrigger
                       tooltip={{
@@ -887,7 +889,7 @@ export function AssessmentQuestionTable({
                       }}
                     >
                       <span>
-                        <i class="fas fa-question-circle text-secondary" />
+                        <i className="fas fa-question-circle text-secondary" />
                       </span>
                     </OverlayTrigger>
                   </Dropdown.Header>
@@ -896,14 +898,15 @@ export function AssessmentQuestionTable({
                       key={grader.id}
                       onClick={() => handleBatchAction({ assigned_grader: grader.id }, selectedIds)}
                     >
-                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid}
+                      )
                     </Dropdown.Item>
                   ))}
                   <Dropdown.Item
                     key="remove-grader-assignment"
                     onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
                   >
-                    <i class="fas fa-user-slash" /> Remove grader assignment
+                    <i className="fas fa-user-slash" /> Remove grader assignment
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item
@@ -912,7 +915,7 @@ export function AssessmentQuestionTable({
                       handleBatchAction({ requires_manual_grading: true }, selectedIds)
                     }
                   >
-                    <i class="fas fa-tag" /> Tag as required grading
+                    <i className="fas fa-tag" /> Tag as required grading
                   </Dropdown.Item>
                   <Dropdown.Item
                     key="tag-as-graded"
@@ -920,7 +923,7 @@ export function AssessmentQuestionTable({
                       handleBatchAction({ requires_manual_grading: false }, selectedIds)
                     }
                   >
-                    <i class="fas fa-check-square" /> Tag as graded
+                    <i className="fas fa-check-square" /> Tag as graded
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
