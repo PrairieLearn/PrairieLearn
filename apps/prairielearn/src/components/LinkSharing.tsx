@@ -132,7 +132,7 @@ export function StudentLinkSharing({
   return (
     <div class="mb-3">
       <label class="form-label" for="student_link">
-        Student Link
+        Student link
       </label>
       <InputGroup>
         <Form.Control type="text" id="student_link" value={studentLink} disabled />
@@ -164,7 +164,7 @@ export function StudentLinkSharing({
           <Button
             size="sm"
             variant="outline-secondary"
-            aria-label="Student Link QR Code"
+            aria-label="Student link QR code"
             onClick={() => setShowQR(true)}
           >
             <i class="bi bi-qr-code-scan" />
@@ -174,7 +174,7 @@ export function StudentLinkSharing({
       <small class="form-text text-muted">{studentLinkMessage}</small>
       <QRCodeModal
         id="studentLinkModal"
-        title="Student Link QR Code"
+        title="Student link QR code"
         content={studentLink}
         show={showQR}
         onHide={() => setShowQR(false)}
@@ -192,7 +192,7 @@ export function StudentLinkSharingHtml({
 }) {
   return html`
     <div class="mb-3">
-      <label class="form-label" for="student_link">Student Link</label>
+      <label class="form-label" for="student_link">Student link</label>
       <span class="input-group">
         <input
           type="text"
@@ -213,7 +213,7 @@ export function StudentLinkSharingHtml({
         <button
           type="button"
           class="btn btn-sm btn-outline-secondary"
-          aria-label="Student Link QR Code"
+          aria-label="Student link QR code"
           data-bs-toggle="modal"
           data-bs-target="#studentLinkModal"
         >
