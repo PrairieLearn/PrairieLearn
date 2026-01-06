@@ -159,13 +159,28 @@ router.post(
       accessType: 'instructor',
     });
 
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
+      course_instance_id: courseInstance.id,
+    });
+
     if (req.body.__action === 'copy_course_instance') {
-      const { short_name, long_name, start_date, end_date } = z
+      const {
+        short_name,
+        long_name,
+        start_date,
+        end_date,
+        self_enrollment_enabled,
+        self_enrollment_use_enrollment_code,
+      } = z
         .object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
+          self_enrollment_enabled: z.boolean(),
+          self_enrollment_use_enrollment_code: z.boolean(),
         })
         .parse(req.body);
 
@@ -224,6 +239,26 @@ router.post(
             }
           : undefined;
 
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        undefined,
+        self_enrollment_enabled,
+        true,
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        undefined,
+        self_enrollment_use_enrollment_code,
+        false,
+      );
+
+      const resolvedSelfEnrollment =
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+        enrollmentManagementEnabled
+          ? {
+              enabled: selfEnrollmentEnabled,
+              useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+            }
+          : undefined;
+
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
@@ -233,6 +268,7 @@ router.post(
         course_instance: updatedCourseInstance,
         metadataOverrides: {
           publishing: resolvedPublishing,
+          selfEnrollment: resolvedSelfEnrollment,
         },
       });
 
@@ -319,7 +355,6 @@ router.post(
         courseInstanceInfo.selfEnrollment?.enabled,
         parsedBody.self_enrollment_enabled,
         true,
-        { isUIBoolean: true },
       );
       const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
         courseInstanceInfo.selfEnrollment?.useEnrollmentCode,
