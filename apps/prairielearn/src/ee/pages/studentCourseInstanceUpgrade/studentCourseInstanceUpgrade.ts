@@ -61,7 +61,7 @@ router.get(
     const planGrants = await getPlanGrantsForPartialContexts({
       institution_id: institution.id,
       course_instance_id: course_instance.id,
-      user_id: user.user_id,
+      user_id: user.id,
     });
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
     const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
@@ -133,7 +133,7 @@ router.post(
       const planGrants = await getPlanGrantsForPartialContexts({
         institution_id: institution.id,
         course_instance_id: course_instance.id,
-        user_id: user.user_id,
+        user_id: user.id,
       });
       const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
       const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
@@ -145,7 +145,7 @@ router.post(
       const urlBase = `${host}/pl/course_instance/${course_instance.id}/upgrade`;
 
       const stripe = getStripeClient();
-      const customerId = await getOrCreateStripeCustomerId(user.user_id, {
+      const customerId = await getOrCreateStripeCustomerId(user.id, {
         name: user.name,
       });
       const metadata = {
@@ -155,7 +155,7 @@ router.post(
         prairielearn_course_name: `${course.short_name}: ${course.title}`,
         prairielearn_course_instance_id: course_instance.id,
         prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
-        prairielearn_user_id: user.user_id,
+        prairielearn_user_id: user.id,
       };
       const session = await stripe.checkout.sessions.create({
         customer: customerId,
@@ -174,11 +174,11 @@ router.post(
       });
 
       await insertStripeCheckoutSessionForUserInCourseInstance({
-        agent_user_id: user.user_id,
+        agent_user_id: user.id,
         stripe_object_id: session.id,
         institution_id: institution.id,
         course_instance_id: course_instance.id,
-        subject_user_id: user.user_id,
+        subject_user_id: user.id,
         data: session,
         plan_names: planNames,
       });
@@ -229,7 +229,7 @@ router.get(
     // could try to replay a session ID from a different course instance or user.
     if (
       localSession.course_instance_id !== course_instance.id ||
-      localSession.agent_user_id !== res.locals.authn_user.user_id
+      localSession.agent_user_id !== res.locals.authn_user.id
     ) {
       throw new error.HttpStatusError(400, 'Invalid session');
     }
@@ -250,9 +250,9 @@ router.get(
                 type: 'stripe',
                 institution_id: institution.id,
                 course_instance_id: course_instance.id,
-                user_id: authn_user.user_id,
+                user_id: authn_user.id,
               },
-              authn_user_id: authn_user.user_id,
+              authn_user_id: authn_user.id,
             });
           }
 

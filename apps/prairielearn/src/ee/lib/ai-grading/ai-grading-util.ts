@@ -1,10 +1,4 @@
-import type {
-  EmbeddingModel,
-  GenerateObjectResult,
-  GenerateTextResult,
-  ModelMessage,
-  UserContent,
-} from 'ai';
+import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
@@ -12,37 +6,28 @@ import {
   callRow,
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
   queryRow,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import {
   AssessmentQuestionSchema,
-  type Course,
   GradingJobSchema,
-  IdSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
-  type Question,
   type RubricItem,
   RubricItemSchema,
   SprocAssessmentInstancesGradeSchema,
   type Submission,
-  type SubmissionGradingContextEmbedding,
-  SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
-import { buildQuestionUrls } from '../../../lib/question-render.js';
-import { getQuestionCourse } from '../../../lib/question-variant.js';
-import * as questionServers from '../../../question-servers/index.js';
-import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
@@ -52,14 +37,6 @@ export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-export const GradedExampleSchema = z.object({
-  submission_text: z.string(),
-  score_perc: z.number(),
-  feedback: z.record(z.string(), z.any()).nullable(),
-  instance_question_id: z.string(),
-  manual_rubric_grading_id: z.string().nullable(),
-});
-export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 /**
  * Models supporting system messages after the first user message.
@@ -78,16 +55,16 @@ export async function generatePrompt({
   questionAnswer,
   submission_text,
   submitted_answer,
-  example_submissions,
   rubric_items,
+  grader_guidelines,
   model_id,
 }: {
   questionPrompt: string;
   questionAnswer: string;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-  example_submissions: GradedExample[];
   rubric_items: RubricItem[];
+  grader_guidelines: string | null;
   model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
@@ -95,6 +72,19 @@ export async function generatePrompt({
   const systemRoleAfterUserMessage = MODELS_SUPPORTING_SYSTEM_MSG_AFTER_USER_MSG.has(model_id)
     ? 'system'
     : 'user';
+
+  const graderGuidelinesMessages = grader_guidelines
+    ? ([
+        {
+          role: systemRoleAfterUserMessage,
+          content: 'The instructor has provided the following grader guidelines:',
+        },
+        {
+          role: 'user',
+          content: grader_guidelines,
+        },
+      ] satisfies ModelMessage[])
+    : [];
 
   // Instructions for grading
   if (rubric_items.length > 0) {
@@ -110,8 +100,12 @@ export async function generatePrompt({
             'You must include an explanation on why you make these choices.',
             'Follow any special instructions given by the instructor in the question.',
           ],
-          'Here are the rubric items:',
         ]),
+      },
+      ...graderGuidelinesMessages,
+      {
+        role: systemRoleAfterUserMessage,
+        content: 'Here are the rubric items:',
       },
       {
         role: 'user',
@@ -130,16 +124,19 @@ export async function generatePrompt({
       },
     );
   } else {
-    input.push({
-      role: 'system',
-      content: formatPrompt([
-        "You are an instructor for a course, and you are grading a student's response to a question.",
-        'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
-        "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
-        'You must include an explanation on why you made these choices.',
-        'Follow any special instructions given by the instructor in the question.',
-      ]),
-    });
+    input.push(
+      {
+        role: 'system',
+        content: formatPrompt([
+          "You are an instructor for a course, and you are grading a student's response to a question.",
+          'You will assign a numeric score between 0 and 100 (inclusive) to the student response,',
+          "Include feedback for the student, but omit the feedback if the student's response is entirely correct.",
+          'You must include an explanation on why you made these choices.',
+          'Follow any special instructions given by the instructor in the question.',
+        ]),
+      },
+      ...graderGuidelinesMessages,
+    );
   }
 
   input.push(
@@ -164,70 +161,6 @@ export async function generatePrompt({
         content: questionAnswer.trim(),
       },
     );
-  }
-
-  if (example_submissions.length > 0) {
-    if (rubric_items.length > 0) {
-      input.push({
-        role: systemRoleAfterUserMessage,
-        content:
-          'Here are some example student responses and their corresponding selected rubric items.',
-      });
-    } else {
-      input.push({
-        role: systemRoleAfterUserMessage,
-        content:
-          'Here are some example student responses and their corresponding scores and feedback.',
-      });
-    }
-
-    // Examples
-    for (const example of example_submissions) {
-      if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
-        // Note that the example may have been graded with a different rubric,
-        // or the rubric may have changed significantly since the example was graded.
-        // We'll show whatever items were selected anyways, since it'll likely
-        // still be useful context to the LLM.
-        const rubric_grading_items = await selectRubricGradingItems(
-          example.manual_rubric_grading_id,
-        );
-        input.push({
-          role: 'user',
-          content: formatPrompt([
-            '<example-submission>',
-            example.submission_text,
-            '</example-submission>',
-            '<selected-rubric-items>',
-            run(() => {
-              if (rubric_grading_items.length === 0) {
-                return 'No rubric items were selected for this example student response.';
-              }
-              return rubric_grading_items.map((item) => `- ${item.description}`).join('\n');
-            }),
-            '</selected-rubric-items>',
-          ]),
-        });
-      } else {
-        input.push({
-          role: 'user',
-          content: formatPrompt([
-            '<example-submission>',
-            example.submission_text,
-            '</example-submission>',
-            '<grading-result>',
-            JSON.stringify(
-              {
-                score: example.score_perc,
-                feedback: example.feedback?.manual?.trim() || '',
-              },
-              null,
-              2,
-            ),
-            '</grading-result>',
-          ]),
-        });
-      }
-    }
   }
 
   input.push(
@@ -356,51 +289,6 @@ export function generateSubmissionMessage({
   };
 }
 
-export async function generateSubmissionEmbedding({
-  course,
-  question,
-  instance_question,
-  urlPrefix,
-  embeddingModel,
-}: {
-  question: Question;
-  course: Course;
-  instance_question: InstanceQuestion;
-  urlPrefix: string;
-  embeddingModel: EmbeddingModel;
-}): Promise<SubmissionGradingContextEmbedding> {
-  const question_course = await getQuestionCourse(question, course);
-  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
-  const locals = {
-    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
-  };
-  const questionModule = questionServers.getModule(question.type);
-  const render_submission_results = await questionModule.render(
-    { question: false, submissions: true, answer: false },
-    variant,
-    question,
-    submission,
-    [submission],
-    question_course,
-    locals,
-  );
-  const submission_text = render_submission_results.data.submissionHtmls[0];
-  const embedding = await createEmbedding(embeddingModel, submission_text, `course_${course.id}`);
-  // Insert new embedding into the table and return the new embedding
-  const new_submission_embedding = await queryRow(
-    sql.create_embedding_for_submission,
-    {
-      embedding: vectorToString(embedding),
-      submission_id: submission.id,
-      submission_text,
-      assessment_question_id: instance_question.assessment_question_id,
-    },
-    SubmissionGradingContextEmbeddingSchema,
-  );
-  return new_submission_embedding;
-}
-
 export function parseAiRubricItems({
   ai_rubric_items,
   rubric_items,
@@ -504,51 +392,8 @@ export async function selectLastVariantAndSubmission(
   );
 }
 
-export async function selectClosestSubmissionInfo({
-  submission_id,
-  assessment_question_id,
-  embedding,
-  limit,
-}: {
-  submission_id: string;
-  assessment_question_id: string;
-  embedding: string;
-  limit: number;
-}): Promise<GradedExample[]> {
-  return await queryRows(
-    sql.select_closest_submission_info,
-    {
-      submission_id,
-      assessment_question_id,
-      embedding,
-      limit,
-    },
-    GradedExampleSchema,
-  );
-}
-
-export async function selectRubricForGrading(
-  assessment_question_id: string,
-): Promise<RubricItem[]> {
-  return await queryRows(
-    sql.select_rubric_for_grading,
-    { assessment_question_id },
-    RubricItemSchema,
-  );
-}
-
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
   return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
-}
-
-export async function selectEmbeddingForSubmission(
-  submission_id: string,
-): Promise<SubmissionGradingContextEmbedding | null> {
-  return await queryOptionalRow(
-    sql.select_embedding_for_submission,
-    { submission_id },
-    SubmissionGradingContextEmbeddingSchema,
-  );
 }
 
 export async function deleteAiGradingJobs({

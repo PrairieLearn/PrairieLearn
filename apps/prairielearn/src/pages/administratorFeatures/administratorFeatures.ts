@@ -4,12 +4,12 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import {
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   InstitutionSchema,
   type User,
 } from '../../lib/db-types.js';
@@ -171,7 +171,7 @@ router.post(
         institution_id: institution?.id ?? null,
         course_id: course?.id ?? null,
         course_instance_id: course_instance?.id ?? null,
-        user_id: user?.user_id ?? null,
+        user_id: user?.id ?? null,
       });
 
       if (params.enabled) {

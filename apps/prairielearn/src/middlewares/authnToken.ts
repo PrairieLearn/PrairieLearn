@@ -6,8 +6,9 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema, UserSchema } from '../lib/db-types.js';
+import { UserSchema } from '../lib/db-types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

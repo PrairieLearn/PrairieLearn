@@ -4,8 +4,9 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
 import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
@@ -62,7 +63,7 @@ export async function updateCourseRequest(req: Request, res: Response) {
 
   await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action,
   });
   res.redirect(req.originalUrl);
@@ -71,7 +72,7 @@ export async function updateCourseRequest(req: Request, res: Response) {
 export async function createCourseFromRequest(req: Request, res: Response) {
   await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action: 'creating',
   });
 

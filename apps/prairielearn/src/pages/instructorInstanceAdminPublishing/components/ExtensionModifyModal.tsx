@@ -8,6 +8,7 @@ import z from 'zod';
 
 import { run } from '@prairielearn/run';
 
+import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { plainDateTimeStringToDate } from '../utils/dateUtils.js';
 
 export type ExtensionModifyModalData =
@@ -19,6 +20,8 @@ interface ExtensionFormValues {
   end_date: string;
   uids: string;
 }
+
+const MAX_UIDS = 1000;
 
 export function ExtensionModifyModal({
   data,
@@ -74,14 +77,12 @@ export function ExtensionModifyModal({
   };
 
   const validateEmails = async (value: string) => {
-    const uids = [
-      ...new Set(
-        value
-          .split(/[\n,\s]+/)
-          .map((uid) => uid.trim())
-          .filter((uid) => uid.length > 0),
-      ),
-    ];
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value, MAX_UIDS);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Failed to parse UIDs';
+    }
 
     if (uids.length === 0) {
       return 'At least one UID is required';
@@ -157,7 +158,7 @@ export function ExtensionModifyModal({
         </Modal.Header>
         <Modal.Body>
           <p>The following UIDs are not enrolled in this course instance:</p>
-          <div class="mb-3 p-3 bg-light border rounded">
+          <div className="mb-3 p-3 bg-light border rounded">
             {stage.unenrolledUids.map((uid) => (
               <div key={uid}>{uid}</div>
             ))}
@@ -170,7 +171,7 @@ export function ExtensionModifyModal({
         <Modal.Footer>
           <button
             type="button"
-            class="btn btn-outline-secondary"
+            className="btn btn-outline-secondary"
             disabled={saveMutation.isPending}
             onClick={() => setStage({ type: 'editing' })}
           >
@@ -178,7 +179,7 @@ export function ExtensionModifyModal({
           </button>
           <button
             type="button"
-            class="btn btn-warning"
+            className="btn btn-warning"
             disabled={saveMutation.isPending}
             onClick={handleSubmit((data, event) => {
               event?.preventDefault();
@@ -208,20 +209,20 @@ export function ExtensionModifyModal({
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
-          <div class="mb-3">
-            <label class="form-label" for="ext-name">
+          <div className="mb-3">
+            <label className="form-label" for="ext-name">
               Extension name (optional)
             </label>
-            <input id="ext-name" type="text" class="form-control" {...register('name')} />
+            <input id="ext-name" type="text" className="form-control" {...register('name')} />
           </div>
-          <div class="mb-3">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-              <label class="form-label" for="ext-date">
+          <div className="mb-3">
+            <div className="d-flex justify-content-between align-items-center mb-2">
+              <label className="form-label" for="ext-date">
                 End date
               </label>
               <button
                 type="button"
-                class={clsx('btn btn-outline-primary btn-sm', !currentEndDate && 'disabled')}
+                className={clsx('btn btn-outline-primary btn-sm', !currentEndDate && 'disabled')}
                 onClick={handleAddWeek}
               >
                 +1 week
@@ -231,7 +232,7 @@ export function ExtensionModifyModal({
               id="ext-date"
               type="datetime-local"
               step="1"
-              class="form-control"
+              className="form-control"
               {...register('end_date', {
                 required: 'End date is required',
                 validate: (value) => {
@@ -247,22 +248,22 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.end_date && (
-              <div class="text-danger small">{String(errors.end_date.message)}</div>
+              <div className="text-danger small">{String(errors.end_date.message)}</div>
             )}
-            <small class="form-text">Current course end date: {currentUnpublishText}</small>
+            <small className="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error.message}
             </Alert>
           )}
-          <div class="mb-0">
-            <label class="form-label" for="ext-uids">
+          <div className="mb-0">
+            <label className="form-label" for="ext-uids">
               UIDs
             </label>
             <textarea
               id="ext-uids"
-              class="form-control"
+              className="form-control"
               aria-describedby="ext-uids-help"
               rows={5}
               {...register('uids', {
@@ -270,9 +271,9 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div class="text-danger small">{String(errors.uids.message)}</div>
+              <div className="text-danger small">{String(errors.uids.message)}</div>
             )}
-            <small id="ext-uids-help" class="form-text">
+            <small id="ext-uids-help" className="form-text">
               Enter UIDs separated by commas, whitespace, or new lines.
             </small>
           </div>
@@ -280,7 +281,7 @@ export function ExtensionModifyModal({
         <Modal.Footer>
           <button
             type="button"
-            class="btn btn-outline-secondary"
+            className="btn btn-outline-secondary"
             disabled={saveMutation.isPending}
             onClick={() => {
               setStage({ type: 'editing' });
@@ -290,7 +291,7 @@ export function ExtensionModifyModal({
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={saveMutation.isPending}>
+          <button type="submit" className="btn btn-primary" disabled={saveMutation.isPending}>
             {saveMutation.isPending ? 'Saving...' : 'Save'}
           </button>
         </Modal.Footer>

@@ -9,10 +9,10 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';

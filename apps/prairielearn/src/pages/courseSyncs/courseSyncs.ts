@@ -2,14 +2,15 @@ import { type DescribeImagesCommandOutput, ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
 import { DockerName } from '@prairielearn/docker-utils';
 import { HttpStatusError } from '@prairielearn/error';
-import { loadSqlEquiv, queryOptionalRow, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
@@ -18,6 +19,9 @@ import { CourseSyncs, ImageRowSchema, JobSequenceRowSchema } from './courseSyncs
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
+const DEFAULT_SYNC_LIMIT = 100;
+const NO_LIMIT = 2147483647;
+
 router.get(
   '/',
   createAuthzMiddleware({
@@ -25,10 +29,19 @@ router.get(
     unauthorizedUsers: 'block',
   }),
   asyncHandler(async (req, res) => {
+    const showAll = 'all' in req.query;
+    const limit = showAll ? NO_LIMIT : DEFAULT_SYNC_LIMIT;
+
     const jobSequences = await queryRows(
       sql.select_sync_job_sequences,
-      { course_id: res.locals.course.id },
+      { course_id: res.locals.course.id, limit },
       JobSequenceRowSchema,
+    );
+
+    const jobSequenceCount = await queryRow(
+      sql.count_sync_job_sequences,
+      { course_id: res.locals.course.id },
+      z.number(),
     );
 
     const images = await queryRows(
@@ -77,7 +90,15 @@ router.get(
       });
     }
 
-    res.send(CourseSyncs({ resLocals: res.locals, images, jobSequences }));
+    res.send(
+      CourseSyncs({
+        resLocals: res.locals,
+        images,
+        jobSequences,
+        jobSequenceCount,
+        showAllJobSequences: showAll,
+      }),
+    );
   }),
 );
 

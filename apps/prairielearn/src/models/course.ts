@@ -188,7 +188,7 @@ export async function deleteCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course_id,
       new_state: deletedCourse,
       course_id,
@@ -229,7 +229,7 @@ export async function insertCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course.id,
       new_state: course,
       institution_id,

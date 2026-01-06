@@ -7,4 +7,4 @@ FROM
 WHERE
   a.course_instance_id = 1
   AND aset.abbreviation = 'HW'
-  AND a.group_work IS TRUE;
+  AND a.team_work IS TRUE;

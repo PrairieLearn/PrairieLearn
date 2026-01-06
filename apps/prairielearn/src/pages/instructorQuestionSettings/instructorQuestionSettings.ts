@@ -102,8 +102,8 @@ router.post(
         question: res.locals.question,
         course_instance: res.locals.course_instance,
         course: res.locals.course,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         // Optional variant seed prefix for deterministic testing.
         // Not exposed in UI - for internal use with automated testing scripts.
         variantSeedPrefix: req.body.variant_seed_prefix,
@@ -120,8 +120,8 @@ router.post(
           question: res.locals.question,
           course_instance: res.locals.course_instance,
           course: res.locals.course,
-          user_id: res.locals.user.user_id,
-          authn_user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.user.id,
+          authn_user_id: res.locals.authn_user.id,
           // Optional variant seed prefix for deterministic testing.
           // Not exposed in UI - for internal use with automated testing scripts.
           variantSeedPrefix: req.body.variant_seed_prefix,
@@ -517,7 +517,7 @@ router.get(
     // here because this form will actually post to a different route, not `req.originalUrl`.
     const questionTestCsrfToken = generateCsrfToken({
       url: questionTestPath,
-      authnUserId: res.locals.authn_user.user_id,
+      authnUserId: res.locals.authn_user.id,
     });
 
     const questionGHLink = courseRepoContentUrl(
@@ -552,7 +552,7 @@ router.get(
       sharingSetsIn = result.filter((row) => row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       is_administrator: res.locals.is_administrator,
     });
     const infoPath = path.join('questions', res.locals.question.qid, 'info.json');

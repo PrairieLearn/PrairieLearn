@@ -12,7 +12,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
-import { parseUidsString } from '../../lib/user.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   type CourseInstanceAuthz,
@@ -102,7 +102,7 @@ router.post(
     }
 
     if (req.body.__action === 'course_permissions_insert_by_user_uids') {
-      const uids = parseUidsString(req.body.uid, MAX_UIDS);
+      const uids = parseUniqueValuesFromString(req.body.uid, MAX_UIDS);
 
       // Verify there is at least one UID
       if (uids.length === 0) throw new error.HttpStatusError(400, 'Empty list of UIDs');
@@ -160,7 +160,7 @@ router.post(
             course_id: res.locals.course.id,
             uid,
             course_role: req.body.course_role,
-            authn_user_id: res.locals.authz_data.authn_user.user_id,
+            authn_user_id: res.locals.authz_data.authn_user.id,
           });
         } catch (err: any) {
           logger.verbose(`Failed to insert course permission for uid: ${uid}`, err);
@@ -176,10 +176,10 @@ router.post(
         try {
           await insertCourseInstancePermissions({
             course_id: res.locals.course.id,
-            user_id: user.user_id,
+            user_id: user.id,
             course_instance_id: course_instance.id,
             course_instance_role: req.body.course_instance_role,
-            authn_user_id: res.locals.authz_data.authn_user.user_id,
+            authn_user_id: res.locals.authz_data.authn_user.id,
           });
         } catch (err: any) {
           logger.verbose(`Failed to insert course instance permission for uid: ${uid}`, err);
@@ -275,7 +275,7 @@ ${given_cp_and_cip.join(',\n')}
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_update_role') {
       if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(
@@ -285,7 +285,7 @@ ${given_cp_and_cip.join(',\n')}
       }
 
       if (
-        idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.authn_user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(
@@ -309,12 +309,12 @@ ${given_cp_and_cip.join(',\n')}
         course_id: res.locals.course.id,
         user_id: req.body.user_id,
         course_role: req.body.course_role,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_permissions_delete') {
       if (
-        idsEqual(req.body.user_id, res.locals.user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(
@@ -324,7 +324,7 @@ ${given_cp_and_cip.join(',\n')}
       }
 
       if (
-        idsEqual(req.body.user_id, res.locals.authn_user.user_id) &&
+        idsEqual(req.body.user_id, res.locals.authn_user.id) &&
         !res.locals.authz_data.is_administrator
       ) {
         throw new error.HttpStatusError(
@@ -336,7 +336,7 @@ ${given_cp_and_cip.join(',\n')}
       await deleteCoursePermissions({
         course_id: res.locals.course.id,
         user_id: req.body.user_id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'course_instance_permissions_update_role_or_delete') {
@@ -366,7 +366,7 @@ ${given_cp_and_cip.join(',\n')}
           user_id: req.body.user_id,
           course_instance_id: req.body.course_instance_id,
           course_instance_role: req.body.course_instance_role,
-          authn_user_id: authzData.authn_user.user_id,
+          authn_user_id: authzData.authn_user.id,
         });
         res.redirect(req.originalUrl);
       } else if (req.body.course_instance_role === 'None' || !req.body.course_instance_role) {
@@ -375,7 +375,7 @@ ${given_cp_and_cip.join(',\n')}
           course_id: course.id,
           user_id: req.body.user_id,
           course_instance_id: req.body.course_instance_id,
-          authn_user_id: authzData.authn_user.user_id,
+          authn_user_id: authzData.authn_user.id,
         });
         res.redirect(req.originalUrl);
       } else {
@@ -408,28 +408,28 @@ ${given_cp_and_cip.join(',\n')}
         user_id: req.body.user_id,
         course_instance_id: req.body.course_instance_id,
         course_instance_role: 'Student Data Viewer',
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_non_owners') {
       debug('Delete non-owners');
       await deleteCoursePermissionsForNonOwners({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'delete_no_access') {
       debug('Delete users with no access');
       await deleteCoursePermissionsForUsersWithoutAccess({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'remove_all_student_data_access') {
       debug('Remove all student data access');
       await deleteAllCourseInstancePermissionsForCourse({
         course_id: res.locals.course.id,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

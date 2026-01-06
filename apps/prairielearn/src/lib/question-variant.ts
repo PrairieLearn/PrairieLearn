@@ -6,6 +6,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
@@ -14,7 +15,6 @@ import * as questionServers from '../question-servers/index.js';
 import {
   type Course,
   type CourseInstance,
-  IdSchema,
   type Question,
   type Variant,
   VariantSchema,
@@ -32,7 +32,7 @@ type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
   user_id: IdSchema.nullable(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   course_instance_id: IdSchema,
   instance_question_open: z.boolean().nullable(),
@@ -272,7 +272,7 @@ async function makeAndInsertVariant(
 
       question_id = instance_question.question_id;
       real_user_id = instance_question.user_id;
-      real_group_id = instance_question.group_id;
+      real_group_id = instance_question.team_id;
 
       new_number = await sqldb.queryOptionalRow(
         sql.next_variant_number,

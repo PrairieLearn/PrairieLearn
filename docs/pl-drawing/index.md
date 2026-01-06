@@ -93,25 +93,25 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute           | Type   | Default | Description                                                                                                                                                                    |
-| ------------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`                | float  | 40      | `x` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas.        |
-| `y1`                | float  | 40      | `y` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.           |
-| `width`             | float  | 40      | Length of the arrow vector.                                                                                                                                                    |
-| `angle`             | float  | 0       | Angle of the coordinate system. Angle is positive when clockwise orientation.                                                                                                  |
-| `label`             | string | -       | Text to label the center of the coordinate system                                                                                                                              |
-| `offsetx`           | float  | -16     | Horizontal distance of `label` from the origin of the coordinate system.                                                                                                       |
-| `offsety`           | float  | -10     | Vertical distance of `label` from the origin of the coordinate system.                                                                                                         |
-| `label-x`           | string | x       | Text to label the horizontal arrow vector (x-axis)                                                                                                                             |
-| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the origin of the coordinate system.                                                                                                     |
-| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the origin of the coordinate system.                                                                                                       |
-| `label-y`           | string | y       | Text to label the vertical arrow vector (y-axis)                                                                                                                               |
-| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the origin of the coordinate system.                                                                                                     |
-| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the origin of the coordinate system.                                                                                                       |
-| `color`             | string | black   | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ) |
-| `stroke-width`      | float  | 2       | Set the width of the stroke.                                                                                                                                                   |
-| `arrow-head-width`  | float  | 1       | Scale factor for the width of the arrow head.                                                                                                                                  |
-| `arrow-head-length` | float  | 1       | Scale factor for the length of the arrow head.                                                                                                                                 |
+| Attribute           | Type   | Default | Description                                                                                                                                                             |
+| ------------------- | ------ | ------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`                | float  | 40      | `x` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the horizontal distance from the left border of the canvas. |
+| `y1`                | float  | 40      | `y` position of the origin of the coordinate system w.r.t the origin of the canvas (top/left corner), i.e., the vertical distance from the top border of the canvas.    |
+| `width`             | float  | 40      | Length of the arrow vector.                                                                                                                                             |
+| `angle`             | float  | 0       | Angle of the coordinate system. Angle is positive when clockwise orientation.                                                                                           |
+| `label`             | string | -       | Text to label the center of the coordinate system                                                                                                                       |
+| `offsetx`           | float  | -16     | Horizontal distance of `label` from the origin of the coordinate system.                                                                                                |
+| `offsety`           | float  | -10     | Vertical distance of `label` from the origin of the coordinate system.                                                                                                  |
+| `label-x`           | string | x       | Text to label the horizontal arrow vector (x-axis)                                                                                                                      |
+| `offsetx-label-x`   | float  | 0       | Horizontal distance of `label-x` from the origin of the coordinate system.                                                                                              |
+| `offsety-label-x`   | float  | 0       | Vertical distance of `label-x` from the origin of the coordinate system.                                                                                                |
+| `label-y`           | string | y       | Text to label the vertical arrow vector (y-axis)                                                                                                                        |
+| `offsetx-label-y`   | float  | -20     | Horizontal distance of `label-y` from the origin of the coordinate system.                                                                                              |
+| `offsety-label-y`   | float  | -10     | Vertical distance of `label-y` from the origin of the coordinate system.                                                                                                |
+| `color`             | string | black   | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )            |
+| `stroke-width`      | float  | 2       | Set the width of the stroke.                                                                                                                                            |
+| `arrow-head-width`  | float  | 1       | Scale factor for the width of the arrow head.                                                                                                                           |
+| `arrow-head-length` | float  | 1       | Scale factor for the length of the arrow head.                                                                                                                          |
 
 #### Example implementations
 
@@ -144,7 +144,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `x2`           | float  | -       | `x` position for the end point for the line, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
 | `y2`           | float  | -       | `y` position for the end point for the line, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
 | `opacity`      | float  | 1       | Set the opacity of the line                                                                                                                                                                                                                         |
-| `stroke-color` | string | black   | Set the color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                   |
+| `stroke-color` | string | black   | Set the color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                                     |
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                                                                                    |
 
@@ -187,7 +187,7 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 | `start-angle`  | float  | 0       | Start angle of the arc. Angles are measured from the horizontal axis and are positive clockwise.                                                                                 |
 | `end-angle`    | float  | 90      | End angle of the arc. Angles are measured from the horizontal axis and are positive clockwise. Arcs are formed from `start-angle` to `end-angle` going on clockwise orientation. |
 | `opacity`      | float  | 1       | Set the opacity of the arc.                                                                                                                                                      |
-| `stroke-color` | string | black   | Set the stroke color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).        |
+| `stroke-color` | string | black   | Set the stroke color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                          |
 | `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                     |
 | `dashed-size`  | float  | \_      | Creates a dashed line with equally spaced `dashed-size`px fills.                                                                                                                 |
 
@@ -212,16 +212,16 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute | Type   | Default | Description                                                                                                                                                              |
-| --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`      | float  | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                                             |
-| `y1`      | float  | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                                                |
-| `radius`  | float  | 4       | Radius of the circle that defines the point.                                                                                                                             |
-| `label`   | string | -       | Text to label the point.                                                                                                                                                 |
-| `offsetx` | float  | 5       | Horizontal distance of `label` from the point.                                                                                                                           |
-| `offsety` | float  | 5       | Vertical distance of `label` from the point.                                                                                                                             |
-| `opacity` | float  | 1       | Set the opacity of the point.                                                                                                                                            |
-| `color`   | string | black   | Set the fill color of the point ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| Attribute | Type   | Default | Description                                                                                                                                            |
+| --------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`      | float  | 20      | `x` position of the point, i.e., the horizontal distance from the left border of the canvas.                                                           |
+| `y1`      | float  | 20      | `y` position of the point, i.e., the vertical distance from the top border of the canvas.                                                              |
+| `radius`  | float  | 4       | Radius of the circle that defines the point.                                                                                                           |
+| `label`   | string | -       | Text to label the point.                                                                                                                               |
+| `offsetx` | float  | 5       | Horizontal distance of `label` from the point.                                                                                                         |
+| `offsety` | float  | 5       | Vertical distance of `label` from the point.                                                                                                           |
+| `opacity` | float  | 1       | Set the opacity of the point.                                                                                                                          |
+| `color`   | string | black   | Set the fill color of the point ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
 
 #### Example implementations
 
@@ -245,18 +245,18 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                                 |
-| -------------- | ------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float  | 20      | `x` position for vertex 1, i.e., the horizontal distance from the left border of the canvas.                                                                                |
-| `y1`           | float  | 20      | `y` position for vertex 1, i.e., the vertical distance from the top border of the canvas.                                                                                   |
-| `x2`           | float  | 20      | `x` position for vertex 2, i.e., the horizontal distance from the left border of the canvas.                                                                                |
-| `y2`           | float  | 20      | `y` position for vertex 2, i.e., the vertical distance from the top border of the canvas.                                                                                   |
-| `x3`           | float  | 20      | `x` position for vertex 3, i.e., the horizontal distance from the left border of the canvas.                                                                                |
-| `y3`           | float  | 20      | `y` position for vertex 3, i.e., the vertical distance from the top border of the canvas.                                                                                   |
-| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                                 |
-| `color`        | string | red1    | Set the fill color of the triangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string | black   | Set the stroke color of the triangle.                                                                                                                                       |
-| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                                |
+| Attribute      | Type   | Default | Description                                                                                                                                               |
+| -------------- | ------ | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 20      | `x` position for vertex 1, i.e., the horizontal distance from the left border of the canvas.                                                              |
+| `y1`           | float  | 20      | `y` position for vertex 1, i.e., the vertical distance from the top border of the canvas.                                                                 |
+| `x2`           | float  | 20      | `x` position for vertex 2, i.e., the horizontal distance from the left border of the canvas.                                                              |
+| `y2`           | float  | 20      | `y` position for vertex 2, i.e., the vertical distance from the top border of the canvas.                                                                 |
+| `x3`           | float  | 20      | `x` position for vertex 3, i.e., the horizontal distance from the left border of the canvas.                                                              |
+| `y3`           | float  | 20      | `y` position for vertex 3, i.e., the vertical distance from the top border of the canvas.                                                                 |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                               |
+| `color`        | string | red1    | Set the fill color of the triangle ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string | black   | Set the stroke color of the triangle.                                                                                                                     |
+| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                              |
 
 #### Example implementations
 
@@ -281,17 +281,17 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                                  |
-| -------------- | ------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float  | 20      | `x` position for the center of the rectangle, i.e., the horizontal distance from the left border of the canvas.                                                              |
-| `y1`           | float  | 20      | `y` position for the center of the rectangle, i.e., the vertical distance from the top border of the canvas.                                                                 |
-| `height`       | float  | 20      | Height of the rectangle.                                                                                                                                                     |
-| `width`        | float  | 20      | Width of the rectangle.                                                                                                                                                      |
-| `angle`        | float  | 0       | Angle of rotation around the center of the rectangle. Angles are measured from the horizontal axis and are positive clockwise.                                               |
-| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                                  |
-| `color`        | string | green1  | Set the fill color of the rectangle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string | black   | Set the stroke color of the rectangle.                                                                                                                                       |
-| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                                 |
+| Attribute      | Type   | Default | Description                                                                                                                                                |
+| -------------- | ------ | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 20      | `x` position for the center of the rectangle, i.e., the horizontal distance from the left border of the canvas.                                            |
+| `y1`           | float  | 20      | `y` position for the center of the rectangle, i.e., the vertical distance from the top border of the canvas.                                               |
+| `height`       | float  | 20      | Height of the rectangle.                                                                                                                                   |
+| `width`        | float  | 20      | Width of the rectangle.                                                                                                                                    |
+| `angle`        | float  | 0       | Angle of rotation around the center of the rectangle. Angles are measured from the horizontal axis and are positive clockwise.                             |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                |
+| `color`        | string | green1  | Set the fill color of the rectangle ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string | black   | Set the stroke color of the rectangle.                                                                                                                     |
+| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                               |
 
 #### Example implementations
 
@@ -316,18 +316,18 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                               |
-| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float  | 20      | `x` position for the center of the circle, i.e., the horizontal distance from the left border of the canvas.                                                              |
-| `y1`           | float  | 20      | `y` position for the center of the circle, i.e., the vertical distance from the top border of the canvas.                                                                 |
-| `radius`       | float  | 20      | Radius of the circle.                                                                                                                                                     |
-| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                               |
-| `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                                       |
-| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                              |
-| `label`        | string | -       | Text to label the center of the circle.                                                                                                                                   |
-| `offsetx`      | float  | 5       | Horizontal distance of `label` from the center of the circle.                                                                                                             |
-| `offsety`      | float  | 5       | Vertical distance of `label1` from the center of the circle                                                                                                               |
+| Attribute      | Type   | Default | Description                                                                                                                                             |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float  | 20      | `x` position for the center of the circle, i.e., the horizontal distance from the left border of the canvas.                                            |
+| `y1`           | float  | 20      | `y` position for the center of the circle, i.e., the vertical distance from the top border of the canvas.                                               |
+| `radius`       | float  | 20      | Radius of the circle.                                                                                                                                   |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                             |
+| `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                     |
+| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                            |
+| `label`        | string | -       | Text to label the center of the circle.                                                                                                                 |
+| `offsetx`      | float  | 5       | Horizontal distance of `label` from the center of the circle.                                                                                           |
+| `offsety`      | float  | 5       | Vertical distance of `label1` from the center of the circle                                                                                             |
 
 #### Example implementations
 
@@ -351,13 +351,13 @@ A `pl-coordinates` element adds a 2D system of coordinates.
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                               |
-| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `plist`        | string | ''      | List of the vertices that form the polygon.                                                                                                                               |
-| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                                               |
-| `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                                       |
-| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                                              |
+| Attribute      | Type   | Default | Description                                                                                                                                             |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `plist`        | string | ''      | List of the vertices that form the polygon.                                                                                                             |
+| `opacity`      | float  | 1       | Set the opacity of the entire element (both line and fill).                                                                                             |
+| `color`        | string | gray1   | Set the fill color of the circle ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string | black   | Set the stroke color of the circle.                                                                                                                     |
+| `stroke-width` | float  | 1       | Set the width of the stroke.                                                                                                                            |
 
 To draw a polygon with `n` vertices, each one with coordinates `(xi,yi)`, the string `plist` is given as a dictionary with the following format:
 
@@ -387,23 +387,23 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                            |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `x2`           | float   | 80      | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                          |
-| `y2`           | float   | 20      | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                                             |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                                  |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                                         |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx1`     | float   | 2       | Horizontal distance of `label1` from the first end of the rod.                                                                                                         |
-| `offsety1`     | float   | 2       | Vertical distance of `label1` from the first end of the rod.                                                                                                           |
-| `label2`       | string  | -       | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the first end of the rod.                                                                                                         |
-| `offsety2`     | float   | 2       | Vertical distance of `label2` from the first end of the rod.                                                                                                           |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                       |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                           |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 80      | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y2`           | float   | 20      | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 2       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | 2       | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx2`     | float   | 2       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
+| `offsety2`     | float   | 2       | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
@@ -427,28 +427,28 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                            |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                                         |
-| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                                            |
-| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                          |
-| `y3`           | float   | 140     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                                             |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                                  |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                                         |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                                         |
-| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                                           |
-| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                                             |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                                         |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                                           |
-| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                                               |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                                         |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                                           |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                       |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                           |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
+| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
+| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y3`           | float   | 140     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
@@ -472,33 +472,33 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                            |
-| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                                         |
-| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                                            |
-| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                          |
-| `y3`           | float   | 160     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                                             |
-| `x4`           | float   | 140     | `x` position for the third end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y4`           | float   | 60      | `y` position for the third end of the rod, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                                  |
-| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                                         |
-| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                                         |
-| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                                           |
-| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                                             |
-| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                                         |
-| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                                           |
-| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                                               |
-| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                                         |
-| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                                           |
-| `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                                                |
-| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the first end of the rod.                                                                                                         |
-| `offsety4`     | float   | -20     | Vertical distance of `label4` from the first end of the rod.                                                                                                           |
-| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                                       |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                           |
+| Attribute      | Type    | Default | Description                                                                                                                                          |
+| -------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 40      | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`           | float   | 100     | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`           | float   | 100     | `x` position of the center point of the rod, i.e., the horizontal distance from the left border of the canvas.                                       |
+| `y2`           | float   | 100     | `y` position of the center point of the rod, i.e., the vertical distance from the top border of the canvas.                                          |
+| `x3`           | float   | 100     | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y3`           | float   | 160     | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `x4`           | float   | 140     | `x` position for the third end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y4`           | float   | 60      | `y` position for the third end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `width`        | float   | 20      | Thickness of the rod.                                                                                                                                |
+| `draw-pin`     | boolean | true    | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`       | string  | -       | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`     | float   | 0       | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`     | float   | -20     | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`       | string  | -       | Text to label the middle point of the rod.                                                                                                           |
+| `offsetx2`     | float   | 0       | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
+| `offsety2`     | float   | -20     | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `label3`       | string  | -       | Text to label the second end of the rod.                                                                                                             |
+| `offsetx3`     | float   | 0       | Horizontal distance of `label3` from the first end of the rod.                                                                                       |
+| `offsety3`     | float   | -20     | Vertical distance of `label3` from the first end of the rod.                                                                                         |
+| `label4`       | string  | -       | Text to label the third end of the rod.                                                                                                              |
+| `offsetx4`     | float   | 0       | Horizontal distance of `label4` from the first end of the rod.                                                                                       |
+| `offsety4`     | float   | -20     | Vertical distance of `label4` from the first end of the rod.                                                                                         |
+| `color`        | string  | white   | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
@@ -522,29 +522,29 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute          | Type    | Default    | Description                                                                                                                                                            |
-| ------------------ | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`               | float   | 40         | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                           |
-| `y1`               | float   | 40         | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                              |
-| `x2`               | float   | 100        | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                                          |
-| `y2`               | float   | 40         | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                                             |
-| `width`            | float   | 20         | Thickness of the rod.                                                                                                                                                  |
-| `draw-pin`         | boolean | true       | Draw the pin location in both ends of the rod.                                                                                                                         |
-| `label1`           | string  | -          | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx1`         | float   | 2          | Horizontal distance of `label1` from the first end of the rod.                                                                                                         |
-| `offsety1`         | float   | 2          | Vertical distance of `label1` from the first end of the rod.                                                                                                           |
-| `label2`           | string  | -          | Text to label the first end of the rod.                                                                                                                                |
-| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the first end of the rod.                                                                                                         |
-| `offsety2`         | float   | 2          | Vertical distance of `label2` from the first end of the rod.                                                                                                           |
-| `draw-collar-end1` | boolean | true       | Draw a collar end at `(x1,y1)`.                                                                                                                                        |
-| `w1`               | float   | 1.5\*width | The width of the collar at end 1.                                                                                                                                      |
-| `h1`               | float   | 2\*width   | The height of the collar at end 1.                                                                                                                                     |
-| `draw-collar-end2` | boolean | false      | Draw a collar end at `(x2,y2)`.                                                                                                                                        |
-| `w2`               | float   | 1.5\*width | The width of the collar at end 2.                                                                                                                                      |
-| `h2`               | float   | 2\*width   | The height of the collar at end 2.                                                                                                                                     |
-| `color`            | string  | white      | Set the fill color of the rod ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color`     | string  | black      | Set the stroke color of the rod.                                                                                                                                       |
-| `stroke-width`     | float   | 2          | Set the width of the stroke.                                                                                                                                           |
+| Attribute          | Type    | Default    | Description                                                                                                                                          |
+| ------------------ | ------- | ---------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`               | float   | 40         | `x` position for the first end of the rod, i.e., the horizontal distance from the left border of the canvas.                                         |
+| `y1`               | float   | 40         | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                            |
+| `x2`               | float   | 100        | `x` position for the second end of the rod, i.e., the horizontal distance from the left border of the canvas.                                        |
+| `y2`               | float   | 40         | `y` position for the second end of the rod, i.e., the vertical distance from the top border of the canvas.                                           |
+| `width`            | float   | 20         | Thickness of the rod.                                                                                                                                |
+| `draw-pin`         | boolean | true       | Draw the pin location in both ends of the rod.                                                                                                       |
+| `label1`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
+| `offsetx1`         | float   | 2          | Horizontal distance of `label1` from the first end of the rod.                                                                                       |
+| `offsety1`         | float   | 2          | Vertical distance of `label1` from the first end of the rod.                                                                                         |
+| `label2`           | string  | -          | Text to label the first end of the rod.                                                                                                              |
+| `offsetx2`         | float   | 2          | Horizontal distance of `label2` from the first end of the rod.                                                                                       |
+| `offsety2`         | float   | 2          | Vertical distance of `label2` from the first end of the rod.                                                                                         |
+| `draw-collar-end1` | boolean | true       | Draw a collar end at `(x1,y1)`.                                                                                                                      |
+| `w1`               | float   | 1.5\*width | The width of the collar at end 1.                                                                                                                    |
+| `h1`               | float   | 2\*width   | The height of the collar at end 1.                                                                                                                   |
+| `draw-collar-end2` | boolean | false      | Draw a collar end at `(x2,y2)`.                                                                                                                      |
+| `w2`               | float   | 1.5\*width | The width of the collar at end 2.                                                                                                                    |
+| `h2`               | float   | 2\*width   | The height of the collar at end 2.                                                                                                                   |
+| `color`            | string  | white      | Set the fill color of the rod ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color`     | string  | black      | Set the stroke color of the rod.                                                                                                                     |
+| `stroke-width`     | float   | 2          | Set the width of the stroke.                                                                                                                         |
 
 #### Example implementations
 
@@ -568,21 +568,21 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                                    |
-| -------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                                      |
-| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                                      |
-| `height`       | float   | 40      | Height of the pin support, measured from the top of the base (ground) to the center of the pin.                                                                                |
-| `width`        | float   | 30      | Width of the pin support.                                                                                                                                                      |
-| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                                       |
-| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                                  |
-| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                                              |
-| `label`        | string  | -       | Text to label the pin support.                                                                                                                                                 |
-| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                     |
-| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                       |
-| `color`        | string  | brown1  | Set the fill color of the pin support ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the pin support.                                                                                                                                       |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                   |
+| Attribute      | Type    | Default | Description                                                                                                                                                  |
+| -------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                    |
+| `y1`           | float   | 20      | `y` position for the first end of the rod, i.e., the vertical distance from the top border of the canvas.                                                    |
+| `height`       | float   | 40      | Height of the pin support, measured from the top of the base (ground) to the center of the pin.                                                              |
+| `width`        | float   | 30      | Width of the pin support.                                                                                                                                    |
+| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                     |
+| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                |
+| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                            |
+| `label`        | string  | -       | Text to label the pin support.                                                                                                                               |
+| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                   |
+| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                     |
+| `color`        | string  | brown1  | Set the fill color of the pin support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the pin support.                                                                                                                     |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                 |
 
 #### Example implementations
 
@@ -607,21 +607,21 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type    | Default | Description                                                                                                                                                                       |
-| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                                         |
-| `y1`           | float   | 20      | `y` position for the first end of the pin, i.e., the vertical distance from the top border of the canvas.                                                                         |
-| `height`       | float   | 40      | Height of the roller support, measured from the top of the base (ground) to the center of the pin.                                                                                |
-| `width`        | float   | 30      | Width of the roller support.                                                                                                                                                      |
-| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                                          |
-| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                                     |
-| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                                                 |
-| `label`        | string  | -       | Text to label the roller support.                                                                                                                                                 |
-| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                        |
-| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                          |
-| `color`        | string  | brown1  | Set the fill color of the roller support ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color` | string  | black   | Set the stroke color of the roller.                                                                                                                                               |
-| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                      |
+| Attribute      | Type    | Default | Description                                                                                                                                                     |
+| -------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`           | float   | 20      | `x` position for the center of the pin, i.e., the horizontal distance from the left border of the canvas.                                                       |
+| `y1`           | float   | 20      | `y` position for the first end of the pin, i.e., the vertical distance from the top border of the canvas.                                                       |
+| `height`       | float   | 40      | Height of the roller support, measured from the top of the base (ground) to the center of the pin.                                                              |
+| `width`        | float   | 30      | Width of the roller support.                                                                                                                                    |
+| `angle`        | float   | 0       | Angle of rotation around the center of the pin. Angles are measured from the horizontal axis and are positive clockwise.                                        |
+| `draw-pin`     | boolean | true    | Draw the location of the pin.                                                                                                                                   |
+| `draw-ground`  | boolean | true    | Draw the rectangular base/ground.                                                                                                                               |
+| `label`        | string  | -       | Text to label the roller support.                                                                                                                               |
+| `offsetx`      | float   | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                      |
+| `offsety`      | float   | 2       | Vertical distance of `label` from the center of the pin.                                                                                                        |
+| `color`        | string  | brown1  | Set the fill color of the roller support ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color` | string  | black   | Set the stroke color of the roller.                                                                                                                             |
+| `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                    |
 
 #### Example implementations
 
@@ -647,18 +647,18 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute      | Type   | Default | Description                                                                                                                                                                                                        |
-| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| `x1`           | float  | 20      | `x` position for the clamped point, i.e., the horizontal distance from the left border of the canvas.                                                                                                              |
-| `y1`           | float  | 20      | `y` position for the clamped, i.e., the vertical distance from the top border of the canvas.                                                                                                                       |
-| `height`       | float  | 40      | Height of the clamped support (rectangle).                                                                                                                                                                         |
-| `width`        | float  | 20      | Width of the clamped support (rectangle).                                                                                                                                                                          |
-| `angle`        | float  | 0       | Angle of rotation around the clamped point. Angles are measured from the horizontal axis and are positive clockwise.                                                                                               |
-| `label`        | string | -       | Text to label the pin support.                                                                                                                                                                                     |
-| `offsetx`      | float  | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                                                         |
-| `offsety`      | float  | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                                                           |
-| `color`        | string | black   | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                                       |
+| Attribute      | Type   | Default | Description                                                                                                                                                                                      |
+| -------------- | ------ | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `x1`           | float  | 20      | `x` position for the clamped point, i.e., the horizontal distance from the left border of the canvas.                                                                                            |
+| `y1`           | float  | 20      | `y` position for the clamped, i.e., the vertical distance from the top border of the canvas.                                                                                                     |
+| `height`       | float  | 40      | Height of the clamped support (rectangle).                                                                                                                                                       |
+| `width`        | float  | 20      | Width of the clamped support (rectangle).                                                                                                                                                        |
+| `angle`        | float  | 0       | Angle of rotation around the clamped point. Angles are measured from the horizontal axis and are positive clockwise.                                                                             |
+| `label`        | string | -       | Text to label the pin support.                                                                                                                                                                   |
+| `offsetx`      | float  | 2       | Horizontal distance of `label` from the center of the pin.                                                                                                                                       |
+| `offsety`      | float  | 2       | Vertical distance of `label` from the center of the pin.                                                                                                                                         |
+| `color`        | string | black   | Fill color for the clamped support using a gradient from white to `color` ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-width` | float  | 2       | Set the width of the stroke.                                                                                                                                                                     |
 
 #### Example implementations
 
@@ -694,7 +694,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `interval`     | float   | 10      | Interval between each angled line. This interval is recalculated if the spring width is too short.                                                                                                                                                    |
 | `x2`           | float   | -       | `x` position for the end point for the spring, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
 | `y2`           | float   | -       | `y` position for the end point for the spring, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
-| `stroke-color` | string  | black   | Set the color of the spring ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                  |
+| `stroke-color` | string  | black   | Set the color of the spring ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                          |
 | `draw-pin`     | boolean | false   | Draw points at the spring ends.                                                                                                                                                                                                                       |
 
@@ -729,7 +729,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `height`       | float   | 30      | Height of the coil.                                                                                                                                                                                                                                 |
 | `x2`           | float   | -       | `x` position for the end point for the coil, i.e., the horizontal distance from the left border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced. |
 | `y2`           | float   | -       | `y` position for the end point for the coil, i.e., the vertical distance from the top border of the canvas. By default, `(x2,y2)` are determined from `angle` and `width`. If `x2` and `y2` are provided, then `angle` and `width` are replaced.    |
-| `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                  |
+| `stroke-color` | string  | black   | Set the color of the coil ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                    |
 | `stroke-width` | float   | 2       | Set the width of the stroke.                                                                                                                                                                                                                        |
 | `draw-pin`     | boolean | false   | Draw points at the coil ends.                                                                                                                                                                                                                       |
 
@@ -754,22 +754,22 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 
 #### Customizations
 
-| Attribute          | Type    | Default | Description                                                                                                                                                               |
-| ------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `x1`               | float   | 40      | `x` position for the center of the pulley, i.e., the horizontal distance from the left border of the canvas.                                                              |
-| `y1`               | float   | 40      | `y` position for the center of the pulley, i.e., the vertical distance from the top border of the canvas.                                                                 |
-| `x2`               | float   | 10      | `x` position for the first point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                                   |
-| `y2`               | float   | 10      | `y` position for the first point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                                      |
-| `x3`               | float   | 120     | `x` position for the second point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                                  |
-| `y3`               | float   | 60      | `y` position for the second point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                                     |
-| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to the points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.                               |
-| `radius`           | float   | 20      | Radius of the pulley.                                                                                                                                                     |
-| `label`            | string  | -       | Text to label the pulley.                                                                                                                                                 |
-| `offsetx`          | float   | 2       | Horizontal distance of `label` from the center of the pulley.                                                                                                             |
-| `offsety`          | float   | 2       | Vertical distance of `label` from the center of the pulley.                                                                                                               |
-| `color`            | string  | gray    | Set the fill color of the pulley ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
-| `stroke-color`     | string  | black   | Set the stroke color of the pulley.                                                                                                                                       |
-| `stroke-width`     | float   | 2       | Set the width of the stroke.                                                                                                                                              |
+| Attribute          | Type    | Default | Description                                                                                                                                             |
+| ------------------ | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `x1`               | float   | 40      | `x` position for the center of the pulley, i.e., the horizontal distance from the left border of the canvas.                                            |
+| `y1`               | float   | 40      | `y` position for the center of the pulley, i.e., the vertical distance from the top border of the canvas.                                               |
+| `x2`               | float   | 10      | `x` position for the first point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                 |
+| `y2`               | float   | 10      | `y` position for the first point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                    |
+| `x3`               | float   | 120     | `x` position for the second point defining the end of the pulley line, i.e., the horizontal distance from the left border of the canvas.                |
+| `y3`               | float   | 60      | `y` position for the second point defining the end of the pulley line, i.e., the vertical distance from the top border of the canvas.                   |
+| `alternative-path` | boolean | false   | Selects the other tangent points at the pulley that connects to the points `(x2,y2)` and `(x3,y3)`. By default, it draws the shortest path.             |
+| `radius`           | float   | 20      | Radius of the pulley.                                                                                                                                   |
+| `label`            | string  | -       | Text to label the pulley.                                                                                                                               |
+| `offsetx`          | float   | 2       | Horizontal distance of `label` from the center of the pulley.                                                                                           |
+| `offsety`          | float   | 2       | Vertical distance of `label` from the center of the pulley.                                                                                             |
+| `color`            | string  | gray    | Set the fill color of the pulley ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ). |
+| `stroke-color`     | string  | black   | Set the stroke color of the pulley.                                                                                                                     |
+| `stroke-width`     | float   | 2       | Set the width of the stroke.                                                                                                                            |
 
 #### Example implementations
 
@@ -840,7 +840,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `label`              | string  | -       | Text to label the dimension.                                                                                                                                                                                                                          |
 | `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the dimension line.                                                                                                                                                                                 |
 | `offsety`            | float   | 0       | Vertical distance of `label` from the center of the dimension line.                                                                                                                                                                                   |
-| `stroke-color`       | string  | black   | Set the color of the line ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                    |
+| `stroke-color`       | string  | black   | Set the color of the line ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                      |
 | `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                                                                                          |
 | `draw-start-arrow`   | boolean | true    | Draw an arrow head at the start point of the line.                                                                                                                                                                                                    |
 | `draw-end-arrow`     | boolean | true    | Draw an arrow head at the end point of the line.                                                                                                                                                                                                      |
@@ -892,7 +892,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `label`              | string  | -       | Text to label the arc angle.                                                                                                                                                     |
 | `offsetx`            | float   | 0       | Horizontal distance of `label` from the center of the arc.                                                                                                                       |
 | `offsety`            | float   | 0       | Vertical distance of `label` from the center of the arc.                                                                                                                         |
-| `stroke-color`       | string  | black   | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).         |
+| `stroke-color`       | string  | black   | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                           |
 | `stroke-width`       | float   | 1       | Set the width of the stroke.                                                                                                                                                     |
 | `arrow-head-width`   | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                    |
 | `arrow-head-length`  | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                   |
@@ -941,7 +941,7 @@ For an example that uses `server.py` to generate `plist` refer to QID: `Example-
 | `label`             | string  | -       | Text to label the vector.                                                                                                                                                                                                                                                                                         |
 | `offsetx`           | float   | 2       | Horizontal distance of `label` from the head of the vector.                                                                                                                                                                                                                                                       |
 | `offsety`           | float   | 2       | Vertical distance of `label` from the head of the vector.                                                                                                                                                                                                                                                         |
-| `color`             | string  | red3    | Set the color of the vector ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                              |
+| `color`             | string  | red3    | Set the color of the vector ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                |
 | `stroke-width`      | float   | 3       | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
 | `arrow-head-width`  | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
 | `arrow-head-length` | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
@@ -995,7 +995,7 @@ More information about the grading attributes in the Grading section below.
 | `label`             | string  | -       | Text to label the vector.                                                                                                                                                                                                                                                                                         |
 | `offsetx`           | float   | 2       | Horizontal distance of `label` from the head of the vector.                                                                                                                                                                                                                                                       |
 | `offsety`           | float   | 2       | Vertical distance of `label` from the head of the vector.                                                                                                                                                                                                                                                         |
-| `color`             | string  | red3    | Set the color of the vector ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                              |
+| `color`             | string  | red3    | Set the color of the vector ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                |
 | `stroke-width`      | float   | 3       | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
 | `arrow-head-width`  | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
 | `arrow-head-length` | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
@@ -1097,7 +1097,7 @@ More information about the grading attributes in the Grading section below.
 | `label`               | string  | -       | Text to label the arc vector angle.                                                                                                                                                     |
 | `offsetx`             | float   | 0       | Horizontal distance of `label` from the center of the arc vector.                                                                                                                       |
 | `offsety`             | float   | 0       | Vertical distance of `label` from the center of the arc vector.                                                                                                                         |
-| `color`               | string  | purple  | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                |
+| `color`               | string  | purple  | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                  |
 | `stroke-width`        | float   | 3       | Set the width of the stroke.                                                                                                                                                            |
 | `arrow-head-width`    | float   | 1       | Scale factor for the width of the arrow head.                                                                                                                                           |
 | `arrow-head-length`   | float   | 1       | Scale factor for the length of the arrow head.                                                                                                                                          |
@@ -1163,7 +1163,7 @@ More information about the grading attributes in the Grading section below.
 | `label2`            | string  | -                   | Text to label the height of the vectors at the start of the range.                                                                                                                                                                                                                                                |
 | `offsetx2`          | float   | 2                   | Horizontal distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                        |
 | `offsety2`          | float   | 2                   | Vertical distance of `label2` from the vector at the start of the range.                                                                                                                                                                                                                                          |
-| `color`             | string  | blue                | Set the stroke color of the arc ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                          |
+| `color`             | string  | blue                | Set the stroke color of the arc ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                            |
 | `stroke-width`      | float   | 3                   | Set the width of the stroke.                                                                                                                                                                                                                                                                                      |
 | `arrow-head-width`  | float   | 1                   | Scale factor for the width of the arrow head.                                                                                                                                                                                                                                                                     |
 | `arrow-head-length` | float   | 1                   | Scale factor for the length of the arrow head.                                                                                                                                                                                                                                                                    |
@@ -1219,7 +1219,7 @@ More information about the grading attributes in the Grading section below.
 | `draw-error-box` | boolean | -       | Draw the error bounding box, where the location of the end points and control point are accepted as correct.                                                                                                                                                              |
 | `offset-tol-x`   | float   | 0       | Tolerance offset in the horizontal direction. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box. |
 | `offset-tol-y`   | float   | 0       | Tolerance offset in the vertical direction. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.     |
-| `color`          | string  | red     | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                            |
+| `color`          | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) )                                                                                                              |
 | `stroke-width`   | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                              |
 | `handle-radius`  | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                              |
 
@@ -1270,7 +1270,7 @@ More information about the grading attributes in the Grading section below.
 | `offset-tol-y`         | float   | 0       | Tolerance offset in the vertical direction for the end points. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The end point is at the center of the bounding box.            |
 | `offset-control-tol-x` | float   | 0       | Tolerance offset in the horizontal direction for the control point. The error bounding box has horizontal dimension equals to `2*(tol + offset-tol-x)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box. |
 | `offset-control-tol-y` | float   | 0       | Tolerance offset in the vertical direction for the control point. The error bounding box has vertical dimension equals to `2*(tol + offset-tol-y)` where `tol` is defined as an attribute of `pl-drawing` (or the default is 1/2 grid). The control point is at the center of the bounding box.     |
-| `color`                | string  | red     | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                     |
+| `color`                | string  | red     | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                       |
 | `stroke-width`         | float   | 4       | Set the width of the stroke.                                                                                                                                                                                                                                                                        |
 | `handle-radius`        | float   | 6       | Set the radius of the circle handles that define the end and control points.                                                                                                                                                                                                                        |
 
@@ -1810,7 +1810,7 @@ A `pl-axes` element adds two axes to define the coordinate plane for sketching p
 | `offsety-label-y`  | float  | -10                | Vertical offset distance of `label-y`.                                                                                                                                                                                                                                                                                                                                                       |
 | `supporting-lines` | string |                    | Add additional grid lines to help with the sketching. For example, '[{"x":80},{"y":40}]' adds a vertical line passing through position `x=80` with respect to `origin`, i.e., the origin of the coordinate system defined by the plot axes. It also adds a horizontal line passing through `y=40` with respect to `origin`.                                                                  |
 | `grid-label`       | string |                    | Add labels to specified grid points. For example, '[ {"axis": "x", "pos": 80, "lab": "4" } ]' adds the label `4` at position `x=80` with respect to `origin`. If additional adjustment of the position of the label is needed, this attribute can have two additional optional keys: `offsetx` and `offsety`, i.e., '[ {"axis": "x", "pos": 80, "lab": "4", "offsetx": 10, "offsety":20 } ]' |
-| `color`            | string | black              | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                                                              |
+| `color`            | string | black              | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                                                                                |
 | `stroke-width`     | float  | 2                  | Set the width of the stroke.                                                                                                                                                                                                                                                                                                                                                                 |
 
 ### `pl-graph-line` element
@@ -1829,7 +1829,7 @@ A `pl-graph-line` element adds straight or quadratic lines to plots. It wraps th
 | `offset-tol-y`         | float   | 0                  | Half the length of the bounding box in the y-direction. The end point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                            |
 | `offset-control-tol-x` | float   | 0                  | Half the length of the bounding box in the x-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
 | `offset-control-tol-y` | float   | 0                  | Half the length of the bounding box in the y-direction. The control point is at the center of the bounding box.                                                                                                                                                                                                                                                                                                                                                        |
-| `color`                | string  | red                | Set the color of the coordinate system ( [PL colors](https://prairielearn.readthedocs.io/en/latest/course/#colors) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                                                                                                                                        |
+| `color`                | string  | red                | Set the color of the coordinate system ( [PL colors](../python-reference/prairielearn/colors.md) or [HTML colors](https://htmlcolorcodes.com/color-chart/) ).                                                                                                                                                                                                                                                                                                          |
 | `stroke-width`         | float   | 4                  | Set the width of the stroke.                                                                                                                                                                                                                                                                                                                                                                                                                                           |
 
 ## Extension API

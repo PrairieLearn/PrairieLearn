@@ -23,14 +23,14 @@ WITH
     SELECT
       ai.id,
       COALESCE(ai.user_id, gu.user_id) AS user_id,
-      ai.group_id,
+      ai.team_id,
       ai.assessment_id,
       ai.score_perc
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN groups AS g ON (g.id = ai.group_id)
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+      LEFT JOIN teams AS g ON (g.id = ai.team_id)
+      LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
     WHERE
       a.course_instance_id = $course_instance_id
       AND g.deleted_at IS NULL
@@ -38,11 +38,11 @@ WITH
   course_scores AS (
     -- For each user, select the instance with the highest score for each assessment
     SELECT DISTINCT
-      ON (cai.user_id, cai.assessment_id) cai.user_id,
+      ON (cai.user_id, cai.assessment_id) cai.id AS assessment_instance_id,
+      cai.user_id,
       cai.assessment_id,
       cai.score_perc,
-      cai.id AS assessment_instance_id,
-      cai.group_id
+      cai.team_id
     FROM
       course_assessment_instances AS cai
     ORDER BY
@@ -96,19 +96,19 @@ WITH
   course_users AS (
     -- Retrieve user data for each user
     SELECT
-      u.user_id,
+      u.id,
       u.uid,
       u.uin,
       u.name AS user_name,
-      users_get_displayed_role (u.user_id, $course_instance_id) AS role
+      users_get_displayed_role (u.id, $course_instance_id) AS role
     FROM
       user_ids
-      JOIN users AS u ON (u.user_id = user_ids.user_id)
+      JOIN users AS u ON (u.id = user_ids.user_id)
   ),
   user_scores AS (
     -- Aggregate scores for each user
     SELECT
-      u.user_id,
+      u.id AS user_id,
       JSONB_OBJECT_AGG(
         s.assessment_id,
         json_build_object(
@@ -124,15 +124,15 @@ WITH
                   json_build_object('uid', ou.uid, 'enrollment_id', e.id)
                 )
               FROM
-                group_users AS ogu
-                LEFT JOIN course_users AS ou ON (ou.user_id = ogu.user_id)
+                team_users AS ogu
+                LEFT JOIN course_users AS ou ON (ou.id = ogu.user_id)
                 LEFT JOIN enrollments AS e ON (
-                  ou.user_id = e.user_id
+                  ou.id = e.user_id
                   AND e.course_instance_id = $course_instance_id
                 )
               WHERE
-                ogu.group_id = s.group_id
-                AND ogu.user_id != u.user_id
+                ogu.team_id = s.team_id
+                AND ogu.user_id != u.id
             ),
             '[]'::json
           )
@@ -140,12 +140,12 @@ WITH
       ) AS scores
     FROM
       course_users AS u
-      JOIN course_scores AS s ON (s.user_id = u.user_id)
+      JOIN course_scores AS s ON (s.user_id = u.id)
     GROUP BY
-      u.user_id
+      u.id
   )
 SELECT
-  u.user_id,
+  u.id AS user_id,
   u.uid,
   u.uin,
   u.user_name,
@@ -155,10 +155,10 @@ SELECT
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (
-    e.user_id = u.user_id
+    e.user_id = u.id
     AND e.course_instance_id = $course_instance_id
   )
-  LEFT JOIN user_scores AS s ON (u.user_id = s.user_id)
+  LEFT JOIN user_scores AS s ON (u.id = s.user_id)
 ORDER BY
   role DESC,
   uid ASC;
@@ -171,7 +171,7 @@ SELECT
   ai.id AS assessment_instance_id
 FROM
   assessment_instances AS ai
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
-  LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
+  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
   ai.id = $assessment_instance_id
