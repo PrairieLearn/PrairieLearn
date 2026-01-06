@@ -1,7 +1,6 @@
 import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';
-import { NuqsAdapter } from '@prairielearn/ui';
 
 import {
   RawStudentCourseInstanceSchema,
@@ -11,8 +10,7 @@ import {
 } from '../../lib/client/safe-db-types.js';
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 
-import { EmptyStateCards } from './components/EmptyStateCards.js';
-import { StudentCoursesCard } from './components/StudentCoursesCard.js';
+import { HomeCards } from './components/HomeCards.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -69,40 +67,24 @@ export function Home({
     (ci) => ci.enrollment.status === 'joined' || ci.enrollment.status === 'invited',
   );
 
-  const hasCourses = listedStudentCourses.length > 0 || instructorCourses.length > 0;
-
   return (
     <div className="pt-5">
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-      {hasCourses ? (
-        <>
-          <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
-          <Hydrate>
-            <NuqsAdapter search={search}>
-              <StudentCoursesCard
-                studentCourses={listedStudentCourses}
-                hasInstructorCourses={instructorCourses.length > 0}
-                canAddCourses={canAddCourses}
-                csrfToken={csrfToken}
-                urlPrefix={urlPrefix}
-                isDevMode={isDevMode}
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
-              />
-            </NuqsAdapter>
-          </Hydrate>
-        </>
-      ) : (
-        <Hydrate>
-          <NuqsAdapter search={search}>
-            <EmptyStateCards
-              urlPrefix={urlPrefix}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
-            />
-          </NuqsAdapter>
-        </Hydrate>
-      )}
+      <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
+      <Hydrate>
+        <HomeCards
+          studentCourses={listedStudentCourses}
+          hasInstructorCourses={instructorCourses.length > 0}
+          canAddCourses={canAddCourses}
+          csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+          isDevMode={isDevMode}
+          search={search}
+          enrollmentManagementEnabled={enrollmentManagementEnabled}
+        />
+      </Hydrate>
     </div>
   );
 }

@@ -11,7 +11,10 @@ This is a monorepo that contains both applications (in `apps/*`) and libraries (
 - `apps/grader-host`: The application that runs external grading jobs.
 - `apps/workspace-host`: The application that runs workspace containers.
 
-If you update a package in `packages/`, make sure to add a changeset.
+## Packages
+
+Libraries live in `packages/`. If you update a package, you MUST add a changeset.
+Create a changeset using `yarn changeset`.
 
 ## Building and type checking
 
