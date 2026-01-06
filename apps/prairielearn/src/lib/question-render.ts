@@ -48,12 +48,6 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
-import {
-  type QuestionGroupPermissions,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  getUserRoles,
-} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
@@ -66,6 +60,12 @@ import {
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import type { UntypedResLocals } from './res-locals.types.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -248,6 +248,7 @@ export interface ResLocalsBuildLocals {
   variantAttemptsTotal: number;
   submissions: SubmissionForRender[];
   variantToken: string;
+  jobSequenceTokens: Record<string, string>;
 }
 
 function buildLocals({
@@ -292,6 +293,7 @@ function buildLocals({
     // Used for "auth" for external grading realtime results
     // ID is coerced to a string so that it matches what we get back from the client
     variantToken: generateSignedToken({ variantId: variant.id.toString() }, config.secretKey),
+    jobSequenceTokens: {},
   };
 
   if (!assessment || !assessment_instance || !assessment_question || !instance_question) {
