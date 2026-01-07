@@ -32,18 +32,12 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @returns An array of unique filenames found in the HTML.
  */
 function extractDynamicFileUrls(html: string, variantId: string): string[] {
-  // Match URLs like:
-  // - /pl/course/123/question/456/generatedFilesQuestion/variant/789/myfile.png
-  // - generatedFilesQuestion/variant/789/data.txt
-  // The variant ID must match exactly, and we capture the filename after it.
   const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^"'<>\\s]+)`, 'g');
-
   const filenames = new Set<string>();
   let match;
   while ((match = pattern.exec(html)) !== null) {
     filenames.add(match[1]);
   }
-
   return Array.from(filenames);
 }
 
@@ -75,14 +69,11 @@ async function testDynamicFiles(
   user_id: string,
   authn_user_id: string,
 ): Promise<void> {
-  // Don't test dynamic files for broken variants
   if (variant.broken_at) return;
 
-  // Only Freeform questions support dynamic files
   const questionModule = questionServers.getModule(question.type);
   if (!questionModule.file) return;
 
-  // Combine all HTML content for searching
   const allHtml = [
     htmls.questionHtml ?? '',
     htmls.answerHtml ?? '',
@@ -90,13 +81,11 @@ async function testDynamicFiles(
     ...(htmls.submissionHtmls ?? []),
   ].join('\n');
 
-  // Extract unique dynamic file URLs
   const filenames = extractDynamicFileUrls(allHtml, variant.id);
   if (filenames.length === 0) return;
 
   const question_course = await getQuestionCourse(question, course);
 
-  // Test each dynamic file
   for (const filename of filenames) {
     const { courseIssues } = await questionModule.file(
       filename,
@@ -376,7 +365,6 @@ async function testQuestion(
     user,
     authn_user,
     is_administrator: false,
-    // These will be populated by getAndRenderVariant
     questionHtml: undefined as string | undefined,
     submissionHtmls: undefined as string[] | undefined,
     answerHtml: undefined as string | undefined,
@@ -384,8 +372,6 @@ async function testQuestion(
   };
   try {
     await getAndRenderVariant(variant.id, null, initialRenderLocals);
-
-    // Test dynamic files from the initial render
     await testDynamicFiles(
       {
         questionHtml: initialRenderLocals.questionHtml,
@@ -429,7 +415,6 @@ async function testQuestion(
       user,
       authn_user,
       is_administrator: false,
-      // These will be populated by getAndRenderVariant
       questionHtml: undefined as string | undefined,
       submissionHtmls: undefined as string[] | undefined,
       answerHtml: undefined as string | undefined,
@@ -437,8 +422,6 @@ async function testQuestion(
     };
     try {
       await getAndRenderVariant(variant.id, null, finalRenderLocals);
-
-      // Test dynamic files from the final render
       await testDynamicFiles(
         {
           questionHtml: finalRenderLocals.questionHtml,
