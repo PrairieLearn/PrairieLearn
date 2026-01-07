@@ -266,7 +266,7 @@ export async function addUserToTeam({
       TeamForUpdateSchema,
     );
     if (team == null) {
-      throw new TeamOperationError('team does not exist.');
+      throw new TeamOperationError('Group does not exist.');
     }
 
     const user = await selectUserInCourseInstance({
