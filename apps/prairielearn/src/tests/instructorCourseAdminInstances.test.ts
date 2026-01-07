@@ -7,7 +7,11 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { selectCourseInstancePermissionForUser } from '../models/course-permissions.js';
+import {
+  deleteCoursePermissions,
+  selectCourseInstancePermissionForUser,
+  selectCoursePermissionForUser,
+} from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
 import { updateCourseRepository } from './helperCourse.js';
@@ -84,6 +88,7 @@ describe('Creating a course instance', () => {
             end_date: '2021-01-02T00:00:00',
             self_enrollment_enabled: true,
             self_enrollment_use_enrollment_code: true,
+            course_instance_permission: 'Student Data Editor',
           }),
         },
       );
@@ -126,6 +131,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2019',
           start_date: '2021-01-01T00:00:00',
           end_date: '2021-01-02T00:00:00',
+          course_instance_permission: 'None',
         }),
       },
     );
@@ -155,6 +161,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2020',
           start_date: '',
           end_date: '',
+          course_instance_permission: 'Student Data Editor',
         }),
       },
     );
@@ -202,6 +209,7 @@ describe('Creating a course instance', () => {
             end_date: '',
             self_enrollment_enabled: false,
             self_enrollment_use_enrollment_code: false,
+            course_instance_permission: 'Student Data Editor',
           }),
         },
       );
@@ -243,6 +251,7 @@ describe('Creating a course instance', () => {
           long_name: 'Fall 2019',
           start_date: '2021-01-01T00:00:00',
           end_date: '2021-01-02T00:00:00',
+          course_instance_permission: 'None',
         }),
       },
     );
@@ -272,6 +281,7 @@ describe('Creating a course instance', () => {
           long_name: '',
           start_date: '2021-01-01T00:00:00',
           end_date: '2021-01-02T00:00:00',
+          course_instance_permission: 'None',
         }),
       },
     );
@@ -303,6 +313,7 @@ describe('Creating a course instance', () => {
             long_name: 'Fall 2026',
             start_date: '',
             end_date: '',
+            course_instance_permission: 'None',
           }),
         },
       );
@@ -316,9 +327,9 @@ describe('Creating a course instance', () => {
   test.sequential(
     'create course instance with permission parameter succeeds for admin user',
     async () => {
-      // Note: The dev user is an administrator without a course_permissions record.
-      // The permission insertion is gracefully skipped for such users since they
-      // already have access via their admin role.
+      // The dev user is an administrator without a course_permissions record.
+      // Creating a course instance with a permission will create both the
+      // course_permissions record (with 'None' role) and the course_instance_permissions.
       const courseInstancePageResponse = await fetchCheerio(
         `${siteUrl}/pl/course/1/course_admin/instances`,
       );
@@ -348,20 +359,33 @@ describe('Creating a course instance', () => {
       const newCourseInstanceId = responseBody.course_instance_id;
       assert.isDefined(newCourseInstanceId);
 
-      // Admin user doesn't have course_permissions, so no course_instance_permission is created.
-      // This is expected - admins have full access via their admin role.
-      const permission = await selectCourseInstancePermissionForUser({
+      // Verify that the course_permission was created with role 'None'
+      const coursePermission = await selectCoursePermissionForUser({
+        course_id: '1',
+        user_id: '1',
+      });
+      assert.isNotNull(coursePermission);
+      assert.equal(coursePermission, 'None');
+
+      // Verify that the course_instance_permission was created with the specified role
+      const courseInstancePermission = await selectCourseInstancePermissionForUser({
         course_instance_id: newCourseInstanceId,
         user_id: '1',
       });
-
-      assert.isNull(permission);
+      assert.isNotNull(courseInstancePermission);
+      assert.equal(courseInstancePermission, 'Student Data Editor');
     },
   );
 
   test.sequential(
     'create course instance with None permission does not create permission record',
     async () => {
+      await deleteCoursePermissions({
+        course_id: '1',
+        user_id: '1',
+        authn_user_id: '1',
+      });
+
       const courseInstancePageResponse = await fetchCheerio(
         `${siteUrl}/pl/course/1/course_admin/instances`,
       );
@@ -391,13 +415,19 @@ describe('Creating a course instance', () => {
       const newCourseInstanceId = responseBody.course_instance_id;
       assert.isDefined(newCourseInstanceId);
 
-      // Verify that no permission was created in the database
-      const permission = await selectCourseInstancePermissionForUser({
+      // Verify that no course_instance_permissions record was created
+      const courseInstancePermission = await selectCourseInstancePermissionForUser({
         course_instance_id: newCourseInstanceId,
         user_id: '1',
       });
+      assert.isNull(courseInstancePermission);
 
-      assert.isNull(permission);
+      // Verify that no course_permissions record was created
+      const coursePermission = await selectCoursePermissionForUser({
+        course_id: '1',
+        user_id: '1',
+      });
+      assert.isNull(coursePermission);
     },
   );
 
@@ -422,6 +452,7 @@ describe('Creating a course instance', () => {
             long_name: 'Fall 2019 (2)',
             start_date: '', // It is invalid to specify an end date without a start date
             end_date: '2021-01-02T00:00:00',
+            course_instance_permission: 'None',
           }),
         },
       );
