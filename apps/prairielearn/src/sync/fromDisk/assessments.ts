@@ -360,8 +360,12 @@ function getParamsForAssessment(
     constant_question_value: assessment.constantQuestionValue,
     // Team configuration - use new teams schema if present, otherwise fall back to legacy group properties
     team_work: teamsConfig ? teamsConfig.enabled : assessment.groupWork,
-    team_max_size: teamsConfig ? (teamsConfig.maxMembers ?? null) : (assessment.groupMaxSize ?? null),
-    team_min_size: teamsConfig ? (teamsConfig.minMembers ?? null) : (assessment.groupMinSize ?? null),
+    team_max_size: teamsConfig
+      ? (teamsConfig.maxMembers ?? null)
+      : (assessment.groupMaxSize ?? null),
+    team_min_size: teamsConfig
+      ? (teamsConfig.minMembers ?? null)
+      : (assessment.groupMinSize ?? null),
     student_team_create: teamsConfig
       ? teamsConfig.studentPermissions.canCreateTeam
       : assessment.studentGroupCreate,
