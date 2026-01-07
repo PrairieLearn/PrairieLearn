@@ -1,5 +1,35 @@
 # @prairielearn/logger
 
+## 2.0.24
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 2.0.23
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 2.0.22
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 2.0.21
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 2.0.20
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
 ## 2.0.19
 
 ### Patch Changes

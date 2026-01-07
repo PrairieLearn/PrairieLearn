@@ -4,6 +4,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
+import { SprocQuestionOrderSchema } from '../lib/db-types.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -14,8 +15,22 @@ describe(
   'Assessment that forces students to complete questions in-order',
   { timeout: 60_000 },
   function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context = { siteUrl: `http://localhost:${config.serverPort}` } as {
+      siteUrl: string;
+      baseUrl: string;
+      courseInstanceBaseUrl: string;
+      assessmentId: string;
+      assessmentInstanceId: string;
+      assessmentInstanceUrl: string;
+      assessmentUrl: string;
+      instructorAssessmentQuestionsUrl: string;
+      expectedPercentages: number[];
+      instanceQuestions: { id: number; locked: boolean; url: string }[];
+      lockedQuestion: { id: number; url: string };
+      firstUnlockedQuestion: { id: number; url: string };
+      __csrf_token: string;
+      __variant_id: string;
+    };
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
@@ -53,8 +68,12 @@ describe(
      * Updates context.instanceQuestions to the current state of the assessment instance
      */
     async function refreshContextQuestions() {
-      const results = await sqldb.callAsync('question_order', [context.assessmentInstanceId]);
-      context.instanceQuestions = results.rows.map((e) => {
+      const results = await sqldb.callRows(
+        'question_order',
+        [context.assessmentInstanceId],
+        SprocQuestionOrderSchema,
+      );
+      context.instanceQuestions = results.map((e) => {
         return {
           id: Number(e.instance_question_id),
           locked: Boolean(e.sequence_locked),
@@ -148,13 +167,12 @@ describe(
       },
     );
 
-    async function submitQuestion(score, question) {
+    async function submitQuestion(score: number, question: { id: number; url: string }) {
       const preSubmissionResponse = await helperClient.fetchCheerio(question.url);
       assert.isTrue(preSubmissionResponse.ok);
       helperClient.extractAndSaveCSRFToken(context, preSubmissionResponse.$, '.question-form');
-      context.__variant_id = preSubmissionResponse
-        .$('.question-form input[name="__variant_id"]')
-        .attr('value');
+      context.__variant_id =
+        preSubmissionResponse.$('.question-form input[name="__variant_id"]').attr('value') ?? '';
       const response = await helperClient.fetchCheerio(question.url, {
         method: 'POST',
         body: new URLSearchParams({
@@ -207,7 +225,7 @@ describe(
       assert.isFalse(context.instanceQuestions[4].locked);
     });
 
-    test.sequential('Unlocking question 4 does NOT cascade to question 6', async function () {
+    test.sequential('Unlocking question 4 does NOT cascade to question 6', function () {
       assert.isTrue(context.instanceQuestions[5].locked);
     });
   },

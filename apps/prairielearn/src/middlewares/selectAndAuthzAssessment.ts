@@ -22,6 +22,8 @@ const SelectAndAuthzAssessmentSchema = z.object({
   assessment_label: z.string(),
 });
 
+export type ResLocalsAssessment = z.infer<typeof SelectAndAuthzAssessmentSchema>;
+
 export default asyncHandler(async (req, res, next) => {
   const row = await queryOptionalRow(
     sql.select_and_auth,
@@ -34,6 +36,11 @@ export default asyncHandler(async (req, res, next) => {
     SelectAndAuthzAssessmentSchema,
   );
   if (row === null) {
+    res.status(403).send(AccessDenied({ resLocals: res.locals }));
+    return;
+  }
+  // TODO: consider row.assessment.modern_access_control
+  if (!row.authz_result.authorized) {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }

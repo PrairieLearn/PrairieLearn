@@ -3,17 +3,13 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { JobStatus } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
-import {
-  type Course,
-  IdSchema,
-  JobSequenceSchema,
-  QuestionSchema,
-  UserSchema,
-} from '../../lib/db-types.js';
+import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -36,10 +32,14 @@ export function CourseSyncs({
   resLocals,
   images,
   jobSequences,
+  jobSequenceCount,
+  showAllJobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
+  jobSequenceCount: number;
+  showAllJobSequences: boolean;
 }) {
   const { course, __csrf_token, urlPrefix } = resLocals;
 
@@ -151,6 +151,14 @@ export function CourseSyncs({
             </tbody>
           </table>
         </div>
+        ${!showAllJobSequences && jobSequenceCount > jobSequences.length
+          ? html`
+              <div class="card-footer">
+                Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
+                <a href="?all" aria-label="View all sync jobs">View all</a>
+              </div>
+            `
+          : ''}
       </div>
     `,
   });
@@ -199,11 +207,15 @@ function ImageTable({
                 </td>
                 <td>${image.tag}</td>
                 <td>
-                  <code class="mb-0" title="${image.digest}">
-                    ${(image.digest?.length ?? 0) <= 24
-                      ? image.digest
-                      : `${image.digest?.slice(0, 24)}...`}
-                  </code>
+                  ${image.digest
+                    ? html`
+                        <code class="mb-0" title="${image.digest}">
+                          ${image.digest.length <= 24
+                            ? image.digest
+                            : `${image.digest.slice(0, 24)}...`}
+                        </code>
+                      `
+                    : html`&mdash;`}
                 </td>
                 <td>${(image.size ?? 0) > 0 ? filesize(image.size ?? 0) : ''}</td>
                 <td>

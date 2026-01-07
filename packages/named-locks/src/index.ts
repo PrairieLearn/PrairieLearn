@@ -91,7 +91,7 @@ export async function init(
 ) {
   renewIntervalMs = namedLocksConfig.renewIntervalMs ?? renewIntervalMs;
   await pool.initAsync(pgConfig, idleErrorHandler);
-  await pool.queryAsync(
+  await pool.execute(
     'CREATE TABLE IF NOT EXISTS named_locks (id bigserial PRIMARY KEY, name text NOT NULL UNIQUE);',
     {},
   );
@@ -142,7 +142,7 @@ export async function doWithLock<T, U = never>(
  * @param options Optional parameters.
  */
 async function getLock(name: string, options: LockOptions) {
-  await pool.queryAsync(
+  await pool.execute(
     'INSERT INTO named_locks (name) VALUES ($name) ON CONFLICT (name) DO NOTHING;',
     { name },
   );

@@ -8,7 +8,6 @@ import * as sqldb from '@prairielearn/postgres';
 import {
   QuestionSchema,
   SprocAssessmentsFormatForQuestionSchema,
-  SprocTagsForQuestionSchema,
   TopicSchema,
 } from '../lib/db-types.js';
 
@@ -17,17 +16,23 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const SelectAndAuthSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: SprocTagsForQuestionSchema.nullable(),
   open_issue_count: z.coerce.number(),
 });
 
 const SelectAndAuthWithCourseInstanceSchema = z.object({
   question: QuestionSchema,
   topic: TopicSchema,
-  tags: SprocTagsForQuestionSchema.nullable(),
   assessments: SprocAssessmentsFormatForQuestionSchema.nullable(),
   open_issue_count: z.coerce.number(),
 });
+
+export type ResLocalsInstructorQuestionWithCourseInstance = z.infer<
+  typeof SelectAndAuthWithCourseInstanceSchema
+>;
+
+export type ResLocalsInstructorQuestion = z.infer<typeof SelectAndAuthSchema> & {
+  questionRenderContext?: 'manual_grading' | 'ai_grading';
+};
 
 export async function selectAndAuthzInstructorQuestion(req: Request, res: Response) {
   if (res.locals.course_instance) {

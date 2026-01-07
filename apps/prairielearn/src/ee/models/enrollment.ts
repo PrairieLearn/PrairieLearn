@@ -24,6 +24,8 @@ interface EnrollmentCounts {
  * Enrollments are counted during the time period spanning from the current
  * time back to the given `created_since` time, which is a Postgres interval
  * string like '1 year' or '6 months'.
+ *
+ * Only considers the count of joined enrollments.
  */
 export async function getEnrollmentCountsForInstitution({
   institution_id,
@@ -49,6 +51,8 @@ export async function getEnrollmentCountsForInstitution({
  * Enrollments are counted during the time period spanning from the current
  * time back to the given `created_since` time, which is a Postgres interval
  * string like '1 year' or '6 months'.
+ *
+ * Only considers the count of joined enrollments.
  */
 export async function getEnrollmentCountsForCourse({
   course_id,
@@ -74,6 +78,8 @@ export async function getEnrollmentCountsForCourse({
 
 /**
  * Returns counts of free and paid enrollments for the given course instance.
+ *
+ * Only considers the count of joined enrollments.
  */
 export async function getEnrollmentCountsForCourseInstance(
   course_instance_id: string,
@@ -90,10 +96,11 @@ export async function getEnrollmentCountsForCourseInstance(
   };
 }
 
-export enum PotentialEnterpriseEnrollmentStatus {
+export enum PotentialEnrollmentStatus {
   ALLOWED = 'allowed',
   LIMIT_EXCEEDED = 'limit_exceeded',
   PLAN_GRANTS_REQUIRED = 'plan_grants_required',
+  INELIGIBLE = 'ineligible',
 }
 
 /**
@@ -110,22 +117,22 @@ export enum PotentialEnterpriseEnrollmentStatus {
 export async function checkPotentialEnterpriseEnrollment({
   institution,
   course,
-  course_instance,
-  authz_data,
+  courseInstance,
+  authzData,
 }: {
   institution: Institution;
   course: Course;
-  course_instance: CourseInstance;
-  authz_data: any;
-}): Promise<PotentialEnterpriseEnrollmentStatus> {
+  courseInstance: CourseInstance;
+  authzData: any;
+}): Promise<Exclude<PotentialEnrollmentStatus, PotentialEnrollmentStatus.INELIGIBLE>> {
   const hasPlanGrants = await checkPlanGrants({
     institution,
-    course_instance,
-    authz_data,
+    courseInstance,
+    authzData,
   });
 
   if (!hasPlanGrants) {
-    return PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED;
+    return PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED;
   }
 
   // Check if the user is a paid user. If they are, we'll bypass any enrollment
@@ -139,12 +146,12 @@ export async function checkPotentialEnterpriseEnrollment({
   // user, we would have blocked the enrollment.
   const planGrants = await getPlanGrantsForContext({
     institution_id: institution.id,
-    course_instance_id: course_instance.id,
-    user_id: authz_data.user.user_id,
+    course_instance_id: courseInstance.id,
+    user_id: authzData.user.id,
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
   if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
-    return PotentialEnterpriseEnrollmentStatus.ALLOWED;
+    return PotentialEnrollmentStatus.ALLOWED;
   }
 
   // Note that this check is susceptible to race conditions: if two users
@@ -159,11 +166,11 @@ export async function checkPotentialEnterpriseEnrollment({
     created_since: '1 year',
   });
   const courseEnrollmentCounts = await getEnrollmentCountsForCourse({
-    course_id: course_instance.course_id,
+    course_id: courseInstance.course_id,
     created_since: '1 year',
   });
   const courseInstanceEnrollmentCounts = await getEnrollmentCountsForCourseInstance(
-    course_instance.id,
+    courseInstance.id,
   );
 
   const freeInstitutionEnrollmentCount = institutionEnrollmentCounts.free;
@@ -183,7 +190,7 @@ export async function checkPotentialEnterpriseEnrollment({
   const courseYearlyEnrollmentLimit =
     course.yearly_enrollment_limit ?? institutionYearlyEnrollmentLimit;
   const courseInstanceEnrollmentLimit =
-    course_instance.enrollment_limit ??
+    courseInstance.enrollment_limit ??
     course.course_instance_enrollment_limit ??
     institution.course_instance_enrollment_limit;
 
@@ -192,8 +199,8 @@ export async function checkPotentialEnterpriseEnrollment({
     freeCourseEnrollmentCount + 1 > courseYearlyEnrollmentLimit ||
     freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
   ) {
-    return PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED;
+    return PotentialEnrollmentStatus.LIMIT_EXCEEDED;
   }
 
-  return PotentialEnterpriseEnrollmentStatus.ALLOWED;
+  return PotentialEnrollmentStatus.ALLOWED;
 }

@@ -17,6 +17,7 @@ SELECT
   aq.max_manual_points,
   aq.max_auto_points,
   aq.init_points,
+  aq.allow_real_time_grading,
   qo.row_order,
   qo.question_number,
   z.max_points AS zone_max_points,
@@ -32,7 +33,7 @@ SELECT
       f.instance_question_id = iq.id
       AND f.deleted_at IS NULL
   )::int AS file_count,
-  qo.sequence_locked AS sequence_locked,
+  qo.sequence_locked,
   (lag(aq.effective_advance_score_perc) OVER w) AS prev_advance_score_perc,
   CASE
     WHEN a.type = 'Homework' THEN ''

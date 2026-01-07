@@ -2,78 +2,55 @@ import crypto from 'node:crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { AssessmentSchema, LtiCredentialSchema, LtiLinkSchema } from '../../lib/db-types.js';
 
-import { InstructorInstanceAdminLti } from './instructorInstanceAdminLti.html.js';
+import { InstructorInstanceAdminLti, LtiDataSchema } from './instructorInstanceAdminLti.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-const LtiDataSchema = z.object({
-  assessments: z
-    .array(
-      z.object({
-        assessment_id: AssessmentSchema.shape.id,
-        label: z.string(),
-        title: AssessmentSchema.shape.title,
-        tid: AssessmentSchema.shape.tid,
-      }),
-    )
-    .nullable(),
-  lti_credentials: z
-    .array(
-      z.object({
-        ...LtiCredentialSchema.pick({
-          id: true,
-          course_instance_id: true,
-          consumer_key: true,
-          secret: true,
-          created_at: true,
-        }).shape,
-        created: z.string(),
-        deleted: z.string().nullable(),
-      }),
-    )
-    .nullable(),
-  lti_links: z
-    .array(
-      z.object({
-        ...LtiLinkSchema.pick({
-          id: true,
-          resource_link_title: true,
-          resource_link_description: true,
-          assessment_id: true,
-          created_at: true,
-        }).shape,
-        created: z.string(),
-      }),
-    )
-    .nullable(),
-});
 
 router.get(
   '/',
   asyncHandler(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
-      res.locals.course_owners = await getCourseOwners(res.locals.course.id);
-      res.status(403).send(InstructorInstanceAdminLti({ resLocals: res.locals }));
+      // Access denied, but instead of sending them to an error page, we'll show
+      // them an explanatory message and prompt them to get the right permissions.
+      const courseOwners = await getCourseOwners(res.locals.course.id);
+      res.status(403).send(
+        InsufficientCoursePermissionsCardPage({
+          resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'lti',
+          },
+          courseOwners,
+          pageTitle: 'LTI configuration',
+          requiredPermissions: 'Editor',
+        }),
+      );
       return;
     }
 
-    const result = await sqldb.queryRow(
+    const { assessments, lti_credentials, lti_links } = await sqldb.queryRow(
       sql.lti_data,
       { course_instance_id: res.locals.course_instance.id },
       LtiDataSchema,
     );
-    Object.assign(res.locals, result);
 
-    res.send(InstructorInstanceAdminLti({ resLocals: res.locals }));
+    res.send(
+      InstructorInstanceAdminLti({
+        resLocals: res.locals,
+        assessments,
+        lti_credentials,
+        lti_links,
+      }),
+    );
   }),
 );
 
@@ -88,20 +65,20 @@ router.post(
     }
 
     if (req.body.__action === 'lti_new_cred') {
-      await sqldb.queryAsync(sql.insert_cred, {
+      await sqldb.execute(sql.insert_cred, {
         key: 'K' + randomString(),
         secret: 'S' + randomString(),
         course_instance_id: res.locals.course_instance.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'lti_del_cred') {
-      await sqldb.queryAsync(sql.delete_cred, {
+      await sqldb.execute(sql.delete_cred, {
         id: req.body.lti_link_id,
         ci_id: res.locals.course_instance.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'lti_link_target') {
-      await sqldb.queryAsync(sql.update_link, {
+      await sqldb.execute(sql.update_link, {
         assessment_id: req.body.newAssessment || null,
         id: req.body.lti_link_id,
         ci_id: res.locals.course_instance.id,

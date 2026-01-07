@@ -1,17 +1,17 @@
 columns
-    group_id: bigint
     id: bigint not null default nextval('last_accesses_id_seq'::regclass)
     last_access: timestamp with time zone
+    team_id: bigint
     user_id: bigint
 
 indexes
     last_accesses_pkey: PRIMARY KEY (id) USING btree (id)
-    last_accesses_group_id_key: UNIQUE (group_id) USING btree (group_id)
+    last_accesses_team_id_key: UNIQUE (team_id) USING btree (team_id)
     last_accesses_user_id_key: UNIQUE (user_id) USING btree (user_id)
 
 check constraints
-    user_group_xor: CHECK (user_id IS NOT NULL AND group_id IS NULL OR group_id IS NOT NULL AND user_id IS NULL)
+    user_team_xor: CHECK (user_id IS NOT NULL AND team_id IS NULL OR team_id IS NOT NULL AND user_id IS NULL)
 
 foreign-key constraints
-    last_accesses_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE CASCADE
-    last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE CASCADE
+    last_accesses_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -1,8 +1,8 @@
-import { CloudWatch, type MetricDatum } from '@aws-sdk/client-cloudwatch';
+import { CloudWatch, type MetricDatum, type StandardUnit } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { z } from 'zod';
 
-import { callRow, loadSqlEquiv, queryAsync } from '@prairielearn/postgres';
+import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
@@ -52,7 +52,7 @@ async function getLoadStats() {
   );
 }
 
-const cloudwatch_definitions = {
+const cloudwatch_definitions: Record<string, { name: string; unit: StandardUnit }> = {
   workspace_jobs_capacity_desired: {
     name: 'DesiredJobCapacity',
     unit: 'Count',
@@ -193,7 +193,7 @@ async function handleWorkspaceAutoscaling(stats: WorkspaceLoadStats) {
         },
       });
       const instance_ids = (data.Instances ?? []).map((instance) => instance.InstanceId);
-      await queryAsync(sql.insert_new_instances, { instance_ids });
+      await execute(sql.insert_new_instances, { instance_ids });
     }
   } else if (desired_hosts < ready_hosts) {
     const surplus = ready_hosts - desired_hosts;

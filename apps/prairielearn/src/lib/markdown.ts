@@ -12,7 +12,7 @@ const langRegex = /([^\\{]*)?(\{(.*)\})?/;
 
 // The question processor also includes the use of pl-code instead of pre,
 // and does not sanitize scripts
-const questionMarked = await createMarkedInstance({
+const questionMarked = createMarkedInstance({
   sanitize: false,
   extensions: [
     {

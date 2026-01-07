@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';
@@ -19,7 +20,10 @@ function checkAssessmentSet(
 ) {
   assert.isOk(syncedAssessmentSet);
   for (const key of Object.keys(assessmentSet)) {
-    assert.equal(syncedAssessmentSet[key], assessmentSet[key]);
+    assert.equal(
+      syncedAssessmentSet[key as keyof AssessmentSet],
+      assessmentSet[key as keyof AssessmentSet],
+    );
   }
 }
 
@@ -115,7 +119,7 @@ describe('Assessment set syncing', () => {
       (as) => as.name === newAssessmentSet1.name,
     );
     checkAssessmentSet(syncedAssessmentSet, newAssessmentSet2);
-    const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
     const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
     assert.match(syncedCourse?.sync_warnings ?? '', /Found duplicates in 'assessmentSets'/);
   });

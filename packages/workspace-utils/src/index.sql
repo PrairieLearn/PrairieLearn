@@ -140,9 +140,9 @@ INSERT INTO
   )
 SELECT
   'Workspace',
-  i.id,
-  c.id,
-  ci.id,
+  i.id AS institution_id,
+  c.id AS course_id,
+  ci.id AS course_instance_id,
   date_trunc('day', w.state_updated_at, 'UTC'),
   -- Use v.authn_user_id because we don't care about really tracking the
   -- effective user, we are only using this to avoid contention when there are
@@ -156,7 +156,7 @@ FROM
   workspaces AS w
   JOIN variants AS v ON (v.workspace_id = w.id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS c ON (c.id = q.course_id)
+  JOIN courses AS c ON (c.id = q.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)

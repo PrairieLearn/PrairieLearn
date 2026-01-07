@@ -5,9 +5,8 @@ import { html } from '@prairielearn/html';
 import { JobStatus } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import { renderHtml } from '../../lib/preact-html.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -20,7 +19,7 @@ export function InstructorAssessmentRegrading({
   resLocals,
   regradingJobSequences,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   regradingJobSequences: RegradingJobSequence[];
 }) {
   return PageLayout({
@@ -35,15 +34,6 @@ export function InstructorAssessmentRegrading({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${regradeAllAssessmentInstancesModal({
@@ -97,7 +87,7 @@ export function InstructorAssessmentRegrading({
               </tr>
             </thead>
             <tbody>
-              ${regradingJobSequences && regradingJobSequences.length > 0
+              ${regradingJobSequences.length > 0
                 ? regradingJobSequences.map((jobSequence) => {
                     return html`
                       <tr>

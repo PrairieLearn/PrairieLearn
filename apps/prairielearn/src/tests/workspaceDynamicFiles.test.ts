@@ -12,6 +12,15 @@ async function checkFileContents(targetPath: string, filename: string, expectedC
   assert.equal(fileContents, expectedContents);
 }
 
+async function checkFilePermissions(
+  targetPath: string,
+  filename: string,
+  expectedPermissions: number,
+) {
+  const fileStats = await fs.stat(join(targetPath, filename));
+  assert.equal(fileStats.mode & 0o777, expectedPermissions);
+}
+
 describe('Workspace dynamic files', function () {
   it('succeeds with valid dynamic files', async () => {
     const targetPath = await tmp.dir({ unsafeCleanup: true });
@@ -173,6 +182,12 @@ describe('Workspace dynamic files', function () {
             // File without contents or questionFile
             name: 'no_contents.txt',
           },
+          {
+            // File with invalid mode
+            name: 'invalid_mode.sh',
+            contents: '#!/bin/bash\necho "test"\n',
+            mode: 0o777,
+          },
         ],
       },
       correctAnswers: {
@@ -199,6 +214,7 @@ describe('Workspace dynamic files', function () {
         msg: 'has neither "contents" nor "questionFile" nor "serverFilesCourseFile"',
         contents: '',
       },
+      { file: 'invalid_mode.sh', msg: 'unsupported mode' },
     ];
 
     for (const expectedError of expectedErrors) {
@@ -215,6 +231,97 @@ describe('Workspace dynamic files', function () {
       }
     }
 
-    assert.lengthOf(fileGenerationErrors, 8);
+    assert.lengthOf(fileGenerationErrors, 9);
+  });
+
+  it('preserves executable permissions from static files', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'example',
+      },
+      correctAnswers: {
+        b: 10,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that the static file with executable permissions is preserved
+    const staticScriptPath = join(targetPath.path, 'script.sh');
+    const staticScriptStats = await fs.stat(staticScriptPath);
+    assert.equal(staticScriptStats.mode & 0o755, 0o755);
+  });
+
+  it('preserves executable permissions from template files', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'test',
+      },
+      correctAnswers: {
+        b: 42,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that the rendered template file has executable permissions
+    await checkFilePermissions(targetPath.path, 'script.sh', 0o755);
+
+    // Check that the simple (non-rendered) template file has executable permissions
+    await checkFilePermissions(targetPath.path, 'simple_script.sh', 0o755);
+
+    // Verify the content was correctly rendered
+    const scriptContent = await fs.readFile(join(targetPath.path, 'script.sh'), 'utf-8');
+    assert.include(scriptContent, 'params: test', 'Template should be rendered with params');
+  });
+
+  it('preserves executable permissions from dynamic files with mode', async () => {
+    const targetPath = await tmp.dir({ unsafeCleanup: true });
+    const { fileGenerationErrors } = await generateWorkspaceFiles({
+      serverFilesCoursePath: join(TEST_COURSE_PATH, 'serverFilesCourse'),
+      questionBasePath: join(TEST_COURSE_PATH, 'questions', 'workspace'),
+      params: {
+        a: 'dynamic',
+        _workspace_files: [
+          {
+            name: 'executable_script.sh',
+            contents: '#!/bin/bash\necho "Executable from params"\n',
+            mode: 0o755,
+          },
+          {
+            name: 'non_executable.txt',
+            contents: 'Not executable\n',
+            mode: 0o644,
+          },
+          {
+            name: 'no_mode_specified.txt',
+            contents: 'Default permissions\n',
+          },
+        ],
+      },
+      correctAnswers: {
+        b: 99,
+      },
+      targetPath: targetPath.path,
+    });
+
+    assert.lengthOf(fileGenerationErrors, 0);
+
+    // Check that dynamic file with mode=0o755 is executable
+    await checkFilePermissions(targetPath.path, 'executable_script.sh', 0o755);
+
+    // Check that dynamic file with mode=0o644 is not executable
+    await checkFilePermissions(targetPath.path, 'non_executable.txt', 0o644);
+
+    // Check that dynamic file without mode uses default permissions
+    await checkFilePermissions(targetPath.path, 'no_mode_specified.txt', 0o644);
   });
 });

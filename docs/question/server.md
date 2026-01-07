@@ -38,7 +38,7 @@ def generate(data):
 
 These values can be used in the `question.html` file with Mustache syntax. For example, you can use `data["params"]["x"]` with `{{params.x}}`.
 
-The snippet below uses the [`<pl-question-panel>`](../elements.md#pl-question-panel-element) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
+The snippet below uses the [`<pl-question-panel>`](../elements/pl-question-panel.md) element so that it is only shown within the context of the [question panel](./template.md#question-panel).
 
 <!-- prettier-ignore -->
 ```html title="question.html"
@@ -138,7 +138,7 @@ Although questions with custom grading may not rely on the full grading function
     Data stored under the `"submitted_answers"` key in the data dictionary may be of varying type. Specifically, the `pl-integer-input`
     element sometimes stores very large integers as strings instead of the Python `int` type used in most cases. The best practice for custom grader
     code in this case is to always cast the data to the desired type, for example `int(data["submitted_answers"][name])`. See the
-    [PrairieLearn elements documentation](../elements.md) for more detailed discussion related to specific elements.
+    [PrairieLearn elements documentation](../elements/index.md) for more detailed discussion related to specific elements.
 
 The `parse()` function can also be used to create custom files to be sent to an external grader. This can be done with the `pl.add_submitted_file()` function, as in the example below:
 
@@ -169,7 +169,7 @@ The values typically read or modified by a `grade` function are:
 
 It is recommended that you give additional feedback to the student as they make progress towards the solution, and reward this progress with partial credit.
 
-If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer. In the snipped below, we update `data["score"]` using the [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] utility.
+If this function is not defined, the question will be graded automatically based on the correct answers set in `data["correct_answers"]`. Each answer the student provides will also be given feedback from the element that graded it. If the `grade` function _is_ defined, the data you receive has already been graded by the elements. You should ensure you only award partial credit if the answer isn't correct, otherwise you might give partial credit for a correct answer. In the snippet below, we update `data["score"]` using the [`set_weighted_score_data`][prairielearn.question_utils.set_weighted_score_data] utility.
 
 You can set `data["format_errors"][NAME]` to mark the submission as invalid. This will cause the question to not use up one of the student's attempts on assessments. However, you are encouraged to do as many checks for invalid data as possible in `parse` instead of `grade`; the `parse` function is called when the student hits "Save only", in manually or externally graded questions, and in assessments without real-time grading.
 
@@ -204,7 +204,7 @@ Some elements provide feedback through `data["partial_scores"][NAME]["feedback"]
     {{#feedback.value1}}<div>Feedback: {{.}}</div>{{/feedback.value1}}
     ```
 
-Overall question feedback in `data["feedback"][NAME]` needs to be rendered explicity in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]`, if supported by the element, will be rendered automatically by the elements, assuming the element is visible.
+Overall question feedback in `data["feedback"][NAME]` needs to be rendered explicitly in the `question.html` template using `{{feedback.NAME}}`. Feedback given in `data["partial_scores"][NAME]["feedback"]`, if supported by the element, will be rendered automatically by the elements, assuming the element is visible.
 
 ### Grading floating-point answers
 
@@ -311,10 +311,10 @@ This table summarizes the functions that can be defined in `server.py`.
 | `generate()` | :white_check_mark: | `correct_answers`, `params`                                                                              | Generate the parameter and true answers for a new random question variant. Set `data["params"][name]` and `data["correct_answers"][name]` for any variables as needed. Modify the `data` dictionary in-place.                                                                 |
 | `prepare()`  | :white_check_mark: | `answers_names`, `correct_answers`, `params`                                                             | Final question preparation after element code has run. Can modify data as necessary. Modify the `data` dictionary in-place.                                                                                                                                                   |
 | `render()`   | :x:                | N/A. Returns `html` as a string                                                                          | Render the HTML for one panel and return it as a string.                                                                                                                                                                                                                      |
-| `parse()`    | :white_check_mark: | `correct_answers`, `format_errors`, `feedback`, `submitted_answers`                                      | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
+| `parse()`    | :white_check_mark: | `correct_answers`, `feedback`, `format_errors`, `params`, `submitted_answers`                            | Parse the `data["submitted_answers"][var]` data entered by the student, modifying this variable. Modify the `data` dictionary in-place.                                                                                                                                       |
 | `grade()`    | :white_check_mark: | `correct_answers`, `feedback`, `format_errors`, `params`, `partial_scores`, `score`, `submitted_answers` | Grade `data["submitted_answers"][var]` to determine a score. Store the score and any feedback in `data["partial_scores"][var]["score"]` and `data["partial_scores"][var]["feedback"]`. Modify the `data` dictionary in-place.                                                 |
 | `file()`     | :x:                | N/A. Returns an `object` (string, bytes-like, file-like)                                                 | Generate a file object dynamically in lieu of a physical file. Trigger via `type="dynamic"` in the question element (e.g., `pl-figure`, `pl-file-download`). Access the requested filename via `data['filename']`. If `file()` returns nothing, an empty string will be used. |
-| `test()`     | :white_check_mark: | `partial_scores`, `format_errors`, `score`, `raw_submitted_answers`, `feedback`, `gradable`              | Test the question, and ensure it can grade a variety of student inputs.                                                                                                                                                                                                       |
+| `test()`     | :white_check_mark: | `feedback`, `format_errors`, `gradable`, `partial_scores`, `raw_submitted_answers`, `score`              | Generate test cases to ensure the question can grade a variety of student inputs.                                                                                                                                                                                             |
 
 As shown in the table, all functions (except for `render`) accept a single argument, `data` (a dictionary), and modify it in place. The `render` function accepts two arguments: the `data` dictionary and the `html` content computed from the template and elements.
 
@@ -326,7 +326,7 @@ As shown in the table, all functions (except for `render`) accept a single argum
 | `correct_answers`       | `dict`  | Correct answers for the question variant. Each item maps from a named answer to a value.                                             |
 | `submitted_answers`     | `dict`  | Student answers submitted for the question after parsing.                                                                            |
 | `raw_submitted_answers` | `dict`  | Raw student answers submitted for the question.                                                                                      |
-| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to a error message.                                  |
+| `format_errors`         | `dict`  | Dictionary of format errors for each answer. Each item maps from a named answer to an error message.                                 |
 | `partial_scores`        | `dict`  | Dictionary of partial scores for each answer. Each entry is a dictionary with the keys `score` (float) and `weight` (int, optional). |
 | `score`                 | `float` | The total score for the question variant.                                                                                            |
 | `feedback`              | `dict`  | Dictionary of [feedback](#providing-feedback) for each answer. Each item maps from a named answer to a feedback message.             |
@@ -418,7 +418,7 @@ def file(data):
 
 Requests for files to this URL will be routed to the `file()` function in `server.py` since the `type` of `pl-figure` is set to `"dynamic"`. The filename requested is stored in `data["filename"]`, and the file contents should be returned from the `file()` function.
 
-We recommend using the [`pl-figure`](../elements.md#pl-figure-element) and [`pl-file-download`](../elements.md#pl-file-download-element) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
+We recommend using the [`pl-figure`](../elements/pl-figure.md) and [`pl-file-download`](../elements/pl-file-download.md) elements to display or download files. Specifically, you should use `pl-file-download` for files that should be downloaded or shown in a separate tab (e.g. PDFs, source code, etc.), and `pl-figure` for images that should be displayed.
 
 ??? info "Advanced dynamic file usage"
 

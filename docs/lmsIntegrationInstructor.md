@@ -24,7 +24,17 @@ go to "Settings" in the left-hand menu, then choose the "Navigation" tab and fin
 PrairieLearn in the list of hidden items. Drag PrairieLearn to the top visible list and
 click Save. When the page reloads, you should see PrairieLearn in your Canvas course left menu.
 
-If PrairieLearn is not listed under "Settings" / "Navigation" then it needs to be enabled for your university. Please email <support@prairielearn.com> to get it set up.
+!!! note
+
+    If PrairieLearn does not appear under Settings → Navigation in your Canvas course:
+
+    1. Confirm you have a Teacher or Designer role (only these roles can enable navigation items).
+    2. Check with a Canvas administrator that the PrairieLearn LTI 1.3 tool has been configured at your institution.
+      - If it is already installed, the admin may still need to enable or expose the tool for your sub‑account or specifically for your course so it appears in Navigation.
+      - If it has never been installed, a Canvas administrator must coordinate installation with the PrairieLearn team.
+    3. After installation/enabling, revisit Settings → Navigation to move PrairieLearn into the active (visible) list and Save.
+
+    Canvas administrators who need to configure the integration can contact <support@prairielearn.com>.
 
 The next step is to set up a connection between the Canvas course and a PrairieLearn course
 instance. As a Canvas Teacher, click the PrairieLearn left menu link. You will be presented
@@ -47,7 +57,7 @@ assessment with a Canvas assignment. There are two ways to do this:
 
 1. **Create a new Canvas assignment for the PrairieLearn assessment.** In PrairieLearn, go to your course instance and then the "Integrations" tab. Click the "Link assignment" button and then the "Create a new assignment" button. This will create a new Canvas assignment and link it to the PrairieLearn assessment.
 2. **Link an existing Canvas assignment.** If you already have a Canvas assignment that you want to link to a PrairieLearn assessment, there is a multistep procedure:
-   1. In PrairieLearn, go to the assessment, then the "Settings" tab, and copy the "Student Link".
+   1. In PrairieLearn, go to the assessment, then the "Settings" tab, and copy the "Student link".
    2. In Canvas, go to the Assignments page. Next to your assignment click the three-dots menu and select "Edit". Change the "Submission Type" to "External Tool" and set the "External Tool URL" to the student link that you copied above from PrairieLearn. Check "Load This Tool In A New Tab". Save the assignment changes.
    3. In PrairieLearn, go to your course instance and then the "Integrations" tab. Click the "Link assignment" button and then the "Pick from existing" button. Select the Canvas assignment and click "Link assignment".
 

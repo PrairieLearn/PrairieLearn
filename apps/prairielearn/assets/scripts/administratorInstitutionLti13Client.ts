@@ -3,7 +3,7 @@ import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { type LTI13InstancePlatforms } from '../../src/ee/pages/administratorInstitutionLti13/administratorInstitutionLti13.types.js';
 
 onDocumentReady(() => {
-  const platformDefaults = decodeData<LTI13InstancePlatforms>('platform_defaults_data') || [];
+  const platformDefaults = decodeData<LTI13InstancePlatforms>('platform_defaults_data');
 
   const platformSelector = document.querySelector<HTMLSelectElement>('#choosePlatform');
   const updateParams = document.querySelector<HTMLInputElement>('#update_params');

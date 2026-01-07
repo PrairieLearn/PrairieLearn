@@ -24,9 +24,9 @@ dnf -y install \
     lsof \
     make \
     openssl \
-    postgresql16 \
-    postgresql16-server \
-    postgresql16-contrib \
+    postgresql17 \
+    postgresql17-server \
+    postgresql17-contrib \
     procps-ng \
     redis6 \
     tar \
@@ -51,12 +51,13 @@ for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
+mkdir /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
-dnf -y install postgresql16-server-devel
+dnf -y install postgresql17-server-devel
 cd /tmp
-git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
 cd pgvector
 # This Docker image will be built in GitHub Actions but must run on a variety
 # of platforms, so we need to build it without machine-specific instructions.
@@ -65,22 +66,17 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-dnf -y remove postgresql16-server-devel
+dnf -y remove postgresql17-server-devel
 dnf -y autoremove
 
-# TODO: use standard OS Python installation? The only reason we switched to Conda
-# was to support R and `rpy2`, but now that we've removed those, we might not
-# get any benefit from Conda.
-echo "setting up conda..."
+echo "setting up uv + venv..."
 cd /
-arch="$(uname -m)"
-# Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
-curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
-bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
-pip install -U pip
+curl -LO https://astral.sh/uv/install.sh
+env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
+
+# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
+UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.10
 
 # Clear various caches to minimize the final image size.
 dnf clean all
-conda clean --all
 nvm cache clear
-rm Miniforge3-Linux-${arch}.sh

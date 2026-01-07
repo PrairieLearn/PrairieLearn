@@ -16,7 +16,16 @@ import {
 
 const sql = sqldb.loadSqlEquiv(import.meta.filename);
 
-export async function init(directories: string | string[], project: string) {
+interface InitOptions {
+  directories: string[];
+  project: string;
+  migrationFilters?: {
+    beforeTimestamp?: string | null;
+    inclusiveBefore?: boolean;
+  };
+}
+
+export async function init({ directories, project, migrationFilters = {} }: InitOptions) {
   const migrationDirectories = Array.isArray(directories) ? directories : [directories];
   const lockName = 'migrations';
   logger.verbose(`Waiting for lock ${lockName}`);
@@ -34,26 +43,57 @@ export async function init(directories: string | string[], project: string) {
     },
     async () => {
       logger.verbose(`Acquired lock ${lockName}`);
-      await initWithLock(migrationDirectories, project);
+      await initWithLock({ directories: migrationDirectories, project, migrationFilters });
     },
   );
   logger.verbose(`Released lock ${lockName}`);
 }
 
+/**
+ * Get the migrations to execute.
+ *
+ * @param migrationFiles The full list of migration files.
+ * @param options The options for the migration execution.
+ * @param options.excludeMigrations The list of migrations to exclude.
+ * @param options.beforeTimestamp All migrations with timestamps before this timestamp will be excluded.
+ * @param options.inclusiveBefore Whether to include the migration with the timestamp equal to the beforeTimestamp.
+ */
 export function getMigrationsToExecute(
   migrationFiles: MigrationFile[],
-  executedMigrations: { timestamp: string | null }[],
+  {
+    excludeMigrations = [],
+    beforeTimestamp = null,
+    inclusiveBefore = false,
+  }: {
+    excludeMigrations?: { timestamp: string | null }[];
+    beforeTimestamp?: string | null;
+    inclusiveBefore?: boolean;
+  },
 ): MigrationFile[] {
   // If no migrations have ever been run, run them all.
-  if (executedMigrations.length === 0) {
+  if (excludeMigrations.length === 0 && beforeTimestamp === null) {
     return migrationFiles;
   }
 
-  const executedMigrationTimestamps = new Set(executedMigrations.map((m) => m.timestamp));
-  return migrationFiles.filter((m) => !executedMigrationTimestamps.has(m.timestamp));
+  const excludedMigrationTimestamps = new Set(excludeMigrations.map((m) => m.timestamp));
+  const remainingMigrationFiles = migrationFiles.filter(
+    (m) => !excludedMigrationTimestamps.has(m.timestamp),
+  );
+  if (beforeTimestamp === null) {
+    return remainingMigrationFiles;
+  }
+  return remainingMigrationFiles.filter((m) =>
+    inclusiveBefore ? m.timestamp <= beforeTimestamp : m.timestamp < beforeTimestamp,
+  );
 }
 
-export async function initWithLock(directories: string[], project: string) {
+export async function initWithLock({ directories, project, migrationFilters = {} }: InitOptions) {
+  const resolvedMigrationFilters = {
+    beforeTimestamp: null,
+    inclusiveBefore: false,
+    ...migrationFilters,
+  };
+
   logger.verbose('Starting DB schema migration');
 
   const oldSchema = sqldb.defaultPool.getSearchSchema();
@@ -66,25 +106,25 @@ export async function initWithLock(directories: string[], project: string) {
   await sqldb.defaultPool.setSearchSchema('public');
   try {
     // Create the migrations table if needed
-    await sqldb.queryAsync(sql.create_migrations_table, {});
+    await sqldb.execute(sql.create_migrations_table);
 
     // Apply necessary changes to the migrations table as needed.
     try {
-      await sqldb.queryAsync('SELECT project FROM migrations;', {});
+      await sqldb.execute('SELECT project FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table');
-        await sqldb.queryAsync(sql.add_projects_column, {});
+        await sqldb.execute(sql.add_projects_column);
       } else {
         throw err;
       }
     }
     try {
-      await sqldb.queryAsync('SELECT timestamp FROM migrations;', {});
+      await sqldb.execute('SELECT timestamp FROM migrations;');
     } catch (err: any) {
       if (err.routine === 'errorMissingColumn') {
         logger.info('Altering migrations table again');
-        await sqldb.queryAsync(sql.add_timestamp_column, {});
+        await sqldb.execute(sql.add_timestamp_column);
       } else {
         throw err;
       }
@@ -121,7 +161,10 @@ export async function initWithLock(directories: string[], project: string) {
     const sortedMigrationFiles = sortMigrationFiles(migrationFiles);
 
     // Figure out which migrations have to be applied.
-    const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, allMigrations.rows);
+    const migrationsToExecute = getMigrationsToExecute(sortedMigrationFiles, {
+      excludeMigrations: allMigrations.rows,
+      ...resolvedMigrationFilters,
+    });
     for (const { directory, filename, timestamp } of migrationsToExecute) {
       if (allMigrations.rows.length === 0) {
         // if we are running all the migrations then log at a lower level
@@ -136,10 +179,10 @@ export async function initWithLock(directories: string[], project: string) {
         const annotations = parseAnnotations(migrationSql);
         try {
           if (annotations.has('NO TRANSACTION')) {
-            await sqldb.queryAsync(migrationSql, {});
+            await sqldb.execute(migrationSql);
           } else {
             await sqldb.runInTransactionAsync(async () => {
-              await sqldb.queryAsync(migrationSql, {});
+              await sqldb.execute(migrationSql);
             });
           }
         } catch (err) {
@@ -156,7 +199,7 @@ export async function initWithLock(directories: string[], project: string) {
       }
 
       // Record the migration.
-      await sqldb.queryAsync(sql.insert_migration, {
+      await sqldb.execute(sql.insert_migration, {
         filename,
         timestamp,
         project,

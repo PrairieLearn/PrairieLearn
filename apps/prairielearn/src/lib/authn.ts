@@ -1,4 +1,6 @@
 // @ts-check
+import assert from 'node:assert';
+
 import type { Request, Response } from 'express';
 import { z } from 'zod';
 
@@ -7,28 +9,13 @@ import * as sqldb from '@prairielearn/postgres';
 import { redirectToTermsPageIfNeeded } from '../ee/lib/terms.js';
 import { clearCookie } from '../lib/cookie.js';
 
+import { type LoadUserAuth, SelectUserSchema } from './authn.types.js';
 import { config } from './config.js';
-import { InstitutionSchema, type User, UserSchema } from './db-types.js';
+import { SprocUsersSelectOrInsertSchema, type User } from './db-types.js';
 import { isEnterprise } from './license.js';
 import { HttpRedirect } from './redirect.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
-
-interface LoadUserOptions {
-  /** Redirect after processing? */
-  redirect?: boolean;
-}
-
-export interface LoadUserAuth {
-  uid?: string;
-  uin?: string | null;
-  name?: string | null;
-  email?: string | null;
-  provider: string;
-  /** If present, skip the users_select_or_insert call */
-  user_id?: number | string;
-  institution_id?: number | string | null;
-}
 
 async function handlePendingLti13User({
   user,
@@ -61,10 +48,15 @@ async function handlePendingLti13User({
 
   // Store the `sub` claim.
   await updateLti13UserSub({
-    user_id: user.user_id,
+    user_id: user.id,
     lti13_instance_id: lti13Instance.id,
     sub,
   });
+}
+
+interface LoadUserOptions {
+  /** Redirect after processing? */
+  redirect?: boolean;
 }
 
 export async function loadUser(
@@ -99,27 +91,25 @@ export async function loadUser(
       authnParams.institution_id,
     ];
 
-    const userSelectOrInsertRes = await sqldb.callAsync('users_select_or_insert', params);
+    const userSelectOrInsertRes = await sqldb.callRow(
+      'users_select_or_insert',
+      params,
+      SprocUsersSelectOrInsertSchema,
+    );
 
-    user_id = userSelectOrInsertRes.rows[0].user_id;
-    const { result, user_institution_id } = userSelectOrInsertRes.rows[0];
+    const { result, user_institution_id } = userSelectOrInsertRes;
     if (result === 'invalid_authn_provider') {
+      assert(user_institution_id !== null);
       throw new HttpRedirect(
         `/pl/login?unsupported_provider=true&institution_id=${user_institution_id}`,
       );
     }
+
+    assert(userSelectOrInsertRes.user_id !== null);
+    user_id = userSelectOrInsertRes.user_id;
   }
 
-  const selectedUser = await sqldb.queryOptionalRow(
-    sql.select_user,
-    { user_id },
-    z.object({
-      user: UserSchema,
-      institution: InstitutionSchema,
-      is_administrator: z.boolean(),
-      news_item_notification_count: z.number(),
-    }),
-  );
+  const selectedUser = await sqldb.queryOptionalRow(sql.select_user, { user_id }, SelectUserSchema);
 
   if (!selectedUser) {
     throw new Error('user not found with user_id ' + user_id);
@@ -150,7 +140,7 @@ export async function loadUser(
   }
 
   if (options.redirect) {
-    let redirUrl = config.homeUrl;
+    let redirUrl = '/';
     if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
@@ -182,7 +172,7 @@ export async function loadUser(
         sql.select_is_institution_admin,
         {
           institution_id: res.locals.authn_institution.id,
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
         },
         z.boolean(),
       ));

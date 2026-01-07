@@ -187,9 +187,9 @@ WITH
         course_permission_id
       )
     SELECT
-      ci.id,
+      ci.id AS course_instance_id,
       $course_instance_role,
-      cp.id
+      cp.id AS course_permission_id
     FROM
       existing_course_permission AS cp
       -- Course instance ID is provided by the user, so must be validated against the course ID.
@@ -350,16 +350,16 @@ SELECT
   TRUE
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
+  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
   LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
-  LEFT JOIN pl_courses AS c ON (c.id = cp.course_id)
+  LEFT JOIN courses AS c ON (c.id = cp.course_id)
   LEFT JOIN course_instances AS ci ON (
     ci.id = cip.course_instance_id
     AND ci.course_id = c.id
   )
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND (
     adm.id IS NOT NULL
     OR (

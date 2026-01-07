@@ -2,16 +2,13 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { v4 as uuidv4 } from 'uuid';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
-import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
@@ -27,7 +24,7 @@ router.get(
 
     const accessTokens = await sqldb.queryRows(
       sql.select_access_tokens,
-      { user_id: authn_user.user_id },
+      { user_id: authn_user.id },
       AccessTokenSchema,
     );
 
@@ -42,24 +39,17 @@ router.get(
 
     // Now that we've rendered these tokens, remove any tokens from the DB
     if (newAccessTokens.length > 0) {
-      await sqldb.queryAsync(sql.clear_tokens_for_user, {
-        user_id: authn_user.user_id,
+      await sqldb.execute(sql.clear_tokens_for_user, {
+        user_id: authn_user.id,
       });
     }
 
-    const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.user_id) : [];
+    const purchases = isEnterprise() ? await getPurchasesForUser(authn_user.id) : [];
 
     const { mode } = await ipToMode({
       ip: req.ip,
       date: res.locals.req_date,
-      authn_user_id: authn_user.user_id,
-    });
-
-    const showEnhancedNavigationToggle = await features.enabled('enhanced-navigation-user-toggle', {
-      user_id: authn_user.user_id,
-    });
-    const enhancedNavigationEnabled = await features.enabled('enhanced-navigation', {
-      user_id: authn_user.user_id,
+      authn_user_id: authn_user.id,
     });
 
     res.send(
@@ -71,8 +61,6 @@ router.get(
         newAccessTokens,
         purchases,
         isExamMode: mode !== 'Public',
-        showEnhancedNavigationToggle,
-        enhancedNavigationEnabled,
         resLocals: res.locals,
       }),
     );
@@ -82,35 +70,22 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    if (req.body.__action === 'update_features') {
-      const context = { user_id: res.locals.authn_user.user_id };
-
-      if (await features.enabled('enhanced-navigation-user-toggle', context)) {
-        if (req.body.enhanced_navigation) {
-          await features.enable('enhanced-navigation', context);
-        } else {
-          await features.disable('enhanced-navigation', context);
-        }
-      }
-
-      flash('success', 'Features updated successfully.');
-      res.redirect(req.originalUrl);
-    } else if (req.body.__action === 'token_generate') {
+    if (req.body.__action === 'token_generate') {
       const { mode } = await ipToMode({
         ip: req.ip,
         date: res.locals.req_date,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       if (mode !== 'Public') {
         throw new HttpStatusError(403, 'Cannot generate access tokens in exam mode.');
       }
 
       const name = req.body.token_name;
-      const token = uuidv4();
+      const token = crypto.randomUUID();
       const token_hash = crypto.createHash('sha256').update(token, 'utf8').digest('hex');
 
-      await sqldb.queryAsync(sql.insert_access_token, {
-        user_id: res.locals.authn_user.user_id,
+      await sqldb.execute(sql.insert_access_token, {
+        user_id: res.locals.authn_user.id,
         name,
         // The token will only be persisted until the next page render.
         // After that, we'll remove it from the database.
@@ -119,9 +94,9 @@ router.post(
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'token_delete') {
-      await sqldb.queryAsync(sql.delete_access_token, {
+      await sqldb.execute(sql.delete_access_token, {
         token_id: req.body.token_id,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

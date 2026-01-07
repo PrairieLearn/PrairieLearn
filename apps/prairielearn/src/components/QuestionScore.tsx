@@ -246,12 +246,23 @@ function IssueReportingPanel({ variant, csrfToken }: { variant: Variant; csrfTok
 export function ExamQuestionStatus({
   instance_question,
   assessment_question,
+  realTimeGradingPartiallyDisabled,
 }: {
   instance_question: InstanceQuestion & {
     allow_grade_left_ms?: number;
     allow_grade_interval?: string;
   };
-  assessment_question: Pick<AssessmentQuestion, 'max_auto_points' | 'max_manual_points'>;
+  assessment_question: Pick<
+    AssessmentQuestion,
+    'max_auto_points' | 'max_manual_points' | 'allow_real_time_grading'
+  >;
+  /**
+   * On exam with mixed real-time grading settings, this flag allows us to
+   * differentiate between questions that are saved and which can be graded by
+   * clicking the "Grade N saved answers" button and those that cannot
+   * (because real-time grading is disabled).
+   */
+  realTimeGradingPartiallyDisabled?: boolean;
 }) {
   // Special case: if this is a manually graded question in the "saved" state,
   // we want to differentiate it from saved auto-graded questions which can
@@ -282,11 +293,24 @@ export function ExamQuestionStatus({
     incorrect: 'danger',
   };
 
+  const { badgeText, badgeColor } = run(() => {
+    if (
+      realTimeGradingPartiallyDisabled &&
+      instance_question.status === 'saved' &&
+      !assessment_question.allow_real_time_grading
+    ) {
+      return { badgeText: 'saved for grading after finish', badgeColor: 'success' };
+    }
+
+    return {
+      badgeText: instance_question.status,
+      badgeColor: badge_color[instance_question.status ?? 'unanswered'],
+    };
+  });
+
   return html`
     <span class="align-middle">
-      <span class="badge text-bg-${badge_color[instance_question.status ?? 'unanswered']}">
-        ${instance_question.status}
-      </span>
+      <span class="badge text-bg-${badgeColor}">${badgeText}</span>
 
       ${(instance_question.allow_grade_left_ms ?? 0) > 0
         ? html`
@@ -367,7 +391,12 @@ export function InstanceQuestionPoints({
 }: {
   instance_question: Pick<
     InstanceQuestion,
-    'auto_points' | 'manual_points' | 'points' | 'status' | 'requires_manual_grading'
+    | 'auto_points'
+    | 'manual_points'
+    | 'points'
+    | 'status'
+    | 'requires_manual_grading'
+    | 'last_grader'
   >;
   assessment_question: Pick<
     AssessmentQuestion,
@@ -404,13 +433,20 @@ export function InstanceQuestionPoints({
 
   return html`
     <span class="text-nowrap">
-      ${instance_question.status === 'unanswered'
-        ? html`&mdash;`
-        : pointsPending
-          ? html`<span class="badge text-bg-info">pending</span>`
-          : !points && !maxPoints
-            ? html`&mdash;`
-            : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`}
+      ${
+        // If the question is unanswered show a dash instead of 0 points, unless
+        // the question was manually graded or a regrading process forced the
+        // points to be increased.
+        instance_question.status === 'unanswered' &&
+        instance_question.last_grader == null &&
+        instance_question.points === 0
+          ? html`&mdash;`
+          : pointsPending
+            ? html`<span class="badge text-bg-info">pending</span>`
+            : !points && !maxPoints
+              ? html`&mdash;`
+              : html`<span data-testid="awarded-points">${formatPoints(points)}</span>`
+      }
       ${maxPoints ? html`<small>/<span class="text-muted">${maxPoints}</span></small>` : ''}
     </span>
   `;

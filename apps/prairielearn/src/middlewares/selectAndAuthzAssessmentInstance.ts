@@ -10,8 +10,9 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   FileSchema,
-  GroupSchema,
   SprocAuthzAssessmentInstanceSchema,
+  SprocUsersGetDisplayedRoleSchema,
+  TeamSchema,
   UserSchema,
 } from '../lib/db-types.js';
 
@@ -25,16 +26,18 @@ const SelectAndAuthzAssessmentInstanceSchema = z.object({
   assessment_instance_time_limit_ms: z.number().nullable(),
   assessment_instance_time_limit_expired: z.boolean(),
   instance_user: UserSchema.nullable(),
-  instance_role: z.string(),
+  instance_role: SprocUsersGetDisplayedRoleSchema,
   assessment: AssessmentSchema,
   assessment_set: AssessmentSetSchema,
   authz_result: SprocAuthzAssessmentInstanceSchema,
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
-  instance_group: GroupSchema.nullable(),
-  instance_group_uid_list: z.array(z.string()),
+  instance_team: TeamSchema.nullable(),
+  instance_team_uid_list: z.array(z.string()),
 });
+
+export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
 
 export async function selectAndAuthzAssessmentInstance(req: Request, res: Response) {
   const row = await sqldb.queryOptionalRow(
@@ -48,6 +51,12 @@ export async function selectAndAuthzAssessmentInstance(req: Request, res: Respon
     SelectAndAuthzAssessmentInstanceSchema,
   );
   if (row === null) throw new error.HttpStatusError(403, 'Access denied');
+
+  // TODO: consider row.assessment.modern_access_control
+
+  if (!row.authz_result.authorized) {
+    throw new error.HttpStatusError(403, 'Access denied');
+  }
   Object.assign(res.locals, row);
 }
 

@@ -46,12 +46,12 @@ function PurchaseTable({ purchases }: { purchases: Purchase[] }) {
                 <a
                   ${purchase.course_instance == null
                     ? ''
-                    : html`href="/pl/course_instance/${purchase.course_instance?.id}"`}
+                    : html`href="/pl/course_instance/${purchase.course_instance.id}"`}
                 >
                   ${courseName} (${courseInstanceName})
                 </a>
               </td>
-              <td>${purchase.stripe_checkout_session.created_at?.toUTCString()}</td>
+              <td>${purchase.stripe_checkout_session.created_at.toUTCString()}</td>
               <td>${formatStripePrice(purchase.stripe_checkout_session.data.amount_total)} USD</td>
               <td>
                 ${StripeCheckoutSessionPaymentStatus({

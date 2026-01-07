@@ -23,7 +23,7 @@ body,
   display: grid;
   grid-template-areas: 'back preview-tabs' 'chat preview';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: 400px 1fr;
+  grid-template-columns: var(--chat-width, 400px) 1fr;
   min-height: 0;
 }
 
@@ -34,6 +34,7 @@ body,
   grid-template-areas: 'history' 'prompt';
   grid-template-rows: 1fr min-content;
   min-height: 0;
+  position: relative;
 }
 
 .app-back {
@@ -58,6 +59,21 @@ body,
   grid-area: preview;
   min-height: 0;
   overflow-y: auto;
+}
+
+.app-chat-resizer {
+  position: absolute;
+  top: 0;
+  right: 0;
+  width: 6px;
+  height: 100%;
+  cursor: col-resize;
+  /* Wider hit area without visual noise */
+  background: transparent;
+}
+
+.app-chat-resizer:hover {
+  background: rgba(0, 0, 0, 0.05);
 }
 
 .question-wrapper {

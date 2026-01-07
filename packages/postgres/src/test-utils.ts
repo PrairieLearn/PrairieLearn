@@ -15,6 +15,8 @@ export interface PostgresTestUtilsOptions {
   prepareAfterReset?: (client: pg.Client) => Promise<void>;
 }
 
+type PostgresTestPoolConfig = Required<Pick<pg.PoolConfig, 'user' | 'host' | 'database'>>;
+
 interface CreateDatabaseOptions {
   dropExistingDatabase?: boolean;
   database?: string;
@@ -38,7 +40,7 @@ async function createDatabase(
     templateDatabase,
     prepare,
   }: CreateDatabaseOptions = {},
-): Promise<void> {
+): Promise<PostgresTestPoolConfig> {
   const client = new pg.Client({
     ...getPoolConfig(options),
     database: options.defaultDatabase ?? POSTGRES_DATABASE,
@@ -46,7 +48,7 @@ async function createDatabase(
   await client.connect();
 
   const escapedDatabase = client.escapeIdentifier(
-    database ?? getDatabaseNameForCurrentMochaWorker(options.database),
+    database ?? getDatabaseNameForCurrentTestWorker(options.database),
   );
   if (dropExistingDatabase ?? true) {
     await client.query(`DROP DATABASE IF EXISTS ${escapedDatabase}`);
@@ -63,12 +65,12 @@ async function createDatabase(
 
   await prepare?.(client);
 
+  const poolConfig = getPoolConfig(options);
+
   if (configurePool) {
     await defaultPool.initAsync(
       {
-        user: options.user ?? POSTGRES_USER,
-        host: options.host ?? POSTGRES_HOST,
-        database: getDatabaseNameForCurrentMochaWorker(options.database),
+        ...poolConfig,
         // Offer sensible default, but these can be overridden by `options.poolConfig`.
         max: 10,
         idleTimeoutMillis: 30000,
@@ -80,6 +82,8 @@ async function createDatabase(
       },
     );
   }
+
+  return poolConfig;
 }
 
 async function resetDatabase(options: PostgresTestUtilsOptions): Promise<void> {
@@ -110,7 +114,7 @@ async function dropDatabase(
     await defaultPool.closeAsync();
   }
 
-  const databaseName = database ?? getDatabaseNameForCurrentMochaWorker(options.database);
+  const databaseName = database ?? getDatabaseNameForCurrentTestWorker(options.database);
   if ('PL_KEEP_TEST_DB' in process.env && !force) {
     // eslint-disable-next-line no-console
     console.log(`PL_KEEP_TEST_DB environment variable set, not dropping database ${databaseName}`);
@@ -126,24 +130,25 @@ async function dropDatabase(
   await client.end();
 }
 
-function getDatabaseNameForCurrentMochaWorker(namespace: string): string {
-  const workerId = process.env.MOCHA_WORKER_ID ?? process.env.VITEST_POOL_ID ?? '1';
+function getDatabaseNameForCurrentTestWorker(namespace: string): string {
+  // https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
+  const workerId = process.env.TEST_WORKER_INDEX ?? process.env.VITEST_POOL_ID ?? '1';
   return `${namespace}_${workerId}`;
 }
 
-function getPoolConfig(options: PostgresTestUtilsOptions): pg.PoolConfig {
+function getPoolConfig(options: PostgresTestUtilsOptions): PostgresTestPoolConfig {
   return {
     user: options.user ?? POSTGRES_USER,
     host: options.host ?? POSTGRES_HOST,
-    database: getDatabaseNameForCurrentMochaWorker(options.database),
+    database: getDatabaseNameForCurrentTestWorker(options.database),
   };
 }
 
 export interface PostgresTestUtils {
-  createDatabase: (options?: CreateDatabaseOptions) => Promise<void>;
+  createDatabase: (options?: CreateDatabaseOptions) => Promise<pg.PoolConfig>;
   resetDatabase: () => Promise<void>;
   dropDatabase: (options?: DropDatabaseOptions) => Promise<void>;
-  getDatabaseNameForCurrentMochaWorker: () => string;
+  getDatabaseNameForCurrentTestWorker: () => string;
   getPoolConfig: () => pg.PoolConfig;
 }
 
@@ -153,8 +158,8 @@ export function makePostgresTestUtils(options: PostgresTestUtilsOptions): Postgr
       createDatabase(options, createOptions),
     resetDatabase: () => resetDatabase(options),
     dropDatabase: (dropOptions?: DropDatabaseOptions) => dropDatabase(options, dropOptions),
-    getDatabaseNameForCurrentMochaWorker: () =>
-      getDatabaseNameForCurrentMochaWorker(options.database),
+    getDatabaseNameForCurrentTestWorker: () =>
+      getDatabaseNameForCurrentTestWorker(options.database),
     getPoolConfig: () => getPoolConfig(options),
   };
 }

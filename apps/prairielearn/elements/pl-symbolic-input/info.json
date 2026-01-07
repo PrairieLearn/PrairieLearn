@@ -1,6 +1,8 @@
 {
   "controller": "pl-symbolic-input.py",
   "dependencies": {
+    "nodeModulesScripts": ["mathlive/mathlive.min.js"],
+    "elementScripts": ["pl-symbolic-input.js"],
     "elementStyles": ["pl-symbolic-input.css"]
   }
 }

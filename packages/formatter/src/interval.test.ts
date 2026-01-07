@@ -75,13 +75,13 @@ describe('interval formatting', () => {
   });
 
   describe('formatIntervalHM()', () => {
-    it('should correctly handle postive minutes', () => {
+    it('should correctly handle positive minutes', () => {
       assert.equal(formatIntervalHM(3.2 * 60 * 1000), '00:03');
     });
-    it('should correctly handle postive hours', () => {
+    it('should correctly handle positive hours', () => {
       assert.equal(formatIntervalHM((4 * 60 + 17.8) * 60 * 1000), '04:17');
     });
-    it('should correctly handle large postive hours', () => {
+    it('should correctly handle large positive hours', () => {
       assert.equal(formatIntervalHM((143 * 60 + 17.8) * 60 * 1000), '143:17');
     });
     it('should correctly handle an explicit sign', () => {

@@ -1,25 +1,14 @@
-import { Temporal } from '@js-temporal/polyfill';
 import { on } from 'delegated-events';
 import { render } from 'preact';
-import React, { useState } from 'preact/hooks';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
-import { formatDate } from '@prairielearn/formatter';
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { ScorebarHtml } from '../../src/components/Scorebar.js';
+import { TimeLimitEditForm } from '../../src/pages/instructorAssessmentInstances/components/TimeLimitEditForm.js';
 import { type AssessmentInstanceRow } from '../../src/pages/instructorAssessmentInstances/instructorAssessmentInstances.types.js';
 
 import { getPopoverTriggerForContainer } from './lib/popover.js';
-
-type TimeLimitAction =
-  | 'set_total'
-  | 'set_rem'
-  | 'set_exact'
-  | 'add'
-  | 'subtract'
-  | 'remove'
-  | 'expire';
 
 onDocumentReady(() => {
   const dataset = document.getElementById('usersTable')?.dataset;
@@ -27,7 +16,7 @@ onDocumentReady(() => {
     return;
   }
   const { assessmentSetAbbr, assessmentNumber, csrfToken, urlPrefix } = dataset;
-  const assessmentGroupWork = dataset.assessmentGroupWork === 'true';
+  const assessmentTeamWork = dataset.assessmentTeamWork === 'true';
   const assessmentMultipleInstance = dataset.assessmentMultipleInstance === 'true';
   const hasCourseInstancePermissionEdit = dataset.hasCourseInstancePermissionEdit === 'true';
   const timezone = dataset.timezone ?? 'UTC';
@@ -94,24 +83,22 @@ onDocumentReady(() => {
     ) => {
       return data.filter((row) => {
         const search = searchText.toLowerCase();
-        return assessmentGroupWork
-          ? (!filter?.role || row.group_roles?.includes(filter.role)) &&
-              (row.group_name?.toLowerCase().includes(search) ||
+        return assessmentTeamWork
+          ? (!filter?.role || row.team_roles?.includes(filter.role)) &&
+              (row.team_name?.toLowerCase().includes(search) ||
                 row.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
                 row.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
-                row.group_roles?.some((role) => role.toLowerCase().includes(search)))
+                row.team_roles?.some((role) => role.toLowerCase().includes(search)))
           : (!filter?.role || row.role === filter.role) &&
               (row.uid?.toLowerCase().includes(search) ||
                 row.name?.toLowerCase().includes(search) ||
-                row.role?.toLowerCase().includes(search));
+                row.role.toLowerCase().includes(search));
       });
     },
-    columns: tableColumns(assessmentGroupWork),
+    columns: tableColumns(assessmentTeamWork),
   });
 
   on('submit', 'form.js-popover-form', (event) => {
-    if (!event.currentTarget) return;
-
     event.preventDefault();
     $.post(
       window.location.pathname,
@@ -172,7 +159,7 @@ onDocumentReady(() => {
       templateFromAttributes(relatedTarget, modal[0], {
         'data-uid': '.modal-uid',
         'data-name': '.modal-name',
-        'data-group-name': '.modal-group-name',
+        'data-team-name': '.modal-team-name',
         'data-uid-list': '.modal-uid-list',
         'data-number': '.modal-number',
         'data-date-formatted': '.modal-date',
@@ -207,7 +194,7 @@ onDocumentReady(() => {
     $($(e.currentTarget).data('target')).modal('show');
   });
 
-  function tableColumns(assessmentGroupWork: boolean) {
+  function tableColumns(assessmentTeamWork: boolean) {
     return [
       {
         field: 'assessment_instance_id',
@@ -218,10 +205,10 @@ onDocumentReady(() => {
         class: 'align-middle sticky-column text-nowrap',
         switchable: false,
       },
-      ...(assessmentGroupWork
+      ...(assessmentTeamWork
         ? [
             {
-              field: 'group_name',
+              field: 'team_name',
               title: 'Name',
               visible: false,
               sortable: true,
@@ -247,7 +234,7 @@ onDocumentReady(() => {
               switchable: true,
             },
             {
-              field: 'group_roles',
+              field: 'team_roles',
               title: html`
                 Roles
                 <button
@@ -392,8 +379,8 @@ onDocumentReady(() => {
           </button>
         `,
         class: 'text-center align-middle',
-        // Hidden for groupwork by default, as it is not as relevant in that context
-        visible: !assessmentGroupWork,
+        // Hidden for teamwork by default, as it is not as relevant in that context
+        visible: !assessmentTeamWork,
         switchable: true,
         sortable: true,
       },
@@ -411,229 +398,15 @@ onDocumentReady(() => {
     bsTable.bootstrapTable('refresh', { silent: true });
   }
 
-  function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
-    let explanation = '';
-    if (action === 'set_total') {
-      explanation =
-        'Updating the total time limit will set the given amount of time for the assessment based on when the assessment was started.';
-    } else if (action === 'set_rem') {
-      explanation =
-        'Updating the time remaining will set the given amount of time for the assessment based on the current time.';
-    } else if (action === 'set_exact') {
-      explanation = 'This will set the exact closing time for the assessment.';
-    } else if (action === 'add') {
-      explanation = 'This will add the given amount of time to the remaining time limit.';
-    } else if (action === 'subtract') {
-      explanation = 'This will subtract the given amount of time from the remaining time limit.';
-    } else if (action === 'remove') {
-      explanation = 'This will remove the time limit and the assessment will remain open.';
-    } else if (action === 'expire') {
-      explanation =
-        'This will expire the time limit and students will be unable to submit any further answers.';
-    }
-    return <small class="form-text text-muted">{explanation}</small>;
-  }
-
-  function TimeLimitEditPopover({
-    row,
-  }: {
-    row: {
-      action: string;
-      assessment_instance_id: number;
-      date: string;
-      has_closed_instance: boolean;
-      has_open_instance: boolean;
-      total_time: string;
-      total_time_sec: number;
-      time_remaining: string;
-      time_remaining_sec: number;
-      open: boolean;
-    };
-  }) {
-    const [form, setForm] = useState({
-      action: 'add' as TimeLimitAction,
-      time_add: 5,
-      date: Temporal.Now.zonedDateTimeISO(timezone).toPlainDateTime().toString().slice(0, 16),
-      reopen_closed: false,
-      reopen_without_limit: true,
-    });
-    const showTimeLimitOptions =
-      row.action === 'set_time_limit_all' || row.open || !form.reopen_without_limit;
-
-    function updateFormState<T extends keyof typeof form>(key: T, value: (typeof form)[T]) {
-      setForm({
-        ...form,
-        [key]: value,
-      });
-    }
-
-    function proposedClosingTime() {
-      const totalTime = Math.round(row.total_time_sec);
-
-      let startDate = Temporal.Instant.from(row.date).toZonedDateTimeISO(timezone);
-      if (form.action === 'set_total') {
-        startDate = startDate.add({ minutes: form.time_add });
-      } else if (form.action === 'set_rem') {
-        startDate = Temporal.Now.zonedDateTimeISO(timezone).add({ minutes: form.time_add });
-      } else if (form.action === 'add') {
-        startDate = startDate.add({ seconds: totalTime }).add({ minutes: form.time_add });
-      } else if (form.action === 'subtract') {
-        startDate = startDate.add({ seconds: totalTime }).subtract({ minutes: form.time_add });
-      }
-
-      return formatDate(new Date(startDate.epochMilliseconds), timezone);
-    }
-
-    return (
-      <form name="set-time-limit-form" class="js-popover-form" method="POST">
-        <input type="hidden" name="__action" value={row.action ?? 'set_time_limit'} />
-        <input type="hidden" name="__csrf_token" value={csrfToken} />
-        {row.assessment_instance_id ? (
-          <input type="hidden" name="assessment_instance_id" value={row.assessment_instance_id} />
-        ) : null}
-        {row.action !== 'set_time_limit_all' && !row.open ? (
-          <div>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="reopen_without_limit"
-                id="reopen_without_limit"
-                value="true"
-                checked={form.reopen_without_limit}
-                onClick={() => updateFormState('reopen_without_limit', true)}
-              />
-              <label class="form-check-label" for="reopen_without_limit">
-                Re-open without time limit
-              </label>
-            </div>
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="radio"
-                name="reopen_without_limit"
-                id="reopen_with_limit"
-                value="false"
-                checked={!form.reopen_without_limit}
-                onClick={() => updateFormState('reopen_without_limit', false)}
-              />
-              <label class="form-check-label" for="reopen_with_limit">
-                Re-open with time limit
-              </label>
-            </div>
-          </div>
-        ) : null}
-        <p>
-          Total time limit: {row.total_time}
-          <br />
-          Remaining time: {row.time_remaining}
-        </p>
-        {showTimeLimitOptions ? (
-          <p>
-            <select
-              class="form-select select-time-limit"
-              name="action"
-              aria-label="Time limit options"
-              onChange={(e) => updateFormState('action', e.currentTarget.value as TimeLimitAction)}
-            >
-              {row.time_remaining_sec !== null ? (
-                row.has_open_instance ? (
-                  <>
-                    <option value="add">Add to instances with time limit</option>
-                    <option value="subtract">Subtract from instances with time limit</option>
-                  </>
-                ) : (
-                  <>
-                    <option value="add">Add</option>
-                    <option value="subtract">Subtract</option>
-                  </>
-                )
-              ) : null}
-              <option value="set_total">Set total time limit</option>
-              <option value="set_rem">Set remaining time</option>
-              <option value="set_exact">Set exact closing time</option>
-              {row.action === 'set_time_limit_all' ||
-              (row.open && row.time_remaining) !== 'Open (no time limit)' ? (
-                <option value="remove">Remove time limit</option>
-              ) : null}
-              {row.open && row.time_remaining !== 'Expired' ? (
-                <option value="expire">Expire time limit</option>
-              ) : null}
-            </select>
-            <TimeLimitExplanation action={form.action} />
-          </p>
-        ) : null}
-        {showTimeLimitOptions &&
-        form.action !== 'set_exact' &&
-        form.action !== 'remove' &&
-        form.action !== 'expire' ? (
-          <div class="input-group mb-2">
-            <input
-              class="form-control time-limit-field"
-              type="number"
-              name="time_add"
-              aria-label="Time value"
-              value={form.time_add}
-              onChange={(e) =>
-                updateFormState('time_add', Number.parseFloat(e.currentTarget.value))
-              }
-            />
-            <span class="input-group-text time-limit-field">minutes</span>
-          </div>
-        ) : null}
-        {showTimeLimitOptions && form.action === 'set_exact' ? (
-          <div class="input-group date-picker mb-2">
-            <input
-              class="form-control date-picker"
-              type="datetime-local"
-              name="date"
-              value={form.date}
-              onChange={(e) => updateFormState('date', e.currentTarget.value)}
-            />
-            <span class="input-group-text date-picker">{timezone}</span>
-          </div>
-        ) : null}
-        {(row.open || !form.reopen_without_limit) &&
-        (form.action === 'set_total' ||
-          form.action === 'set_rem' ||
-          form.action === 'add' ||
-          form.action === 'subtract') ? (
-          <p>Proposed closing time: {proposedClosingTime()}</p>
-        ) : null}
-        <p>
-          {row.has_closed_instance ? (
-            <div class="form-check">
-              <input
-                class="form-check-input"
-                type="checkbox"
-                name="reopen_closed"
-                value="true"
-                checked={form.reopen_closed}
-                id="reopen_closed"
-                onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
-              />
-              <label class="form-check-label" for="reopen_closed">
-                Also re-open closed instances
-              </label>
-            </div>
-          ) : null}
-        </p>
-        <div class="btn-toolbar justify-content-end">
-          <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="popover">
-            Cancel
-          </button>
-          <button type="submit" class="btn btn-primary">
-            Set
-          </button>
-        </div>
-      </form>
-    );
-  }
-
   function timeLimitEditPopoverContent(this: any) {
+    if (!csrfToken) throw new Error('CSRF token not found');
+
     const div = document.createElement('div');
 
-    render(<TimeLimitEditPopover row={$(this).data('row')} />, div);
+    render(
+      <TimeLimitEditForm row={$(this).data('row')} csrfToken={csrfToken} timezone={timezone} />,
+      div,
+    );
 
     return div;
   }
@@ -642,13 +415,13 @@ onDocumentReady(() => {
     return ScorebarHtml(score).toString();
   }
 
-  function listFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+  function listFormatter(list: string[] | null) {
+    if (!list?.[0]) list = ['(empty)'];
     return html`<small>${list.join(', ')}</small>`;
   }
 
-  function uniqueListFormatter(list: string[]) {
-    if (!list || !list[0]) list = ['(empty)'];
+  function uniqueListFormatter(list: string[] | null) {
+    if (!list?.[0]) list = ['(empty)'];
     const uniq = Array.from(new Set(list));
     return html`<small>${uniq.join(', ')}</small>`;
   }
@@ -671,7 +444,7 @@ onDocumentReady(() => {
   }
 
   function detailsLinkFormatter(value: string, row: AssessmentInstanceRow) {
-    const name = assessmentGroupWork ? row.group_name : row.uid;
+    const name = assessmentTeamWork ? row.team_name : row.uid;
 
     let number;
     if (!assessmentMultipleInstance) {
@@ -690,18 +463,18 @@ onDocumentReady(() => {
     rowA: AssessmentInstanceRow,
     rowB: AssessmentInstanceRow,
   ) {
-    const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
-    const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+    const nameKey = assessmentTeamWork ? 'team_name' : 'uid';
+    const idKey = assessmentTeamWork ? 'team_id' : 'user_id';
 
     const nameA = rowA[nameKey];
     const nameB = rowB[nameKey];
     const idA = rowA[idKey] ?? '';
     const idB = rowB[idKey] ?? '';
 
-    // Compare first by UID/group name, then user/group ID, then
+    // Compare first by UID/team name, then user/team ID, then
     // instance number, then by instance ID.
     let compare = nameA?.localeCompare(nameB ?? '');
-    if (!compare) compare = (Number.parseInt(idA) ?? 0) - (Number.parseInt(idB) ?? 0);
+    if (!compare) compare = Number.parseInt(idA) - Number.parseInt(idB);
     if (!compare) compare = (rowA.number ?? 0) - (rowB.number ?? 0);
     if (!compare) compare = valueA - valueB;
     return compare;
@@ -715,7 +488,7 @@ onDocumentReady(() => {
   ) {
     // Closed assessments are listed first, followed by time limits
     // ascending, followed by open without a time limit
-    return Number(rowA.open) - Number(rowB.open) || (valueA ?? Infinity) - (valueB ?? Infinity);
+    return Number(rowA.open) - Number(rowB.open) || valueA - valueB;
   }
 
   function actionButtonFormatter(_value: string, row: AssessmentInstanceRow) {
@@ -747,7 +520,7 @@ onDocumentReady(() => {
                     data-name="${row.name}"
                     data-number="${row.number}"
                     data-date-formatted="${row.date_formatted}"
-                    data-group-name="${row.group_name}"
+                    data-team-name="${row.team_name}"
                     data-uid-list="${row.uid_list?.join(', ') || 'empty'}"
                     data-score-perc="${Math.floor(row.score_perc ?? 0)}"
                     data-assessment-instance-id="${row.assessment_instance_id}"
@@ -834,7 +607,7 @@ onDocumentReady(() => {
       action: 'set_time_limit_all',
       time_remaining: '',
     };
-    if (remaining_time_min === null) {
+    if (time_limit_list.length === 0) {
       time_limit_totals.time_remaining = 'No time limits';
     } else if (remaining_time_max < 60) {
       time_limit_totals.time_remaining = 'Less than a minute';

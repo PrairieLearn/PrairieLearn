@@ -1,10 +1,12 @@
+import type { Request, Response } from 'express';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { loadSqlEquiv, queryAsync, queryRows } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { DateFromISOString, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
+import { JobSequenceSchema } from '../lib/db-types.js';
 import { createCourseRepoJob } from '../lib/github.js';
 import { sendCourseRequestMessage } from '../lib/opsbot.js';
 
@@ -51,7 +53,7 @@ export async function selectPendingCourseRequests() {
   return await selectCourseRequests(false);
 }
 
-export async function updateCourseRequest(req, res) {
+export async function updateCourseRequest(req: Request, res: Response) {
   let action = req.body.approve_deny_action;
   if (action === 'deny') {
     action = 'denied';
@@ -59,18 +61,18 @@ export async function updateCourseRequest(req, res) {
     throw new Error(`Unknown course request action "${action}"`);
   }
 
-  await queryAsync(sql.update_course_request, {
+  await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action,
   });
   res.redirect(req.originalUrl);
 }
 
-export async function createCourseFromRequest(req, res) {
-  await queryAsync(sql.update_course_request, {
+export async function createCourseFromRequest(req: Request, res: Response) {
+  await execute(sql.update_course_request, {
     id: req.body.request_id,
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     action: 'creating',
   });
 

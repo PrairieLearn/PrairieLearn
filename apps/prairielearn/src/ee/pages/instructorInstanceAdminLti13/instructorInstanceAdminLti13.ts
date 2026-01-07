@@ -7,8 +7,8 @@ import { flash } from '@prairielearn/flash';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -95,7 +95,7 @@ router.get(
     if ('lineitems' in req.query) {
       try {
         res.end(LineitemsInputs(await getLineitems(instance)));
-      } catch (error) {
+      } catch (error: any) {
         res.end(html`<div class="alert alert-warning">${error.message}</div>`.toString());
         logger.error('LineitemsInputs error', error);
       }
@@ -106,8 +106,6 @@ router.get(
       sql.select_assessments,
       {
         course_instance_id: res.locals.course_instance.id,
-        authz_data: res.locals.authz_data,
-        req_date: res.locals.req_date,
         assessments_group_by: res.locals.course_instance.assessments_group_by,
       },
       AssessmentRowSchema,
@@ -150,8 +148,8 @@ router.post(
     const serverJobOptions = {
       courseId: res.locals.course.id,
       courseInstanceId: res.locals.course_instance.id,
-      userId: res.locals.user.user_id,
-      authnUserId: res.locals.authn_user.user_id,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authn_user.id,
       type: 'lti13',
       description: 'Some LTI operation',
     };
@@ -167,7 +165,7 @@ router.post(
           Lti13CourseInstanceSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'lti13_course_instances',
           action: 'delete',
           institution_id: res.locals.institution.id,
@@ -290,17 +288,20 @@ router.post(
         },
         AssessmentSchema,
       );
-      if (assessment === null) {
-        throw new error.HttpStatusError(403, 'Invalid assessment.id');
-      }
 
       serverJobOptions.description = 'LTI 1.3 send assessment grades to LMS';
       const serverJob = await createServerJob(serverJobOptions);
 
       serverJob.executeInBackground(async (job) => {
-        await updateLti13Scores(assessment.id, instance, job);
+        await updateLti13Scores({
+          courseInstance: res.locals.course_instance,
+          authzData: res.locals.authz_data,
+          unsafe_assessment_id: assessment.id,
+          instance,
+          job,
+        });
 
-        await queryAsync(sql.update_lti13_assessment_last_activity, {
+        await execute(sql.update_lti13_assessment_last_activity, {
           assessment_id: assessment.id,
         });
       });

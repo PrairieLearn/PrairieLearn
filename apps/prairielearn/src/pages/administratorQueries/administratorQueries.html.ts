@@ -2,6 +2,7 @@ import { html } from '@prairielearn/html';
 
 import type { AdministratorQuerySpecs } from '../../admin_queries/lib/util.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export interface AdministratorQuery extends AdministratorQuerySpecs {
   error?: any;
@@ -13,13 +14,13 @@ export function AdministratorQueries({
   resLocals,
 }: {
   queries: AdministratorQuery[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Administrator Queries',
     navContext: {
-      type: 'plain',
+      type: 'administrator',
       page: 'admin',
       subPage: 'queries',
     },

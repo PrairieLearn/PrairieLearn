@@ -3,9 +3,8 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
-import { loadSqlEquiv, queryOneRowAsync, queryOptionalRow, queryRow } from '@prairielearn/postgres';
-
-import { DateFromISOString, IdSchema } from '../lib/db-types.js';
+import { executeRow, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -44,10 +43,13 @@ function smallestDate(first: Date | null, second: Date | null): Date | null {
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(id) as max from pl_courses;', {});
+    const max = await queryRow(
+      'SELECT MAX(id) as max from pl_courses;',
+      z.bigint({ coerce: true }).nullable(),
+    );
     return {
       min: 1n,
-      max: result.rows[0].max,
+      max,
       batchSize: 10,
     };
   },
@@ -80,7 +82,7 @@ export default makeBatchedMigration({
         throw new Error(`Could not determine created_at date for course ${course.id}`);
       }
 
-      await queryOneRowAsync(sql.update_course_created_at, {
+      await executeRow(sql.update_course_created_at, {
         course_id: id,
         created_at: createdAt,
       });

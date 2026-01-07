@@ -1,12 +1,21 @@
 import * as cheerio from 'cheerio';
+import type { Element } from 'domhandler';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { SubmissionSchema } from '../lib/db-types.js';
+import {
+  type AssessmentInstance,
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  QuestionSchema,
+  SubmissionSchema,
+  type Variant,
+} from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
@@ -15,7 +24,44 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
+const locals = {} as {
+  siteUrl: string;
+  baseUrl: string;
+  courseInstanceBaseUrl: string;
+  questionBaseUrl: string;
+  assessmentsUrl: string;
+  isStudentPage: boolean;
+  totalPoints: number;
+  assessment_id: string;
+  $: cheerio.CheerioAPI;
+  assessmentUrl: string;
+  assessmentInstanceUrl: string;
+  getSubmittedAnswer: (variant: any) => object;
+  preStartTime: number;
+  postStartTime: number;
+  instance_questions: z.infer<typeof SelectInstanceQuestionSchema>[];
+  preEndTime: number;
+  postEndTime: number;
+  assessment_instance: AssessmentInstance;
+  attachFilesUrl: string;
+  shouldHaveButtons: string[];
+  question: TestQuestion;
+  expectedResult: {
+    submission_score?: number | null;
+    submission_correct?: boolean | null;
+    instance_question_points?: number | undefined;
+    instance_question_score_perc?: number;
+    instance_question_auto_points?: number | undefined;
+    instance_question_manual_points?: number;
+    assessment_instance_points?: number;
+    assessment_instance_score_perc?: number;
+  };
+  postAction: string;
+  __csrf_token: string;
+  questionSavedCsrfToken: string;
+  variant: Variant;
+  savedVariant: Variant;
+};
 
 interface TestQuestion {
   qid: string;
@@ -181,18 +227,25 @@ const partialCreditTests = [
   ],
 ];
 
+const SelectInstanceQuestionSchema = z.object({
+  ...InstanceQuestionSchema.shape,
+  qid: QuestionSchema.shape.qid,
+});
+
 describe('Homework assessment', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
-  let page, elemList;
+  let page: string;
+  let page2: ArrayBuffer;
+  let elemList: cheerio.Cheerio<Element>;
 
   const startAssessment = function () {
     describe('the locals object', function () {
       it('should be cleared', function () {
         for (const prop in locals) {
-          delete locals[prop];
+          delete locals[prop as keyof typeof locals];
         }
       });
       it('should be initialized', function () {
@@ -211,7 +264,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         questionsArray.forEach(function (question) {
           for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
+              delete question[prop as keyof TestQuestion];
             }
           }
           question.points = 0;
@@ -231,6 +284,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
 
     describe('GET ' + locals.assessmentsUrl, function () {
       it('should load successfully', async () => {
+        assert.isDefined(locals.assessmentsUrl);
         const res = await fetch(locals.assessmentsUrl);
         assert.equal(res.status, 200);
         page = await res.text();
@@ -254,6 +308,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     describe('GET to assessment URL', function () {
       it('should load successfully', async () => {
         locals.preStartTime = Date.now();
+        assert.isDefined(locals.assessmentUrl);
         const res = await fetch(locals.assessmentUrl);
         locals.postStartTime = Date.now();
         assert.equal(res.status, 200);
@@ -264,23 +319,26 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         assert.equal(res.url, locals.siteUrl + '/pl/course_instance/1/assessment_instance/1');
       });
       it('should create one assessment_instance', async () => {
-        const result = await sqldb.queryAsync(sql.select_assessment_instances, []);
-        if (result.rowCount !== 1) {
-          throw new Error('expected one assessment_instance, got: ' + result.rowCount);
-        }
-        locals.assessment_instance = result.rows[0];
+        const result = await sqldb.queryRow(
+          sql.select_assessment_instances,
+          AssessmentInstanceSchema,
+        );
+        locals.assessment_instance = result;
       });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
       it(`should create ${questionsArray.length} instance_questions`, async () => {
-        const result = await sqldb.queryAsync(sql.select_instance_questions, []);
-        if (result.rowCount !== questionsArray.length) {
+        const result = await sqldb.queryRows(
+          sql.select_instance_questions,
+          SelectInstanceQuestionSchema,
+        );
+        if (result.length !== questionsArray.length) {
           throw new Error(
-            `expected ${questionsArray.length} instance_questions, got: ` + result.rowCount,
+            `expected ${questionsArray.length} instance_questions, got: ` + result.length,
           );
         }
-        locals.instance_questions = result.rows;
+        locals.instance_questions = result;
       });
       questionsArray.forEach(function (question, i) {
         it(`should have question #${i + 1} as QID ${question.qid}`, function () {
@@ -1165,10 +1223,10 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         const fileUrl = locals.siteUrl + elemList[0].attribs.href;
         const res = await fetch(fileUrl);
         assert.equal(res.status, 200);
-        page = await res.arrayBuffer();
+        page2 = await res.arrayBuffer();
       });
       it('should have downloaded a file with the contents of generatedFilesQuestion/figure.png', function () {
-        assert.equal(Buffer.from(page.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
+        assert.equal(Buffer.from(page2.slice(0, 8)).toString('hex'), '89504e470d0a1a0a');
       });
     });
   });
@@ -1176,7 +1234,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
   describe('regrading', function () {
     describe('change max_points', function () {
       it('should succeed', async () => {
-        await sqldb.queryAsync(sql.update_max_points, []);
+        await sqldb.execute(sql.update_max_points);
       });
     });
     helperQuestion.regradeAssessment(locals);
@@ -1273,7 +1331,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
               locals.shouldHaveButtons = ['grade', 'save'];
               locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
-              locals.question.points += questionTest.sub_points;
+              locals.question.points! += questionTest.sub_points;
               locals.totalPoints += questionTest.sub_points;
               const submission_score =
                 questionTest.submission_score == null
@@ -1284,7 +1342,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
                 submission_correct: submission_score === 100,
                 instance_question_points: locals.question.points,
                 instance_question_score_perc:
-                  (locals.question.points / locals.question.maxPoints) * 100,
+                  (locals.question.points! / locals.question.maxPoints) * 100,
                 instance_question_auto_points: locals.question.points,
                 instance_question_manual_points: 0,
                 assessment_instance_points: locals.totalPoints,

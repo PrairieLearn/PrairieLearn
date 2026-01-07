@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { type Institution, type Lti13Instance } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
 
@@ -18,7 +19,7 @@ export function AdministratorInstitutionLti13({
   institution: Institution;
   lti13Instances: Lti13Instance[];
   instance: Lti13Instance | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   platform_defaults: LTI13InstancePlatforms;
   canonicalHost: string;
 }): string {
@@ -47,7 +48,7 @@ export function AdministratorInstitutionLti13({
             ${lti13Instances.map((i) => {
               return html`
                 <a class="nav-link ${i.id === instance?.id ? 'active' : ''}" href="${i.id}">
-                  <span style="white-space: nowrap"> ${i.name ?? `#${i.id}`} </span>
+                  <span style="white-space: nowrap">${i.name}</span>
                   <span style="white-space: nowrap">(${i.platform})</span>
                 </a>
               `;
@@ -76,7 +77,7 @@ export function AdministratorInstitutionLti13({
 
 function LTI13Instance(
   instance: Lti13Instance | null,
-  resLocals: Record<string, any>,
+  resLocals: UntypedResLocals,
   platform_defaults: LTI13InstancePlatforms,
   canonicalHost: string,
 ) {
@@ -121,7 +122,7 @@ function LTI13Instance(
         |
         <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore link</a>
         (${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-        key${instance.keystore?.keys?.length === 1 ? '' : 's'})
+        key${instance.keystore?.keys.length === 1 ? '' : 's'})
       </p>
 
       <hr />
@@ -250,9 +251,9 @@ ${JSON.stringify(instance.custom_fields, null, 3)}</textarea
 
       <a href="${canonicalHost}/pl/lti13_instance/${instance.id}/jwks">JWKS keystore</a>
       contains ${instance.keystore?.keys ? instance.keystore.keys.length : 0}
-      key${instance.keystore?.keys?.length === 1 ? '' : 's'}.<br />
+      key${instance.keystore?.keys.length === 1 ? '' : 's'}.<br />
       <ul>
-        ${instance.keystore?.keys?.map((k) => {
+        ${instance.keystore?.keys.map((k) => {
           return html`<li>
             <form method="POST">
               <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />

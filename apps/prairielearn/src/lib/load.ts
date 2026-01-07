@@ -109,7 +109,7 @@ class LoadEstimator {
       max_jobs: this.maxJobCount,
     };
     sqldb
-      .queryAsync(sql.insert_load, params)
+      .execute(sql.insert_load, params)
       .catch((err) => {
         logger.error('Error reporting load', { err });
       })

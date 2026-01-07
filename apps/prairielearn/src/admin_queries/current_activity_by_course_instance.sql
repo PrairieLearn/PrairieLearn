@@ -38,13 +38,13 @@ SELECT
 FROM
   course_instances_with_submission_counts AS ciwsc
   JOIN course_instances AS ci ON (ci.id = ciwsc.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
   ciwsc.submission_count DESC,
-  i.short_name,
-  c.short_name,
-  ci.short_name,
-  ci.id
+  i.short_name ASC,
+  c.short_name ASC,
+  ci.short_name ASC,
+  ci.id ASC
 LIMIT
   $limit;

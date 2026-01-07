@@ -2,7 +2,7 @@
 WITH
   setup_users AS (
     INSERT INTO
-      users (user_id, uid)
+      users (id, uid)
     VALUES
       (1000, 'student@example.com')
   ),
@@ -37,19 +37,26 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone, path)
+      courses (id, display_timezone, path)
     VALUES
       (1, 'UC', '/path/to/course/1')
   ),
   setup_ci AS (
     INSERT INTO
-      course_instances (id, uuid, course_id, display_timezone)
+      course_instances (
+        id,
+        uuid,
+        course_id,
+        display_timezone,
+        enrollment_code
+      )
     VALUES
       (
         1,
         'b3d010d2-dbef-4b5b-ba4d-92f9aea25c8d',
         1,
-        'UTC'
+        'UTC',
+        'XXXYYY1111'
       )
   ),
   setup_assessment_sets AS (

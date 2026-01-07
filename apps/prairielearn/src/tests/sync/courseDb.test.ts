@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/dot-notation */
 import * as path from 'path';
 
 import fs from 'fs-extra';
@@ -41,6 +42,7 @@ function getQuestion() {
     title: 'Test question',
     topic: 'Test',
     tags: ['test'],
+    authors: [{ name: 'John Doe', email: 'doe@example.org', orcid: '0000-0000-0000-0001' }],
     type: 'v3',
   } satisfies QuestionJsonInput;
 }

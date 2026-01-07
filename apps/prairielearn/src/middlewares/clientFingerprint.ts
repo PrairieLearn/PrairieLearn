@@ -2,8 +2,8 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -19,14 +19,14 @@ export default asyncHandler(async (req, res, next) => {
     // Only update the client fingerprint if the assessment is open and the
     // access to the assessment is active (i.e., student has permission to
     // submit new answers)
-    res.locals.assessment_instance?.open &&
+    res.locals.assessment_instance.open &&
     res.locals.authz_result?.active &&
-    !idsEqual(res.locals.assessment_instance?.last_client_fingerprint_id, client_fingerprint_id)
+    !idsEqual(res.locals.assessment_instance.last_client_fingerprint_id, client_fingerprint_id)
   ) {
-    await sqldb.queryAsync(sql.update_assessment_instance_fingerprint, {
+    await sqldb.execute(sql.update_assessment_instance_fingerprint, {
       client_fingerprint_id,
-      assessment_instance_id: res.locals.assessment_instance?.id,
-      authn_user_id: res.locals.authn_user.user_id,
+      assessment_instance_id: res.locals.assessment_instance.id,
+      authn_user_id: res.locals.authn_user.id,
     });
   }
 
@@ -48,7 +48,7 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     // that the authn user is the owner of the assessment. This will keep us
     // from inadvertently recording a fingerprint change
     // for an instructor viewing the assessment instance.
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     user_session_id,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],

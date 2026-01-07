@@ -45,6 +45,35 @@ export const QuestionDependencyJsonSchema = z
   .strict()
   .describe("The question's client-side dependencies.");
 
+export const QuestionAuthorJsonSchema = z
+  .object({
+    name: z
+      .string()
+      .describe('A human-readable name of a question author.')
+      .trim()
+      .min(3)
+      .max(255)
+      .optional(),
+    email: z
+      .string()
+      .describe('An email address to contact a question author.')
+      .max(255)
+      .optional(),
+    orcid: z
+      .string()
+      .describe('An ORCID identifier that uniquely identifies an individual question author.')
+      .regex(/^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$/)
+      .optional(),
+    originCourse: z
+      .string()
+      .describe('The sharing name of a course whose staff is a question author.')
+      .optional(),
+  })
+  .strict()
+  .describe(
+    'An author (individual person, or staff of a course of origin) credited with creating a question.',
+  );
+
 export const WorkspaceOptionsJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -77,7 +106,8 @@ export const WorkspaceOptionsJsonSchema = z
       .describe(
         'The list of files or directories that will be copied out of the workspace container when saving a submission.',
       )
-      .optional(),
+      .optional()
+      .default([]),
     enableNetworking: z
       .boolean()
       .describe('Whether the workspace should have network access. Access is disabled by default.')
@@ -86,7 +116,8 @@ export const WorkspaceOptionsJsonSchema = z
     environment: z
       .record(z.string())
       .describe('Environment variables to set inside the workspace container.')
-      .optional(),
+      .optional()
+      .default({}),
     syncIgnore: z
       .array(z.string().describe('A single file or directory that will be excluded from sync.'))
       .describe(
@@ -96,6 +127,12 @@ export const WorkspaceOptionsJsonSchema = z
   })
   .strict()
   .describe('Options for workspace questions.');
+
+export const defaultWorkspaceOptions = WorkspaceOptionsJsonSchema.extend({
+  image: WorkspaceOptionsJsonSchema.shape.image.optional(),
+  port: WorkspaceOptionsJsonSchema.shape.port.optional(),
+  home: WorkspaceOptionsJsonSchema.shape.home.optional(),
+}).parse({});
 
 export const ExternalGradingOptionsJsonSchema = z
   .object({
@@ -126,7 +163,8 @@ export const ExternalGradingOptionsJsonSchema = z
       .describe(
         'The list of files or directories that will be copied from course/externalGradingFiles/ to /grade/shared/',
       )
-      .optional(),
+      .optional()
+      .default([]),
     timeout: z
       .number()
       .int()
@@ -142,10 +180,17 @@ export const ExternalGradingOptionsJsonSchema = z
     environment: z
       .record(z.string())
       .describe('Environment variables to set inside the grading container.')
-      .optional(),
+      .optional()
+      .default({}),
   })
   .strict()
   .describe('Options for externally graded questions.');
+
+export type ExternalGradingOptionsJson = z.infer<typeof ExternalGradingOptionsJsonSchema>;
+
+export const defaultExternalGradingOptions = ExternalGradingOptionsJsonSchema.extend({
+  image: ExternalGradingOptionsJsonSchema.shape.image.optional(),
+}).parse({});
 
 export const QuestionJsonSchema = z
   .object({
@@ -156,7 +201,7 @@ export const QuestionJsonSchema = z
       .describe('Unique identifier (UUID v4).'),
     type: z
       .enum(['Calculation', 'MultipleChoice', 'Checkbox', 'File', 'MultipleTrueFalse', 'v3'])
-      .describe('Type of the question.'),
+      .describe('Type of the question. This should be set to "v3" for new questions.'),
     title: z
       .string()
       .describe(
@@ -166,11 +211,14 @@ export const QuestionJsonSchema = z
     tags: z
       .array(z.string().describe('A tag associated with a question.'))
       .describe("Extra tags associated with the question (e.g., 'Exam Only', 'Broken').")
-      .optional(),
+      .optional()
+      .default([]),
+    authors: z.array(QuestionAuthorJsonSchema).max(10).optional().default([]),
     clientFiles: z
       .array(z.string().describe('A single file accessible by the client.'))
-      .describe('The list of question files accessible by the client (defaults to ["client.js"]).')
-      .optional(),
+      .describe('The list of question files accessible by the client.')
+      .optional()
+      .default(['client.js', 'question.html', 'answer.html']),
     clientTemplates: z
       .array(z.string().describe('A single template file accessible by the client.'))
       .describe('List of client-accessible templates to render server-side.')
@@ -182,7 +230,8 @@ export const QuestionJsonSchema = z
     gradingMethod: z
       .enum(['Internal', 'External', 'Manual'])
       .describe('The grading method used for this question.')
-      .optional(),
+      .optional()
+      .default('Internal'),
     singleVariant: z
       .boolean()
       .describe('Whether the question is not randomized and only generates a single variant.')
@@ -207,17 +256,22 @@ export const QuestionJsonSchema = z
       )
       .optional(),
     externalGradingOptions: ExternalGradingOptionsJsonSchema.optional(),
-    dependencies: QuestionDependencyJsonSchema.optional(),
+    dependencies: QuestionDependencyJsonSchema.optional().default({}),
     workspaceOptions: WorkspaceOptionsJsonSchema.optional(),
     sharingSets: z
       .array(z.string().describe('The name of a sharing set'))
       .describe('The list of sharing sets that this question belongs to.')
       .optional(),
-    sharePublicly: z.boolean().describe('Whether this question is publicly shared.').optional(),
+    sharePublicly: z
+      .boolean()
+      .describe('Whether this question is publicly shared.')
+      .optional()
+      .default(false),
     shareSourcePublicly: z
       .boolean()
-      .describe("Whether this questions's source code is publicly shared.")
-      .optional(),
+      .describe("Whether this question's source code is publicly shared.")
+      .optional()
+      .default(false),
   })
   .strict()
   .describe('Info files for questions.');

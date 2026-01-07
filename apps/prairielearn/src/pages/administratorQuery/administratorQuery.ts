@@ -5,12 +5,13 @@ import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type AdministratorQueryResult,
   loadAdminQueryModule,
 } from '../../admin_queries/lib/util.js';
-import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
 
 import { AdministratorQuery, QueryRunRowSchema } from './administratorQuery.html.js';
 
@@ -44,9 +45,9 @@ router.get(
     } else if (req.query.format === 'csv') {
       res.attachment(req.params.query + '.csv');
       if (query_run?.result != null) {
-        stringify(query_run.result?.rows, {
+        stringify(query_run.result.rows, {
           header: true,
-          columns: query_run.result?.columns,
+          columns: query_run.result.columns,
         }).pipe(res);
       } else {
         res.send('');
@@ -87,8 +88,8 @@ router.post(
     let error: string | null = null;
     let result: AdministratorQueryResult | null = null;
     try {
-      result = (await module.default(queryParams)) as AdministratorQueryResult;
-    } catch (err) {
+      result = await module.default(queryParams);
+    } catch (err: any) {
       logger.error(err);
       error = err.toString();
     }
@@ -98,7 +99,7 @@ router.post(
       {
         name: req.params.query,
         params: queryParams,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         error,
         result,
       },
