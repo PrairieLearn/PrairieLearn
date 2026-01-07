@@ -45,6 +45,12 @@ The system of coordinates of the canvas is located at the top/left corner, as il
 
 Interactive `pl-drawing` elements are currently not accessible. For interactive diagrams, there are no viable keyboard controls or reasonable screen reader interaction. You can, however, use the `aria-label` attribute to provide a short description of a static diagram (i.e. a short title), and the `aria-description` attribute to provide a longer, more detailed description. This will be read by screen readers when `gradable` is `false`.
 
+#### Example implementations
+
+- [element/drawingOptions]: Example demonstrating `weight`, `allow-blank`, and `show-score` options
+
+- [element/drawingGallery]: Image gallery with drawing objects
+
 ### `pl-drawing-initial` element
 
 A `pl-drawing-initial` will group objects that will be displayed in the canvas defined by `pl-drawing`.
@@ -2099,7 +2105,7 @@ These button icons can then be attached to your elements by setting the `get_but
 
 <!-- Reference links -->
 
-[element/drawinggallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
+[element/drawingGallery]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingGallery
 [demo/drawing/liftingmechanism]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/liftingMechanism
 [demo/drawing/pulley]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/pulley
 [demo/drawing/vmdiagrams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/vmDiagrams
@@ -2112,3 +2118,4 @@ These button icons can then be attached to your elements by setting the `get_but
 [demo/drawing/customizedbuttons]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/customizedButtons
 [demo/drawing/inclinedplane-reaction]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/inclinedPlane-reaction
 [demo/drawing/frame-exploded]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/drawing/frame-exploded
+[element/drawingOptions]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/drawingOptions

@@ -1,0 +1,60 @@
+<pl-question-panel>
+    <p>
+        This question demonstrates the <code>weight</code>, <code>allow-blank</code>,
+        and <code>show-score</code> options for <code>pl-drawing</code>.
+    </p>
+    <ul>
+        <li><code>weight="3"</code>: The drawing is worth 3x the integer input (which defaults to weight 1). If you get only the area correct, you score 25% (1/4). If you get only the centroid correct, you score 75% (3/4).</li>
+        <li><code>allow-blank="true"</code>: Submitting without placing any points will score 0% for the drawing part instead of showing "Invalid submission".</li>
+        <li><code>show-score="true"</code>: After submission, a score badge (green/yellow/red) appears next to the drawing in the "Submitted answer" panel.</li>
+    </ul>
+    <p>
+        <strong>Part a)</strong> Mark the centroid of the rectangle shown below.
+        <em>(This part is weighted 3x relative to Part b)</em>
+    </p>
+    <p>
+        <strong>Part b)</strong> Calculate the area of the rectangle (width = {{params.rect_width}}, height = {{params.rect_height}}).
+    </p>
+</pl-question-panel>
+
+<p><strong>Part a)</strong> Mark the centroid:</p>
+
+<pl-drawing
+    grid-size="20"
+    gradable="true"
+    answers-name="centroid"
+    width="300"
+    height="{{params.height_canvas}}"
+    hide-answer-panel="false"
+    weight="3"
+    allow-blank="true"
+    show-score="true">
+
+    <pl-drawing-answer draw-error-box="true">
+        <pl-point x1="{{params.xA}}" y1="{{params.yA}}"></pl-point>
+    </pl-drawing-answer>
+
+    <pl-drawing-initial>
+        <pl-rectangle
+            x1="{{params.xA}}"
+            y1="{{params.yA}}"
+            width="{{params.rect_width}}"
+            height="{{params.rect_height}}"
+            color="blue1">
+        </pl-rectangle>
+    </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group label="Graded objects:">
+            <pl-drawing-button type="pl-point"></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group label="Help buttons:">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+            <pl-drawing-button type="help-line"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+</pl-drawing>
+
+<p><strong>Part b)</strong> What is the area?</p>
+
+<pl-integer-input answers-name="area" label="Area $=$" suffix="square units" allow-blank="true"></pl-integer-input>
