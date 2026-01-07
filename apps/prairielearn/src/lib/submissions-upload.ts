@@ -64,7 +64,7 @@ const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
 });
 
 const TeamSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
-  'Group name': z.string(),
+  'Team name': z.string(),
   Usernames: z.preprocess((val) => {
     if (val === '' || val == null) return [];
     // CSV exports serialize arrays as JSON
@@ -182,14 +182,14 @@ export async function uploadSubmissions(
       try {
         // Auto-detect CSV type on first data row
         if (isTeamWork === null) {
-          isTeamWork = 'Group name' in record && !('UID' in record);
+          isTeamWork = 'Team name' in record && !('UID' in record);
 
           if (isTeamWork && !assessment.team_work) {
             throw new Error(
-              'Group work CSV detected, but assessment does not have group work enabled',
+              'Team work CSV detected, but assessment does not have team work enabled',
             );
           } else if (!isTeamWork && assessment.team_work) {
-            throw new Error('Individual work CSV detected, but assessment has group work enabled');
+            throw new Error('Individual work CSV detected, but assessment has team work enabled');
           }
         }
 
@@ -198,7 +198,7 @@ export async function uploadSubmissions(
           : IndividualSubmissionCsvRowSchema.parse(record);
 
         if ('Usernames' in row && row.Usernames.length === 0) {
-          job.warn(`Skipping group "${row['Group name']}" with no usernames`);
+          job.warn(`Skipping team "${row['Team name']}" with no usernames`);
           continue;
         }
 
@@ -213,12 +213,12 @@ export async function uploadSubmissions(
             // Create users for all team members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
 
-            const team = await getOrInsertTeam([row['Group name']], async () => {
+            const team = await getOrInsertTeam([row['Team name']], async () => {
               // Use createOrAddToTeam which handles both creating new teams and adding to existing ones
               return await createOrAddToTeam({
                 course_instance,
                 assessment,
-                team_name: row['Group name'],
+                team_name: row['Team name'],
                 uids: row.Usernames,
                 authn_user_id,
                 // This function only runs in dev mode, so we can safely ignore permission checks.

@@ -44,7 +44,7 @@ student2@example.com,2,explainMax,0,,0,0,42984,{},{},{"ans": "gives the set of l
 student2@example.com,2,describeFibonacci,100,,10,0,42987,{},{},{"ans": "calculates the n-th Fibonacci number"},,,,
 ```
 
-For group assessments, the `uid` column is replaced with the `group_name` and `uid_list` columns, containing, respectively, the name of the group and a list of the user IDs of all group members.
+For team assessments, the `uid` column is replaced with the `team_name` and `uid_list` columns, containing, respectively, the name of the team and a list of the user IDs of all team members.
 
 This CSV file has three blank columns at the end, ready for the percentage score (0 to 100) and optional feedback and partial scores. The `submission_id` is an internal identifier that PrairieLearn uses to determine exactly which submitted answer is being graded. The `params` and `true_answer` columns show the question data. The `old_score_perc` column shows the score that the student currently has, while `old_auto_points` and `old_manual_points` show the auto-graded and manually graded points already submitted. If feedback was already provided in a previous upload, the `old_feedback` column will contain the feedback the student currently has.
 
@@ -66,10 +66,10 @@ After editing the percentage score and/or feedback for each submitted answer, up
 
 The submission associated with each row in the CSV file is identified through one of the following methods (in order of precedence):
 
-1. If the row includes a `submission_id` column that is not left blank, this is used to identify the submission to be updated. In this case, the `uid`, `group_name` and `qid` columns, if they are provided, are used for verification only, and any mismatches are listed in the upload output as errors.
-2. If the `submission_id` column is left blank or not present, the submission is identified by matching the `uid` (or `group_name` for group assessments), `instance`, and `qid` columns. In this case, all of these columns must be provided.
+1. If the row includes a `submission_id` column that is not left blank, this is used to identify the submission to be updated. In this case, the `uid`, `team_name` and `qid` columns, if they are provided, are used for verification only, and any mismatches are listed in the upload output as errors.
+2. If the `submission_id` column is left blank or not present, the submission is identified by matching the `uid` (or `team_name` for team assessments), `instance`, and `qid` columns. In this case, all of these columns must be provided.
 
-Graders are encouraged to keep both the `submission_id` column for identification, as well as the `uid` (or `group_name`) and `qid` columns for verification, to avoid any ambiguity. Other columns not involved in the identification of the submission, such as `params`, `old_score_perc` or `submitted_answer`, will be ignored if present.
+Graders are encouraged to keep both the `submission_id` column for identification, as well as the `uid` (or `team_name`) and `qid` columns for verification, to avoid any ambiguity. Other columns not involved in the identification of the submission, such as `params`, `old_score_perc` or `submitted_answer`, will be ignored if present.
 
 Each question will have its score and/or feedback updated and the total assessment score will be recalculated. All updates are done with `credit` of 100%, so students get exactly the scores as uploaded.
 
@@ -102,7 +102,7 @@ After students have completed their assessments, open the "Manual Grading" tab. 
 
     The order in which student submissions are listed for a question is purposely not based on any deterministic information about the student or the submission data. Rather, submissions are listed in a stable pseudo-random order (i.e., the same order is used if the page is reloaded). Similarly, when a grader submits a grade or skips a submission, the next submission to be graded is based on the same order. Different questions on the same assessment will list the same set of students in a different order.
 
-    The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or group. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
+    The main reason for this ordering is to ensure that any sequential bias or disparity that is associated to the order in which submissions are graded does not affect any specific student or team. Studies have shown that graders have a tendency to grade latter submissions more harshly or with less quality feedback. Graders may also unwittingly compare submissions with more recently seen answers instead of with a rubric or sample answer. More details:
 
     - Wang, Zhihan (Helen) and Pei, Jiaxin and Li, Jun, [*30 Million Canvas Grading Records Reveal Widespread Sequential Bias and System-Induced Surname Initial Disparity*](https://ssrn.com/abstract=4603146) (2023).
     - Goldbach, C., Sickmann, J., & Pitz, T. [*Sequential decision bias – evidence from grading exams*](https://doi.org/10.1080/00036846.2021.1976390). Applied Economics (2021), 54(32), 3727–3739.

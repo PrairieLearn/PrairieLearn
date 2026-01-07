@@ -32,11 +32,11 @@ export function InstructorAssessmentTeams({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: 'Groups',
+    pageTitle: 'Teams',
     navContext: {
       type: 'instructor',
       page: 'assessment',
-      subPage: 'groups',
+      subPage: 'teams',
     },
     options: {
       fullWidth: true,
@@ -58,10 +58,10 @@ export function InstructorAssessmentTeams({
         ? html`
             <div class="card mb-4">
               <div class="card-header bg-primary text-white d-flex align-items-center">
-                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
+                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Teams</h1>
               </div>
               <div class="card-body">
-                This is not a group assessment. To enable this functionality, please set
+                This is not a team assessment. To enable this functionality, please set
                 <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
               </div>
             </div>
@@ -85,7 +85,7 @@ export function InstructorAssessmentTeams({
               : ''}
             <div class="card mb-4">
               <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
-                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Groups</h1>
+                <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Teams</h1>
                 ${resLocals.authz_data.has_course_instance_permission_edit
                   ? html`
                       <div class="ms-auto">
@@ -95,7 +95,7 @@ export function InstructorAssessmentTeams({
                           data-bs-toggle="modal"
                           data-bs-target="#addTeamModal"
                         >
-                          <i class="fa fa-plus" aria-hidden="true"></i> Add a group
+                          <i class="fa fa-plus" aria-hidden="true"></i> Add a team
                         </button>
                         <button
                           type="button"
@@ -103,7 +103,7 @@ export function InstructorAssessmentTeams({
                           data-bs-toggle="modal"
                           data-bs-target="#deleteAllTeamsModal"
                         >
-                          <i class="fa fa-times" aria-hidden="true"></i> Delete all groups
+                          <i class="fa fa-times" aria-hidden="true"></i> Delete all teams
                         </button>
                       </div>
                     `
@@ -122,7 +122,7 @@ export function InstructorAssessmentTeams({
                           >
                             <i class="fas fa-upload" aria-hidden="true"></i> Upload
                           </button>
-                          <div class="mt-2">Upload a CSV file with group assignments.</div>
+                          <div class="mt-2">Upload a CSV file with team assignments.</div>
                         </div>
                         <div class="col-sm bg-light py-4 border text-center">
                           <button
@@ -133,7 +133,7 @@ export function InstructorAssessmentTeams({
                           >
                             <i class="fas fa-shuffle" aria-hidden="true"></i> Random
                           </button>
-                          <div class="mt-2">Randomly assign students to groups.</div>
+                          <div class="mt-2">Randomly assign students to teams.</div>
                         </div>
                       </div>
                     </div>
@@ -143,13 +143,13 @@ export function InstructorAssessmentTeams({
                 <table
                   id="usersTable"
                   class="table table-sm table-hover tablesorter"
-                  aria-label="Groups"
+                  aria-label="Teams"
                 >
                   <thead>
                     <tr>
                       <th>Name</th>
                       <th>Size</th>
-                      <th class="text-center">Group Members (UIDs)</th>
+                      <th class="text-center">Team Members (UIDs)</th>
                       ${resLocals.authz_data.has_course_instance_permission_edit
                         ? html` <th class="sorter-false"></th> `
                         : ''}
@@ -230,7 +230,7 @@ export function InstructorAssessmentTeams({
                                       data-bs-container="body"
                                       data-bs-html="true"
                                       data-bs-placement="auto"
-                                      data-bs-title="Delete group"
+                                      data-bs-title="Delete team"
                                       data-bs-content="${escapeHtml(
                                         DeleteTeamForm({
                                           row,
@@ -238,7 +238,7 @@ export function InstructorAssessmentTeams({
                                         }),
                                       )}"
                                     >
-                                      <i class="fa fa-times" aria-hidden="true"></i> Delete group
+                                      <i class="fa fa-times" aria-hidden="true"></i> Delete team
                                     </button>
                                   </div>
                                 </div>
@@ -261,7 +261,7 @@ export function InstructorAssessmentTeams({
                   </p>
                   <small>
                     ${notAssigned?.length === 0
-                      ? html` <strong> All students have been assigned groups. </strong> `
+                      ? html` <strong> All students have been assigned teams. </strong> `
                       : html`
                           <strong>
                             ${notAssigned?.length
@@ -329,7 +329,7 @@ function AddMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: stri
 function DeleteTeamForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: string }) {
   return html`
     <form name="delete-team-form" method="POST">
-      <p>Are you sure you want to delete the group <strong>${row.name}</strong>?</p>
+      <p>Are you sure you want to delete the team <strong>${row.name}</strong>?</p>
       <input type="hidden" name="__action" value="delete_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="team_id" value="${row.team_id}" />
@@ -364,21 +364,21 @@ function RemoveMembersForm({ row, csrfToken }: { row: TeamUsersRow; csrfToken: s
 function UploadAssessmentTeamsModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'uploadAssessmentTeamsModal',
-    title: 'Upload new group assignments',
+    title: 'Upload new team assignments',
     formEncType: 'multipart/form-data',
     body: html`
       <p>Upload a CSV file in the format of:</p>
       <code class="text-dark">
-        groupName,UID<br />
-        groupA,one@example.com<br />
-        groupA,two@example.com<br />
-        groupB,three@example.com<br />
-        groupB,four@example.com</code
+        teamName,UID<br />
+        teamA,one@example.com<br />
+        teamA,two@example.com<br />
+        teamB,three@example.com<br />
+        teamB,four@example.com</code
       >
       <!-- Closing code tag not on its own line to improve copy/paste formatting -->
       <p class="mt-3">
-        The <code>groupname</code> column should be a unique identifier for each group. To change
-        the grouping, link uids to the groupname.
+        The <code>teamName</code> column should be a unique identifier for each team. To change the
+        team assignment, link UIDs to the team name.
       </p>
       <div class="mb-3">
         <label class="form-label" for="uploadAssessmentTeamsFileInput"> Choose CSV file </label>
@@ -411,10 +411,10 @@ function RandomAssessmentTeamsModal({
 }) {
   return Modal({
     id: 'randomAssessmentTeamsModal',
-    title: 'Random group assignments',
+    title: 'Random team assignments',
     body: html`
       <div class="mb-3">
-        <label class="form-label" for="formMin">Min number of members in a group</label>
+        <label class="form-label" for="formMin">Min number of members in a team</label>
         <input
           type="number"
           required
@@ -426,7 +426,7 @@ function RandomAssessmentTeamsModal({
         />
       </div>
       <div class="mb-3">
-        <label class="form-label" for="formMax">Max number of members in a group</label>
+        <label class="form-label" for="formMax">Max number of members in a team</label>
         <input
           type="number"
           required
@@ -442,7 +442,7 @@ function RandomAssessmentTeamsModal({
       <input type="hidden" name="__action" value="random_assessment_teams" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
-      <button type="submit" class="btn btn-primary">Group</button>
+      <button type="submit" class="btn btn-primary">Assign</button>
     `,
   });
 }
@@ -450,10 +450,10 @@ function RandomAssessmentTeamsModal({
 function AddTeamModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'addTeamModal',
-    title: 'Add a group',
+    title: 'Add a team',
     body: html`
       <div class="mb-3">
-        <label class="form-label" for="formName">Group Name</label>
+        <label class="form-label" for="formName">Team Name</label>
         <input
           type="text"
           class="form-control"
@@ -469,17 +469,17 @@ function AddTeamModal({ csrfToken }: { csrfToken: string }) {
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="addGroupUids">UIDs</label>
+        <label class="form-label" for="addTeamUids">UIDs</label>
         <input
           type="text"
           class="form-control"
-          id="addGroupUids"
+          id="addTeamUids"
           name="uids"
           placeholder="student1@example.com, student2@example.com"
-          aria-describedby="addGroupUidsHelp"
+          aria-describedby="addTeamUidsHelp"
           required
         />
-        <small id="addGroupUidsHelp" class="form-text text-muted">
+        <small id="addTeamUidsHelp" class="form-text text-muted">
           Separate multiple UIDs with commas.
         </small>
       </div>
@@ -504,10 +504,10 @@ function DeleteAllTeamsModal({
 }) {
   return Modal({
     id: 'deleteAllTeamsModal',
-    title: 'Delete all existing groups',
+    title: 'Delete all existing teams',
     body: html`
       <p>
-        Are you sure you want to delete all existing groups for
+        Are you sure you want to delete all existing teams for
         <strong>${assessmentSetName} ${assessmentNumber}</strong>? This cannot be undone.
       </p>
     `,

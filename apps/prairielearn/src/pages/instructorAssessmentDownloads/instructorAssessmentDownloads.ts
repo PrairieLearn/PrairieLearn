@@ -142,11 +142,11 @@ function getFilenames(locals: UntypedResLocals) {
     allFilesZipFilename: prefix + 'all_files.zip',
   };
   if (locals.assessment.team_work) {
-    filenames.teamsCsvFilename = prefix + 'groups.csv';
-    filenames.scoresTeamCsvFilename = prefix + 'scores_by_group.csv';
-    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_group_all.csv';
-    filenames.pointsTeamCsvFilename = prefix + 'points_by_group.csv';
-    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_group_all.csv';
+    filenames.teamsCsvFilename = prefix + 'teams.csv';
+    filenames.scoresTeamCsvFilename = prefix + 'scores_by_team.csv';
+    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_team_all.csv';
+    filenames.pointsTeamCsvFilename = prefix + 'points_by_team.csv';
+    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_team_all.csv';
   }
   return filenames;
 }
@@ -335,7 +335,7 @@ router.get(
     ];
     const usernameColumn: Columns = [['Username', 'username']];
     const teamNameColumn: Columns = [
-      ['Group name', 'group_name'],
+      ['Team name', 'group_name'],
       ['Usernames', 'uid_list'],
     ];
     const scoreColumn: Columns = [[assessmentName, 'score_perc']];
@@ -562,7 +562,7 @@ router.get(
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
+        ['teamName', 'name'],
         ['UID', 'uid'],
       ];
       if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);

@@ -122,10 +122,10 @@ export function getNavPageTabs() {
         renderCondition: ({ authz_data }) => authz_data.has_course_permission_view,
       },
       {
-        activeSubPage: 'groups',
+        activeSubPage: 'teams',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/groups`,
         iconClasses: 'fas fa-users',
-        tabLabel: 'Groups',
+        tabLabel: 'Teams',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {

@@ -43,7 +43,7 @@ router.get(
       res.locals.course_instance,
       res.locals.course,
     );
-    const teamsCsvFilename = prefix + 'groups.csv';
+    const teamsCsvFilename = prefix + 'teams.csv';
 
     const teamConfigInfo = await sqldb.queryOptionalRow(
       sql.config_info,
