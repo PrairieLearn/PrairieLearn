@@ -38,6 +38,7 @@ export interface PublishingFormValues {
  * @param params.originalStartDate - The original start date of the course instance.
  * @param params.originalEndDate - The original end date of the course instance.
  * @param params.showButtons - Whether to show the buttons to save and cancel.
+ * @param params.formId - An unique ID for the form on the page.
  */
 export function CourseInstancePublishingForm({
   displayTimezone,
@@ -45,12 +46,14 @@ export function CourseInstancePublishingForm({
   originalStartDate,
   originalEndDate,
   showButtons = true,
+  formId,
 }: {
   displayTimezone: string;
   canEdit: boolean;
   originalStartDate: Date | null;
   originalEndDate: Date | null;
   showButtons?: boolean;
+  formId: string;
 }) {
   const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
@@ -220,7 +223,7 @@ export function CourseInstancePublishingForm({
               className="form-check-input"
               type="radio"
               name="status"
-              id="status-unpublished"
+              id={`${formId}-status-unpublished`}
               value="unpublished"
               checked={selectedStatus === 'unpublished'}
               disabled={!canEdit}
@@ -230,7 +233,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for="status-unpublished">
+            <label className="form-check-label" for={`${formId}-status-unpublished`}>
               Unpublished
             </label>
           </div>
@@ -271,7 +274,7 @@ export function CourseInstancePublishingForm({
               className="form-check-input"
               type="radio"
               name="status"
-              id="status-publish-scheduled"
+              id={`${formId}-status-publish-scheduled`}
               value="publish_scheduled"
               checked={selectedStatus === 'publish_scheduled'}
               disabled={!canEdit}
@@ -281,7 +284,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for="status-publish-scheduled">
+            <label className="form-check-label" for={`${formId}-status-publish-scheduled`}>
               Scheduled to be published
             </label>
           </div>
@@ -310,7 +313,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for="start_date">
+                    <label className="form-label mb-0" for={`${formId}-start-date`}>
                       Start date
                     </label>
                     {canEdit && (
@@ -328,9 +331,13 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       className={clsx('form-control', errors.start_date && 'is-invalid')}
-                      id="start_date"
+                      id={`${formId}-start-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.start_date}
+                      aria-errormessage={
+                        errors.start_date ? `${formId}-start-date-error` : undefined
+                      }
                       {...register('start_date', {
                         validate: validateStartDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -340,13 +347,15 @@ export function CourseInstancePublishingForm({
                     <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
-                    <div className="text-danger small mt-1">{errors.start_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-start-date-error`}>
+                      {errors.start_date.message}
+                    </div>
                   )}
                 </div>
 
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for="end_date">
+                    <label className="form-label mb-0" for={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -364,9 +373,11 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       className={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -375,7 +386,9 @@ export function CourseInstancePublishingForm({
                     <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div className="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-end-date-error`}>
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>
@@ -390,7 +403,7 @@ export function CourseInstancePublishingForm({
               className="form-check-input"
               type="radio"
               name="status"
-              id="status-published"
+              id={`${formId}-status-published`}
               value="published"
               checked={selectedStatus === 'published'}
               disabled={!canEdit}
@@ -400,7 +413,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for="status-published">
+            <label className="form-check-label" for={`${formId}-status-published`}>
               Published
             </label>
           </div>
@@ -434,7 +447,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for="end_date">
+                    <label className="form-label mb-0" for={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -452,9 +465,11 @@ export function CourseInstancePublishingForm({
                     <input
                       type="datetime-local"
                       className={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
                         setValueAs: normalizeDateTimeLocal,
@@ -463,7 +478,9 @@ export function CourseInstancePublishingForm({
                     <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div className="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-end-date-error`}>
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>

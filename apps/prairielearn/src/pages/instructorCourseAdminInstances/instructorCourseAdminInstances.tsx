@@ -11,7 +11,7 @@ import { Hydrate } from '@prairielearn/preact/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
-import { CourseInstanceAddEditor } from '../../lib/editors.js';
+import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   selectCourseInstanceByUuid,
@@ -109,12 +109,21 @@ router.post(
     });
 
     if (req.body.__action === 'add_course_instance') {
-      const { short_name, long_name, start_date, end_date } = z
+      const {
+        short_name,
+        long_name,
+        start_date,
+        end_date,
+        self_enrollment_enabled,
+        self_enrollment_use_enrollment_code,
+      } = z
         .object({
           short_name: z.string().trim(),
           long_name: z.string().trim(),
           start_date: z.string(),
           end_date: z.string(),
+          self_enrollment_enabled: z.boolean().optional(),
+          self_enrollment_use_enrollment_code: z.boolean().optional(),
         })
         .parse(req.body);
 
@@ -157,35 +166,57 @@ router.post(
         );
       }
 
-      let startAccessDate: Temporal.ZonedDateTime | undefined;
-      let endAccessDate: Temporal.ZonedDateTime | undefined;
-
       // Parse dates if provided (empty strings mean unpublished)
-      if (start_date) {
-        startAccessDate = Temporal.PlainDateTime.from(start_date).toZonedDateTime(
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      if (startDate && endDate) {
+        const startAccessDate = Temporal.PlainDateTime.from(startDate).toZonedDateTime(
           course.display_timezone,
         );
-      }
-      if (end_date) {
-        endAccessDate = Temporal.PlainDateTime.from(end_date).toZonedDateTime(
+        const endAccessDate = Temporal.PlainDateTime.from(endDate).toZonedDateTime(
           course.display_timezone,
         );
+        if (startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds) {
+          throw new error.HttpStatusError(400, 'End date must be after start date');
+        }
       }
 
-      if (
-        startAccessDate &&
-        endAccessDate &&
-        startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds
-      ) {
-        throw new error.HttpStatusError(400, 'End date must be after start date');
-      }
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        undefined,
+        self_enrollment_enabled,
+        true,
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        undefined,
+        self_enrollment_use_enrollment_code,
+        false,
+      );
+
+      const resolvedSelfEnrollment =
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
+          ? {
+              enabled: selfEnrollmentEnabled,
+              useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+            }
+          : undefined;
 
       const editor = new CourseInstanceAddEditor({
         locals: res.locals as any,
         short_name,
         long_name,
-        start_access_date: startAccessDate,
-        end_access_date: endAccessDate,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+          selfEnrollment: resolvedSelfEnrollment,
+        },
       });
 
       const serverJob = await editor.prepareServerJob();

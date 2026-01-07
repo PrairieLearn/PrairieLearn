@@ -1,4 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
+import clsx from 'clsx';
 import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
@@ -6,10 +7,14 @@ import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
+import {
+  CourseInstanceSelfEnrollmentForm,
+  type SelfEnrollmentFormValues,
+} from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { getCourseEditErrorUrl, getCourseInstanceSettingsUrl } from '../../../lib/client/url.js';
 
-interface CreateFormValues extends PublishingFormValues {
+interface CreateFormValues extends PublishingFormValues, SelfEnrollmentFormValues {
   short_name: string;
   long_name: string;
 }
@@ -31,6 +36,8 @@ export function CreateCourseInstanceModal({
       long_name: '',
       start_date: '',
       end_date: '',
+      self_enrollment_enabled: true,
+      self_enrollment_use_enrollment_code: true,
     },
     mode: 'onSubmit',
   });
@@ -51,6 +58,8 @@ export function CreateCourseInstanceModal({
         long_name: data.long_name.trim(),
         start_date: data.start_date,
         end_date: data.end_date,
+        self_enrollment_enabled: data.self_enrollment_enabled,
+        self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -114,21 +123,23 @@ export function CreateCourseInstanceModal({
               <input
                 id="create-long-name"
                 type="text"
-                className="form-control"
+                className={clsx('form-control', errors.long_name && 'is-invalid')}
                 aria-describedby="create-long-name-help"
+                aria-invalid={!!errors.long_name}
+                aria-errormessage={errors.long_name ? 'create-long-name-error' : undefined}
                 {...register('long_name', {
                   required: 'Long name is required',
                 })}
               />
+              <small id="create-long-name-help" className="form-text text-muted">
+                The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined to
+                the course name, e.g. &quot;
+                {course.short_name} Fall 2025&quot;.
+              </small>
               {errors.long_name && (
-                <div className="text-danger small mt-1">{errors.long_name.message}</div>
-              )}
-              {!errors.long_name && (
-                <small id="create-long-name-help" className="form-text text-muted">
-                  The full course instance name, such as &quot;Fall 2025&quot;. Users see it joined
-                  to the course name, e.g. &quot;
-                  {course.short_name} Fall 2025&quot;.
-                </small>
+                <div className="invalid-feedback" id="create-long-name-error">
+                  {errors.long_name.message}
+                </div>
               )}
             </div>
 
@@ -139,8 +150,10 @@ export function CreateCourseInstanceModal({
               <input
                 id="create-short-name"
                 type="text"
-                className="form-control font-monospace"
+                className={clsx('form-control font-monospace', errors.short_name && 'is-invalid')}
                 aria-describedby="create-short-name-help"
+                aria-invalid={!!errors.short_name}
+                aria-errormessage={errors.short_name ? 'create-short-name-error' : undefined}
                 {...register('short_name', {
                   required: 'Short name is required',
                   pattern: {
@@ -149,15 +162,15 @@ export function CreateCourseInstanceModal({
                   },
                 })}
               />
+              <small id="create-short-name-help" className="form-text text-muted">
+                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
+                and headers where a short description is required. Use only letters, numbers,
+                dashes, and underscores, with no spaces.
+              </small>
               {errors.short_name && (
-                <div className="text-danger small mt-1">{errors.short_name.message}</div>
-              )}
-              {!errors.short_name && (
-                <small id="create-short-name-help" className="form-text text-muted">
-                  A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                  and headers where a short description is required. Use only letters, numbers,
-                  dashes, and underscores, with no spaces.
-                </small>
+                <div className="invalid-feedback" id="create-short-name-error">
+                  {errors.short_name.message}
+                </div>
               )}
             </div>
 
@@ -175,7 +188,17 @@ export function CreateCourseInstanceModal({
               originalStartDate={null}
               originalEndDate={null}
               showButtons={false}
+              formId="create-course-instance"
             />
+
+            <hr />
+
+            <h3 className="h5">Self-enrollment settings</h3>
+            <p className="text-muted small">
+              Configure self-enrollment for your new course instance. This can be changed later.
+            </p>
+
+            <CourseInstanceSelfEnrollmentForm formId="create-course-instance" />
           </Modal.Body>
 
           <Modal.Footer>

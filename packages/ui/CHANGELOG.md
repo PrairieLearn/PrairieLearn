@@ -1,5 +1,16 @@
 # @prairielearn/ui
 
+## 1.10.0
+
+### Minor Changes
+
+- e2bffd9: Prefer `className` instead of `class`
+
+### Patch Changes
+
+- Updated dependencies [e2bffd9]
+  - @prairielearn/preact-cjs@2.0.0
+
 ## 1.9.1
 
 ### Patch Changes

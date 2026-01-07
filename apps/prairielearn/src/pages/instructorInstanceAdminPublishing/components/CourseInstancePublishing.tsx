@@ -15,14 +15,18 @@ import { PublishingExtensions } from './PublishingExtensions.js';
 
 export function CourseInstancePublishing({
   courseInstance,
-  canEdit,
+  canEditPublishing,
+  canViewExtensions,
+  canEditExtensions,
   csrfToken,
   origHash,
   extensions,
   isDevMode,
 }: {
   courseInstance: StaffCourseInstance;
-  canEdit: boolean;
+  canEditPublishing: boolean;
+  canViewExtensions: boolean;
+  canEditExtensions: boolean;
   csrfToken: string;
   origHash: string | null;
   extensions: CourseInstancePublishingExtensionRow[];
@@ -63,18 +67,6 @@ export function CourseInstancePublishing({
       <div className="mb-4">
         <h4 className="mb-4">Publishing</h4>
 
-        {!canEdit && origHash !== null && (
-          <div className="alert alert-info" role="alert">
-            You do not have permission to edit publishing settings.
-          </div>
-        )}
-        {!canEdit && origHash === null && (
-          <div className="alert alert-warning" role="alert">
-            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
-            file does not exist.
-          </div>
-        )}
-
         <form method="POST" onSubmit={onSubmit}>
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="__action" value="update_publishing" />
@@ -83,12 +75,25 @@ export function CourseInstancePublishing({
           <FormProvider {...methods}>
             <CourseInstancePublishingForm
               displayTimezone={courseInstance.display_timezone}
-              canEdit={canEdit}
+              canEdit={canEditPublishing}
               originalStartDate={courseInstance.publishing_start_date}
               originalEndDate={courseInstance.publishing_end_date}
+              formId="course-instance-publishing"
             />
           </FormProvider>
         </form>
+
+        {!canEditPublishing && origHash !== null && (
+          <div className="alert alert-info" role="alert">
+            You must be a course editor to edit publishing settings.
+          </div>
+        )}
+        {!canEditPublishing && origHash === null && (
+          <div className="alert alert-info" role="alert">
+            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
+            file does not exist.
+          </div>
+        )}
 
         {startDate && (
           <>
@@ -97,7 +102,8 @@ export function CourseInstancePublishing({
               <PublishingExtensions
                 courseInstance={courseInstance}
                 initialExtensions={extensions}
-                canEdit={canEdit}
+                canView={canViewExtensions}
+                canEdit={canEditExtensions}
                 csrfToken={csrfToken}
               />
             </QueryClientProviderDebug>
