@@ -179,7 +179,6 @@ WITH
       ci.course_id AS course_instance_course_id,
       ci.display_timezone,
       format_date_iso8601 (ci.deleted_at, ci.display_timezone) AS deleted_at,
-      ci.hide_in_enroll_page,
       pl_c.title AS course_title,
       pl_c.short_name AS course_short_name
     FROM

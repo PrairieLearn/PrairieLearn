@@ -213,9 +213,6 @@ export function SelfEnrollmentSettings({
     name: 'self_enrollment_enabled_before_date',
   });
 
-  const { invalid: showInEnrollPageInvalid, error: showInEnrollPageError } =
-    control.getFieldState('show_in_enroll_page');
-
   const {
     invalid: selfEnrollmentEnabledBeforeDateInvalid,
     error: selfEnrollmentEnabledBeforeDateError,
@@ -242,10 +239,7 @@ export function SelfEnrollmentSettings({
           type="checkbox"
           id="self_enrollment_enabled"
           disabled={!canEdit || !hasModernPublishing || !enrollmentManagementEnabled}
-          {...control.register('self_enrollment_enabled', {
-            // Re-run validation on show_in_enroll_page when self-enrollment changes
-            deps: ['show_in_enroll_page'],
-          })}
+          {...control.register('self_enrollment_enabled')}
         />
         {(!canEdit || !hasModernPublishing || !enrollmentManagementEnabled) && (
           <input
@@ -260,32 +254,6 @@ export function SelfEnrollmentSettings({
         <div className="small text-muted">
           If not checked, students will need to be invited to this course instance.
         </div>
-      </div>
-
-      <div className={clsx('mb-3 form-check', enrollmentManagementEnabled && 'd-none')}>
-        <input
-          className={clsx('form-check-input', showInEnrollPageInvalid && 'is-invalid')}
-          type="checkbox"
-          id="show_in_enroll_page"
-          {...control.register('show_in_enroll_page', {
-            validate: (value, { self_enrollment_enabled }) => {
-              if (!self_enrollment_enabled && value) {
-                return '"Allow self-enrollment" must be checked in order to check "Show on enrollment page"';
-              }
-              return true;
-            },
-          })}
-        />
-        <label className="form-check-label" for="show_in_enroll_page">
-          Show on enrollment page
-        </label>
-        {showInEnrollPageError ? (
-          <div className="invalid-feedback">{showInEnrollPageError.message}</div>
-        ) : (
-          <div className="small text-muted">
-            If not checked, students will need a direct link to the course instance to enroll.
-          </div>
-        )}
       </div>
 
       <div
@@ -409,6 +377,12 @@ export function SelfEnrollmentSettings({
             'form-control mt-2',
             selfEnrollmentEnabledBeforeDateInvalid && 'is-invalid',
           )}
+          aria-invalid={selfEnrollmentEnabledBeforeDateInvalid}
+          aria-errormessage={
+            selfEnrollmentEnabledBeforeDateInvalid
+              ? 'self-enrollment-enabled-before-date-error'
+              : undefined
+          }
           disabled={
             !canEdit ||
             !selfEnrollmentEnabledBeforeDateEnabled ||
@@ -438,7 +412,9 @@ export function SelfEnrollmentSettings({
           />
         )}
         {selfEnrollmentEnabledBeforeDateError && (
-          <div className="invalid-feedback">{selfEnrollmentEnabledBeforeDateError.message}</div>
+          <div className="invalid-feedback" id="self-enrollment-enabled-before-date-error">
+            {selfEnrollmentEnabledBeforeDateError.message}
+          </div>
         )}
       </div>
 
