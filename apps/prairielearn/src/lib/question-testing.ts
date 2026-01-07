@@ -35,6 +35,10 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^?#]+)$`);
   const filenames = new Set<string>();
 
+  // We intentionally look for more than just `a[href]` and `img[src]` in case
+  // other tags or attributes are used to reference dynamic files. For instance,
+  // people might use `srcset`, or use `data-*` attributes for lazy loading or
+  // other client-side purposes.
   $('*').each((_, el) => {
     if (el.type !== ElementType.Tag) return;
     for (const value of Object.values(el.attribs)) {
