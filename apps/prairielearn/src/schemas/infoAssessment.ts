@@ -9,6 +9,7 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
 }
 
 // TODO: This schema is being deprecated
+// https://github.com/PrairieLearn/PrairieLearn/issues/13545
 export const GroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
