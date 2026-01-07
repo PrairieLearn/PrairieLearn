@@ -42,9 +42,9 @@ export async function insertCoursePermissionsByUserUid({
 }): Promise<User> {
   return await runInTransactionAsync(async () => {
     const user = await selectOrInsertUserByUid(uid);
-    await execute(sql.insert_course_permissions, {
-      user_id: user.id,
+    await insertCoursePermissionsByUserId({
       course_id,
+      user_id: user.id,
       course_role,
       authn_user_id,
     });
