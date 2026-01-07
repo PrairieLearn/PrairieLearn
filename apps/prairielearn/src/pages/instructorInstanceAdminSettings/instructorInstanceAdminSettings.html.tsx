@@ -35,6 +35,7 @@ export function InstructorInstanceAdminSettings({
   enrollmentManagementEnabled,
   infoCourseInstancePath,
   isDevMode,
+  isAdministrator,
 }: {
   csrfToken: string;
   urlPrefix: string;
@@ -53,6 +54,7 @@ export function InstructorInstanceAdminSettings({
   enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
   isDevMode: boolean;
+  isAdministrator: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -316,6 +318,7 @@ export function InstructorInstanceAdminSettings({
           courseShortName={course.short_name}
           courseInstance={courseInstance}
           enrollmentManagementEnabled={enrollmentManagementEnabled}
+          isAdministrator={isAdministrator}
           onHide={() => setShowCopyModal(false)}
         />
       </div>

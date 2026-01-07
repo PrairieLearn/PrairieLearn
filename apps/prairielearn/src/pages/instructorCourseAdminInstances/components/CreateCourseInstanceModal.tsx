@@ -32,12 +32,14 @@ export function CreateCourseInstanceModal({
   course,
   csrfToken,
   enrollmentManagementEnabled,
+  isAdministrator,
 }: {
   show: boolean;
   onHide: () => void;
   course: StaffCourse;
   csrfToken: string;
   enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }) {
   const methods = useForm<CreateFormValues>({
     defaultValues: {
@@ -47,7 +49,7 @@ export function CreateCourseInstanceModal({
       end_date: '',
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: true,
-      course_instance_permission: 'Student Data Editor',
+      course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
     },
     mode: 'onSubmit',
   });

@@ -36,6 +36,7 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseShortName,
   enrollmentManagementEnabled,
+  isAdministrator,
 }: {
   show: boolean;
   onHide: () => void;
@@ -43,6 +44,7 @@ export function CopyCourseInstanceModal({
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
   enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }) {
   const methods = useForm<CopyFormValues>({
     defaultValues: {
@@ -52,7 +54,7 @@ export function CopyCourseInstanceModal({
       end_date: '',
       self_enrollment_enabled: courseInstance.self_enrollment_enabled,
       self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
-      course_instance_permission: 'Student Data Editor',
+      course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
     },
     mode: 'onSubmit',
   });

@@ -76,6 +76,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   csrfToken: string;
   urlPrefix: string;
   enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }
 
 export function InstructorCourseAdminInstancesInner({
@@ -86,6 +87,7 @@ export function InstructorCourseAdminInstancesInner({
   csrfToken,
   urlPrefix,
   enrollmentManagementEnabled,
+  isAdministrator,
 }: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -98,6 +100,7 @@ export function InstructorCourseAdminInstancesInner({
         course={course}
         csrfToken={csrfToken}
         enrollmentManagementEnabled={enrollmentManagementEnabled}
+        isAdministrator={isAdministrator}
         onHide={() => setShowCreateModal(false)}
       />
 

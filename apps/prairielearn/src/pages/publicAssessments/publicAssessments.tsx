@@ -80,6 +80,7 @@ router.get(
             courseInstanceCopyTargets={safeCourseInstanceCopyTargets}
             questionsForCopy={safeQuestionsForCopy}
             enrollmentManagementEnabled={enrollmentManagementEnabled}
+            isAdministrator={res.locals.is_administrator}
           />
         ),
       }),

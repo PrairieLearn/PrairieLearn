@@ -40,12 +40,14 @@ export function CopyCourseInstanceModal({
   courseInstanceCopyTargets,
   questionsForCopy,
   enrollmentManagementEnabled,
+  isAdministrator,
 }: {
   course: PublicCourse;
   courseInstance: PublicCourseInstance;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
   enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(
@@ -69,7 +71,7 @@ export function CopyCourseInstanceModal({
     end_date: '',
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
-    course_instance_permission: 'Student Data Editor',
+    course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
   };
 
   const methods = useForm<CopyFormValues>({

@@ -41,6 +41,7 @@ export function PublicAssessments({
   courseInstanceCopyTargets,
   questionsForCopy,
   enrollmentManagementEnabled,
+  isAdministrator,
 }: {
   rows: SafeAssessmentRow[];
   courseInstance: PublicCourseInstance;
@@ -48,6 +49,7 @@ export function PublicAssessments({
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
   enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }) {
   return (
     <div className="card mb-4">
@@ -62,6 +64,7 @@ export function PublicAssessments({
                 courseInstanceCopyTargets={courseInstanceCopyTargets}
                 questionsForCopy={questionsForCopy}
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
           </div>

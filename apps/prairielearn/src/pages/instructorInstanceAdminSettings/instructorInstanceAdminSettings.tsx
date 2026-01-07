@@ -55,6 +55,7 @@ router.get(
       urlPrefix,
       navPage,
       __csrf_token,
+      is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -141,6 +142,7 @@ router.get(
                 enrollmentManagementEnabled={enrollmentManagementEnabled}
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
             <Hydrate>
@@ -299,10 +301,7 @@ router.post(
       });
 
       // Assign course instance permissions if a non-None permission was selected.
-      // This requires the user to have a course_permissions record; administrators
-      // may not have one (they have access via their admin role instead).
       if (course_instance_permission !== 'None') {
-        // try {
         await insertCourseInstancePermissions({
           course_id: course.id,
           course_instance_id: copiedInstance.id,
@@ -310,13 +309,6 @@ router.post(
           course_instance_role: course_instance_permission,
           authn_user_id: res.locals.authn_user.user_id,
         });
-        // } catch (err) {
-        //   // If the user doesn't have course permissions (e.g., they're an admin),
-        //   // skip adding course instance permissions - they already have access.
-        //   if (!(err instanceof error.HttpStatusError && err.status === 404)) {
-        //     throw err;
-        //   }
-        // }
       }
 
       res.status(200).json({ course_instance_id: copiedInstance.id });
