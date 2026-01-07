@@ -218,7 +218,7 @@ onDocumentReady(() => {
             },
             {
               field: 'uid_list',
-              title: 'Group Members',
+              title: 'Team Members',
               sortable: true,
               class: 'text-center align-middle text-wrap',
               formatter: listFormatter,
@@ -226,7 +226,7 @@ onDocumentReady(() => {
             },
             {
               field: 'user_name_list',
-              title: 'Group Member Name',
+              title: 'Team Member Name',
               sortable: true,
               visible: false,
               class: 'text-center align-middle text-wrap',

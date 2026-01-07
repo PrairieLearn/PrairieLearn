@@ -43,7 +43,7 @@ WITH
       format_interval (ai.duration) AS duration,
       DATE_PART('epoch', ai.duration) AS duration_secs,
       DATE_PART('epoch', ai.duration) / 60 AS duration_mins,
-      t.name AS group_name, -- user-facing
+      t.name AS team_name,
       teams_uid_list (t.id) AS uid_list
     FROM
       assessments AS a
@@ -80,7 +80,7 @@ FROM
   filtered_assessment_instances
 ORDER BY
   uid,
-  group_name,
+  team_name,
   uin,
   id,
   number,
@@ -110,7 +110,7 @@ SELECT
   iq.last_submission_score,
   iq.number_attempts,
   DATE_PART('epoch', iq.duration) AS duration_seconds,
-  t.name AS group_name, -- user-facing
+  t.name AS team_name,
   teams_uid_list (t.id) AS uid_list,
   agu.uid AS assigned_grader,
   lgu.uid AS last_grader
@@ -137,7 +137,7 @@ WHERE
 ORDER BY
   u.uid,
   u.uin,
-  group_name,
+  team_name,
   ai.number,
   q.qid,
   iq.number,
@@ -149,9 +149,9 @@ WITH
     SELECT DISTINCT
       ON (t.id, u.id) ai.id,
       u.id AS user_id,
-      t.id AS team_id, -- Not user-facing, for joining only
+      t.id AS team_id
       assessment_id,
-      t.name AS group_name, -- user-facing
+      t.name AS team_name,
       teams_uid_list (t.id) AS uid_list
     FROM
       assessment_instances AS ai
@@ -186,7 +186,7 @@ WITH
         ELSE (s.submitted_answer - '_files')
       END AS submitted_answer,
       s.partial_scores AS old_partial_scores,
-      ai.group_name, -- user-facing
+      ai.team_name,
       ai.uid_list
     FROM
       submissions AS s
@@ -209,7 +209,7 @@ FROM
   final_submissions
 ORDER BY
   uid,
-  group_name,
+  team_name,
   qid,
   submission_id;
 
@@ -308,7 +308,7 @@ WITH
             s.id DESC
         )
       ) = 1 AS best_submission_per_variant,
-      t.name AS group_name, -- user-facing
+      t.name AS team_name,
       teams_uid_list (t.id) AS uid_list,
       su.uid AS submission_user,
       agu.uid AS assigned_grader,
@@ -356,7 +356,7 @@ WHERE
   )
 ORDER BY
   uid,
-  group_name,
+  team_name,
   assessment_instance_number,
   qid,
   instance_question_number,

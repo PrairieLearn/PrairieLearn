@@ -139,7 +139,7 @@ export async function uploadSubmissions(
     job.info('Deleting all existing assessment instances');
     await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
-    job.info('Deleting all existing groups');
+    job.info('Deleting all existing teams');
     await deleteAllTeams(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);

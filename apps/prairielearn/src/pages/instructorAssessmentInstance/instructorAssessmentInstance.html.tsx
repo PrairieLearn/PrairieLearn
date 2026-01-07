@@ -137,7 +137,7 @@ export function InstructorAssessmentInstance({
                       <td colspan="2">${resLocals.instance_team.name}</td>
                     </tr>
                     <tr>
-                      <th>Group Members</th>
+                      <th>Team Members</th>
                       <td colspan="2">${resLocals.instance_team_uid_list.join(', ')}</td>
                     </tr>
                   `
@@ -802,11 +802,11 @@ function ResetQuestionVariantsModal({
     body: html`
       <p>
         Are your sure you want to reset all current variants of this question for this
-        ${assessment.team_work ? 'group' : 'student'}?
+        ${assessment.team_work ? 'team' : 'student'}?
         <strong>All ungraded attempts will be lost.</strong>
       </p>
       <p>
-        This ${assessment.team_work ? 'group' : 'student'} will receive a new variant the next time
+        This ${assessment.team_work ? 'team' : 'student'} will receive a new variant the next time
         they view this question.
       </p>
     `,
@@ -828,7 +828,7 @@ function ExamResetNotSupportedModal({ assessment }: { assessment: Assessment }) 
       <p>Resetting question variants is not supported for Exam assessments.</p>
       <p class="mb-0">
         Consider alternative options, such as deleting the assessment instance to allow the
-        ${assessment.team_work ? 'group' : 'student'} to start over.
+        ${assessment.team_work ? 'team' : 'student'} to start over.
       </p>
     `,
     footer: html`

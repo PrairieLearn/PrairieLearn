@@ -53,7 +53,7 @@ export async function regradeAssessmentInstance(
     RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrTeam = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
+  const userOrTeam = assessmentInstance.user_uid || `team "${assessmentInstance.team_name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
     description: 'Regrade ' + assessment_instance_label + ' for ' + userOrTeam,
@@ -131,7 +131,7 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrTeam = row.user_uid || `group "${row.team_name}"`;
+      const userOrTeam = row.user_uid || `team "${row.team_name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
           assessment_instance_id: row.assessment_instance_id,

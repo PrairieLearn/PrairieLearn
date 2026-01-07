@@ -72,7 +72,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
                     {computeTitle(row)}
                   </a>
                   {row.assessment.team_work && (
-                    <i className="fas fa-users ms-1" aria-hidden="true" title="Group work" />
+                    <i className="fas fa-users ms-1" aria-hidden="true" title="Team work" />
                   )}
                 </td>
                 <td className="text-center align-middle">

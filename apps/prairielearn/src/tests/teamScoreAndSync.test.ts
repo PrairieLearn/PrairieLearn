@@ -49,7 +49,7 @@ describe('assessment instance team synchronization test', function () {
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceBaseUrl + '/assessment/' + locals.assessment_id;
       locals.instructorAssessmentsUrlTeamTab =
-        locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+        locals.courseInstanceBaseUrl + '/instructor/assessment/' + locals.assessment_id + '/teams';
       locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/instance_question';
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
     });

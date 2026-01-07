@@ -285,7 +285,7 @@ async function updateInstanceQuestionFromCsvRow(
   assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
-  const uid_or_team = record.group_name ?? record.uid;
+  const uid_or_team = record.team_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
@@ -307,12 +307,12 @@ async function updateInstanceQuestionFromCsvRow(
 
     if (submission_data == null) {
       throw new Error(
-        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_team}, qid=${record.qid} for this assessment.`,
+        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/team=${uid_or_team}, qid=${record.qid} for this assessment.`,
       );
     }
     if (uid_or_team !== null && submission_data.uid_or_team !== uid_or_team) {
       throw new Error(
-        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_team}.`,
+        `Found submission with id=${record.submission_id}, but uid/team does not match ${uid_or_team}.`,
       );
     }
     if (record.qid !== null && submission_data.qid !== record.qid) {
@@ -361,21 +361,21 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
         IdSchema,
       ),
     };
-  } else if (record.group_name != null) {
+  } else if (record.team_name != null) {
     return {
-      id: record.group_name,
+      id: record.team_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
         sql.select_assessment_instance_team,
         {
           assessment_id,
-          team_name: record.group_name,
+          team_name: record.team_name,
           instance_number: record.instance,
         },
         IdSchema,
       ),
     };
   } else {
-    throw new Error('"uid" or "group_name" not found');
+    throw new Error('"uid" or "team_name" not found');
   }
 }
 

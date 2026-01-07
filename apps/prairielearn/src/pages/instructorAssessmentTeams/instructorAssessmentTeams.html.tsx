@@ -62,7 +62,7 @@ export function InstructorAssessmentTeams({
               </div>
               <div class="card-body">
                 This is not a team assessment. To enable this functionality, please set
-                <code>"groupWork": true</code> in <code>infoAssessment.json</code>.
+                <code>"teams": { "enabled": true }</code> in <code>infoAssessment.json</code>.
               </div>
             </div>
           `
@@ -71,8 +71,8 @@ export function InstructorAssessmentTeams({
               ? html`
                   ${UploadAssessmentTeamsModal({ csrfToken: resLocals.__csrf_token })}
                   ${RandomAssessmentTeamsModal({
-                    groupMin: teamConfigInfo.minimum ?? 2,
-                    groupMax: teamConfigInfo.maximum ?? 5,
+                    teamMin: teamConfigInfo.minimum ?? 2,
+                    teamMax: teamConfigInfo.maximum ?? 5,
                     csrfToken: resLocals.__csrf_token,
                   })}
                   ${AddTeamModal({ csrfToken: resLocals.__csrf_token })}
@@ -401,12 +401,12 @@ function UploadAssessmentTeamsModal({ csrfToken }: { csrfToken: string }) {
 }
 
 function RandomAssessmentTeamsModal({
-  groupMin,
-  groupMax,
+  teamMin,
+  teamMax,
   csrfToken,
 }: {
-  groupMin: number;
-  groupMax: number;
+  teamMin: number;
+  teamMax: number;
   csrfToken: string;
 }) {
   return Modal({
@@ -419,7 +419,7 @@ function RandomAssessmentTeamsModal({
           type="number"
           required
           min="1"
-          value="${groupMin}"
+          value="${teamMin}"
           class="form-control"
           id="formMin"
           name="min_team_size"
@@ -431,7 +431,7 @@ function RandomAssessmentTeamsModal({
           type="number"
           required
           min="1"
-          value="${groupMax}"
+          value="${teamMax}"
           class="form-control"
           id="formMax"
           name="max_team_size"

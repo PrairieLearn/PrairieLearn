@@ -53,7 +53,7 @@ export async function uploadInstanceTeams({
 
   const serverJob = await createServerJob({
     type: 'upload_teams',
-    description: `Upload group settings for ${assessment_label}`,
+    description: `Upload team settings for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_instance.course_id,
@@ -69,14 +69,14 @@ export async function uploadInstanceTeams({
       {
         timeout: 10000,
         onNotAcquired: () => {
-          job.fail('Another user is already updating the groups for this assessment.');
+          job.fail('Another user is already updating the teams for this assessment.');
         },
       },
       async () => {
-        job.verbose('Uploading group settings for ' + assessment_label);
+        job.verbose('Uploading team settings for ' + assessment_label);
         job.verbose(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
         job.verbose('----------------------------------------');
-        job.verbose('Processing group updates...');
+        job.verbose('Processing team updates...');
         const csvStream = streamifier.createReadStream(csvFile.buffer, {
           encoding: 'utf8',
         });
@@ -85,7 +85,7 @@ export async function uploadInstanceTeams({
           totalCount = 0;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            const { uid, groupname: team_name } = record;
+            const { uid, teamname: team_name } = record;
             if (!uid || !team_name) continue;
             totalCount++;
             await createOrAddToTeam({
@@ -99,7 +99,7 @@ export async function uploadInstanceTeams({
               () => successCount++,
               (err) => {
                 if (err instanceof TeamOperationError) {
-                  job.error(`Error adding ${uid} to group ${team_name}: ${err.message}`);
+                  job.error(`Error adding ${uid} to team ${team_name}: ${err.message}`);
                 } else {
                   throw err;
                 }
@@ -111,9 +111,9 @@ export async function uploadInstanceTeams({
         const errorCount = totalCount - successCount;
         job.verbose('----------------------------------------');
         if (errorCount === 0) {
-          job.verbose(`Successfully updated groups for ${successCount} students, with no errors`);
+          job.verbose(`Successfully updated teams for ${successCount} students, with no errors`);
         } else {
-          job.verbose(`Successfully updated groups for ${successCount} students`);
+          job.verbose(`Successfully updated teams for ${successCount} students`);
           job.fail(`Error updating ${errorCount} students`);
         }
       },
@@ -154,14 +154,14 @@ export async function randomTeams({
   authzData: AuthzData;
 }): Promise<string> {
   if (max_team_size < 2 || min_team_size < 1 || max_team_size < min_team_size) {
-    throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
+    throw new Error('Team Setting Requirements: max > 1; min > 0; max >= min');
   }
 
   const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
     type: 'random_generate_teams',
-    description: `Randomly generate groups for ${assessment_label}`,
+    description: `Randomly generate teams for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: course_instance.course_id,
@@ -177,12 +177,12 @@ export async function randomTeams({
       {
         timeout: 10000,
         onNotAcquired: () => {
-          job.fail('Another user is already updating the groups for this assessment.');
+          job.fail('Another user is already updating the teams for this assessment.');
         },
       },
       async () => {
         job.verbose(`Acquired lock ${lockName}`);
-        job.verbose('Randomly generate groups for ' + assessment_label);
+        job.verbose('Randomly generate teams for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
         const studentsWithoutTeam = await queryRows(
@@ -193,10 +193,10 @@ export async function randomTeams({
         _.shuffle(studentsWithoutTeam);
         const numStudents = studentsWithoutTeam.length;
         job.verbose(
-          `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
+          `There are ${numStudents} students enrolled in ${assessment_label} without a team`,
         );
         job.verbose('----------------------------------------');
-        job.verbose(`Creating groups with a size between ${min_team_size} and ${max_team_size}`);
+        job.verbose(`Creating teams with a size between ${min_team_size} and ${max_team_size}`);
 
         let teamsCreated = 0,
           studentsInTeam = 0;
@@ -216,7 +216,7 @@ export async function randomTeams({
               .map((team) => team.pop()!);
             if (usersToMove.length === 0) {
               job.warn(
-                `Could not create groups with the desired sizes. One group will have a size of ${smallTeam.length}`,
+                `Could not create teams with the desired sizes. One team will have a size of ${smallTeam.length}`,
               );
               break;
             }
@@ -249,12 +249,10 @@ export async function randomTeams({
         const errorCount = numStudents - studentsInTeam;
         job.verbose('----------------------------------------');
         if (studentsInTeam !== 0) {
-          job.verbose(
-            `Successfully grouped ${studentsInTeam} students into ${teamsCreated} groups`,
-          );
+          job.verbose(`Successfully assigned ${studentsInTeam} students to ${teamsCreated} teams`);
         }
         if (errorCount !== 0) {
-          job.fail(`Error adding ${errorCount} students to groups.`);
+          job.fail(`Error adding ${errorCount} students to teams.`);
         }
       },
     );

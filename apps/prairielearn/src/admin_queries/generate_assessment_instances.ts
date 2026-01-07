@@ -16,7 +16,7 @@ import { type AdministratorQueryResult, type AdministratorQuerySpecs } from './l
 
 export const specs: AdministratorQuerySpecs = {
   description:
-    'Simulates all students enrolled in a course starting an assessment. For group assessments, groups must have been created.',
+    'Simulates all students enrolled in a course starting an assessment. For team assessments, teams must have been created.',
   params: [
     {
       name: 'assessment_id',
@@ -43,7 +43,7 @@ const UserRowSchema = z.object({
 });
 type UserRow = z.infer<typeof UserRowSchema>;
 const TeamRowSchema = UserRowSchema.extend({
-  group_name: z.string(),
+  team_name: z.string(),
 });
 type TeamRow = z.infer<typeof TeamRowSchema>;
 
@@ -66,7 +66,7 @@ export default async function ({
     const users = assessment.team_work
       ? await queryRows(sql.select_teams, { assessment_id }, TeamRowSchema)
       : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-    if (assessment.team_work) columns.splice(0, 0, 'group_name');
+    if (assessment.team_work) columns.splice(0, 0, 'team_name');
 
     const rows = await mapSeries(users, async (user: UserRow | TeamRow) => ({
       ...user,
