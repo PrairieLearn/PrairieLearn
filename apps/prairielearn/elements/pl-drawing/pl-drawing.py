@@ -13,7 +13,8 @@ import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
 ALLOW_BLANK_DEFAULT = False
-SHOW_SCORE_DEFAULT = False # for backwards-compatibility 
+SHOW_SCORE_DEFAULT = False  # for backwards-compatibility
+
 
 def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[dict]:
     # Union two sets of drawing items, prioritizing e2 in cases of duplicates.
@@ -51,11 +52,9 @@ def check_attributes_rec(element: lxml.html.HtmlElement) -> None:
 
     name = element.tag
     attributes = elements.get_attributes(name)
-    attributes += [
-        "weight",
-        "allow-blank",
-        "show-score"
-    ]
+    if name == "pl-drawing":
+        attributes += ["weight", "allow-blank", "show-score"]
+
     if elements.should_validate_attributes(name):
         try:
             pl.check_attribs(element, required_attribs=[], optional_attribs=attributes)
@@ -376,9 +375,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
-        showscore = pl.get_boolean_attrib(
-            element, "show-score", SHOW_SCORE_DEFAULT
-        )
+        showscore = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
         if showscore and name in data["partial_scores"]:
             feedback = data["partial_scores"][name].get("feedback", {})
             html_params["correct"] = feedback.get("correct", False)
@@ -401,11 +398,9 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
-    allow_blank = pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    )
-    if allow_blank and data["submitted_answers"][name] == "":
-        return 
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    if allow_blank and data["submitted_answers"].get(name, "") == "":
+        return
 
     try:
         data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
@@ -430,12 +425,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
-    allow_blank = pl.get_boolean_attrib(
-        element, "allow-blank", ALLOW_BLANK_DEFAULT
-    )
-    weight = pl.get_integer_attrib(
-        element, "weight", WEIGHT_DEFAULT 
-    )
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
     grid_size = pl.get_integer_attrib(
         element, "grid-size", defaults.element_defaults["grid-size"]
     )
@@ -460,7 +451,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             data["partial_scores"][name] = {
                 "score": 0.0,
                 "weight": weight,
-                "feedback": {"correct": False, "partial": 0, "incorrect": True, "missing": {}, "matches": {}},
+                "feedback": {
+                    "correct": False,
+                    "partial": 0,
+                    "incorrect": True,
+                    "missing": {},
+                    "matches": {},
+                },
             }
             return
         else:
@@ -543,7 +540,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     data["partial_scores"][name] = {
         "score": score,
         "weight": weight,
-        "feedback": {"correct": (score == 1), "incorrect": (score == 0), "partial": (score*100 if (score != 0 and score != 1) else False), "missing": {}, "matches": matches},
+        "feedback": {
+            "correct": (score == 1),
+            "incorrect": (score == 0),
+            "partial": (score * 100 if (score != 0 and score != 1) else False),
+            "missing": {},
+            "matches": matches,
+        },
     }
 
 
@@ -560,9 +563,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
-    weight = pl.get_integer_attrib(
-        element, "weight", WEIGHT_DEFAULT 
-    )
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
 
     a_tru = []
     if result in ["correct", "incorrect"]:
