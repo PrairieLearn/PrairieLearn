@@ -67,18 +67,6 @@ export function CourseInstancePublishing({
       <div className="mb-4">
         <h4 className="mb-4">Publishing</h4>
 
-        {!canEditPublishing && origHash !== null && (
-          <div className="alert alert-info" role="alert">
-            You do not have permission to edit publishing settings.
-          </div>
-        )}
-        {!canEditPublishing && origHash === null && (
-          <div className="alert alert-warning" role="alert">
-            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
-            file does not exist.
-          </div>
-        )}
-
         <form method="POST" onSubmit={onSubmit}>
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="__action" value="update_publishing" />
@@ -94,6 +82,18 @@ export function CourseInstancePublishing({
             />
           </FormProvider>
         </form>
+
+        {!canEditPublishing && origHash !== null && (
+          <div className="alert alert-info" role="alert">
+            You must have be a course editor to edit publishing settings.
+          </div>
+        )}
+        {!canEditPublishing && origHash === null && (
+          <div className="alert alert-info" role="alert">
+            You cannot edit publishing settings because the <code>infoCourseInstance.json</code>{' '}
+            file does not exist.
+          </div>
+        )}
 
         {startDate && (
           <>

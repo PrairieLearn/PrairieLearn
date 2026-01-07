@@ -105,7 +105,7 @@ export function PublishingExtensions({
       )}
 
       {!canView ? (
-        <div className="alert alert-danger" role="alert">
+        <div className="alert alert-info" role="alert">
           You must have student data permission to view and edit extensions.
         </div>
       ) : extensionsQuery.isError ? (
