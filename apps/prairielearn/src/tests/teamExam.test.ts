@@ -24,8 +24,8 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const GROUP_EXAM_1_TID = 'exam14-groupWork';
-const GROUP_EXAM_2_TID = 'exam16-groupWorkRoles';
+const GROUP_EXAM_1_TID = 'exam14-teams';
+const GROUP_EXAM_2_TID = 'exam16-teamRoles';
 const TEAM_NAME = 'teamBB';
 const TEAM_NAME_ALTERNATIVE = 'teamCC';
 

@@ -1,23 +1,31 @@
 {
   "uuid": "1646F291-3E3C-4992-892B-5B62FE52884E",
   "type": "Homework",
-  "title": "Group activity template",
+  "title": "Team activity template",
   "set": "GroupActivity",
   "module": "IntroModule",
   "number": "1",
-  "comment": "this is a group activity, with minimum size of 1 and maximum size of 5, where students can self-assign to groups.",
-  "groupWork": true,
-  "groupMinSize": 1,
-  "groupMaxSize": 5,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
-  "groupRoles": [
-    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
-    { "name": "Recorder", "minimum": 1, "maximum": 1 },
-    { "name": "Reflector", "minimum": 1, "maximum": 1 },
-    { "name": "Contributor" }
-  ],
+  "comment": "this is a team activity, with minimum size of 1 and maximum size of 5, where students can self-assign to teams.",
+  "teams": {
+    "minMembers": 1,
+    "maxMembers": 5,
+    "roles": [
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Contributor" }
+    ],
+    "studentPermissions": {
+      "canCreateTeam": true,
+      "canJoinTeam": true,
+      "canLeaveTeam": true
+    },
+    "rolePermissions": {
+      "canAssignRoles": ["Manager"],
+      "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+      "canSubmit": ["Recorder"]
+    }
+  },
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {

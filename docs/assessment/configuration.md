@@ -40,24 +40,34 @@ In addition to those properties, the following properties can be used to further
 | `advanceScorePerc`                                  | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
 | `gradeRateMinutes`                                  | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
 
-### Group work
+### Team work
 
-The following group work properties (all optional) can be used to configure group work for an assessment.
+Team work (also known as group work) allows multiple students to work together on the same assessment instance. The recommended way to configure team work is using the `teams` property.
 
-| Property                                                          | Type    | Description                                                                                                                     |
-| ----------------------------------------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
-| [`groupWork`](#enabling-group-work-for-collaborative-assessments) | boolean | Whether the assessment will support group work. (default: `false`)                                                              |
-| `groupMaxSize`                                                    | number  | Maximum number of students in a group. (default: none)                                                                          |
-| `groupMinSize`                                                    | number  | Minimum number of students in a group. (default: none)                                                                          |
-| [`groupRoles`](#enabling-custom-group-roles)                      | array   | Array of custom user roles in a group. (default: none)                                                                          |
-| `canSubmit`                                                       | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (default: none) |
-| `canView`                                                         | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (default: none)   |
-| `studentGroupCreate`                                              | boolean | Whether students can create groups. (default: `false`)                                                                          |
-| `studentGroupJoin`                                                | boolean | Whether students can join groups. (default: `false`)                                                                            |
-| `studentGroupLeave`                                               | boolean | Whether students can leave groups. (default: `false`)                                                                           |
-| `studentGroupChooseName`                                          | boolean | Whether students can choose their own group name. (default: `true`)                                                             |
+| Property                                                     | Type   | Description                                               |
+| ------------------------------------------------------------ | ------ | --------------------------------------------------------- |
+| [`teams`](#enabling-team-work-for-collaborative-assessments) | object | Configuration for team-based assessments. (default: none) |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
+
+??? note "Legacy group properties"
+
+    The following legacy properties are still supported but deprecated in favor of the `teams` schema. See [Migrating from legacy group properties to the teams schema](#migrating-from-legacy-group-properties-to-the-teams-schema) for migration instructions.
+
+    | Property                   | Type    | Description                                                                                                                     |
+    | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+    | `groupWork`                | boolean | Whether the assessment will support group work. (default: `false`)                                                              |
+    | `groupMaxSize`             | number  | Maximum number of students in a group. (default: none)                                                                          |
+    | `groupMinSize`             | number  | Minimum number of students in a group. (default: none)                                                                          |
+    | `groupRoles`               | array   | Array of custom user roles in a group. (default: none)                                                                          |
+    | `canSubmit`                | array   | A list of group role names that can submit questions in this assessment. Only applicable for group assessments. (default: none) |
+    | `canView`                  | array   | A list of group role names that can view questions in this assessment. Only applicable for group assessments. (default: none)   |
+    | `studentGroupCreate`       | boolean | Whether students can create groups. (default: `false`)                                                                          |
+    | `studentGroupJoin`         | boolean | Whether students can join groups. (default: `false`)                                                                            |
+    | `studentGroupLeave`        | boolean | Whether students can leave groups. (default: `false`)                                                                           |
+    | `studentGroupChooseName`   | boolean | Whether students can choose their own group name. (default: `true`)                                                             |
+
+    You cannot use both `teams` and legacy group properties in the same assessment.
 
 ## Assessment types
 
@@ -393,120 +403,151 @@ For practice exams it is often desirable to make a _multiple instance_ assessmen
 
 Note that this setting is not suitable in scenarios where multiple attempts are created in different environments. For example, if students write an exam for credit, and are then allowed to re-attempt the same exam without credit for practice, or where the score used in the course is a weighted average of the attempts, then the multiple-instance option is not a valid approach. In such cases, a better option is a separate assessment (possibly with the same questions) for the original exam and for the practice version or re-attempt. The practice version itself may be suitable for multiple instances, but not the original exam.
 
-## Enabling group work for collaborative assessments
+## Enabling team work for collaborative assessments
 
-By default, assessment instances are tied to only one user. By setting `"groupWork": true`, multiple students will be able to work on the same assessment instance. Group configuration can be set in the `infoAssessment.json` file. For example:
+By default, assessment instances are tied to only one user. By using the `teams` configuration, multiple students will be able to work on the same assessment instance.
 
 ```json title="infoAssessment.json"
 {
-  "groupWork": true,
-  "groupMaxSize": 6,
-  "groupMinSize": 2,
-  "studentGroupCreate": true,
-  "studentGroupChooseName": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true
+  "teams": {
+    "minMembers": 2,
+    "maxMembers": 6,
+    "studentPermissions": {
+      "canCreateTeam": true,
+      "canJoinTeam": true,
+      "canLeaveTeam": true,
+      "canNameTeam": true
+    }
+  }
 }
 ```
 
-| Attribute                | Type    | Default | Description                                                                                                |
-| ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
-| `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
-| `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
-| `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
-| `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
-| `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
-| `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
-| `studentGroupLeave`      | boolean | false   | Allow students to leave groups.                                                                            |
+### Teams configuration
 
-Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
+The `teams` object supports the following properties:
 
-### Managing groups
+| Attribute            | Type    | Default | Description                                                                                                                     |
+| -------------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| `enabled`            | boolean | `true`  | Whether team work is enabled for this assessment.                                                                               |
+| `minMembers`         | integer | -       | The minimum number of students in a team.                                                                                       |
+| `maxMembers`         | integer | -       | The maximum number of students in a team.                                                                                       |
+| `roles`              | array   | `[]`    | Array of custom user roles in a team. See [Enabling custom team roles](#enabling-custom-team-roles).                            |
+| `studentPermissions` | object  | `{}`    | Student permissions for team management. See below.                                                                             |
+| `rolePermissions`    | object  | `{}`    | Role-based permissions for team assessments. See [Adding permissions for an assessment](#adding-permissions-for-an-assessment). |
 
-Instructors can manage groups on the "Groups" tab of an assessment. This page allows instructors to create individual groups, delete existing groups, and add or remove users from groups.
+### Student permissions
 
-To create groups in bulk, upload a CSV file in the following format:
+The `studentPermissions` object controls what students can do to manage their teams:
+
+| Attribute       | Type    | Default | Description                                                                                              |
+| --------------- | ------- | ------- | -------------------------------------------------------------------------------------------------------- |
+| `canCreateTeam` | boolean | `false` | Allow students to create teams.                                                                          |
+| `canJoinTeam`   | boolean | `false` | Allow students to join other teams by join code.                                                         |
+| `canLeaveTeam`  | boolean | `false` | Allow students to leave teams.                                                                           |
+| `canNameTeam`   | boolean | `true`  | Allow students to choose a team name when creating a team. If set to false, a default name will be used. |
+
+Note that changing an assessment from individual to team-based or vice versa after students have started working on it will cause student work to be lost.
+
+### Managing teams
+
+Instructors can manage teams on the "Groups" tab of an assessment. This page allows instructors to create individual teams, delete existing teams, and add or remove users from teams.
+
+To create teams in bulk, upload a CSV file in the following format:
 
 ```csv
 groupName,UID
-groupA,one@example.com
-groupA,two@example.com
-groupB,three@example.com
-groupB,four@example.com
+teamA,one@example.com
+teamA,two@example.com
+teamB,three@example.com
+teamB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current team assignments. This can be used to copy team assignments from one assessment to another. The same file is also listed at the bottom of the teams page.
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Random" button can be used to randomly assign students to teams based on a desired minimum/maximum team size.
 
-### Student options for group work
+### Student options for team work
 
-![Student perspective for joining a group](groupwork_student_perspective_join.png)
+![Student perspective for joining a team](groupwork_student_perspective_join.png)
 
-If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via a join code, which they can get from another classmate.
+If an instructor does not assign a student to a team, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing team via a join code, which they can get from another classmate.
 
-When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
+When calculating a student's grade for a team assessment, PrairieLearn will always use the score of their team's assessment instance.
 
 !!! info
 
     Students cannot see each other's edits in real-time.
 
-![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
+![Student view of assessment with team work enabled](groupwork_student_perspective_assessment.png)
 
-Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with each other outside PrairieLearn. They are also able to leave their group to join a different one.
+Students are able to see their teammates' UIDs, which can become a point of contact to communicate with each other outside PrairieLearn. They are also able to leave their team to join a different one.
 
-### Enabling custom group roles
+### Enabling custom team roles
 
-By default, students working in a collaborative group assessments can view and submit every question. However, instructors can define **custom group roles**, which can be assigned different permissions to facilitate role-based teamwork. Assessments can be configured to allow or restrict some operations to students with specific roles, such as:
+By default, students working in collaborative team assessments can view and submit every question. However, instructors can define **custom team roles**, which can be assigned different permissions to facilitate role-based teamwork. Assessments can be configured to allow or restrict some operations to students with specific roles, such as:
 
 - Submitting specific questions
 - Viewing specific questions
-- Assigning group roles for other students
+- Assigning team roles for other students
 
-Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join groups after assessments have started.
+Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join teams after assessments have started.
 
-To opt in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
+To opt in to custom team roles, roles must be defined in the `teams.roles` array of the `infoAssessment.json` file. For example:
 
 ```json title="infoAssessment.json"
 {
-  "groupRoles": [
-    {
-      "name": "Manager",
-      "minimum": 1,
-      "maximum": 1,
-      "canAssignRoles": true
+  "teams": {
+    "minMembers": 2,
+    "maxMembers": 4,
+    "roles": [
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Contributor" }
+    ],
+    "rolePermissions": {
+      "canAssignRoles": ["Manager"],
+      "canView": ["Manager", "Recorder", "Reflector", "Contributor"],
+      "canSubmit": ["Recorder"]
     },
-    {
-      "name": "Recorder",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Reflector",
-      "minimum": 1,
-      "maximum": 1
-    },
-    {
-      "name": "Contributor"
+    "studentPermissions": {
+      "canCreateTeam": true,
+      "canJoinTeam": true,
+      "canLeaveTeam": true
     }
-  ]
+  }
 }
 ```
 
-| Attribute        | Type    | Default | Description                                                                  |
-| ---------------- | ------- | ------- | ---------------------------------------------------------------------------- |
-| `name`           | string  | -       | The name of the role.                                                        |
-| `minimum`        | integer | 0       | The minimum required number of students holding this role in the assessment. |
-| `maximum`        | integer | -       | The maximum required number of students holding this role in the assessment. |
-| `canAssignRoles` | boolean | false   | Allow students with this role to assign roles to other students.             |
+#### Team role properties
 
-Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a group's role configuration does not meet the instructor's specification.
+Each role in the `teams.roles` array supports the following properties:
+
+| Attribute    | Type    | Default | Description                                                                  |
+| ------------ | ------- | ------- | ---------------------------------------------------------------------------- |
+| `name`       | string  | -       | The name of the role. (required)                                             |
+| `minMembers` | integer | 0       | The minimum required number of students holding this role in the assessment. |
+| `maxMembers` | integer | -       | The maximum required number of students holding this role in the assessment. |
+
+#### Role permissions
+
+The `teams.rolePermissions` object controls which roles can perform certain actions:
+
+| Attribute        | Type            | Default | Description                                      |
+| ---------------- | --------------- | ------- | ------------------------------------------------ |
+| `canAssignRoles` | array of string | `[]`    | Role names that can assign other users to roles. |
+| `canView`        | array of string | `[]`    | Role names that can view questions.              |
+| `canSubmit`      | array of string | `[]`    | Role names that can submit questions.            |
+
+!!! note
+
+    At least one role in `canAssignRoles` must have `minMembers >= 1` to ensure there is always someone who can assign roles.
+
+Students typically select their roles before starting an assessment, but they can change their roles mid-assessment if needed. As a safeguard against invalid role configurations, PrairieLearn prevents students from viewing questions if a team's role configuration does not meet the instructor's specification.
 
 #### Adding permissions for an assessment
 
-Permissions can be configured at the _assessment_, _zone_, or _question_ level.
-
-The schema for permissions is defined as follows:
+In addition to assessment-level permissions in `teams.rolePermissions`, permissions can be further refined at the _zone_ or _question_ level using `canView` and `canSubmit` properties.
 
 ```json
 {
@@ -526,14 +567,24 @@ Permissions defined at a higher level are propagated down the assessment hierarc
 
 ```json title="infoAssessment.json"
 {
-  "canView": ["Manager", "Reflector", "Recorder"],
+  "teams": {
+    "roles": [
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 }
+    ],
+    "rolePermissions": {
+      "canAssignRoles": ["Manager"],
+      "canView": ["Manager", "Reflector", "Recorder"],
+      "canSubmit": ["Recorder"]
+    }
+  },
   "zones": [
     {
-      "canSubmit": ["Recorder"],
       "questions": [
         { "id": "question1", "points": 1 },
         { "id": "question2", "points": 1, "canView": ["Recorder"] },
-        { "id": "question3", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] }
+        { "id": "question3", "points": 1, "canView": ["Reflector"], "canSubmit": ["Reflector"] },
         { "id": "question4", "points": 1, "canView": null }
       ]
     }
@@ -541,35 +592,129 @@ Permissions defined at a higher level are propagated down the assessment hierarc
 }
 ```
 
-In the example above, question 1 can be viewed by students in Manager, Reflector or Recorder roles, but only students with a Recorder role can submit an answer, as per the default roles defined by in the assessment level (for viewing) and the zone level (for editing). Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector. Question 4 overrides the default settings by using the `null` special value, and allows students in any role to view the question, though only students with the Recorder role can submit an answer.
+In the example above, question 1 can be viewed by students in Manager, Reflector or Recorder roles, but only students with a Recorder role can submit an answer, as per the default roles defined in `teams.rolePermissions`. Question 2 can only be viewed and submitted by a Recorder, while question 3 can only be viewed and submitted by a Reflector. Question 4 overrides the default settings by using the `null` special value, and allows students in any role to view the question, though only students with the Recorder role can submit an answer.
 
 #### Assigning roles to students
 
-When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. Students can click "View role info" to see more information about the assessment's group roles.
+When students join a team, they are automatically assigned a role. Students can always view the roles of other students in the team, both before and during an assessment. Students can click "View role info" to see more information about the assessment's team roles.
 
-![Joining a group assessment with custom group roles](grouproles_join.png)
+![Joining a team assessment with custom team roles](grouproles_join.png)
 
-When expanded, group assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
+When expanded, team assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
 
-![Group info from student perspective](grouproles_groupinfo.png)
+![Team info from student perspective](grouproles_groupinfo.png)
 
-Any student with an assigner role can view additional controls to change the roles of other users in the group. Students with assigner roles can re-assign group roles both before and during an assessment.
+Any student with an assigner role can view additional controls to change the roles of other users in the team. Students with assigner roles can re-assign team roles both before and during an assessment.
 
-![Group role assignment controls](grouproles_assign_roles.png)
+![Team role assignment controls](grouproles_assign_roles.png)
 
 #### Restrictions based on role permissions
 
 When an instructor restricts the viewing of a question to certain roles, users without those roles will be unable to view that question.
 
-![Question cannot be viewed due to group role](grouproles_view_question.png)
+![Question cannot be viewed due to team role](grouproles_view_question.png)
 
 Additionally, when an instructor restricts the submitting of a question to certain roles, users without those roles will be unable to submit that question.
 
-![Question cannot be submitted due to group role](grouproles_submit_question.png)
+![Question cannot be submitted due to team role](grouproles_submit_question.png)
 
-When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
+When a role configuration is invalid, which may occur when a user leaves the team or a new user joins the team, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
 
-![Group configuration errors](grouproles_invalid_config_errors.png)
+![Team configuration errors](grouproles_invalid_config_errors.png)
+
+## Migrating from legacy group properties to the teams schema
+
+If you have existing assessments using the legacy `groupWork`, `groupRoles`, and related properties, you can migrate them to the new `teams` schema. The new schema provides a cleaner, more organized structure for team-based assessments.
+
+Here's an example showing how to convert from the legacy format to the new format:
+
+=== "Legacy format (deprecated)"
+
+    ```json title="infoAssessment.json"
+    {
+      "groupWork": true,
+      "groupMaxSize": 5,
+      "groupMinSize": 2,
+      "studentGroupCreate": true,
+      "studentGroupJoin": true,
+      "studentGroupLeave": true,
+      "studentGroupChooseName": true,
+      "groupRoles": [
+        { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
+        { "name": "Recorder", "minimum": 1, "maximum": 1 },
+        { "name": "Reflector", "minimum": 1, "maximum": 1 },
+        { "name": "Contributor" }
+      ],
+      "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+      "canSubmit": ["Recorder"],
+      "zones": [
+        {
+          "questions": [
+            { "id": "question1", "points": 1 }
+          ]
+        }
+      ]
+    }
+    ```
+
+=== "New teams format (recommended)"
+
+    ```json title="infoAssessment.json"
+    {
+      "teams": {
+        "minMembers": 2,
+        "maxMembers": 5,
+        "roles": [
+          { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+          { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+          { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+          { "name": "Contributor" }
+        ],
+        "studentPermissions": {
+          "canCreateTeam": true,
+          "canJoinTeam": true,
+          "canLeaveTeam": true,
+          "canNameTeam": true
+        },
+        "rolePermissions": {
+          "canAssignRoles": ["Manager"],
+          "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
+          "canSubmit": ["Recorder"]
+        }
+      },
+      "zones": [
+        {
+          "questions": [
+            { "id": "question1", "points": 1 }
+          ]
+        }
+      ]
+    }
+    ```
+
+### Property mapping
+
+The following table shows how legacy properties map to the new `teams` schema:
+
+| Legacy property               | New teams property                                           |
+| ----------------------------- | ------------------------------------------------------------ |
+| `groupWork: true`             | `teams: { ... }` (presence enables teams)                    |
+| `groupMinSize`                | `teams.minMembers`                                           |
+| `groupMaxSize`                | `teams.maxMembers`                                           |
+| `studentGroupCreate`          | `teams.studentPermissions.canCreateTeam`                     |
+| `studentGroupJoin`            | `teams.studentPermissions.canJoinTeam`                       |
+| `studentGroupLeave`           | `teams.studentPermissions.canLeaveTeam`                      |
+| `studentGroupChooseName`      | `teams.studentPermissions.canNameTeam`                       |
+| `groupRoles[].name`           | `teams.roles[].name`                                         |
+| `groupRoles[].minimum`        | `teams.roles[].minMembers`                                   |
+| `groupRoles[].maximum`        | `teams.roles[].maxMembers`                                   |
+| `groupRoles[].canAssignRoles` | `teams.rolePermissions.canAssignRoles` (array of role names) |
+| `canView` (assessment)        | `teams.rolePermissions.canView`                              |
+| `canSubmit` (assessment)      | `teams.rolePermissions.canSubmit`                            |
+
+!!! warning
+
+    You cannot use both `teams` and legacy group properties in the same assessment. If both are present, PrairieLearn will report a sync error.
 
 ## Forcing students to complete questions in-order
 

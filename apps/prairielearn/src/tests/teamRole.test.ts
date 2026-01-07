@@ -1213,7 +1213,7 @@ const changeTeamRolesConfig = async (courseDir: string, teamRoles: GroupRoleJson
     'courseInstances',
     'Sp15',
     'assessments',
-    'hw5-templateGroupWork',
+    'hw5-templateTeams',
     'infoAssessment.json',
   );
   const infoAssessment = await fs.readJSON(infoAssessmentPath);
@@ -1246,7 +1246,7 @@ describe('Test team role reassignments with role of minimum > 1', function () {
     // Find the ID of an assessment that has team roles
     assessmentId = await sqldb.queryRow(
       sql.select_assessment,
-      { tid: 'hw5-templateGroupWork' },
+      { tid: 'hw5-templateTeams' },
       IdSchema,
     );
     assessmentUrl = locals.courseInstanceUrl + '/assessment/' + assessmentId;
