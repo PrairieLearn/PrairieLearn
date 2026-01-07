@@ -35,13 +35,11 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
-  enrollmentManagementEnabled,
 }: {
   course: PublicCourse;
   courseInstance: PublicCourseInstance;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
-  enrollmentManagementEnabled: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(
@@ -157,18 +155,16 @@ export function CopyCourseInstanceModal({
                   formId="copy-course-instance"
                 />
 
-                {enrollmentManagementEnabled && (
-                  <>
-                    <hr />
+                <>
+                  <hr />
 
-                    <h3 className="h5">Self-enrollment settings</h3>
-                    <p className="text-muted small">
-                      Configure self-enrollment for your new course instance. This can be changed
-                      later.
-                    </p>
-                    <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
-                  </>
-                )}
+                  <h3 className="h5">Self-enrollment settings</h3>
+                  <p className="text-muted small">
+                    Configure self-enrollment for your new course instance. This can be changed
+                    later.
+                  </p>
+                  <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
+                </>
               </FormProvider>
             </Modal.Body>
 
