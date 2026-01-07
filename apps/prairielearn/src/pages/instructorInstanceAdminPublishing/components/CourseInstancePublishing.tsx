@@ -85,7 +85,7 @@ export function CourseInstancePublishing({
 
         {!canEditPublishing && origHash !== null && (
           <div className="alert alert-info" role="alert">
-            You must have be a course editor to edit publishing settings.
+            You must be a course editor to edit publishing settings.
           </div>
         )}
         {!canEditPublishing && origHash === null && (

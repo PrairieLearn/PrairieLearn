@@ -148,7 +148,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         const response = await helperClient.fetchCheerio(publishingUrl, { headers });
         assert.isTrue(response.ok);
         assert.lengthOf(
-          response.$('.alert:contains("You do not have permission to edit publishing settings")'),
+          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
           1,
         );
       },
@@ -162,7 +162,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       const response = await helperClient.fetchCheerio(publishingUrl, { headers });
       assert.isTrue(response.ok);
       assert.lengthOf(
-        response.$('.alert:contains("You do not have permission to edit publishing settings")'),
+        response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
         0,
       );
     });
@@ -177,7 +177,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         const response = await helperClient.fetchCheerio(publishingUrl, { headers });
         assert.isTrue(response.ok);
         assert.lengthOf(
-          response.$('.alert:contains("You do not have permission to edit publishing settings")'),
+          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
           1,
         );
       },
@@ -193,7 +193,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         const response = await helperClient.fetchCheerio(publishingUrl, { headers });
         assert.isTrue(response.ok);
         assert.lengthOf(
-          response.$('.alert:contains("You do not have permission to edit publishing settings")'),
+          response.$('.alert:contains("You must be a course editor to edit publishing settings")'),
           0,
         );
       },
