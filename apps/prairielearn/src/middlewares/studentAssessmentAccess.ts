@@ -4,6 +4,7 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
+import { run } from '@prairielearn/run';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import { canDeleteAssessmentInstance, deleteAssessmentInstance } from '../lib/assessment.js';
@@ -14,7 +15,14 @@ import { StudentAssessmentAccess } from './studentAssessmentAccess.html.js';
 
 export function checkStudentAssessmentAccess(req: Request, res: Response): boolean {
   const showClosedAssessment = res.locals.authz_result?.show_closed_assessment ?? true;
-  const assessmentInstanceOpen = res.locals.assessment_instance?.open ?? true;
+  const assessmentInstanceOpen = run(() => {
+    // If there's no assessment instance, we consider it to be open.
+    if (!res.locals.assessment_instance) return true;
+
+    // `open` is nullable in the database, but it will always be set for all new
+    // assessment instances. We include the fallback here to be extra safe.
+    return res.locals.assessment_instance.open ?? false;
+  });
   const assessmentActive = res.locals.authz_result?.active ?? true;
 
   if (!showClosedAssessment && (!assessmentInstanceOpen || !assessmentActive)) {
