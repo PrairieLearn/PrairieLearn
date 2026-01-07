@@ -50,7 +50,7 @@ onDocumentReady(() => {
       // remove the `aria-describedby` attribute when the tooltip is shown.
       if (!el.hasAttribute('aria-label')) {
         const title = el.dataset.bsTitle;
-        if (title && !el.textContent?.trim()) {
+        if (title && !el.textContent.trim()) {
           el.setAttribute('aria-label', title);
         }
         el.addEventListener('inserted.bs.tooltip', () => {

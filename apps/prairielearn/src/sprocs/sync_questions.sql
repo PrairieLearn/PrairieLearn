@@ -1,8 +1,8 @@
 CREATE FUNCTION
     sync_questions(
-        IN disk_questions_data JSONB[],
+        IN disk_questions_data jsonb[],
         IN syncing_course_id bigint,
-        OUT name_to_id_map JSONB
+        OUT name_to_id_map jsonb
     )
 AS $$
 DECLARE

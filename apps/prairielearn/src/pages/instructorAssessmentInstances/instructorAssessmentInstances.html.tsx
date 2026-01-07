@@ -2,11 +2,10 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
-export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorAssessmentInstances({ resLocals }: { resLocals: UntypedResLocals }) {
   return PageLayout({
     resLocals,
     pageTitle: 'Instances',
@@ -37,21 +36,12 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authz_data={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentGroupWork: resLocals.assessment.group_work,
+              assessmentTeamWork: resLocals.assessment.team_work,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({
@@ -73,7 +63,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
         : ''}
 
       <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+        <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
           ${resLocals.authz_data.has_course_instance_permission_edit
             ? html`
@@ -165,7 +155,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           data-smart-display="false"
           data-show-extended-pagination="true"
           data-sticky-header="true"
-          data-assessment-group-work="${resLocals.assessment.group_work}"
+          data-assessment-team-work="${resLocals.assessment.team_work}"
           data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
           data-assessment-number="${resLocals.assessment.number}"
           data-url-prefix="${resLocals.urlPrefix}"
@@ -325,12 +315,12 @@ function TimeRemainingHelpModal() {
 function DeleteAssessmentInstanceModal({
   assessmentSetName,
   assessmentNumber,
-  assessmentGroupWork,
+  assessmentTeamWork,
   csrfToken,
 }: {
   assessmentSetName: string;
   assessmentNumber: number;
-  assessmentGroupWork: boolean;
+  assessmentTeamWork: boolean;
   csrfToken: string;
 }) {
   return Modal({
@@ -341,9 +331,9 @@ function DeleteAssessmentInstanceModal({
       <span class="modal-number"></span> of
       <strong> ${assessmentSetName} ${assessmentNumber} </strong>
       for
-      ${assessmentGroupWork
+      ${assessmentTeamWork
         ? html`
-            <strong><span class="modal-group-name"></span></strong>
+            <strong><span class="modal-team-name"></span></strong>
             (<span class="modal-uid-list"></span>)
           `
         : html`

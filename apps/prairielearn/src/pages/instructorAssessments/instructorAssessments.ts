@@ -7,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   updateAssessmentStatistics,
@@ -17,18 +18,22 @@ import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { selectAssessments, selectAssessmentsCursor } from '../../models/assessment.js';
+import {
+  type AssessmentRow,
+  selectAssessments,
+  selectAssessmentsCursor,
+} from '../../models/assessment.js';
 
 import { AssessmentStats, InstructorAssessments } from './instructorAssessments.html.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: UntypedResLocals) {
   return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
 }
 
@@ -116,7 +121,7 @@ router.get(
         course_instance_id: res.locals.course_instance.id,
       });
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentRow>({
         header: true,
         columns: [
           'Course',
@@ -152,7 +157,7 @@ router.get(
             res.locals.course.short_name,
             res.locals.course_instance.short_name,
             record.name,
-            record.assessment_number,
+            record.number, // assessment number
             record.label,
             record.title,
             record.tid,

@@ -26,13 +26,13 @@ function hasUserAcceptedTerms(user: User): boolean {
  * @param ip The IP address of the request
  * @returns Whether the user should be redirected to the terms acceptance page
  */
-export async function shouldRedirectToTermsPage(user: User, ip: string) {
+export async function shouldRedirectToTermsPage(user: User, ip: string | undefined) {
   if (!config.requireTermsAcceptance || hasUserAcceptedTerms(user)) return false;
 
   const { mode } = await ipToMode({
     ip,
     date: new Date(),
-    authn_user_id: user.user_id,
+    authn_user_id: user.id,
   });
   return mode === 'Public';
 }
@@ -55,7 +55,7 @@ export function redirectToTermsPage(res: Response, redirectUrl?: string): void {
 export async function redirectToTermsPageIfNeeded(
   res: Response,
   user: User,
-  ip: string,
+  ip: string | undefined,
   redirectUrl?: string,
 ): Promise<void> {
   if (await shouldRedirectToTermsPage(user, ip)) {

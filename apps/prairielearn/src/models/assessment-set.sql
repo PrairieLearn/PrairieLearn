@@ -3,5 +3,5 @@ SELECT
   *
 FROM
   assessment_sets
-where
+WHERE
   id = $assessment_set_id;

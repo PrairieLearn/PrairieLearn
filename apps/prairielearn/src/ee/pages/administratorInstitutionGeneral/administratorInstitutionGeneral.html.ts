@@ -5,7 +5,8 @@ import { type HtmlValue, html } from '@prairielearn/html';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Institution, type PlanGrant } from '../../../lib/db-types.js';
-import { type Timezone, formatTimezone } from '../../../lib/timezones.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { type Timezone, formatTimezone } from '../../../lib/timezone.shared.js';
 import { PlanGrantsEditor } from '../../lib/billing/components/PlanGrantsEditor.js';
 
 export const InstitutionStatisticsSchema = z.object({
@@ -26,7 +27,7 @@ export function AdministratorInstitutionGeneral({
   availableTimezones: Timezone[];
   statistics: InstitutionStatistics;
   planGrants: PlanGrant[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     pageTitle: 'Institution Administration',
@@ -77,7 +78,8 @@ export function AdministratorInstitutionGeneral({
             value="${institution.short_name}"
           />
           <small id="short_name_help" class="form-text text-muted">
-            Use an abbreviation or short name. E.g., "UIUC" or "Berkeley".
+            An abbreviation or short name, e.g. "illinois.edu" or "ubc.ca". Usually this should be
+            the institution's domain.
           </small>
         </div>
         <div class="mb-3">
@@ -90,7 +92,7 @@ export function AdministratorInstitutionGeneral({
             value="${institution.long_name}"
           />
           <small id="long_name_help" class="form-text text-muted">
-            Use the full name of the university. E.g., "University of Illinois Urbana-Champaign".
+            The full name of the university, e.g. "University of Illinois Urbana-Champaign".
           </small>
         </div>
         <div class="mb-3">
@@ -119,8 +121,8 @@ export function AdministratorInstitutionGeneral({
               target="_blank"
               rel="noreferrer"
               >tz database</a
-            >. It's best to use a city-based timezone that has the same times as you. E.g.,
-            "America/Chicago".
+            >. It's best to use a city-based timezone that has the same times as the institution,
+            e.g. "America/Chicago".
           </small>
         </div>
         <div class="mb-3">
@@ -133,7 +135,8 @@ export function AdministratorInstitutionGeneral({
             value="${institution.uid_regexp}"
           />
           <small id="uid_regexp_help" class="form-text text-muted">
-            Should match the non-username part of students' UIDs. E.g., @example\\.com$.
+            Should match the non-username part of user UIDs, e.g. <code>@example\\.com$</code>. This
+            should be set for institution-based access restrictions to work correctly.
           </small>
         </div>
         <h2 class="h4">Limits</h2>

@@ -23,7 +23,8 @@ SELECT
   v.instance_question_id,
   q.grading_method,
   aq.max_auto_points,
-  aq.max_manual_points
+  aq.max_manual_points,
+  aq.allow_real_time_grading
 FROM
   variants AS v
   JOIN questions AS q ON (q.id = v.question_id)
@@ -74,14 +75,14 @@ FROM
 WITH
   previous_last_access AS (
     SELECT
-      COALESCE(NOW() - last_access, INTERVAL '0 seconds') AS full_delta
+      COALESCE(NOW() - last_access, interval '0 seconds') AS full_delta
     FROM
       last_accesses AS la
     WHERE
       (
         CASE
           WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
-          ELSE la.group_id = $group_id
+          ELSE la.team_id = $team_id
         END
       )
   ),
@@ -93,7 +94,7 @@ WITH
       (
         CASE
           WHEN $user_id::bigint IS NOT NULL THEN la.user_id = $user_id
-          ELSE la.group_id = $group_id
+          ELSE la.team_id = $team_id
         END
       )
   )

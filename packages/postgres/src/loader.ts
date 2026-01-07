@@ -5,8 +5,9 @@ import url from 'node:url';
 type SqlFile = Record<string, string>;
 
 export function loadSql(filename: string): SqlFile {
-  const sql: SqlFile = {};
-  sql.all = fs.readFileSync(filename, 'utf8');
+  const sql: SqlFile = {
+    all: fs.readFileSync(filename, 'utf8'),
+  };
   const lines = sql.all.split(/\r?\n/);
   const blockRE = /^ *-- *BLOCK +([^ ]+) *$/;
   let blockName: string | null = null;

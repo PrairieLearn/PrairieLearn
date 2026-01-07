@@ -21,7 +21,7 @@ export default function (options = { publicQuestionPreview: false }) {
         unsafe_variant_id: req.params.variant_id,
         variant_course: res.locals.course ?? (await selectCourseById(req.params.course_id)),
         question_id: res.locals.question?.id ?? req.params.question_id,
-        course_instance_id: res.locals?.course_instance?.id,
+        course_instance_id: res.locals.course_instance?.id,
         instance_question_id: res.locals.instance_question?.id,
         authz_data: res.locals.authz_data,
         authn_user: res.locals.authn_user,
@@ -29,10 +29,6 @@ export default function (options = { publicQuestionPreview: false }) {
         is_administrator: res.locals.is_administrator,
         publicQuestionPreview: options.publicQuestionPreview,
       });
-
-      if (!variant) {
-        throw new HttpStatusError(404, 'Variant not found');
-      }
 
       if (!variant.open) {
         throw new HttpStatusError(403, 'This variant is not open');
@@ -69,7 +65,7 @@ export default function (options = { publicQuestionPreview: false }) {
   router.post(
     '/',
     asyncHandler(async (req, res) => {
-      const variantId = req.params.variant_id as string;
+      const variantId = req.params.variant_id;
       const fileName = req.body.file_name as string | undefined;
 
       if (!fileName) {

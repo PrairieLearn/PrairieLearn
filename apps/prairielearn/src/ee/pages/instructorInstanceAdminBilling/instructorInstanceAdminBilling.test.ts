@@ -2,7 +2,7 @@ import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
-import { queryAsync } from '@prairielearn/postgres';
+import { execute } from '@prairielearn/postgres';
 
 import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
@@ -20,7 +20,7 @@ const siteUrl = 'http://localhost:' + config.serverPort;
 const pageUrl = siteUrl + '/pl/course_instance/1/instructor/instance_admin/billing';
 
 async function updateCourseInstanceEnrollmentLimit(limit: number) {
-  await queryAsync('UPDATE course_instances SET enrollment_limit = $limit;', { limit });
+  await execute('UPDATE course_instances SET enrollment_limit = $limit;', { limit });
 }
 
 describe('instructorInstanceAdminBilling', () => {

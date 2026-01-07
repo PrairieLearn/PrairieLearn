@@ -1,3 +1,4 @@
+/* eslint-disable jsdoc/check-param-names */
 // This is a fork of Sentry's Express integration from `@sentry/node`that's not
 // available in the `@sentry/node-core` package`. It has been lightly modified
 // to remove unused code and conform to PrairieLearn's coding style.
@@ -121,7 +122,7 @@ export function setupExpressErrorHandler(
 function getStatusCodeFromResponse(error: MiddlewareError): number {
   const statusCode =
     error.status || error.statusCode || error.status_code || error.output?.statusCode;
-  return statusCode ? parseInt(statusCode as string, 10) : 500;
+  return statusCode ? Number.parseInt(statusCode as string) : 500;
 }
 
 /** Returns true if response code is internal server error */

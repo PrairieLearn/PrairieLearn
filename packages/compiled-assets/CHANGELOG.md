@@ -1,5 +1,75 @@
 # @prairielearn/compiled-assets
 
+## 3.3.1
+
+### Patch Changes
+
+- 926403c: Upgrade `globby` to latest version
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/html@4.0.23
+
+## 3.3.0
+
+### Minor Changes
+
+- d087e37: Immediately 404 if a built asset isn't found
+
+## 3.2.9
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+- Updated dependencies [0425922]
+  - @prairielearn/html@4.0.22
+
+## 3.2.8
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+- Updated dependencies [c0b1c74]
+  - @prairielearn/html@4.0.21
+
+## 3.2.7
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+- Updated dependencies [c72a4b8]
+  - @prairielearn/html@4.0.20
+
+## 3.2.6
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+- Updated dependencies [f571b40]
+  - @prairielearn/html@4.0.19
+
+## 3.2.5
+
+### Patch Changes
+
+- ca3712e: Upgrade all JavaScript dependencies
+
+## 3.2.4
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+- Updated dependencies [b55261c]
+  - @prairielearn/html@4.0.18
+
+## 3.2.3
+
+### Patch Changes
+
+- 0edbdcb: Upgrade more JavaScript dependencies
+- 23adb05: Upgrade all JavaScript dependencies
+- Updated dependencies [23adb05]
+  - @prairielearn/html@4.0.17
+
 ## 3.2.2
 
 ### Patch Changes

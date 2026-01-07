@@ -13,10 +13,12 @@ import { IssueBadge } from '../../../components/IssueBadge.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
+import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { StaffAssessmentQuestionRow } from '../../../models/assessment-question.js';
+import { assertNever } from '../../../lib/types.js';
 
+import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function Title({
@@ -69,15 +71,15 @@ export function InstructorAssessmentQuestionsTable({
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
   const [showResetModal, setShowResetModal] = useState(false);
 
-  const handleResetButtonClick = (questionId: string) => {
-    setResetAssessmentQuestionId(questionId);
+  const handleResetButtonClick = (assessmentQuestionId: string) => {
+    setResetAssessmentQuestionId(assessmentQuestionId);
     setShowResetModal(true);
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol =
-    questionRows.filter((q) => q.assessment_question.effective_advance_score_perc !== 0).length >=
-    1;
+  const showAdvanceScorePercCol = questionRows.some(
+    (q) => q.assessment_question.effective_advance_score_perc !== 0,
+  );
 
   const nTableCols = showAdvanceScorePercCol ? 12 : 11;
 
@@ -93,13 +95,15 @@ export function InstructorAssessmentQuestionsTable({
     init_points: number | null;
   }) {
     if (max_auto_points || !max_manual_points) {
-      if (assessmentType === 'Exam') {
-        return (points_list || [max_manual_points])
-          .map((p) => (p ?? 0) - (max_manual_points ?? 0))
-          .join(',');
-      }
-      if (assessmentType === 'Homework') {
-        return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+      switch (assessmentType) {
+        case 'Exam':
+          return (points_list || [max_manual_points])
+            .map((p) => (p ?? 0) - (max_manual_points ?? 0))
+            .join(',');
+        case 'Homework':
+          return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
+        default:
+          assertNever(assessmentType);
       }
     } else {
       return '—';
@@ -108,18 +112,18 @@ export function InstructorAssessmentQuestionsTable({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
             {assessmentSetName} {assessmentNumber}: Questions
           </h1>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Assessment questions">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
                 <th>
-                  <span class="visually-hidden">Name</span>
+                  <span className="visually-hidden">Name</span>
                 </th>
                 <th>QID</th>
                 <th>Topic</th>
@@ -130,12 +134,13 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
-                <th class="text-end">Actions</th>
+                <th className="text-end">Actions</th>
               </tr>
             </thead>
             <tbody>
               {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
                 const { question, assessment_question, other_assessments } = questionRow;
+
                 return (
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
@@ -148,7 +153,7 @@ export function InstructorAssessmentQuestionsTable({
                         />
                         <IssueBadge
                           urlPrefix={urlPrefix}
-                          count={questionRow.open_issue_count ?? 0}
+                          count={questionRow.open_issue_count}
                           issueQid={question.qid}
                         />
                       </td>
@@ -160,9 +165,9 @@ export function InstructorAssessmentQuestionsTable({
                         ) : (
                           ''
                         )}
-                        {idsEqual(course.id, question.course_id)
+                        {idsEqual(course.id, questionRow.course.id)
                           ? question.qid
-                          : `@${course.sharing_name}/${question.qid}`}
+                          : `@${questionRow.course.sharing_name}/${question.qid}`}
                       </td>
                       <td>
                         <TopicBadge topic={questionRow.topic} />
@@ -181,7 +186,7 @@ export function InstructorAssessmentQuestionsTable({
                       <td>{assessment_question.max_manual_points || '—'}</td>
                       {showAdvanceScorePercCol && (
                         <td
-                          class={clsx(
+                          className={clsx(
                             assessment_question.effective_advance_score_perc === 0 && 'text-muted',
                           )}
                           data-testid="advance-score-perc"
@@ -194,7 +199,7 @@ export function InstructorAssessmentQuestionsTable({
                           ? `${assessment_question.mean_question_score.toFixed(3)}%`
                           : ''}
                       </td>
-                      <td class="text-center">
+                      <td className="text-center">
                         {assessment_question.number_submissions_hist ? (
                           <HistMini
                             data={assessment_question.number_submissions_hist}
@@ -209,7 +214,7 @@ export function InstructorAssessmentQuestionsTable({
                           return (
                             <div
                               key={`${question.qid}-${assessment.assessment_id}`}
-                              class="d-inline-block me-1"
+                              className="d-inline-block me-1"
                             >
                               <AssessmentBadge
                                 urlPrefix={urlPrefix}
@@ -223,11 +228,11 @@ export function InstructorAssessmentQuestionsTable({
                           );
                         })}
                       </td>
-                      <td class="text-end">
+                      <td className="text-end">
                         <Dropdown>
                           <Dropdown.Toggle
                             variant="secondary"
-                            class="dropdown-toggle btn-xs"
+                            size="sm"
                             id={`question-actions-${question.qid}`}
                           >
                             Action
@@ -255,12 +260,16 @@ export function InstructorAssessmentQuestionsTable({
           </table>
         </div>
       </div>
-      <ResetQuestionVariantsModal
-        csrfToken={csrfToken}
-        assessmentQuestionId={resetAssessmentQuestionId}
-        show={showResetModal}
-        onHide={() => setShowResetModal(false)}
-      />
+      {assessmentType === 'Homework' ? (
+        <ResetQuestionVariantsModal
+          csrfToken={csrfToken}
+          assessmentQuestionId={resetAssessmentQuestionId}
+          show={showResetModal}
+          onHide={() => setShowResetModal(false)}
+        />
+      ) : (
+        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+      )}
     </>
   );
 }

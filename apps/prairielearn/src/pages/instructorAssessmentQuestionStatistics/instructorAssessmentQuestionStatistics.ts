@@ -13,10 +13,12 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
+  type AssessmentQuestionStatsRow,
   AssessmentQuestionStatsRowSchema,
   InstructorAssessmentQuestionStatistics,
 } from './instructorAssessmentQuestionStatistics.html.js';
@@ -24,7 +26,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals) {
+function makeStatsCsvFilename(locals: UntypedResLocals) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -80,11 +82,13 @@ router.get(
   '/:filename',
   asyncHandler(async (req, res) => {
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryCursor(sql.questions, {
-        assessment_id: res.locals.assessment.id,
-      });
+      const cursor = await sqldb.queryCursor(
+        sql.questions,
+        { assessment_id: res.locals.assessment.id },
+        AssessmentQuestionStatsRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentQuestionStatsRow>({
         header: true,
         columns: [
           'Course',

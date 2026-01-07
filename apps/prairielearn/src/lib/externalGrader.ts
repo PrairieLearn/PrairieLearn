@@ -7,6 +7,7 @@ import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
 import {
@@ -18,7 +19,6 @@ import { config } from './config.js';
 import {
   CourseSchema,
   GradingJobSchema,
-  IdSchema,
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,
@@ -141,7 +141,7 @@ function handleGraderError(grading_job_id: string, err: Error): void {
 }
 
 async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
-  await sqldb.queryAsync(sql.update_grading_submitted_time, {
+  await sqldb.execute(sql.update_grading_submitted_time, {
     grading_job_id,
     grading_submitted_at: new Date().toISOString(),
   });
@@ -149,7 +149,7 @@ async function updateJobSubmissionTime(grading_job_id: string): Promise<void> {
 }
 
 async function updateJobReceivedTime(grading_job_id: string, receivedTime: string): Promise<void> {
-  await sqldb.queryAsync(sql.update_grading_received_time, {
+  await sqldb.execute(sql.update_grading_received_time, {
     grading_job_id,
     grading_received_at: receivedTime,
   });
@@ -193,7 +193,7 @@ export async function processGradingResult(content: any): Promise<void> {
 
     if (gradable) {
       // We only care about the score if it is gradable.
-      if (typeof content.grading.score === 'undefined') {
+      if (content.grading.score === undefined) {
         content.grading.feedback = {
           results: { succeeded: false, gradable: false },
           message: 'Error parsing external grading results: score was not provided.',

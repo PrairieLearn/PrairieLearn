@@ -16,9 +16,20 @@ WHERE
   AND ci.short_name = $short_name
   AND ci.deleted_at IS NULL;
 
+-- BLOCK select_course_instance_by_enrollment_code
+SELECT
+  ci.*
+FROM
+  course_instances AS ci
+WHERE
+  ci.enrollment_code = $enrollment_code
+  AND ci.deleted_at IS NULL;
+
 -- BLOCK select_course_instances_with_staff_access
 SELECT
   ci.*,
+  d.start_date,
+  d.end_date,
   CASE
     WHEN d.start_date IS NULL THEN '—'
     ELSE format_date_full_compact (d.start_date, ci.display_timezone)
@@ -40,7 +51,7 @@ SELECT
     FALSE
   ) AS has_course_instance_permission_edit
 FROM
-  pl_courses AS c
+  courses AS c
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN institution_administrators AS ia ON (
     ia.institution_id = i.id
@@ -92,7 +103,7 @@ SELECT
 FROM
   course_instance_permissions AS cip
   JOIN course_permissions AS cp ON (cp.id = cip.course_permission_id)
-  JOIN users AS u ON (u.user_id = cp.user_id)
+  JOIN users AS u ON (u.id = cp.user_id)
 WHERE
   cip.course_instance_id = $course_instance_id
   AND cip.course_instance_role >= $minimal_role;
@@ -103,19 +114,11 @@ SELECT
     SELECT
       1
     FROM
-      course_instances as ci
+      course_instances AS ci
     WHERE
       ci.course_id = $course_id
       AND ci.deleted_at IS NULL
   );
-
--- BLOCK check_course_instance_is_public
-SELECT
-  ci.share_source_publicly
-FROM
-  course_instances AS ci
-WHERE
-  ci.id = $course_instance_id;
 
 -- BLOCK select_course_instance_by_uuid
 SELECT

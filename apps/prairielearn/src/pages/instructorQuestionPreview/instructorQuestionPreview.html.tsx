@@ -1,13 +1,14 @@
+import assert from 'node:assert';
+
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
-import { QuestionSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type CopyTarget } from '../../lib/copy-content.js';
-import { renderHtml } from '../../lib/preact-html.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorQuestionPreview({
   normalPreviewUrl,
@@ -28,8 +29,10 @@ export function InstructorQuestionPreview({
   renderSubmissionSearchParams: URLSearchParams;
   readmeHtml: string;
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'instructor-question'>;
 }) {
+  assert(resLocals.question.qid !== null);
+
   return PageLayout({
     resLocals,
     pageTitle: 'Question Preview',
@@ -52,9 +55,7 @@ export function InstructorQuestionPreview({
             <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
             <script src="${assetPath('javascripts/require.js')}"></script>
             <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath(
-                `localscripts/question${resLocals.effectiveQuestionType}.js`,
-              )}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
@@ -77,18 +78,6 @@ export function InstructorQuestionPreview({
           max-height: 150px;
         }
       </style>
-    `,
-    preContent: html`
-      <div class="container-fluid">
-        ${renderHtml(
-          <QuestionSyncErrorsAndWarnings
-            authz_data={resLocals.authz_data}
-            question={resLocals.question}
-            course={resLocals.course}
-            urlPrefix={resLocals.urlPrefix}
-          />,
-        )}
-      </div>
     `,
     content: html`
       ${manualGradingPreviewEnabled

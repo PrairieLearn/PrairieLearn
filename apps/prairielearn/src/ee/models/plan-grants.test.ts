@@ -23,9 +23,9 @@ describe('plan-grants', () => {
           plan_grant: {
             plan_name: 'basic',
             type: 'stripe',
-            user_id: user.user_id,
+            user_id: user.id,
           },
-          authn_user_id: user.user_id,
+          authn_user_id: user.id,
         });
       });
     });
@@ -43,9 +43,9 @@ describe('plan-grants', () => {
           plan_grant: {
             plan_name: 'basic',
             type: 'stripe',
-            user_id: user.user_id,
+            user_id: user.id,
           },
-          authn_user_id: user.user_id,
+          authn_user_id: user.id,
         } as const;
 
         await ensurePlanGrant(options);

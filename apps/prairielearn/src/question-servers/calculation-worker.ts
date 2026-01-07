@@ -1,3 +1,5 @@
+#!/usr/bin/env node
+
 // This is meant to be invoked from a Python code caller via `lib/code-caller`.
 // This allows us to isolate code from the main process that's handling requests,
 // and to execute code inside Docker containers in environments where
@@ -40,7 +42,7 @@ async function loadServer(questionServerPath: string, coursePath: string): Promi
   return new Promise((resolve, reject) => {
     configRequire(
       [questionServerPath],
-      function (server) {
+      function (server: any) {
         if (server === undefined) {
           reject(new Error(`Could not load ${path.basename(questionServerPath)}`));
         }

@@ -6,6 +6,8 @@ columns
     course_instance_id: bigint not null
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deployment_id: text not null
+    enrollment_lti_enforced: boolean default false
+    enrollment_lti_enforced_after_date: timestamp with time zone
     id: bigint not null default nextval('lti13_course_instances_id_seq'::regclass)
     lineitems_url: text
     lti13_instance_id: bigint
@@ -20,4 +22,5 @@ foreign-key constraints
     lti13_course_instances_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
+    enrollments: FOREIGN KEY (pending_lti13_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
     lti13_assessments: FOREIGN KEY (lti13_course_instance_id) REFERENCES lti13_course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE

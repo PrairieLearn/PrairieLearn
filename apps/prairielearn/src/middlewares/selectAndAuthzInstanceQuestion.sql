@@ -73,9 +73,9 @@ SELECT
     AND ai.date_limit <= $req_date::timestamptz
   ) AS assessment_instance_time_limit_expired,
   to_jsonb(u) AS instance_user,
-  users_get_displayed_role (u.user_id, ci.id) AS instance_role,
-  to_jsonb(g) AS instance_group,
-  groups_uid_list (g.id) AS instance_group_uid_list,
+  users_get_displayed_role (u.id, ci.id) AS instance_role,
+  to_jsonb(t) AS instance_team,
+  teams_uid_list (t.id) AS instance_team_uid_list,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   jsonb_build_object(
     'id',
@@ -109,17 +109,17 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
-    AND g.deleted_at IS NULL
+  LEFT JOIN teams AS t ON (
+    t.id = ai.team_id
+    AND t.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
   JOIN LATERAL authz_assessment_instance (
     ai.id,
     $authz_data,
     $req_date,
     ci.display_timezone,
-    a.group_work
+    a.team_work
   ) AS aai ON TRUE
   JOIN LATERAL instance_questions_next_allowed_grade (iq.id) AS iqnag ON TRUE
   CROSS JOIN file_list AS fl
@@ -127,10 +127,9 @@ WHERE
   iq.id = $instance_question_id
   AND ci.id = $course_instance_id
   AND (
-    $assessment_id::BIGINT IS NULL
+    $assessment_id::bigint IS NULL
     OR a.id = $assessment_id
   )
   AND q.deleted_at IS NULL
   AND a.deleted_at IS NULL
-  AND aai.authorized
   AND NOT iqi.sequence_locked;

@@ -63,7 +63,7 @@ export function parallelHistograms(
   const xOrdinal = scaleBand()
     .domain(range(numHistograms).map((d) => `${d}`))
     .rangeRound([0, width])
-    .padding(0.0);
+    .padding(0);
 
   const xLinear = scaleLinear().domain([0, numHistograms]).range([0, width]);
 
@@ -118,7 +118,7 @@ export function parallelHistograms(
       return (histogram[i] / max) * width_per_day;
     };
 
-    const xOffset = (index + 0.5) * width_per_day + (yAxisWidth ?? 70);
+    const xOffset = (index + 0.5) * width_per_day + yAxisWidth;
 
     const g = plot.append('g').attr('transform', `translate(${xOffset}, 0)`);
 
@@ -188,6 +188,6 @@ function calculate_max(data: Data[]) {
     }
   }
 
-  max = max * 1.1;
+  max *= 1.1;
   return max;
 }

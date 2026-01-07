@@ -3,18 +3,18 @@ import { z } from 'zod';
 import {
   type CursorIterator,
   loadSqlEquiv,
+  queryCursor,
   queryOptionalRow,
   queryRow,
   queryRows,
-  queryValidatedCursor,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -66,6 +66,7 @@ export const AssessmentStatsRowSchema = AssessmentSchema.extend({
 export type AssessmentStatsRow = z.infer<typeof AssessmentStatsRowSchema>;
 
 export const AssessmentRowSchema = AssessmentStatsRowSchema.extend({
+  name: AssessmentSetSchema.shape.name,
   start_new_assessment_group: z.boolean(),
   assessment_set: AssessmentSetSchema,
   assessment_module: AssessmentModuleSchema,
@@ -91,7 +92,7 @@ export function selectAssessmentsCursor({
 }: {
   course_instance_id: string;
 }): Promise<CursorIterator<AssessmentRow>> {
-  return queryValidatedCursor(
+  return queryCursor(
     sql.select_assessments_for_course_instance,
     { course_instance_id },
     AssessmentRowSchema,

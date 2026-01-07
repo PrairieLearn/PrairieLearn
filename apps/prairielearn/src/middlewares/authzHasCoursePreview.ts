@@ -1,10 +1,6 @@
-import { type NextFunction, type Request, type Response } from 'express';
+import { createAuthzMiddleware } from './authzHelper.js';
 
-import { HttpStatusError } from '@prairielearn/error';
-
-export default function (req: Request, res: Response, next: NextFunction) {
-  if (!res.locals.authz_data.has_course_permission_preview) {
-    return next(new HttpStatusError(403, 'Requires course preview access'));
-  }
-  next();
-}
+export default createAuthzMiddleware({
+  oneOfPermissions: ['has_course_permission_preview'],
+  unauthorizedUsers: 'block',
+});

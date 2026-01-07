@@ -16,7 +16,7 @@ import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
 } from '../models/course-permissions.js';
-import { updateCourseSharingName } from '../models/course.js';
+import { selectCourseById, updateCourseSharingName } from '../models/course.js';
 import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
@@ -68,11 +68,11 @@ function getVariantId(cheerio: CheerioAPI): string {
   return variantId;
 }
 
-function getWorkspaceUrl(cheerio: CheerioAPI): string {
-  const workspaceUrl = cheerio('a:contains("Open workspace")').attr('href');
-  assert(workspaceUrl);
-  assert.isString(workspaceUrl);
-  return workspaceUrl;
+function getWorkspaceId(cheerio: CheerioAPI): string {
+  const workspaceId = cheerio('.question-container').attr('data-workspace-id');
+  assert(workspaceId);
+  assert.isString(workspaceId);
+  return workspaceId;
 }
 
 /**
@@ -102,19 +102,21 @@ async function assertVariantAccess({
   questionBasePath,
   variantId,
   submissionId,
-  workspaceUrl,
+  workspaceId,
   expectedAccess,
+  workspaceBaseUrl = '/pl/workspace',
 }: {
   questionBasePath: string;
   variantId: string;
   submissionId: string;
-  workspaceUrl: string;
+  workspaceId: string;
   expectedAccess: boolean;
+  workspaceBaseUrl?: string;
 }) {
   // Remove trailing slash if present.
   questionBasePath = questionBasePath.replace(/\/$/, '');
 
-  const isStudentRoute = !!questionBasePath.match(/course_instance\/\d+\/instance_question\//);
+  const isStudentRoute = !!/course_instance\/\d+\/instance_question\//.test(questionBasePath);
 
   // Test access to the rendered variant.
   const variantUrl = `${siteUrl}${questionBasePath}${isStudentRoute ? '' : '/preview'}?variant_id=${variantId}`;
@@ -153,7 +155,7 @@ async function assertVariantAccess({
   }
 
   // Test access to the variant's workspace.
-  const workspaceRes = await fetchCheerio(siteUrl + workspaceUrl);
+  const workspaceRes = await fetchCheerio(siteUrl + workspaceBaseUrl + '/' + workspaceId);
   assert.equal(workspaceRes.status, expectedAccess ? 200 : 403);
 }
 
@@ -165,25 +167,28 @@ describe('Variant access', () => {
   let assessment: Assessment;
   let courseInstance: CourseInstance;
   let publicVariantId: string;
-  let publicVariantWorkspaceUrl: string;
+  let publicVariantWorkspaceId: string;
   let publicVariantSubmissionId: string;
   let otherPublicVariantId: string;
-  let otherPublicVariantWorkspaceUrl: string;
+  let otherPublicVariantWorkspaceId: string;
   let otherPublicVariantSubmissionId: string;
   let studentInstanceQuestionPath: string;
   let studentVariantId: string;
-  let studentVariantWorkspaceUrl: string;
+  let studentVariantWorkspaceId: string;
   let studentVariantSubmissionId: string;
   let otherStudentInstanceQuestionPath: string;
   let otherStudentVariantId: string;
-  let otherStudentVariantWorkspaceUrl: string;
+  let otherStudentVariantWorkspaceId: string;
   let otherStudentVariantSubmissionId: string;
   let instructorVariantId: string;
-  let instructorVariantWorkspaceUrl: string;
+  let instructorVariantWorkspaceId: string;
   let instructorVariantSubmissionId: string;
 
   test.sequential('get relevant entities', async () => {
-    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    courseInstance = await selectCourseInstanceByShortName({
+      course: await selectCourseById('1'),
+      shortName: 'Sp15',
+    });
     question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(
       'SELECT * FROM assessments WHERE tid = $tid',
@@ -199,14 +204,14 @@ describe('Variant access', () => {
       course_id: '1',
       uid: instructorUser.uid,
       course_role: 'Owner',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
     await insertCourseInstancePermissions({
       course_id: '1',
       course_instance_id: '1',
-      user_id: instructorUser.user_id,
+      user_id: instructorUser.id,
       course_instance_role: 'Student Data Viewer',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
   });
 
@@ -217,7 +222,7 @@ describe('Variant access', () => {
       course_id: '1',
       uid: courseAssistantUser.uid,
       course_role: 'Editor',
-      authn_user_id: adminUser.user_id,
+      authn_user_id: adminUser.id,
     });
   });
 
@@ -235,7 +240,7 @@ describe('Variant access', () => {
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       publicVariantId = getVariantId(res.$);
-      publicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      publicVariantWorkspaceId = getWorkspaceId(res.$);
       publicVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
@@ -246,7 +251,7 @@ describe('Variant access', () => {
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       otherPublicVariantId = getVariantId(res.$);
-      otherPublicVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      otherPublicVariantWorkspaceId = getWorkspaceId(res.$);
       otherPublicVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
@@ -257,7 +262,7 @@ describe('Variant access', () => {
       const res = await fetchCheerio(url);
       assert.equal(res.status, 200);
       instructorVariantId = getVariantId(res.$);
-      instructorVariantWorkspaceUrl = getWorkspaceUrl(res.$);
+      instructorVariantWorkspaceId = getWorkspaceId(res.$);
       instructorVariantSubmissionId = await makeSubmission(url, res.$);
     });
   });
@@ -279,7 +284,7 @@ describe('Variant access', () => {
       const addVectorsQuestionRes = await fetchCheerio(instanceQuestionUrl);
       assert.equal(addVectorsQuestionRes.status, 200);
       studentVariantId = getVariantId(addVectorsQuestionRes.$);
-      studentVariantWorkspaceUrl = getWorkspaceUrl(addVectorsQuestionRes.$);
+      studentVariantWorkspaceId = getWorkspaceId(addVectorsQuestionRes.$);
       studentVariantSubmissionId = await makeSubmission(
         instanceQuestionUrl,
         addVectorsQuestionRes.$,
@@ -304,11 +309,24 @@ describe('Variant access', () => {
       const addVectorsQuestionRes = await fetchCheerio(instanceQuestionUrl);
       assert.equal(addVectorsQuestionRes.status, 200);
       otherStudentVariantId = getVariantId(addVectorsQuestionRes.$);
-      otherStudentVariantWorkspaceUrl = getWorkspaceUrl(addVectorsQuestionRes.$);
+      otherStudentVariantWorkspaceId = getWorkspaceId(addVectorsQuestionRes.$);
       otherStudentVariantSubmissionId = await makeSubmission(
         instanceQuestionUrl,
         addVectorsQuestionRes.$,
       );
+    });
+  });
+
+  test.sequential('public preview allows access to workspaces', async () => {
+    await withUser(PUBLIC_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: `/pl/public/course/1/question/${question.id}`,
+        variantId: publicVariantId,
+        workspaceId: publicVariantWorkspaceId,
+        submissionId: publicVariantSubmissionId,
+        expectedAccess: true,
+        workspaceBaseUrl: '/pl/public/workspace',
+      });
     });
   });
 
@@ -317,9 +335,10 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: otherPublicVariantId,
-        workspaceUrl: otherPublicVariantWorkspaceUrl,
+        workspaceId: otherPublicVariantWorkspaceId,
         submissionId: otherPublicVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
@@ -329,9 +348,10 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: instructorVariantId,
-        workspaceUrl: instructorVariantWorkspaceUrl,
+        workspaceId: instructorVariantWorkspaceId,
         submissionId: instructorVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
@@ -341,9 +361,10 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/public/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: false,
+        workspaceBaseUrl: '/pl/public/workspace',
       });
     });
   });
@@ -353,7 +374,7 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: publicVariantId,
-        workspaceUrl: publicVariantWorkspaceUrl,
+        workspaceId: publicVariantWorkspaceId,
         submissionId: publicVariantSubmissionId,
         // TODO: Once we make the necessary changes, this should 403. We'll have to
         // update the name of this test too.
@@ -367,7 +388,7 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: true,
       });
@@ -379,7 +400,7 @@ describe('Variant access', () => {
       await assertVariantAccess({
         questionBasePath: `/pl/course/1/question/${question.id}`,
         variantId: studentVariantId,
-        workspaceUrl: studentVariantWorkspaceUrl,
+        workspaceId: studentVariantWorkspaceId,
         submissionId: studentVariantSubmissionId,
         expectedAccess: false,
       });
@@ -393,7 +414,7 @@ describe('Variant access', () => {
         await assertVariantAccess({
           questionBasePath: studentInstanceQuestionPath,
           variantId: otherStudentVariantId,
-          workspaceUrl: otherStudentVariantWorkspaceUrl,
+          workspaceId: otherStudentVariantWorkspaceId,
           submissionId: otherStudentVariantSubmissionId,
           expectedAccess: false,
         });
@@ -408,7 +429,7 @@ describe('Variant access', () => {
         await assertVariantAccess({
           questionBasePath: studentInstanceQuestionPath,
           variantId: instructorVariantId,
-          workspaceUrl: instructorVariantWorkspaceUrl,
+          workspaceId: instructorVariantWorkspaceId,
           submissionId: instructorVariantSubmissionId,
           expectedAccess: false,
         });
@@ -423,9 +444,37 @@ describe('Variant access', () => {
         await assertVariantAccess({
           questionBasePath: studentInstanceQuestionPath,
           variantId: publicVariantId,
-          workspaceUrl: publicVariantWorkspaceUrl,
+          workspaceId: publicVariantWorkspaceId,
           submissionId: publicVariantSubmissionId,
           expectedAccess: false,
+        });
+      });
+    },
+  );
+
+  test.sequential('student cannot access workspace created through public preview', async () => {
+    await withUser(STUDENT_USER, async () => {
+      await assertVariantAccess({
+        questionBasePath: studentInstanceQuestionPath,
+        variantId: publicVariantId,
+        workspaceId: publicVariantWorkspaceId,
+        submissionId: publicVariantSubmissionId,
+        expectedAccess: false,
+      });
+    });
+  });
+
+  test.sequential(
+    'public user cannot access workspace created through student assessment',
+    async () => {
+      await withUser(PUBLIC_USER, async () => {
+        await assertVariantAccess({
+          questionBasePath: `/pl/public/course/1/question/${question.id}`,
+          variantId: studentVariantId,
+          workspaceId: studentVariantWorkspaceId,
+          submissionId: studentVariantSubmissionId,
+          expectedAccess: false,
+          workspaceBaseUrl: '/pl/public/workspace',
         });
       });
     },

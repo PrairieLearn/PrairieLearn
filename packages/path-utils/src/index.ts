@@ -8,7 +8,7 @@ import path from 'path';
  * @param childPath The path of the child file/directory. If relative, resolved
  * in relation to the parent directory.
  * @param includeSelf Return value if both paths point to the same directory.
- * @return True if the child path is a child of the parent path, false
+ * @returns True if the child path is a child of the parent path, false
  * otherwise.
  */
 export function contains(parentPath: string, childPath: string, includeSelf = true): boolean {
@@ -29,7 +29,7 @@ export function contains(parentPath: string, childPath: string, includeSelf = tr
  * before checking.
  * @param includeSelf Return value if the path refers to the directory itself
  * (i.e. '.' or '').
- * @return True if the path is contained within the current directory, false
+ * @returns True if the path is contained within the current directory, false
  * otherwise.
  */
 export function isContainedRelativePath(relPath: string, includeSelf = true): boolean {

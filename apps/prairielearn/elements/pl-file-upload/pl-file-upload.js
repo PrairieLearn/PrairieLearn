@@ -17,9 +17,10 @@
   }
 
   class PLFileUpload {
+    // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
+    maxFileSizeMB = 5;
+
     constructor(uuid, options) {
-      // Not configurable at this point as this matches the request size limit enforced by the server (accounting for base64 overhead)
-      this.maxFileSizeMB = 5;
       this.uuid = uuid;
       this.files = [];
       this.requiredFiles = options.requiredFiles || [];
@@ -65,7 +66,7 @@
           const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
             new RegExp(f[0], 'i').test(n),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
           }
         });
@@ -174,11 +175,11 @@
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
 
-      var reader = new FileReader();
+      const reader = new FileReader();
       reader.onload = (e) => {
-        var dataUrl = e.target.result;
+        const dataUrl = e.target.result;
 
-        var commaSplitIdx = dataUrl.indexOf(',');
+        const commaSplitIdx = dataUrl.indexOf(',');
         if (commaSplitIdx === -1) {
           this.addWarningMessage(
             `<strong>${escapeFileName(name)}</strong> is empty, ignoring file.`,
@@ -187,7 +188,7 @@
         }
 
         // Store the file as base-64 encoded data
-        var base64FileData = dataUrl.substring(commaSplitIdx + 1);
+        const base64FileData = dataUrl.slice(commaSplitIdx + 1);
         this.saveSubmittedFile(name, size, isFromDownload ? null : new Date(), base64FileData);
         this.refreshRequiredRegex();
         this.renderFileList();
@@ -206,13 +207,13 @@
 
     /**
      * Saves or updates the given file.
-     * @param  {String} name     Name of the file
-     * @param  {Number} size     Size of the file in bytes
-     * @param  {Date|null} date     Date when the file was uploaded (null if file is downloaded)
-     * @param  {String} contents The file's base64-encoded contents
+     * @param {string} name Name of the file
+     * @param {number} size Size of the file in bytes
+     * @param {Date|null} date Date when the file was uploaded (null if file is downloaded)
+     * @param {string} contents The file's base64-encoded contents
      */
     saveSubmittedFile(name, size, date, contents) {
-      var idx = this.files.findIndex((file) => file.name === name);
+      const idx = this.files.findIndex((file) => file.name === name);
       if (idx === -1) {
         this.files.push({
           name,
@@ -231,8 +232,8 @@
 
     /**
      * Gets the base64-encoded contents of a file with the given name.
-     * @param  {String} name The desired file
-     * @return {String}      The file's contents, or null if the file was not found
+     * @param {string} name The desired file
+     * @returns {string} The file's contents, or null if the file was not found
      */
     getSubmittedFileContents(name) {
       const file = this.files.find((file) => file.name === name);
@@ -242,7 +243,7 @@
     deleteUploadedFile(name) {
       this.pendingFileDownloads.delete(name);
       this.failedFileDownloads.delete(name);
-      var idx = this.files.findIndex((file) => file.name === name);
+      const idx = this.files.findIndex((file) => file.name === name);
       if (idx !== -1) {
         this.files.splice(idx, 1);
       }
@@ -262,7 +263,7 @@
         const matchingRegex = this.requiredFilesUnmatchedRegex.findIndex((f) =>
           new RegExp(f[0], 'i').test(n.name),
         );
-        if (matchingRegex >= 0) {
+        if (matchingRegex !== -1) {
           this.requiredFilesUnmatchedRegex.splice(matchingRegex, 1);
         }
       });
@@ -273,12 +274,12 @@
      * previews of files as appropriate.
      */
     renderFileList() {
-      var $fileList = this.element.find('.file-upload-status .card ul.list-group');
+      const $fileList = this.element.find('.file-upload-status .card ul.list-group');
 
       // Save which cards are currently expanded
-      var expandedFiles = [];
+      const expandedFiles = [];
       $fileList.children().each(function () {
-        var fileName = $(this).attr('data-file');
+        const fileName = $(this).attr('data-file');
         if (fileName && $(this).find('.file-preview').hasClass('show')) {
           expandedFiles.push(fileName);
         }
@@ -286,16 +287,18 @@
 
       $fileList.html('');
 
-      var uuid = this.uuid;
-      var index = 0;
+      const uuid = this.uuid;
+      let index = 0;
 
       // This is called repeatedly with different parameters for required/optional/regex entries
-      var renderFileListEntry = (fileName, isOptional = false, isWildcard = false) => {
-        var isExpanded = expandedFiles.includes(fileName);
-        var fileData = this.getSubmittedFileContents(fileName);
+      const renderFileListEntry = (fileName, isOptional = false, isWildcard = false) => {
+        const isExpanded = expandedFiles.includes(fileName);
+        const fileData = this.getSubmittedFileContents(fileName);
 
-        var $file = $(`<li class="list-group-item" data-file="${escapeFileName(fileName)}"></li>`);
-        var $fileStatusContainer = $('<div class="file-status-container d-flex flex-row"></div>');
+        const $file = $(
+          `<li class="list-group-item" data-file="${escapeFileName(fileName)}"></li>`,
+        );
+        const $fileStatusContainer = $('<div class="file-status-container d-flex flex-row"></div>');
         if (isExpanded) {
           $fileStatusContainer.removeClass('collapsed');
         }
@@ -304,7 +307,7 @@
           $fileStatusContainer.addClass('has-preview');
         }
         $file.append($fileStatusContainer);
-        var $fileStatusContainerLeft = $('<div class="flex-grow-1"></div>');
+        const $fileStatusContainerLeft = $('<div class="flex-grow-1"></div>');
         $fileStatusContainer.append($fileStatusContainerLeft);
         if (this.pendingFileDownloads.has(fileName)) {
           $fileStatusContainerLeft.append(
@@ -351,7 +354,7 @@
         } else if (!fileData) {
           $fileStatusContainerLeft.append('<p class="file-status">not uploaded</p>');
         } else {
-          var uploadDate = this.files.find((file) => file.name === fileName).date;
+          const uploadDate = this.files.find((file) => file.name === fileName).date;
           if (uploadDate !== null) {
             $fileStatusContainerLeft.append(
               `<p class="file-status">uploaded at ${uploadDate.toLocaleString()}</p>`,
@@ -361,27 +364,27 @@
           }
         }
         if (fileData) {
-          var $download = $(
+          const $download = $(
             `<a download="${fileName}" class="btn btn-outline-secondary btn-sm me-1" href="data:application/octet-stream;base64,${fileData}">Download</a>`,
           );
 
-          var $preview = $(
+          const $preview = $(
             `<div class="file-preview collapse" id="file-preview-${uuid}-${index}"></div>`,
           );
 
-          var $deleteUpload = $(
+          const $deleteUpload = $(
             `<button type="button" class="btn btn-outline-secondary btn-sm me-1" id="file-delete-${uuid}-${index}">Delete</button>`,
           );
 
-          var $previewNotAvailable = $(
+          const $previewNotAvailable = $(
             '<div class="alert alert-info mt-2 d-none" role="alert">Content preview is not available for this type of file.</div>',
           );
           $preview.append($previewNotAvailable);
 
-          var $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
+          const $imgPreview = $('<img class="mw-100 mt-2 d-none"/>');
           $preview.append($imgPreview);
 
-          var $codePreview = $(
+          const $codePreview = $(
             '<pre class="bg-dark text-white rounded p-3 mt-2 mb-0 d-none"><code></code></pre>',
           );
           $preview.append($codePreview);
@@ -406,7 +409,7 @@
               $preview.append($objectPreview);
               this.expandPreviewForFile(fileName);
             } else {
-              var fileContents = this.b64DecodeUnicode(fileData);
+              const fileContents = this.b64DecodeUnicode(fileData);
               if (!this.isBinary(fileContents)) {
                 $preview.find('code').text(fileContents);
               } else {
@@ -430,7 +433,7 @@
               .attr('src', url);
           }
           $file.append($preview);
-          var $fileButtons = $('<div class="align-self-center"></div>');
+          const $fileButtons = $('<div class="align-self-center"></div>');
           $fileButtons.append($download);
           $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
           $fileButtons.append($deleteUpload);
@@ -456,7 +459,7 @@
           const matchingRegex = this.requiredFilesRegex.findIndex(
             (f) => new RegExp(f[0], 'i').test(n) && !matchedRegex.includes(f),
           );
-          if (matchingRegex >= 0) {
+          if (matchingRegex !== -1) {
             matchedRegex.push(this.requiredFilesRegex[matchingRegex]);
             matchedRegexFiles.push(n);
             return true;
@@ -484,7 +487,7 @@
     }
 
     addWarningMessage(message) {
-      var $alert = $(
+      const $alert = $(
         '<div class="alert alert-warning alert-dismissible" role="alert"><button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button></div>',
       );
       $alert.append(message);
@@ -503,13 +506,13 @@
      * text. Uses the same method as git: if the first 8000 bytes contain a
      * NUL character ('\0'), we consider the file to be binary.
      * http://stackoverflow.com/questions/6119956/how-to-determine-if-git-handles-a-file-as-binary-or-as-text
-     * @param  {String}  decodedFileContents File contents to check
-     * @return {Boolean}                     If the file is recognized as binary
+     * @param {string} decodedFileContents File contents to check
+     * @returns {boolean} If the file is recognized as binary
      */
     isBinary(decodedFileContents) {
-      var nulIdx = decodedFileContents.indexOf('\0');
-      var fileLength = decodedFileContents.length;
-      return nulIdx !== -1 && nulIdx <= (fileLength <= 8000 ? fileLength : 8000);
+      const nulIdx = decodedFileContents.indexOf('\0');
+      const fileLength = decodedFileContents.length;
+      return nulIdx !== -1 && nulIdx <= Math.min(fileLength, 8000);
     }
 
     /**
@@ -532,8 +535,8 @@
      * first we get the bytestream, then we percent-encode it, then we
      * decode that to the original string.
      * https://developer.mozilla.org/en-US/docs/Web/API/WindowBase64/Base64_encoding_and_decoding#The_Unicode_Problem
-     * @param  {String} str the base64 string to decode
-     * @return {String}     the decoded string
+     * @param {string} str the base64 string to decode
+     * @returns {string} the decoded string
      */
     b64DecodeUnicode(str) {
       // Going backwards: from bytestream, to percent-encoding, to original string.

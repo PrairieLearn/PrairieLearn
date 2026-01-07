@@ -4,7 +4,7 @@ onDocumentReady(() => {
   const userPromptExampleSelect = document.querySelector<HTMLSelectElement>('#user-prompt-example');
   userPromptExampleSelect?.addEventListener('change', () => {
     function setInputValue(selector: string, value: string) {
-      const input = document.querySelector(selector) as HTMLInputElement;
+      const input = document.querySelector<HTMLInputElement>(selector)!;
       input.value = value;
     }
 

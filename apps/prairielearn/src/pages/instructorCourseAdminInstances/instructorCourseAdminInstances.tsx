@@ -1,0 +1,256 @@
+import { Temporal } from '@js-temporal/polyfill';
+import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
+import fs from 'fs-extra';
+import { z } from 'zod';
+
+import * as error from '@prairielearn/error';
+import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
+
+import { PageLayout } from '../../components/PageLayout.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { features } from '../../lib/features/index.js';
+import { idsEqual } from '../../lib/id.js';
+import {
+  selectCourseInstanceByUuid,
+  selectCourseInstancesWithStaffAccess,
+} from '../../models/course-instances.js';
+
+import { InstructorCourseAdminInstances } from './InstructorCourseAdminInstances.html.js';
+import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
+
+const router = Router();
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
+router.get(
+  '/',
+  asyncHandler(async (req, res) => {
+    let needToSync = false;
+    try {
+      await fs.access(res.locals.course.path);
+    } catch (err: any) {
+      if (err.code === 'ENOENT') {
+        needToSync = true;
+      } else {
+        throw new Error('Invalid course path', { cause: err });
+      }
+    }
+
+    const {
+      authz_data: authzData,
+      course,
+      institution,
+      __csrf_token,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+      requiredRole: ['Previewer', 'Student Data Viewer'],
+    });
+
+    const enrollmentCounts = await sqldb.queryRows(
+      sql.select_enrollment_counts,
+      { course_id: course.id },
+      z.object({ course_instance_id: CourseInstanceSchema.shape.id, enrollment_count: z.number() }),
+    );
+
+    const safeCourseInstancesWithEnrollmentCounts = z
+      .array(InstructorCourseAdminInstanceRowSchema)
+      .parse(
+        courseInstances.map((ci) => ({
+          ...ci,
+          enrollment_count:
+            enrollmentCounts.find((row) => idsEqual(row.course_instance_id, ci.id))
+              ?.enrollment_count || 0,
+        })),
+      );
+
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
+    });
+
+    res.send(
+      PageLayout({
+        resLocals: res.locals,
+        pageTitle: 'Course Instances',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'instances',
+        },
+        options: {
+          fullWidth: true,
+        },
+        content: (
+          <Hydrate>
+            <InstructorCourseAdminInstances
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              courseInstances={safeCourseInstancesWithEnrollmentCounts}
+              course={course}
+              canEditCourse={authzData.has_course_permission_edit}
+              needToSync={needToSync}
+              csrfToken={__csrf_token}
+              urlPrefix={urlPrefix}
+            />
+          </Hydrate>
+        ),
+      }),
+    );
+  }),
+);
+
+router.post(
+  '/',
+  asyncHandler(async (req, res) => {
+    const { course, institution } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
+      institution_id: institution.id,
+      course_id: course.id,
+    });
+
+    if (req.body.__action === 'add_course_instance') {
+      const {
+        short_name,
+        long_name,
+        start_date,
+        end_date,
+        self_enrollment_enabled,
+        self_enrollment_use_enrollment_code,
+      } = z
+        .object({
+          short_name: z.string().trim(),
+          long_name: z.string().trim(),
+          start_date: z.string(),
+          end_date: z.string(),
+          self_enrollment_enabled: z.boolean().optional(),
+          self_enrollment_use_enrollment_code: z.boolean().optional(),
+        })
+        .parse(req.body);
+
+      if (!short_name) {
+        throw new error.HttpStatusError(400, 'Short name is required');
+      }
+
+      if (!long_name) {
+        throw new error.HttpStatusError(400, 'Long name is required');
+      }
+
+      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
+        throw new error.HttpStatusError(
+          400,
+          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
+        );
+      }
+
+      const existingNames = await sqldb.queryRows(
+        sql.select_names,
+        { course_id: course.id },
+        z.object({ short_name: z.string(), long_name: z.string().nullable() }),
+      );
+      const existingShortNames = existingNames.map((name) => name.short_name.toLowerCase());
+      const existingLongNames = existingNames
+        .map((name) => name.long_name?.toLowerCase())
+        .filter((name) => name != null);
+
+      if (existingShortNames.includes(short_name.toLowerCase())) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this short name already exists',
+        );
+      }
+
+      if (existingLongNames.includes(long_name.toLowerCase())) {
+        throw new error.HttpStatusError(
+          400,
+          'A course instance with this long name already exists',
+        );
+      }
+
+      // Parse dates if provided (empty strings mean unpublished)
+      const startDate = start_date.length > 0 ? start_date : undefined;
+      const endDate = end_date.length > 0 ? end_date : undefined;
+
+      if (startDate && endDate) {
+        const startAccessDate = Temporal.PlainDateTime.from(startDate).toZonedDateTime(
+          course.display_timezone,
+        );
+        const endAccessDate = Temporal.PlainDateTime.from(endDate).toZonedDateTime(
+          course.display_timezone,
+        );
+        if (startAccessDate.epochMilliseconds >= endAccessDate.epochMilliseconds) {
+          throw new error.HttpStatusError(400, 'End date must be after start date');
+        }
+      }
+
+      const resolvedPublishing =
+        (startDate ?? endDate)
+          ? {
+              startDate,
+              endDate,
+            }
+          : undefined;
+
+      const selfEnrollmentEnabled = propertyValueWithDefault(
+        undefined,
+        self_enrollment_enabled,
+        true,
+      );
+      const selfEnrollmentUseEnrollmentCode = propertyValueWithDefault(
+        undefined,
+        self_enrollment_use_enrollment_code,
+        false,
+      );
+
+      const resolvedSelfEnrollment =
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
+        enrollmentManagementEnabled
+          ? {
+              enabled: selfEnrollmentEnabled,
+              useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
+            }
+          : undefined;
+
+      const editor = new CourseInstanceAddEditor({
+        locals: res.locals as any,
+        short_name,
+        long_name,
+        metadataOverrides: {
+          publishing: resolvedPublishing,
+          selfEnrollment: resolvedSelfEnrollment,
+        },
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch {
+        res.status(400).json({ job_sequence_id: serverJob.jobSequenceId });
+        return;
+      }
+
+      const courseInstance = await selectCourseInstanceByUuid({
+        uuid: editor.uuid,
+        course,
+      });
+
+      res.json({ course_instance_id: courseInstance.id });
+    } else {
+      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+    }
+  }),
+);
+
+export default router;

@@ -38,7 +38,7 @@ Then, the path will be accessible at `/myCourse` (note the beginning slash).
 
 ## Setting up external image capture locally
 
-The [`pl-image-capture`](../elements.md#pl-number-input-element) element lets users capture images of submitted work through an external device, such as a mobile device or tablet, or a local camera.
+The [`pl-image-capture`](../elements/pl-image-capture.md) element lets users capture images of submitted work through an external device, such as a mobile device or tablet, or a local camera.
 
 To use external capture locally, you must set `serverCanonicalHost` in `config.json` to your local IPv4 address.
 
@@ -52,10 +52,75 @@ To retrieve your local IPv4 address, if you're on
 
 Copy the first address you see, and paste it into the `serverCanonicalHost` property of your `config.json` file.
 
-For example, if your IPv4 is `192.168.1.60`, your file should read:
+For example, if your IPv4 is `192.168.1.60` and PL is running on port `3000`, your file should read:
 
 ```json title="config.json"
 {
-  "serverCanonicalHost": "192.168.1.60"
+  "serverCanonicalHost": "http://192.168.1.60:3000"
+}
+```
+
+## Workspaces and external graders
+
+You should set the workspace host home directory root and home directory root in your `config.json`.
+
+```json title="config.json"
+{
+  "workspaceHostHomeDirRoot": "/tmp/workspace",
+  "workspaceHomeDirRoot": "/tmp/workspace"
+}
+```
+
+### Running workspaces / external graders natively on macOS
+
+If you are running workspaces natively on macOS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "localhost"
+}
+```
+
+Certain images detect if you are running as root and try to chown the workspace files to the user 1001 before stepping down to the user 1001 (`pl-gosu-helper.sh`). On macOS, this will fail because bind mounts cannot be chown'd (FUSE-based filesystems). To fix this, you can set `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` to 1001 in your `config.json`.
+
+```json title="config.json"
+{
+  "workspaceJobsDirectoryOwnerUid": 1001,
+  "workspaceJobsDirectoryOwnerGid": 1001
+}
+```
+
+Many containers can only run as UID 1001 or 0. Make sure you run as root locally!
+
+```sh
+sudo make dev-workspace-host
+sudo make dev
+```
+
+If you don't both of these commands, you will see errors like:
+
+```text
+chown: changing ownership of '/home/coder/workspace': Permission denied
+chown: changing ownership of '/home/coder/workspace/fibonacci.py': Permission denied
+```
+
+### Testing local docker images
+
+When testing [docker images](../dockerImages.md) locally, you may want to force PrairieLearn to use the local version of an image.
+
+```json title="config.json"
+{
+  "workspacePullImagesFromDockerHub": false,
+  "externalGradingPullImagesFromDockerHub": false
+}
+```
+
+## Enterprise
+
+Some features of PrairieLearn are only available in the Enterprise Edition. Note that you must adhere to the [PrairieLearn license](https://github.com/PrairieLearn/PrairieLearn/blob/master/LICENSE) when setting this option.
+
+```json title="config.json"
+{
+  "isEnterprise": true
 }
 ```

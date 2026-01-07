@@ -26,7 +26,7 @@ export async function getModeForRequest(
   const result = await ipToMode({
     ip: req.ip,
     date: res.locals.req_date,
-    authn_user_id: res.locals.authn_user.user_id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   // This function can be run independently of `authzCourseOrInstance`, which is
@@ -46,10 +46,14 @@ export async function ipToMode({
   date,
   authn_user_id,
 }: {
-  ip: string;
+  ip: string | undefined;
   date: Date;
   authn_user_id: string;
 }) {
+  // Express's types indicate that `ip` may be undefined in some cases. We want
+  // to ensure that we don't try to proceed without one.
+  if (ip === undefined) throw new Error('IP address is required');
+
   return await callRow(
     'ip_to_mode',
     [ip, date, authn_user_id],

@@ -1,10 +1,10 @@
+import * as crypto from 'node:crypto';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -12,6 +12,7 @@ import { flash } from '@prairielearn/flash';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
+import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
@@ -28,6 +29,8 @@ router.get(
       path.join(res.locals.course.path, 'infoCourse.json'),
     );
     const availableTimezones = await getCanonicalTimezones([res.locals.course.display_timezone]);
+
+    const courseGHLink = courseRepoContentUrl(res.locals.course);
 
     let origHash = '';
     if (courseInfoExists) {
@@ -60,6 +63,7 @@ router.get(
         courseInfoExists,
         availableTimezones,
         origHash,
+        courseGHLink,
       }),
     );
   }),
@@ -137,7 +141,7 @@ router.post(
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_configuration') {
       const infoJson = {
-        uuid: uuidv4(),
+        uuid: crypto.randomUUID(),
         name: path.basename(res.locals.course.path),
         title: path.basename(res.locals.course.path),
         timezone: res.locals.institution.display_timezone,

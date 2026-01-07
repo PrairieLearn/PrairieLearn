@@ -1,16 +1,25 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import z from 'zod';
 
-import { compiledStylesheetTag } from '@prairielearn/compiled-assets';
-import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { HttpStatusError } from '@prairielearn/error';
+import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/preact/server';
+import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseInstanceSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import { getCourseInstanceContext, getPageContext } from '../../lib/client/page-context.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
+import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
+import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { Hydrate } from '../../lib/preact.js';
-import { getUrl } from '../../lib/url.js';
+import { features } from '../../lib/features/index.js';
+import { createServerJob } from '../../lib/server-jobs.js';
+import { getCanonicalHost, getUrl } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
+import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -18,36 +27,240 @@ import { StudentRowSchema } from './instructorStudents.shared.js';
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
+// Supports a client-side table refresh.
 router.get(
+  '/data.json',
+  asyncHandler(async (req, res) => {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    if (!pageContext.authz_data.has_course_instance_permission_view) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    const { course_instance: courseInstance } = pageContext;
+    const students = await queryRows(
+      sql.select_users_and_enrollments_for_course_instance,
+      { course_instance_id: courseInstance.id },
+      StudentRowSchema,
+    );
+    res.json(students);
+  }),
+);
+
+router.get(
+  '/enrollment.json',
+  asyncHandler(async (req, res) => {
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    if (!pageContext.authz_data.has_course_instance_permission_view) {
+      throw new HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
+    const { course_instance: courseInstance } = pageContext;
+    const { uid } = req.query;
+    if (typeof uid !== 'string') {
+      throw new HttpStatusError(400, 'UID must be a string');
+    }
+    const enrollment = await selectOptionalEnrollmentByUid({
+      courseInstance,
+      uid,
+      requiredRole: ['Student Data Viewer'],
+      authzData: res.locals.authz_data,
+    });
+    const staffEnrollment = StaffEnrollmentSchema.nullable().parse(enrollment);
+    res.json(staffEnrollment);
+  }),
+);
+
+router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const pageContext = getPageContext(res.locals);
-    const { authz_data, urlPrefix } = pageContext;
-    const { course_instance: courseInstance, course } = getCourseInstanceContext(
-      res.locals,
-      'instructor',
-    );
+    if (req.accepts('html')) {
+      throw new HttpStatusError(406, 'Not Acceptable');
+    }
+
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    if (!pageContext.authz_data.has_course_instance_permission_edit) {
+      throw new HttpStatusError(403, 'Access denied (must be an instructor)');
+    }
+
+    const { course_instance: courseInstance, course, authz_data: authzData } = pageContext;
+    const {
+      authn_user: { id: authnUserId },
+      user: { id: userId },
+    } = authzData;
+
+    if (!courseInstance.modern_publishing) {
+      throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
+    }
+
+    const BodySchema = z.object({
+      uids: UniqueUidsFromStringSchema(1000),
+      __action: z.literal('invite_uids'),
+    });
+    const body = BodySchema.parse(req.body);
+
+    const serverJob = await createServerJob({
+      type: 'invite_students',
+      description: 'Invite students to course instance',
+      userId,
+      authnUserId,
+      courseId: course.id,
+      courseInstanceId: courseInstance.id,
+    });
+
+    serverJob.executeInBackground(async (job) => {
+      const counts = {
+        success: 0,
+        instructor: 0,
+        alreadyEnrolled: 0,
+        alreadyBlocked: 0,
+        alreadyInvited: 0,
+      };
+
+      for (const uid of body.uids) {
+        const user = await selectOptionalUserByUid(uid);
+        if (user) {
+          // Check if user is an instructor
+          const isInstructor = await callRow(
+            'users_is_instructor_in_course_instance',
+            [user.id, courseInstance.id],
+            z.boolean(),
+          );
+          if (isInstructor) {
+            job.info(`${uid}: Skipped (instructor)`);
+            counts.instructor++;
+            continue;
+          }
+        }
+
+        const existingEnrollment = await selectOptionalEnrollmentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Viewer'],
+          authzData,
+        });
+
+        if (existingEnrollment) {
+          if (existingEnrollment.status === 'joined') {
+            job.info(`${uid}: Skipped (already enrolled)`);
+            counts.alreadyEnrolled++;
+            continue;
+          }
+          if (existingEnrollment.status === 'invited') {
+            job.info(`${uid}: Skipped (already invited)`);
+            counts.alreadyInvited++;
+            continue;
+          }
+          if (existingEnrollment.status === 'blocked') {
+            job.info(`${uid}: Skipped (blocked)`);
+            counts.alreadyBlocked++;
+            continue;
+          }
+        }
+
+        await inviteStudentByUid({
+          courseInstance,
+          uid,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+        });
+        job.info(`${uid}: Invited`);
+        counts.success++;
+      }
+
+      // Log summary at the end
+      job.info('\nSummary:');
+      job.info(`  Successfully invited: ${counts.success}`);
+      if (counts.alreadyEnrolled > 0) {
+        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+      }
+      if (counts.alreadyInvited > 0) {
+        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+      }
+      if (counts.alreadyBlocked > 0) {
+        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
+      }
+      if (counts.instructor > 0) {
+        job.info(`  Skipped (instructor): ${counts.instructor}`);
+      }
+    });
+
+    res.json({ job_sequence_id: serverJob.jobSequenceId });
+  }),
+);
+
+router.get(
+  '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'passthrough',
+  }),
+  asyncHandler(async (req, res) => {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'courseInstance',
+      accessType: 'instructor',
+    });
+    const {
+      authz_data,
+      __csrf_token: csrfToken,
+      course_instance: courseInstance,
+      course,
+      institution,
+    } = pageContext;
 
     const search = getUrl(req).search;
 
-    if (!pageContext.authz_data.has_course_instance_permission_view) {
+    if (!authz_data.has_course_instance_permission_view) {
       const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'instance_admin',
+            subPage: 'students',
+          },
           courseOwners,
           pageTitle: 'Students',
-          requiredPermissions: 'Instructor',
+          requiredPermissions: 'Student Data Viewer',
         }),
       );
       return;
     }
 
+    const enrollmentManagementEnabled =
+      (await features.enabled('enrollment-management', {
+        institution_id: institution.id,
+        course_id: course.id,
+        course_instance_id: courseInstance.id,
+      })) && authz_data.is_administrator;
+
     const students = await queryRows(
-      sql.select_students,
+      sql.select_users_and_enrollments_for_course_instance,
       { course_instance_id: courseInstance.id },
       StudentRowSchema,
     );
+
+    const host = getCanonicalHost(req);
+    const selfEnrollLink = new URL(
+      courseInstance.self_enrollment_use_enrollment_code
+        ? getSelfEnrollmentLinkUrl({
+            courseInstanceId: courseInstance.id,
+            enrollmentCode: courseInstance.enrollment_code,
+          })
+        : getStudentCourseInstanceUrl(courseInstance.id),
+      host,
+    ).href;
 
     res.send(
       PageLayout({
@@ -62,25 +275,21 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        headContent: compiledStylesheetTag('tanstackTable.css'),
         content: (
-          <>
-            <CourseInstanceSyncErrorsAndWarnings
-              authz_data={authz_data}
+          <Hydrate fullHeight>
+            <InstructorStudents
+              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              isDevMode={config.devMode}
+              authzData={authz_data}
+              students={students}
+              search={search}
+              timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
-              urlPrefix={urlPrefix}
+              csrfToken={csrfToken}
+              selfEnrollLink={selfEnrollLink}
             />
-            <Hydrate fullHeight>
-              <InstructorStudents
-                students={students}
-                search={search}
-                timezone={course.display_timezone}
-                courseInstance={courseInstance}
-                course={course}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );

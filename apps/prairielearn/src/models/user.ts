@@ -30,12 +30,16 @@ export async function selectOptionalUserByUin({
 /**
  * Locks the user with `SELECT ... FOR NO KEY UPDATE` and returns the user.
  */
-export async function selectAndLockUserById(user_id: string): Promise<User> {
+export async function selectAndLockUser(user_id: string): Promise<User> {
   return await queryRow(sql.select_and_lock_user_by_id, { user_id }, UserSchema);
 }
 
 export async function selectOrInsertUserByUid(uid: string): Promise<User> {
   return await queryRow(sql.select_or_insert_user_by_uid, { uid }, UserSchema);
+}
+
+export async function updateUserUid({ user_id, uid }: { user_id: string; uid: string }) {
+  return await queryRow(sql.update_user_uid, { user_id, uid }, UserSchema);
 }
 
 export async function generateUsers(count: number): Promise<User[]> {

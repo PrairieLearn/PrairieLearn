@@ -13,6 +13,7 @@ import {
   gradeAssessmentInstance,
 } from '../../lib/assessment.js';
 import { regradeAssessmentInstance } from '../../lib/regrading.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import { InstructorAssessmentInstances } from './instructorAssessmentInstances.html.js';
 import { AssessmentInstanceRowSchema } from './instructorAssessmentInstances.types.js';
@@ -37,10 +38,11 @@ router.get(
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     res.send(InstructorAssessmentInstances({ resLocals: res.locals }));
   }),
 );
@@ -56,18 +58,16 @@ router.post(
       const assessment_id = res.locals.assessment.id;
       const assessment_instance_id = req.body.assessment_instance_id;
       await checkBelongs(assessment_instance_id, assessment_id);
-      const requireOpen = true;
-      const close = true;
-      const overrideGradeRate = true;
-      await gradeAssessmentInstance(
+      await gradeAssessmentInstance({
         assessment_instance_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        close,
-        overrideGradeRate,
-        null, // client_fingerprint_id
-      );
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+        client_fingerprint_id: null,
+      });
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'delete') {
       const assessment_id = res.locals.assessment.id;
@@ -75,25 +75,24 @@ router.post(
       await deleteAssessmentInstance(
         assessment_id,
         assessment_instance_id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'grade_all' || req.body.__action === 'close_all') {
       const assessment_id = res.locals.assessment.id;
-      const close = req.body.__action === 'close_all';
-      const overrideGradeRate = true;
-      const job_sequence_id = await gradeAllAssessmentInstances(
+      const job_sequence_id = await gradeAllAssessmentInstances({
         assessment_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        close,
-        overrideGradeRate,
-      );
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        close: req.body.__action === 'close_all',
+        ignoreGradeRateLimit: true,
+        ignoreRealTimeGradingDisabled: true,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'delete_all') {
       await deleteAllAssessmentInstancesForAssessment(
         res.locals.assessment.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'regrade') {
@@ -102,8 +101,8 @@ router.post(
       await checkBelongs(assessment_instance_id, assessment_id);
       const job_sequence_id = await regradeAssessmentInstance(
         assessment_instance_id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else if (req.body.__action === 'set_time_limit') {
@@ -112,7 +111,7 @@ router.post(
         assessment_id: res.locals.assessment.id,
         time_add: req.body.time_add,
         base_time: 'date_limit',
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
         exact_date: new Date(),
       };
       if (req.body.action === 'remove' || req.body.reopen_without_limit === 'true') {
@@ -135,7 +134,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit, params);
+      await sqldb.execute(sql.set_time_limit, params);
       res.send(JSON.stringify({}));
     } else if (req.body.__action === 'set_time_limit_all') {
       const params = {
@@ -143,7 +142,7 @@ router.post(
         time_add: req.body.time_add,
         base_time: 'date_limit',
         reopen_closed: !!req.body.reopen_closed,
-        authn_user_id: res.locals.authz_data.authn_user.user_id,
+        authn_user_id: res.locals.authz_data.authn_user.id,
         exact_date: new Date(),
       };
       if (req.body.action === 'remove') {
@@ -166,7 +165,7 @@ router.post(
       } else if (req.body.action === 'subtract') {
         params.time_add *= -1;
       }
-      await sqldb.queryAsync(sql.set_time_limit_all, params);
+      await sqldb.execute(sql.set_time_limit_all, params);
       res.send(JSON.stringify({}));
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

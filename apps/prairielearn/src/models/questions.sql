@@ -21,10 +21,11 @@ SELECT
   q.sync_warnings,
   q.grading_method,
   q.external_grading_image,
-  case
-    when q.type = 'Freeform' then 'v3'
-    else 'v2 (' || q.type || ')'
-  end AS display_type,
+  q.workspace_image,
+  CASE
+    WHEN q.type = 'Freeform' THEN 'v3'
+    ELSE 'v2 (' || q.type || ')'
+  END AS display_type,
   coalesce(issue_count.open_issue_count, 0)::int AS open_issue_count,
   row_to_json(top) AS topic,
   (
@@ -43,7 +44,7 @@ SELECT
       jsonb_agg(to_jsonb(ss))
     FROM
       sharing_set_questions AS ssq
-      JOIN sharing_sets AS ss on (ss.id = ssq.sharing_set_id)
+      JOIN sharing_sets AS ss ON (ss.id = ssq.sharing_set_id)
     WHERE
       ssq.question_id = q.id
   ) AS sharing_sets,
@@ -70,10 +71,11 @@ SELECT
   q.title,
   q.grading_method,
   q.external_grading_image,
-  case
-    when q.type = 'Freeform' then 'v3'
-    else 'v2 (' || q.type || ')'
-  end AS display_type,
+  q.workspace_image,
+  CASE
+    WHEN q.type = 'Freeform' THEN 'v3'
+    ELSE 'v2 (' || q.type || ')'
+  END AS display_type,
   row_to_json(top) AS topic,
   (
     SELECT

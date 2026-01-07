@@ -1,5 +1,6 @@
 import { makeMigrator } from '../lib/bootstrap-compat-utils.js';
 
+// eslint-disable-next-line no-console
 console.log('Enabling Bootstrap compatibility layer.');
 
 // The following list of attributes was compiled from the Bootstrap 4 docs:
@@ -237,7 +238,7 @@ makeMigrator({
     if (!input || !label) return;
 
     // Move the label before the input.
-    el.insertBefore(label, input);
+    input.before(label);
 
     // Update the classes.
     label.classList.add('form-label');
@@ -264,7 +265,7 @@ makeMigrator({
     if (!el.parentElement?.classList.contains('input-group')) return;
 
     for (const child of Array.from(el.children)) {
-      el.parentElement?.insertBefore(child, el);
+      el.parentElement.insertBefore(child, el);
     }
     el.remove();
 

@@ -1,6 +1,8 @@
+import z from 'zod';
+
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import * as namedLocks from '@prairielearn/named-locks';
-import { queryOneRowAsync, queryRows } from '@prairielearn/postgres';
+import { queryRow, queryRows } from '@prairielearn/postgres';
 
 import { type Course, CourseSchema } from '../lib/db-types.js';
 import { createServerJob } from '../lib/server-jobs.js';
@@ -9,10 +11,13 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 export default makeBatchedMigration({
   async getParameters() {
-    const result = await queryOneRowAsync('SELECT MAX(id) as max from pl_courses;', {});
+    const max = await queryRow(
+      'SELECT MAX(id) as max from pl_courses;',
+      z.bigint({ coerce: true }).nullable(),
+    );
     return {
       min: 1n,
-      max: result.rows[0].max,
+      max,
       batchSize: 10,
     };
   },
@@ -35,13 +40,13 @@ export default makeBatchedMigration({
  */
 export async function syncCourse(course: Course) {
   const serverJob = await createServerJob({
-    courseId: course.id,
     type: 'sync',
     description: 'Sync from disk',
     // Since this is a sync performed by the system, don't associate any user
     // with it.
-    userId: undefined,
-    authnUserId: undefined,
+    userId: null,
+    authnUserId: null,
+    courseId: course.id,
   });
 
   // We use `executeUnsafe` to ensure that any errors bubble up and mark the

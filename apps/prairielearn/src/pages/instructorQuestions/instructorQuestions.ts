@@ -8,6 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { getCourseOwners } from '../../lib/course.js';
@@ -15,6 +16,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { getSearchParams } from '../../lib/url.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
 import { type QuestionsPageData, selectQuestionsForCourse } from '../../models/questions.js';
@@ -55,7 +57,7 @@ async function getTemplateQuestionsExampleCourse() {
   });
 
   const templateQuestions = Object.entries(questions)
-    .map(([qid, question]) => ({ qid, title: question?.data?.title }))
+    .map(([qid, question]) => ({ qid, title: question.data?.title }))
     .filter(({ qid, title }) => qid.startsWith('template/') && title !== undefined) as {
     qid: string;
     title: string;
@@ -90,14 +92,28 @@ async function getTemplateQuestions(questions: QuestionsPageData[]) {
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async function (req, res) {
-    if (!res.locals.authz_data.has_course_permission_preview) {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    if (!authzData.has_course_permission_preview) {
       // Access denied, but instead of sending them to an error page, we'll show
       // them an explanatory message and prompt them to get view permissions.
-      const courseOwners = await getCourseOwners(res.locals.course.id);
+      const courseOwners = await getCourseOwners(course.id);
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -107,33 +123,29 @@ router.get(
     }
 
     const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course_id: res.locals.course.id,
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      is_administrator: res.locals.is_administrator,
-      authn_is_administrator: res.locals.authz_data.authn_is_administrator,
+      course,
+      authzData,
+      requiredRole: ['Previewer'],
     });
 
     const questions = await selectQuestionsForCourse(
-      res.locals.course.id,
+      course.id,
       courseInstances.map((ci) => ci.id),
     );
 
     const templateQuestions = await getTemplateQuestions(questions);
 
-    const courseDirExists = await fs.pathExists(res.locals.course.path);
+    const courseDirExists = await fs.pathExists(course.path);
     res.send(
       QuestionsPage({
         questions,
         templateQuestions,
         course_instances: courseInstances,
         showAddQuestionButton:
-          res.locals.authz_data.has_course_permission_edit &&
-          !res.locals.course.example_course &&
-          courseDirExists,
+          authzData.has_course_permission_edit && !course.example_course && courseDirExists,
         showAiGenerateQuestionButton:
-          res.locals.authz_data.has_course_permission_edit &&
-          !res.locals.course.example_course &&
+          authzData.has_course_permission_edit &&
+          !course.example_course &&
           isEnterprise() &&
           (await features.enabledFromLocals('ai-question-generation', res.locals)),
         resLocals: res.locals,
@@ -147,6 +159,10 @@ router.get(
 // want to jump through hoops to get a question ID from a QID.
 router.get(
   '/qid/*',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'passthrough',
+  }),
   asyncHandler(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny
     // access after the redirect, but doing this will allow us to avoid
@@ -159,6 +175,11 @@ router.get(
       res.status(403).send(
         InsufficientCoursePermissionsCardPage({
           resLocals: res.locals,
+          navContext: {
+            type: 'instructor',
+            page: 'course_admin',
+            subPage: 'questions',
+          },
           courseOwners,
           pageTitle: 'Questions',
           requiredPermissions: 'Previewer',
@@ -218,8 +239,8 @@ router.post(
 
       const result = await api.createQuestion.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         qid: req.body.qid,
         title: req.body.title,

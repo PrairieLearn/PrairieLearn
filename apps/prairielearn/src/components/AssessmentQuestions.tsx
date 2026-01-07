@@ -1,9 +1,9 @@
+import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
 import type {
   StaffAlternativeGroup,
   StaffAssessmentQuestion,
 } from '../lib/client/safe-db-types.js';
 import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
-import type { StaffAssessmentQuestionRow } from '../models/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -17,7 +17,7 @@ export function AssessmentQuestionHeaders({
       {question.start_new_zone ? (
         <tr>
           <th colspan={nTableCols}>
-            Zone {question.zone.number}. {question.zone.title}
+            Zone {question.zone.number}. {question.zone.title}{' '}
             {question.zone.number_choose == null
               ? '(Choose all questions)'
               : question.zone.number_choose === 1
@@ -64,7 +64,7 @@ export function AssessmentQuestionNumber({
   return alternativeGroupSize === 1 ? (
     `${alternativeGroup.number}. `
   ) : (
-    <span class="ms-3">
+    <span className="ms-3">
       {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
     </span>
   );

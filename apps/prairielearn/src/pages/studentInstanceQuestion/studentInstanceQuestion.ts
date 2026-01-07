@@ -1,24 +1,26 @@
+import assert from 'assert';
+import url from 'node:url';
+
 import { type Request, type Response, Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
-import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getQuestionTeamPermissions } from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import selectAndAuthzInstanceQuestion from '../../middlewares/selectAndAuthzInstanceQuestion.js';
-import studentAssessmentAccess from '../../middlewares/studentAssessmentAccess.js';
 import { selectUserById } from '../../models/user.js';
 import { selectAndAuthzVariant, selectVariantsByInstanceQuestion } from '../../models/variant.js';
 
@@ -28,10 +30,27 @@ const sql = loadSqlEquiv(import.meta.url);
 
 const router = Router({ mergeParams: true });
 
-router.use(selectAndAuthzInstanceQuestion);
-router.use(studentAssessmentAccess);
-router.use(clientFingerprint);
 router.use(enterpriseOnly(() => checkPlanGrantsForQuestion));
+router.use((req, res, next) => {
+  // We deliberately use `url` instead of `originalUrl`. The former is relative to
+  // where this router is mounted, while the latter is absolute to the app.
+  const pathname = url.parse(req.url).pathname ?? '/';
+
+  // Because this router is mounted a general path, its middleware will also
+  // be run for sub-routes like `submissions/:submission_id/file/:filename`
+  // and `clientFilesQuestion/:filename`.
+  //
+  // We only want to run this middleware for requests to the main page itself,
+  // as that's the only page that will record log entries with fingerprints. It
+  // would be confusing if the fingerprint change count was incremented without
+  // a corresponding log entry.
+  if (pathname !== '/') {
+    next();
+    return;
+  }
+
+  clientFingerprint(req, res, next);
+});
 
 async function processFileUpload(req: Request, res: Response) {
   if (!res.locals.assessment_instance.open) {
@@ -66,8 +85,8 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -103,8 +122,8 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -135,7 +154,7 @@ async function processDeleteFile(req: Request, res: Response) {
 
   // Check the requested file belongs to the current instance question
   const validFiles =
-    res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
+    res.locals.file_list?.filter((file: File) => idsEqual(file.id, req.body.file_id)) ?? [];
   if (validFiles.length === 0) {
     throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
   }
@@ -145,7 +164,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 
   return variant.id;
 }
@@ -160,7 +179,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
+  if (res.locals.team_config?.has_roles && !res.locals.team_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -171,7 +190,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question', { client_fingerprint_id: string }>(async (req, res) => {
     if (!res.locals.authz_result.authorized_edit) {
       throw new HttpStatusError(403, 'Not authorized');
     }
@@ -184,8 +203,11 @@ router.post(
             'Time limit is expired, please go back and finish your assessment',
           );
         }
-        if (req.body.__action === 'grade' && !res.locals.assessment.allow_real_time_grading) {
-          throw new HttpStatusError(403, 'Real-time grading is not allowed for this assessment');
+        if (
+          req.body.__action === 'grade' &&
+          !res.locals.assessment_question.allow_real_time_grading
+        ) {
+          throw new HttpStatusError(403, 'Real-time grading is not allowed for this question');
         }
       }
       const variant_id = await validateAndProcessSubmission(req, res);
@@ -205,18 +227,17 @@ router.post(
         return res.redirect(req.originalUrl);
       }
 
-      const requireOpen = true;
-      const closeExam = true;
-      const overrideGradeRate = false;
-      await gradeAssessmentInstance(
-        res.locals.assessment_instance.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-        requireOpen,
-        closeExam,
-        overrideGradeRate,
-        res.locals.client_fingerprint_id,
-      );
+      await gradeAssessmentInstance({
+        assessment_instance_id: res.locals.assessment_instance.id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        requireOpen: true,
+        close: true,
+        ignoreGradeRateLimit: false,
+        ignoreRealTimeGradingDisabled: false,
+        client_fingerprint_id: res.locals.client_fingerprint_id,
+      });
+
       res.redirect(
         `${res.locals.urlPrefix}/assessment_instance/${res.locals.assessment_instance.id}?timeLimitExpired=true`,
       );
@@ -251,7 +272,7 @@ router.post(
 
 router.get(
   '/variant/:unsafe_variant_id(\\d+)/submission/:unsafe_submission_id(\\d+)',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     const variant = await selectAndAuthzVariant({
       unsafe_variant_id: req.params.unsafe_variant_id,
       variant_course: res.locals.course,
@@ -271,10 +292,10 @@ router.get(
       variant,
       user: res.locals.user,
       urlPrefix: res.locals.urlPrefix,
-      questionContext: res.locals.question.type === 'Exam' ? 'student_exam' : 'student_homework',
+      questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.group_role_permissions,
+      teamRolePermissions: res.locals.team_role_permissions ?? null,
     });
     res.json(panels);
   }),
@@ -282,7 +303,7 @@ router.get(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instance-question'>(async (req, res) => {
     let variant_id =
       res.locals.assessment.type === 'Exam' || typeof req.query.variant_id !== 'string'
         ? null
@@ -316,7 +337,7 @@ router.get(
         variant_id = last_variant_id;
       }
     }
-    await getAndRenderVariant(variant_id, null, res.locals as any);
+    await getAndRenderVariant(variant_id, null, res.locals);
 
     await logPageView('studentInstanceQuestion', req, res);
     const questionCopyTargets = await getQuestionCopyTargets({
@@ -333,21 +354,25 @@ router.get(
     });
 
     if (
-      res.locals.group_config?.has_roles &&
+      res.locals.team_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
+      assert(
+        res.locals.assessment_instance.team_id !== null,
+        'assessment_instance.team_id is null',
+      );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
-        res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.prev_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
-        res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.next_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.next_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
     }

@@ -10,14 +10,18 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
 } from './types.js';
 
 async function prepareChunksIfNeeded(question: Question, course: Course) {
@@ -109,7 +113,7 @@ async function callFunction<Data>(
       // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
-  } catch (err) {
+  } catch (err: any) {
     err.fatal = true;
     return {
       // We don't have any useful data to return. We'll just lie to the type checker.
@@ -143,13 +147,13 @@ export async function grade(
 // here to satisfy the question server interface.
 
 export async function render(
-  _renderSelection: any,
+  _renderSelection: RenderSelection,
   _variant: Variant,
   _question: Question,
-  _submission: Submission,
+  _submission: Submission | null,
   submissions: Submission[],
   _course: Course,
-  _locals: any,
+  _locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',
@@ -163,7 +167,7 @@ export async function render(
 export async function prepare(
   _question: Question,
   _course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   const data = {
     params: variant.params ?? {},
@@ -174,7 +178,7 @@ export async function prepare(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   _question: Question,
   _course: Course,

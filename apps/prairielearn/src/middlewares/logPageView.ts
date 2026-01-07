@@ -17,7 +17,7 @@ type PageType =
   | 'studentGradebook'
   | 'studentInstanceQuestion';
 export async function logPageView(pageType: PageType, req: Request, res: Response) {
-  const user_id = res.locals.user ? res.locals.user.user_id : res.locals.authn_user.user_id;
+  const user_id = res.locals.user ? res.locals.user.id : res.locals.authn_user.id;
 
   // Originally, we opted to only record page views for assessments if
   // the authn'ed user is also the owner of the assessment instance.
@@ -26,7 +26,7 @@ export async function logPageView(pageType: PageType, req: Request, res: Respons
   // the assessment.
 
   const params = {
-    authn_user_id: res.locals.authn_user.user_id,
+    authn_user_id: res.locals.authn_user.id,
     user_id,
     course_instance_id: res.locals.course_instance ? res.locals.course_instance.id : null,
     assessment_id: res.locals.assessment ? res.locals.assessment.id : null,
@@ -40,7 +40,7 @@ export async function logPageView(pageType: PageType, req: Request, res: Respons
     client_fingerprint_id: res.locals.client_fingerprint_id ?? null,
   };
 
-  await sqldb.queryOneRowAsync(sql.log_page_view, params).catch((err) => {
+  await sqldb.executeRow(sql.log_page_view, params).catch((err) => {
     // Swallow the error so that we don't affect the request, but still
     // report the error to Sentry.
     logger.error('error logging page view', err);

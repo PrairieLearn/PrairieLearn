@@ -6,12 +6,13 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function PublicQuestionPreview({
   resLocals,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({
@@ -36,9 +37,7 @@ export function PublicQuestionPreview({
             <script src="${nodeModulesAssetPath('lodash/lodash.min.js')}"></script>
             <script src="${assetPath('javascripts/require.js')}"></script>
             <script src="${assetPath('localscripts/question.js')}"></script>
-            <script src="${assetPath(
-                `localscripts/question${resLocals.effectiveQuestionType}.js`,
-              )}"></script>
+            <script src="${assetPath('localscripts/questionCalculation.js')}"></script>
           `
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}

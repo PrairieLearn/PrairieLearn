@@ -3,7 +3,6 @@ import * as crypto from 'node:crypto';
 import _ from 'lodash';
 import fetch from 'node-fetch';
 import oauthSignature from 'oauth-signature';
-import { v4 as uuid } from 'uuid';
 import * as xml2js from 'xml2js';
 import z from 'zod';
 
@@ -35,6 +34,7 @@ const exampleRequest = {
     },
   },
 };
+
 function xmlReplaceResult(sourcedId: string, score: number, identifier: string) {
   const Obj = structuredClone(exampleRequest);
 
@@ -55,8 +55,6 @@ function xmlReplaceResult(sourcedId: string, score: number, identifier: string) 
  * @param assessment_instance_id - The assessment instance ID
  */
 export async function updateScore(assessment_instance_id: string) {
-  if (assessment_instance_id == null) return;
-
   const info = await sqldb.queryOptionalRow(
     sql.get_score,
     { ai_id: assessment_instance_id },
@@ -70,10 +68,10 @@ export async function updateScore(assessment_instance_id: string) {
 
   let score = (info.score_perc ?? 0) / 100;
   if (score > 1) {
-    score = 1.0;
+    score = 1;
   }
   if (score < 0) {
-    score = 0.0;
+    score = 0;
   }
 
   if (info.lis_result_sourcedid === null || info.date === null) {
@@ -95,7 +93,7 @@ export async function updateScore(assessment_instance_id: string) {
     oauth_consumer_key: info.consumer_key,
     oauth_version: '1.0',
     oauth_timestamp: Math.floor(Date.now() / 1000).toString(),
-    oauth_nonce: uuid().replace(/-/g, ''),
+    oauth_nonce: crypto.randomUUID().replaceAll('-', ''),
     oauth_signature_method: 'HMAC-SHA1',
     oauth_body_hash: Buffer.from(sha1, 'hex').toString('base64'),
   };

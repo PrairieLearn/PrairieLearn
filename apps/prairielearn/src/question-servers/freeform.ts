@@ -24,6 +24,8 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -39,9 +41,12 @@ import {
   type GenerateResultData,
   type GradeResultData,
   type ParseResultData,
+  type ParseSubmission,
   type PrepareResultData,
+  type PrepareVariant,
   type QuestionServerReturnValue,
   type RenderResultData,
+  type RenderSelection,
   type TestResultData,
 } from './types.js';
 
@@ -60,7 +65,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
@@ -120,16 +128,21 @@ export async function init() {
  */
 async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   const elementSchema = run(() => {
-    if (elementType === 'core') return ElementCoreJsonSchema;
-    if (elementType === 'course') return ElementCourseJsonSchema;
-    throw new Error(`Unknown element type ${elementType}`);
+    switch (elementType) {
+      case 'core':
+        return ElementCoreJsonSchema;
+      case 'course':
+        return ElementCourseJsonSchema;
+      default:
+        assertNever(elementType);
+    }
   });
 
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
-  } catch (err) {
-    if (err && err.code === 'ENOENT') {
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -151,8 +164,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
-    } catch (err) {
-      if (err && err.code === 'ENOENT') {
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -170,12 +183,12 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     // For backwards compatibility.
     // TODO remove once everyone is using the new version.
     if (elementType === 'core') {
-      elements[elementName.replace(/-/g, '_')] = elements[elementName];
+      elements[elementName.replaceAll('-', '_')] = elements[elementName];
 
       if ('additionalNames' in elements[elementName]) {
         elements[elementName].additionalNames?.forEach((name) => {
           elements[name] = elements[elementName];
-          elements[name.replace(/-/g, '_')] = elements[elementName];
+          elements[name.replaceAll('-', '_')] = elements[elementName];
         });
       }
     }
@@ -186,8 +199,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
-    courseElementsCache[course.id] !== undefined &&
-    courseElementsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseElementsCache[course.id]?.commit_hash &&
     courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseElementsCache[course.id].data;
@@ -215,7 +228,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   let elementFolders: string[];
   try {
     elementFolders = await fs.readdir(sourceDir);
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') {
       // We don't really care if there are no extensions, just return an empty object.
       return {};
@@ -249,7 +262,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJson(infoPath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
         return;
@@ -281,8 +294,8 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
-    courseExtensionsCache[course.id] !== undefined &&
-    courseExtensionsCache[course.id].commit_hash &&
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    courseExtensionsCache[course.id]?.commit_hash &&
     courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
     return courseExtensionsCache[course.id].data;
@@ -363,7 +376,7 @@ async function execPythonServer(
     );
     debug('execPythonServer(): completed');
     return { result, output };
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
@@ -394,28 +407,34 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
     if (!Object.prototype.hasOwnProperty.call(data, prop)) {
       return `"${prop}" is missing from "data"`;
     }
-    if (type === 'integer') {
-      if (!Number.isInteger(data[prop])) {
-        return `data.${prop} is not an integer: ${String(data[prop])}`;
-      }
-    } else if (type === 'number') {
-      if (!Number.isFinite(data[prop])) {
-        return `data.${prop} is not a number: ${String(data[prop])}`;
-      }
-    } else if (type === 'string') {
-      if (typeof data[prop] !== 'string') {
-        return `data.${prop} is not a string: ${String(data[prop])}`;
-      }
-    } else if (type === 'boolean') {
-      if (data[prop] !== true && data[prop] !== false) {
-        return `data.${prop} is not a boolean: ${String(data[prop])}`;
-      }
-    } else if (type === 'object') {
-      if (data[prop] == null || typeof data[prop] !== 'object') {
-        return `data.${prop} is not an object: ${String(data[prop])}`;
-      }
-    } else {
-      return `invalid type: ${String(type)}`;
+    switch (type) {
+      case 'integer':
+        if (!Number.isInteger(data[prop])) {
+          return `data.${prop} is not an integer: ${String(data[prop])}`;
+        }
+        break;
+      case 'number':
+        if (!Number.isFinite(data[prop])) {
+          return `data.${prop} is not a number: ${String(data[prop])}`;
+        }
+        break;
+      case 'string':
+        if (typeof data[prop] !== 'string') {
+          return `data.${prop} is not a string: ${String(data[prop])}`;
+        }
+        break;
+      case 'boolean':
+        if (data[prop] !== true && data[prop] !== false) {
+          return `data.${prop} is not a boolean: ${String(data[prop])}`;
+        }
+        break;
+      case 'object':
+        if (data[prop] == null || typeof data[prop] !== 'object') {
+          return `data.${prop} is not an object: ${String(data[prop])}`;
+        }
+        break;
+      default:
+        return `invalid type: ${String(type)}`;
     }
     if (!editPhases.includes(phase)) {
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
@@ -486,7 +505,7 @@ async function processQuestionPhase<T>(
     course_path: config.workersExecutionMode === 'container' ? '/course' : context.course_dir_host,
   };
   const courseIssues: CourseIssueError[] = [];
-  let result: any | null = null;
+  let result: any = null;
   let output: string | null = null;
 
   try {
@@ -499,7 +518,7 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-  } catch (err) {
+  } catch (err: any) {
     courseIssues.push(
       new CourseIssueError(err.message, {
         data: err.data,
@@ -562,7 +581,7 @@ async function processQuestionHtml<T extends ExecutionData>(
   let html: string;
   try {
     html = await execTemplate(htmlFilename, data);
-  } catch (err) {
+  } catch (err: any) {
     return {
       courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
@@ -637,7 +656,7 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-  } catch (err) {
+  } catch (err: any) {
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
@@ -694,7 +713,12 @@ async function processQuestionServer<T extends ExecutionData>(
         fatal: true,
       }),
     );
-    return { courseIssues, data };
+    return {
+      courseIssues,
+      // The new `data` failed validation, so we can't safely return it. Return
+      // the original data instead.
+      data: origData,
+    };
   }
 
   return { courseIssues, data, html, fileData };
@@ -786,7 +810,7 @@ export async function generate(
     const data = {
       params: {},
       correct_answers: {},
-      variant_seed: parseInt(variant_seed, 36),
+      variant_seed: Number.parseInt(variant_seed, 36),
       options: { ...course.options, ...question.options, ...getContextOptions(context) },
     } satisfies ExecutionData;
 
@@ -812,10 +836,10 @@ export async function generate(
 export async function prepare(
   question: Question,
   course: Course,
-  variant: Variant,
+  variant: PrepareVariant,
 ): QuestionServerReturnValue<PrepareResultData> {
   return instrumented('freeform.prepare', async () => {
-    if (variant.broken_at) throw new Error('attempted to prepare broken variant');
+    if (variant.broken) throw new Error('attempted to prepare broken variant');
 
     const context = await getContext(question, course);
 
@@ -823,8 +847,8 @@ export async function prepare(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       answers_names: {},
     } satisfies ExecutionData;
 
@@ -860,7 +884,7 @@ async function renderPanel(
   variant: Variant,
   submission: Submission | null,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -875,7 +899,7 @@ async function renderPanel(
   // broken submission kills the submission panel, but we can
   // proceed with other panels, treating the submission as
   // missing
-  if (submission && submission.broken) {
+  if (submission?.broken) {
     if (panel === 'submission') {
       return {
         courseIssues: [],
@@ -897,11 +921,11 @@ async function renderPanel(
   // it won't be present in `locals`). This URL will only have meaning if
   // there's a submission, so it will be `null` otherwise.
   const submissionFilesUrl = submission
-    ? locals.questionUrl + `submission/${submission?.id}/file`
+    ? locals.questionUrl + `submission/${submission.id}/file`
     : null;
 
   const options = {
-    ...(variant.options ?? {}),
+    ...variant.options,
     client_files_question_url: locals.clientFilesQuestionUrl,
     client_files_course_url: locals.clientFilesCourseUrl,
     client_files_question_dynamic_url: locals.clientFilesQuestionGeneratedFileUrl,
@@ -935,7 +959,7 @@ async function renderPanel(
     partial_scores: submission?.partial_scores ?? {},
     score: submission?.score ?? 0,
     feedback: submission?.feedback ?? {},
-    variant_seed: parseInt(variant.variant_seed ?? '0', 36),
+    variant_seed: Number.parseInt(variant.variant_seed, 36),
     options,
     raw_submitted_answers: submission?.raw_submitted_answer ?? {},
     editable: !!(
@@ -956,7 +980,7 @@ async function renderPanel(
     }),
     ai_grading: locals.questionRenderContext === 'ai_grading',
     panel,
-    num_valid_submissions: variant.num_tries ?? null,
+    num_valid_submissions: variant.num_tries,
   } satisfies ExecutionData;
 
   const { data: cachedData, cacheHit } = await getCachedDataOrCompute(
@@ -1005,7 +1029,7 @@ async function renderPanelInstrumented(
   variant: Variant,
   question: Question,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1030,13 +1054,13 @@ async function renderPanelInstrumented(
 }
 
 export async function render(
-  renderSelection: { question: boolean; answer: boolean; submissions: boolean },
+  renderSelection: RenderSelection,
   variant: Variant,
   question: Question,
   submission: Submission | null,
   submissions: Submission[],
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1073,26 +1097,29 @@ export async function render(
       }
 
       if (renderSelection.submissions) {
-        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'submission',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
-          );
+        htmls.submissionHtmls = await async.mapSeries(
+          submissions,
+          async (submission: Submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+            } = await renderPanelInstrumented(
+              'submission',
+              codeCaller,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context,
+            );
 
-          courseIssues.push(...newCourseIssues);
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-          return html;
-        });
+            courseIssues.push(...newCourseIssues);
+            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            return html;
+          },
+        );
       }
 
       if (renderSelection.answer) {
@@ -1118,34 +1145,36 @@ export async function render(
 
       const extensions = context.course_element_extensions;
       const dependencies = {
-        coreStyles: [],
-        coreScripts: [],
-        nodeModulesStyles: [],
-        nodeModulesScripts: [],
-        coreElementStyles: [],
-        coreElementScripts: [],
-        courseElementStyles: [],
-        courseElementScripts: [],
-        extensionStyles: [],
-        extensionScripts: [],
-        clientFilesCourseStyles: [],
-        clientFilesCourseScripts: [],
-        clientFilesQuestionStyles: [],
-        clientFilesQuestionScripts: [],
+        coreStyles: [] as string[],
+        coreScripts: [] as string[],
+        nodeModulesStyles: [] as string[],
+        nodeModulesScripts: [] as string[],
+        coreElementStyles: [] as string[],
+        coreElementScripts: [] as string[],
+        courseElementStyles: [] as string[],
+        courseElementScripts: [] as string[],
+        extensionStyles: [] as string[],
+        extensionScripts: [] as string[],
+        clientFilesCourseStyles: [] as string[],
+        clientFilesCourseScripts: [] as string[],
+        clientFilesQuestionStyles: [] as string[],
+        clientFilesQuestionScripts: [] as string[],
       };
       const dynamicDependencies = {
-        nodeModulesScripts: {},
-        coreElementScripts: {},
-        courseElementScripts: {},
-        extensionScripts: {},
-        clientFilesCourseScripts: {},
+        nodeModulesScripts: {} as Record<string, string>,
+        coreElementScripts: {} as Record<string, string>,
+        courseElementScripts: {} as Record<string, string>,
+        extensionScripts: {} as Record<string, string>,
+        clientFilesCourseScripts: {} as Record<string, string>,
       };
 
       for (const type in question.dependencies) {
         if (!(type in dependencies)) continue;
 
         for (const dep of question.dependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           if (!dependencies[type].includes(dep)) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             dependencies[type].push(dep);
           }
         }
@@ -1193,8 +1222,11 @@ export async function render(
 
           if (!(resolvedType in dependencies)) continue;
 
-          for (const dep of elementDependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+          for (const dep of elementDependencies[type] ?? []) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!dependencies[resolvedType].includes(dep)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dependencies[resolvedType].push(dep);
             }
           }
@@ -1211,17 +1243,26 @@ export async function render(
             return type;
           });
 
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           for (const key in elementDynamicDependencies[type]) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
             } else if (
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
             ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
                     dependencyType: type,
-                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                    values: [
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      dynamicDependencies[resolvedType][key],
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      elementDynamicDependencies[type][key],
+                    ],
                   },
                   fatal: true,
                 }),
@@ -1264,24 +1305,40 @@ export async function render(
             for (const type in extension) {
               if (!(type in dependencies)) continue;
 
-              for (const dep of extension[type]) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+              for (const dep of extension[type] ?? []) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!dependencies[type].includes(dep)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dependencies[type].push(dep);
                 }
               }
             }
             for (const type in extensionDynamic) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               for (const key in extensionDynamic[type]) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!Object.hasOwn(dynamicDependencies[type], key)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
-                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+                } else if (
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  dynamicDependencies[type][key] !==
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  extensionDynamic[type][key]
+                ) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
+                          values: [
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            dynamicDependencies[type][key],
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            extensionDynamic[type][key],
+                          ],
                         },
                         fatal: true,
                       },
@@ -1423,8 +1480,8 @@ export async function file(
       // These should never be null, but that can't be encoded in the schema.
       params: variant.params ?? {},
       correct_answers: variant.true_answer ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       filename,
     } satisfies ExecutionData;
 
@@ -1459,7 +1516,7 @@ export async function file(
 }
 
 export async function parse(
-  submission: Submission,
+  submission: ParseSubmission,
   variant: Variant,
   question: Question,
   course: Course,
@@ -1477,8 +1534,8 @@ export async function parse(
       submitted_answers: submission.submitted_answer ?? {},
       feedback: submission.feedback ?? {},
       format_errors: submission.format_errors ?? {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1533,8 +1590,8 @@ export async function grade(
       partial_scores: submission.partial_scores == null ? {} : submission.partial_scores,
       score: submission.score == null ? 0 : submission.score,
       feedback: submission.feedback == null ? {} : submission.feedback,
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: submission.raw_submitted_answer ?? {},
       gradable: submission.gradable ?? true,
     } satisfies ExecutionData;
@@ -1587,8 +1644,8 @@ export async function test(
       partial_scores: {},
       score: 0,
       feedback: {},
-      variant_seed: parseInt(variant.variant_seed, 36),
-      options: { ...(variant.options ?? {}), ...getContextOptions(context) },
+      variant_seed: Number.parseInt(variant.variant_seed, 36),
+      options: { ...variant.options, ...getContextOptions(context) },
       raw_submitted_answers: {},
       gradable: true as boolean,
       test_type,
@@ -1752,7 +1809,7 @@ async function getCachedDataOrCompute(
 
     try {
       cachedData = await cache.get(cacheKey);
-    } catch (err) {
+    } catch (err: any) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);

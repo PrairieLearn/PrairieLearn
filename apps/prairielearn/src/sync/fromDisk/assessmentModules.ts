@@ -1,4 +1,4 @@
-import { loadSqlEquiv, queryAsync, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { execute, loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { AssessmentModuleSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
@@ -10,7 +10,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 interface DesiredAssessmentModule {
   name: string;
-  // TODO: make non-nullable once we make this non-null in the database schema.
+  /** TODO: make non-nullable once we make this non-null in the database schema. */
   heading: string | null;
 }
 
@@ -66,13 +66,13 @@ export async function sync(courseId: string, courseData: CourseData) {
   });
 
   if (
-    assessmentModulesToCreate.length ||
-    assessmentModulesToUpdate.length ||
-    assessmentModulesToDelete.length
+    assessmentModulesToCreate.length > 0 ||
+    assessmentModulesToUpdate.length > 0 ||
+    assessmentModulesToDelete.length > 0
   ) {
     await runInTransactionAsync(async () => {
-      if (assessmentModulesToCreate.length) {
-        await queryAsync(sql.insert_assessment_modules, {
+      if (assessmentModulesToCreate.length > 0) {
+        await execute(sql.insert_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToCreate.map((am) =>
             JSON.stringify([am.name, am.heading, am.number, am.implicit]),
@@ -80,8 +80,8 @@ export async function sync(courseId: string, courseData: CourseData) {
         });
       }
 
-      if (assessmentModulesToUpdate.length) {
-        await queryAsync(sql.update_assessment_modules, {
+      if (assessmentModulesToUpdate.length > 0) {
+        await execute(sql.update_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToUpdate.map((am) =>
             JSON.stringify([am.name, am.heading, am.number, am.implicit]),
@@ -89,8 +89,8 @@ export async function sync(courseId: string, courseData: CourseData) {
         });
       }
 
-      if (assessmentModulesToDelete.length) {
-        await queryAsync(sql.delete_assessment_modules, {
+      if (assessmentModulesToDelete.length > 0) {
+        await execute(sql.delete_assessment_modules, {
           course_id: courseId,
           modules: assessmentModulesToDelete,
         });

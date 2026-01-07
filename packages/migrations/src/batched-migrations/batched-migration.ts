@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import {
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryOptionalRow,
   queryRow,
   queryRows,
@@ -114,5 +114,5 @@ export async function updateBatchedMigrationStatus(
 }
 
 export async function retryFailedBatchedMigrationJobs(project: string, id: string): Promise<void> {
-  await queryAsync(sql.retry_failed_jobs, { project, id });
+  await execute(sql.retry_failed_jobs, { project, id });
 }

@@ -3,8 +3,8 @@ SELECT
   assessment_instance_label (ai, a, aset),
   a.id AS assessment_id,
   u.uid AS user_uid,
-  g.id AS group_id,
-  g.name AS group_name,
+  t.id AS team_id,
+  t.name AS team_name,
   ci.id AS course_instance_id,
   c.id AS course_id
 FROM
@@ -12,28 +12,31 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
-  LEFT JOIN groups AS g ON (g.id = ai.group_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN teams AS t ON (t.id = ai.team_id)
 WHERE
   ai.id = $assessment_instance_id
-  AND g.deleted_at IS NULL;
+  AND t.deleted_at IS NULL;
 
 -- BLOCK select_regrade_assessment_instances
 SELECT
   ai.id AS assessment_instance_id,
   assessment_instance_label (ai, a, aset),
-  u.uid AS user_uid
+  u.uid AS user_uid,
+  t.name AS team_name
 FROM
   assessments AS a
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
+  LEFT JOIN teams AS t ON (t.id = ai.team_id)
 WHERE
   a.id = $assessment_id
+  AND t.deleted_at IS NULL
 ORDER BY
   u.uid,
-  u.user_id,
+  u.id,
   ai.number;
 
 -- BLOCK select_and_lock_assessment_instance
@@ -57,6 +60,12 @@ WITH
       auto_points = aq.max_auto_points,
       manual_points = aq.max_manual_points,
       score_perc = 100,
+      requires_manual_grading = FALSE,
+      -- If the question was unanswered, the status remains unanswered. Otherwise, it becomes complete.
+      status = CASE
+        WHEN iq.status = 'unanswered' THEN 'unanswered'::enum_instance_question_status
+        ELSE 'complete'::enum_instance_question_status
+      END,
       modified_at = now()
     FROM
       assessment_questions AS aq

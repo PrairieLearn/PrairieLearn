@@ -14,22 +14,22 @@ const ExternalGraderLoadStatsSchema = z.object({
   instance_count_in_service: z.number().int(),
   instance_count_abandoning_launch: z.number().int(),
   instance_count_unhealthy: z.number().int(),
-  current_jobs: z.number().int(),
-  max_jobs: z.number().int(),
+  current_jobs: z.number(),
+  max_jobs: z.number(),
   load_perc: z.number(),
-  ungraded_jobs: z.number().int(),
-  ungraded_jobs_in_submit: z.number().int(),
-  ungraded_jobs_in_queue: z.number().int(),
-  ungraded_jobs_in_prepare: z.number().int(),
-  ungraded_jobs_in_run: z.number().int(),
-  ungraded_jobs_in_report: z.number().int(),
+  ungraded_jobs: z.number(),
+  ungraded_jobs_in_submit: z.number(),
+  ungraded_jobs_in_queue: z.number(),
+  ungraded_jobs_in_prepare: z.number(),
+  ungraded_jobs_in_run: z.number(),
+  ungraded_jobs_in_report: z.number(),
   age_of_oldest_job_sec: z.number(),
   age_of_oldest_job_in_submit_sec: z.number(),
   age_of_oldest_job_in_queue_sec: z.number(),
   age_of_oldest_job_in_prepare_sec: z.number(),
   age_of_oldest_job_in_run_sec: z.number(),
   age_of_oldest_job_in_report_sec: z.number(),
-  history_jobs: z.number().int(),
+  history_jobs: z.number(),
   current_users: z.number().int(),
   grading_jobs_per_user: z.number(),
   average_grading_jobs_per_user: z.number(),
@@ -47,6 +47,8 @@ const ExternalGraderLoadStatsSchema = z.object({
   desired_instances: z.number().int(),
   timestamp_formatted: z.string(),
 });
+
+type ExternalGraderLoadStats = z.infer<typeof ExternalGraderLoadStatsSchema>;
 
 export async function run() {
   if (!config.runningInEc2) return;
@@ -70,7 +72,7 @@ async function getLoadStats() {
   );
 }
 
-async function sendStatsToCloudWatch(stats) {
+async function sendStatsToCloudWatch(stats: ExternalGraderLoadStats) {
   const dimensions = [{ Name: 'By Queue', Value: config.externalGradingJobsQueueName }];
   const timestamp = new Date(stats.timestamp_formatted);
 
@@ -379,7 +381,7 @@ async function sendStatsToCloudWatch(stats) {
   });
 }
 
-async function setAutoScalingGroupCapacity(stats) {
+async function setAutoScalingGroupCapacity(stats: ExternalGraderLoadStats) {
   if (!config.externalGradingAutoScalingGroupName) return;
   if (!Number.isInteger(stats.desired_instances)) return;
   if (stats.desired_instances < 1 || stats.desired_instances > 1e6) return;

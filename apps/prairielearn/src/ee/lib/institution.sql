@@ -14,14 +14,8 @@ FROM
 WHERE
   institution_id = $institution_id;
 
--- BLOCK select_authentication_providers
-SELECT
-  *
-FROM
-  authn_providers;
-
 -- BLOCK select_institution_authn_providers
-SELECt
+SELECT
   ap.*
 FROM
   authn_providers AS ap

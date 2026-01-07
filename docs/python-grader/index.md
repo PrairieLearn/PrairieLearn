@@ -290,7 +290,7 @@ The Python autograder is able to retrieve information from `serverFilesCourse`. 
 
 To access `serverFilesCourse` from the autograder, specify the file or its containing directory in the question `info.json`. For example, to copy the `compounds` directory to the autograder, use:
 
-```json title="info.json" hl_lines="6"
+```json title="info.json" hl_lines="5"
 {
   "externalGradingOptions": {
     "enabled": true,

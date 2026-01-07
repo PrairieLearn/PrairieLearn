@@ -18,7 +18,7 @@ All non-text content must have a text alternative that serves an equivalent purp
 
 ### Images and figures (`pl-figure`)
 
-When using the [`pl-figure`](../elements.md#pl-figure-element) element to embed images, always provide descriptive alternative text (alt text) via the `alt` attribute. Good alt text is concise and conveys the essential information or function of the image.
+When using the [`pl-figure`](../elements/pl-figure.md) element to embed images, always provide descriptive alternative text (alt text) via the `alt` attribute. Good alt text is concise and conveys the essential information or function of the image.
 
 ```html
 <pl-figure
@@ -48,7 +48,7 @@ Many elements support an `aria-label` attribute to provide a label that is not v
 </pl-multiple-choice>
 ```
 
-Consult [the documentation for each specific PrairieLearn element](../elements.md) to understand its accessibility features and best practices.
+Consult [the documentation for each specific PrairieLearn element](../elements/index.md) to understand its accessibility features and best practices.
 
 ## Perceivable content
 

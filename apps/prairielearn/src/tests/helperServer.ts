@@ -12,7 +12,7 @@ import * as cron from '../cron/index.js';
 import * as assets from '../lib/assets.js';
 import * as codeCaller from '../lib/code-caller/index.js';
 import { config } from '../lib/config.js';
-import { type JobSequence, JobSequenceSchema } from '../lib/db-types.js';
+import { JobSchema, type JobSequence, JobSequenceSchema } from '../lib/db-types.js';
 import * as externalGrader from '../lib/externalGrader.js';
 import * as externalGradingSocket from '../lib/externalGradingSocket.js';
 import * as load from '../lib/load.js';
@@ -30,7 +30,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 config.startServer = false;
 // Pick a unique port based on the Vitest worker ID.
-config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0', 10)).toString();
+config.serverPort = (3007 + Number.parseInt(process.env.VITEST_POOL_ID ?? '0')).toString();
 
 export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => Promise<void> {
   return async () => {
@@ -73,7 +73,8 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       await assets.init();
 
       debug('before(): start server');
-      const httpServer = await server.startServer();
+      const app = await server.initExpress();
+      const httpServer = await server.startServer(app);
 
       debug('before(): initialize socket server');
       socketServer.init(httpServer);
@@ -137,7 +138,7 @@ export async function after(): Promise<void> {
   }
 }
 
-export async function waitForJobSequence(job_sequence_id) {
+export async function waitForJobSequence(job_sequence_id: string) {
   let job_sequence: JobSequence;
   while (true) {
     job_sequence = await sqldb.queryRow(
@@ -151,19 +152,22 @@ export async function waitForJobSequence(job_sequence_id) {
   return job_sequence;
 }
 
-export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success' | 'Error') {
+export async function waitForJobSequenceStatus(
+  job_sequence_id: string,
+  status: 'Success' | 'Error',
+) {
   const job_sequence = await waitForJobSequence(job_sequence_id);
 
   // In the case of a failure, print more information to aid debugging.
   if (job_sequence.status !== status) {
     console.log(job_sequence);
-    const result = await sqldb.queryAsync(sql.select_jobs, { job_sequence_id });
-    console.log(result.rows);
+    const result = await sqldb.queryRow(sql.select_jobs, { job_sequence_id }, JobSchema);
+    console.log(result);
   }
 
   assert.equal(job_sequence.status, status);
 }
 
-export async function waitForJobSequenceSuccess(job_sequence_id) {
+export async function waitForJobSequenceSuccess(job_sequence_id: string) {
   await waitForJobSequenceStatus(job_sequence_id, 'Success');
 }

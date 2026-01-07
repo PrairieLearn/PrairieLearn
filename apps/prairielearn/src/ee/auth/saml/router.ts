@@ -1,6 +1,6 @@
 import util from 'node:util';
 
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
 
@@ -32,7 +32,7 @@ router.get('/login', (req, res, next) => {
   })(req, res, next);
 });
 
-function authenticate(req, res): Promise<any> {
+function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'saml',
@@ -40,7 +40,7 @@ function authenticate(req, res): Promise<any> {
         failureRedirect: '/pl',
         session: false,
       },
-      (err, user) => {
+      (err: any, user: Express.User | false | null) => {
         if (err) {
           reject(err);
         } else {
@@ -101,11 +101,10 @@ router.post(
 
     // Only perform validation if we aren't rendering the above test page.
     //
-    // Support for pulling in email from an attribute was added after all initial
-    // attributes, so we can't yet require it to be present. In the future, once
-    // we've specified such an attribute for all institutions, we can assert that
-    // the email attribute mapping and the corresponding value are both present.
-    //
+    // We cannot safely require emails for users. For some categories of users,
+    // such as FERPA-suppressed students, an IdP may not pass an email address.
+    // So even if an email attribute is configured and we get it for the vast
+    // majority of users, there may be some for which it is not present.
     if (!uidAttribute || !uinAttribute || !nameAttribute) {
       throw new Error('Missing one or more SAML attribute mappings');
     }

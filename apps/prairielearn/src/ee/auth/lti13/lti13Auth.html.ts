@@ -1,8 +1,8 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.js';
-import { type LoadUserAuth } from '../../../lib/authn.js';
 import { type Lti13Instance } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export function Lti13Test({
   resLocals,
@@ -11,14 +11,19 @@ export function Lti13Test({
   lti13_instance,
   url,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   lti13_claims: Record<string, any>;
-  userInfo: LoadUserAuth;
+  userInfo: {
+    uin: string | null;
+    uid: string | null;
+    name: string | null;
+    email: string | null;
+  };
   lti13_instance: Lti13Instance;
   url: URL;
 }) {
   return html`
-    <!DOCTYPE html>
+    <!doctype html>
     <html lang="en">
       <head>
         ${HeadContents({ resLocals, pageTitle: 'LTI 1.3 test' })}
@@ -91,7 +96,7 @@ export function Lti13AuthRequired({
   resLocals,
 }: {
   institution_id: string;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <!doctype html>

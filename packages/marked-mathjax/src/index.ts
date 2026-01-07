@@ -15,6 +15,25 @@ const startMath = /(\$|\\\(|\\\[)/;
 export function addMathjaxExtension(marked: Marked, MathJax: any) {
   const mathjaxInput = MathJax.startup.getInputJax() ?? [];
   marked.use({
+    hooks: {
+      // This hook ensures that, if a math token is to be found inside an
+      // em/strong token, no `*` or `_` characters are interpreted as em/strong
+      // termination. This is done by masking the content that the em/strong
+      // interpreter use to find the termination characters.
+      emStrongMask(src) {
+        // Fast-path: no potential math delimiters present
+        if (!startMath.test(src)) return src;
+        for (const inputJax of mathjaxInput) {
+          for (const foundMath of inputJax.findMath([src])) {
+            src =
+              src.slice(0, foundMath.start.n) +
+              'a'.repeat(foundMath.end.n - foundMath.start.n) +
+              src.slice(foundMath.end.n);
+          }
+        }
+        return src;
+      },
+    },
     renderer: {
       // Any leaf text token that is not math should be ignored by MathJax.
       // Note:
@@ -28,7 +47,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
       //   already rendered with escape characters as needed, so nothing to do.
       text: (token) => {
         if (token.type === 'text' && (token.tokens || token.escaped)) return false;
-        if (token.text.match(/[$\\]/)) {
+        if (/[$\\]/.test(token.text)) {
           return `<span class="mathjax_ignore">${token.text}</span>`;
         }
         return false;
@@ -52,7 +71,7 @@ export function addMathjaxExtension(marked: Marked, MathJax: any) {
           for (const inputJax of mathjaxInput) {
             const foundMath = inputJax.findMath([src])?.find((math: any) => math.start?.n === 0);
             if (foundMath?.end?.n !== undefined) {
-              const raw = src.substring(0, foundMath.end.n);
+              const raw = src.slice(0, foundMath.end.n);
               return {
                 type: 'math',
                 raw,

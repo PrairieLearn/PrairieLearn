@@ -6,6 +6,9 @@ const MIN_ZOOM_SCALE = 1;
 /** Maximum zoom scale for the submitted image preview */
 const MAX_ZOOM_SCALE = 5;
 
+/** Maximum side length for the captured image */
+const MAX_IMAGE_SIDE_LENGTH = 2000;
+
 (() => {
   class PLImageCapture {
     constructor(uuid) {
@@ -33,54 +36,140 @@ const MAX_ZOOM_SCALE = 5;
       this.editable = options.editable;
 
       this.external_image_capture_url = options.external_image_capture_url;
+      this.external_image_capture_available = options.external_image_capture_available;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
+      this.manual_upload_enabled = options.manual_upload_enabled;
 
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
+      this.handwritingEnhanced = false;
+
+      /** Resizing canvas and context used for image scaling */
+      this.resizingCanvas = null;
+      this.resizingCtx = null;
+
+      /** Original captured image width and height */
+      this.originalImageWidth = null;
+      this.originalImageHeight = null;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
         // without initializing the image capture functionality.
         this.loadSubmission();
+        this.handwritingEnhancementListeners();
         return;
       }
 
       if (this.mobile_capture_enabled) {
-        this.createExternalCaptureListeners();
+        this.prepareMobileCaptureButtons();
       }
+
       this.createLocalCameraCaptureListeners();
 
       this.loadSubmission();
+      this.createDeletionListeners();
+
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
       }
 
-      this.createCropRotateListeners();
-      this.createApplyChangesListeners();
-    }
-
-    createExternalCaptureListeners() {
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
-
-      if (!captureWithMobileDeviceButton) {
-        throw new Error('Capture with mobile device button not found in image capture element');
+      if (this.manual_upload_enabled) {
+        this.createManualUploadListener();
       }
 
-      captureWithMobileDeviceButton.addEventListener('inserted.bs.popover', () => {
-        this.generateQrCode();
+      this.createCropRotateListeners();
+    }
+
+    /**
+     * Add the popovers and listeners to the mobile capture buttons in the
+     * horizontal and dropdown layouts.
+     */
+    prepareMobileCaptureButtons() {
+      const mobileCaptureButtons = this.getMobileCaptureButtons();
+
+      for (const mobileCaptureButton of mobileCaptureButtons) {
+        $(mobileCaptureButton).popover({
+          title: 'Capture with mobile device',
+          placement: 'auto',
+          container: 'body',
+          html: true,
+          content: `
+              <div class="w-100 d-flex flex-column align-items-center">
+                ${
+                  this.external_image_capture_available
+                    ? `
+                  <div class="qr-code-${this.uuid} pl-image-capture-qr-code-box mb-3 bg-body-secondary d-flex justify-content-center align-items-center border">
+                    <div class="spinning-wheel spinner-border">
+                      <span class="visually-hidden">Loading...</span>
+                    </div>
+                  </div>
+                  <p class="small text-muted mb-0">
+                    Scan the QR code with your mobile device to capture an image of your work. 
+                  </p>
+                `
+                    : `
+                  <p class="small text-muted mb-0">
+                    Mobile device capture is not available in this environment.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    It will be available once the question is deployed to production.
+                  </p>
+                  <p class="small text-muted mb-0 mt-3">
+                    For setup instructions to enable mobile capture locally, refer to the 
+                    <a href="https://prairielearn.readthedocs.io/en/latest/dev-guide/configJson/#setting-up-external-image-capture-locally" target="_blank">the server configuration guide</a>.
+                  </p>
+                `
+                }
+              </div>
+            `,
+        });
+        mobileCaptureButton.addEventListener('inserted.bs.popover', () => {
+          this.generateQrCode();
+        });
+      }
+    }
+
+    createManualUploadListener() {
+      const manualUploadButtons = this.getManualUploadButtons();
+      const manualUploadInput = this.imageCaptureDiv.querySelector('.js-manual-upload-input');
+
+      this.ensureElementsExist({
+        manualUploadInput,
+      });
+
+      for (const manualUploadButton of manualUploadButtons) {
+        this.ensureElementsExist({
+          manualUploadButton,
+        });
+
+        manualUploadButton.addEventListener('click', () => {
+          manualUploadInput.click();
+        });
+      }
+
+      manualUploadInput.addEventListener('change', (event) => {
+        const target = event.target;
+        const file = target.files && target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          this.loadCapturePreviewFromDataUrl({
+            dataUrl: reader.result,
+          });
+        };
+
+        reader.readAsDataURL(file);
       });
     }
 
     createLocalCameraCaptureListeners() {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
+      const localCaptureButtons = this.getUseLocalCaptureButtons();
 
       const captureLocalCameraImageButton = this.imageCaptureDiv.querySelector(
         '.js-capture-local-camera-image-button',
@@ -92,27 +181,51 @@ const MAX_ZOOM_SCALE = 5;
       const applyChangesButton = this.imageCaptureDiv.querySelector('.js-apply-changes-button');
 
       this.ensureElementsExist({
-        captureWithLocalCameraButton,
         captureLocalCameraImageButton,
         cancelLocalCameraButton,
         applyChangesButton,
       });
 
-      captureWithLocalCameraButton.addEventListener('click', () => {
-        this.startLocalCameraCapture();
-      });
+      for (const localCaptureButton of localCaptureButtons) {
+        localCaptureButton.addEventListener('click', () => {
+          this.startLocalCameraCapture();
+        });
+      }
 
       captureLocalCameraImageButton.addEventListener('click', () => {
         this.handleCaptureImage();
       });
 
-      cancelLocalCameraButton.addEventListener('click', () => {
-        this.cancelLocalCameraCapture();
+      cancelLocalCameraButton.addEventListener('click', async () => {
+        await this.cancelLocalCameraCapture();
       });
 
-      applyChangesButton.addEventListener('click', () => {
-        this.confirmCropRotateChanges();
+      applyChangesButton.addEventListener('click', async () => {
+        await this.confirmCropRotateChanges();
       });
+    }
+
+    /** Retrieve the local capture button elements for the horizontal and dropdown layouts. */
+    getUseLocalCaptureButtons() {
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-local-camera-button');
+    }
+
+    /** Retrieve the mobile capture button elements for the horizontal and dropdown layouts. */
+    getMobileCaptureButtons() {
+      if (!this.mobile_capture_enabled) {
+        throw new Error('Mobile capture is not enabled, cannot get mobile capture buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
+    }
+
+    /** Retrieve the manual upload button elements for the horizontal and dropdown layouts. */
+    getManualUploadButtons() {
+      if (!this.manual_upload_enabled) {
+        throw new Error('Manual upload is not enabled, cannot get manual upload buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-manual-upload-button');
     }
 
     createCropRotateListeners() {
@@ -150,6 +263,10 @@ const MAX_ZOOM_SCALE = 5;
       const flipHorizontalButton = this.imageCaptureDiv.querySelector('.js-flip-horizontal-button');
       const flipVerticalButton = this.imageCaptureDiv.querySelector('.js-flip-vertical-button');
 
+      const cropRotateResetButton = this.imageCaptureDiv.querySelector(
+        '.js-crop-rotate-reset-button',
+      );
+
       this.ensureElementsExist({
         cropRotateButton,
         rotationSlider,
@@ -158,6 +275,7 @@ const MAX_ZOOM_SCALE = 5;
         rotateCounterclockwiseButton,
         flipHorizontalButton,
         flipVerticalButton,
+        cropRotateResetButton,
       });
 
       cropRotateButton.addEventListener('click', () => {
@@ -165,8 +283,8 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       rotationSlider.addEventListener('input', (event) => {
-        const newRotationAngle = parseFloat(event.target.value);
-        if (isNaN(newRotationAngle)) {
+        const newRotationAngle = Number.parseFloat(event.target.value);
+        if (Number.isNaN(newRotationAngle)) {
           throw new Error('Invalid rotation angle');
         }
         this.setRotationOffset(newRotationAngle);
@@ -191,23 +309,83 @@ const MAX_ZOOM_SCALE = 5;
       cancelCropRotateButton.addEventListener('click', () => {
         this.cancelCropRotate();
       });
+
+      cropRotateResetButton.addEventListener('click', () => {
+        this.resetAllCropRotation();
+      });
     }
 
-    /**
-     * When the user clicks Enter or Space, apply any pending changes based on the current container.
-     * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in local-camera-capture, capture the current image.
-     */
-    createApplyChangesListeners() {
-      document.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (this.selectedContainerName === 'crop-rotate') {
-            this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'local-camera-capture') {
-            this.handleCaptureImage();
-          }
-        }
+    setShowDeletionButton(showDeletionButton) {
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
+      );
+      this.ensureElementsExist({
+        deleteCapturedImageButton,
+      });
+      deleteCapturedImageButton.classList.toggle('d-none', !showDeletionButton);
+    }
+
+    confirmImageDeletion() {
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        uploadedImageContainer,
+      });
+
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: null,
+        originalCapture: true,
+      });
+
+      this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+      this.setShowDeletionButton(false);
+
+      this.setCaptureChangedFlag(true);
+    }
+
+    createDeletionListeners() {
+      const deleteCapturedImageButton = this.imageCaptureDiv.querySelector(
+        '.js-delete-captured-image-button',
+      );
+      const uploadedImageContainer = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container',
+      );
+
+      this.ensureElementsExist({
+        deleteCapturedImageButton,
+        uploadedImageContainer,
+      });
+
+      const confirmDeletion = () => {
+        this.loadCapturePreviewFromDataUrl({
+          dataUrl: null,
+          originalCapture: true,
+        });
+
+        this.setNoCaptureAvailableYetState(uploadedImageContainer);
+
+        this.setShowDeletionButton(false);
+
+        this.setCaptureChangedFlag(true);
+      };
+
+      deleteCapturedImageButton.addEventListener('shown.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+        });
+        confirmDeletionButton.addEventListener('click', confirmDeletion, { once: true });
+      });
+
+      deleteCapturedImageButton.addEventListener('hide.bs.popover', () => {
+        const confirmDeletionButton = document.querySelector(`#confirm-delete-${this.uuid}`);
+        this.ensureElementsExist({
+          confirmDeletionButton,
+        });
+        confirmDeletionButton.removeEventListener('click', confirmDeletion);
       });
     }
 
@@ -279,21 +457,26 @@ const MAX_ZOOM_SCALE = 5;
       this.selectedContainerName = containerName;
     }
 
+    /**
+     * Generate the QR code for external image capture and insert it into
+     * any QR code divs associated with the image capture element.
+     */
     generateQrCode() {
       if (!this.external_image_capture_url) {
         return;
       }
 
-      const qrCode = document.querySelector(`#qr-code-${this.uuid}`);
-
-      if (!qrCode) {
+      const qrCodes = document.querySelectorAll(`.qr-code-${this.uuid}`);
+      if (qrCodes.length === 0) {
         throw new Error('QR code element not found.');
       }
 
-      qrCode.innerHTML = new QRCode({
-        content: this.external_image_capture_url,
-        container: 'svg-viewbox',
-      }).svg();
+      for (const qrCode of qrCodes) {
+        qrCode.innerHTML = new QRCode({
+          content: this.external_image_capture_url,
+          container: 'svg-viewbox',
+        }).svg();
+      }
     }
 
     /**
@@ -321,7 +504,7 @@ const MAX_ZOOM_SCALE = 5;
         },
       );
 
-      socket.on('externalImageCapture', async (msg) => {
+      socket.on('externalImageCapture', (msg) => {
         if (this.selectedContainerName === 'crop-rotate') {
           this.removeCropperChangeListeners();
         }
@@ -346,13 +529,11 @@ const MAX_ZOOM_SCALE = 5;
           },
         );
 
-        const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-          '.js-capture-with-mobile-device-button',
-        );
+        const mobileCaptureButtons = this.getMobileCaptureButtons();
 
-        if (captureWithMobileDeviceButton) {
-          // Dismiss the QR code popover if it is open.
-          const popover = bootstrap.Popover.getInstance(captureWithMobileDeviceButton);
+        // Dismiss the QR code popover if it is open.
+        for (const mobileCaptureButton of mobileCaptureButtons) {
+          const popover = bootstrap.Popover.getInstance(mobileCaptureButton);
           if (popover) {
             popover.hide();
           }
@@ -362,11 +543,25 @@ const MAX_ZOOM_SCALE = 5;
           if (this.selectedContainerName === 'crop-rotate') {
             // We discard any pending changes or captured images and show the capture preview, since
             // the user's most recent action was to capture an image externally.
-            await this.revertToPreviousCropRotateState();
+            this.revertToPreviousCropRotateState();
           }
           this.openContainer('capture-preview');
         }
       });
+    }
+
+    /**
+     * Creates the HTML for the image placeholder div, which is displayed when
+     * no image is captured or when the image is loading.
+     *
+     * @param {string} content The inner HTML of the placeholder div.
+     */
+    createJsImagePlaceholderDivHtml(content) {
+      return `
+        <div class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center" style="height: 200px;">
+          ${content}
+        </div>
+      `;
     }
 
     /**
@@ -376,13 +571,19 @@ const MAX_ZOOM_SCALE = 5;
     setNoCaptureAvailableYetState(uploadedImageContainer) {
       const imagePlaceholderDiv = uploadedImageContainer.querySelector('.js-image-placeholder');
 
-      this.ensureElementsExist({
-        imagePlaceholderDiv,
-      });
-
-      imagePlaceholderDiv.innerHTML = `
-        <span class="text-muted">No image captured yet.</span>
+      const placeholderMessage = `
+        <span class="small text-muted text-center">
+          No image captured yet.
+          <br/>
+          Use a clean sheet of paper.
+        </span>
       `;
+
+      if (imagePlaceholderDiv) {
+        imagePlaceholderDiv.innerHTML = placeholderMessage;
+      } else {
+        uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(placeholderMessage);
+      }
     }
 
     /**
@@ -390,23 +591,15 @@ const MAX_ZOOM_SCALE = 5;
      * @param {HTMLElement} uploadedImageContainer
      */
     setLoadingCaptureState(uploadedImageContainer) {
-      uploadedImageContainer.innerHTML = `
-        <div
-            class="js-image-placeholder bg-body-secondary d-flex justify-content-center align-items-center w-100"
-            style="height: 200px;"
-        >
-            <div class="spinning-wheel spinner-border">
-                <span class="visually-hidden">Loading...</span>
-            </div>
+      uploadedImageContainer.innerHTML = this.createJsImagePlaceholderDivHtml(`
+        <div class="spinning-wheel spinner-border">
+          <span class="visually-hidden">Loading...</span>
         </div>
-      `;
+      `);
     }
 
     /**
      * Loads the most recent submission or external image capture.
-     *
-     * @param {boolean} forExternalImageCapture If true, load the image from the most recent external image capture.
-     * If false, load the image from the most recent submission.
      */
     async loadSubmission() {
       const uploadedImageContainer = this.imageCaptureDiv.querySelector(
@@ -438,7 +631,7 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
@@ -446,51 +639,101 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       if (dataUrl && !hiddenCaptureInput.value) {
-        this.updateCaptureButtonTextForRetake();
+        this.updateCaptureButtons(true);
+      } else if (!dataUrl) {
+        this.updateCaptureButtons(false);
       }
 
-      hiddenCaptureInput.value = dataUrl;
+      if (dataUrl) {
+        // Perform scaling to ensure that captured images are not too large.
+        // The scale factor ensures that the width and height of the image do not exceed 2000px.
+        // If the image width and height are both less than 2000px, no scaling is applied.
+        const image = new Image();
+        image.src = dataUrl;
+
+        try {
+          await image.decode();
+        } catch (error) {
+          throw new Error('Failed to decode image', { cause: error });
+        }
+
+        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+        if (imageScaleFactor >= 1) {
+          // If we don't need to shrink the image, just use it directly.
+          hiddenCaptureInput.value = dataUrl;
+          return;
+        }
+        const targetWidth = Math.round(image.width * imageScaleFactor);
+        const targetHeight = Math.round(image.height * imageScaleFactor);
+
+        if (!this.resizingCanvas) {
+          this.resizingCanvas = document.createElement('canvas');
+        }
+        if (!this.resizingCtx) {
+          this.resizingCtx = this.resizingCanvas.getContext('2d');
+          if (!this.resizingCtx) {
+            throw new Error('Failed to get canvas context');
+          }
+        }
+
+        this.resizingCanvas.width = targetWidth;
+        this.resizingCanvas.height = targetHeight;
+        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
+      } else {
+        hiddenCaptureInput.removeAttribute('value');
+      }
     }
 
     /**
-     * Updates the text of the capture buttons to indicate that the user can retake the image.
+     * Update the capture button layout and text based on if the user is retaking the image.
+     *
+     * @param {boolean} isRetaking - Whether the user is retaking the image.
      */
-    updateCaptureButtonTextForRetake() {
-      const captureWithLocalCameraButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-local-camera-button',
-      );
-      const captureWithLocalCameraButtonSpan = captureWithLocalCameraButton.querySelector('span');
-      this.ensureElementsExist({
-        captureWithLocalCameraButtonSpan,
-      });
-      captureWithLocalCameraButtonSpan.innerHTML = 'Retake with webcam';
+    updateCaptureButtons(isRetaking) {
+      if (this.mobile_capture_enabled) {
+        const captureButtonsHorizontalDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal',
+        );
+        const captureButtonsDropdownDiv = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-dropdown',
+        );
 
-      if (!this.mobile_capture_enabled) {
-        return;
+        this.ensureElementsExist({
+          captureButtonsHorizontalDiv,
+          captureButtonsDropdownDiv,
+        });
+
+        if (isRetaking) {
+          captureButtonsHorizontalDiv.classList.replace('d-flex', 'd-none');
+        } else {
+          captureButtonsHorizontalDiv.classList.replace('d-none', 'd-flex');
+        }
+        captureButtonsDropdownDiv.classList.toggle('d-none', !isRetaking);
+      } else {
+        const captureWithLocalCameraButtonHorizontalSpan = this.imageCaptureDiv.querySelector(
+          '.js-capture-buttons-horizontal .js-capture-with-local-camera-button span',
+        );
+        this.ensureElementsExist({
+          captureWithLocalCameraButtonHorizontalSpan,
+        });
+        captureWithLocalCameraButtonHorizontalSpan.innerHTML = isRetaking
+          ? 'Retake with webcam'
+          : 'Use webcam';
       }
-      const captureWithMobileDeviceButton = this.imageCaptureDiv.querySelector(
-        '.js-capture-with-mobile-device-button',
-      );
-      const captureWithMobileDeviceButtonSpan =
-        captureWithMobileDeviceButton?.querySelector('span');
-
-      this.ensureElementsExist({
-        captureWithMobileDeviceButtonSpan,
-      });
-
-      captureWithMobileDeviceButtonSpan.innerHTML = 'Retake with phone';
     }
 
     /**
      * Sets the hidden capture input value to the capture preview, which is the last
      * image that was ready for submission.
      */
-    setHiddenCaptureInputToCapturePreview() {
+    async setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
-        '.js-uploaded-image-container .capture-preview',
+        '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
-      this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
+      await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
@@ -503,13 +746,22 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       const capturePreview = document.createElement('img');
-      capturePreview.className = 'capture-preview img-fluid bg-body-secondary w-100';
+      capturePreview.className = 'pl-image-capture-preview img-fluid bg-body-secondary w-100';
 
-      capturePreview.src = dataUrl;
+      if (dataUrl) {
+        capturePreview.src = dataUrl;
+      } else {
+        capturePreview.removeAttribute('src');
+      }
       capturePreview.alt = 'Captured image preview';
 
+      const capturePreviewParent = document.createElement('div');
+      capturePreviewParent.className = 'js-capture-preview-div bg-body-secondary';
+
+      capturePreviewParent.append(capturePreview);
+
       uploadedImageContainer.innerHTML = '';
-      uploadedImageContainer.appendChild(capturePreview);
+      uploadedImageContainer.append(capturePreviewParent);
 
       if (originalCapture) {
         capturePreview.addEventListener(
@@ -521,13 +773,20 @@ const MAX_ZOOM_SCALE = 5;
         );
       }
 
-      if (!this.editable) {
+      if (this.editable) {
+        this.setShowDeletionButton(dataUrl ? true : false);
+      } else {
         const zoomButtonsContainer = this.imageCaptureDiv.querySelector('.js-zoom-buttons');
+        const viewerRotateClockwiseButton = this.imageCaptureDiv.querySelector(
+          '.js-viewer-rotate-clockwise-button',
+        );
+
         const zoomInButton = this.imageCaptureDiv.querySelector('.js-zoom-in-button');
         const zoomOutButton = this.imageCaptureDiv.querySelector('.js-zoom-out-button');
 
         this.ensureElementsExist({
           zoomButtonsContainer,
+          viewerRotateClockwiseButton,
           zoomInButton,
           zoomOutButton,
         });
@@ -538,7 +797,9 @@ const MAX_ZOOM_SCALE = 5;
         zoomButtonsContainer.classList.remove('d-none');
 
         if (!this.imageCapturePreviewPanzoom) {
-          this.imageCapturePreviewPanzoom = Panzoom(capturePreview, {
+          // Initialize Panzoom on the parent of the captured image element, since
+          // the image itself may be rotated.
+          this.imageCapturePreviewPanzoom = Panzoom(capturePreviewParent, {
             contain: 'outside',
             minScale: MIN_ZOOM_SCALE,
             maxScale: MAX_ZOOM_SCALE,
@@ -549,6 +810,43 @@ const MAX_ZOOM_SCALE = 5;
           });
           zoomOutButton.addEventListener('click', () => {
             this.imageCapturePreviewPanzoom.zoomOut();
+          });
+
+          let rotation = 0;
+          viewerRotateClockwiseButton.addEventListener('click', () => {
+            const capturePreviewImg = this.imageCaptureDiv.querySelector(
+              '.js-uploaded-image-container .pl-image-capture-preview',
+            );
+
+            this.ensureElementsExist({
+              capturePreviewImg,
+            });
+
+            // The capture preview image always fills the entire height.
+            const photoHeight = capturePreviewImg.clientHeight;
+
+            // Compute the width of the capture preview image excluding any side
+            // whitespace coming from the max-height: 600px constraint.
+            const photoWidth =
+              photoHeight * (capturePreviewImg.naturalWidth / capturePreviewImg.naturalHeight);
+
+            const clientHeight = capturePreviewImg.clientHeight;
+            const clientWidth = capturePreviewImg.clientWidth;
+
+            // Rotation is strictly increasing so that the rotation animation is always in the same direction.
+            rotation += 90;
+
+            // Compute the scale factor based on the rotation.
+            // - If image is parallel to the capture preview div, reset its scaling to 1.
+            // - If image is perpendicular to the capture preview div, scale it so its longest side
+            //   fits within the preview container without clipping.
+            const scaleFactor =
+              rotation % 180 === 0
+                ? 1
+                : Math.min(clientHeight / photoWidth, clientWidth / photoHeight);
+
+            capturePreviewImg.style.transform = `rotate(${rotation}deg) scale(${scaleFactor})`;
+            this.imageCapturePreviewPanzoom.reset({ animate: true });
           });
 
           let panEnabled = false;
@@ -597,12 +895,31 @@ const MAX_ZOOM_SCALE = 5;
           const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
             '.js-hidden-original-capture-input',
           );
-          hiddenOriginalCaptureInput.value = dataUrl;
+
+          this.ensureElementsExist({
+            hiddenOriginalCaptureInput,
+          });
+
+          if (dataUrl) {
+            hiddenOriginalCaptureInput.value = dataUrl;
+            if (capturePreview.complete) {
+              this.originalImageWidth = capturePreview.naturalWidth;
+              this.originalImageHeight = capturePreview.naturalHeight;
+            } else {
+              capturePreview.onload = () => {
+                this.originalImageWidth = capturePreview.naturalWidth;
+                this.originalImageHeight = capturePreview.naturalHeight;
+              };
+            }
+          } else {
+            hiddenOriginalCaptureInput.removeAttribute('value');
+          }
           if (this.cropper) {
-            this.resetCropRotate();
+            this.resetCropRotateInterfaceState();
           }
         }
-        this.showCropRotateButton();
+
+        this.setShowCropRotateButton(dataUrl ? true : false);
       }
     }
 
@@ -671,7 +988,13 @@ const MAX_ZOOM_SCALE = 5;
 
       try {
         // Stream the local camera video to the video element
-        this.localCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        this.localCameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 7680 },
+            aspectRatio: { min: 1, max: 1.9 },
+          },
+        });
+
         localCameraVideo.srcObject = this.localCameraStream;
 
         await localCameraVideo.play();
@@ -765,7 +1088,7 @@ const MAX_ZOOM_SCALE = 5;
       this.openContainer('capture-preview');
     }
 
-    cancelLocalCameraCapture() {
+    async cancelLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
       );
@@ -783,7 +1106,7 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      await this.setHiddenCaptureInputToCapturePreview();
 
       localCameraErrorMessage.classList.add('d-none');
 
@@ -792,7 +1115,7 @@ const MAX_ZOOM_SCALE = 5;
 
     /**
      * Ensures that the provided elements exist. Throws an error if any element is not present.
-     * @param {Object} containers An object wherein keys are element names and values are the elements.
+     * @param {object} elements An object wherein keys are element names and values are the elements.
      */
     ensureElementsExist(elements) {
       for (const elementName in elements) {
@@ -813,14 +1136,18 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    showCropRotateButton() {
+    /**
+     * Set if the crop rotate button is shown or not.
+     *
+     * @param {boolean} show If true, shows the crop rotate button. Otherwise, hides it.
+     */
+    setShowCropRotateButton(show) {
       const cropRotateButton = this.imageCaptureDiv.querySelector('.js-crop-rotate-button');
 
       this.ensureElementsExist({
         cropRotateButton,
       });
-
-      cropRotateButton.classList.remove('d-none');
+      cropRotateButton.classList.toggle('d-none', !show);
     }
 
     async startCropRotate() {
@@ -1022,7 +1349,11 @@ const MAX_ZOOM_SCALE = 5;
       );
     }
 
-    resetCropRotate() {
+    /**
+     * Resets the cropper selection, rotation amount, and flip states without
+     * affecting the actual transformations applied to the captured image.
+     */
+    resetCropRotateInterfaceState() {
       this.ensureCropperExists();
 
       this.cropper.getCropperImage().$resetTransform();
@@ -1043,14 +1374,14 @@ const MAX_ZOOM_SCALE = 5;
 
       rotationSlider.value = 0;
 
-      const selection = this.cropper.getCropperSelection();
+      const cropperSelection = this.cropper.getCropperSelection();
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: 0,
         offsetRotationAngle: 0,
@@ -1059,25 +1390,63 @@ const MAX_ZOOM_SCALE = 5;
       };
     }
 
+    /**
+     * Resets the crop/rotation interface state and any transformations applied to the image.
+     */
+    resetAllCropRotation() {
+      const hiddenOriginalCaptureInput = this.imageCaptureDiv.querySelector(
+        '.js-hidden-original-capture-input',
+      );
+
+      this.ensureElementsExist({
+        hiddenOriginalCaptureInput,
+      });
+
+      this.previousCropRotateState = null;
+
+      this.cancelCropRotate(false);
+
+      this.loadCapturePreviewFromDataUrl({
+        dataUrl: hiddenOriginalCaptureInput.value,
+        originalCapture: false,
+      });
+    }
+
     timeoutId = null;
 
-    /**
-     * Helper function for saveCropperSelectionToHiddenInput to implement debounce.
-     * Do not use this function; use saveCropperSelectionToHiddenInput instead.
-     */
-    async saveCropperSelectionToHiddenInputHelper() {
+    /** Retrieve the Base64-encoded image data of the cropper selection and its CropperJS selection object. */
+    async getCropperSelection() {
       this.ensureCropperExists();
-      // Obtain the data URL of the image selection.
-      const selection = this.cropper.getCropperSelection();
-      let dataUrl;
+
+      const cropperSelection = this.cropper.getCropperSelection();
+      const cropperImageDims = this.cropper.getCropperImage().getBoundingClientRect();
+
       try {
-        const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
+        // The width and height of the selection and cropper are relative to the display dimensions.
+        // We need to scale them to be relative to the original image dimensions instead.
+
+        // We use the dimensions of the cropper image instead of the entire canvas since the image
+        // may not fill the entire canvas (e.g. tall images viewed on wide windows).
+
+        const canvas = await cropperSelection.$toCanvas({
+          width: Math.floor(
+            (cropperSelection.width / cropperImageDims.width) * this.originalImageWidth,
+          ),
+          height: Math.floor(
+            (cropperSelection.height / cropperImageDims.height) * this.originalImageHeight,
+          ),
+          beforeDraw: (ctx) => {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+          },
+        });
+        return {
+          dataUrl: canvas.toDataURL('image/jpeg'),
+          cropperSelection,
+        };
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
-
-      this.setHiddenCaptureInputValue(dataUrl);
     }
 
     /**
@@ -1094,22 +1463,15 @@ const MAX_ZOOM_SCALE = 5;
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
-        await this.saveCropperSelectionToHiddenInputHelper();
+        const { dataUrl } = await this.getCropperSelection();
+        await this.setHiddenCaptureInputValue(dataUrl);
       }, 200);
     }
 
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
 
-      // Obtain the data URL of the image selection.
-      const selection = this.cropper.getCropperSelection();
-      let dataUrl;
-      try {
-        const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
-      } catch {
-        throw new Error('Failed to convert cropper selection to canvas');
-      }
+      const { dataUrl, cropperSelection } = await this.getCropperSelection();
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
@@ -1119,10 +1481,10 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: this.baseRotationAngle,
         offsetRotationAngle: this.offsetRotationAngle,
@@ -1135,11 +1497,11 @@ const MAX_ZOOM_SCALE = 5;
       this.openContainer('capture-preview');
     }
 
-    async revertToPreviousCropRotateState() {
+    revertToPreviousCropRotateState() {
       this.ensureCropperExists();
 
       if (!this.previousCropRotateState) {
-        this.resetCropRotate();
+        this.resetCropRotateInterfaceState();
         return;
       }
 
@@ -1170,19 +1532,64 @@ const MAX_ZOOM_SCALE = 5;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    async cancelCropRotate() {
+    async cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
 
-      await this.revertToPreviousCropRotateState();
+      // Clear any pending debounced crop/rotate changes that would be saved
+      clearTimeout(this.timeoutId);
+      this.timeoutId = null;
+
+      this.revertToPreviousCropRotateState();
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      if (revertToLastImage) {
+        await this.setHiddenCaptureInputToCapturePreview();
+      }
 
       // Restore the previous hidden capture changed flag value.
       // Needed for the case that the user had no changes before starting crop/rotate.
       this.setCaptureChangedFlag(this.previousCaptureChangedFlag);
+    }
+
+    /**
+     * Enhances handwriting in the captured image by applying black-and-white and contrast filters.
+     */
+    async enhanceHandwriting() {
+      if (this.editable) {
+        throw new Error('Handwriting enhancement is not allowed if pl-image-capture is editable.');
+      }
+
+      const capturePreview = this.imageCaptureDiv.querySelector(
+        '.js-uploaded-image-container .pl-image-capture-preview',
+      );
+
+      this.ensureElementsExist({
+        capturePreview,
+      });
+
+      if (this.handwritingEnhanced) {
+        capturePreview.style.filter = '';
+        this.handwritingEnhanced = false;
+      } else {
+        capturePreview.style.filter = 'grayscale(1) contrast(2)';
+        this.handwritingEnhanced = true;
+      }
+    }
+
+    handwritingEnhancementListeners() {
+      const enhanceHandwritingButton = this.imageCaptureDiv.querySelector(
+        '.js-enhance-handwriting-button',
+      );
+
+      this.ensureElementsExist({
+        enhanceHandwritingButton,
+      });
+
+      enhanceHandwritingButton.addEventListener('click', () => {
+        this.enhanceHandwriting();
+      });
     }
   }
 

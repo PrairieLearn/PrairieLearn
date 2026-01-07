@@ -1,9 +1,12 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 
 import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { checkVariantToken } from './checkVariantToken.js';
+import { ensureProps } from './ensureProps.js';
 import type {
   StatusMessage,
   StatusMessageWithFileContent,
@@ -13,30 +16,39 @@ import * as socketServer from './socket-server.js';
 let namespace: Namespace;
 
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-image-capture');
   namespace.on('connection', connection);
 }
 
 export function connection(socket: Socket) {
-  socket.on('joinExternalImageCapture', async (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
+  socket.on('joinExternalImageCapture', (msg: StatusMessage, callback) => {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['variant_id', 'variant_token', 'file_name'],
+        socketName: 'external image capture',
+      })
+    ) {
       return callback(null);
     }
-
-    msg = msg as StatusMessage;
 
     if (!validateMessageContent(msg)) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
+    void socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
-    socket.on('externalImageCaptureAck', (msg, callback) => {
-      if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
+    socket.on('externalImageCaptureAck', (msg: StatusMessage, callback) => {
+      if (
+        !ensureProps({
+          data: msg,
+          props: ['variant_id', 'variant_token', 'file_name'],
+          socketName: 'external image capture',
+        })
+      ) {
         return callback(null);
       }
-
-      msg = msg as StatusMessage;
 
       if (!validateMessageContent(msg)) {
         return callback(null);
@@ -51,19 +63,6 @@ export function connection(socket: Socket) {
 
     callback(msg);
   });
-}
-
-function ensureProps(data: Record<string, any>, props: string[]): boolean {
-  for (const prop of props) {
-    if (!Object.hasOwn(data, prop)) {
-      logger.error(`socket.io external image capture connected without ${prop}`);
-      Sentry.captureException(
-        new Error(`socket.io external image capture connected without property ${prop}`),
-      );
-      return false;
-    }
-  }
-  return true;
 }
 
 /**
@@ -90,6 +89,9 @@ export function emitExternalImageCapture({
  * Prevents cross-site scripting and directory traversal attacks.
  *
  * @param msg - The message to validate.
+ * @param msg.variant_id - The variant ID.
+ * @param msg.variant_token - The variant token.
+ * @param msg.file_name - The file name.
  *
  * @returns true if the message is valid, false otherwise.
  */
@@ -102,14 +104,14 @@ function validateMessageContent({ variant_id, variant_token, file_name }: Status
 
   // file_name must be a valid file name with no directory traversal: it must not contain
   // any path separators (e.g., / or \) and must have an extension.
-  if (!file_name.match(/^(?!.*[\\/])[^\\/]+\.[^\\/]+$/)) {
+  if (!/^(?!.*[\\/])[^\\/]+\.[^\\/]+$/.test(file_name)) {
     logger.error('Invalid file_name provided for external image capture');
     Sentry.captureException(new Error('Invalid file_name provided for external image capture'));
     return false;
   }
 
   // variant_id must be a positive integer.
-  if (!variant_id.match(/^\d+$/)) {
+  if (!/^\d+$/.test(variant_id)) {
     logger.error('Invalid variant_id provided for external image capture');
     Sentry.captureException(new Error('Invalid variant_id provided for external image capture'));
     return false;

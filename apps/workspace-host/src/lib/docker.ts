@@ -26,7 +26,7 @@ export function parseDockerLogs(buffer: Buffer): Buffer {
     outputChunks.push(content);
   }
 
-  function bufferSlice(end) {
+  function bufferSlice(end: number) {
     const out = buffer.subarray(0, end);
     buffer = buffer.subarray(end, buffer.length);
     return out;

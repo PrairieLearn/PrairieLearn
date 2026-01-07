@@ -7,10 +7,12 @@ import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 import {
+  type AssessmentQuestionStatsRow,
   AssessmentQuestionStatsRowSchema,
   InstructorQuestionStatistics,
 } from './instructorQuestionStatistics.html.js';
@@ -18,7 +20,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals) {
+function makeStatsCsvFilename(locals: UntypedResLocals) {
   const prefix = questionFilenamePrefix(locals.question, locals.course);
   return prefix + 'stats.csv';
 }
@@ -57,11 +59,13 @@ router.get(
     }
 
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
-      const cursor = await sqldb.queryCursor(sql.assessment_question_stats, {
-        question_id: res.locals.question.id,
-      });
+      const cursor = await sqldb.queryCursor(
+        sql.assessment_question_stats,
+        { question_id: res.locals.question.id },
+        AssessmentQuestionStatsRowSchema,
+      );
 
-      const stringifier = stringifyStream({
+      const stringifier = stringifyStream<AssessmentQuestionStatsRow>({
         header: true,
         columns: [
           'Course',

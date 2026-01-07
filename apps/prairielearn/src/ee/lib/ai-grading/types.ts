@@ -7,6 +7,8 @@ export const AIGradingStatsSchema = z.object({
   ai_grading_status: z.enum(['Graded', 'LatestRubric', 'OutdatedRubric', 'None']),
   point_difference: z.number().nullable(),
   rubric_difference: z.array(RubricItemSchema.extend({ false_positive: z.boolean() })).nullable(),
+  rubric_similarity: z.array(RubricItemSchema.extend({ true_positive: z.boolean() })).nullable(),
+  instance_question_group_name: z.string().nullable(),
 });
 
 type AIGradingStats = z.infer<typeof AIGradingStatsSchema>;
@@ -21,4 +23,23 @@ export interface AIGradingLog {
 export interface AIGradingLogger {
   info(msg: string): void;
   error(msg: string): void;
+}
+
+export interface AiGradingGeneralStats {
+  submission_point_count: number;
+  submission_rubric_count: number;
+  mean_error: number | null;
+  /** Mapping from rubric item id to disagreement count */
+  rubric_stats: Record<string, number>;
+}
+
+export interface InstanceQuestionAIGradingInfo {
+  /** If the submission was also manually graded. */
+  submissionManuallyGraded: boolean;
+  /** The IDs of the rubric items selected by the AI grader. */
+  selectedRubricItemIds: string[];
+  /** The raw prompt sent to the LLM for AI grading.  */
+  prompt: string;
+  /** Explanation from the LLM for AI grading */
+  explanation: string | null;
 }

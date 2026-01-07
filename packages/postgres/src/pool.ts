@@ -4,9 +4,8 @@ import { Readable, Transform } from 'node:stream';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
-import { DatabaseError } from 'pg-protocol';
 import { z } from 'zod';
 
 export type QueryParams = Record<string, any> | any[];
@@ -26,7 +25,7 @@ const searchSchemaMap = new WeakMap<pg.PoolClient, string>();
 
 function addDataToError(err: Error, data: Record<string, any>): Error {
   (err as any).data = {
-    ...((err as any).data ?? {}),
+    ...(err as any).data,
     ...data,
   };
   return err;
@@ -47,8 +46,8 @@ export class PostgresError extends Error {
  */
 function debugString(s: string): string {
   if (typeof s !== 'string') return 'NOT A STRING';
-  s = s.replace(/\n/g, '\\n');
-  if (s.length > 78) s = s.substring(0, 75) + '...';
+  s = s.replaceAll('\n', '\\n');
+  if (s.length > 78) s = s.slice(0, 75) + '...';
   s = '"' + s + '"';
   return s;
 }
@@ -107,14 +106,14 @@ function paramsToArray(
         paramsArray.push(params[v]);
       }
     }
-    processedSql += remainingSql.substring(0, result.index) + map[v];
-    remainingSql = remainingSql.substring(result.index + result[0].length);
+    processedSql += remainingSql.slice(0, result.index) + map[v];
+    remainingSql = remainingSql.slice(result.index + result[0].length);
   }
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
     const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length) {
+    if (difference.length > 0) {
       throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
     }
   }
@@ -136,11 +135,12 @@ function escapeIdentifier(identifier: string): string {
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // Copy the error so we don't end up with a circular reference in the
   // final error.
-  const sqlError = { ...err };
-
-  // `message` is a non-enumerable property, so we need to copy it manually to
-  // the error object.
-  sqlError.message = err.message;
+  const sqlError = {
+    ...err,
+    // `message` is a non-enumerable property, so we need to copy it manually to
+    // the error object.
+    message: err.message,
+  };
 
   const errorHasPosition = err instanceof DatabaseError && err.position != null;
 
@@ -176,6 +176,9 @@ export class PostgresPool {
     pgConfig: PostgresPoolConfig,
     idleErrorHandler: (error: Error, client: pg.PoolClient) => void,
   ): Promise<void> {
+    if (this.pool != null) {
+      throw new Error('Postgres pool already initialized');
+    }
     this.errorOnUnusedParameters = pgConfig.errorOnUnusedParameters ?? false;
     this.pool = new pg.Pool(pgConfig);
     this.pool.on('error', function (err, client) {
@@ -207,9 +210,9 @@ export class PostgresPool {
         return;
       } catch (err: any) {
         if (retryCount === retryTimeouts.length) {
-          throw new Error(
-            `Could not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`,
-          );
+          throw new Error(`Could not connect to Postgres after ${retryTimeouts.length} attempts`, {
+            cause: err,
+          });
         }
 
         const timeout = retryTimeouts[retryCount];
@@ -453,6 +456,11 @@ export class PostgresPool {
 
   /**
    * Executes a query with the specified parameters.
+   *
+   * @deprecated Use {@link execute} instead.
+   *
+   * Using the return value of this function directly is not recommended. Instead, use
+   * {@link queryRows}, {@link queryRow}, or {@link queryOptionalRow}.
    */
   async queryAsync(sql: string, params: QueryParams): Promise<QueryResult> {
     debug('query()', 'sql:', debugString(sql));
@@ -471,6 +479,8 @@ export class PostgresPool {
   /**
    * Executes a query with the specified parameters. Errors if the query does
    * not return exactly one row.
+   *
+   * @deprecated Use {@link executeRow} or {@link queryRow} instead.
    */
   async queryOneRowAsync(sql: string, params: QueryParams): Promise<pg.QueryResult> {
     debug('queryOneRow()', 'sql:', debugString(sql));
@@ -510,7 +520,7 @@ export class PostgresPool {
   async callAsync(functionName: string, params: any[]): Promise<pg.QueryResult> {
     debug('call()', 'function:', functionName);
     debug('call()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders});`;
     const result = await this.queryAsync(sql, params);
     debug('call() success', 'rowCount:', result.rowCount);
@@ -563,7 +573,7 @@ export class PostgresPool {
   ): Promise<pg.QueryResult> {
     debug('callWithClient()', 'function:', functionName);
     debug('callWithClient()', 'params:', debugParams(params));
-    const placeholders = params.map((_, v) => '$' + (v + 1)).join();
+    const placeholders = params.map((_, v) => '$' + (v + 1)).join(',');
     const sql = `SELECT * FROM ${escapeIdentifier(functionName)}(${placeholders})`;
     const result = await this.queryWithClientAsync(client, sql, params);
     debug('callWithClient() success', 'rowCount:', result.rowCount);
@@ -788,10 +798,31 @@ export class PostgresPool {
   }
 
   /**
+   * Executes a query with the specified parameters. Returns the number of rows affected.
+   */
+  async execute(sql: string, params: QueryParams = {}): Promise<number> {
+    const result = await this.queryAsync(sql, params);
+    return result.rowCount ?? 0;
+  }
+
+  /**
+   * Executes a query with the specified parameter, and errors if the query doesn't return exactly one row.
+   */
+  async executeRow(sql: string, params: QueryParams = {}) {
+    const rowCount = await this.execute(sql, params);
+    if (rowCount !== 1) {
+      throw new PostgresError('Incorrect rowCount: ' + rowCount, {
+        sql,
+        sqlParams: params,
+      });
+    }
+  }
+
+  /**
    * Returns a {@link Cursor} for the given query. The cursor can be used to
    * read results in batches, which is useful for large result sets.
    */
-  async queryCursorWithClient(
+  private async queryCursorWithClient(
     client: pg.PoolClient,
     sql: string,
     params: QueryParams,
@@ -804,31 +835,33 @@ export class PostgresPool {
     return client.query(new Cursor(processedSql, paramsArray));
   }
 
-  /**
-   * Returns an {@link CursorIterator} that can be used to iterate over the
-   * results of the query in batches, which is useful for large result sets.
-   */
+  async queryCursor<Model extends z.ZodTypeAny>(
+    sql: string,
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
+
   async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
-  ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params);
-  }
+    model: Model,
+  ): Promise<CursorIterator<z.infer<Model>>>;
 
   /**
    * Returns an {@link CursorIterator} that can be used to iterate over the
    * results of the query in batches, which is useful for large result sets.
    * Each row will be parsed by the given Zod schema.
    */
-  async queryValidatedCursor<Model extends z.ZodTypeAny>(
+  async queryCursor<Model extends z.ZodTypeAny>(
     sql: string,
-    params: QueryParams,
-    model: Model,
+    paramsOrSchema: Model | QueryParams,
+    maybeModel?: Model,
   ): Promise<CursorIterator<z.infer<Model>>> {
-    return this.queryValidatedCursorInternal(sql, params, model);
+    const params = maybeModel === undefined ? {} : (paramsOrSchema as QueryParams);
+    const model = maybeModel === undefined ? (paramsOrSchema as Model) : maybeModel;
+    return this.queryCursorInternal(sql, params, model);
   }
 
-  private async queryValidatedCursorInternal<Model extends z.ZodTypeAny>(
+  private async queryCursorInternal<Model extends z.ZodTypeAny>(
     sql: string,
     params: QueryParams,
     model?: Model,
@@ -837,6 +870,7 @@ export class PostgresPool {
     const cursor = await this.queryCursorWithClient(client, sql, params);
 
     let iterateCalled = false;
+    let rowKeys: string[] | null = null;
     const iterator: CursorIterator<z.infer<Model>> = {
       async *iterate(batchSize: number) {
         // Safety check: if someone calls iterate multiple times, they're
@@ -853,10 +887,15 @@ export class PostgresPool {
               break;
             }
 
+            if (rowKeys === null) {
+              rowKeys = Object.keys(rows[0] ?? {});
+            }
+            const flattened =
+              rowKeys.length === 1 ? rows.map((row) => row[(rowKeys as string[])[0]]) : rows;
             if (model) {
-              yield z.array(model).parse(rows);
+              yield z.array(model).parse(flattened);
             } else {
-              yield rows;
+              yield flattened;
             }
           }
         } catch (err: any) {
@@ -906,7 +945,7 @@ export class PostgresPool {
    *
    * @param schema The schema name to use (can be "null" to unset the search path)
    */
-  async setSearchSchema(schema: string) {
+  async setSearchSchema(schema: string | null) {
     if (schema == null) {
       this.searchSchema = schema;
       return;
@@ -920,7 +959,7 @@ export class PostgresPool {
   /**
    * Get the schema that is currently used for the search path.
    *
-   * @return schema in use (may be `null` to indicate no schema)
+   * @returns schema in use (may be `null` to indicate no schema)
    */
   getSearchSchema(): string | null {
     return this.searchSchema;
@@ -934,7 +973,7 @@ export class PostgresPool {
    */
   async setRandomSearchSchemaAsync(prefix: string): Promise<string> {
     // truncated prefix (max 28 characters)
-    const truncPrefix = prefix.substring(0, 28);
+    const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
@@ -949,6 +988,40 @@ export class PostgresPool {
     const schema = `${truncPrefix}_${timestamp}_${suffix}`;
     await this.setSearchSchema(schema);
     return schema;
+  }
+
+  /**
+   * Deletes all schemas starting with the given prefix.
+   *
+   * @param prefix The prefix of the schemas to delete.
+   */
+  async clearSchemasStartingWith(prefix: string): Promise<void> {
+    // Sanity check against deleting public, pg_, information_schema, etc.
+    if (prefix === 'public' || prefix.startsWith('pg_') || prefix === 'information_schema') {
+      throw new Error(`Cannot clear schema starting with ${prefix}`);
+    }
+    // Sanity check against a bad prefix.
+    if (prefix.length < 4) {
+      throw new Error(`Prefix is too short: ${prefix}`);
+    }
+
+    await this.queryAsync(
+      `DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname LIKE ${escapeLiteral(prefix + '%')}
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;`,
+      {},
+    );
   }
 
   /** The number of established connections. */

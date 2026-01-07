@@ -1,10 +1,10 @@
 CREATE FUNCTION
     instance_questions_grade(
         instance_question_id bigint,
-        submission_score DOUBLE PRECISION,
+        submission_score double precision,
         grading_job_id bigint,
         authn_user_id bigint
-    ) RETURNS VOID
+    ) RETURNS void
 AS $$
 DECLARE
     instance_question_open boolean;

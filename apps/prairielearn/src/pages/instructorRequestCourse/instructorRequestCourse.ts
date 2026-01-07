@@ -8,19 +8,19 @@ import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
 
+import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
   CourseRequestRowSchema,
   type Lti13CourseRequestInput,
-  RequestCourse,
-} from './instructorRequestCourse.html.js';
+} from './instructorRequestCourse.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -30,7 +30,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const rows = await queryRows(
       sql.get_requests,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       CourseRequestRowSchema,
     );
 
@@ -77,34 +77,34 @@ router.post(
 
     let error = false;
 
-    if (!short_name.match(/[A-Z]+ [A-Z0-9]+/)) {
+    if (!/[A-Z]+ [A-Z0-9]+/.test(short_name)) {
       flash(
         'error',
         'The course rubric and number should be a series of letters, followed by a space, followed by a series of numbers and/or letters.',
       );
       error = true;
     }
-    if (title.length < 1) {
+    if (title.length === 0) {
       flash('error', 'The course title should not be empty.');
       error = true;
     }
-    if (first_name.length < 1) {
+    if (first_name.length === 0) {
       flash('error', 'The first name should not be empty.');
       error = true;
     }
-    if (last_name.length < 1) {
+    if (last_name.length === 0) {
       flash('error', 'The last name should not be empty.');
       error = true;
     }
-    if (work_email.length < 1) {
+    if (work_email.length === 0) {
       flash('error', 'The work email should not be empty.');
       error = true;
     }
-    if (institution.length < 1) {
+    if (institution.length === 0) {
       flash('error', 'The institution should not be empty.');
       error = true;
     }
-    if (referral_source.length < 1) {
+    if (referral_source.length === 0) {
       flash('error', 'The referral source should not be empty.');
       error = true;
     }
@@ -112,7 +112,7 @@ router.post(
     const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         short_name,
       },
       z.boolean(),
@@ -134,7 +134,7 @@ router.post(
       {
         short_name,
         title,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         github_user,
         first_name,
         last_name,
@@ -148,7 +148,7 @@ router.post(
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
       sql.can_auto_create_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       z.boolean(),
     );
 
@@ -156,7 +156,7 @@ router.post(
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await queryRow(
         sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.user_id },
+        { user_id: res.locals.authn_user.id },
         z.object({
           institution_id: IdSchema,
           display_timezone: z.string(),

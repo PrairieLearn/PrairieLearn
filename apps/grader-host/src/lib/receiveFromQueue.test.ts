@@ -2,6 +2,7 @@ import {
   ChangeMessageVisibilityCommand,
   DeleteMessageCommand,
   ReceiveMessageCommand,
+  type SQSClient,
 } from '@aws-sdk/client-sqs';
 import { assert, beforeEach, describe, expect, it, vi } from 'vitest';
 
@@ -51,7 +52,7 @@ function fakeSqs(options: { message?: any; timeoutCount?: number } = {}) {
   let callCount = 0;
 
   return {
-    send: async (command) => {
+    send: async (command: Parameters<SQSClient['send']>[0]) => {
       if (command instanceof ReceiveMessageCommand) {
         return receiveMessage(command);
       } else if (command instanceof ChangeMessageVisibilityCommand) {

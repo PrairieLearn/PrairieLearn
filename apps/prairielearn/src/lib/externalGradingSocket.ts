@@ -1,14 +1,18 @@
+import assert from 'node:assert';
+
 import type { Namespace, Socket } from 'socket.io';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { gradingJobStatus } from '../models/grading-job.js';
 
 import { checkVariantToken } from './checkVariantToken.js';
-import { GradingJobSchema, IdSchema } from './db-types.js';
+import { GradingJobSchema } from './db-types.js';
+import { ensureProps } from './ensureProps.js';
 import type { StatusMessage } from './externalGradingSocket.types.js';
 import * as socketServer from './socket-server.js';
 
@@ -27,22 +31,29 @@ const SubmissionForGradingJobSchema = z.object({
 
 let namespace: Namespace;
 
-// This module MUST be initialized after socket-server
+/** This module MUST be initialized after socket-server */
 export function init() {
+  assert(socketServer.io);
   namespace = socketServer.io.of('/external-grading');
   namespace.on('connection', connection);
 }
 
 export function connection(socket: Socket) {
   socket.on('init', (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token'])) {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['variant_id', 'variant_token'],
+        socketName: 'external grader',
+      })
+    ) {
       return callback(null);
     }
     if (!checkVariantToken(msg.variant_token, msg.variant_id)) {
       return callback(null);
     }
 
-    socket.join(`variant-${msg.variant_id}`);
+    void socket.join(`variant-${msg.variant_id}`);
 
     getVariantSubmissionsStatus(msg.variant_id).then(
       (submissions) => {
@@ -84,7 +95,7 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
       submissions: [
         {
           id: submission.id,
-          grading_job_id: submission.grading_job?.id,
+          grading_job_id: submission.grading_job.id,
           grading_job_status: gradingJobStatus(submission.grading_job),
         },
       ],
@@ -94,17 +105,4 @@ export async function gradingJobStatusUpdated(grading_job_id: string) {
     logger.error('Error selecting submission for grading job', err);
     Sentry.captureException(err);
   }
-}
-
-function ensureProps(data: Record<string, any>, props: string[]): boolean {
-  for (const prop of props) {
-    if (!Object.hasOwn(data, prop)) {
-      logger.error(`socket.io external grader connected without ${prop}`);
-      Sentry.captureException(
-        new Error(`socket.io external grader connected without property ${prop}`),
-      );
-      return false;
-    }
-  }
-  return true;
 }

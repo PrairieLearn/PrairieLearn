@@ -41,14 +41,14 @@ FROM
   JOIN assessments AS a ON (a.id = awsc.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 ORDER BY
   awsc.submission_count DESC,
-  i.short_name,
-  c.short_name,
-  ci.short_name,
-  assessment,
-  a.id
+  i.short_name ASC,
+  c.short_name ASC,
+  ci.short_name ASC,
+  assessment ASC,
+  a.id ASC
 LIMIT
   $limit;

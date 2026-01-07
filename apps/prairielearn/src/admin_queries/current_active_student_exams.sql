@@ -18,7 +18,7 @@ WITH
       possible_exams AS ai
       JOIN page_view_logs AS pvl ON (pvl.assessment_instance_id = ai.id)
     ORDER BY
-      ai.id,
+      ai.id ASC,
       pvl.date DESC
   ),
   last_submissions AS (
@@ -33,7 +33,7 @@ WITH
     WHERE
       s.credit > 0
     ORDER BY
-      ai.id,
+      ai.id ASC,
       s.date DESC
   )
 SELECT
@@ -56,9 +56,9 @@ FROM
   LEFT JOIN last_submissions ON (last_submissions.id = ai.id)
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  JOIN users AS u ON (u.user_id = ai.user_id)
+  JOIN users AS u ON (u.id = ai.user_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
   (
     (

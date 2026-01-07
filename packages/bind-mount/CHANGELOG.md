@@ -1,5 +1,47 @@
 # @prairielearn/bind-mount
 
+## 1.1.15
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 1.1.14
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.1.13
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.1.12
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
+## 1.1.11
+
+### Patch Changes
+
+- f571b40: Upgrade all JavaScript dependencies
+
+## 1.1.10
+
+### Patch Changes
+
+- b55261c: Upgrade to TypeScript 5.9
+
+## 1.1.9
+
+### Patch Changes
+
+- 23adb05: Upgrade all JavaScript dependencies
+
 ## 1.1.8
 
 ### Patch Changes

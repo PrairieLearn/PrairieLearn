@@ -5,6 +5,7 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { regradeAllAssessmentInstances } from '../../lib/regrading.js';
+import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   InstructorAssessmentRegrading,
@@ -16,10 +17,11 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_instance_permission_view'],
+    unauthorizedUsers: 'block',
+  }),
   asyncHandler(async (req, res) => {
-    if (!res.locals.authz_data.has_course_instance_permission_view) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
-    }
     const regradingJobSequences = await sqldb.queryRows(
       sql.select_regrading_job_sequences,
       { assessment_id: res.locals.assessment.id },
@@ -39,8 +41,8 @@ router.post(
     if (req.body.__action === 'regrade_all') {
       const job_sequence_id = await regradeAllAssessmentInstances(
         res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else {

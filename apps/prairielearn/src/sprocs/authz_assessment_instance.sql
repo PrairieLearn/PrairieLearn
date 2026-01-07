@@ -1,15 +1,15 @@
 CREATE FUNCTION
     authz_assessment_instance (
         IN assessment_instance_id bigint,
-        IN authz_data JSONB,
+        IN authz_data jsonb,
         IN req_date timestamptz,
         IN display_timezone text,
-        IN group_work boolean,
+        IN team_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
         OUT credit integer,          -- How much credit will they receive?
-        OUT credit_date_string TEXT, -- For display to the user.
+        OUT credit_date_string text, -- For display to the user.
         OUT time_limit_min integer,  -- Time limit (if any) for this assessment.
         OUT time_limit_expired boolean, -- Is the time limit expired?
         OUT password text,           -- Password (if any) for this assessment.
@@ -18,7 +18,7 @@ CREATE FUNCTION
         OUT show_closed_assessment_score boolean, -- If students can view their grade after the assessment is closed
         OUT active boolean,         -- If the assessment is active
         OUT next_active_time text,  -- The next time the assessment becomes active. This is non-null only if the assessment is not currently active but will be later.
-        OUT access_rules JSONB       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
+        OUT access_rules jsonb       -- For display to the user. The currently active rule is marked by 'active' = TRUE.
     )
 AS $$
 DECLARE
@@ -104,12 +104,12 @@ BEGIN
     -- the user about grading on an exam assessment instance. Be careful if you
     -- change this behavior!
     --
-    -- What about groups? No problem. Everything is the same, except for group work
-    -- we need to check instead that "there exists a group_users with the same group_id
+    -- What about teams? No problem. Everything is the same, except for team work
+    -- we need to check instead that "there exists a team_users with the same team_id
     -- as the assessment instance and the same user_id as the effective user."
     IF
-        (((group_work) AND (NOT EXISTS (SELECT 1 FROM group_users AS gu WHERE gu.group_id = assessment_instance.group_id AND gu.user_id = (authz_data->'user'->>'user_id')::bigint)))
-        OR ((NOT group_work) AND ((authz_data->'user'->>'user_id')::bigint != assessment_instance.user_id)))
+        (((team_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS tu WHERE tu.team_id = assessment_instance.team_id AND tu.user_id = (authz_data->'user'->>'id')::bigint)))
+        OR ((NOT team_work) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
     THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;

@@ -1,7 +1,7 @@
 import {
   callAsync,
+  execute,
   loadSqlEquiv,
-  queryAsync,
   queryRows,
   runInTransactionAsync,
 } from '@prairielearn/postgres';
@@ -66,7 +66,9 @@ export async function sync(
   });
 
   const newTags = await run(async () => {
-    if (!tagsToCreate.length && !tagsToUpdate.length && !tagsToDelete.length) return [];
+    if (tagsToCreate.length === 0 && tagsToUpdate.length === 0 && tagsToDelete.length === 0) {
+      return [];
+    }
 
     return await runInTransactionAsync(async () => {
       const insertedTags = await run(async () => {
@@ -85,7 +87,7 @@ export async function sync(
       });
 
       if (tagsToUpdate.length > 0) {
-        await queryAsync(sql.update_tags, {
+        await execute(sql.update_tags, {
           course_id: courseId,
           tags: tagsToUpdate.map((t) =>
             JSON.stringify([t.name, t.description, t.color, t.number, t.implicit, t.comment]),
@@ -94,7 +96,7 @@ export async function sync(
       }
 
       if (tagsToDelete.length > 0) {
-        await queryAsync(sql.delete_tags, {
+        await execute(sql.delete_tags, {
           course_id: courseId,
           tags: tagsToDelete,
         });

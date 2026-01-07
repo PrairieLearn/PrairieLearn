@@ -1,17 +1,15 @@
 import { formatDate, formatInterval } from '@prairielearn/formatter';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { DateFromISOString, IntervalSchema } from '@prairielearn/zod';
 
-import { config } from '../lib/config.js';
 import {
   type Assessment,
   type AssessmentInstance,
   type Course,
   type CourseInstance,
-  DateFromISOString,
-  type Group,
   type InstanceQuestion,
-  IntervalSchema,
   type Question,
+  type Team,
   type User,
   type Variant,
 } from '../lib/db-types.js';
@@ -28,8 +26,8 @@ export function InstructorInfoPanel({
   lastGrader,
   question,
   variant,
-  instance_group,
-  instance_group_uid_list,
+  instance_team,
+  instance_team_uid_list,
   instance_user,
   authz_data,
   question_is_shared,
@@ -45,8 +43,8 @@ export function InstructorInfoPanel({
   lastGrader?: User | null;
   question?: Question;
   variant?: Variant;
-  instance_group?: Group | null;
-  instance_group_uid_list?: string[] | null;
+  instance_team?: Team | null;
+  instance_team_uid_list?: string[] | null;
   instance_user?: User | null;
   authz_data: Record<string, any>;
   question_is_shared?: boolean;
@@ -76,7 +74,7 @@ export function InstructorInfoPanel({
         <h2>Staff information</h2>
       </div>
       ${ListGroup([
-        InstanceUserInfo({ instance_user, instance_group, instance_group_uid_list }),
+        InstanceUserInfo({ instance_user, instance_team, instance_team_uid_list }),
         QuestionInfo({
           course,
           course_instance,
@@ -113,23 +111,23 @@ function ListGroup(children: HtmlValue[]) {
 
 function InstanceUserInfo({
   instance_user,
-  instance_group,
-  instance_group_uid_list,
+  instance_team,
+  instance_team_uid_list,
 }: {
   instance_user?: User | null;
-  instance_group?: Group | null;
-  instance_group_uid_list?: string[] | null;
+  instance_team?: Team | null;
+  instance_team_uid_list?: string[] | null;
 }) {
-  if (instance_user == null && instance_group == null) return '';
+  if (instance_user == null && instance_team == null) return '';
   return html`
     <div>
       <details>
-        ${instance_group != null
+        ${instance_team != null
           ? html`
               <summary><h3 class="card-title h5">Group details</h3></summary>
               <div class="d-flex flex-wrap">
-                <div class="pe-1">${instance_group.name}</div>
-                <div class="pe-1">(${instance_group_uid_list?.join(', ')})</div>
+                <div class="pe-1">${instance_team.name}</div>
+                <div class="pe-1">(${instance_team_uid_list?.join(', ')})</div>
               </div>
             `
           : html`
@@ -161,12 +159,12 @@ function QuestionInfo({
 }) {
   if (question == null || variant == null) return '';
 
-  const questionPreviewUrl = `${config.urlPrefix}/${
+  const questionPreviewUrl = `/pl/${
     course_instance != null
       ? `course_instance/${course_instance.id}/instructor`
       : `course/${course.id}`
   }/question/${question.id}?variant_seed=${variant.variant_seed}`;
-  const publicPreviewUrl = `${config.urlPrefix}/public/course/${question.course_id}/question/${question.id}/preview`;
+  const publicPreviewUrl = `/pl/public/course/${question.course_id}/question/${question.id}/preview`;
 
   // We don't show the sharing name in the QID if the question is not shared
   // publicly for importing, such as if only `share_source_publicly` is set.
@@ -267,7 +265,7 @@ function AssessmentInstanceInfo({
 }) {
   if (assessment == null || assessment_instance == null) return '';
 
-  const instructorUrlPrefix = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor`;
+  const instructorUrlPrefix = `/pl/course_instance/${assessment.course_instance_id}/instructor`;
 
   // Some legacy queries still return the duration and date as a string, so parse them before formatting
   const duration =
@@ -325,7 +323,7 @@ function ManualGradingInfo({
     return '';
   }
 
-  const manualGradingUrl = `${config.urlPrefix}/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
+  const manualGradingUrl = `/pl/course_instance/${assessment.course_instance_id}/instructor/assessment/${assessment.id}/manual_grading/instance_question/${instance_question.id}`;
 
   return html`
     <h3 class="card-title h5">Manual grading</h3>

@@ -124,6 +124,8 @@
     contents = rtePurify.sanitize(contents, rtePurifyConfig);
 
     quill.setContents(quill.clipboard.convert({ html: contents }));
+    // Ensure that the initial content is not part of the undo stack
+    quill.history.clear();
 
     const getText = () => quill.getText();
     const counter = options.counter === 'none' ? null : new Counter(options.counter, uuid, getText);
@@ -172,7 +174,7 @@
 
   // Override default implementation of 'formula'
 
-  var Embed = Quill.import('blots/embed');
+  const Embed = Quill.import('blots/embed');
 
   class MathFormula extends Embed {
     static create(value) {
@@ -184,11 +186,11 @@
     }
 
     static updateNode(node, value) {
+      node.setAttribute('data-value', value);
       MathJax.startup.promise.then(async () => {
         const html = await (MathJax.tex2chtmlPromise || MathJax.tex2svgPromise)(value);
         node.innerHTML = html.innerHTML;
         node.contentEditable = 'false';
-        node.setAttribute('data-value', value);
       });
     }
 
