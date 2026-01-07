@@ -159,12 +159,6 @@ router.post(
       accessType: 'instructor',
     });
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-    });
-
     if (req.body.__action === 'copy_course_instance') {
       const {
         short_name,
@@ -251,8 +245,7 @@ router.post(
       );
 
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
-        enrollmentManagementEnabled
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
