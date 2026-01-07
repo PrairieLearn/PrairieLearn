@@ -360,6 +360,15 @@ WHERE
   cip.course_instance_id = $course_instance_id
   AND cp.user_id = $user_id;
 
+-- BLOCK select_course_permission_for_user
+SELECT
+  cp.course_role
+FROM
+  course_permissions AS cp
+WHERE
+  cp.course_id = $course_id
+  AND cp.user_id = $user_id;
+
 -- BLOCK user_is_instructor_in_any_course
 SELECT
   TRUE

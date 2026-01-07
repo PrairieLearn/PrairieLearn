@@ -16,6 +16,7 @@ import {
   CoursePermissionSchema,
   type EnumCourseInstanceRole,
   EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
   type User,
 } from '../lib/db-types.js';
 
@@ -294,6 +295,24 @@ export async function selectCourseInstancePermissionForUser({
     sql.select_course_instance_permission_for_user,
     { course_instance_id, user_id },
     EnumCourseInstanceRoleSchema,
+  );
+}
+
+/**
+ * Returns the course role for a user in a specific course, or null if the user
+ * has no course permissions.
+ */
+export async function selectCoursePermissionForUser({
+  course_id,
+  user_id,
+}: {
+  course_id: string;
+  user_id: string;
+}) {
+  return await queryOptionalRow(
+    sql.select_course_permission_for_user,
+    { course_id, user_id },
+    EnumCourseRoleSchema,
   );
 }
 
