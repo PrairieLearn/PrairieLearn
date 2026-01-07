@@ -1,0 +1,19 @@
+FROM ubuntu:24.04
+ARG CACHEBUST=2025-12-15-14-21-51
+
+ENV DEBIAN_FRONTEND=noninteractive
+COPY pre-install.sh /pre-install.sh
+RUN /bin/bash /pre-install.sh
+
+COPY pl-gosu-helper.sh /pl-gosu-helper.sh
+COPY start-vnc.sh /start-vnc.sh
+COPY java /opt/defaults/java
+COPY server /opt/server
+
+COPY post-install.sh /post-install.sh
+RUN /bin/bash /post-install.sh
+
+USER 1001
+ENV PL_USER=prairielearner
+
+CMD ["/pl-gosu-helper.sh", "/start-vnc.sh" ]

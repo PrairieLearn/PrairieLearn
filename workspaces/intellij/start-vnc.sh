@@ -1,0 +1,14 @@
+#!/usr/bin/env bash
+
+# Copy over config files
+cp -r /opt/defaults/java /home/prairielearner/.java
+cp /opt/defaults/.profile /home/prairielearner/.profile
+cp /opt/defaults/.bashrc /home/prairielearner/.bashrc
+
+chown -R 1001:1001 /home/prairielearner/.java
+
+# VNC -> Websocket proxy layer
+websockify :5901 localhost:5900 &
+
+# Start web server
+cd /opt/server && node server.js --de /opt/idea/bin/idea

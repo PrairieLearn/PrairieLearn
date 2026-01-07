@@ -1,0 +1,14 @@
+{
+  "uuid": "b03c9933-6625-4a4d-9b4c-2499b9efd816",
+  "title": "Workspace demo: IntelliJ",
+  "topic": "Workspace",
+  "tags": [],
+  "type": "v3",
+  "singleVariant": true,
+  "workspaceOptions": {
+    "image": "prairielearn/workspace-intellij-idea",
+    "port": 8080,
+    "home": "/home/prairielearner/IdeaProjects",
+    "gradedFiles": []
+  }
+}
