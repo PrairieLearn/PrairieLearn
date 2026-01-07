@@ -149,7 +149,7 @@ WITH
     SELECT DISTINCT
       ON (t.id, u.id) ai.id,
       u.id AS user_id,
-      t.id AS team_id
+      t.id AS team_id,
       assessment_id,
       t.name AS team_name,
       teams_uid_list (t.id) AS uid_list
