@@ -94,7 +94,7 @@ async function testDynamicFiles(
       question_course,
     );
 
-    const studentMessage = 'Error generating dynamic file: ' + filename;
+    const studentMessage = 'Error creating file: ' + filename;
     const courseData = { variant, question, course, filename };
     await writeCourseIssues(
       courseIssues,
