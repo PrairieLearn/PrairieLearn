@@ -23,6 +23,105 @@ import { type ServerJob, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
+/**
+ * Extracts unique dynamic file names from HTML content.
+ * Looks for URLs matching the pattern `generatedFilesQuestion/variant/{variantId}/{filename}`.
+ *
+ * @param html - The HTML content to search.
+ * @param variantId - The variant ID to match in URLs.
+ * @returns An array of unique filenames found in the HTML.
+ */
+function extractDynamicFileUrls(html: string, variantId: string): string[] {
+  // Match URLs like:
+  // - /pl/course/123/question/456/generatedFilesQuestion/variant/789/myfile.png
+  // - generatedFilesQuestion/variant/789/data.txt
+  // The variant ID must match exactly, and we capture the filename after it.
+  const escapedVariantId = variantId.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
+  const pattern = new RegExp(
+    `generatedFilesQuestion/variant/${escapedVariantId}/([^"'<>\\s]+)`,
+    'g',
+  );
+
+  const filenames = new Set<string>();
+  let match;
+  while ((match = pattern.exec(html)) !== null) {
+    filenames.add(match[1]);
+  }
+
+  return Array.from(filenames);
+}
+
+/**
+ * Tests dynamic files by extracting URLs from rendered HTML and invoking the
+ * question server's file() function for each unique filename.
+ *
+ * @param htmls - The rendered HTML content from getAndRenderVariant().
+ * @param htmls.questionHtml - The rendered question HTML.
+ * @param htmls.submissionHtmls - The rendered submission HTMLs.
+ * @param htmls.answerHtml - The rendered answer HTML.
+ * @param htmls.extraHeadersHtml - Extra headers HTML.
+ * @param variant - The variant being tested.
+ * @param question - The question being tested.
+ * @param course - The course for the variant.
+ * @param user_id - The current effective user.
+ * @param authn_user_id - The currently authenticated user.
+ */
+async function testDynamicFiles(
+  htmls: {
+    questionHtml?: string;
+    submissionHtmls?: string[];
+    answerHtml?: string;
+    extraHeadersHtml?: string;
+  },
+  variant: Variant,
+  question: Question,
+  course: Course,
+  user_id: string,
+  authn_user_id: string,
+): Promise<void> {
+  // Don't test dynamic files for broken variants
+  if (variant.broken_at) return;
+
+  // Only Freeform questions support dynamic files
+  const questionModule = questionServers.getModule(question.type);
+  if (!questionModule.file) return;
+
+  // Combine all HTML content for searching
+  const allHtml = [
+    htmls.questionHtml ?? '',
+    htmls.answerHtml ?? '',
+    htmls.extraHeadersHtml ?? '',
+    ...(htmls.submissionHtmls ?? []),
+  ].join('\n');
+
+  // Extract unique dynamic file URLs
+  const filenames = extractDynamicFileUrls(allHtml, variant.id);
+  if (filenames.length === 0) return;
+
+  const question_course = await getQuestionCourse(question, course);
+
+  // Test each dynamic file
+  for (const filename of filenames) {
+    const { courseIssues } = await questionModule.file(
+      filename,
+      variant,
+      question,
+      question_course,
+    );
+
+    const studentMessage = 'Error generating dynamic file: ' + filename;
+    const courseData = { variant, question, course, filename };
+    await writeCourseIssues(
+      courseIssues,
+      variant,
+      user_id,
+      authn_user_id,
+      studentMessage,
+      courseData,
+    );
+  }
+}
+
 interface TestResultStats {
   generateDuration: number;
   initialRenderDuration: number;
@@ -274,15 +373,36 @@ async function testQuestion(
   const authn_user = await selectUserById(authn_user_id);
 
   const initialRenderStart = Date.now();
+  const initialRenderLocals = {
+    question,
+    course: variant_course,
+    urlPrefix: `/pl/course/${variant_course.id}`,
+    user,
+    authn_user,
+    is_administrator: false,
+    // These will be populated by getAndRenderVariant
+    questionHtml: undefined as string | undefined,
+    submissionHtmls: undefined as string[] | undefined,
+    answerHtml: undefined as string | undefined,
+    extraHeadersHtml: undefined as string | undefined,
+  };
   try {
-    await getAndRenderVariant(variant.id, null, {
+    await getAndRenderVariant(variant.id, null, initialRenderLocals);
+
+    // Test dynamic files from the initial render
+    await testDynamicFiles(
+      {
+        questionHtml: initialRenderLocals.questionHtml,
+        submissionHtmls: initialRenderLocals.submissionHtmls,
+        answerHtml: initialRenderLocals.answerHtml,
+        extraHeadersHtml: initialRenderLocals.extraHeadersHtml,
+      },
+      variant,
       question,
-      course: variant_course,
-      urlPrefix: `/pl/course/${variant_course.id}`,
-      user,
-      authn_user,
-      is_administrator: false,
-    });
+      variant_course,
+      user_id,
+      authn_user_id,
+    );
   } finally {
     const initialRenderEnd = Date.now();
     initialRenderDuration = initialRenderEnd - initialRenderStart;
@@ -306,15 +426,36 @@ async function testQuestion(
 
     // Render once more to make sure we can render the various panels with the submitted data.
     const finalRenderStart = Date.now();
+    const finalRenderLocals = {
+      question,
+      course: variant_course,
+      urlPrefix: `/pl/course/${variant_course.id}`,
+      user,
+      authn_user,
+      is_administrator: false,
+      // These will be populated by getAndRenderVariant
+      questionHtml: undefined as string | undefined,
+      submissionHtmls: undefined as string[] | undefined,
+      answerHtml: undefined as string | undefined,
+      extraHeadersHtml: undefined as string | undefined,
+    };
     try {
-      await getAndRenderVariant(variant.id, null, {
+      await getAndRenderVariant(variant.id, null, finalRenderLocals);
+
+      // Test dynamic files from the final render
+      await testDynamicFiles(
+        {
+          questionHtml: finalRenderLocals.questionHtml,
+          submissionHtmls: finalRenderLocals.submissionHtmls,
+          answerHtml: finalRenderLocals.answerHtml,
+          extraHeadersHtml: finalRenderLocals.extraHeadersHtml,
+        },
+        variant,
         question,
-        course: variant_course,
-        urlPrefix: `/pl/course/${variant_course.id}`,
-        user,
-        authn_user,
-        is_administrator: false,
-      });
+        variant_course,
+        user_id,
+        authn_user_id,
+      );
     } finally {
       const finalRenderEnd = Date.now();
       finalRenderDuration = finalRenderEnd - finalRenderStart;
