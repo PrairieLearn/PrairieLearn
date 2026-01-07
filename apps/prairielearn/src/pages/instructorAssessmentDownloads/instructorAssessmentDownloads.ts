@@ -562,7 +562,7 @@ router.get(
       );
 
       const columns: Columns = [
-        ['teamName', 'name'],
+        ['groupName', 'name'],
         ['UID', 'uid'],
       ];
       if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);
