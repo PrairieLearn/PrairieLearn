@@ -21,6 +21,7 @@ WITH
       JOIN team_configs AS tc ON (tc.id = t.team_config_id)
     WHERE
       tc.assessment_id = $assessment_id
+      -- TODO: investigate this.
       AND t.name ~ '^group[0-9]+$'
       AND t.deleted_at IS NULL
     ORDER BY
