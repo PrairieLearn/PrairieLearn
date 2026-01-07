@@ -21,8 +21,7 @@ WITH
       JOIN team_configs AS tc ON (tc.id = t.team_config_id)
     WHERE
       tc.assessment_id = $assessment_id
-      -- TODO: investigate this.
-      AND t.name ~ '^group[0-9]+$'
+      AND t.name ~ '^team[0-9]+$'
       AND t.deleted_at IS NULL
     ORDER BY
       team_number DESC
@@ -38,12 +37,12 @@ WITH
             -- If no name is provided, use the next team number.
             (
               SELECT
-                'group' || team_number
+                'team' || team_number
               FROM
                 next_team_number
             ),
-            -- If no name is provided and no teams exist, use 'group1'.
-            'group1'
+            -- If no name is provided and no teams exist, use 'team1'.
+            'team1'
           ),
           tc.id,
           tc.course_instance_id
