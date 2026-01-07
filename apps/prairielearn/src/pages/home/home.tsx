@@ -17,6 +17,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
+import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
@@ -128,6 +129,8 @@ router.get(
       institution_id: res.locals.authn_institution.id,
     });
 
+    const search = getUrl(req).search;
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -149,6 +152,7 @@ router.get(
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
             enrollmentManagementEnabled={enrollmentManagementEnabled}
+            search={search}
           />
         ),
       }),
