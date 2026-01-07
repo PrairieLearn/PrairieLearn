@@ -60,11 +60,7 @@ export const TeamStudentPermissionsJsonSchema = z
       .describe('Whether students can create teams.')
       .optional()
       .default(false),
-    canJoinTeam: z
-      .boolean()
-      .describe('Whether students can join teams.')
-      .optional()
-      .default(false),
+    canJoinTeam: z.boolean().describe('Whether students can join teams.').optional().default(false),
     canLeaveTeam: z
       .boolean()
       .describe('Whether students can leave teams.')
