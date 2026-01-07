@@ -9,7 +9,7 @@ WITH
     SET
       course_role = EXCLUDED.course_role
     WHERE
-      -- excluded is the new role, only lets you step up in permissions
+      -- only allows stepping up in permissions
       cp.course_role < EXCLUDED.course_role
     RETURNING
       cp.*
@@ -170,6 +170,10 @@ FOR NO KEY UPDATE OF
   cp;
 
 -- BLOCK insert_course_instance_permissions
+-- Inserts or updates course instance permissions for a user. This query only
+-- allows stepping up in permissions (i.e., if the user already has a higher
+-- role, the role will not be changed). Returns the existing course_permissions
+-- record for the user, or nothing if no course permissions exist.
 WITH
   existing_course_permission AS (
     SELECT
