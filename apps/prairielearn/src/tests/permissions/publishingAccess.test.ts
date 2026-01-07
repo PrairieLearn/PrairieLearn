@@ -16,10 +16,58 @@ const courseInstanceId = '1';
 describe('publishing page access', { timeout: 60_000 }, function () {
   const publishingUrl = `http://localhost:${config.serverPort}${getCourseInstancePublishingUrl(courseInstanceId)}`;
 
+  async function postUpdatePublishing(
+    cookie: string,
+    options: { startDate?: string; endDate?: string } = {},
+  ): Promise<Response> {
+    const pageResponse = await helperClient.fetchCheerio(publishingUrl, {
+      headers: { cookie },
+    });
+    const csrfToken = pageResponse.$('input[name="__csrf_token"]').val() as string;
+    const origHash = pageResponse.$('input[name="orig_hash"]').val() as string;
+
+    return fetch(publishingUrl, {
+      method: 'POST',
+      headers: { cookie },
+      body: new URLSearchParams({
+        __action: 'update_publishing',
+        __csrf_token: csrfToken,
+        orig_hash: origHash,
+        start_date: options.startDate ?? '',
+        end_date: options.endDate ?? '',
+      }),
+      redirect: 'manual',
+    });
+  }
+
+  async function postAddExtension(
+    cookie: string,
+    options: { name?: string; endDate: string; uids: string },
+  ): Promise<Response> {
+    const pageResponse = await helperClient.fetchCheerio(publishingUrl, {
+      headers: { cookie },
+    });
+    const csrfToken = pageResponse.$('input[name="__csrf_token"]').val() as string;
+
+    return fetch(publishingUrl, {
+      method: 'POST',
+      headers: {
+        cookie,
+        Accept: 'application/json',
+      },
+      body: new URLSearchParams({
+        __action: 'add_extension',
+        __csrf_token: csrfToken,
+        name: options.name ?? '',
+        end_date: options.endDate,
+        uids: options.uids,
+      }),
+    });
+  }
+
   beforeAll(helperServer.before());
 
   beforeAll(async function () {
-    // Set up test users
     const instructor = await getOrCreateUser({
       uid: 'instructor@example.com',
       name: 'Test Instructor',
@@ -27,15 +75,13 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       email: 'instructor@example.com',
     });
 
-    // Give the instructor course owner permissions
     await insertCoursePermissionsByUserUid({
       course_id: courseId,
       uid: instructor.uid,
       course_role: 'Owner',
       authn_user_id: instructor.id,
     });
-    // Give the instructor course instance editor permissions (student data editor)
-    // This allows testing course instance permission scenarios
+
     await insertCourseInstancePermissions({
       course_id: courseId,
       user_id: instructor.id,
@@ -150,6 +196,61 @@ describe('publishing page access', { timeout: 60_000 }, function () {
           response.$('.alert:contains("You do not have permission to edit publishing settings")'),
           0,
         );
+      },
+    );
+  });
+
+  describe('publishing settings POST permissions', () => {
+    test.sequential(
+      'student data editor (without course editor) cannot POST to update publishing settings',
+      async () => {
+        const cookie =
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
+        const response = await postUpdatePublishing(cookie, {
+          startDate: '2024-01-01T00:00',
+          endDate: '2024-12-31T23:59',
+        });
+        assert.equal(response.status, 403);
+      },
+    );
+
+    test.sequential(
+      'course editor (without student data) can POST to update publishing settings',
+      async () => {
+        const cookie =
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
+        const response = await postUpdatePublishing(cookie);
+        assert.equal(response.status, 302);
+      },
+    );
+  });
+
+  describe('extensions POST permissions', () => {
+    test.sequential(
+      'student data editor (without course editor) cannot POST to add extension',
+      async () => {
+        const cookie =
+          'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor';
+        const response = await postAddExtension(cookie, {
+          name: 'Test Extension',
+          endDate: '2024-12-31T23:59',
+          uids: 'student@example.com',
+        });
+        assert.equal(response.status, 403);
+      },
+    );
+
+    test.sequential(
+      'course editor (without student data editor) cannot POST to add extension',
+      async () => {
+        const cookie =
+          'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=None';
+        const response = await postAddExtension(cookie, {
+          name: 'Test Extension',
+          endDate: '2024-12-31T23:59',
+          uids: 'student@example.com',
+        });
+        assert.equal(response.status, 403);
       },
     );
   });
