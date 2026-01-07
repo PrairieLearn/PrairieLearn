@@ -182,7 +182,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (res.locals.team_config?.has_roles && !res.locals.team_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
-      'Your current group role does not give you permission to submit to this question.',
+      'Your current team role does not give you permission to submit to this question.',
     );
   }
   return await processSubmission(req, res, { studentSubmission: true });

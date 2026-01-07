@@ -293,7 +293,7 @@ export async function initExpress(): Promise<Express> {
     upload.single('file'),
   );
   app.post(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/teams',
     upload.single('file'),
   );
   app.post(
@@ -884,10 +884,10 @@ export async function initExpress(): Promise<Express> {
     ],
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/groups',
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/teams',
     [
       function (req: Request, res: Response, next: NextFunction) {
-        res.locals.navSubPage = 'groups';
+        res.locals.navSubPage = 'teams';
         next();
       },
       (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,

@@ -73,7 +73,7 @@ export function QuestionNavSideButton({
   }
 
   if (teamRolePermissions?.can_view === false) {
-    disabledExplanation = html`Your current group role (${userTeamRoles}) restricts access to the
+    disabledExplanation = html`Your current team role (${userTeamRoles}) restricts access to the
     ${buttonLabel.toLowerCase()}.`;
   } else if (sequenceLocked) {
     disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission

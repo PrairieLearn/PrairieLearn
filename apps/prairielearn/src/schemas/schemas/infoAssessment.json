@@ -123,7 +123,7 @@
       "default": []
     },
     "canSubmit": {
-      "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+      "description": "A list of team role names matching those in teamRoles that can submit the question. Only applicable for team assessments.",
       "type": "array",
       "items": {
         "type": "string"
@@ -132,7 +132,7 @@
       "default": []
     },
     "canView": {
-      "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+      "description": "A list of team role names matching those in teamRoles that can view the question. Only applicable for team assessments.",
       "type": "array",
       "items": {
         "type": "string"
@@ -329,7 +329,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+          "description": "A list of team role names that can submit questions in this zone. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -338,7 +338,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+          "description": "A list of team role names that can view questions in this zone. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -413,7 +413,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+          "description": "A list of team role names matching those in teamRoles that can submit the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -422,7 +422,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+          "description": "A list of team role names matching those in teamRoles that can view the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"

@@ -141,7 +141,7 @@ function HonorPledge({
         ? html`<div class="px-3 py-2 honor-code">${unsafeHtml(customHonorCode)}</div>`
         : html`<ul class="list-group list-group-flush">
             <li class="list-group-item py-2">
-              I certify that I am ${user.name} and ${teamWork ? 'our group is' : 'I am'} allowed to
+              I certify that I am ${user.name} and ${teamWork ? 'our team is' : 'I am'} allowed to
               take this assessment.
             </li>
             <li class="list-group-item py-2">
@@ -191,8 +191,8 @@ function StudentTeamControls({
     ${teamConfig.minimum != null && teamConfig.minimum - teamInfo.teamSize > 0
       ? html`
           <p class="text-center">
-            * Minimum group size is ${teamConfig.minimum}. You need at least
-            ${teamConfig.minimum - teamInfo.teamSize} more group member(s) to start.
+            * Minimum team size is ${teamConfig.minimum}. You need at least
+            ${teamConfig.minimum - teamInfo.teamSize} more team member(s) to start.
           </p>
         `
       : ''}
@@ -209,7 +209,7 @@ function TeamCreationJoinForm({
   if (!teamConfig.student_authz_join && !teamConfig.student_authz_create) {
     return html`
       <p class="text-center">
-        This is a group assessment. Please wait for the instructor to assign groups.
+        This is a team assessment. Please wait for the instructor to assign teams.
       </p>
     `;
   }
@@ -218,18 +218,18 @@ function TeamCreationJoinForm({
     <p class="text-center">
       ${(teamConfig.minimum ?? 0) > 1
         ? html`
-            This is a group assessment. A group must have
+            This is a team assessment. A team must have
             ${teamConfig.maximum != null
               ? `between ${teamConfig.minimum} and ${teamConfig.maximum}`
               : `at least ${teamConfig.minimum}`}
             students.
           `
         : html`
-            This assessment can be done individually or in groups.
+            This assessment can be done individually or in teams.
             ${teamConfig.maximum
-              ? `A group must have no more than ${teamConfig.maximum} students.`
+              ? `A team must have no more than ${teamConfig.maximum} students.`
               : ''}
-            <br />To work individually, you must also create a group, but you don't need to share
+            <br />To work individually, you must also create a team, but you don't need to share
             your join code.
           `}
     </p>
@@ -241,7 +241,7 @@ function TeamCreationJoinForm({
                 <form id="create-form" name="create-form" method="POST">
                   ${teamConfig.student_authz_choose_name
                     ? html`
-                        <label for="team-name-input">Group name</label>
+                        <label for="team-name-input">Team name</label>
                         <input
                           type="text"
                           class="form-control"
@@ -250,12 +250,12 @@ function TeamCreationJoinForm({
                           maxlength="30"
                           pattern="[a-zA-Z0-9]+"
                           placeholder="e.g. teamOne"
-                          aria-label="Group name"
+                          aria-label="Team name"
                           aria-describedby="team-name-help"
                         />
                         <small id="team-name-help" class="form-text text-muted">
-                          Group names can only contain letters and numbers, with maximum length of
-                          30 characters. If you leave this blank, a group name will be generated for
+                          Team names can only contain letters and numbers, with maximum length of 30
+                          characters. If you leave this blank, a team name will be generated for
                           you.
                         </small>
                       `
@@ -264,7 +264,7 @@ function TeamCreationJoinForm({
                     <div class="mb-3">
                       <input type="hidden" name="__action" value="create_team" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                      <button type="submit" class="btn btn-primary">Create new group</button>
+                      <button type="submit" class="btn btn-primary">Create new team</button>
                     </div>
                   </div>
                 </form>
@@ -290,7 +290,7 @@ function TeamCreationJoinForm({
                     <div class="mb-3">
                       <input type="hidden" name="__action" value="join_team" />
                       <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                      <button type="submit" class="btn btn-primary">Join group</button>
+                      <button type="submit" class="btn btn-primary">Join team</button>
                     </div>
                   </div>
                 </form>

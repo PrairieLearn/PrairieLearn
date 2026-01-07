@@ -42,7 +42,7 @@ In addition to those properties, the following properties can be used to further
 
 ### Team work
 
-Team work (also known as group work) allows multiple students to work together on the same assessment instance. The recommended way to configure team work is using the `teams` property.
+Team work (previously known as group work) allows multiple students to work together on the same assessment instance.
 
 | Property                                                     | Type   | Description                                               |
 | ------------------------------------------------------------ | ------ | --------------------------------------------------------- |
@@ -357,7 +357,7 @@ After the four submissions above the student has achieved 6.5 points for the que
 
 ## Assessment instances, question selection, and question order
 
-PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the configuration in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student (or group of students, for group assessments), and it is this selection that is the _assessment instance_ for the student/group. There is only one copy of each assessment, but every student/group has their own assessment instance.
+PrairieLearn distinguishes between _assessments_ and _assessment instances_. An _assessment_ is determined by the configuration in an `assessments/` directory, and is something like "Midterm 1". Given an assessment, PrairieLearn needs to select the random list of questions for each student (or team of students, for team assessments), and it is this selection that is the _assessment instance_ for the student/team. There is only one copy of each assessment, but every student/team has their own assessment instance.
 
 The specific questions assigned to a particular assessment instance are chosen in three steps:
 
@@ -365,7 +365,7 @@ The specific questions assigned to a particular assessment instance are chosen i
 
 2. For each zone, concatenate the _selected questions_ from each `questions` entry to form the total list of _available zone questions_. If `numberChoose` is specified for the zone, randomly select that many questions from the available zone questions to give the _zone questions_ (defaults to selecting all of the available zone questions). If shuffling is enabled, randomly shuffle the order of the _zone questions_.
 
-3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_. This set of questions forms the _assessment instance_ for this student/group.
+3. Concatenate the _zone questions_ from each zone to form the total set of _assessment questions_. This set of questions forms the _assessment instance_ for this student/team.
 
 Each zone appears in the given order in the assessment (this is not randomized for each assessment instance). Within each zone the question order is randomized per-instance for Exams, but not randomized for Homeworks (but see the [`shuffleQuestions` option](#question-order-randomization)).
 
@@ -450,19 +450,19 @@ Note that changing an assessment from individual to team-based or vice versa aft
 
 ### Managing teams
 
-Instructors can manage teams on the "Groups" tab of an assessment. This page allows instructors to create individual teams, delete existing teams, and add or remove users from teams.
+Instructors can manage teams on the "Teams" tab of an assessment. This page allows instructors to create individual teams, delete existing teams, and add or remove users from teams.
 
 To create teams in bulk, upload a CSV file in the following format:
 
 ```csv
-groupName,UID
+teamName,UID
 teamA,one@example.com
 teamA,two@example.com
 teamB,three@example.com
 teamB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current team assignments. This can be used to copy team assignments from one assessment to another. The same file is also listed at the bottom of the teams page.
+The assessment's "Downloads" tab has an `<assessment>_teams.csv` file that contains the current team assignments. This can be used to copy team assignments from one assessment to another. The same file is also listed at the bottom of the teams page.
 
 Alternatively, the "Random" button can be used to randomly assign students to teams based on a desired minimum/maximum team size.
 
@@ -777,7 +777,7 @@ If a student uses all of their attempts on a question and cannot submit any more
 
 ### :warning: Warning about in-order questions and high-stakes exams
 
-The `advanceScorePerc` attribute is intended to be used in [group work](#enabling-group-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
+The `advanceScorePerc` attribute is intended to be used in [team work](#enabling-team-work-for-collaborative-assessments) and assessment types which are indirectly supported, such as worksheets (see [multiple instance assessments](#multiple-instance-versus-single-instance-assessments)). In the interest of allowing students to best demonstrate their knowledge of course material, we **strongly** discourage the use of this feature in high-stakes exams where the student cannot receive help from course staff.
 
 ## Auto-closing Exam assessments
 

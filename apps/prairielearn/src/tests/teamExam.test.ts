@@ -102,7 +102,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
           tid: GROUP_EXAM_1_TID,
         });
         const instructorAssessmentsUrlTeamTab =
-          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
+          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/teams';
 
         // Page should load successfully
         const res = await fetch(instructorAssessmentsUrlTeamTab);
@@ -119,7 +119,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
           tid: GROUP_EXAM_2_TID,
         });
         const instructorAssessmentsUrlTeamTab =
-          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
+          courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/teams';
 
         // Page should load successfully
         const res = await fetch(instructorAssessmentsUrlTeamTab);

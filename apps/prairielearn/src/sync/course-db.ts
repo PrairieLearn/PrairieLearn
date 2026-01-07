@@ -1367,12 +1367,12 @@ function validateAssessment({
     assessment.groupRoles.forEach((role) => {
       if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
         warnings.push(
-          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
+          `Team role "${role.name}" has a minimum greater than the team's minimum size.`,
         );
       }
       if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
         errors.push(
-          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
+          `Team role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
         );
       }
       if (
@@ -1381,12 +1381,12 @@ function validateAssessment({
         role.maximum > assessment.groupMaxSize
       ) {
         errors.push(
-          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
+          `Team role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
         );
       }
       if (role.maximum != null && role.minimum > role.maximum) {
         errors.push(
-          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
+          `Team role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
         );
       }
     });
@@ -1404,7 +1404,7 @@ function validateAssessment({
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canView" permission contains the non-existent team role name "${roleName}".`,
           );
         }
       });
@@ -1412,7 +1412,7 @@ function validateAssessment({
       canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canSubmit" permission contains the non-existent team role name "${roleName}".`,
           );
         }
       });

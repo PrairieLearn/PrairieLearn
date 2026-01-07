@@ -808,7 +808,7 @@ function RowLabel({
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
   } else if (!(instance_question_row.team_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userTeamRoles}) restricts access to this question.`;
+    lockedPopoverText = `Your current team role (${userTeamRoles}) restricts access to this question.`;
   }
 
   return html`

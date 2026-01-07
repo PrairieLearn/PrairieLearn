@@ -37,7 +37,7 @@ export function InstructorAssessmentDownloads({
   resLocals: UntypedResLocals;
   filenames: Filenames;
 }) {
-  const identity = resLocals.assessment.team_work ? 'group' : 'student';
+  const identity = resLocals.assessment.team_work ? 'team' : 'student';
 
   return PageLayout({
     resLocals,
@@ -153,7 +153,7 @@ export function InstructorAssessmentDownloads({
                         >
                       </td>
                       <td>
-                        Information about current groups, including group names and group members
+                        Information about current teams, including team names and team members
                       </td>
                     </tr>
                     <tr>
@@ -165,7 +165,7 @@ export function InstructorAssessmentDownloads({
                         >
                       </td>
                       <td>
-                        Total percentage score for each group. Scores range from 0 to 100 (or higher
+                        Total percentage score for each team. Scores range from 0 to 100 (or higher
                         if bonus credit was given).
                       </td>
                     </tr>
@@ -195,7 +195,7 @@ export function InstructorAssessmentDownloads({
                         >
                       </td>
                       <td>
-                        Total points for each group. Points range from 0 to the maximum for this
+                        Total points for each team. Points range from 0 to the maximum for this
                         assessment.
                       </td>
                     </tr>

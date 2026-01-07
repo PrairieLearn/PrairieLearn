@@ -107,7 +107,7 @@ export function EditScoreButton({
               {otherUsers.length > 0 && (
                 <Alert variant="info">
                   <small>
-                    This is a group assessment. Updating this grade will also update grades for:
+                    This is a team assessment. Updating this grade will also update grades for:
                   </small>
                   <ul className="mb-0">
                     {otherUsers.map(({ uid, enrollment_id }) => (

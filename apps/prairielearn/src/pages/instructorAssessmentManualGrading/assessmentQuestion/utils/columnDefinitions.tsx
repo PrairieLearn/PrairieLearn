@@ -218,7 +218,7 @@ export function createColumns({
 
     columnHelper.accessor('user_or_team_name', {
       id: 'user_or_team_name',
-      header: assessment.team_work ? 'Group name' : 'Name',
+      header: assessment.team_work ? 'Team name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),
 

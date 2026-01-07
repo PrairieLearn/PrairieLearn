@@ -21,7 +21,7 @@ export function TeamWorkInfoContainer({
     <div class="container-fluid">
       <div class="row">
         <div class="col-sm bg-light py-4 px-4 border">
-          <div><strong>Group name:</strong> <span id="team-name">${teamInfo.teamName}</span></div>
+          <div><strong>Team name:</strong> <span id="team-name">${teamInfo.teamName}</span></div>
           ${teamConfig.student_authz_join
             ? html`
                 <div>
@@ -30,8 +30,8 @@ export function TeamWorkInfoContainer({
                 <div class="mt-3">
                   ${(teamConfig.minimum ?? 0) > 1
                     ? html`
-                        This is a group assessment. Use your join code to invite others to join the
-                        group. A group must have
+                        This is a team assessment. Use your join code to invite others to join the
+                        team. A team must have
                         ${teamConfig.minimum === teamConfig.maximum
                           ? teamConfig.minimum
                           : teamConfig.maximum
@@ -40,10 +40,10 @@ export function TeamWorkInfoContainer({
                         students.
                       `
                     : html`
-                        This assessment can be done individually or in groups. Use your join code if
-                        you wish to invite others to join the group.
+                        This assessment can be done individually or in teams. Use your join code if
+                        you wish to invite others to join the team.
                         ${teamConfig.maximum
-                          ? `A group must have no more than ${teamConfig.maximum} students.`
+                          ? `A team must have no more than ${teamConfig.maximum} students.`
                           : ''}
                       `}
                 </div>
@@ -60,13 +60,13 @@ export function TeamWorkInfoContainer({
                     data-bs-toggle="modal"
                     data-bs-target="#leaveTeamModal"
                   >
-                    Leave the group
+                    Leave the team
                   </button>
                 </div>
                 ${LeaveTeamModal({ csrfToken })}
               `
             : ''}
-          <span id="team-member"><b>Group members: </b></span>
+          <span id="team-member"><b>Team members: </b></span>
           ${teamInfo.teamMembers.map((user) =>
             teamConfig.has_roles
               ? html`
@@ -89,11 +89,11 @@ export function TeamWorkInfoContainer({
 function LeaveTeamModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
     id: 'leaveTeamModal',
-    title: 'Confirm leave group',
+    title: 'Confirm leave team',
     body: html`
-      <p>Are you sure you want to leave the group?</p>
+      <p>Are you sure you want to leave the team?</p>
       <p>
-        You will lose access to any work done by the group and you might not be able to re-join
+        You will lose access to any work done by the team and you might not be able to re-join
         later.
       </p>
     `,
@@ -101,7 +101,7 @@ function LeaveTeamModal({ csrfToken }: { csrfToken: string }) {
       <input type="hidden" name="__action" value="leave_team" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      <button id="leave-team" type="submit" class="btn btn-danger">Leave group</button>
+      <button id="leave-team" type="submit" class="btn btn-danger">Leave team</button>
     `,
   });
 }
@@ -125,8 +125,8 @@ function TeamRoleTable({
     ${roleConfigProblems > 0
       ? html`
           <div class="alert alert-danger mt-2" role="alert">
-            Your group's role configuration is currently invalid. Please review the role
-            requirements and
+            Your team's role configuration is currently invalid. Please review the role requirements
+            and
             ${userCanAssignRoles
               ? 'assign a valid role configuration'
               : 'ask a user with an assigner role to update the role configuration'}.
@@ -136,7 +136,7 @@ function TeamRoleTable({
       : ''}
     <details class="card mb-2">
       <summary class="card-header bg-secondary text-light">
-        ${userCanAssignRoles ? 'Manage group roles' : 'View group roles'}
+        ${userCanAssignRoles ? 'Manage team roles' : 'View team roles'}
         ${roleConfigProblems > 0
           ? html`
               <span
@@ -151,15 +151,15 @@ function TeamRoleTable({
       <div class="card-body">
         ${TeamRoleErrors({ rolesInfo, teamSize })}
         <p>
-          This assessment contains group roles, which selectively allow students to view questions,
-          submit answers, and change group role assignments.
+          This assessment contains team roles, which selectively allow students to view questions,
+          submit answers, and change team role assignments.
         </p>
 
         <form id="role-select-form" name="role-select-form" method="POST">
           <div class="table-responsive mb-3">
             <table
               class="table table-bordered table-striped table-sm mb-0"
-              aria-label="Group users and roles"
+              aria-label="Team users and roles"
             >
               <thead>
                 <tr>
@@ -267,7 +267,7 @@ function TeamRoleErrors({
     ${!rolesInfo.rolesAreBalanced
       ? html`
           <div class="alert alert-danger" role="alert">
-            At least one student has too many roles. In a group with ${teamSize} students, every
+            At least one student has too many roles. In a team with ${teamSize} students, every
             student must be assigned to exactly <strong>one</strong> role.
           </div>
         `

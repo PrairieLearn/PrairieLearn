@@ -554,7 +554,7 @@ export function QuestionFooterContent({
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
                     data-bs-toggle="popover"
-                    data-bs-content="Your group role (${getRoleNamesForUser(team_info, user).join(
+                    data-bs-content="Your team role (${getRoleNamesForUser(team_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"
