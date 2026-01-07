@@ -167,6 +167,7 @@ router.post(
       course,
       institution,
       urlPrefix,
+      authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -305,9 +306,9 @@ router.post(
         await insertCourseInstancePermissions({
           course_id: course.id,
           course_instance_id: copiedInstance.id,
-          user_id: res.locals.authn_user.user_id,
+          user_id: authzData.authn_user.id,
           course_instance_role: course_instance_permission,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: authzData.authn_user.id,
         });
       }
 

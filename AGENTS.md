@@ -53,6 +53,7 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 - Use `@tanstack/react-query` for API calls.
 - Use `react-hook-form` for form handling.
+- Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 
 ### User interface conventions
 
