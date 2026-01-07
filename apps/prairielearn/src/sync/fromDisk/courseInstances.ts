@@ -60,7 +60,6 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     long_name: courseInstance.longName,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     display_timezone: courseInstance.timezone ?? null,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage,
     comment: JSON.stringify(courseInstance.comment),
     modern_publishing: accessRules == null,
     publishing_start_date: courseInstance.publishing?.startDate ?? null,

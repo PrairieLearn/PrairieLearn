@@ -593,7 +593,7 @@ export const CourseInstanceSchema = z.object({
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
-  hide_in_enroll_page: z.boolean().nullable(),
+  hide_in_enroll_page: z.unknown(), // TODO: Drop column
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),

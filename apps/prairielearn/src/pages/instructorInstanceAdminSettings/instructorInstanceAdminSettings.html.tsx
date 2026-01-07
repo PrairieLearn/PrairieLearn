@@ -63,8 +63,6 @@ export function InstructorInstanceAdminSettings({
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
-    show_in_enroll_page:
-      courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
     self_enrollment_restrict_to_institution: courseInstance.self_enrollment_restrict_to_institution,

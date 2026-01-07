@@ -11,8 +11,7 @@ import {
 import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
-import { EmptyStateCards } from './components/EmptyStateCards.js';
-import { StudentCoursesCard } from './components/StudentCoursesCard.js';
+import { HomeCards } from './components/HomeCards.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -52,6 +51,7 @@ export function Home({
   adminInstitutions,
   urlPrefix,
   isDevMode,
+  search,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -60,6 +60,7 @@ export function Home({
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
+  search: string;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -77,32 +78,23 @@ export function Home({
     return false;
   });
 
-  const hasCourses = listedStudentCourses.length > 0 || instructorCourses.length > 0;
-
   return (
     <div className="pt-5">
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-      {hasCourses ? (
-        <>
-          <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
-          <Hydrate>
-            <StudentCoursesCard
-              studentCourses={listedStudentCourses}
-              hasInstructorCourses={instructorCourses.length > 0}
-              canAddCourses={canAddCourses}
-              csrfToken={csrfToken}
-              urlPrefix={urlPrefix}
-              isDevMode={isDevMode}
-            />
-          </Hydrate>
-        </>
-      ) : (
-        <Hydrate>
-          <EmptyStateCards urlPrefix={urlPrefix} />
-        </Hydrate>
-      )}
+      <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
+      <Hydrate>
+        <HomeCards
+          studentCourses={listedStudentCourses}
+          hasInstructorCourses={instructorCourses.length > 0}
+          canAddCourses={canAddCourses}
+          csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+          isDevMode={isDevMode}
+          search={search}
+        />
+      </Hydrate>
     </div>
   );
 }
