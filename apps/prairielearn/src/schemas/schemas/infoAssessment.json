@@ -160,6 +160,111 @@
       "type": "boolean",
       "default": false
     },
+    "teams": {
+      "description": "Configuration for team-based assessments. Cannot be used with legacy group properties.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Whether team work is enabled for this assessment.",
+          "type": "boolean",
+          "default": true
+        },
+        "minMembers": {
+          "description": "Minimum number of students in a team.",
+          "type": "number"
+        },
+        "maxMembers": {
+          "description": "Maximum number of students in a team.",
+          "type": "number"
+        },
+        "roles": {
+          "description": "Array of custom user roles in a team.",
+          "type": "array",
+          "items": {
+            "description": "A custom role for use in team assessments.",
+            "type": "object",
+            "required": ["name"],
+            "properties": {
+              "name": {
+                "description": "The team role's name (e.g., Manager, Recorder).",
+                "type": "string"
+              },
+              "minMembers": {
+                "description": "The minimum number of users that should be in this role.",
+                "type": "number",
+                "default": 0
+              },
+              "maxMembers": {
+                "description": "The maximum number of users that should be in this role.",
+                "type": "number"
+              }
+            }
+          },
+          "default": []
+        },
+        "studentPermissions": {
+          "description": "Student permissions for team management.",
+          "type": "object",
+          "properties": {
+            "canCreateTeam": {
+              "description": "Whether students can create teams.",
+              "type": "boolean",
+              "default": false
+            },
+            "canJoinTeam": {
+              "description": "Whether students can join teams.",
+              "type": "boolean",
+              "default": false
+            },
+            "canLeaveTeam": {
+              "description": "Whether students can leave teams.",
+              "type": "boolean",
+              "default": false
+            },
+            "canNameTeam": {
+              "description": "Whether students can choose a team name when creating a team.",
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "default": {}
+        },
+        "rolePermissions": {
+          "description": "Role-based permissions for team assessments.",
+          "type": "object",
+          "properties": {
+            "canAssignRoles": {
+              "description": "Role names that can assign other users to roles.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            },
+            "canView": {
+              "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true,
+              "default": []
+            },
+            "canSubmit": {
+              "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "uniqueItems": true,
+              "default": []
+            }
+          },
+          "default": {}
+        }
+      }
+    },
     "advanceScorePerc": {
       "description": "Minimum score percentage to unlock access to subsequent questions.",
       "$ref": "#/definitions/AdvanceScorePercJsonSchema"

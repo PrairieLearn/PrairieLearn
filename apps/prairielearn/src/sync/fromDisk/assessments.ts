@@ -315,12 +315,21 @@ function getParamsForAssessment(
     });
   });
 
-  const teamRoles = assessment.groupRoles.map((role) => ({
-    role_name: role.name,
-    minimum: role.minimum,
-    maximum: role.maximum,
-    can_assign_roles: role.canAssignRoles,
-  }));
+  // Determine team configuration - prefer new teams schema over legacy group properties
+  const teamsConfig = assessment.teams;
+  const teamRoles = teamsConfig
+    ? teamsConfig.roles.map((role) => ({
+        role_name: role.name,
+        minimum: role.minMembers,
+        maximum: role.maxMembers,
+        can_assign_roles: teamsConfig.rolePermissions.canAssignRoles.includes(role.name),
+      }))
+    : assessment.groupRoles.map((role) => ({
+        role_name: role.name,
+        minimum: role.minimum,
+        maximum: role.maximum,
+        can_assign_roles: role.canAssignRoles,
+      }));
 
   return {
     type: assessment.type,
@@ -349,21 +358,28 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    // TODO: Fix up schemas to refer to teams and not groups
-    // https://github.com/PrairieLearn/PrairieLearn/issues/13545
-    team_work: assessment.groupWork,
-    team_max_size: assessment.groupMaxSize ?? null,
-    team_min_size: assessment.groupMinSize ?? null,
-    student_team_create: assessment.studentGroupCreate,
-    student_team_choose_name: assessment.studentGroupChooseName,
-    student_team_join: assessment.studentGroupJoin,
-    student_team_leave: assessment.studentGroupLeave,
+    // Team configuration - use new teams schema if present, otherwise fall back to legacy group properties
+    team_work: teamsConfig ? teamsConfig.enabled : assessment.groupWork,
+    team_max_size: teamsConfig ? (teamsConfig.maxMembers ?? null) : (assessment.groupMaxSize ?? null),
+    team_min_size: teamsConfig ? (teamsConfig.minMembers ?? null) : (assessment.groupMinSize ?? null),
+    student_team_create: teamsConfig
+      ? teamsConfig.studentPermissions.canCreateTeam
+      : assessment.studentGroupCreate,
+    student_team_choose_name: teamsConfig
+      ? teamsConfig.studentPermissions.canNameTeam
+      : assessment.studentGroupChooseName,
+    student_team_join: teamsConfig
+      ? teamsConfig.studentPermissions.canJoinTeam
+      : assessment.studentGroupJoin,
+    student_team_leave: teamsConfig
+      ? teamsConfig.studentPermissions.canLeaveTeam
+      : assessment.studentGroupLeave,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: assessment.groupRoles.length > 0,
-    json_can_view: assessment.canView,
-    json_can_submit: assessment.canSubmit,
+    has_roles: teamRoles.length > 0,
+    json_can_view: teamsConfig ? teamsConfig.rolePermissions.canView : assessment.canView,
+    json_can_submit: teamsConfig ? teamsConfig.rolePermissions.canSubmit : assessment.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
     modern_access_control: false,
     allowAccess,

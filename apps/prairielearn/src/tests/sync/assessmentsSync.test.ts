@@ -19,6 +19,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   QuestionSchema,
+  TeamConfigSchema,
   type TeamRole,
   TeamRoleSchema,
   ZoneSchema,
@@ -3917,5 +3918,93 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[1].json_tries_per_variant, 2);
     assert.equal(syncedData.assessment_questions[1].json_tries_per_variant, 3);
     assert.isNull(syncedData.assessment_questions[2].json_tries_per_variant);
+  });
+
+  it('records an error if both teams and legacy group properties are used', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.groupWork = true;
+    assessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 4,
+      roles: [{ name: 'Manager', minMembers: 1 }],
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager'],
+        canSubmit: ['Manager'],
+      },
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['conflictAssessment'] =
+      assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('conflictAssessment');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot use both "teams" and legacy group properties/,
+    );
+  });
+
+  it('syncs teams configuration correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 5,
+      roles: [
+        { name: 'Manager', minMembers: 1, maxMembers: 1 },
+        { name: 'Recorder', minMembers: 1, maxMembers: 1 },
+        { name: 'Contributor' },
+      ],
+      studentPermissions: {
+        canCreateTeam: true,
+        canJoinTeam: true,
+        canLeaveTeam: false,
+        canNameTeam: true,
+      },
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager', 'Recorder', 'Contributor'],
+        canSubmit: ['Recorder'],
+      },
+    };
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [{ id: util.QUESTION_ID, points: 5 }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsAssessment'] = assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('teamsAssessment');
+    assert.isNull(syncedAssessment.sync_errors);
+
+    // Verify team config was synced
+    const teamConfigs = await util.dumpTableWithSchema('team_configs', TeamConfigSchema);
+    const teamConfig = teamConfigs.find((tc) => tc.assessment_id === syncedAssessment.id);
+    assert.isOk(teamConfig);
+    assert.equal(teamConfig.minimum, 2);
+    assert.equal(teamConfig.maximum, 5);
+    assert.equal(teamConfig.student_authz_create, true);
+    assert.equal(teamConfig.student_authz_join, true);
+    assert.equal(teamConfig.student_authz_leave, false);
+    assert.equal(teamConfig.student_authz_choose_name, true);
+
+    // Verify team roles were synced
+    const teamRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    const assessmentRoles = teamRoles.filter((r) => r.assessment_id === syncedAssessment.id);
+    assert.equal(assessmentRoles.length, 3);
+
+    const managerRole = assessmentRoles.find((r) => r.role_name === 'Manager');
+    assert.isOk(managerRole);
+    assert.equal(managerRole.minimum, 1);
+    assert.equal(managerRole.maximum, 1);
+    assert.equal(managerRole.can_assign_roles, true);
+
+    const recorderRole = assessmentRoles.find((r) => r.role_name === 'Recorder');
+    assert.isOk(recorderRole);
+    assert.equal(recorderRole.can_assign_roles, false);
   });
 });

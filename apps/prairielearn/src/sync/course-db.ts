@@ -1127,6 +1127,26 @@ function validateAssessment({
     );
   }
 
+  // Check for conflict between legacy group properties and new teams schema
+  if (assessment.teams != null) {
+    const usedLegacyProps: string[] = [];
+    if (assessment.groupWork === true) usedLegacyProps.push('groupWork');
+    if (assessment.groupMaxSize != null) usedLegacyProps.push('groupMaxSize');
+    if (assessment.groupMinSize != null) usedLegacyProps.push('groupMinSize');
+    if (assessment.groupRoles.length > 0) usedLegacyProps.push('groupRoles');
+    if (assessment.studentGroupCreate === true) usedLegacyProps.push('studentGroupCreate');
+    if (assessment.studentGroupJoin === true) usedLegacyProps.push('studentGroupJoin');
+    if (assessment.studentGroupLeave === true) usedLegacyProps.push('studentGroupLeave');
+    if (assessment.studentGroupChooseName === false) usedLegacyProps.push('studentGroupChooseName');
+
+    if (usedLegacyProps.length > 0) {
+      errors.push(
+        'Cannot use both "teams" and legacy group properties in the same assessment. ' +
+          `Found: ${usedLegacyProps.map((p) => `"${p}"`).join(', ')}.`,
+      );
+    }
+  }
+
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
   if (assessment.type === 'Homework') {
     // Because of how Homework-type assessments work, we don't allow
@@ -1432,6 +1452,76 @@ function validateAssessment({
           'zone question',
         );
       });
+    });
+  }
+
+  // Validate new teams schema
+  if (assessment.teams != null && assessment.teams.roles.length > 0) {
+    const rolePerms = assessment.teams.rolePermissions;
+
+    // Validate at least one role in canAssignRoles has minMembers >= 1
+    if (rolePerms.canAssignRoles.length > 0) {
+      const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
+      const hasAssigner = assessment.teams.roles.some(
+        (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
+      );
+      if (!hasAssigner) {
+        errors.push(
+          'No role in "rolePermissions.canAssignRoles" has minMembers >= 1. At least one role must be able to assign roles.',
+        );
+      }
+    }
+
+    // Validate role constraints
+    const validRoleNames = new Set(assessment.teams.roles.map((r) => r.name));
+
+    // Validate canAssignRoles references valid roles
+    rolePerms.canAssignRoles.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(`"rolePermissions.canAssignRoles" contains non-existent role "${roleName}".`);
+      }
+    });
+
+    // Validate canView references valid roles
+    rolePerms.canView.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(`"rolePermissions.canView" contains non-existent role "${roleName}".`);
+      }
+    });
+
+    // Validate canSubmit references valid roles
+    rolePerms.canSubmit.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(`"rolePermissions.canSubmit" contains non-existent role "${roleName}".`);
+      }
+    });
+
+    // Validate role min/max constraints
+    assessment.teams.roles.forEach((role) => {
+      if (assessment.teams!.minMembers != null && role.minMembers > assessment.teams!.minMembers) {
+        warnings.push(
+          `Team role "${role.name}" has a minMembers greater than the team's minMembers.`,
+        );
+      }
+      if (assessment.teams!.maxMembers != null && role.minMembers > assessment.teams!.maxMembers) {
+        errors.push(
+          `Team role "${role.name}" contains an invalid minMembers. (Expected at most ${assessment.teams!.maxMembers}, found ${role.minMembers}).`,
+        );
+      }
+      if (
+        role.maxMembers != null &&
+        assessment.teams!.maxMembers != null &&
+        role.maxMembers > assessment.teams!.maxMembers
+      ) {
+        errors.push(
+          `Team role "${role.name}" contains an invalid maxMembers. (Expected at most ${assessment.teams!.maxMembers}, found ${role.maxMembers}).`,
+        );
+      }
+      if (role.maxMembers != null && role.minMembers > role.maxMembers) {
+        errors.push(
+          `Team role "${role.name}" must have minMembers <= maxMembers. (Expected minMembers <= ${role.maxMembers}, found minMembers = ${role.minMembers}).`,
+        );
+      }
     });
   }
 
