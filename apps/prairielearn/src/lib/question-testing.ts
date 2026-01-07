@@ -1,3 +1,5 @@
+import * as cheerio from 'cheerio';
+import { ElementType } from 'domelementtype';
 import jsonStringifySafe from 'json-stringify-safe';
 import _ from 'lodash';
 import { z } from 'zod';
@@ -24,20 +26,23 @@ import { type ServerJob, createServerJob } from './server-jobs.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**
- * Extracts unique dynamic file names from HTML content.
- * Looks for URLs matching the pattern `generatedFilesQuestion/variant/{variantId}/{filename}`.
- *
- * @param html - The HTML content to search.
- * @param variantId - The variant ID to match in URLs.
- * @returns An array of unique filenames found in the HTML.
+ * Extracts unique dynamic file names from HTML content by parsing with cheerio
+ * and searching all element attributes for URLs matching the pattern
+ * `generatedFilesQuestion/variant/{variantId}/{filename}`.
  */
 function extractDynamicFileUrls(html: string, variantId: string): string[] {
-  const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^"'<>\\s]+)`, 'g');
+  const $ = cheerio.load(html);
+  const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^?#]+)$`);
   const filenames = new Set<string>();
-  let match;
-  while ((match = pattern.exec(html)) !== null) {
-    filenames.add(match[1]);
-  }
+
+  $('*').each((_, el) => {
+    if (el.type !== ElementType.Tag) return;
+    for (const value of Object.values(el.attribs)) {
+      const match = value.match(pattern);
+      if (match) filenames.add(match[1].trim());
+    }
+  });
+
   return Array.from(filenames);
 }
 
