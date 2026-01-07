@@ -1,4 +1,4 @@
--- BLOCK select_group_work_assessment
+-- BLOCK select_team_work_assessment
 SELECT
   a.id
 FROM
@@ -9,7 +9,7 @@ WHERE
   AND aset.abbreviation = 'HW'
   AND a.team_work IS TRUE;
 
--- BLOCK select_group_config
+-- BLOCK select_team_config
 SELECT
   minimum,
   maximum
@@ -19,7 +19,7 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK select_all_user_in_group
+-- BLOCK select_all_user_in_team
 SELECT
   team_id,
   user_id
