@@ -93,6 +93,17 @@ warnings.filterwarnings(
     message=r"invalid escape sequence .*",
 )
 
+# Importing pandas causes pyarrow to create native threads. These threads are
+# invisible to Python's threading module but are detected by os.fork(), which
+# emits a DeprecationWarning about potential deadlocks. The threads are from
+# pyarrow's C++ code, not Python threads holding the GIL, so they're safe to
+# fork with. We suppress this warning since it's a false positive in our case.
+warnings.filterwarnings(
+    "ignore",
+    category=DeprecationWarning,
+    message=r".*multi-threaded.*fork\(\).*",
+)
+
 # Pre-load commonly used modules
 import html
 import math
