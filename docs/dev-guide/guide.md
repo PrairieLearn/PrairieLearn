@@ -743,3 +743,74 @@ console.log(idsEqual(12345, '12345'));
 ```
 
 "Modern" queries that use Zod validation will automatically coerce all IDs to strings. If you're confident that data on both sides of the comparison is coming from a Zod-validated query, you can use the `===` operator directly.
+
+## Safe database types
+
+PrairieLearn distinguishes between raw database types and safe types that can be exposed to the client. When rendering pages, data flows from the database to the server and then to the client (browser). Raw database types may contain sensitive information that should not be exposed to certain users, such as internal IDs, configuration values, or user data that should only be visible to administrators.
+
+### The two type files
+
+**`db-types.ts`** (located at `apps/prairielearn/src/lib/db-types.ts`) contains Zod schemas for all database tables. These types represent the complete row structure as stored in PostgreSQL.
+
+**`safe-db-types.ts`** (located at `apps/prairielearn/src/lib/client/safe-db-types.ts`) provides sanitized versions of database types organized into access levels:
+
+| Prefix | Access Level | Use Case |
+|--------|--------------|----------|
+| `Admin*` | Administrators | System administration pages |
+| `Staff*` | Course staff | Instructor and TA views |
+| `Student*` | Students | Student-facing pages |
+| `Public*` | Public/unauthenticated | Public course information |
+
+Each level exposes progressively fewer fields using Zod's `.pick()` method.
+
+### Using safe types
+
+Client components that receive props via hydration must use safe types. The `<Hydrate>` component and `hydrateHtml()` function serialize data and send it to the client, so any props must use types from `safe-db-types.ts`:
+
+```typescript
+// GOOD: Using safe types
+import { StaffUser, StaffCourse } from '../lib/client/safe-db-types.js';
+
+interface MyComponentProps {
+  user: StaffUser;
+  course: StaffCourse;
+}
+```
+
+```typescript
+// BAD: Using raw database types - will be flagged by the linter
+import { User, Course } from '../lib/db-types.js';
+
+interface MyComponentProps {
+  user: User;
+  course: Course;
+}
+```
+
+### ESLint enforcement
+
+The `@prairielearn/safe-db-types` ESLint rule automatically detects when hydrated components use types from `db-types.ts` instead of `safe-db-types.ts`. If you see an error like:
+
+```
+Prop "user" uses type "User" which is derived from db-types.ts. Use safe-db-types.ts instead.
+```
+
+You need to find or create an appropriate safe type in `safe-db-types.ts` and update your component props accordingly.
+
+### Adding new safe types
+
+When you need to expose a new database type to the client:
+
+1. Determine the appropriate access level (Admin, Staff, Student, Public)
+2. Add the schema to `safe-db-types.ts` using `.pick()` to select only safe fields
+3. Use `.brand()` to create a nominally typed version for compile-time safety
+
+```typescript
+export const RawStaffMyTableSchema = RawMyTableSchema.pick({
+  id: true,
+  name: true,
+  // Only include fields safe for staff to see
+});
+export const StaffMyTableSchema = RawStaffMyTableSchema.brand<'StaffMyTable'>();
+export type StaffMyTable = z.infer<typeof StaffMyTableSchema>;
+```
