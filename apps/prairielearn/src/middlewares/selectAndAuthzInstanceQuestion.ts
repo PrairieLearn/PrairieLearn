@@ -117,7 +117,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
       ) {
         throw new error.HttpStatusError(
           400,
-          'Group role assignments do not match required settings for this assessment. Questions cannot be viewed until the group role assignments are updated.',
+          'Team role assignments do not match required settings for this assessment. Questions cannot be viewed until the team role assignments are updated.',
         );
       }
 
@@ -135,7 +135,7 @@ export async function selectAndAuthzInstanceQuestion(req: Request, res: Response
         if (!res.locals.team_role_permissions.can_view) {
           throw new error.HttpStatusError(
             400,
-            'Your current group role does not give you permission to see this question.',
+            'Your current team role does not give you permission to see this question.',
           );
         }
       }
