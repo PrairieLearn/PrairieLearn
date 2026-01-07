@@ -36,11 +36,7 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   // - /pl/course/123/question/456/generatedFilesQuestion/variant/789/myfile.png
   // - generatedFilesQuestion/variant/789/data.txt
   // The variant ID must match exactly, and we capture the filename after it.
-  const escapedVariantId = variantId.replaceAll(/[.*+?^${}()|[\]\\]/g, '\\$&');
-  const pattern = new RegExp(
-    `generatedFilesQuestion/variant/${escapedVariantId}/([^"'<>\\s]+)`,
-    'g',
-  );
+  const pattern = new RegExp(`generatedFilesQuestion/variant/${variantId}/([^"'<>\\s]+)`, 'g');
 
   const filenames = new Set<string>();
   let match;
