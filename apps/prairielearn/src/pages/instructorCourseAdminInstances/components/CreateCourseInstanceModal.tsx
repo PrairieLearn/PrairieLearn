@@ -19,9 +19,7 @@ import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { getCourseEditErrorUrl, getCourseInstanceSettingsUrl } from '../../../lib/client/url.js';
 
 interface CreateFormValues
-  extends PublishingFormValues,
-    SelfEnrollmentFormValues,
-    PermissionsFormValues {
+  extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
 }

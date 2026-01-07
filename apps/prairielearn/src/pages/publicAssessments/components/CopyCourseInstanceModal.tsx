@@ -62,9 +62,7 @@ export function CopyCourseInstanceModal({
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
   interface CopyFormValues
-    extends PublishingFormValues,
-      SelfEnrollmentFormValues,
-      PermissionsFormValues {}
+    extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {}
 
   const defaultValues: CopyFormValues = {
     start_date: '',

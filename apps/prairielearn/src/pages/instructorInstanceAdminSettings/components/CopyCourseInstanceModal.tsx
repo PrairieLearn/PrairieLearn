@@ -22,9 +22,7 @@ import {
 } from '../../../lib/client/url.js';
 
 interface CopyFormValues
-  extends PublishingFormValues,
-    SelfEnrollmentFormValues,
-    PermissionsFormValues {
+  extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
 }

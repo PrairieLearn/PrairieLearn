@@ -114,7 +114,11 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course, institution, authz_data: authzData } = extractPageContext(res.locals, {
+    const {
+      course,
+      institution,
+      authz_data: authzData,
+    } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
