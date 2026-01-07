@@ -12,7 +12,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   selectCourseInstanceByUuid,
@@ -42,7 +41,6 @@ router.get(
     const {
       authz_data: authzData,
       course,
-      institution,
       __csrf_token,
       urlPrefix,
     } = extractPageContext(res.locals, {
@@ -73,11 +71,6 @@ router.get(
         })),
       );
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-    });
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -93,7 +86,6 @@ router.get(
         content: (
           <Hydrate>
             <InstructorCourseAdminInstances
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               courseInstances={safeCourseInstancesWithEnrollmentCounts}
               course={course}
               canEditCourse={authzData.has_course_permission_edit}
@@ -111,14 +103,9 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course, institution } = extractPageContext(res.locals, {
+    const { course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
-    });
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
     });
 
     if (req.body.__action === 'add_course_instance') {
@@ -215,8 +202,7 @@ router.post(
       );
 
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
-        enrollmentManagementEnabled
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,

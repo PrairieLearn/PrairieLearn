@@ -6,13 +6,13 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, GroupRoleSchema, type User } from '../lib/db-types.js';
+import { AssessmentInstanceSchema, TeamRoleSchema, type User } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
-import { switchUserAndLoadAssessment } from './utils/group.js';
+import { switchUserAndLoadAssessment } from './utils/team.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -22,11 +22,11 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const GROUP_WORK_EXAM_TID = 'exam16-groupWorkRoles';
+const TEAM_WORK_EXAM_TID = 'exam16-groupWorkRoles';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
-const GROUP_NAME = 'groupBB';
+const TEAM_NAME = 'teamBB';
 
 async function generateThreeStudentUsers() {
   const rows = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
@@ -35,19 +35,19 @@ async function generateThreeStudentUsers() {
 }
 
 /**
- * Creates a new group in the given assessment as the user with the given CSRF token
+ * Creates a new team in the given assessment as the user with the given CSRF token
  */
-async function createGroup(
-  group_name: string,
+async function createTeam(
+  team_name: string,
   csrfToken: string,
   assessmentUrl: string,
 ): Promise<cheerio.CheerioAPI> {
   const res = await fetch(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
-      __action: 'create_group',
+      __action: 'create_team',
       __csrf_token: csrfToken,
-      group_name,
+      team_name,
     }),
   });
   assert.isOk(res.ok);
@@ -56,9 +56,9 @@ async function createGroup(
 }
 
 /**
- * Joins a group in an assessment using the provided join code as the user with the given CSRF token
+ * Joins a team in an assessment using the provided join code as the user with the given CSRF token
  */
-async function joinGroup(
+async function joinTeam(
   assessmentUrl: string,
   joinCode: string,
   csrfToken: string,
@@ -66,7 +66,7 @@ async function joinGroup(
   const res = await fetch(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
-      __action: 'join_group',
+      __action: 'join_team',
       __csrf_token: csrfToken,
       join_code: joinCode,
     }),
@@ -77,19 +77,19 @@ async function joinGroup(
 }
 
 /**
- * Sends and verifies a group roles update request using current user.
- * Updates element list to check that group role select table is changed correctly.
+ * Sends and verifies a team roles update request using current user.
+ * Updates element list to check that team role select table is changed correctly.
  */
-async function updateGroupRoles(
+async function updateTeamRoles(
   roleUpdates: any[],
-  groupRoles: any[],
+  teamRoles: any[],
   studentUsers: User[],
   csrfToken: string,
   assessmentUrl: string,
   $: cheerio.CheerioAPI,
 ): Promise<cheerio.CheerioAPI> {
   // Uncheck all of the inputs
-  const roleIds = groupRoles.map((role) => role.id);
+  const roleIds = teamRoles.map((role) => role.id);
   const userIds = studentUsers.map((user) => user.id);
   for (const roleId of roleIds) {
     for (const userId of userIds) {
@@ -102,8 +102,8 @@ async function updateGroupRoles(
   assert.lengthOf(checkedBoxes, 0, 'all checkboxes in role select form must be unchecked');
 
   // Mark the checkboxes as checked
-  roleUpdates.forEach(({ roleId, groupUserId }) => {
-    $(`#user_role_${roleId}-${groupUserId}`).attr('checked', '');
+  roleUpdates.forEach(({ roleId, teamUserId }) => {
+    $(`#user_role_${roleId}-${teamUserId}`).attr('checked', '');
   });
   checkedBoxes = $('#role-select-form').find('tr').find('input:checked');
   assert.lengthOf(
@@ -120,12 +120,12 @@ async function updateGroupRoles(
   const res = await fetch(assessmentUrl, {
     method: 'POST',
     body: new URLSearchParams({
-      __action: 'update_group_roles',
+      __action: 'update_team_roles',
       __csrf_token: csrfToken,
       ...checkedElementIds,
     }),
   });
-  assert.isOk(res.ok, 'updating group roles should be successful');
+  assert.isOk(res.ok, 'updating team roles should be successful');
   return cheerio.load(await res.text());
 }
 
@@ -143,14 +143,14 @@ async function getQuestionUrl(
 }
 
 /**
- * Validates and prepares a role-based group assessment with three users in a
+ * Validates and prepares a role-based team assessment with three users in a
  * valid user configuration, then returns data for use in tests.
  */
-async function prepareGroup() {
+async function prepareTeam() {
   // Get exam assessment URL using ids from database
   const assessmentId = await queryRow(
     sql.select_assessment,
-    { assessment_tid: GROUP_WORK_EXAM_TID },
+    { assessment_tid: TEAM_WORK_EXAM_TID },
     IdSchema,
   );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;
@@ -158,68 +158,68 @@ async function prepareGroup() {
   // Generate three users
   const studentUsers = await generateThreeStudentUsers();
 
-  // Get group roles
-  const groupRoles = await queryRows(
-    sql.select_assessment_group_roles,
+  // Get team roles
+  const teamRoles = await queryRows(
+    sql.select_assessment_team_roles,
     { assessment_id: assessmentId },
-    GroupRoleSchema.pick({
+    TeamRoleSchema.pick({
       id: true,
       role_name: true,
       minimum: true,
       maximum: true,
     }),
   );
-  assert.lengthOf(groupRoles, 4);
+  assert.lengthOf(teamRoles, 4);
 
-  const manager = groupRoles.find((row) => row.role_name === 'Manager');
+  const manager = teamRoles.find((row) => row.role_name === 'Manager');
   assert.isDefined(manager);
-  const recorder = groupRoles.find((row) => row.role_name === 'Recorder');
+  const recorder = teamRoles.find((row) => row.role_name === 'Recorder');
   assert.isDefined(recorder);
-  const reflector = groupRoles.find((row) => row.role_name === 'Reflector');
+  const reflector = teamRoles.find((row) => row.role_name === 'Reflector');
   assert.isDefined(reflector);
-  const contributor = groupRoles.find((row) => row.role_name === 'Contributor');
+  const contributor = teamRoles.find((row) => row.role_name === 'Contributor');
   assert.isDefined(contributor);
 
-  // As first user, create group, load the page, and check group information
+  // As first user, create team, load the page, and check team information
   const { csrfToken: firstUserCsrfToken } = await switchUserAndLoadAssessment(
     studentUsers[0],
     assessmentUrl,
     'create-form',
   );
-  let $ = await createGroup(GROUP_NAME, firstUserCsrfToken, assessmentUrl);
+  let $ = await createTeam(TEAM_NAME, firstUserCsrfToken, assessmentUrl);
   const joinCode = $('#join-code').text();
 
-  // Join group as second user
+  // Join team as second user
   const { csrfToken: secondUserCsrfToken } = await switchUserAndLoadAssessment(
     studentUsers[1],
     assessmentUrl,
-    'joingroup-form',
+    'jointeam-form',
   );
-  await joinGroup(assessmentUrl, joinCode, secondUserCsrfToken);
+  await joinTeam(assessmentUrl, joinCode, secondUserCsrfToken);
 
-  // Join group as third user
+  // Join team as third user
   const { csrfToken: thirdUserCsrfToken } = await switchUserAndLoadAssessment(
     studentUsers[2],
     assessmentUrl,
-    'joingroup-form',
+    'jointeam-form',
   );
-  await joinGroup(assessmentUrl, joinCode, thirdUserCsrfToken);
+  await joinTeam(assessmentUrl, joinCode, thirdUserCsrfToken);
 
-  // Switch to first user and assign group roles
+  // Switch to first user and assign team roles
   const { $: $preJoinFirstUserPage } = await switchUserAndLoadAssessment(
     studentUsers[0],
     assessmentUrl,
     null,
-    '#leaveGroupModal',
+    '#leaveTeamModal',
   );
   const validRoleConfig = [
-    { roleId: manager.id, groupUserId: studentUsers[0].id },
-    { roleId: recorder.id, groupUserId: studentUsers[1].id },
-    { roleId: reflector.id, groupUserId: studentUsers[2].id },
+    { roleId: manager.id, teamUserId: studentUsers[0].id },
+    { roleId: recorder.id, teamUserId: studentUsers[1].id },
+    { roleId: reflector.id, teamUserId: studentUsers[2].id },
   ];
-  $ = await updateGroupRoles(
+  $ = await updateTeamRoles(
     validRoleConfig,
-    groupRoles,
+    teamRoles,
     studentUsers,
     firstUserCsrfToken,
     assessmentUrl,
@@ -251,7 +251,7 @@ async function prepareGroup() {
     questionOneUrl: await getQuestionUrl(courseInstanceUrl, assessmentInstanceId, QUESTION_ID_1),
     questionTwoUrl: await getQuestionUrl(courseInstanceUrl, assessmentInstanceId, QUESTION_ID_2),
     questionThreeUrl: await getQuestionUrl(courseInstanceUrl, assessmentInstanceId, QUESTION_ID_3),
-    groupRoles,
+    teamRoles,
     manager,
     recorder,
     reflector,
@@ -261,8 +261,8 @@ async function prepareGroup() {
   };
 }
 
-describe('Assessment instance with group roles & permissions - Exam', function () {
-  describe('valid group role configuration tests', { timeout: 20_000 }, function () {
+describe('Assessment instance with team roles & permissions - Exam', function () {
+  describe('valid team role configuration tests', { timeout: 20_000 }, function () {
     beforeAll(helperServer.before(TEST_COURSE_PATH));
 
     beforeAll(function () {
@@ -277,19 +277,19 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       Object.assign(config, storedConfig);
     });
 
-    it('enforces correct permissions during valid group role configuration', async function () {
+    it('enforces correct permissions during valid team role configuration', async function () {
       const {
         assessmentInstanceUrl,
         questionOneUrl,
         questionTwoUrl,
         questionThreeUrl,
         studentUsers,
-      } = await prepareGroup();
+      } = await prepareTeam();
       const { $: $assessmentInstanceFirstUserPage } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
+        '#leaveTeamModal',
       );
       let $ = $assessmentInstanceFirstUserPage;
 
@@ -426,7 +426,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       Object.assign(config, storedConfig);
     });
 
-    it('shows correct errors during invalid group role configuration', async function () {
+    it('shows correct errors during invalid team role configuration', async function () {
       const {
         assessmentInstanceUrl,
         questionOneUrl,
@@ -435,25 +435,25 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         manager,
         recorder,
         reflector,
-        groupRoles,
-      } = await prepareGroup();
+        teamRoles,
+      } = await prepareTeam();
 
       // Assign an invalid configuration
       const { $: $assessmentInstanceFirstUserPage, csrfToken } = await switchUserAndLoadAssessment(
         studentUsers[0],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
+        '#leaveTeamModal',
       );
       const invalidRoleConfig = [
-        { roleId: manager.id, groupUserId: studentUsers[0].id },
-        { roleId: recorder.id, groupUserId: studentUsers[0].id },
-        { roleId: recorder.id, groupUserId: studentUsers[1].id },
-        { roleId: reflector.id, groupUserId: studentUsers[2].id },
+        { roleId: manager.id, teamUserId: studentUsers[0].id },
+        { roleId: recorder.id, teamUserId: studentUsers[0].id },
+        { roleId: recorder.id, teamUserId: studentUsers[1].id },
+        { roleId: reflector.id, teamUserId: studentUsers[2].id },
       ];
-      let $ = await updateGroupRoles(
+      let $ = await updateTeamRoles(
         invalidRoleConfig,
-        groupRoles,
+        teamRoles,
         studentUsers,
         csrfToken,
         assessmentInstanceUrl,
@@ -461,7 +461,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       );
 
       // Assert the correct errors show up on screen
-      let errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
+      let errorNotification = $('[data-testid="team-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -476,12 +476,12 @@ describe('Assessment instance with group roles & permissions - Exam', function (
         studentUsers[1],
         assessmentInstanceUrl,
         null,
-        '#leaveGroupModal',
+        '#leaveTeamModal',
       );
       $ = assessmentInstanceSecondUserPage;
 
       // Assert that the same errors still show
-      errorNotification = $('[data-testid="group-role-config-problems"]:contains(2)');
+      errorNotification = $('[data-testid="team-role-config-problems"]:contains(2)');
       assert.lengthOf(errorNotification, 1, 'role config should have 2 errors');
       assertAlert($, 'role configuration is currently invalid');
       assertAlert($, 'too many roles');
@@ -493,11 +493,11 @@ describe('Assessment instance with group roles & permissions - Exam', function (
           studentUsers[0],
           assessmentInstanceUrl,
           null,
-          '#leaveGroupModal',
+          '#leaveTeamModal',
         );
-      $ = await updateGroupRoles(
+      $ = await updateTeamRoles(
         validRoleConfig,
-        groupRoles,
+        teamRoles,
         studentUsers,
         firstUserCsrfToken2,
         assessmentInstanceUrl,
@@ -505,7 +505,7 @@ describe('Assessment instance with group roles & permissions - Exam', function (
       );
 
       // Check that the errors no longer show
-      errorNotification = $('[data-testid="group-role-config-problems"]');
+      errorNotification = $('[data-testid="team-role-config-problems"]');
       assert.lengthOf(errorNotification, 0, 'no error notification should appear');
       assertAlert($, 'role configuration is currently invalid', 0);
       assertAlert($, 'too many roles', 0);

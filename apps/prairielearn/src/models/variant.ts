@@ -89,9 +89,9 @@ export async function selectVariantsByInstanceQuestion({
 /**
  * Returns whether the given user owns the given variant. There are two cases:
  *
- * - For group work, a user is considered to own a variant if they are in the
- *   group for the assessment instance that the variant is associated with.
- * - For non-group work, a user is considered to own a variant if they are the
+ * - For team work, a user is considered to own a variant if they are in the
+ *   team for the assessment instance that the variant is associated with.
+ * - For non-team work, a user is considered to own a variant if they are the
  *   user that created the variant, as tracked in `variants.user_id`.
  */
 export async function selectUserOwnsVariant({
