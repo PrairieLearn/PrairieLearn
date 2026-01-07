@@ -1367,7 +1367,7 @@ function validateAssessment({
     assessment.groupRoles.forEach((role) => {
       if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
         warnings.push(
-          `Group role "${role.name}" has a minimum greater than the team's minimum size.`,
+          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
         );
       }
       if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
@@ -1404,7 +1404,7 @@ function validateAssessment({
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent team role name "${roleName}".`,
+            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
@@ -1412,7 +1412,7 @@ function validateAssessment({
       canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent team role name "${roleName}".`,
+            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
           );
         }
       });
