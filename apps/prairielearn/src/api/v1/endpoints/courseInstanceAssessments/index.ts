@@ -69,6 +69,7 @@ export const AssessmentInstanceDataSchema = z.array(
     assessment_label: z.string(),
     assessment_set_abbreviation: AssessmentSetSchema.shape.abbreviation,
     assessment_number: AssessmentSchema.shape.number,
+    // Left join users table
     user_id: UserSchema.shape.id.nullable(),
     user_uid: UserSchema.shape.uid.nullable(),
     user_uin: UserSchema.shape.uin.nullable(),
@@ -81,9 +82,11 @@ export const AssessmentInstanceDataSchema = z.array(
     assessment_instance_number: AssessmentInstanceSchema.shape.number,
     open: AssessmentInstanceSchema.shape.open,
     modified_at: z.string(),
+    // Left join team_info sproc
     group_id: AssessmentInstanceSchema.shape.team_id.nullable(),
     group_name: SprocTeamInfoSchema.shape.name.nullable(),
     group_uids: SprocTeamInfoSchema.shape.uid_list.nullable(),
+
     time_remaining: z.string(),
     start_date: z.string().nullable(),
     duration_seconds: z.number(),
