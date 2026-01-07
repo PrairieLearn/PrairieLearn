@@ -14,7 +14,7 @@ WITH
       SUBSTRING(
         t.name
         FROM
-          6
+          5
       )::integer + 1 AS team_number
     FROM
       teams AS t

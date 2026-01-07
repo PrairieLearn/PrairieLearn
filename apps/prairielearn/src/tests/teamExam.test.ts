@@ -237,7 +237,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
         'jointeam-form',
       );
       $ = await joinTeam(assessmentUrl, joinCode, thirdUserCsrfToken);
-      assertAlert($, 'Group is already full');
+      assertAlert($, 'Team is already full');
 
       // Switch to second user and start assessment
       const { $: $secondUser } = await switchUserAndLoadAssessment(
@@ -469,6 +469,6 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
     $ = cheerio.load(await crossAssessmentJoinResponse.text());
 
     // Error message should show
-    assertAlert($, 'Group does not exist');
+    assertAlert($, 'Team does not exist');
   });
 });

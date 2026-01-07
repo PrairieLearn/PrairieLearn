@@ -176,7 +176,7 @@ describe('Instructor team controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assertAlert(response.$, 'in another group');
+    assertAlert(response.$, 'in another team');
     assert.lengthOf(response.$(`#usersTable tr:contains(TestTeam):contains(${users[4].uid})`), 1);
     assert.lengthOf(response.$(`#usersTable tr:contains(TeamTeam2):contains(${users[4].uid})`), 0);
   });
