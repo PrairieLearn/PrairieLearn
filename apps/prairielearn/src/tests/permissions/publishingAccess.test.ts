@@ -63,7 +63,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
       assert.isTrue(response.ok);
     });
 
-    test.sequential('course instance viewer can view publishing page', async () => {
+    test.sequential('student data viewer can view publishing page', async () => {
       const headers = {
         cookie:
           'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Viewer',
@@ -122,11 +122,27 @@ describe('publishing page access', { timeout: 60_000 }, function () {
     });
 
     test.sequential(
-      'course instance editor can edit publishing settings (no alert shown)',
+      'student data editor (without course editor) sees "no permission to edit" alert',
       async () => {
         const headers = {
           cookie:
             'pl_test_user=test_instructor; pl2_requested_course_role=None; pl2_requested_course_instance_role=Student Data Editor',
+        };
+        const response = await helperClient.fetchCheerio(publishingUrl, { headers });
+        assert.isTrue(response.ok);
+        assert.lengthOf(
+          response.$('.alert:contains("You do not have permission to edit publishing settings")'),
+          1,
+        );
+      },
+    );
+
+    test.sequential(
+      'course editor with student data editor can edit publishing settings (no alert shown)',
+      async () => {
+        const headers = {
+          cookie:
+            'pl_test_user=test_instructor; pl2_requested_course_role=Editor; pl2_requested_course_instance_role=Student Data Editor',
         };
         const response = await helperClient.fetchCheerio(publishingUrl, { headers });
         assert.isTrue(response.ok);
@@ -150,7 +166,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         assert.isTrue(response.ok);
         assert.lengthOf(
           response.$(
-            '.alert:contains("You do not have permission to view extensions. Extensions require student data permissions.")',
+            '.alert:contains("You must have student data permission to view and edit extensions.")',
           ),
           1,
         );
@@ -168,7 +184,7 @@ describe('publishing page access', { timeout: 60_000 }, function () {
         assert.isTrue(response.ok);
         assert.lengthOf(
           response.$(
-            '.alert:contains("You do not have permission to view extensions. Extensions require student data permissions.")',
+            '.alert:contains("You must have student data permission to view and edit extensions.")',
           ),
           0,
         );

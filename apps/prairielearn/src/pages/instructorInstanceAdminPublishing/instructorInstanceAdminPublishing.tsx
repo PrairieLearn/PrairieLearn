@@ -208,12 +208,10 @@ router.get(
             <CourseInstancePublishing
               courseInstance={courseInstance}
               canEditPublishing={
-                (hasCoursePermissionEdit || hasCourseInstancePermissionEdit) &&
-                !course.example_course &&
-                origHash !== null
+                hasCoursePermissionEdit && !course.example_course && origHash !== null
               }
               canViewExtensions={hasCourseInstancePermissionView}
-              canEditExtensions={hasCourseInstancePermissionEdit}
+              canEditExtensions={hasCoursePermissionEdit && hasCourseInstancePermissionEdit}
               csrfToken={csrfToken}
               origHash={origHash}
               extensions={publishingExtensions}
@@ -251,14 +249,10 @@ router.post(
       has_course_instance_permission_edit: hasCourseInstancePermissionEdit,
     } = authzData;
 
-    if (!hasCoursePermissionEdit && !hasCourseInstancePermissionEdit) {
-      throw new error.HttpStatusError(
-        403,
-        'Access denied (must be a course or course instance editor)',
-      );
-    }
-
     if (req.body.__action === 'update_publishing') {
+      if (!hasCoursePermissionEdit) {
+        throw new error.HttpStatusError(403, 'Access denied (must be a course editor)');
+      }
       if (!courseInstance.modern_publishing) {
         flash('error', 'Cannot update publishing when legacy allowAccess rules are present');
         res.redirect(req.originalUrl);
@@ -342,9 +336,12 @@ router.post(
       throw new error.HttpStatusError(406, 'Not acceptable');
     }
 
-    // Extension actions require student data edit permission
-    if (!hasCourseInstancePermissionEdit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+    // Extension actions require both course editor and student data editor permissions
+    if (!hasCoursePermissionEdit || !hasCourseInstancePermissionEdit) {
+      throw new error.HttpStatusError(
+        403,
+        'Access denied (must be a course editor and student data editor)',
+      );
     }
 
     if (req.body.__action === 'add_extension') {
