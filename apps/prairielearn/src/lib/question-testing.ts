@@ -87,15 +87,16 @@ async function testDynamicFiles(
   const question_course = await getQuestionCourse(question, course);
 
   for (const filename of filenames) {
+    const decodedFilename = decodeURIComponent(filename);
     const { courseIssues } = await questionModule.file(
-      filename,
+      decodedFilename,
       variant,
       question,
       question_course,
     );
 
-    const studentMessage = 'Error creating file: ' + filename;
-    const courseData = { variant, question, course, filename };
+    const studentMessage = 'Error creating file: ' + decodedFilename;
+    const courseData = { variant, question, course, filename: decodedFilename };
     await writeCourseIssues(
       courseIssues,
       variant,
