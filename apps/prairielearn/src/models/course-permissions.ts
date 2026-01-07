@@ -14,6 +14,8 @@ import {
   CourseInstancePermissionSchema,
   type CoursePermission,
   CoursePermissionSchema,
+  type EnumCourseInstanceRole,
+  EnumCourseInstanceRoleSchema,
   type User,
 } from '../lib/db-types.js';
 
@@ -134,7 +136,7 @@ export async function insertCourseInstancePermissions({
   course_id: string;
   course_instance_id: string;
   user_id: string;
-  course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
+  course_instance_role: EnumCourseInstanceRole;
   authn_user_id: string;
 }): Promise<void> {
   const coursePermission = await queryOptionalRow(
@@ -142,12 +144,23 @@ export async function insertCourseInstancePermissions({
     { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
     CoursePermissionSchema,
   );
+
+  /**
+   *
+   * TODO:
+   *
+   * Admin defaults to none
+   * Everyone else Student data editor
+   */
+
   if (!coursePermission) {
+    // console.log('No course permissions found when inserting course instance permissions');
     throw new error.HttpStatusError(
       404,
       'Cannot add permissions for a course instance without course permissions',
     );
   }
+  console.log('Inserted course instance permissions:', coursePermission, course_instance_role);
 }
 
 export async function updateCourseInstancePermissionsRole({
@@ -204,6 +217,24 @@ export async function deleteAllCourseInstancePermissionsForCourse({
     course_id,
     authn_user_id,
   });
+}
+
+/**
+ * Returns the course instance role for a user in a specific course instance,
+ * or null if the user has no course instance permissions.
+ */
+export async function selectCourseInstancePermissionForUser({
+  course_instance_id,
+  user_id,
+}: {
+  course_instance_id: string;
+  user_id: string;
+}) {
+  return await queryOptionalRow(
+    sql.select_course_instance_permission_for_user,
+    { course_instance_id, user_id },
+    EnumCourseInstanceRoleSchema,
+  );
 }
 
 /**

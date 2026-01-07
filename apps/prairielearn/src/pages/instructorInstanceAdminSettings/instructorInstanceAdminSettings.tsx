@@ -18,6 +18,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -192,9 +193,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
-          course_instance_permission: z
-            .enum(['None', 'Student Data Viewer', 'Student Data Editor'])
-            .optional(),
+          course_instance_permission: EnumCourseInstanceRoleSchema,
         })
         .parse(req.body);
 
@@ -302,22 +301,22 @@ router.post(
       // Assign course instance permissions if a non-None permission was selected.
       // This requires the user to have a course_permissions record; administrators
       // may not have one (they have access via their admin role instead).
-      if (course_instance_permission && course_instance_permission !== 'None') {
-        try {
-          await insertCourseInstancePermissions({
-            course_id: course.id,
-            course_instance_id: copiedInstance.id,
-            user_id: res.locals.authn_user.user_id,
-            course_instance_role: course_instance_permission,
-            authn_user_id: res.locals.authn_user.user_id,
-          });
-        } catch (err) {
-          // If the user doesn't have course permissions (e.g., they're an admin),
-          // skip adding course instance permissions - they already have access.
-          if (!(err instanceof error.HttpStatusError && err.status === 404)) {
-            throw err;
-          }
-        }
+      if (course_instance_permission !== 'None') {
+        // try {
+        await insertCourseInstancePermissions({
+          course_id: course.id,
+          course_instance_id: copiedInstance.id,
+          user_id: res.locals.authn_user.user_id,
+          course_instance_role: course_instance_permission,
+          authn_user_id: res.locals.authn_user.user_id,
+        });
+        // } catch (err) {
+        //   // If the user doesn't have course permissions (e.g., they're an admin),
+        //   // skip adding course instance permissions - they already have access.
+        //   if (!(err instanceof error.HttpStatusError && err.status === 404)) {
+        //     throw err;
+        //   }
+        // }
       }
 
       res.status(200).json({ course_instance_id: copiedInstance.id });

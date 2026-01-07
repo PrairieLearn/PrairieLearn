@@ -9,6 +9,7 @@ WITH
     SET
       course_role = EXCLUDED.course_role
     WHERE
+      -- excluded is the new role, only lets you step up in permissions
       cp.course_role < EXCLUDED.course_role
     RETURNING
       cp.*
@@ -344,6 +345,16 @@ SELECT
   cip.old_state
 FROM
   deleted_course_instance_permissions AS cip;
+
+-- BLOCK select_course_instance_permission_for_user
+SELECT
+  cip.course_instance_role
+FROM
+  course_instance_permissions AS cip
+  JOIN course_permissions AS cp ON cip.course_permission_id = cp.id
+WHERE
+  cip.course_instance_id = $course_instance_id
+  AND cp.user_id = $user_id;
 
 -- BLOCK user_is_instructor_in_any_course
 SELECT

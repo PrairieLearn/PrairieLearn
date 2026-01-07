@@ -3,19 +3,15 @@ import * as path from 'path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import * as tmp from 'tmp';
-import { z } from 'zod';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-
-import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { selectCourseInstancePermissionForUser } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
 import { updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 
@@ -354,11 +350,10 @@ describe('Creating a course instance', () => {
 
       // Admin user doesn't have course_permissions, so no course_instance_permission is created.
       // This is expected - admins have full access via their admin role.
-      const permission = await queryOptionalRow(
-        sql.select_course_instance_permission,
-        { course_instance_id: newCourseInstanceId, user_id: '1' },
-        z.object({ course_instance_role: z.string() }),
-      );
+      const permission = await selectCourseInstancePermissionForUser({
+        course_instance_id: newCourseInstanceId,
+        user_id: '1',
+      });
 
       assert.isNull(permission);
     },
@@ -397,11 +392,10 @@ describe('Creating a course instance', () => {
       assert.isDefined(newCourseInstanceId);
 
       // Verify that no permission was created in the database
-      const permission = await queryOptionalRow(
-        sql.select_course_instance_permission,
-        { course_instance_id: newCourseInstanceId, user_id: '1' },
-        z.object({ course_instance_role: z.string() }),
-      );
+      const permission = await selectCourseInstancePermissionForUser({
+        course_instance_id: newCourseInstanceId,
+        user_id: '1',
+      });
 
       assert.isNull(permission);
     },

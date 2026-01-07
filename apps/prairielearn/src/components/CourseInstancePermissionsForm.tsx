@@ -31,10 +31,7 @@ export function CourseInstancePermissionsForm({ formId }: { formId: string }) {
         <label className="form-check-label" for={`${formId}-permission-none`}>
           No permissions
         </label>
-        <div className="small text-muted">
-          You will not have any course instance permissions. Choose this if you only need to manage
-          course content.
-        </div>
+        <div className="small text-muted">You will not have any course instance permissions.</div>
       </div>
 
       <div className="mb-3 form-check">
@@ -60,7 +57,7 @@ export function CourseInstancePermissionsForm({ formId }: { formId: string }) {
           {...register('course_instance_permission')}
         />
         <label className="form-check-label" for={`${formId}-permission-editor`}>
-          Student data editor (recommended)
+          Student data editor
         </label>
         <div className="small text-muted">
           You will be able to view and edit student data, grades, and manage enrollments.
