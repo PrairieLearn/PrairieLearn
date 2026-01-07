@@ -102,20 +102,20 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support team work.",
+      "description": "Whether the assessment will support group work.",
       "type": "boolean",
       "default": false
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a team.",
+      "description": "Maximum number of students in a group.",
       "type": "number"
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a team.",
+      "description": "Minimum number of students in a group.",
       "type": "number"
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a team.",
+      "description": "Array of custom user roles in a group.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/GroupRoleJsonSchema"
@@ -141,22 +141,22 @@
       "default": []
     },
     "studentGroupCreate": {
-      "description": "Whether students can create teams.",
+      "description": "Whether students can create groups.",
       "type": "boolean",
       "default": false
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a team name when creating a team. Only applicable if studentGroupCreate is true.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
       "type": "boolean",
       "default": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join teams.",
+      "description": "Whether students can join groups.",
       "type": "boolean",
       "default": false
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave teams.",
+      "description": "Whether students can leave groups.",
       "type": "boolean",
       "default": false
     },
@@ -181,25 +181,25 @@
   },
   "definitions": {
     "GroupRoleJsonSchema": {
-      "description": "A custom role for use in team assessments that allows control over certain permissions.",
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
       "type": "object",
       "required": ["name"],
       "properties": {
         "name": {
-          "description": "The team role's name (i.e. Manager, Reflector, Recorder).",
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
           "type": "string"
         },
         "minimum": {
-          "description": "The minimum number of users that should be in this role in a team.",
+          "description": "The minimum number of users that should be in this role in a group.",
           "type": "number",
           "default": 0
         },
         "maximum": {
-          "description": "The maximum number of users that should be in this role in a team.",
+          "description": "The maximum number of users that should be in this role in a group.",
           "type": "number"
         },
         "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' team roles.",
+          "description": "Whether users with this role can assign other users' group roles.",
           "type": "boolean",
           "default": false
         }

@@ -85,7 +85,8 @@ export async function uploadInstanceTeams({
           totalCount = 0;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            const { uid, teamname: team_name } = record;
+            const { uid, teamname, groupname } = record;
+            const team_name = teamname ?? groupname ?? null;
             if (!uid || !team_name) continue;
             totalCount++;
             await createOrAddToTeam({
