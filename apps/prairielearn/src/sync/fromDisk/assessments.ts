@@ -349,8 +349,8 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    // TODO: Fix up schemas to refer to teams and not
-    // groups
+    // TODO: Fix up schemas to refer to teams and not groups
+    // https://github.com/PrairieLearn/PrairieLearn/issues/13545
     team_work: assessment.groupWork,
     team_max_size: assessment.groupMaxSize ?? null,
     team_min_size: assessment.groupMinSize ?? null,
