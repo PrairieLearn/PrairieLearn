@@ -9,7 +9,9 @@ WITH
     SET
       course_role = EXCLUDED.course_role
     WHERE
-      -- only allows stepping up in permissions
+      -- This query will only step up in permission. If a permission already
+      -- exists for this user and it has higher permissions than what we're
+      -- trying to insert, this will be a no-op.
       cp.course_role < EXCLUDED.course_role
     RETURNING
       cp.*
