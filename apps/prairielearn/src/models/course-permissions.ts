@@ -209,7 +209,7 @@ export async function insertCourseInstancePermissions({
     await queryOptionalRow(
       sql.insert_course_instance_permissions,
       { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
-      CoursePermissionSchema,
+      CourseInstancePermissionSchema,
     );
   });
 }
