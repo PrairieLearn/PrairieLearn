@@ -1130,6 +1130,12 @@ function validateAssessment({
   // Check for conflict between legacy group properties and new teams schema
   if (assessment.teams != null) {
     const usedLegacyProps: string[] = [];
+
+    // If they are using the default values for these properties, we won't
+    // consider them "used" for the purposes of this check.
+    // validateAssessment is called after Zod parsing, so these properties
+    // will have default values filled in.
+
     if (assessment.groupWork === true) usedLegacyProps.push('groupWork');
     if (assessment.groupMaxSize != null) usedLegacyProps.push('groupMaxSize');
     if (assessment.groupMinSize != null) usedLegacyProps.push('groupMinSize');

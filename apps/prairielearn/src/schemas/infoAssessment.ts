@@ -35,7 +35,6 @@ export const GroupRoleJsonSchema = z
 export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
-// New teams schema - https://github.com/PrairieLearn/PrairieLearn/issues/13545
 export const TeamRoleJsonSchema = z
   .object({
     name: z.string().describe("The team role's name (e.g., Manager, Recorder)."),
