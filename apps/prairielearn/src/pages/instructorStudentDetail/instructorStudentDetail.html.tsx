@@ -34,6 +34,8 @@ interface StudentDetailProps {
   hasCourseInstancePermissionEdit?: boolean;
   enrollmentManagementEnabled: boolean;
   hasModernPublishing: boolean;
+  studentsUrl: string;
+  pageTitle: string;
 }
 
 export function InstructorStudentDetail({
@@ -46,6 +48,8 @@ export function InstructorStudentDetail({
   hasCourseInstancePermissionEdit,
   enrollmentManagementEnabled,
   hasModernPublishing,
+  studentsUrl,
+  pageTitle,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
 
@@ -70,6 +74,16 @@ export function InstructorStudentDetail({
 
   return (
     <TimezoneContext.Provider value={course_instance.display_timezone}>
+      <nav aria-label="breadcrumb" className="mb-3">
+        <ol className="breadcrumb mb-0">
+          <li className="breadcrumb-item">
+            <a href={studentsUrl}>Students</a>
+          </li>
+          <li className="breadcrumb-item active" aria-current="page">
+            {pageTitle}
+          </li>
+        </ol>
+      </nav>
       <OverviewCard
         student={student}
         courseInstanceUrl={courseInstanceUrl}

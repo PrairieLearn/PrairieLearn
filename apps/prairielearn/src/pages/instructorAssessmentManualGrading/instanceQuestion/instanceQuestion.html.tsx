@@ -5,6 +5,7 @@ import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/preact/server';
 
+import { Breadcrumbs } from '../../../components/Breadcrumbs.html.js';
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
@@ -128,25 +129,21 @@ export function InstanceQuestion({
           `
         : ''}
       <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
-        <nav aria-label="breadcrumb">
-          <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item">
-              <a href="${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading">
-                Manual grading
-              </a>
-            </li>
-            <li class="breadcrumb-item">
-              <a
-                href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                  .id}/manual_grading/assessment_question/${resLocals.assessment_question.id}"
-              >
-                Question ${resLocals.assessment_question.number_in_alternative_group}.
-                ${resLocals.question.title}
-              </a>
-            </li>
-            <li class="breadcrumb-item active" aria-current="page">Student submission</li>
-          </ol>
-        </nav>
+        ${Breadcrumbs({
+          breadcrumbs: [
+            {
+              label: 'Manual grading',
+              url: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading`,
+            },
+            {
+              label: `Question ${resLocals.assessment_question.number_in_alternative_group}. ${resLocals.question.title}`,
+              url: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/manual_grading/assessment_question/${resLocals.assessment_question.id}`,
+            },
+            {
+              label: 'Student submission',
+            },
+          ],
+        })}
 
         ${aiGradingEnabled
           ? html`

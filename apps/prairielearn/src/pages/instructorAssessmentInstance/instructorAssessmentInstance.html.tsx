@@ -5,6 +5,7 @@ import { escapeHtml, html } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
+import { Breadcrumbs } from '../../components/Breadcrumbs.html.js';
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -110,6 +111,17 @@ export function InstructorAssessmentInstance({
           ? html`${resLocals.instance_group.name}`
           : html`${resLocals.instance_user.name}`}
       </h1>
+      ${Breadcrumbs({
+        breadcrumbs: [
+          {
+            label: 'Students',
+            url: `${resLocals.urlPrefix}/assessment/${resLocals.assessment.id}/instances`,
+          },
+          {
+            label: resLocals.instance_group?.name ?? resLocals.instance_user?.name,
+          },
+        ],
+      })}
       ${ResetQuestionVariantsModal({
         assessment: resLocals.assessment,
         csrfToken: resLocals.__csrf_token,

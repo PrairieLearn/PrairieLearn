@@ -3,6 +3,7 @@ import assert from 'node:assert';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
+import { Breadcrumbs } from '../../components/Breadcrumbs.html.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
@@ -80,6 +81,19 @@ export function InstructorQuestionPreview({
       </style>
     `,
     content: html`
+      ${Breadcrumbs({
+        breadcrumbs: [
+          {
+            label: 'Questions',
+            url: resLocals.course_instance
+              ? `/pl/course_instance/${resLocals.course_instance.id}/instructor/course_admin/questions`
+              : `/pl/course/${resLocals.course.id}/course_admin/questions`,
+          },
+          {
+            label: resLocals.question.qid,
+          },
+        ],
+      })}
       ${manualGradingPreviewEnabled
         ? html`
             <div class="alert alert-primary">

@@ -111,6 +111,8 @@ router.get(
               }
               hasModernPublishing={courseInstance.modern_publishing}
               enrollmentManagementEnabled={enrollmentManagementEnabled}
+              studentsUrl={`${urlPrefix}/instance_admin/students`}
+              pageTitle={pageTitle}
             />
           </Hydrate>
         ),
