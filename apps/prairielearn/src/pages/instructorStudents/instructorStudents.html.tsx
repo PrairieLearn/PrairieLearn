@@ -152,7 +152,6 @@ interface StudentsCardProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
   selfEnrollLink: string;
@@ -169,7 +168,6 @@ function StudentsCard({
   authzData,
   course,
   courseInstance,
-  enrollmentManagementEnabled,
   students: initialStudents,
   timezone,
   csrfToken,
@@ -438,7 +436,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
+            {courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -547,7 +545,6 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
-  enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
 }: {
@@ -566,7 +563,6 @@ export const InstructorStudents = ({
           selfEnrollLink={selfEnrollLink}
           course={course}
           courseInstance={courseInstance}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}

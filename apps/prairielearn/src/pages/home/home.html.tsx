@@ -51,7 +51,6 @@ export function Home({
   adminInstitutions,
   urlPrefix,
   isDevMode,
-  enrollmentManagementEnabled,
   search,
 }: {
   canAddCourses: boolean;
@@ -61,7 +60,6 @@ export function Home({
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
   search: string;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
@@ -95,7 +93,6 @@ export function Home({
           urlPrefix={urlPrefix}
           isDevMode={isDevMode}
           search={search}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
         />
       </Hydrate>
     </div>

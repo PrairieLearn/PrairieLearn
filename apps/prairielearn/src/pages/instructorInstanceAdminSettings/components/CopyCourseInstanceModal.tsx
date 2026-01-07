@@ -28,14 +28,12 @@ export function CopyCourseInstanceModal({
   csrfToken,
   courseInstance,
   courseShortName,
-  enrollmentManagementEnabled,
 }: {
   show: boolean;
   onHide: () => void;
   csrfToken: string;
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   courseShortName: string;
-  enrollmentManagementEnabled: boolean;
 }) {
   const methods = useForm<CopyFormValues>({
     defaultValues: {
@@ -202,18 +200,14 @@ export function CopyCourseInstanceModal({
               formId="copy-course-instance"
             />
 
-            {enrollmentManagementEnabled && (
-              <>
-                <hr />
+            <hr />
 
-                <h3 className="h5">Self-enrollment settings</h3>
-                <p className="text-muted small">
-                  Configure self-enrollment for your new course instance. This can be changed later.
-                </p>
+            <h3 className="h5">Self-enrollment settings</h3>
+            <p className="text-muted small">
+              Configure self-enrollment for your new course instance. This can be changed later.
+            </p>
 
-                <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
-              </>
-            )}
+            <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
           </Modal.Body>
 
           <Modal.Footer>

@@ -360,7 +360,7 @@ export function AssessmentQuestionTable({
       rubric_grading_item_ids: setRubricItemsFilter,
       ai_grading_status: undefined,
       uid: undefined,
-      user_or_group_name: undefined,
+      user_or_team_name: undefined,
       select: undefined,
       index: undefined,
     };
@@ -463,7 +463,7 @@ export function AssessmentQuestionTable({
           return [col.id, aiGradingMode];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
+        if (['user_or_team_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
           return [col.id, false];
         }
 
@@ -545,7 +545,7 @@ export function AssessmentQuestionTable({
   // Determine student info checkbox state based on column visibility
   const studentInfoCheckboxState = useMemo(() => {
     const visibility = columnVisibility;
-    const nameVisible = visibility.user_or_group_name;
+    const nameVisible = visibility.user_or_team_name;
     const uidVisible = visibility.uid;
 
     if (nameVisible && uidVisible) return 'checked';
@@ -563,14 +563,14 @@ export function AssessmentQuestionTable({
       // Checked -> Unchecked (hide both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: false,
+        user_or_team_name: false,
         uid: false,
       };
     } else {
       // Unchecked or Indeterminate -> Checked (show both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: true,
+        user_or_team_name: true,
         uid: true,
       };
     }
@@ -952,7 +952,7 @@ export function AssessmentQuestionTable({
             },
             {
               name: assessment.team_work ? 'Group Name' : 'Name',
-              value: row.user_or_group_name || '',
+              value: row.user_or_team_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
             {
