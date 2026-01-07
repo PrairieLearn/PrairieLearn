@@ -18,6 +18,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -32,6 +33,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
@@ -52,6 +54,7 @@ router.get(
       urlPrefix,
       navPage,
       __csrf_token,
+      is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -131,6 +134,7 @@ router.get(
                 selfEnrollLink={selfEnrollLink}
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
             <Hydrate>
@@ -154,6 +158,7 @@ router.post(
       course_instance: courseInstance,
       course,
       urlPrefix,
+      authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -167,6 +172,7 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        course_instance_permission,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -175,6 +181,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
+          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
         })
         .parse(req.body);
 
@@ -277,6 +284,17 @@ router.post(
         uuid: editor.uuid,
         course,
       });
+
+      // Assign course instance permissions if a non-None permission was selected.
+      if (course_instance_permission !== 'None') {
+        await insertCourseInstancePermissions({
+          course_id: course.id,
+          course_instance_id: copiedInstance.id,
+          user_id: authzData.authn_user.id,
+          course_instance_role: course_instance_permission,
+          authn_user_id: authzData.authn_user.id,
+        });
+      }
 
       res.status(200).json({ course_instance_id: copiedInstance.id });
       return;

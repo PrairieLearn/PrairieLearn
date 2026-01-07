@@ -10,13 +10,14 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
+import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 
 import { InstructorCourseAdminInstances } from './InstructorCourseAdminInstances.html.js';
 import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
@@ -43,6 +44,7 @@ router.get(
       course,
       __csrf_token,
       urlPrefix,
+      is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -92,6 +94,7 @@ router.get(
               needToSync={needToSync}
               csrfToken={__csrf_token}
               urlPrefix={urlPrefix}
+              isAdministrator={isAdministrator}
             />
           </Hydrate>
         ),
@@ -103,7 +106,7 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const { course } = extractPageContext(res.locals, {
+    const { course, authz_data: authzData } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
@@ -116,6 +119,7 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        course_instance_permission,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -124,6 +128,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
+          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
         })
         .parse(req.body);
 
@@ -231,6 +236,17 @@ router.post(
         uuid: editor.uuid,
         course,
       });
+
+      // Assign course instance permissions if a non-None permission was selected.
+      if (course_instance_permission !== 'None') {
+        await insertCourseInstancePermissions({
+          course_id: course.id,
+          course_instance_id: courseInstance.id,
+          user_id: authzData.authn_user.id,
+          course_instance_role: course_instance_permission,
+          authn_user_id: authzData.authn_user.id,
+        });
+      }
 
       res.json({ course_instance_id: courseInstance.id });
     } else {

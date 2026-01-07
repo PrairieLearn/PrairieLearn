@@ -241,7 +241,7 @@ export function CourseInstancePublishingForm({
             <>
               <input type="hidden" name="start_date" value={startDate} />
               <input type="hidden" name="end_date" value={endDate} />
-              <div className="ms-4 mt-1 small text-muted">
+              <div className="ms-4 small text-muted">
                 Course is not accessible by any students
                 {startDate && ' except those with extensions'}.
                 {endDate && (
@@ -292,7 +292,7 @@ export function CourseInstancePublishingForm({
           {selectedStatus === 'publish_scheduled' && (
             <>
               {startDate && endDate && (
-                <div className="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
@@ -420,7 +420,7 @@ export function CourseInstancePublishingForm({
           {selectedStatus === 'published' && (
             <>
               {startDate && endDate && (
-                <div className="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course{' '}
                   {plainDateTimeStringToDate(startDate, displayTimezone).getTime() ===
                     originalStartDate?.getTime() && originalStatus === 'published'
