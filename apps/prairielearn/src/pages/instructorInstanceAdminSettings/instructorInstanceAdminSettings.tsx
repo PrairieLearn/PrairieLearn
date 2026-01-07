@@ -196,7 +196,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
-          course_instance_permission: EnumCourseInstanceRoleSchema,
+          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
         })
         .parse(req.body);
 
