@@ -41,34 +41,28 @@ function extractDynamicFileUrls(html: string, variantId: string): string[] {
   return Array.from(filenames);
 }
 
-/**
- * Tests dynamic files by extracting URLs from rendered HTML and invoking the
- * question server's file() function for each unique filename.
- *
- * @param htmls - The rendered HTML content from getAndRenderVariant().
- * @param htmls.questionHtml - The rendered question HTML.
- * @param htmls.submissionHtmls - The rendered submission HTMLs.
- * @param htmls.answerHtml - The rendered answer HTML.
- * @param htmls.extraHeadersHtml - Extra headers HTML.
- * @param variant - The variant being tested.
- * @param question - The question being tested.
- * @param course - The course for the variant.
- * @param user_id - The current effective user.
- * @param authn_user_id - The currently authenticated user.
- */
-async function testDynamicFiles(
+async function testDynamicFiles({
+  htmls,
+  variant,
+  question,
+  course,
+  question_course,
+  user_id,
+  authn_user_id,
+}: {
   htmls: {
     questionHtml?: string;
     submissionHtmls?: string[];
     answerHtml?: string;
     extraHeadersHtml?: string;
-  },
-  variant: Variant,
-  question: Question,
-  course: Course,
-  user_id: string,
-  authn_user_id: string,
-): Promise<void> {
+  };
+  variant: Variant;
+  question: Question;
+  course: Course;
+  question_course: Course;
+  user_id: string;
+  authn_user_id: string;
+}): Promise<void> {
   if (variant.broken_at) return;
 
   const questionModule = questionServers.getModule(question.type);
@@ -83,8 +77,6 @@ async function testDynamicFiles(
 
   const filenames = extractDynamicFileUrls(allHtml, variant.id);
   if (filenames.length === 0) return;
-
-  const question_course = await getQuestionCourse(question, course);
 
   for (const filename of filenames) {
     const decodedFilename = decodeURIComponent(filename);
@@ -373,8 +365,8 @@ async function testQuestion(
   };
   try {
     await getAndRenderVariant(variant.id, null, initialRenderLocals);
-    await testDynamicFiles(
-      {
+    await testDynamicFiles({
+      htmls: {
         questionHtml: initialRenderLocals.questionHtml,
         submissionHtmls: initialRenderLocals.submissionHtmls,
         answerHtml: initialRenderLocals.answerHtml,
@@ -382,10 +374,11 @@ async function testQuestion(
       },
       variant,
       question,
-      variant_course,
+      course: variant_course,
+      question_course,
       user_id,
       authn_user_id,
-    );
+    });
   } finally {
     const initialRenderEnd = Date.now();
     initialRenderDuration = initialRenderEnd - initialRenderStart;
@@ -423,8 +416,8 @@ async function testQuestion(
     };
     try {
       await getAndRenderVariant(variant.id, null, finalRenderLocals);
-      await testDynamicFiles(
-        {
+      await testDynamicFiles({
+        htmls: {
           questionHtml: finalRenderLocals.questionHtml,
           submissionHtmls: finalRenderLocals.submissionHtmls,
           answerHtml: finalRenderLocals.answerHtml,
@@ -432,10 +425,11 @@ async function testQuestion(
         },
         variant,
         question,
-        variant_course,
+        course: variant_course,
+        question_course,
         user_id,
         authn_user_id,
-      );
+      });
     } finally {
       const finalRenderEnd = Date.now();
       finalRenderDuration = finalRenderEnd - finalRenderStart;
