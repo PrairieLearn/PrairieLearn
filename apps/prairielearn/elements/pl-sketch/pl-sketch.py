@@ -14,7 +14,6 @@ from grading.utils import (
     graph_to_screen_x,
     graph_to_screen_y,
     parse_function_string,
-    screen_to_graph_dist,
 )
 from validation.grader_validation import (
     validate_2p_range,
@@ -114,8 +113,8 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         "weight",
         "xrange",
         "yrange",
-        "graph-width",
-        "graph-height",
+        "width",
+        "height",
         "enforce-bounds",
         "read-only",
         "allow-blank",
@@ -301,19 +300,19 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         min_width = 240
 
     # width height check (this is based on the number of tools)
-    width = pl.get_integer_attrib(element, "graph-width", None)
+    width = pl.get_integer_attrib(element, "width", None)
     if width is not None:
         if width > 900:
-            raise ValueError("graph-width must be less than or equal to 900.")
+            raise ValueError("width must be less than or equal to 900.")
         if width < min_width:
             raise ValueError(
-                "graph-width must be at least "
+                "width must be at least "
                 + str(min_width)
                 + ". This value is based on the number of tools you are using."
             )
     else:
         width = WIDTH_DEFAULT
-    height = pl.get_integer_attrib(element, "graph-height", HEIGHT_DEFAULT)
+    height = pl.get_integer_attrib(element, "height", HEIGHT_DEFAULT)
 
     # set the x and y ranges, add 10px margins
     x_range_str = pl.get_string_attrib(element, "xrange", XRANGE_DEFAULT)
@@ -846,18 +845,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     # validate that polygons have <= 20 vertices
-    # validate that spline-type objects with the same toolid don't overlap each other more than 15 px
-    spline_based_tool_names = ["freeform", "spline", "polyline"]
     tool_info = data["params"][name]["sketch_config"]["tool_info"]
-
-    # we don't want to check overlap if the graph is flipped for f(y) grading
-    no_overlap_check = []
-    for grader in data["params"][name]["sketch_config"]["graders"]:
-        if "funxyswap" in grader and grader["funxyswap"] is True:
-            no_overlap_check += [
-                tool_info[tool.strip()]["type"] for tool in grader["toolid"].split(",")
-            ]
-
     for toolid in submission_parsed["gradeable"]:
         tool_type = tool_info[toolid]["type"]
         if tool_type == "polygon":
@@ -867,40 +855,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                         "The drawn region exceeds the allowed number of vertices (max 30)."
                     )
                     break
-        elif tool_type in spline_based_tool_names and tool_type not in no_overlap_check:
-            if len(submission_parsed["gradeable"][toolid]) == 1:
-                continue
-            # get min and max x values of each object drawn with spline-type tool, see if they overlap more than 15 px
-            ranges = [
-                [
-                    min(spline["spline"], key=lambda x: x[0])[0],
-                    max(spline["spline"], key=lambda x: x[0])[0],
-                ]
-                for spline in submission_parsed["gradeable"][toolid]
-            ]
-            ranges = sorted(ranges, key=lambda rg: rg[0])
-            for i in range(len(ranges) - 1):
-                total_overlap = 0
-                if ranges[i + 1][0] < ranges[i][1]:
-                    total_overlap += (
-                        min(ranges[i][1], ranges[i + 1][1]) - ranges[i + 1][0]
-                    )
-                overlap_tolerance = 15
-                if total_overlap > overlap_tolerance:
-                    x_s = data["params"][name]["sketch_config"]["ranges"]["x_start"]
-                    x_e = data["params"][name]["sketch_config"]["ranges"]["x_end"]
-                    width = data["params"][name]["sketch_config"]["ranges"]["width"]
-                    g_overlap = screen_to_graph_dist(x_e - x_s, width, total_overlap)
-                    g_tolerance = screen_to_graph_dist(
-                        x_e - x_s, width, overlap_tolerance
-                    )
-                    data["format_errors"][name] = (
-                        'Two "'
-                        + tool_info[toolid]["label"]
-                        + (
-                            f'" lines overlap by {round(g_overlap, 3)}, which is greater than the overlap tolerance of {round(g_tolerance, 3)}.'
-                        )
-                    )
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
