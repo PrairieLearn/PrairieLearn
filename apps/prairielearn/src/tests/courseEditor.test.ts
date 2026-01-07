@@ -271,6 +271,7 @@ const testEditData: EditData[] = [
       long_name: 'New',
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     files: new Set([
       'README.md',
@@ -309,6 +310,7 @@ const testEditData: EditData[] = [
       end_date: '',
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: false,
+      course_instance_permission: 'Student Data Editor',
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
@@ -390,6 +392,7 @@ const publicCopyTestData: EditData[] = [
       course_instance_id: 2,
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -416,6 +419,7 @@ const publicCopyTestData: EditData[] = [
       course_instance_id: 2,
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
