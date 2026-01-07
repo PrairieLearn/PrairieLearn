@@ -8,6 +8,10 @@ import {
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
 import {
+  CourseInstanceSelfEnrollmentForm,
+  type SelfEnrollmentFormValues,
+} from '../../../components/CourseInstanceSelfEnrollmentForm.js';
+import {
   type PublicCourse,
   type PublicCourseInstance,
   RawPublicQuestionSchema,
@@ -31,11 +35,13 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
+  enrollmentManagementEnabled,
 }: {
   course: PublicCourse;
   courseInstance: PublicCourseInstance;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
+  enrollmentManagementEnabled: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(
@@ -49,12 +55,16 @@ export function CopyCourseInstanceModal({
   // Find the selected course data
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
-  const defaultValues: PublishingFormValues = {
+  interface CopyFormValues extends PublishingFormValues, SelfEnrollmentFormValues {}
+
+  const defaultValues: CopyFormValues = {
     start_date: '',
     end_date: '',
+    self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+    self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
   };
 
-  const methods = useForm<PublishingFormValues>({
+  const methods = useForm<CopyFormValues>({
     defaultValues,
   });
 
@@ -144,7 +154,21 @@ export function CopyCourseInstanceModal({
                   originalStartDate={null}
                   originalEndDate={null}
                   showButtons={false}
+                  formId="copy-course-instance"
                 />
+
+                {enrollmentManagementEnabled && (
+                  <>
+                    <hr />
+
+                    <h3 className="h5">Self-enrollment settings</h3>
+                    <p className="text-muted small">
+                      Configure self-enrollment for your new course instance. This can be changed
+                      later.
+                    </p>
+                    <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
+                  </>
+                )}
               </FormProvider>
             </Modal.Body>
 

@@ -110,10 +110,14 @@ If you have no meaningful reads/writes to the old column, you can combine the fi
 
 ### Drop column
 
-- First PR: Remove column
+If you have no meaningful reads from the old column, you can combine the first and second PRs into a single PR.
+
+- First PR: Remove reads from the column
   - Update all code to not read from the column
+
+- Second PR: Remove writes to the column
   - Update all code to not write to the column
   - Mark the column in the zod schema as `z.unknown()`
 
-- Second PR: Finalize
+- Third PR: Finalize
   - Remove the column from the database

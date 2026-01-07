@@ -11,7 +11,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import {
-  PotentialEnterpriseEnrollmentStatus,
+  PotentialEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
 import {
@@ -244,12 +244,12 @@ export async function ensureEnrollment({
   requiredRole: 'Student'[];
   actionDetail: SupportedActionsForTable<'enrollments'>;
   throwOnIneligible?: boolean;
-}) {
+}): Promise<PotentialEnrollmentStatus> {
   // If the current user is not a student, bail.
   // We don't want to give instructors an enrollment.
-  if (!hasRole(authzData, requiredRole)) return;
+  if (!hasRole(authzData, requiredRole)) return PotentialEnrollmentStatus.INELIGIBLE;
 
-  let status = PotentialEnterpriseEnrollmentStatus.ALLOWED;
+  let status = PotentialEnrollmentStatus.ALLOWED;
 
   if (isEnterprise()) {
     status = await checkPotentialEnterpriseEnrollment({
@@ -260,21 +260,21 @@ export async function ensureEnrollment({
     });
 
     switch (status) {
-      case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED: {
+      case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED: {
         if (throwOnIneligible) {
           throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
         } else {
           return status;
         }
       }
-      case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED: {
+      case PotentialEnrollmentStatus.LIMIT_EXCEEDED: {
         if (throwOnIneligible) {
           throw new HttpRedirect('/pl/enroll/limit_exceeded');
         } else {
           return status;
         }
       }
-      case PotentialEnterpriseEnrollmentStatus.ALLOWED:
+      case PotentialEnrollmentStatus.ALLOWED:
         break;
       default:
         assertNever(status);
@@ -457,7 +457,7 @@ async function _inviteExistingEnrollment({
   lockedEnrollment: Enrollment;
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
@@ -492,7 +492,7 @@ async function inviteNewEnrollment({
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -529,7 +529,7 @@ export async function inviteStudentByUid({
   requiredRole,
 }: {
   uid: string;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {

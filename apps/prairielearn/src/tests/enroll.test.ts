@@ -2,7 +2,7 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { execute, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 
-import { PotentialEnterpriseEnrollmentStatus } from '../ee/models/enrollment.js';
+import { PotentialEnrollmentStatus } from '../ee/models/enrollment.js';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
@@ -50,16 +50,9 @@ const USER_3 = {
   email: 'student3@example.com',
 };
 
-describe('Enroll page removed', function () {
+describe('Enrollment status pages', function () {
   beforeAll(helperServer.before());
   afterAll(helperServer.after);
-
-  test('shows page removed message', async () => {
-    const res = await fetch(`${baseUrl}/enroll`);
-    assert.equal(res.status, 200);
-    const text = await res.text();
-    assert.include(text, 'Enrollment page removed');
-  });
 
   test('shows limit exceeded message on /limit_exceeded', async () => {
     const res = await fetch(`${baseUrl}/enroll/limit_exceeded`);
@@ -79,12 +72,12 @@ describe('Enrollment limits (enterprise)', function () {
 
   test.sequential('enroll a single student', async () => {
     const status = await enrollUser('1', USER_1);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
   test.sequential('enrolls the same student again', async () => {
     const status = await enrollUser('1', USER_1);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
   test.sequential('unenroll a single student', async () => {
@@ -105,12 +98,12 @@ describe('Enrollment limits (enterprise)', function () {
 
   test.sequential('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
   test.sequential('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED);
+    assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
   test.sequential('apply an institution-level course instance enrollment limit', async () => {
@@ -120,7 +113,7 @@ describe('Enrollment limits (enterprise)', function () {
 
   test.sequential('fail to enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED);
+    assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
   test.sequential('set a higher course instance enrollment limit', async () => {
@@ -129,12 +122,12 @@ describe('Enrollment limits (enterprise)', function () {
 
   test.sequential('enroll a second student', async () => {
     const status = await enrollUser('1', USER_2);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
   test.sequential('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED);
+    assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 
   test.sequential('set a yearly enrollment limit', async () => {
@@ -147,7 +140,7 @@ describe('Enrollment limits (enterprise)', function () {
 
   test.sequential('fail to enroll a third student', async () => {
     const status = await enrollUser('1', USER_3);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED);
+    assert.equal(status, PotentialEnrollmentStatus.LIMIT_EXCEEDED);
   });
 });
 
@@ -162,13 +155,13 @@ describe('Enrollment limits (non-enterprise)', () => {
 
   test.sequential('enroll one student', async () => {
     const status = await enrollUser('1', USER_1);
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 
   test.sequential('enroll a second student (limits not enforced in non-enterprise)', async () => {
     const status = await enrollUser('1', USER_2);
     // In non-enterprise mode, limits are not enforced
-    assert.equal(status, PotentialEnterpriseEnrollmentStatus.ALLOWED);
+    assert.equal(status, PotentialEnrollmentStatus.ALLOWED);
   });
 });
 
