@@ -8,7 +8,7 @@
   "workspaceOptions": {
     "image": "prairielearn/workspace-intellij",
     "port": 8080,
-    "home": "/home/prairielearner/IdeaProjects",
+    "home": "/home/prairielearner/Project",
     "gradedFiles": []
   }
 }
