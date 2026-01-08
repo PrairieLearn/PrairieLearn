@@ -1,0 +1,1 @@
+ALTER TABLE jobs VALIDATE CONSTRAINT jobs_assessment_question_id_fkey;
