@@ -10,7 +10,7 @@ COPY start-vnc.sh /start-vnc.sh
 COPY config /opt/defaults/config
 COPY local /opt/defaults/local
 COPY java /opt/defaults/java
-COPY autostart /etc/xdg/openbox/autostart
+COPY openbox /etc/xdg/openbox
 COPY server /opt/server
 
 COPY post-install.sh /post-install.sh
