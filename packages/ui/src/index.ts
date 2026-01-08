@@ -39,3 +39,5 @@ export {
   type ComboBoxProps,
   type TagPickerProps,
 } from './components/ComboBox.js';
+
+export { OtpInput, formatOtpValue, type OtpInputProps } from './components/OtpInput.js';
