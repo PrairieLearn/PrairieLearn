@@ -23,10 +23,10 @@ import {
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
-import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
+import { getTeamId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -129,10 +129,10 @@ export async function makeAssessmentInstance({
   client_fingerprint_id: string | null;
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
-    let group_id: string | null = null;
+    let team_id: string | null = null;
     if (assessment.team_work) {
-      group_id = await getGroupId(assessment.id, user_id);
-      if (group_id == null) {
+      team_id = await getTeamId(assessment.id, user_id);
+      if (team_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
       }
     }
@@ -141,7 +141,7 @@ export async function makeAssessmentInstance({
       sql.insert_assessment_instance,
       {
         assessment_id: assessment.id,
-        group_id,
+        team_id,
         user_id,
         mode,
         time_limit_min,
@@ -623,7 +623,7 @@ export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolea
     (resLocals.authz_data.authn_has_course_permission_preview ||
       resLocals.authz_data.authn_has_course_instance_permission_view) &&
     // Check that the assessment instance belongs to this user, or that the
-    // user belongs to the group that created the assessment instance.
+    // user belongs to the team that created the assessment instance.
     resLocals.authz_result.authorized_edit &&
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.
