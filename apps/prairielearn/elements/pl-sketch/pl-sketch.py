@@ -154,9 +154,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         }
         toolbar.append(fd)
 
-    # Save tool data
-    data["params"][name]["sketch_config"]["tool_data"] = tool_data
-
     # Add axes/grid for the canvas (technically a "tool" on the client side)
     # TODO: Some fancier math might be nice here to better support unusual range configurations
     axes_plugins = {
@@ -235,17 +232,14 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
             graders.append(grader)
         elif html_tag.tag == "pl-sketch-initial":
             # Here we check and set up initials in a clean data format
-            initial = check_initial(
-                html_tag,
-                tool_data,
-                ranges_config
-            )
+            initial = check_initial(html_tag, tool_data, ranges_config)
             initials.append(initial)
 
     # Here we convert the data format into the client side representation that is grouped by tool
     initial_ids = {initial["toolid"] for initial in initials}
     initial_state = {
-        id: format_initials(initials, tool_data[id], ranges_config) for id in initial_ids
+        initial_id: format_initials(initials, tool_data[initial_id], ranges_config)
+        for initial_id in initial_ids
     }
 
     # Saving all processed data into a dictionary
@@ -260,15 +254,20 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     }
 
 
-def split_range(xrange: str, default_start: float | None, default_end: float | None) -> list[float]:
+def split_range(
+    xrange: str, default_start: float | None, default_end: float | None
+) -> list[float]:
     """
     Convert a range specified as a string with empty placeholders into a float list (e.g., "-5,5" -> [-5, 5],
       ",5" -> [default_start, 5], "0.1," -> [0.1, default_end]). This function is also used to validate
-      the raw string inputs, so it is intentionally verbose. Ranges must be sorted. If default_start or 
+      the raw string inputs, so it is intentionally verbose. Ranges must be sorted. If default_start or
       default_end are None, both ends of the range are required.
 
     Returns:
         A list of exactly 2 floating point numbers that represent the start and end of the range.
+
+    Raises:
+        ValueError: If the range is ill-formatted or otherwise invalid
     """
     result = []
     for x in xrange.split(","):
@@ -282,14 +281,16 @@ def split_range(xrange: str, default_start: float | None, default_end: float | N
         raise ValueError(
             "Ranges must contain two values (or empty placeholders) separated by a comma."
         )
-    if result[0] == None:
+    if result[0] is None:
         result[0] = default_start
-    if result[1] == None:
+    if result[1] is None:
         result[1] = default_end
     if result[0] is None or result[1] is None:
         raise ValueError("No empty range placeholders are allowed for canvas ranges.")
     if result[0] >= result[1]:
-        raise ValueError("Ranges must be ordered from low to high numbers and within the canvas bounds.")
+        raise ValueError(
+            "Ranges must be ordered from low to high numbers and within the canvas bounds."
+        )
     return result
 
 
@@ -300,15 +301,17 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
 
     Returns:
         The sketching tool converted into a typed dictionary
-    """
 
+    Raises:
+        ValueError: If data in the tag is invalid
+    """
     # Common list of optional tool attribs
     optional_attribs = [
         "label",
         "limit",
         "color",
         "helper",
-        "readonly",
+        "read-only",
         "group",
     ]
 
@@ -449,16 +452,20 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
 
 
 def check_grader(
-    grader_tag: lxml.html.HtmlElement, tool_data: dict[str, SketchTool], ranges: SketchCanvasSize
+    grader_tag: lxml.html.HtmlElement,
+    tool_data: dict[str, SketchTool],
+    ranges: SketchCanvasSize,
 ) -> SketchGrader:
     """
-    Check that a sketch grading criterion tag is valid (similar to PL element tag validation, but accounting for 
+    Check that a sketch grading criterion tag is valid (similar to PL element tag validation, but accounting for
     the many different attributes for each grading criterion).
 
     Returns:
         The grading criterion converted into a typed dictionary
-    """
 
+    Raises:
+        ValueError: If data in the tag is invalid
+    """
     # Common list of optional grader attribs
     optional_attribs = [
         "toolid",
@@ -499,23 +506,37 @@ def check_grader(
                 raise ValueError(
                     'The "count" attribute is required to use the "count" grading criterion.'
                 )
-            if mode_attrib is not None and mode_attrib not in ["exact", "at-least", "at-most"]:
+            if mode_attrib is not None and mode_attrib not in [
+                "exact",
+                "at-least",
+                "at-most",
+            ]:
                 raise ValueError(
                     'The "mode" attribute of the "count" grading criterion must be "exact", "at-least", or "at-most".'
                 )
             defaults["tolerance"] = 0
-        case "defined-in":
-        case "undefined-in":
-        case "monot-increasing":
-        case "monot-decreasing":
-        case "concave-up":
-        case "concave-down":
+        case (
+            "defined-in"
+            | "undefined-in"
+            | "monot-increasing"
+            | "monot-decreasing"
+            | "concave-up"
+            | "concave-down"
+        ):
             optional_attribs.append("xrange")
             for tool in tools:
-                if tool["type"] == "point" or tool["type"] == "horizontal-line":
+                if tool["type"] == "horizontal-line":
                     raise ValueError(
-                        f'The "{grader_type}" grading criterion does not support the point or horizontal line tools.')
-                if grader_type != "defined-in" and grader_type != "undefined-in" and ((tool["type"] == "polyline" and tool["closed"] == True) or tool["type"] == "vertical-line"):
+                        f'The "{grader_type}" grading criterion does not support the horizontal line tool.'
+                    )
+                if tool["type"] == "point" and grader_type != "undefined-in":
+                    raise ValueError(
+                        f'The "{grader_type}" grading criterion does not support the point or horizontal line tools.'
+                    )
+                if grader_type not in {"defined-in", "undefined-in"} and (
+                    (tool["type"] == "polyline" and tool["closed"])
+                    or tool["type"] == "vertical-line"
+                ):
                     raise ValueError(
                         f'The "{grader_type}" grading criterion does not support the point, polygon, or horizontal/vertical line tools.'
                     )
@@ -568,20 +589,33 @@ def check_grader(
                 "yrange",
             ])
             if pl.get_boolean_attrib(grader_tag, "xyflip", False):
-                split_range(pl.get_string_attrib(grader_tag, "yrange", ","), ranges["y_start"], ranges["y_end"])
+                split_range(
+                    pl.get_string_attrib(grader_tag, "yrange", ","),
+                    ranges["y_start"],
+                    ranges["y_end"],
+                )
             else:
-                split_range(pl.get_string_attrib(grader_tag, "xrange", ","), ranges["x_start"], ranges["x_end"])
+                split_range(
+                    pl.get_string_attrib(grader_tag, "xrange", ","),
+                    ranges["x_start"],
+                    ranges["x_end"],
+                )
             parse_function_string(pl.get_string_attrib(grader_tag, "fun"))
             for tool in tools:
-                if tool["type"] == "line" or tool["type"] == "horizontal-line" or tool["type"] == "vertical-line" or (tool["type"] == "polyline" and tool["closed"] == True):
+                if (
+                    tool["type"] == "line"
+                    or tool["type"] == "horizontal-line"
+                    or tool["type"] == "vertical-line"
+                    or (tool["type"] == "polyline" and tool["closed"])
+                ):
                     raise ValueError(
-                        'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.')
+                        'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.'
+                    )
             pl.get_boolean_attrib(grader_tag, "allow-undefined", False)
             defaults["tolerance"] = 15
-        case "less-than":
-        case "greater-than":
+        case "less-than" | "greater-than":
             optional_attribs.extend([
-                "y"
+                "y",
                 "fun",
                 "xyflip",
                 "allow-undefined",
@@ -590,15 +624,19 @@ def check_grader(
             ])
             y_attrib = pl.get_float_attrib(grader_tag, "y", None)
             fun_attrib = pl.get_string_attrib(grader_tag, "fun", None)
-            if (y_attrib is None and fun_attrib is None) or (y_attrib is not None and fun_attrib is not None):
+            if (y_attrib is None and fun_attrib is None) or (
+                y_attrib is not None and fun_attrib is not None
+            ):
                 raise ValueError(
-                        f'For the "{grader_type}" grading criterion, exactly one of the attributes "y" and "fun" must be set.')
+                    f'For the "{grader_type}" grading criterion, exactly one of the attributes "y" and "fun" must be set.'
+                )
             if fun_attrib is not None:
                 parse_function_string(fun_attrib)
             for tool in tools:
-                if tool["type"] == "line" or tool["type"] == "horizontal-line" or tool["type"] == "vertical-line" or (tool["type"] == "polyline" and tool["closed"] == True):
+                if tool["type"] == "vertical-line":
                     raise ValueError(
-                        'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.')
+                        f'The "{grader_type}" grading criterion does not support the vertical line tool.'
+                    )
             pl.get_boolean_attrib(grader_tag, "allow-undefined", False)
             defaults["tolerance"] = 15
         case _:
@@ -611,13 +649,23 @@ def check_grader(
         "toolid": tools,
         "weight": pl.get_integer_attrib(grader_tag, "weight", defaults["weight"]),
         "stage": pl.get_integer_attrib(grader_tag, "stage", defaults["stage"]),
-        "tolerance": pl.get_boolean_attrib(grader_tag, "xyflip", defaults.get("tolerance", 15)),
+        "tolerance": pl.get_boolean_attrib(
+            grader_tag, "xyflip", defaults.get("tolerance", 15)
+        ),
         "debug": pl.get_boolean_attrib(grader_tag, "xyflip", defaults["debug"]),
         "feedback": pl.get_string_attrib(grader_tag, "feedback", None),
         "x": pl.get_float_attrib(grader_tag, "x", None),
         "y": pl.get_float_attrib(grader_tag, "y", None),
-        "xrange": split_range(pl.get_string_attrib(grader_tag, "xrange", ","), ranges["x_start"], ranges["x_end"]),
-        "yrange": split_range(pl.get_string_attrib(grader_tag, "yrange", ","), ranges["y_start"], ranges["y_end"]),
+        "xrange": split_range(
+            pl.get_string_attrib(grader_tag, "xrange", ","),
+            ranges["x_start"],
+            ranges["x_end"],
+        ),
+        "yrange": split_range(
+            pl.get_string_attrib(grader_tag, "yrange", ","),
+            ranges["y_start"],
+            ranges["y_end"],
+        ),
         "endpoint": pl.get_string_attrib(grader_tag, "endpoint", None),
         "count": pl.get_integer_attrib(grader_tag, "count", None),
         "fun": pl.get_string_attrib(grader_tag, "fun", None),
@@ -629,52 +677,78 @@ def check_grader(
     return tool_params
 
 
-def check_initial(initial_tag: lxml.html.HtmlElement, tool_data: dict[str, SketchTool], ranges: SketchCanvasSize) -> SketchInitial:
+def check_initial(
+    initial_tag: lxml.html.HtmlElement,
+    tool_data: dict[str, SketchTool],
+    ranges: SketchCanvasSize,
+) -> SketchInitial:
     """
-    Check that a sketch initial drawing tag is valid (similar to PL element tag validation, but accounting for
+    Checks that a sketch initial drawing tag is valid (similar to PL element tag validation, but accounting for
     the many different attributes for each tool that is referenced by the tag).
 
     Returns:
         The initial drawing data converted into a typed dictionary
+
+    Raises:
+        ValueError: If data in the tag is invalid
     """
     # check that toolid parameter there for all
     initial_tool = pl.get_string_attrib(initial_tag, "toolid")
     initial_coords = pl.get_string_attrib(initial_tag, "coordinates", None)
     initial_fun = pl.get_string_attrib(initial_tag, "fun", None)
-    initial_xrange = split_range(pl.get_string_attrib(initial_tag, "xrange", ","), ranges["x_start"], ranges["x_end"])
+    initial_xrange = split_range(
+        pl.get_string_attrib(initial_tag, "xrange", ","),
+        ranges["x_start"],
+        ranges["x_end"],
+    )
 
     if initial_tool not in tool_data:
-        raise ValueError(f'Initial drawing tool "{initial_tool}" is not a valid tool ID.')
+        raise ValueError(
+            f'Initial drawing tool "{initial_tool}" is not a valid tool ID.'
+        )
 
-    if (initial_coords is None and initial_fun is None) or (initial_coords is not None and initial_fun is not None):
-        raise ValueError(f'Each initial drawing element needs either a coordinates or a fun attribute.')
+    if (initial_coords is None and initial_fun is None) or (
+        initial_coords is not None and initial_fun is not None
+    ):
+        raise ValueError(
+            "Each initial drawing element needs either a coordinates or a fun attribute."
+        )
 
     coords = []
     if initial_coords is not None:
-        for coord in initial_coords.split(","):
-            coords.append(float(coord.replace("(", "").replace(")", "").strip()))
+        coords.extend(
+            float(coord.replace("(", "").replace(")", "").strip())
+            for coord in initial_coords.split(",")
+        )
 
     match tool_data[initial_tool]["type"]:
-        case "horizontal-line":
-        case "vertical-line":
+        case "horizontal-line" | "vertical-line":
             if len(coords) != 1:
-                raise ValueError(f'Initial drawings for horizontal/vertical tools need exactly one coordinate.')
+                raise ValueError(
+                    "Initial drawings for horizontal/vertical tools need exactly one coordinate."
+                )
         case "point":
             if len(coords) != 2:
-                raise ValueError(f'Initial drawings for points need exactly two coordinates.')
+                raise ValueError(
+                    "Initial drawings for points need exactly two coordinates."
+                )
         case "line":
             if len(coords) != 4:
-                raise ValueError(f'Initial drawings for lines need exactly four coordinates (x/y pairs for start and end).')
+                raise ValueError(
+                    "Initial drawings for lines need exactly four coordinates (x/y pairs for start and end)."
+                )
         case "polyline":
             if len(coords) < 4 or len(coords) % 2 != 0:
-                raise ValueError(f'Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end).')
-        case "spline":
-        case "free-draw":
+                raise ValueError(
+                    "Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end)."
+                )
+        case "spline" | "free-draw":
             if initial_fun is not None:
                 parse_function_string(initial_fun)
-            else:
-                if len(coords) < 4 or len(coords) % 2 != 0:
-                    raise ValueError(f'Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end).')
+            elif len(coords) < 4 or len(coords) % 2 != 0:
+                raise ValueError(
+                    "Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end)."
+                )
         case _:
             raise ValueError(f'Unknown tool type "{tool_data[initial_tool]["type"]}"')
 
@@ -682,11 +756,14 @@ def check_initial(initial_tag: lxml.html.HtmlElement, tool_data: dict[str, Sketc
         "toolid": initial_tool,
         "coordinates": coords,
         "fun": initial_fun,
-        "xrange": initial_xrange
+        "xrange": initial_xrange,
     }
     return initial
 
-def format_initials(initials: list[SketchInitial], tool: SketchTool, ranges: SketchCanvasSize) -> list:
+
+def format_initials(
+    initials: list[SketchInitial], tool: SketchTool, ranges: SketchCanvasSize
+) -> list:
     """
     Convert initial drawing data for one sketching tool into the data format that is used by the client.
     Note that this function does not validate the inputs and assumes that attribute combinations are all
@@ -702,12 +779,26 @@ def format_initials(initials: list[SketchInitial], tool: SketchTool, ranges: Ske
                 coordinates = initial["coordinates"]
                 if tool["type"] == "horizontal-line":
                     new_format = [
-                        {"x": graph_to_screen_x(ranges["x_start"], ranges["x_end"], ranges["width"], float(coord))}
+                        {
+                            "x": graph_to_screen_x(
+                                ranges["x_start"],
+                                ranges["x_end"],
+                                ranges["width"],
+                                float(coord),
+                            )
+                        }
                         for coord in coordinates
                     ]
                 else:
                     new_format = [
-                        {"y": graph_to_screen_y(ranges["y_start"], ranges["y_end"], ranges["height"], float(coord))}
+                        {
+                            "y": graph_to_screen_y(
+                                ranges["y_start"],
+                                ranges["y_end"],
+                                ranges["height"],
+                                float(coord),
+                            )
+                        }
                         for coord in coordinates
                     ]
     elif tool["type"] in ["spline", "freeform", "polyline"]:
@@ -717,8 +808,18 @@ def format_initials(initials: list[SketchInitial], tool: SketchTool, ranges: Ske
                     coordinates = initial["coordinates"]
                     x_y_vals = [
                         [
-                            graph_to_screen_x(ranges["x_start"], ranges["x_end"], ranges["width"], coordinates[i]),
-                            graph_to_screen_y(ranges["y_start"], ranges["y_end"], ranges["height"], coordinates[i + 1]),
+                            graph_to_screen_x(
+                                ranges["x_start"],
+                                ranges["x_end"],
+                                ranges["width"],
+                                coordinates[i],
+                            ),
+                            graph_to_screen_y(
+                                ranges["y_start"],
+                                ranges["y_end"],
+                                ranges["height"],
+                                coordinates[i + 1],
+                            ),
                         ]
                         for i in range(0, len(coordinates), 2)
                     ]
@@ -733,12 +834,13 @@ def format_initials(initials: list[SketchInitial], tool: SketchTool, ranges: Ske
                     function = None
                     x1, x2 = initial["xrange"]
                     function = parse_function_string(initial["fun"])
-                    # Automatically try to handle discontinuities by splitting up functions if sampling leads to undefined values 
+                    # Automatically try to handle discontinuities by splitting up functions if sampling leads to undefined values
                     broken = True
                     while broken:
                         x_y_vals, broken, new_start = function_to_spline(
                             function,
-                            x1, x2,
+                            x1,
+                            x2,
                             ranges,
                         )
                         if len(x_y_vals) > 0:
@@ -759,13 +861,22 @@ def format_initials(initials: list[SketchInitial], tool: SketchTool, ranges: Ske
                 coordinates = initial["coordinates"]
                 new_format += [
                     {
-                        "x": graph_to_screen_x(ranges["x_start"], ranges["x_end"], ranges["width"], coordinates[i]),
-                        "y": graph_to_screen_y(ranges["y_start"], ranges["y_end"], ranges["height"], coordinates[i + 1]),
+                        "x": graph_to_screen_x(
+                            ranges["x_start"],
+                            ranges["x_end"],
+                            ranges["width"],
+                            coordinates[i],
+                        ),
+                        "y": graph_to_screen_y(
+                            ranges["y_start"],
+                            ranges["y_end"],
+                            ranges["height"],
+                            coordinates[i + 1],
+                        ),
                     }
                     for i in range(0, len(coordinates), 2)
                 ]
     return new_format
-
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
