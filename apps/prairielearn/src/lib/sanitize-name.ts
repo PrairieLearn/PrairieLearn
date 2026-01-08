@@ -15,8 +15,9 @@ export function sanitizeString(s: string): string {
  * @param course.short_name - The short name of the course.
  * @returns The sanitized prefix string.
  */
-export function courseFilenamePrefix(course: { short_name: string }): string {
-  const prefix = sanitizeString(course.short_name) + '_';
+export function courseFilenamePrefix(course: { short_name: string | null }): string {
+  // In practice, course.short_name should never be null.
+  const prefix = sanitizeString(course.short_name!) + '_';
   return prefix;
 }
 
@@ -31,11 +32,12 @@ export function courseFilenamePrefix(course: { short_name: string }): string {
  */
 export function courseInstanceFilenamePrefix(
   course_instance: {
-    short_name: string;
+    short_name: string | null;
   },
-  course: { short_name: string },
+  course: { short_name: string | null },
 ): string {
-  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
+  // In practice, course_instance.short_name should never be null.
+  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name!) + '_';
   return prefix;
 }
 
@@ -60,10 +62,10 @@ export function assessmentFilenamePrefix(
     abbreviation: string;
   },
   course_instance: {
-    short_name: string;
+    short_name: string | null;
   },
   course: {
-    short_name: string;
+    short_name: string | null;
   },
 ): string {
   const prefix =
@@ -85,12 +87,13 @@ export function assessmentFilenamePrefix(
  */
 export function questionFilenamePrefix(
   question: {
-    qid: string;
+    qid: string | null;
   },
   course: {
-    short_name: string;
+    short_name: string | null;
   },
 ) {
-  const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid) + '_';
+  // In practice, question.qid should never be null
+  const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid!) + '_';
   return prefix;
 }

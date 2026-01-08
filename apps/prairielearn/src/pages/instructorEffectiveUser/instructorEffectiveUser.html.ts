@@ -9,7 +9,8 @@ import {
   CoursePermissionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -25,7 +26,7 @@ export function InstructorEffectiveUser({
   ipAddress,
   courseRoles,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
@@ -36,6 +37,8 @@ export function InstructorEffectiveUser({
   // fall back to the course, and then to the institution. All institutions must
   // have a display timezone, so we're always guaranteed to have one.
   const displayTimezone =
+    // We don't need to fall back to institution.display_timezone
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     resLocals.course_instance?.display_timezone ??
     resLocals.course.display_timezone ??
     resLocals.institution.display_timezone;
@@ -76,7 +79,7 @@ export function InstructorEffectiveUser({
             ? html`
                 <p>
                   <strong>Authenticated course instance role:</strong>
-                  ${authz_data.authn_course_instance_role}
+                  ${(authz_data as ResLocalsCourseInstanceAuthz).authn_course_instance_role}
                 </p>
               `
             : ''}
@@ -215,7 +218,7 @@ export function InstructorEffectiveUser({
               <div class="card-body">
                 <p>
                   <strong>Effective course instance role:</strong>
-                  ${authz_data.course_instance_role}
+                  ${(authz_data as ResLocalsCourseInstanceAuthz).course_instance_role}
                 </p>
 
                 <div class="alert alert-secondary mb-0">
@@ -232,7 +235,8 @@ export function InstructorEffectiveUser({
                         ${[...courseRoles.available_course_instance_roles]
                           .reverse()
                           .map((available_course_instance_role) =>
-                            available_course_instance_role === authz_data.course_instance_role
+                            available_course_instance_role ===
+                            (authz_data as ResLocalsCourseInstanceAuthz).course_instance_role
                               ? html`
                                   <option value="${available_course_instance_role}" selected>
                                     ${available_course_instance_role} (current)

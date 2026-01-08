@@ -5,7 +5,7 @@ import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const SharingSetRowSchema = z.object({
   name: z.string(),
@@ -19,7 +19,7 @@ function AddCourseToSharingSetPopover({
   resLocals,
 }: {
   sharing_set: SharingSetRow;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
 }) {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
@@ -127,7 +127,7 @@ export function InstructorCourseAdminSharing({
   sharingSets: SharingSetRow[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
 }) {
   const isCourseOwner = resLocals.authz_data.has_course_permission_own;
 
