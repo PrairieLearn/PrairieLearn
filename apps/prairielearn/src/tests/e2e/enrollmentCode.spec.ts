@@ -46,7 +46,7 @@ test.describe('Enrollment code OTP input', () => {
     await expect(otpInput).toHaveValue('ABCDEFGHIJ');
 
     // Verify visual boxes display the characters
-    const boxes = page.locator('.pl-ui-otp-input-box');
+    const boxes = page.locator('.pl-ui-otp-box');
     await expect(boxes).toHaveCount(10);
 
     // Check first few characters are displayed
@@ -138,10 +138,11 @@ test.describe('Enrollment code OTP input', () => {
     await page.getByRole('button', { name: 'Add course' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
-    // Check that separators are rendered
-    const separators = page.locator('.pl-ui-otp-input-separator');
+    // Check that separators are rendered (spans with '-' text between box groups)
+    const separators = page
+      .getByText('-', { exact: true })
+      .filter({ hasNot: page.locator('.pl-ui-otp-box') });
     await expect(separators).toHaveCount(2); // Two separators for [3]-[3]-[4] pattern
-    await expect(separators.first()).toHaveText('-');
   });
 
   test('focus ring appears on current input position', async ({ page }) => {
@@ -155,7 +156,7 @@ test.describe('Enrollment code OTP input', () => {
     await otpInput.focus();
 
     // First box should have focus class (when empty, focus is on first box)
-    const boxes = page.locator('.pl-ui-otp-input-box');
+    const boxes = page.locator('.pl-ui-otp-box');
     await expect(boxes.first()).toHaveClass(/focused/);
 
     // Type some characters
@@ -179,7 +180,7 @@ test.describe('Enrollment code OTP input', () => {
     await otpInput.focus();
 
     // Last box should have focus class (stays on last when complete)
-    const boxes = page.locator('.pl-ui-otp-input-box');
+    const boxes = page.locator('.pl-ui-otp-box');
     await expect(boxes.last()).toHaveClass(/focused/);
   });
 
