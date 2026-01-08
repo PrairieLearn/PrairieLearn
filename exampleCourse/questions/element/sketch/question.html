@@ -113,19 +113,6 @@
 
 <pl-card>
   <pl-question-panel>
-    <p>Another possible use case for the element is the grading of vector sketches. In this question, exactly one
-      arrow can be placed that needs to have a length of 1.4 (approx. $\sqrt{2}$) and a 45 degree angle in the first quadrant for the graph.
-    </p>
-  </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade-vector" allow-blank="true">
-    <pl-sketch-tool id="ln" type="line" arrowhead="10" limit="1"></pl-sketch-tool>
-    <pl-sketch-grade type="match-length" toolid="ln" length="1.4"></pl-sketch-grade> 
-    <pl-sketch-grade type="match-angle" toolid="ln" angle="45"></pl-sketch-grade> 
-  </pl-sketch>
-</pl-card>
-
-<pl-card>
-  <pl-question-panel>
     <p>The element also supports drawing and auto-grading polygons, for example to shade regions of a graph. In this 
       question, a triangular polygon should be drawn that covers the gap between the given functions in the interval $[0,2]$.</p>
     <p>Note that polygon grading is computationally expensive and also somewhat limited. For example, it is not possible to 

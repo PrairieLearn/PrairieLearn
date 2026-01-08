@@ -4,11 +4,8 @@ import math
 import numpy as np
 
 
-def parse_function_string(s):
-    if s is None:
-        return None
-
-    # If fun-x-y-swap is set to true, functions might be defined using y as variable name
+def parse_function_string(s: str):
+    # If xyflip is set to true, functions might be defined using y as variable name
     # This does not affect function evaluation, so we simply rename the variable before parsing
     s = s.replace("y", "x")
 
@@ -92,10 +89,7 @@ def collapse_ranges(ranges):
     return ls
 
 
-def function_to_spline(f, xrange, range_data):
-    x_min, x_max = xrange[0], xrange[1]
-    if x_min > x_max:
-        return [], False, None
+def function_to_spline(f, x_min, x_max, range_data):
     spline = []
 
     # set up values that are needed to convert the coordinates from graph to screen coordinates
