@@ -297,4 +297,4 @@ export function AssessmentSetsPage({
   );
 }
 
-AssessmentSetsPage.displayName = 'AssessmentSetsTable';
+AssessmentSetsPage.displayName = 'AssessmentSetsPage';

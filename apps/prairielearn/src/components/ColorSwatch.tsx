@@ -5,7 +5,7 @@ export function ColorSwatch({ color }: { color: string }) {
       // `form-control-color` provides the correct sizing. We override the
       // cursor and padding to make it appear just as a plain, non-interactive
       // color swatch.
-      class="form-control-color p-0"
+      className="form-control-color p-0"
       style={{ cursor: 'default' }}
       aria-hidden="true"
     >

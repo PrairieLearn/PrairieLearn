@@ -79,18 +79,18 @@ export function EditAssessmentSetsModal({
       <Modal.Body>
         {assessmentSet ? (
           <>
-            <div class="d-flex flex-column align-items-center mb-4">
-              <span class={`badge color-${assessmentSet.color}`}>
+            <div className="d-flex flex-column align-items-center mb-4">
+              <span className={`badge color-${assessmentSet.color}`}>
                 {assessmentSet.abbreviation || 'Preview'}
               </span>
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="abbreviation">
+            <div className="mb-3">
+              <label className="form-label" for="abbreviation">
                 Abbreviation
               </label>
               <input
                 type="text"
-                class={clsx('form-control', invalidAbbreviation && 'is-invalid')}
+                className={clsx('form-control', invalidAbbreviation && 'is-invalid')}
                 id="abbreviation"
                 value={assessmentSet.abbreviation}
                 onChange={(e) =>
@@ -101,31 +101,33 @@ export function EditAssessmentSetsModal({
                 }
               />
               {invalidAbbreviation && (
-                <div class="invalid-feedback">Assessment set abbreviation is required</div>
+                <div className="invalid-feedback">Assessment set abbreviation is required</div>
               )}
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="name">
+            <div className="mb-3">
+              <label className="form-label" for="name">
                 Name
               </label>
               <input
                 type="text"
-                class={clsx('form-control', invalidName && 'is-invalid')}
+                className={clsx('form-control', invalidName && 'is-invalid')}
                 id="name"
                 value={assessmentSet.name}
                 onChange={(e) =>
                   setAssessmentSet({ ...assessmentSet, name: (e.target as HTMLInputElement).value })
                 }
               />
-              {invalidName && <div class="invalid-feedback">Assessment set name is required</div>}
+              {invalidName && (
+                <div className="invalid-feedback">Assessment set name is required</div>
+              )}
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="heading">
+            <div className="mb-3">
+              <label className="form-label" for="heading">
                 Heading
               </label>
               <input
                 type="text"
-                class="form-control"
+                className="form-control"
                 id="heading"
                 value={assessmentSet.heading}
                 onChange={(e) =>
@@ -136,13 +138,13 @@ export function EditAssessmentSetsModal({
                 }
               />
             </div>
-            <div class="mb-3">
-              <label class="form-label" for="color">
+            <div className="mb-3">
+              <label className="form-label" for="color">
                 Color
               </label>
-              <div class="d-flex gap-2 align-items-center">
+              <div className="d-flex gap-2 align-items-center">
                 <select
-                  class={clsx('form-select', invalidColor && 'is-invalid')}
+                  className={clsx('form-select', invalidColor && 'is-invalid')}
                   id="color"
                   value={assessmentSet.color}
                   onChange={(e) =>
@@ -160,7 +162,7 @@ export function EditAssessmentSetsModal({
                 </select>
                 <ColorSwatch color={assessmentSet.color} />
                 {invalidColor && (
-                  <div class="invalid-feedback">Assessment set color is required</div>
+                  <div className="invalid-feedback">Assessment set color is required</div>
                 )}
               </div>
             </div>
@@ -168,10 +170,10 @@ export function EditAssessmentSetsModal({
         ) : null}
       </Modal.Body>
       <Modal.Footer>
-        <button class="btn btn-secondary" type="button" onClick={onClose}>
+        <button className="btn btn-secondary" type="button" onClick={onClose}>
           Cancel
         </button>
-        <button class="btn btn-primary" type="button" onClick={handleSubmit}>
+        <button className="btn btn-primary" type="button" onClick={handleSubmit}>
           Save
         </button>
       </Modal.Footer>
