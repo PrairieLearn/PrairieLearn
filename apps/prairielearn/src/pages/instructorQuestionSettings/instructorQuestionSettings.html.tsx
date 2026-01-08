@@ -231,14 +231,13 @@ export function InstructorQuestionSettings({
                         : renderHtml(<TagBadgeList tags={questionTags} />)}
                     </td>
                   </tr>
-                  ${shouldShowAssessmentsList
+                  ${shouldShowAssessmentsList && resLocals.course_instance
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
                         <td>
                           ${AssessmentBadges({
                             assessmentsWithQuestion,
-                            // If `shouldShowAssessmentsList`, resLocals.course_instance is non-null.
-                            courseInstanceId: resLocals.course_instance!.id,
+                            courseInstanceId: resLocals.course_instance.id,
                           })}
                         </td>
                       </tr>`

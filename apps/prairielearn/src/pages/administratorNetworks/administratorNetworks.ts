@@ -7,7 +7,6 @@ import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import {
   AdministratorNetworks,
-  type AdministratorNetworksRow,
   AdministratorNetworksRowSchema,
 } from './administratorNetworks.html.js';
 
@@ -16,15 +15,9 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  typedAsyncHandler<
-    'plain',
-    {
-      networks: AdministratorNetworksRow[];
-    }
-  >(async (req, res) => {
-    const result = await sqldb.queryRow(sql.select, z.array(AdministratorNetworksRowSchema));
-    res.locals.networks = result;
-    res.send(AdministratorNetworks({ resLocals: res.locals }));
+  typedAsyncHandler<'plain'>(async (req, res) => {
+    const networks = await sqldb.queryRow(sql.select, z.array(AdministratorNetworksRowSchema));
+    res.send(AdministratorNetworks({ resLocals: res.locals, networks }));
   }),
 );
 

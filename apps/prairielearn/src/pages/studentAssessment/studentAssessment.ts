@@ -39,6 +39,7 @@ router.get(
   '/',
   logPageView('studentAssessmentInstance'),
   typedAsyncHandler<'assessment'>(async function (req, res) {
+    // TODO: Investigate if `authz_result` can be null/undefined
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!(res.locals.authz_result?.active ?? true)) {
       // If the student had started the assessment already, they would have been

@@ -10,7 +10,6 @@ import {
   UserSchema,
 } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -30,18 +29,22 @@ export function InstructorEffectiveUser({
   ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
-  const { authz_data, course_instance, __csrf_token, req_date, true_req_date, user } = resLocals;
+  const {
+    authz_data,
+    course_instance,
+    course,
+    __csrf_token,
+    req_date,
+    true_req_date,
+    user,
+    navbarType,
+  } = resLocals;
 
   // This page can be mounted under `/pl/course/...`, in which case we won't
   // have a course instance to get a display timezone from. In that case, we'll
   // fall back to the course, and then to the institution. All institutions must
   // have a display timezone, so we're always guaranteed to have one.
-  const displayTimezone =
-    // We don't need to fall back to institution.display_timezone
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    resLocals.course_instance?.display_timezone ??
-    resLocals.course.display_timezone ??
-    resLocals.institution.display_timezone;
+  const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
   const formattedTrueReqDate = format(
     toZonedTime(true_req_date, displayTimezone),
@@ -58,7 +61,7 @@ export function InstructorEffectiveUser({
     pageTitle: 'Change Effective User',
     resLocals,
     navContext: {
-      type: resLocals.navbarType,
+      type: navbarType,
       page: 'effective',
     },
     options: {
@@ -75,11 +78,11 @@ export function InstructorEffectiveUser({
           <p><strong>Authenticated UID:</strong> ${authz_data.authn_user.uid}</p>
           <p><strong>Authenticated name:</strong> ${authz_data.authn_user.name}</p>
           <p><strong>Authenticated course role:</strong> ${authz_data.authn_course_role}</p>
-          ${course_instance
+          ${'authn_course_instance_role' in authz_data
             ? html`
                 <p>
                   <strong>Authenticated course instance role:</strong>
-                  ${(authz_data as ResLocalsCourseInstanceAuthz).authn_course_instance_role}
+                  ${authz_data.authn_course_instance_role}
                 </p>
               `
             : ''}
@@ -208,7 +211,7 @@ export function InstructorEffectiveUser({
         </div>
       </div>
 
-      ${course_instance
+      ${'course_instance_role' in authz_data
         ? html`
             <div class="card mb-4">
               <div class="card-header bg-primary text-white">
@@ -218,7 +221,7 @@ export function InstructorEffectiveUser({
               <div class="card-body">
                 <p>
                   <strong>Effective course instance role:</strong>
-                  ${(authz_data as ResLocalsCourseInstanceAuthz).course_instance_role}
+                  ${authz_data.course_instance_role}
                 </p>
 
                 <div class="alert alert-secondary mb-0">
@@ -235,8 +238,7 @@ export function InstructorEffectiveUser({
                         ${[...courseRoles.available_course_instance_roles]
                           .reverse()
                           .map((available_course_instance_role) =>
-                            available_course_instance_role ===
-                            (authz_data as ResLocalsCourseInstanceAuthz).course_instance_role
+                            available_course_instance_role === authz_data.course_instance_role
                               ? html`
                                   <option value="${available_course_instance_role}" selected>
                                     ${available_course_instance_role} (current)

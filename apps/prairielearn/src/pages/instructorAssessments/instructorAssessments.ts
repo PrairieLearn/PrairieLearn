@@ -20,7 +20,7 @@ import {
   AssessmentSetSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   type AssessmentRow,
@@ -33,7 +33,7 @@ import { AssessmentStats, InstructorAssessments } from './instructorAssessments.
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: ResLocalsForPage<'assessment'>) {
   return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
 }
 

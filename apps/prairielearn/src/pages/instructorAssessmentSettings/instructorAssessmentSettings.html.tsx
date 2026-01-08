@@ -114,7 +114,7 @@ export function InstructorAssessmentSettings({
                   (set) => html`
                     <option
                       value="${set.name}"
-                      ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                      ${resLocals.assessment_set.id === set.id ? 'selected' : ''}
                     >
                       ${set.name}
                     </option>
@@ -148,7 +148,7 @@ export function InstructorAssessmentSettings({
                   (module) => html`
                     <option
                       value="${module.name}"
-                      ${resLocals.assessment_module?.name === module.name ? 'selected' : ''}
+                      ${resLocals.assessment_module?.id === module.id ? 'selected' : ''}
                     >
                       ${module.name}
                     </option>

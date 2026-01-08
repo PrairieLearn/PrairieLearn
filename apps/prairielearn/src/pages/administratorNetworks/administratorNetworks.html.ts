@@ -18,10 +18,10 @@ export type AdministratorNetworksRow = z.infer<typeof AdministratorNetworksRowSc
 
 export function AdministratorNetworks({
   resLocals,
+  networks,
 }: {
-  resLocals: ResLocalsForPage<'plain'> & {
-    networks: AdministratorNetworksRow[];
-  };
+  resLocals: ResLocalsForPage<'plain'>;
+  networks: AdministratorNetworksRow[];
 }) {
   return PageLayout({
     resLocals,
@@ -52,7 +52,7 @@ export function AdministratorNetworks({
             </thead>
 
             <tbody>
-              ${resLocals.networks.map(
+              ${networks.map(
                 (network: AdministratorNetworksRow) => html`
                   <tr>
                     <td>${network.network}</td>

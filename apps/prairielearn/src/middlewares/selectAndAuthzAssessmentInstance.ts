@@ -35,6 +35,7 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   instance_team_uid_list: z.array(z.string()),
 });
 
+// See `user_team_xor` constraint
 const SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
