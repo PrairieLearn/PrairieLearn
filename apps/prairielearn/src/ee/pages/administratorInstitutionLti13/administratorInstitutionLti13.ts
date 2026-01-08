@@ -15,9 +15,9 @@ import {
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
 
 import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';

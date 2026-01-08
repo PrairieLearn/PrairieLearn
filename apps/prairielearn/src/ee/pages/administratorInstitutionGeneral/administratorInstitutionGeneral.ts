@@ -5,6 +5,7 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
@@ -13,7 +14,6 @@ import {
   reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans.js';
 import { getInstitution } from '../../lib/institution.js';
-import { typedAsyncHandler } from '../../../lib/res-locals.js';
 
 import {
   AdministratorInstitutionGeneral,

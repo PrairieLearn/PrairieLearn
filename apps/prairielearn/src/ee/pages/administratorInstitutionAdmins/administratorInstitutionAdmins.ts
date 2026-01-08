@@ -1,7 +1,7 @@
 import { Router } from 'express';
 
-import { getInstitution } from '../../lib/institution.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getInstitution } from '../../lib/institution.js';
 
 import { AdministratorInstitutionAdmins } from './administratorInstitutionAdmins.html.js';
 

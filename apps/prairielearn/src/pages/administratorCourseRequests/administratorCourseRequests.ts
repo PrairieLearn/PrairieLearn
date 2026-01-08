@@ -8,8 +8,8 @@ import {
   selectAllCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request.js';
-import { selectAllInstitutions } from '../../models/institution.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectAllInstitutions } from '../../models/institution.js';
 
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
 

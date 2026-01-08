@@ -9,9 +9,9 @@ import {
   selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 

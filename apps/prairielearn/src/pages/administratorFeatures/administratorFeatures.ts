@@ -13,8 +13,8 @@ import {
   type User,
 } from '../../lib/db-types.js';
 import { type FeatureName, features } from '../../lib/features/index.js';
-import { selectOptionalUserByUid } from '../../models/user.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { selectOptionalUserByUid } from '../../models/user.js';
 
 import {
   AddFeatureGrantModalBody,
