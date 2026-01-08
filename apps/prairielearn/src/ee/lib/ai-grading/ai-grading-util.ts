@@ -1,17 +1,10 @@
-import type {
-  EmbeddingModel,
-  GenerateObjectResult,
-  GenerateTextResult,
-  ModelMessage,
-  UserContent,
-} from 'ai';
+import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
 import { z } from 'zod';
 
 import {
   execute,
   loadSqlEquiv,
-  queryOptionalRow,
   queryRow,
   queryRows,
   runInTransactionAsync,
@@ -23,25 +16,17 @@ import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
 import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import {
   AssessmentQuestionSchema,
-  type Course,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
-  type Question,
   type RubricItem,
   RubricItemSchema,
   type Submission,
-  type SubmissionGradingContextEmbedding,
-  SubmissionGradingContextEmbeddingSchema,
   SubmissionSchema,
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
-import { buildQuestionUrls } from '../../../lib/question-render.js';
-import { getQuestionCourse } from '../../../lib/question-variant.js';
-import * as questionServers from '../../../question-servers/index.js';
-import { createEmbedding, vectorToString } from '../contextEmbeddings.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
@@ -51,14 +36,6 @@ export const SubmissionVariantSchema = z.object({
   variant: VariantSchema,
   submission: SubmissionSchema,
 });
-export const GradedExampleSchema = z.object({
-  submission_text: z.string(),
-  score_perc: z.number(),
-  feedback: z.record(z.string(), z.any()).nullable(),
-  instance_question_id: z.string(),
-  manual_rubric_grading_id: z.string().nullable(),
-});
-export type GradedExample = z.infer<typeof GradedExampleSchema>;
 
 /**
  * Models supporting system messages after the first user message.
@@ -77,7 +54,6 @@ export async function generatePrompt({
   questionAnswer,
   submission_text,
   submitted_answer,
-  example_submissions,
   rubric_items,
   grader_guidelines,
   model_id,
@@ -86,7 +62,6 @@ export async function generatePrompt({
   questionAnswer: string;
   submission_text: string;
   submitted_answer: Record<string, any> | null;
-  example_submissions: GradedExample[];
   rubric_items: RubricItem[];
   grader_guidelines: string | null;
   model_id: AiGradingModelId;
@@ -185,70 +160,6 @@ export async function generatePrompt({
         content: questionAnswer.trim(),
       },
     );
-  }
-
-  if (example_submissions.length > 0) {
-    if (rubric_items.length > 0) {
-      input.push({
-        role: systemRoleAfterUserMessage,
-        content:
-          'Here are some example student responses and their corresponding selected rubric items.',
-      });
-    } else {
-      input.push({
-        role: systemRoleAfterUserMessage,
-        content:
-          'Here are some example student responses and their corresponding scores and feedback.',
-      });
-    }
-
-    // Examples
-    for (const example of example_submissions) {
-      if (rubric_items.length > 0 && example.manual_rubric_grading_id) {
-        // Note that the example may have been graded with a different rubric,
-        // or the rubric may have changed significantly since the example was graded.
-        // We'll show whatever items were selected anyways, since it'll likely
-        // still be useful context to the LLM.
-        const rubric_grading_items = await selectRubricGradingItems(
-          example.manual_rubric_grading_id,
-        );
-        input.push({
-          role: 'user',
-          content: formatPrompt([
-            '<example-submission>',
-            example.submission_text,
-            '</example-submission>',
-            '<selected-rubric-items>',
-            run(() => {
-              if (rubric_grading_items.length === 0) {
-                return 'No rubric items were selected for this example student response.';
-              }
-              return rubric_grading_items.map((item) => `- ${item.description}`).join('\n');
-            }),
-            '</selected-rubric-items>',
-          ]),
-        });
-      } else {
-        input.push({
-          role: 'user',
-          content: formatPrompt([
-            '<example-submission>',
-            example.submission_text,
-            '</example-submission>',
-            '<grading-result>',
-            JSON.stringify(
-              {
-                score: example.score_perc,
-                feedback: example.feedback?.manual?.trim() || '',
-              },
-              null,
-              2,
-            ),
-            '</grading-result>',
-          ]),
-        });
-      }
-    }
   }
 
   input.push(
@@ -377,51 +288,6 @@ export function generateSubmissionMessage({
   };
 }
 
-export async function generateSubmissionEmbedding({
-  course,
-  question,
-  instance_question,
-  urlPrefix,
-  embeddingModel,
-}: {
-  question: Question;
-  course: Course;
-  instance_question: InstanceQuestion;
-  urlPrefix: string;
-  embeddingModel: EmbeddingModel;
-}): Promise<SubmissionGradingContextEmbedding> {
-  const question_course = await getQuestionCourse(question, course);
-  const { variant, submission } = await selectLastVariantAndSubmission(instance_question.id);
-  const locals = {
-    ...buildQuestionUrls(urlPrefix, variant, question, instance_question),
-    questionRenderContext: 'ai_grading',
-  };
-  const questionModule = questionServers.getModule(question.type);
-  const render_submission_results = await questionModule.render(
-    { question: false, submissions: true, answer: false },
-    variant,
-    question,
-    submission,
-    [submission],
-    question_course,
-    locals,
-  );
-  const submission_text = render_submission_results.data.submissionHtmls[0];
-  const embedding = await createEmbedding(embeddingModel, submission_text, `course_${course.id}`);
-  // Insert new embedding into the table and return the new embedding
-  const new_submission_embedding = await queryRow(
-    sql.create_embedding_for_submission,
-    {
-      embedding: vectorToString(embedding),
-      submission_id: submission.id,
-      submission_text,
-      assessment_question_id: instance_question.assessment_question_id,
-    },
-    SubmissionGradingContextEmbeddingSchema,
-  );
-  return new_submission_embedding;
-}
-
 export function parseAiRubricItems({
   ai_rubric_items,
   rubric_items,
@@ -525,41 +391,8 @@ export async function selectLastVariantAndSubmission(
   );
 }
 
-export async function selectClosestSubmissionInfo({
-  submission_id,
-  assessment_question_id,
-  embedding,
-  limit,
-}: {
-  submission_id: string;
-  assessment_question_id: string;
-  embedding: string;
-  limit: number;
-}): Promise<GradedExample[]> {
-  return await queryRows(
-    sql.select_closest_submission_info,
-    {
-      submission_id,
-      assessment_question_id,
-      embedding,
-      limit,
-    },
-    GradedExampleSchema,
-  );
-}
-
 export async function selectLastSubmissionId(instance_question_id: string): Promise<string> {
   return await queryRow(sql.select_last_submission_id, { instance_question_id }, IdSchema);
-}
-
-export async function selectEmbeddingForSubmission(
-  submission_id: string,
-): Promise<SubmissionGradingContextEmbedding | null> {
-  return await queryOptionalRow(
-    sql.select_embedding_for_submission,
-    { submission_id },
-    SubmissionGradingContextEmbeddingSchema,
-  );
 }
 
 export async function deleteAiGradingJobs({
@@ -629,4 +462,47 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+/**
+ * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
+ *
+ * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
+ * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
+ *
+ * If a rubric item key contains escaped backslashes, Google Gemini generates
+ * unescaped backslashes in the JSON response, leading to a JSON parsing error.
+ *
+ * Example: Rubric item key \\mathbb{x} gets generated as \mathbb{x}, which is invalid JSON since
+ * it contains an unescaped backslash.
+ *
+ * This function escapes all backslashes of rubric item keys in the JSON response.
+ *
+ * @param rawResponseText - The raw AI grading response returned from the Gemini model.
+ * - The response must be a JSON string containing a "rubric_items" key.
+ * - The "rubric_items" key must be the last key in the JSON object.
+ *
+ * @returns The corrected JSON as a string, or null if it could not be corrected.
+ */
+export function correctGeminiMalformedRubricGradingJson(rawResponseText: string): string | null {
+  const RUBRIC_ITEMS_KEY = '"rubric_items":';
+
+  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
+  if (startRubric === -1) return null;
+
+  // The rubric items object starts right after the "rubric_items": key.
+  const rubricItemsRaw = rawResponseText.slice(startRubric + RUBRIC_ITEMS_KEY.length).trim();
+
+  // Gemini sometimes returns unescaped backslashes in the rubric item keys.
+  // We need to escape them properly.
+  // This only changes the keys of rubricItemsRaw since its values are all booleans.
+  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
+
+  // All characters before the rubric items, including the "rubric_items": key.
+  const charactersBeforeRubricItemsObject = rawResponseText.slice(
+    0,
+    startRubric + RUBRIC_ITEMS_KEY.length,
+  );
+
+  return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
 }
