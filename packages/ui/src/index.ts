@@ -32,3 +32,5 @@ export {
 } from './components/nuqs.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
+
+export { OtpInput, formatOtpValue, type OtpInputProps } from './components/OtpInput.js';
