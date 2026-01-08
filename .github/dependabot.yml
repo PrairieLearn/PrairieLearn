@@ -1,4 +1,12 @@
 version: 2
+
+# The Python strategy comes from this comment:
+# https://github.com/dependabot/dependabot-core/issues/12609#issuecomment-3407284321
+multi-ecosystem-groups:
+  python:
+    schedule:
+      interval: monthly
+
 updates:
   - package-ecosystem: docker
     directories:
@@ -45,6 +53,10 @@ updates:
       - dependency-name: 'preact' # https://github.com/PrairieLearn/PrairieLearn/pull/12763
       - dependency-name: 'react'
       - dependency-name: 'react-dom'
+      # Express 5 made significant breaking changes, and we are not yet
+      # ready to upgrade to it.
+      - dependency-name: 'express'
+        versions: ['>=5']
 
     groups:
       # Many OpenTelemetry packages are still pre-v1, so updates frequently won't
@@ -63,6 +75,8 @@ updates:
           - 'minor'
 
   - package-ecosystem: pip
+    multi-ecosystem-group: python
+    patterns: ['*']
     directories:
       - '/'
       - '/docs'
@@ -71,8 +85,6 @@ updates:
       - '/workspaces/jupyterlab-base'
       - '/workspaces/jupyterlab-python'
       - '/workspaces/vscode-python'
-    schedule:
-      interval: monthly
     rebase-strategy: disabled
     ignore:
       # We're not ready to jump to the latest version of `numpy` yet.
@@ -92,3 +104,10 @@ updates:
         update-types:
           - 'patch'
           - 'minor'
+
+  - package-ecosystem: uv
+    multi-ecosystem-group: python
+    patterns: ['*']
+    # Currently we only have a `uv.lock` in the root directory.
+    directories:
+      - '/'
