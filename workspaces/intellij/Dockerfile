@@ -7,7 +7,9 @@ RUN /bin/bash /pre-install.sh
 
 COPY pl-gosu-helper.sh /pl-gosu-helper.sh
 COPY start-vnc.sh /start-vnc.sh
+COPY config /opt/defaults/config
 COPY java /opt/defaults/java
+COPY autostart /etc/xdg/openbox/autostart
 COPY server /opt/server
 
 COPY post-install.sh /post-install.sh

@@ -32,7 +32,7 @@ const argument_option_defs = [
   {
     name: 'de',
     type: String,
-    defaultValue: '/usr/bin/xfce4-session',
+    defaultValue: '/usr/bin/openbox-session',
     description: 'Binary for the desktop environment to run',
   },
 ];
