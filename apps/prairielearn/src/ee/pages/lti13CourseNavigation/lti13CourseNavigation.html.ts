@@ -4,7 +4,6 @@ import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
@@ -110,7 +109,7 @@ export function Lti13CourseNavigationNotReady({
   ltiRoles,
 }: {
   courseName: string;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
   ltiRoles: string[];
 }): string {
   return PageLayout({
@@ -154,7 +153,7 @@ export function Lti13CourseNavigationDone({
   resLocals,
   lti13_instance_id,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
   lti13_instance_id: string;
 }): string {
   return PageLayout({
