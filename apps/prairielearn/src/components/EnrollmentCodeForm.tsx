@@ -20,6 +20,7 @@ interface EnrollmentCodeFormData {
  * @param params.show - If the form is shown (only used for modal style)
  * @param params.onHide - The function to call when the form is hidden (only used for modal style)
  * @param params.courseInstanceId - The ID of the course instance the code is for (optional)
+ * @param params.leadingContent - Content to display above the form
  * @param params.showInstructorHelp - Whether to show the instructor help text
  */
 export function EnrollmentCodeForm({
@@ -27,6 +28,7 @@ export function EnrollmentCodeForm({
   show,
   onHide,
   courseInstanceId,
+  leadingContent,
   showInstructorHelp = false,
 }:
   | {
@@ -34,6 +36,7 @@ export function EnrollmentCodeForm({
       show?: undefined;
       onHide?: undefined;
       courseInstanceId?: string;
+      leadingContent?: preact.ComponentChildren;
       showInstructorHelp?: boolean;
     }
   | {
@@ -41,6 +44,7 @@ export function EnrollmentCodeForm({
       show: boolean;
       onHide: () => void;
       courseInstanceId?: string;
+      leadingContent?: preact.ComponentChildren;
       showInstructorHelp?: boolean;
     }) {
   const {
@@ -274,72 +278,72 @@ export function EnrollmentCodeForm({
 
   const formContent = (
     <>
+      {leadingContent}
       {errors.root?.serverError && (
         <Alert variant="danger" dismissible onClose={() => clearErrors('root.serverError')}>
           {errors.root.serverError.message}
         </Alert>
       )}
-      <div>
-        <label for="enrollment-code" className="form-label">
-          Enter your enrollment code
-        </label>
-        <div className="d-flex gap-2 align-items-center">
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={3}
-            placeholder="ABC"
-            {...code1Props}
-            ref={(e) => {
-              input1Ref.current = e;
-              ref1(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code1')}
-            onPaste={handlePaste}
-          />
-          <span className="text-muted">-</span>
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={3}
-            placeholder="DEF"
-            {...code2Props}
-            ref={(e) => {
-              input2Ref.current = e;
-              ref2(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code2')}
-            onPaste={handlePaste}
-          />
-          <span className="text-muted">-</span>
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={4}
-            placeholder="GHIJ"
-            {...code3Props}
-            ref={(e) => {
-              input3Ref.current = e;
-              ref3(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code3')}
-            onPaste={handlePaste}
-          />
-        </div>
-        {(errors.code1 || errors.code2 || errors.code3) && (
-          <div className="form-text text-danger">
-            {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
+      <div className="d-flex flex-column gap-3">
+        <div>
+          <div className="d-flex gap-2 align-items-center">
+            <input
+              type="text"
+              className="form-control text-center"
+              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              maxLength={3}
+              placeholder="ABC"
+              {...code1Props}
+              ref={(e) => {
+                input1Ref.current = e;
+                ref1(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code1')}
+              onPaste={handlePaste}
+            />
+            <span className="text-muted">-</span>
+            <input
+              type="text"
+              className="form-control text-center"
+              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              maxLength={3}
+              placeholder="DEF"
+              {...code2Props}
+              ref={(e) => {
+                input2Ref.current = e;
+                ref2(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code2')}
+              onPaste={handlePaste}
+            />
+            <span className="text-muted">-</span>
+            <input
+              type="text"
+              className="form-control text-center"
+              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              maxLength={4}
+              placeholder="GHIJ"
+              {...code3Props}
+              ref={(e) => {
+                input3Ref.current = e;
+                ref3(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code3')}
+              onPaste={handlePaste}
+            />
           </div>
-        )}
-        <div className="form-text">
+          {(errors.code1 || errors.code2 || errors.code3) && (
+            <div className="form-text text-danger">
+              {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
+            </div>
+          )}
+        </div>
+        <div className="small text-muted">
           Don't have an enrollment code? Your instructor may have given you a link to your course or
           asked you to access it from another learning management system.
         </div>
         {showInstructorHelp && (
-          <div className="form-text mt-2">
+          <div className="small text-muted">
             <b>Instructors: </b>
             You can find both the enrollment code and a self-enrollment link on the settings page of
             your course instance.
@@ -351,7 +355,7 @@ export function EnrollmentCodeForm({
 
   const submitButton = (
     <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-      {isSubmitting ? 'Looking up code...' : 'Join Course'}
+      {isSubmitting ? 'Looking up code...' : 'Join course'}
     </button>
   );
 
@@ -359,7 +363,7 @@ export function EnrollmentCodeForm({
     return (
       <form onSubmit={handleSubmit(onSubmit)}>
         {formContent}
-        <div className="d-grid">{submitButton}</div>
+        <div className="d-grid mt-3">{submitButton}</div>
       </form>
     );
   }
