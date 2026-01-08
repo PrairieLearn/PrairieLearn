@@ -6,10 +6,9 @@ export type EnrollmentIneligibilityReason =
   | 'self-enrollment-expired'
   | 'institution-restriction';
 
-export interface EnrollmentEligibilityResult {
-  eligible: boolean;
-  reason?: EnrollmentIneligibilityReason;
-}
+export type EnrollmentEligibilityResult =
+  | { eligible: true }
+  | { eligible: false; reason: EnrollmentIneligibilityReason };
 
 /**
  * Check if a user is eligible to self-enroll in a course instance.

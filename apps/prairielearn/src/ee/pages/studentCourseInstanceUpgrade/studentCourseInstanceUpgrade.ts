@@ -68,15 +68,15 @@ router.get(
       });
     });
 
-    const { eligible, reason } = checkEnrollmentEligibility({
+    const enrollmentInfo = checkEnrollmentEligibility({
       userInstitutionId: user.institution_id,
       courseInstitutionId: course.institution_id,
       courseInstance: course_instance,
       existingEnrollment,
     });
 
-    if (!eligible && reason) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: reason }));
+    if (!enrollmentInfo.eligible) {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: enrollmentInfo.reason }));
       return;
     }
 
@@ -146,15 +146,17 @@ router.post(
         });
       });
 
-      const eligibility = checkEnrollmentEligibility({
+      const enrollmentInfo = checkEnrollmentEligibility({
         userInstitutionId: user.institution_id,
         courseInstitutionId: course.institution_id,
         courseInstance: course_instance,
         existingEnrollment,
       });
 
-      if (!eligibility.eligible && eligibility.reason) {
-        res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: eligibility.reason }));
+      if (!enrollmentInfo.eligible) {
+        res
+          .status(403)
+          .send(EnrollmentPage({ resLocals: res.locals, type: enrollmentInfo.reason }));
         return;
       }
 

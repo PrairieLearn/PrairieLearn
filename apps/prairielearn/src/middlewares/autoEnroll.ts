@@ -34,7 +34,7 @@ export default asyncHandler(async (req, res, next) => {
     });
   });
 
-  const { eligible: selfEnrollmentAllowed, reason } = checkEnrollmentEligibility({
+  const enrollmentEligibility = checkEnrollmentEligibility({
     userInstitutionId: res.locals.authn_user.institution_id,
     courseInstitutionId: res.locals.course.institution_id,
     courseInstance,
@@ -43,7 +43,7 @@ export default asyncHandler(async (req, res, next) => {
 
   // If the user is not enrolled or has been rejected then they can enroll if self-enrollment is allowed.
   const canSelfEnroll =
-    selfEnrollmentAllowed &&
+    enrollmentEligibility.eligible &&
     (existingEnrollment == null || ['rejected'].includes(existingEnrollment.status));
 
   // If the user is enrolled and is invited/joined/removed, then they have access regardless of the self-enrollment status.
@@ -71,8 +71,10 @@ export default asyncHandler(async (req, res, next) => {
       // This is the only part of the `authz_data` that would change as a
       // result of this enrollment, so we can just update it directly.
       res.locals.authz_data.has_student_access_with_enrollment = true;
-    } else if (reason) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: reason }));
+    } else if (!enrollmentEligibility.eligible) {
+      res
+        .status(403)
+        .send(EnrollmentPage({ resLocals: res.locals, type: enrollmentEligibility.reason }));
       return;
     }
   }
