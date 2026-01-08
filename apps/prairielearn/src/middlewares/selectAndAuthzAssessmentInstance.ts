@@ -39,11 +39,11 @@ const SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
     instance_team: z.null(),
-  }).transform((data) => ({ ...data, instance_kind: 'user' as const })),
+  }),
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: z.null(),
     instance_team: TeamSchema,
-  }).transform((data) => ({ ...data, instance_kind: 'team' as const })),
+  }),
 ]);
 
 export type ResLocalsAssessmentInstance = z.infer<typeof SelectAndAuthzAssessmentInstanceSchema>;
