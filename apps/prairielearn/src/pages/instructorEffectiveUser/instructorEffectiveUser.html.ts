@@ -42,8 +42,7 @@ export function InstructorEffectiveUser({
 
   // This page can be mounted under `/pl/course/...`, in which case we won't
   // have a course instance to get a display timezone from. In that case, we'll
-  // fall back to the course, and then to the institution. All institutions must
-  // have a display timezone, so we're always guaranteed to have one.
+  // fall back to the course, which is guaranteed to have a display timezone.
   const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
   const formattedTrueReqDate = format(
