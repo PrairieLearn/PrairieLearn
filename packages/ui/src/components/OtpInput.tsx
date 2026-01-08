@@ -160,7 +160,9 @@ export function OtpInput({
           setCursorPosition(inputRef.current?.selectionStart ?? value.length);
         }}
         onKeyDown={handleKeyDown}
-        onSelect={(e) => setCursorPosition((e.target as HTMLInputElement).selectionStart ?? 0)}
+        onSelect={(e: { target: EventTarget | null }) =>
+          setCursorPosition((e.target as HTMLInputElement).selectionStart ?? 0)
+        }
       />
       <FieldError className="form-text text-danger">{errorMessage}</FieldError>
     </TextField>
