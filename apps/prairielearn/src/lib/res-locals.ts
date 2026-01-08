@@ -18,6 +18,7 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
+import type { Course, CourseInstance } from './db-types.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
@@ -30,7 +31,12 @@ export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
 
 interface ResLocalsForPageLookup {
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
+  'public-course': ResLocals & { course: Course };
   'course-instance': ResLocals & ResLocalsCourseInstance;
+  'public-course-instance': ResLocals & {
+    course: Course;
+    course_instance: CourseInstance;
+  };
   'instructor-instance-question': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestionWithCourseInstance &
