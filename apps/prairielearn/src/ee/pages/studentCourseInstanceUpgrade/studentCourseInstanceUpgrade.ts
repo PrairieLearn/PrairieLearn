@@ -5,7 +5,10 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { runInTransactionAsync } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 
+import { EnrollmentPage } from '../../../components/EnrollmentPage.js';
+import { hasRole } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
 import {
   CourseInstanceSchema,
@@ -13,7 +16,9 @@ import {
   InstitutionSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
+import { checkEnrollmentEligibility } from '../../../lib/enrollment-eligibility.js';
 import { getCanonicalHost } from '../../../lib/url.js';
+import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
 import {
   getMissingPlanGrants,
@@ -44,6 +49,37 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
+    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+    const course = CourseSchema.parse(res.locals.course);
+    const user = UserSchema.parse(res.locals.authn_user);
+
+    // Check enrollment eligibility before showing the upgrade page.
+    // This prevents students from paying when they wouldn't be able to enroll
+    // (e.g., due to institution restrictions).
+    const existingEnrollment = await run(async () => {
+      if (!hasRole(res.locals.authz_data, ['Student'])) {
+        return null;
+      }
+      return await selectOptionalEnrollmentByUid({
+        uid: user.uid,
+        courseInstance: course_instance,
+        requiredRole: ['Student'],
+        authzData: res.locals.authz_data,
+      });
+    });
+
+    const { eligible, reason } = checkEnrollmentEligibility({
+      userInstitutionId: user.institution_id,
+      courseInstitutionId: course.institution_id,
+      courseInstance: course_instance,
+      existingEnrollment,
+    });
+
+    if (!eligible && reason) {
+      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: reason }));
+      return;
+    }
+
     // Check if the student is *actually* missing plan grants, or if they just
     // came across this URL on accident. If they have all the necessary plan grants,
     // redirect them back to the assessments page.
@@ -54,9 +90,6 @@ router.get(
     }
 
     const institution = InstitutionSchema.parse(res.locals.institution);
-    const course = CourseSchema.parse(res.locals.course);
-    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
-    const user = UserSchema.parse(res.locals.authn_user);
 
     const planGrants = await getPlanGrantsForPartialContexts({
       institution_id: institution.id,
@@ -99,6 +132,31 @@ router.post(
       const course = CourseSchema.parse(res.locals.course);
       const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
+
+      // Check enrollment eligibility before processing payment.
+      const existingEnrollment = await run(async () => {
+        if (!hasRole(res.locals.authz_data, ['Student'])) {
+          return null;
+        }
+        return await selectOptionalEnrollmentByUid({
+          uid: user.uid,
+          courseInstance: course_instance,
+          requiredRole: ['Student'],
+          authzData: res.locals.authz_data,
+        });
+      });
+
+      const eligibility = checkEnrollmentEligibility({
+        userInstitutionId: user.institution_id,
+        courseInstitutionId: course.institution_id,
+        courseInstance: course_instance,
+        existingEnrollment,
+      });
+
+      if (!eligibility.eligible && eligibility.reason) {
+        res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: eligibility.reason }));
+        return;
+      }
 
       const body = UpgradeBodySchema.parse(req.body);
 
