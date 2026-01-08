@@ -6,16 +6,16 @@ FROM
 WHERE
   a.tid = $assessment_tid;
 
--- BLOCK select_assessment_group_roles
+-- BLOCK select_assessment_team_roles
 SELECT
-  gr.id,
-  gr.role_name,
-  gr.minimum,
-  gr.maximum
+  tr.id,
+  tr.role_name,
+  tr.minimum,
+  tr.maximum
 FROM
-  team_roles AS gr
+  team_roles AS tr
 WHERE
-  gr.assessment_id = $assessment_id;
+  tr.assessment_id = $assessment_id;
 
 -- BLOCK select_all_assessment_instance
 SELECT

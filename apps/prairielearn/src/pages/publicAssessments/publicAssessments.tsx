@@ -5,7 +5,6 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { PublicCourseInstanceSchema, PublicCourseSchema } from '../../lib/client/safe-db-types.js';
 import { getCourseInstanceCopyTargets } from '../../lib/copy-content.js';
 import { UserSchema } from '../../lib/db-types.js';
-import { features } from '../../lib/features/index.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessments } from '../../models/assessment.js';
 import { selectQuestionsForCourseInstanceCopy } from '../../models/question.js';
@@ -44,9 +43,6 @@ router.get(
       .parse(courseInstanceCopyTargets);
     const safeRows = z.array(SafeAssessmentRowSchema).parse(rows);
 
-    // Check the feature flag globally since we don't know the destination course yet
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {});
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -65,7 +61,7 @@ router.get(
             course={safeCourse}
             courseInstanceCopyTargets={safeCourseInstanceCopyTargets}
             questionsForCopy={safeQuestionsForCopy}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
+            isAdministrator={res.locals.is_administrator}
           />
         ),
       }),
