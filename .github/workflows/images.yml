@@ -84,6 +84,7 @@ jobs:
           token: ${{ secrets.GITHUB_TOKEN }}
           images: |
             prairielearn/workspace-desktop
+            prairielearn/workspace-intellij
             prairielearn/workspace-jupyterlab-base
             prairielearn/workspace-jupyterlab-python
             prairielearn/workspace-jupyterlab-r
