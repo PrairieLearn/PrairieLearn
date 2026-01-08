@@ -18,8 +18,8 @@ import {
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
   FileModifyEditor,
-  getOrigHash,
   MultiEditor,
+  getOrigHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';

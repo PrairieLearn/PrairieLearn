@@ -22,8 +22,8 @@ import {
   CourseInstanceDeleteEditor,
   CourseInstanceRenameEditor,
   FileModifyEditor,
-  getOrigHash,
   MultiEditor,
+  getOrigHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
