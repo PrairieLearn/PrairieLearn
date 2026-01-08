@@ -68,12 +68,15 @@
     <p>Drawings can be auto-graded based on different grading criteria, some of which are specific to certain drawing tool 
       types. For tools like points and asymptote lines, common grading criteria are the number of placed objects per type 
       and their position.</p>
+    <p>Note that unlike most other auto-graded elements, <code>pl-sketch</code> does not provide a sample solution in the 
+      answer panel as there might exist a wide range of solutions for a single question. We recommend using an image
+      that is specific to that panel if a sample solution is needed.</p>
     <p>This question requires exactly 3 points to be placed, of which 2 must be at the locations $(0,0)$ and $(1,1)$. 
       The last point can be placed anywhere as long as its x-coordinate is less than 2 and its y-coordinate is in the 
       interval $[-3,3]$.
     </p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade">
+  <pl-sketch answers-name="sketch-grade" allow-blank="true">
     <pl-sketch-tool id="pt" type="point"></pl-sketch-tool>
     <pl-sketch-grade type="match" toolid="pt" x="0" y="0"></pl-sketch-grade> 
     <pl-sketch-grade type="match" toolid="pt" x="1" y="1"></pl-sketch-grade> 
@@ -86,21 +89,38 @@
 
 <pl-card>
   <pl-question-panel>
-    <p>Some grading criteria are more appropriate to functions. For example, this question requires a function to be 
-      drawn that is defined anywhere right of $x=-1$ and that matches $f(x) = x$ in the interval $x=[-1,1]$. It also 
-      must be monotonously increasing right of $x=1$. Grading criteria can be weighted, and also staged to establish
-      dependencies between grading criteria.
+    <p>A common use case for the element is to draw and grade function sketches. The freehand drawing, spline and poly-line
+      tool types are specifically designed for function sketching. Drawings as a single function, even if they consist of 
+      distinct segments or have small gaps. Submissions where multiple y-values exist for the same x-coordinate are marked 
+      as invalid to prevent ambiguities.
+    </p>
+    <p>For this question, a function needs to to be drawn that is defined anywhere right of $x=-1$ and that matches 
+      $f(x) = x$ in the interval $x=[-1,1]$. It also must be monotonously increasing right of $x=1$. 
     </p>
     <p>All grading criteria can be customized, both to adjust tolerances, and to determine how special cases like 
-      definition gaps are handled. The documentation describes the available settings and also lists more types of 
-      criteria, such as concavity checks or length-based grading.
+      definition gaps are handled. Furthermore, grading criteria can be weighted, and also staged to establish 
+      dependencies between grading criteria. The documentation describes the available settings and also lists 
+      more types of criteria, such as concavity checks or length-based grading.
     </p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade-fun">
+  <pl-sketch answers-name="sketch-grade-fun" allow-blank="true">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
     <pl-sketch-grade type="defined-in" toolid="fd" xrange="-1," stage="1"></pl-sketch-grade> 
     <pl-sketch-grade type="match-fun" toolid="fd" fun="x" xrange="-1,1" stage="2" weight="3"></pl-sketch-grade> 
     <pl-sketch-grade type="monot-increasing" toolid="fd" xrange="1," stage="2"></pl-sketch-grade> 
+  </pl-sketch>
+</pl-card>
+
+<pl-card>
+  <pl-question-panel>
+    <p>Another possible use case for the element is the grading of vector sketches. In this question, exactly one
+      arrow can be placed that needs to have a length of 1.4 (approx. $\sqrt{2}$) and a 45 degree angle in the first quadrant for the graph.
+    </p>
+  </pl-question-panel>
+  <pl-sketch answers-name="sketch-grade-vector" allow-blank="true">
+    <pl-sketch-tool id="ln" type="line" arrowhead="10" limit="1"></pl-sketch-tool>
+    <pl-sketch-grade type="match-length" toolid="ln" length="1.4"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-angle" toolid="ln" angle="45"></pl-sketch-grade> 
   </pl-sketch>
 </pl-card>
 
@@ -115,7 +135,7 @@
       counter-productive as it slows down grading to the point where a submission becomes invalid. We strongly recommend giving 
       students a low-stakes opportunity to practice all available drawing tools before using them in exams.</p>
   </pl-question-panel>
-  <pl-sketch answers-name="sketch-grade-poly" xrange="-1,5">
+  <pl-sketch answers-name="sketch-grade-poly" xrange="-1,5" allow-blank="true">
     <pl-sketch-tool id="pl" type="polygon"></pl-sketch-tool>
     <pl-sketch-grade type="defined-in" toolid="pl" xrange="0,2"></pl-sketch-grade> 
     <pl-sketch-grade type="greater-than" toolid="pl" fun="-x" xrange="0,2"></pl-sketch-grade> 
@@ -127,8 +147,9 @@
     <pl-sketch-grade type="match" toolid="pl" x="2" y="2"></pl-sketch-grade> 
 
     <!-- Ungraded helper lines for easier shading -->
-    <pl-sketch-tool id="fd" type="free-draw" read-only="true"></pl-sketch-tool>
-    <pl-sketch-initial toolid="fd" fun="-x" xrange="0,2"></pl-sketch-initial> 
-    <pl-sketch-initial toolid="fd" fun="x" xrange="0,2"></pl-sketch-initial> 
+    <pl-sketch-tool id="sp1" type="spline" read-only="true"></pl-sketch-tool>
+    <pl-sketch-tool id="sp2" type="spline" read-only="true"></pl-sketch-tool>
+    <pl-sketch-initial toolid="sp1" fun="-x" xrange="0,2"></pl-sketch-initial> 
+    <pl-sketch-initial toolid="sp2" fun="x" xrange="0,2"></pl-sketch-initial> 
   </pl-sketch>
 </pl-card>

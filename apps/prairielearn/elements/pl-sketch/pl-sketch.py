@@ -845,16 +845,54 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
             return
 
     # validate that polygons have <= 20 vertices
+    # validate that spline-type objects with the same toolid don't overlap each other more than 15 px
+    spline_based_tool_names = ["freeform", "spline", "polyline"]
     tool_info = data["params"][name]["sketch_config"]["tool_info"]
+
+    # we don't want to check overlap if the graph is flipped for f(y) grading
+    no_overlap_check = []
+    for grader in data["params"][name]["sketch_config"]["graders"]:
+        if "funxyswap" in grader and grader["funxyswap"] is True:
+            no_overlap_check += [
+                tool_info[tool.strip()]["type"] for tool in grader["toolid"].split(",")
+            ]
+
     for toolid in submission_parsed["gradeable"]:
         tool_type = tool_info[toolid]["type"]
         if tool_type == "polygon":
             for spline in submission_parsed["gradeable"][toolid]:
                 if (len(spline["spline"]) - 1) / 3 > 30:
                     data["format_errors"][name] = (
-                        "The drawn region exceeds the allowed number of vertices (max 30)."
+                        "A drawn polygon/region exceeds the allowed number of vertices (max 30)."
                     )
                     break
+        elif tool_type in spline_based_tool_names and tool_type not in no_overlap_check:
+            if len(submission_parsed["gradeable"][toolid]) == 1:
+                continue
+            # get min and max x values of each object and see if they overlap more than 5 px
+            ranges = [
+                [
+                    min(spline["spline"], key=lambda x: x[0])[0],
+                    max(spline["spline"], key=lambda x: x[0])[0],
+                ]
+                for spline in submission_parsed["gradeable"][toolid]
+            ]
+            ranges = sorted(ranges, key=lambda rg: rg[0])
+            for i in range(len(ranges) - 1):
+                total_overlap = 0
+                if ranges[i + 1][0] < ranges[i][1]:
+                    total_overlap += (
+                        min(ranges[i][1], ranges[i + 1][1]) - ranges[i + 1][0]
+                    )
+                overlap_tolerance = 5
+                if total_overlap > overlap_tolerance:
+                    data["format_errors"][name] = (
+                        'Multiple "'
+                        + tool_info[toolid]["label"]
+                        + (
+                            '" lines are defined in the same range. These lines are interpreted as functions, and only one y-value can exist for any x-coordinate.'
+                        )
+                    )
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
