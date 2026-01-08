@@ -19,7 +19,7 @@ import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../l
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 
-import { AssessmentSetsTable } from './components/AssessmentSetsTable.js';
+import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -57,7 +57,7 @@ router.get(
         },
         content: (
           <Hydrate>
-            <AssessmentSetsTable
+            <AssessmentSetsPage
               assessmentSets={assessmentSets}
               allowEdit={allowEdit}
               origHash={origHash}

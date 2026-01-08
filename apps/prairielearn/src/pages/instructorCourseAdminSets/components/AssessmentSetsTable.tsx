@@ -94,7 +94,7 @@ function AssessmentSetRow({
   );
 }
 
-function DraggableTable({
+function AssessmentSetsTable({
   assessmentSetsState,
   setAssessmentSetsState,
   editMode,
@@ -177,7 +177,7 @@ function DraggableTable({
   );
 }
 
-export function AssessmentSetsTable({
+export function AssessmentSetsPage({
   assessmentSets,
   allowEdit,
   origHash,
@@ -276,7 +276,7 @@ export function AssessmentSetsTable({
         </div>
 
         <div className="table-responsive">
-          <DraggableTable
+          <AssessmentSetsTable
             assessmentSetsState={assessmentSetsState}
             setAssessmentSetsState={setAssessmentSetsState}
             editMode={editMode}
@@ -297,4 +297,4 @@ export function AssessmentSetsTable({
   );
 }
 
-AssessmentSetsTable.displayName = 'AssessmentSetsTable';
+AssessmentSetsPage.displayName = 'AssessmentSetsTable';

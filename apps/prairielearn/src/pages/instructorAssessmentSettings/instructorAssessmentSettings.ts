@@ -19,6 +19,7 @@ import {
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
   FileModifyEditor,
+  getOrigHash,
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
@@ -75,9 +76,7 @@ router.get(
 
     let origHash = '';
     if (infoAssessmentPathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(fullInfoAssessmentPath, 'utf8')),
-      ).toString();
+      origHash = (await getOrigHash(fullInfoAssessmentPath)) ?? '';
     }
 
     const assessmentGHLink = courseRepoContentUrl(

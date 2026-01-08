@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Temporal } from '@js-temporal/polyfill';
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -23,6 +22,7 @@ import {
   CourseInstanceDeleteEditor,
   CourseInstanceRenameEditor,
   FileModifyEditor,
+  getOrigHash,
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
@@ -91,9 +91,7 @@ router.get(
     const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
     let origHash = '';
     if (infoCourseInfoPathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(fullInfoCourseInstancePath, 'utf8')),
-      ).toString();
+      origHash = (await getOrigHash(fullInfoCourseInstancePath)) ?? '';
     }
 
     const instanceGHLink = courseRepoContentUrl(

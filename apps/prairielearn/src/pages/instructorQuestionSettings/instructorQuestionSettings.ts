@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -26,6 +25,7 @@ import {
   QuestionCopyEditor,
   QuestionDeleteEditor,
   QuestionRenameEditor,
+  getOrigHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -491,7 +491,7 @@ router.get(
 
     let origHash = '';
     if (questionInfoExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
+      origHash = (await getOrigHash(fullInfoPath)) ?? '';
     }
 
     const canEdit =

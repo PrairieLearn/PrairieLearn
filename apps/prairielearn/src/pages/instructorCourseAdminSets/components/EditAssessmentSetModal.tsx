@@ -37,12 +37,14 @@ export function EditAssessmentSetsModal({
     if (!assessmentSetToEdit) return;
     setAssessmentSet(assessmentSetToEdit);
     setInvalidName(false);
+    setInvalidAbbreviation(false);
     setInvalidColor(false);
   }
 
   function handleModalExited() {
     setAssessmentSet(null);
     setInvalidName(false);
+    setInvalidAbbreviation(false);
     setInvalidColor(false);
   }
 
@@ -157,8 +159,10 @@ export function EditAssessmentSetsModal({
                   ))}
                 </select>
                 <ColorSwatch color={assessmentSet.color} />
+                {invalidColor && (
+                  <div class="invalid-feedback">Assessment set color is required</div>
+                )}
               </div>
-              {invalidColor && <div class="invalid-feedback">Assessment set color is required</div>}
             </div>
           </>
         ) : null}

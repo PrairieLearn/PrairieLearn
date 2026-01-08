@@ -1,7 +1,6 @@
 import assert from 'assert';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -20,7 +19,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import {
@@ -161,9 +160,7 @@ router.get(
     const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
     let origHash: string | null = null;
     if (infoCourseInstancePathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(infoCourseInstancePath, 'utf8')),
-      ).toString();
+      origHash = await getOrigHash(infoCourseInstancePath);
     }
 
     const accessRules = await queryRows(
