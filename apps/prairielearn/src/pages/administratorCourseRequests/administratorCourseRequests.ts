@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
@@ -10,6 +9,7 @@ import {
   updateCourseRequest,
 } from '../../lib/course-request.js';
 import { selectAllInstitutions } from '../../models/institution.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorCourseRequests } from './administratorCourseRequests.html.js';
 
@@ -17,7 +17,7 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const rows = await selectAllCourseRequests();
     const institutions = await selectAllInstitutions();
     res.send(
@@ -33,7 +33,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'approve_deny_course_request') {
       await updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {

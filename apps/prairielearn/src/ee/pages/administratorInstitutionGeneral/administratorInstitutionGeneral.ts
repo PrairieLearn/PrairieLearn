@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -14,6 +13,7 @@ import {
   reconcilePlanGrantsForInstitution,
 } from '../../lib/billing/plans.js';
 import { getInstitution } from '../../lib/institution.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 
 import {
   AdministratorInstitutionGeneral,
@@ -25,7 +25,7 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const availableTimezones = await getCanonicalTimezones([institution.display_timezone]);
     const statistics = await queryRow(
@@ -48,7 +48,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'update_enrollment_limits') {
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);

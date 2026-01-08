@@ -68,7 +68,7 @@ interface ResLocalsForPageLookup {
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
-// Only apply MergeUnion when T is a union of page types; preserve discriminated unions for single types
+// Only apply MergeUnion when T is a union of page types; preserve unions for single types
 export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
   true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
@@ -87,6 +87,7 @@ export type PageType = keyof ResLocalsForPageLookup;
  *
  * The page types include:
  *
+ * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
  * - `course`: A course page.
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.

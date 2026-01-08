@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -12,6 +11,7 @@ import {
 } from '../../lib/course-request.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorCourses, CourseWithInstitutionSchema } from './administratorCourses.html.js';
 
@@ -20,7 +20,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const course_requests = await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
@@ -38,7 +38,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'courses_insert') {
       await insertCourse({
         institution_id: req.body.institution_id,

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 import jose from 'node-jose';
 import { z } from 'zod';
@@ -18,6 +17,7 @@ import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 
 import { AdministratorInstitutionLti13 } from './administratorInstitutionLti13.html.js';
 import { type LTI13InstancePlatforms } from './administratorInstitutionLti13.types.js';
@@ -35,7 +35,7 @@ const lti13_instance_defaults = {
 
 router.get(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
@@ -107,7 +107,7 @@ router.get(
 
 router.post(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'add_key') {
       const keystoreJson = await queryOptionalRow(
         sql.select_keystore,
