@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
