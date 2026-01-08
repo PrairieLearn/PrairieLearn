@@ -75,8 +75,7 @@ router.get(
         authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
-        // @ts-expect-error The types for res.locals need to be improved
-        date: res.locals.authz_data.date,
+        date: res.locals.req_date,
         client_fingerprint_id,
       });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
