@@ -7,7 +7,7 @@ import * as error from '@prairielearn/error';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetById } from '../../models/assessment-set.js';
-import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
+import { selectOptionalAssessmentById } from '../../models/assessment.js';
 
 import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
@@ -17,12 +17,13 @@ router.get(
   '/',
   typedAsyncHandler<'public-course-instance'>(async (req, res) => {
     const assessment_id = req.params.assessment_id;
-    const isAssessmentPublic = await selectAssessmentIsPublic(assessment_id);
-    if (!isAssessmentPublic) {
+    const assessment = await selectOptionalAssessmentById(assessment_id);
+    if (
+      !assessment?.share_source_publicly ||
+      assessment.course_instance_id !== res.locals.course_instance.id
+    ) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
-
-    const assessment = await selectAssessmentById(assessment_id);
 
     assert(assessment.assessment_set_id);
     const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
