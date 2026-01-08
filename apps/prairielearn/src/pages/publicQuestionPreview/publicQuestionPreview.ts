@@ -23,6 +23,13 @@ async function setLocals(req: Request, res: Response) {
   res.locals.authz_data = { user: res.locals.user };
   res.locals.question = await selectQuestionById(req.params.question_id);
 
+  if (
+    !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
+    res.locals.course.id !== res.locals.question.course_id
+  ) {
+    throw new error.HttpStatusError(404, 'Not Found');
+  }
+
   const disablePublicWorkspaces = await features.enabled('disable-public-workspaces', {
     institution_id: res.locals.course.institution_id,
     course_id: res.locals.course.id,
@@ -30,13 +37,6 @@ async function setLocals(req: Request, res: Response) {
 
   if (res.locals.question.workspace_image && disablePublicWorkspaces) {
     throw new error.HttpStatusError(403, 'Access denied');
-  }
-
-  if (
-    !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
-    res.locals.course.id !== res.locals.question.course_id
-  ) {
-    throw new error.HttpStatusError(404, 'Not Found');
   }
 }
 
