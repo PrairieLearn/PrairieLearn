@@ -15,7 +15,7 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
         const course_instance = await selectOptionalCourseInstanceById(
           req.params.course_instance_id,
         );
-        if (!course_instance) return { course: null, course_instance: null };
+        if (!course_instance) throw new HttpStatusError(404, 'Not Found');
 
         return {
           course: await selectOptionalCourseById(course_instance.course_id),
