@@ -313,6 +313,16 @@ def test_partial_credit_type_conversion() -> None:
     )
 
     assert (
+        pl_checkbox.get_partial_credit_mode(build_element(False, None))
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element(True, None))
+        == pl_checkbox.PartialCreditType.NET_CORRECT
+    )
+
+    assert (
         pl_checkbox.get_partial_credit_mode(build_element(True, "PC"))
         == pl_checkbox.PartialCreditType.NET_CORRECT
     )
