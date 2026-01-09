@@ -6,7 +6,7 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type Assessment, AssessmentInstanceSchema, AssessmentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const DurationStatSchema = z.object({
   median_formatted: z.string(),
@@ -51,7 +51,7 @@ export function InstructorAssessmentStatistics({
   userScores,
   filenames,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   assessment: Assessment;
   durationStat: DurationStat;
   assessmentScoreHistogramByDate: AssessmentScoreHistogramByDate[];

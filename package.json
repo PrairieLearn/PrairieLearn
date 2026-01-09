@@ -60,6 +60,7 @@
     "eslint-plugin-you-dont-need-lodash-underscore": "^6.14.0",
     "globby": "^16.1.0",
     "htmlhint": "^1.8.0",
+    "linkinator": "^7.5.3",
     "markdownlint-cli": "^0.47.0",
     "prettier": "3.7.4",
     "prettier-plugin-pkg": "^0.21.2",

@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { CourseSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import { getInstitution } from '../../lib/institution.js';
 
@@ -19,7 +19,7 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const course = await queryRow(
       sql.select_course,
@@ -47,7 +47,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const course = await queryRow(
       sql.select_course,
       {

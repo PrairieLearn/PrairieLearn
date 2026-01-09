@@ -2,7 +2,7 @@ import { Fragment } from 'preact/jsx-runtime';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export interface StudentGradebookTableRow {
   assessment_id: string;
@@ -22,7 +22,7 @@ export function StudentGradebook({
   rows,
   csvFilename,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   rows: StudentGradebookTableRow[];
   csvFilename: string;
 }) {

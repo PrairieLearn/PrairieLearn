@@ -1,13 +1,12 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { stringifyStream } from '@prairielearn/csv';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { questionFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
@@ -20,14 +19,14 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals: UntypedResLocals) {
+function makeStatsCsvFilename(locals: ResLocalsForPage<'instructor-question'>) {
   const prefix = questionFilenamePrefix(locals.question, locals.course);
   return prefix + 'stats.csv';
 }
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
@@ -51,7 +50,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     // TODO: Support question statistics for shared questions. For now, forbid
     // access to question statistics if question is shared from another course.
     if (res.locals.question.course_id !== res.locals.course.id) {
