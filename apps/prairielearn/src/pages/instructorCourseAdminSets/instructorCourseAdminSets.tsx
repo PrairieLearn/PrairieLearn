@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -18,6 +17,7 @@ import { AssessmentSetSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
 
@@ -26,7 +26,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -72,7 +72,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -136,7 +136,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
