@@ -32,9 +32,9 @@ export function InstructorInstanceAdminSettings({
   studentLink,
   publicLink,
   selfEnrollLink,
-  enrollmentManagementEnabled,
   infoCourseInstancePath,
   isDevMode,
+  isAdministrator,
 }: {
   csrfToken: string;
   urlPrefix: string;
@@ -50,9 +50,9 @@ export function InstructorInstanceAdminSettings({
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
   isDevMode: boolean;
+  isAdministrator: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -227,7 +227,6 @@ export function InstructorInstanceAdminSettings({
               hasModernPublishing={courseInstance.modern_publishing}
               control={control}
               trigger={trigger}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               studentLink={studentLink}
               selfEnrollLink={selfEnrollLink}
               enrollmentCode={courseInstance.enrollment_code}
@@ -313,7 +312,7 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
+          isAdministrator={isAdministrator}
           onHide={() => setShowCopyModal(false)}
         />
       </div>

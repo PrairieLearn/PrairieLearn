@@ -56,6 +56,7 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 - Use `@tanstack/react-query` for API calls.
 - Use `react-hook-form` for form handling.
+- Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
 - Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
 
 ### User interface conventions

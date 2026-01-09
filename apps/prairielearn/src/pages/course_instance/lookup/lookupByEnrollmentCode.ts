@@ -7,7 +7,6 @@ import { HttpStatusError } from '@prairielearn/error';
 import { hasRole } from '../../../lib/authz-data-lib.js';
 import { constructCourseOrInstanceContext } from '../../../lib/authz-data.js';
 import type { User } from '../../../lib/db-types.js';
-import { features } from '../../../lib/features/index.js';
 import { selectOptionalCourseInstanceIdByEnrollmentCode } from '../../../models/course-instances.js';
 import { selectCourseById } from '../../../models/course.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
@@ -28,11 +27,6 @@ router.get(
 
     // Parse and validate the code parameter
     const { code, course_instance_id: courseInstanceIdToCheck } = LookupCodeSchema.parse(req.query);
-
-    const enrollmentManagementEnabled = await features.enabledFromLocals(
-      'enrollment-management',
-      res.locals,
-    );
 
     // Look up the course instance by enrollment code
     const courseInstanceId = await selectOptionalCourseInstanceIdByEnrollmentCode({
@@ -93,7 +87,6 @@ router.get(
     }
 
     if (
-      enrollmentManagementEnabled &&
       courseInstance.self_enrollment_restrict_to_institution &&
       // The default value for self-enrollment restriction is true.
       // In the old system (before publishing was introduced), the default was false.

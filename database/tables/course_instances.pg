@@ -5,7 +5,6 @@ columns
     display_timezone: text not null
     enrollment_code: character varying(255) not null
     enrollment_limit: integer
-    hide_in_enroll_page: boolean default false
     id: bigint not null default nextval('course_instances_id_seq'::regclass)
     json_comment: jsonb
     long_name: text

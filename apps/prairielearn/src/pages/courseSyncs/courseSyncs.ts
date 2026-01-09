@@ -1,7 +1,6 @@
 import { type DescribeImagesCommandOutput, ECR } from '@aws-sdk/client-ecr';
 import * as async from 'async';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { DockerName } from '@prairielearn/docker-utils';
@@ -11,6 +10,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
 
@@ -28,7 +28,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_edit'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const showAll = 'all' in req.query;
     const limit = showAll ? NO_LIMIT : DEFAULT_SYNC_LIMIT;
 
@@ -104,7 +104,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }

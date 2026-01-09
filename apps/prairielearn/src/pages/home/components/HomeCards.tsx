@@ -14,7 +14,6 @@ interface HomeCardsProps {
   csrfToken: string;
   urlPrefix: string;
   isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
 }
 
 export function HomeCardsInner({
@@ -24,7 +23,6 @@ export function HomeCardsInner({
   csrfToken,
   urlPrefix,
   isDevMode,
-  enrollmentManagementEnabled,
 }: HomeCardsProps) {
   const [showJoinModal, setShowJoinModal] = useQueryState(
     'join',
@@ -43,19 +41,17 @@ export function HomeCardsInner({
           csrfToken={csrfToken}
           urlPrefix={urlPrefix}
           isDevMode={isDevMode}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
           setShowJoinModal={setShowJoinModal}
         />
       ) : (
-        <EmptyStateCards
-          urlPrefix={urlPrefix}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
-          setShowJoinModal={setShowJoinModal}
-        />
+        <EmptyStateCards urlPrefix={urlPrefix} setShowJoinModal={setShowJoinModal} />
       )}
       <EnrollmentCodeForm
         style="modal"
         show={showJoinModal}
+        leadingContent={
+          <p>To join a course, enter the enrollment code provided by your instructor.</p>
+        }
         showInstructorHelp={hasInstructorCourses}
         onHide={() => setShowJoinModal(false)}
       />

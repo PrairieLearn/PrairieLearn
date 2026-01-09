@@ -14,6 +14,9 @@ import {
   CourseInstancePermissionSchema,
   type CoursePermission,
   CoursePermissionSchema,
+  type EnumCourseInstanceRole,
+  EnumCourseInstanceRoleSchema,
+  EnumCourseRoleSchema,
   type User,
 } from '../lib/db-types.js';
 
@@ -21,6 +24,11 @@ import { selectOrInsertUserByUid } from './user.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+/**
+ * Inserts course permissions for a user identified by UID. If the user doesn't
+ * exist, they are created first. This only allows stepping up in permissions;
+ * if the user already has a higher role, the role is not changed.
+ */
 export async function insertCoursePermissionsByUserUid({
   course_id,
   uid,
@@ -34,9 +42,9 @@ export async function insertCoursePermissionsByUserUid({
 }): Promise<User> {
   return await runInTransactionAsync(async () => {
     const user = await selectOrInsertUserByUid(uid);
-    await execute(sql.insert_course_permissions, {
-      user_id: user.id,
+    await insertCoursePermissionsByUserId({
       course_id,
+      user_id: user.id,
       course_role,
       authn_user_id,
     });
@@ -44,6 +52,34 @@ export async function insertCoursePermissionsByUserUid({
   });
 }
 
+/**
+ * Inserts course permissions for a user identified by user ID. This only allows
+ * stepping up in permissions; if the user already has a higher role, the role
+ * is not changed.
+ */
+export async function insertCoursePermissionsByUserId({
+  course_id,
+  user_id,
+  course_role,
+  authn_user_id,
+}: {
+  course_id: string;
+  user_id: string;
+  course_role: NonNullable<CoursePermission['course_role']>;
+  authn_user_id: string;
+}): Promise<void> {
+  await execute(sql.insert_course_permissions, {
+    course_id,
+    user_id,
+    course_role,
+    authn_user_id,
+  });
+}
+
+/**
+ * Updates the course role for an existing course_permissions record.
+ * Throws a 404 error if no course permissions exist for the user.
+ */
 export async function updateCoursePermissionsRole({
   course_id,
   user_id,
@@ -65,6 +101,11 @@ export async function updateCoursePermissionsRole({
   }
 }
 
+/**
+ * Deletes course permissions for one or more users. Also deletes all
+ * enrollments for these users in instances of this course. Does not throw
+ * an error if no course permissions exist.
+ */
 export async function deleteCoursePermissions({
   course_id,
   user_id,
@@ -79,9 +120,11 @@ export async function deleteCoursePermissions({
     user_ids: Array.isArray(user_id) ? user_id : [user_id],
     authn_user_id,
   });
-  // Do not throw an exception if no course permissions to delete
 }
 
+/**
+ * Deletes course permissions for all users who are not owners of the course.
+ */
 export async function deleteCoursePermissionsForNonOwners({
   course_id,
   authn_user_id,
@@ -103,6 +146,11 @@ export async function deleteCoursePermissionsForNonOwners({
   });
 }
 
+/**
+ * Deletes course permissions for users who have no access to the course
+ * (i.e., course_role is 'None' and they have no course instance permissions
+ * with a role greater than 'None').
+ */
 export async function deleteCoursePermissionsForUsersWithoutAccess({
   course_id,
   authn_user_id,
@@ -124,6 +172,16 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
   });
 }
 
+/**
+ * Inserts or updates course instance permissions for a user. If the user doesn't
+ * have course permissions yet, a course_permissions record with role 'None' is
+ * created first. This allows administrators (who may not have explicit course
+ * permissions) to grant themselves course instance access when creating or
+ * copying course instances.
+ *
+ * This only allows stepping up in permissions; if the user already has a higher
+ * course instance role, the role is not changed.
+ */
 export async function insertCourseInstancePermissions({
   course_id,
   course_instance_id,
@@ -134,22 +192,34 @@ export async function insertCourseInstancePermissions({
   course_id: string;
   course_instance_id: string;
   user_id: string;
-  course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
+  course_instance_role: EnumCourseInstanceRole;
   authn_user_id: string;
 }): Promise<void> {
-  const coursePermission = await queryOptionalRow(
-    sql.insert_course_instance_permissions,
-    { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
-    CoursePermissionSchema,
-  );
-  if (!coursePermission) {
-    throw new error.HttpStatusError(
-      404,
-      'Cannot add permissions for a course instance without course permissions',
-    );
-  }
+  await runInTransactionAsync(async () => {
+    // Ensure the user has a course_permissions record (with at least 'None' role).
+    // This is necessary for administrators who may not have explicit course permissions.
+    await insertCoursePermissionsByUserId({
+      course_id,
+      user_id,
+      course_role: 'None',
+      authn_user_id,
+    });
+
+    // Now insert the course instance permissions
+    await execute(sql.insert_course_instance_permissions, {
+      course_id,
+      course_instance_id,
+      user_id,
+      course_instance_role,
+      authn_user_id,
+    });
+  });
 }
 
+/**
+ * Updates the course instance role for an existing course_instance_permissions
+ * record. Throws a 404 error if no course instance permissions exist for the user.
+ */
 export async function updateCourseInstancePermissionsRole({
   course_id,
   course_instance_id,
@@ -173,6 +243,10 @@ export async function updateCourseInstancePermissionsRole({
   }
 }
 
+/**
+ * Deletes course instance permissions for a user. Does not throw an error if
+ * no course instance permissions exist.
+ */
 export async function deleteCourseInstancePermissions({
   course_id,
   course_instance_id,
@@ -190,9 +264,11 @@ export async function deleteCourseInstancePermissions({
     user_id,
     authn_user_id,
   });
-  // Do not throw an exception if no course instance permissions to delete
 }
 
+/**
+ * Deletes all course instance permissions for all instances of a course.
+ */
 export async function deleteAllCourseInstancePermissionsForCourse({
   course_id,
   authn_user_id,
@@ -204,6 +280,42 @@ export async function deleteAllCourseInstancePermissionsForCourse({
     course_id,
     authn_user_id,
   });
+}
+
+/**
+ * Returns the course instance role for a user in a specific course instance,
+ * or null if the user has no course instance permissions.
+ */
+export async function selectCourseInstancePermissionForUser({
+  course_instance_id,
+  user_id,
+}: {
+  course_instance_id: string;
+  user_id: string;
+}) {
+  return await queryOptionalRow(
+    sql.select_course_instance_permission_for_user,
+    { course_instance_id, user_id },
+    EnumCourseInstanceRoleSchema,
+  );
+}
+
+/**
+ * Returns the course role for a user in a specific course, or null if the user
+ * has no course permissions.
+ */
+export async function selectCoursePermissionForUser({
+  course_id,
+  user_id,
+}: {
+  course_id: string;
+  user_id: string;
+}) {
+  return await queryOptionalRow(
+    sql.select_course_permission_for_user,
+    { course_id, user_id },
+    EnumCourseRoleSchema,
+  );
 }
 
 /**
