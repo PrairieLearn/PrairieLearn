@@ -2,7 +2,6 @@ import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
 import { type Request, type Response, Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -25,7 +24,7 @@ import {
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getTeamConfig } from '../../lib/teams.js';
 
@@ -112,7 +111,7 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-function getFilenames(locals: UntypedResLocals) {
+function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -272,7 +271,7 @@ async function pipeCursorToArchive<T>(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -298,7 +297,7 @@ async function sendInstancesCsv(
   res: Response,
   req: Request,
   columns: Columns,
-  options: { only_highest: boolean; team_work?: true },
+  options: { only_highest: boolean; team_work?: boolean },
 ) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
@@ -316,7 +315,7 @@ async function sendInstancesCsv(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -387,12 +386,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        team_work: res.locals.assessment.team_work,
+        team_work: res.locals.assessment.team_work ?? false,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        team_work: res.locals.assessment.team_work,
+        team_work: res.locals.assessment.team_work ?? false,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(

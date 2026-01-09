@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export interface Filenames {
   scoresCsvFilename: string;
@@ -34,7 +34,7 @@ export function InstructorAssessmentDownloads({
   resLocals,
   filenames,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   filenames: Filenames;
 }) {
   const identity = resLocals.assessment.team_work ? 'group' : 'student';

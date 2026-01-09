@@ -1,9 +1,13 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function EnrollmentLimitExceededMessage({ resLocals }: { resLocals: UntypedResLocals }) {
+export function EnrollmentLimitExceededMessage({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'plain'>;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'Enrollment - Courses',

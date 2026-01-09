@@ -6,6 +6,7 @@ import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
 } from '../middlewares/authzCourseOrInstance.js';
+import type { ResLocalsDate } from '../middlewares/date.js';
 import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.js';
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
@@ -22,13 +23,14 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { MergeUnion, Prettify } from './types.js';
+import type { IsUnion, MergeUnion, Prettify } from './types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
 interface ResLocalsForPageLookup {
+  plain: ResLocals;
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
   'course-instance': ResLocals & ResLocalsCourseInstance;
   'instructor-instance-question': ResLocals &
@@ -59,13 +61,16 @@ interface ResLocalsForPageLookup {
     ResLocalsAssessment &
     ResLocalsAssessmentQuestion &
     ResLocalsInstanceQuestionRender;
-  'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
+  'assessment-instance': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsAssessment &
+    ResLocalsAssessmentInstance;
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
-export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> = MergeUnion<
-  ResLocalsForPageLookup[T]
->;
+// Only apply MergeUnion when T is a union of page types; preserve unions for single types
+export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
+  true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
 export type PageType = keyof ResLocalsForPageLookup;
 
@@ -82,6 +87,7 @@ export type PageType = keyof ResLocalsForPageLookup;
  *
  * The page types include:
  *
+ * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
  * - `course`: A course page.
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.
