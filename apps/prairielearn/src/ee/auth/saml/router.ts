@@ -40,7 +40,6 @@ function authenticate(req: Request, res: Response): Promise<any> {
         failureRedirect: '/pl',
         session: false,
       },
-      // eslint-disable-next-line @typescript-eslint/no-redundant-type-constituents
       (err: any, user: Express.User | false | null) => {
         if (err) {
           reject(err);

@@ -6,6 +6,7 @@ import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
 } from '../middlewares/authzCourseOrInstance.js';
+import type { ResLocalsDate } from '../middlewares/date.js';
 import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.js';
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
@@ -22,62 +23,56 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { UntypedResLocals } from './res-locals.types.js';
-import type { Prettify } from './types.js';
+import type { IsUnion, MergeUnion, Prettify } from './types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
-export interface ResLocalsForPage {
-  course: Prettify<ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount>;
-  'course-instance': Prettify<ResLocals & ResLocalsCourseInstance>;
-  'instructor-instance-question': Prettify<
-    ResLocals &
-      ResLocalsCourseInstance &
-      ResLocalsInstructorQuestionWithCourseInstance &
-      ResLocalsInstanceQuestion &
-      ResLocalsInstanceQuestionRender &
-      ResLocalsQuestionRender & {
-        questionRenderContext: 'manual_grading' | 'ai_grading';
-        navbarType: 'instructor';
-      }
-  >;
-  'instructor-question': Prettify<
-    ResLocals &
-      ResLocalsCourse &
-      Partial<ResLocalsCourseInstance> &
-      ResLocalsInstructorQuestion &
-      ResLocalsQuestionRender
-  >;
-  'instructor-assessment-question': Prettify<
-    ResLocals &
-      ResLocalsCourseInstance &
-      ResLocalsInstructorQuestion &
-      ResLocalsQuestionRender &
-      ResLocalsAssessment &
-      ResLocalsAssessmentQuestion
-  >;
-  'instance-question': Prettify<
-    ResLocals &
-      ResLocalsCourseInstance &
-      ResLocalsInstanceQuestion &
-      ResLocalsInstanceQuestionRender
-  >;
-  'assessment-question': Prettify<
-    ResLocals & ResLocalsAssessment & ResLocalsAssessmentQuestion & ResLocalsInstanceQuestionRender
-  >;
-  'assessment-instance': Prettify<ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance>;
-  assessment: Prettify<ResLocals & ResLocalsCourseInstance & ResLocalsAssessment>;
+interface ResLocalsForPageLookup {
+  plain: ResLocals;
+  course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
+  'course-instance': ResLocals & ResLocalsCourseInstance;
+  'instructor-instance-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstructorQuestionWithCourseInstance &
+    ResLocalsInstanceQuestion &
+    ResLocalsInstanceQuestionRender &
+    ResLocalsQuestionRender & {
+      questionRenderContext: 'manual_grading' | 'ai_grading';
+      navbarType: 'instructor';
+    };
+  'instructor-question': ResLocals &
+    ResLocalsCourse &
+    Partial<ResLocalsCourseInstance> &
+    ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender;
+  'instructor-assessment-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstructorQuestion &
+    ResLocalsQuestionRender &
+    ResLocalsAssessment &
+    ResLocalsAssessmentQuestion;
+  'instance-question': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsInstanceQuestion &
+    ResLocalsInstanceQuestionRender;
+  'assessment-question': ResLocals &
+    ResLocalsAssessment &
+    ResLocalsAssessmentQuestion &
+    ResLocalsInstanceQuestionRender;
+  'assessment-instance': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsAssessment &
+    ResLocalsAssessmentInstance;
+  assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
-export type PageType = keyof ResLocalsForPage;
+// Only apply MergeUnion when T is a union of page types; preserve unions for single types
+export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
+  true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
-export function getResLocalsForPage<T extends PageType>(
-  locals: UntypedResLocals,
-): ResLocalsForPage[T] {
-  return locals as ResLocalsForPage[T];
-}
+export type PageType = keyof ResLocalsForPageLookup;
 
 /**
  * A wrapper around {@link asyncHandler} that ensures that the locals
@@ -92,6 +87,7 @@ export function getResLocalsForPage<T extends PageType>(
  *
  * The page types include:
  *
+ * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
  * - `course`: A course page.
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.
@@ -105,7 +101,7 @@ export function getResLocalsForPage<T extends PageType>(
  * @param handler - The handler function to wrap.
  * @returns A wrapped handler function.
  */
-export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals = object>(
+export const typedAsyncHandler = <T extends PageType, ExtraLocals = object>(
   handler: (
     ...args: Parameters<
       express.RequestHandler<
@@ -113,7 +109,7 @@ export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals 
         any,
         any,
         core.Query,
-        ResLocalsForPage[T] & ExtraLocals
+        Prettify<ResLocalsForPage<T> & ExtraLocals>
       >
     >
   ) => void | Promise<void>,

@@ -5,8 +5,9 @@ import mime from 'mime';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema, UserSchema } from '../../lib/db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';

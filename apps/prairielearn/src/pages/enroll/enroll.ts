@@ -1,62 +1,19 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
-import * as error from '@prairielearn/error';
-import { flash } from '@prairielearn/flash';
-import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
-import { run } from '@prairielearn/run';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
-import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
-import { CourseInstanceSchema, CourseSchema, InstitutionSchema } from '../../lib/db-types.js';
-import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
-import forbidAccessInExamMode from '../../middlewares/forbidAccessInExamMode.js';
-import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
-
-import {
-  CourseInstanceRowSchema,
-  Enroll,
-  EnrollLtiMessage,
-  EnrollmentLimitExceededMessage,
-} from './enroll.html.js';
+import { EnrollmentLimitExceededMessage } from './enroll.html.js';
 
 const router = Router();
-const sql = loadSqlEquiv(import.meta.url);
 
-router.get('/', [
-  // If a student gains control of a course, they could update the course
-  // title to contain arbitrary information and use the enrollment page to
-  // access that during a CBTF exam. We'll block access to prevent this.
-  forbidAccessInExamMode,
-  asyncHandler(async (req, res) => {
-    if (res.locals.authn_provider_name === 'LTI') {
-      const ltiInfo = await queryRow(
-        sql.lti_course_instance_lookup,
-        { course_instance_id: res.locals.authn_user.lti_course_instance_id },
-        z.object({
-          plc_short_name: z.string(),
-          ci_long_name: z.string(),
-        }),
-      );
-      res.send(EnrollLtiMessage({ ltiInfo, resLocals: res.locals }));
-      return;
-    }
-
-    const courseInstances = await queryRows(
-      sql.select_course_instances_legacy_access,
-      {
-        user_id: res.locals.authn_user.user_id,
-        req_date: res.locals.req_date,
-      },
-      CourseInstanceRowSchema,
-    );
-    res.send(Enroll({ courseInstances, resLocals: res.locals }));
-  }),
-]);
+router.get('/', (_req, res) => {
+  // Open the "Join a course" modal on the home page
+  res.redirect('/?join=true');
+});
 
 router.get(
   '/limit_exceeded',
-  asyncHandler((req, res) => {
+  typedAsyncHandler<'plain'>((_req, res) => {
     // Note that we deliberately omit the `forbidAccessInExamMode` middleware
     // here. A student could conceivably hit an enrollment limit while in exam
     // mode, so we'll allow them to see the error message. This page doesn't
@@ -64,68 +21,5 @@ router.get(
     res.send(EnrollmentLimitExceededMessage({ resLocals: res.locals }));
   }),
 );
-
-router.post('/', [
-  // As above, we'll block access in Exam mode to prevent data infiltration.
-  forbidAccessInExamMode,
-  asyncHandler(async (req, res) => {
-    if (res.locals.authn_provider_name === 'LTI') {
-      throw new error.HttpStatusError(400, 'Enrollment unavailable, managed via LTI');
-    }
-
-    const { institution, course, course_instance } = await queryRow(
-      sql.select_course_instance,
-      { course_instance_id: req.body.course_instance_id },
-      z.object({
-        institution: InstitutionSchema,
-        course: CourseSchema,
-        course_instance: CourseInstanceSchema,
-      }),
-    );
-
-    const courseDisplayName = `${course.short_name}: ${course.title}, ${course_instance.long_name}`;
-
-    if (req.body.__action === 'enroll') {
-      // We don't have authzData yet
-      // TODO: see #13275
-      const existingEnrollment = await run(async () => {
-        return await selectOptionalEnrollmentByUid({
-          uid: res.locals.authn_user.uid,
-          courseInstance: course_instance,
-          requiredRole: ['System'],
-          authzData: dangerousFullSystemAuthz(),
-        });
-      });
-
-      if (
-        existingEnrollment &&
-        !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
-      ) {
-        flash('error', 'You cannot enroll in this course.');
-        res.redirect(req.originalUrl);
-        return;
-      }
-
-      // Abuse the middleware to authorize the user for the course instance.
-      req.params.course_instance_id = course_instance.id;
-      await authzCourseOrInstance(req, res);
-      // Now we have authzData
-
-      await ensureEnrollment({
-        institution,
-        course,
-        courseInstance: course_instance,
-        requiredRole: ['Student'],
-        authzData: res.locals.authz_data,
-        actionDetail: 'explicit_joined',
-      });
-
-      flash('success', `You have joined ${courseDisplayName}.`);
-      res.redirect(req.originalUrl);
-    } else {
-      throw new error.HttpStatusError(400, 'unknown action: ' + req.body.__action);
-    }
-  }),
-]);
 
 export default router;

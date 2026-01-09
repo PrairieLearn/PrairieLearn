@@ -86,7 +86,7 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
   courseId?: string | null;
   courseInstanceId?: string | null;
   enrollmentId?: string | null;
-  groupId?: string | null;
+  teamId?: string | null;
   institutionId?: string | null;
 };
 
@@ -99,11 +99,11 @@ export type InsertAuditEventParams = SupportedTableActionCombination & {
  * @param params.agentAuthnUserId - ID of the authenticated user performing the action
  * @param params.agentUserId - ID of the authorized user performing the action
  * @param params.context - Additional context, typically empty
- * @param params.courseId - Inferred from `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.courseInstanceId - Inferred from `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
- * @param params.groupId - ID of the affected group
+ * @param params.courseId - Inferred from `course_instance_id`, `team_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.courseInstanceId - Inferred from `team_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.teamId - ID of the affected team
  * @param params.enrollmentId - ID of the affected enrollment
- * @param params.institutionId - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `group_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
+ * @param params.institutionId - Inferred from `subject_user_id`, `course_id`, `course_instance_id`, `team_id`, `assessment_id`, `assessment_instance_id`, `assessment_question_id`
  * @param params.newRow - The new row data
  * @param params.oldRow - The old row data
  * @param params.rowId - primary key ID of the affected row
@@ -126,7 +126,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     courseId: course_id,
     courseInstanceId: course_instance_id,
     enrollmentId: enrollment_id,
-    groupId: group_id,
+    teamId: team_id,
     institutionId: institution_id,
     newRow: new_row = null,
     oldRow: old_row = null,
@@ -165,7 +165,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_id: inferred_course_id,
     course_instance_id: inferred_course_instance_id,
     enrollment_id: inferred_enrollment_id,
-    group_id: inferred_group_id,
+    team_id: inferred_team_id,
     institution_id: inferred_institution_id,
     user_id: inferred_subject_user_id,
   } = new_row ?? {};
@@ -193,7 +193,7 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
     course_id:
       course_id !== undefined
         ? course_id
-        : ((table_name === 'pl_courses' ? row_id : null) ?? inferred_course_id),
+        : ((table_name === 'courses' ? row_id : null) ?? inferred_course_id),
     course_instance_id:
       course_instance_id !== undefined
         ? course_instance_id
@@ -202,10 +202,10 @@ export async function insertAuditEvent(params: InsertAuditEventParams): Promise<
       enrollment_id !== undefined
         ? enrollment_id
         : ((table_name === 'enrollments' ? row_id : null) ?? inferred_enrollment_id),
-    group_id:
-      group_id !== undefined
-        ? group_id
-        : ((table_name === 'groups' ? row_id : null) ?? inferred_group_id),
+    team_id:
+      team_id !== undefined
+        ? team_id
+        : ((table_name === 'teams' ? row_id : null) ?? inferred_team_id),
     institution_id:
       institution_id !== undefined
         ? institution_id

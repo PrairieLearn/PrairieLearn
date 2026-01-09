@@ -11,7 +11,6 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
-import { generateSignedToken } from '@prairielearn/signed-token';
 import {
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
@@ -19,7 +18,6 @@ import {
 } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { config } from '../../lib/config.js';
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import {
@@ -37,7 +35,9 @@ import { getPaths } from '../../lib/instructorFiles.js';
 import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalHost } from '../../lib/url.js';
+import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
 import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
@@ -85,34 +85,36 @@ router.post(
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
-      const count = 1;
-      const showDetails = true;
-      const jobSequenceId = await startTestQuestion(
-        count,
-        showDetails,
-        res.locals.question,
-        res.locals.course_instance,
-        res.locals.course,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      const jobSequenceId = await startTestQuestion({
+        count: 1,
+        showDetails: true,
+        question: res.locals.question,
+        course_instance: res.locals.course_instance,
+        course: res.locals.course,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        // Optional variant seed prefix for deterministic testing.
+        // Not exposed in UI - for internal use with automated testing scripts.
+        variantSeedPrefix: req.body.variant_seed_prefix,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'test_100') {
       if (!res.locals.authz_data.has_course_permission_view) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Viewer)');
       }
       if (res.locals.question.grading_method !== 'External') {
-        const count = 100;
-        const showDetails = false;
-        const jobSequenceId = await startTestQuestion(
-          count,
-          showDetails,
-          res.locals.question,
-          res.locals.course_instance,
-          res.locals.course,
-          res.locals.user.user_id,
-          res.locals.authn_user.user_id,
-        );
+        const jobSequenceId = await startTestQuestion({
+          count: 100,
+          showDetails: false,
+          question: res.locals.question,
+          course_instance: res.locals.course_instance,
+          course: res.locals.course,
+          user_id: res.locals.user.id,
+          authn_user_id: res.locals.authn_user.id,
+          // Optional variant seed prefix for deterministic testing.
+          // Not exposed in UI - for internal use with automated testing scripts.
+          variantSeedPrefix: req.body.variant_seed_prefix,
+        });
         res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
       } else {
         throw new Error('Not supported for externally-graded questions');
@@ -125,7 +127,7 @@ router.post(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
@@ -133,7 +135,7 @@ router.post(
       const infoPath = path.join(
         res.locals.course.path,
         'questions',
-        res.locals.question.qid,
+        res.locals.question.qid!,
         'info.json',
       );
       if (!(await fs.pathExists(infoPath))) {
@@ -343,14 +345,14 @@ router.post(
 
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           // This won't reflect if the operation is an update or a rename; we think that's OK.
           description: `Update question ${res.locals.question.qid}`,
         },
         [
           // Each of these editors will no-op if there wasn't any change.
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -360,7 +362,7 @@ router.post(
             origHash,
           }),
           new QuestionRenameEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             qid_new,
           }),
         ],
@@ -378,10 +380,10 @@ router.post(
       if (idsEqual(req.body.to_course_id, res.locals.course.id)) {
         // In this case, we are making a duplicate of this question in the same course
         const editor = new QuestionCopyEditor({
-          locals: res.locals as any,
-          from_qid: res.locals.question.qid,
+          locals: res.locals,
+          from_qid: res.locals.question.qid!,
           from_course: res.locals.course,
-          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid),
+          from_path: path.join(res.locals.course.path, 'questions', res.locals.question.qid!),
           is_transfer: false,
         });
         const serverJob = await editor.prepareServerJob();
@@ -410,7 +412,7 @@ router.post(
       }
     } else if (req.body.__action === 'delete_question') {
       const editor = new QuestionDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         questions: res.locals.question,
       });
       const serverJob = await editor.prepareServerJob();
@@ -428,7 +430,7 @@ router.post(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (res.locals.question.course_id !== res.locals.course.id) {
       throw new error.HttpStatusError(403, 'Access denied');
     }
@@ -444,10 +446,10 @@ router.get(
 
     // Generate a CSRF token for the test route. We can't use `res.locals.__csrf_token`
     // here because this form will actually post to a different route, not `req.originalUrl`.
-    const questionTestCsrfToken = generateSignedToken(
-      { url: questionTestPath, authn_user_id: res.locals.authn_user.user_id },
-      config.secretKey,
-    );
+    const questionTestCsrfToken = generateCsrfToken({
+      url: questionTestPath,
+      authnUserId: res.locals.authn_user.id,
+    });
 
     const questionGHLink = courseRepoContentUrl(
       res.locals.course,
@@ -481,10 +483,10 @@ router.get(
       sharingSetsIn = result.filter((row) => row.in_set);
     }
     const editableCourses = await selectCoursesWithEditAccess({
-      user_id: res.locals.user.user_id,
+      user_id: res.locals.user.id,
       is_administrator: res.locals.is_administrator,
     });
-    const infoPath = path.join('questions', res.locals.question.qid, 'info.json');
+    const infoPath = path.join('questions', res.locals.question.qid!, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
     const questionInfoExists = await fs.pathExists(fullInfoPath);
 

@@ -57,7 +57,7 @@ su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/postgres"
 echo "installing pgvector..."
 apt-get install -y --no-install-recommends postgresql-server-dev-16
 cd /tmp
-git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
 cd pgvector
 # This Docker image will be built in GitHub Actions but must run on a variety
 # of platforms, so we need to build it without machine-specific instructions.
@@ -69,19 +69,15 @@ rm -rf /tmp/pgvector
 apt-get remove -y postgresql-server-dev-16
 apt-get autoremove -y
 
-# TODO: use standard OS Python installation? The only reason we switched to Conda
-# was to support R and `rpy2`, but now that we've removed those, we might not
-# get any benefit from Conda.
-echo "setting up conda..."
+echo "setting up uv + venv..."
 cd /
-arch="$(uname -m)"
-# Pinning the Conda version so the default Python version is 3.10. Later conda versions use 3.12 as the default.
-curl -LO https://github.com/conda-forge/miniforge/releases/download/24.3.0-0/Miniforge3-Linux-${arch}.sh
-bash Miniforge3-Linux-${arch}.sh -b -p /usr/local -f
+curl -LO https://astral.sh/uv/install.sh
+env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
+
+# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
+UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.10
 
 # Clear various caches to minimize the final image size.
 apt-get clean
 rm -rf /var/lib/apt/lists/*
-conda clean --all
 nvm cache clear
-rm Miniforge3-Linux-${arch}.sh

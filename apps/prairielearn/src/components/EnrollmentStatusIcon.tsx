@@ -1,12 +1,14 @@
 import clsx from 'clsx';
 
+import { OverlayTrigger } from '@prairielearn/ui';
+
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
 import { assertNever } from '../lib/types.js';
 
 interface EnrollmentStatusIconProps {
   status: EnumEnrollmentStatus;
   type: 'badge' | 'text';
-  class?: string;
+  className?: string;
 }
 
 function getIconClass(status: EnumEnrollmentStatus): string {
@@ -73,19 +75,34 @@ function capitalize(word: string): string {
 export function EnrollmentStatusIcon({
   status,
   type = 'text',
-  class: className,
+  className,
 }: EnrollmentStatusIconProps) {
   const iconClass = getIconClass(status);
   return (
     <span
-      class={clsx(
+      className={clsx(
         'd-inline-flex align-items-center gap-1',
         type === 'badge' && getBadgeClass(status),
         className,
       )}
     >
-      <i class={clsx('bi', iconClass)} aria-hidden="true" />
-      <span class="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
+      <i className={clsx('bi', iconClass)} aria-hidden="true" />
+      <span className="text-nowrap">{capitalize(getFriendlyStatus(status))}</span>
+      {status === 'rejected' && (
+        <OverlayTrigger
+          tooltip={{
+            body: (
+              <div>
+                This student has rejected the invitation to join the course. They can still join
+                while self-enrollment is enabled.
+              </div>
+            ),
+            props: { id: 'rejected-info-tooltip' },
+          }}
+        >
+          <i className="bi bi-info-circle" aria-hidden="true" />
+        </OverlayTrigger>
+      )}
     </span>
   );
 }

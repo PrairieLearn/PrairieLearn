@@ -1,6 +1,6 @@
 # syntax=docker/dockerfile-upstream:master-labs
 FROM ubuntu:24.04
-ARG CACHEBUST=2025-11-15-14-13-19
+ARG CACHEBUST=2025-12-15-14-21-51
 
 WORKDIR /PrairieLearn
 
@@ -11,10 +11,14 @@ ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:/usr/lib/postg
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 
+# - Ensure that all `uv` commands compile Python source files to bytecode.
+# - Ensure that all `uv` commands do not use any caching.
+ENV UV_COMPILE_BYTECODE=1 UV_NO_CACHE=1
+
 # We copy `pyproject.toml` and the `Makefile` since we need to install Python dependencies.
 COPY --parents pyproject.toml Makefile /PrairieLearn/
 
-RUN PIP_NO_CACHE_DIR=1 make python-deps-core
+RUN make python-deps-core
 
 # This copies in all the `package.json` files in `apps` and `packages`, which
 # Yarn needs to correctly install all dependencies in our workspaces.

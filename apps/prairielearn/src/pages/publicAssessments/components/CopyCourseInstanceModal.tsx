@@ -4,9 +4,17 @@ import { FormProvider, useForm } from 'react-hook-form';
 import z from 'zod';
 
 import {
+  CourseInstancePermissionsForm,
+  type PermissionsFormValues,
+} from '../../../components/CourseInstancePermissionsForm.js';
+import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
+import {
+  CourseInstanceSelfEnrollmentForm,
+  type SelfEnrollmentFormValues,
+} from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import {
   type PublicCourse,
   type PublicCourseInstance,
@@ -31,11 +39,13 @@ export function CopyCourseInstanceModal({
   courseInstance,
   courseInstanceCopyTargets,
   questionsForCopy,
+  isAdministrator,
 }: {
   course: PublicCourse;
   courseInstance: PublicCourseInstance;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
+  isAdministrator: boolean;
 }) {
   const [show, setShow] = useState(false);
   const [selectedCourseId, setSelectedCourseId] = useState(
@@ -49,12 +59,18 @@ export function CopyCourseInstanceModal({
   // Find the selected course data
   const selectedCourse = courseInstanceCopyTargets?.find((c) => c.id === selectedCourseId);
 
-  const defaultValues: PublishingFormValues = {
+  interface CopyFormValues
+    extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {}
+
+  const defaultValues: CopyFormValues = {
     start_date: '',
     end_date: '',
+    self_enrollment_enabled: courseInstance.self_enrollment_enabled,
+    self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
+    course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
   };
 
-  const methods = useForm<PublishingFormValues>({
+  const methods = useForm<CopyFormValues>({
     defaultValues,
   });
 
@@ -76,13 +92,13 @@ export function CopyCourseInstanceModal({
       </Overlay>
       <button
         ref={buttonRef}
-        class="btn btn-sm btn-outline-light"
+        className="btn btn-sm btn-outline-light"
         type="button"
         aria-label="Copy course instance"
         onClick={() => setShow(!show)}
       >
-        <i class="fa fa-clone" />
-        <span class="d-none d-sm-inline">Copy course instance</span>
+        <i className="fa fa-clone" />
+        <span className="d-none d-sm-inline">Copy course instance</span>
       </button>
 
       <Modal show={show && hasSharingName} size="lg" onHide={() => setShow(false)}>
@@ -105,12 +121,12 @@ export function CopyCourseInstanceModal({
                 permissions. Select one of your courses to copy this course instance to.
               </p>
               <select
-                class="form-select"
+                className="form-select"
                 name="to_course_id"
                 aria-label="Destination course"
                 value={selectedCourseId}
                 required
-                onChange={(e) => setSelectedCourseId((e.target as HTMLSelectElement).value)}
+                onChange={(e) => setSelectedCourseId(e.currentTarget.value)}
               >
                 {courseInstanceCopyTargets.map((copyTarget) => (
                   <option key={copyTarget.id} value={copyTarget.id}>
@@ -133,8 +149,8 @@ export function CopyCourseInstanceModal({
               </ul>
               <hr />
               <FormProvider {...methods}>
-                <h3 class="h5">Publishing settings</h3>
-                <p class="text-muted small">
+                <h3 className="h5">Publishing settings</h3>
+                <p className="text-muted small">
                   Choose the initial publishing status for your new course instance. This can be
                   changed later.
                 </p>
@@ -144,19 +160,37 @@ export function CopyCourseInstanceModal({
                   originalStartDate={null}
                   originalEndDate={null}
                   showButtons={false}
+                  formId="copy-course-instance"
                 />
+
+                <hr />
+
+                <h3 className="h5">Self-enrollment settings</h3>
+                <p className="text-muted small">
+                  Configure self-enrollment for your new course instance. This can be changed later.
+                </p>
+                <CourseInstanceSelfEnrollmentForm formId="copy-course-instance" />
+
+                <hr />
+
+                <h3 className="h5">Course instance permissions</h3>
+                <p className="text-muted small">
+                  Choose your initial permissions for this course instance. This can be changed
+                  later.
+                </p>
+                <CourseInstancePermissionsForm formId="copy-course-instance" />
               </FormProvider>
             </Modal.Body>
 
             <Modal.Footer>
-              <button type="button" class="btn btn-secondary" onClick={() => setShow(false)}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Close
               </button>
               <button
                 type="submit"
                 name="__action"
                 value="copy_course_instance"
-                class="btn btn-primary"
+                className="btn btn-primary"
               >
                 Copy course instance
               </button>
@@ -172,7 +206,7 @@ export function CopyCourseInstanceModal({
               </p>
             </Modal.Body>
             <Modal.Footer>
-              <button type="button" class="btn btn-secondary" onClick={() => setShow(false)}>
+              <button type="button" className="btn btn-secondary" onClick={() => setShow(false)}>
                 Close
               </button>
             </Modal.Footer>

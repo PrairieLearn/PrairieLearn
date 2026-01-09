@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -11,7 +10,6 @@ import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
@@ -20,13 +18,14 @@ import { TagSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectTagsByCourseId } from '../../models/tags.js';
 
 const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -61,22 +60,15 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              course={pageContext.course}
-              urlPrefix={pageContext.urlPrefix}
+          <Hydrate>
+            <TagsTopicsTable
+              entities={z.array(StaffTagSchema).parse(tags)}
+              entityType="tag"
+              allowEdit={allowEdit}
+              origHash={origHash}
+              csrfToken={pageContext.__csrf_token}
             />
-            <Hydrate>
-              <TagsTopicsTable
-                entities={z.array(StaffTagSchema).parse(tags)}
-                entityType="tag"
-                allowEdit={allowEdit}
-                origHash={origHash}
-                csrfToken={pageContext.__csrf_token}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
@@ -85,7 +77,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -147,7 +139,7 @@ router.post(
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
