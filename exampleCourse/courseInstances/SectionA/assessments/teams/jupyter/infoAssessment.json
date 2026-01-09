@@ -20,9 +20,9 @@
     {
       "title": " How Markov chains work?",
       "questions": [
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Intro", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-Gambler", "points": 1 },
-        { "id": "demo/annotated/MarkovChainGroupActivity/MarkovChains-PageRank", "points": 1 }
+        { "id": "demo/annotated/MarkovChainTeamActivity/MarkovChains-Intro", "points": 1 },
+        { "id": "demo/annotated/MarkovChainTeamActivity/MarkovChains-Gambler", "points": 1 },
+        { "id": "demo/annotated/MarkovChainTeamActivity/MarkovChains-PageRank", "points": 1 }
       ]
     }
   ],
