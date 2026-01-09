@@ -57,6 +57,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
   }
 
   if (config.workersExecutionMode === 'native') {
+    // Try to fetch the venv. This will throw an error if no venv is found.
     await getPythonPath(config.pythonVenvSearchPaths);
   }
 
