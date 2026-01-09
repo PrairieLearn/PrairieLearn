@@ -543,7 +543,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         "feedback": {
             "correct": (score == 1),
             "incorrect": (score == 0),
-            "partial": (score * 100 if (score != 0 and score != 1) else False),
+            "partial": (score * 100 if (score not in {0, 1}) else False),
             "missing": {},
             "matches": matches,
         },
