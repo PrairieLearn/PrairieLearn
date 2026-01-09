@@ -23,9 +23,9 @@
       "color": "blue1"
     },
     {
-      "abbreviation": "G",
-      "name": "GroupActivity",
-      "heading": "Group Activities",
+      "abbreviation": "T",
+      "name": "TeamActivity",
+      "heading": "Team Activities",
       "color": "pink1"
     }
   ],

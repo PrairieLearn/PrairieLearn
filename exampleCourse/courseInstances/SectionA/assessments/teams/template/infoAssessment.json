@@ -2,7 +2,7 @@
   "uuid": "1646F291-3E3C-4992-892B-5B62FE52884E",
   "type": "Homework",
   "title": "Team activity template",
-  "set": "GroupActivity",
+  "set": "TeamActivity",
   "module": "IntroModule",
   "number": "1",
   "comment": "this is a team activity, with minimum size of 1 and maximum size of 5, where students can self-assign to teams.",

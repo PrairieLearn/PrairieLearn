@@ -2,7 +2,7 @@
   "uuid": "7AD9015B-1609-4CD6-BB6E-9FEB28B7D0CA",
   "type": "Homework",
   "title": "Team activity template using Jupyter notebooks",
-  "set": "GroupActivity",
+  "set": "TeamActivity",
   "module": "AnotherModule",
   "number": "2",
   "comment": "this is a team activity, with minimum size of 1 and maximum size of 5, where students can self-assign to teams.",
