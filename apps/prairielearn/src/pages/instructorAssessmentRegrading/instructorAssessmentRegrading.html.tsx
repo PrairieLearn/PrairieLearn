@@ -6,7 +6,7 @@ import { JobStatus } from '../../components/JobStatus.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const RegradingJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -19,7 +19,7 @@ export function InstructorAssessmentRegrading({
   resLocals,
   regradingJobSequences,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   regradingJobSequences: RegradingJobSequence[];
 }) {
   return PageLayout({

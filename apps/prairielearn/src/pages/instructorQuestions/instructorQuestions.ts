@@ -1,7 +1,6 @@
 import * as url from 'node:url';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -15,6 +14,7 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getSearchParams } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -96,7 +96,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async function (req, res) {
+  typedAsyncHandler<'course' | 'course-instance'>(async function (req, res) {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -163,7 +163,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny
     // access after the redirect, but doing this will allow us to avoid
     // leaking the existence or non-existence of questions to viewers,
@@ -213,7 +213,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (req.body.__action === 'add_question') {
       if (!req.body.qid) {
         throw new error.HttpStatusError(400, 'qid is required');

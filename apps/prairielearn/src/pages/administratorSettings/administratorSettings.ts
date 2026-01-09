@@ -1,6 +1,5 @@
 import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { cache } from '@prairielearn/cache';
 import * as error from '@prairielearn/error';
@@ -11,6 +10,7 @@ import { QUESTION_GENERATION_OPENAI_MODEL } from '../../ee/lib/aiQuestionGenerat
 import * as chunks from '../../lib/chunks.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorSettings } from './administratorSettings.html.js';
 
@@ -18,14 +18,14 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     res.send(AdministratorSettings({ resLocals: res.locals }));
   }),
 );
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'invalidate_question_cache') {
