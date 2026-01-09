@@ -30,7 +30,7 @@ ALLOW_BLANK_DEFAULT = False
 
 # tool, graders, initials definitions
 class SketchTool(TypedDict):
-    type: str
+    name: str
     id: str | None
     label: str | None
     color: str | None
@@ -321,11 +321,11 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
     defaults = {}
     defaults["readonly"] = False
     defaults["helper"] = False
-    defaults["limit"] = 0
+    defaults["limit"] = None
     defaults["group"] = None
     match tool_type:
         case "free-draw":
-            defaults["type"] = "freeform"
+            defaults["name"] = "freeform"
             defaults["label"] = "Function f(x)"
             defaults["color"] = "blue"
         case "point":
@@ -333,23 +333,23 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
                 "size",
                 "hollow",
             ])
-            defaults["type"] = "point"
+            defaults["name"] = "point"
             defaults["label"] = "Point"
             defaults["color"] = "black"
             defaults["size"] = 15
             defaults["hollow"] = False
         case "spline":
-            defaults["type"] = "spline"
+            defaults["name"] = "spline"
             defaults["label"] = "Function f(x)"
             defaults["color"] = "purple"
         case "polyline":
-            defaults["type"] = "polyline"
+            defaults["name"] = "polyline"
             defaults["label"] = "Function f(x)"
             defaults["color"] = "orange"
             defaults["closed"] = False
         case "polygon":
             optional_attribs.extend(["dash-style", "opacity", "fill-color"])
-            defaults["type"] = "polyline"
+            defaults["name"] = "polyline"
             defaults["label"] = "Polygon"
             defaults["color"] = "mediumseagreen"
             defaults["fillcolor"] = "mediumseagreen"
@@ -362,7 +362,7 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
                 "length-constraint",
                 "arrowhead",
             ])
-            defaults["type"] = "line"
+            defaults["name"] = "line-segment"
             defaults["label"] = "Line"
             defaults["color"] = "red"
             defaults["dashstyle"] = "solid"
@@ -371,13 +371,13 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
             defaults["arrowhead"] = 0
         case "horizontal-line":
             optional_attribs.append("dash-style")
-            defaults["type"] = "horizontalline"
+            defaults["name"] = "horizontal-line"
             defaults["label"] = "Horizontal Line"
             defaults["color"] = "dimgray"
             defaults["dashstyle"] = "dashdotted"
         case "vertical-line":
             optional_attribs.append("dash-style")
-            defaults["type"] = "verticalline"
+            defaults["name"] = "vertical-line"
             defaults["label"] = "Vertical Line"
             defaults["color"] = "dimgray"
             defaults["dashstyle"] = "dashdotted"
@@ -387,7 +387,7 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
     pl.check_attribs(tool_tag, ["type", "id"], optional_attribs)
 
     tool_params: SketchTool = {
-        "type": defaults["type"],
+        "name": defaults["name"],
         "id": tool_id,
         "label": pl.get_string_attrib(tool_tag, "label", defaults["label"]),
         "color": pl.get_string_attrib(tool_tag, "color", defaults["color"]),
@@ -525,17 +525,17 @@ def check_grader(
         ):
             optional_attribs.append("xrange")
             for tool in tools:
-                if tool["type"] == "horizontal-line":
+                if tool["name"] == "horizontal-line":
                     raise ValueError(
                         f'The "{grader_type}" grading criterion does not support the horizontal line tool.'
                     )
-                if tool["type"] == "point" and grader_type != "undefined-in":
+                if tool["name"] == "point" and grader_type != "undefined-in":
                     raise ValueError(
                         f'The "{grader_type}" grading criterion does not support the point or horizontal line tools.'
                     )
                 if grader_type not in {"defined-in", "undefined-in"} and (
-                    (tool["type"] == "polyline" and tool["closed"])
-                    or tool["type"] == "vertical-line"
+                    (tool["name"] == "polyline" and tool["closed"])
+                    or tool["name"] == "vertical-line"
                 ):
                     raise ValueError(
                         f'The "{grader_type}" grading criterion does not support the point, polygon, or horizontal/vertical line tools.'
@@ -559,11 +559,11 @@ def check_grader(
             defaults["tolerance"] = 15
 
             for tool in tools:
-                if tool["type"] == "horizontal-line" and y_attrib is None:
+                if tool["name"] == "horizontal-line" and y_attrib is None:
                     raise ValueError(
                         'The "y" attribute is required to use the "match" grading criterion for horizontal lines.'
                     )
-                if tool["type"] == "vertical-line" and x_attrib is None:
+                if tool["name"] == "vertical-line" and x_attrib is None:
                     raise ValueError(
                         'The "x" attribute is required to use the "match" grading criterion for vertical lines.'
                     )
@@ -572,7 +572,7 @@ def check_grader(
                         'Either the "x" or the "y" attribute is required to use the "match" grading criterion.'
                     )
                 if endpoint_attrib is not None:
-                    if tool["type"] != "line":
+                    if tool["name"] != "line-segment":
                         raise ValueError(
                             'The "endpoint" attribute of the "match" grading criterion can only be used for lines.'
                         )
@@ -603,10 +603,10 @@ def check_grader(
             parse_function_string(pl.get_string_attrib(grader_tag, "fun"))
             for tool in tools:
                 if (
-                    tool["type"] == "line"
-                    or tool["type"] == "horizontal-line"
-                    or tool["type"] == "vertical-line"
-                    or (tool["type"] == "polyline" and tool["closed"])
+                    tool["name"] == "line-segment"
+                    or tool["name"] == "horizontal-line"
+                    or tool["name"] == "vertical-line"
+                    or (tool["name"] == "polyline" and tool["closed"])
                 ):
                     raise ValueError(
                         'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.'
@@ -633,7 +633,7 @@ def check_grader(
             if fun_attrib is not None:
                 parse_function_string(fun_attrib)
             for tool in tools:
-                if tool["type"] == "vertical-line":
+                if tool["name"] == "vertical-line":
                     raise ValueError(
                         f'The "{grader_type}" grading criterion does not support the vertical line tool.'
                     )
@@ -721,7 +721,7 @@ def check_initial(
             for coord in initial_coords.split(",")
         )
 
-    match tool_data[initial_tool]["type"]:
+    match tool_data[initial_tool]["name"]:
         case "horizontal-line" | "vertical-line":
             if len(coords) != 1:
                 raise ValueError(
@@ -732,7 +732,7 @@ def check_initial(
                 raise ValueError(
                     "Initial drawings for points need exactly two coordinates."
                 )
-        case "line":
+        case "line-segment":
             if len(coords) != 4:
                 raise ValueError(
                     "Initial drawings for lines need exactly four coordinates (x/y pairs for start and end)."
@@ -750,7 +750,7 @@ def check_initial(
                     "Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end)."
                 )
         case _:
-            raise ValueError(f'Unknown tool type "{tool_data[initial_tool]["type"]}"')
+            raise ValueError(f'Unknown tool type "{tool_data[initial_tool]["name"]}"')
 
     initial: SketchInitial = {
         "toolid": initial_tool,
@@ -773,11 +773,11 @@ def format_initials(
         A list that can be converted into JSON for the client
     """
     new_format = []
-    if tool["type"] in ["horizontal-line", "vertical-line"]:
+    if tool["name"] in ["horizontal-line", "vertical-line"]:
         for initial in initials:
             if initial["toolid"] == tool["id"]:
                 coordinates = initial["coordinates"]
-                if tool["type"] == "horizontal-line":
+                if tool["name"] == "horizontal-line":
                     new_format = [
                         {
                             "x": graph_to_screen_x(
@@ -801,7 +801,7 @@ def format_initials(
                         }
                         for coord in coordinates
                     ]
-    elif tool["type"] in ["spline", "freeform", "polyline"]:
+    elif tool["name"] in ["spline", "freeform", "polyline"]:
         for initial in initials:
             if initial["toolid"] == tool["id"]:
                 if initial["fun"] is None:
@@ -824,7 +824,7 @@ def format_initials(
                         for i in range(0, len(coordinates), 2)
                     ]
                     # Free-draw needs special handling since it is stored in a different data format on the client side
-                    if tool["type"] == "free-draw":
+                    if tool["name"] == "freeform":
                         x_y_vals = fitCurve(x_y_vals, 5)
                     formatted_x_y_vals = [
                         {"x": val[0], "y": val[1]} for val in x_y_vals
@@ -845,7 +845,7 @@ def format_initials(
                         )
                         if len(x_y_vals) > 0:
                             # Free-draw needs special handling since it is stored in a different data format on the client side
-                            if tool["type"] == "free-draw":
+                            if tool["name"] == "freeform":
                                 x_y_vals = fitCurve(x_y_vals, 5)
                             formatted_x_y_vals = [
                                 {"x": val[0], "y": val[1]} for val in x_y_vals
