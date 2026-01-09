@@ -502,7 +502,7 @@ describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, fu
     });
   });
 
-  describe('5. Comprehensive test of all downloads for group work assessment', function () {
+  describe('5. Switch back to instructor and verify group work downloads', function () {
     it('should switch back to instructor user', function () {
       // Restore instructor credentials to access download URLs
       config.authUid = storedConfig.authUid;
@@ -510,25 +510,118 @@ describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, fu
       config.authUin = storedConfig.authUin;
     });
 
-    it('should attempt to download every file in getFilenames', async () => {
+    it('should verify assessment is team_work', async () => {
       const assessment = await selectAssessmentById(groupLocals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);
       assert.isTrue(assessment.team_work);
+      groupLocals.assessment = assessment;
+    });
 
-      const filenames: string[] = Object.values(
-        getFilenames({
-          assessment,
-          assessment_set: await selectAssessmentSetById(assessment.assessment_set_id),
-          course_instance: await selectCourseInstanceById(groupLocals.variant.course_instance_id),
-          course: await selectCourseById(groupLocals.variant.course_id),
-        } as ResLocalsForPage<'assessment'>),
-      );
+    it('should store filenames for group work assessment', async () => {
+      groupLocals.filenames = getFilenames({
+        assessment: groupLocals.assessment,
+        assessment_set: await selectAssessmentSetById(groupLocals.assessment.assessment_set_id),
+        course_instance: await selectCourseInstanceById(groupLocals.variant.course_instance_id),
+        course: await selectCourseById(groupLocals.variant.course_id),
+      } as ResLocalsForPage<'assessment'>);
 
-      // Group work assessments should have additional team-related files
-      assert.isTrue(
-        filenames.some((f) => f.includes('group')),
-        'Group work assessment should have group-related download files',
+      // Verify group work specific files exist in filenames
+      assert.isDefined(groupLocals.filenames.teamsCsvFilename, 'Should have groups.csv filename');
+      assert.isDefined(
+        groupLocals.filenames.scoresTeamCsvFilename,
+        'Should have scores_by_group.csv filename',
       );
+      assert.isDefined(
+        groupLocals.filenames.pointsTeamCsvFilename,
+        'Should have points_by_group.csv filename',
+      );
+    });
+  });
+
+  describe('6. Verify groups.csv content', function () {
+    it('should download and verify groups.csv', async () => {
+      const downloadUrl =
+        groupLocals.instructorAssessmentDownloadsUrl + '/' + groupLocals.filenames.teamsCsvFilename;
+      const res = await fetch(downloadUrl);
+      assert.equal(res.status, 200);
+      const csvContent = await res.text();
+      const data = csvParse<any>(csvContent, { columns: true, cast: true });
+
+      // groups.csv has one row per team member, so we expect at least 2 rows for our team
+      assert.isAtLeast(data.length, 2, 'groups.csv should have at least 2 rows (one per team member)');
+
+      // Find rows for our test team (column is 'groupName', not 'Group name')
+      const teamRows = data.filter((row: any) => row['groupName'] === 'testteam');
+      assert.lengthOf(teamRows, 2, 'groups.csv should contain 2 rows for testteam');
+
+      // Verify both team members are listed
+      const uids = teamRows.map((row: any) => row['UID']);
+      assert.include(uids, groupLocals.studentUsers[0].uid, 'Should include first student UID');
+      assert.include(uids, groupLocals.studentUsers[1].uid, 'Should include second student UID');
+    });
+  });
+
+  describe('7. Verify scores_by_group.csv content', function () {
+    it('should download and verify scores_by_group.csv', async () => {
+      const downloadUrl =
+        groupLocals.instructorAssessmentDownloadsUrl +
+        '/' +
+        groupLocals.filenames.scoresTeamCsvFilename;
+      const res = await fetch(downloadUrl);
+      assert.equal(res.status, 200);
+      const csvContent = await res.text();
+      const data = csvParse<any>(csvContent, { columns: true, cast: true });
+
+      assert.isAtLeast(data.length, 1, 'scores_by_group.csv should have at least 1 row');
+
+      // Find the row for our test team (column is 'Group name')
+      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      assert.isDefined(teamRow, 'scores_by_group.csv should contain testteam');
+
+      // Verify usernames column contains both team members
+      const usernames = teamRow['Usernames'];
+      assert.isString(usernames, 'Usernames should be a string');
+
+      // Verify score column exists (assessment name is 'Exam 14')
+      assert.property(teamRow, 'Exam 14', 'Should have Exam 14 column');
+      assert.isNumber(teamRow['Exam 14'], 'Score should be a number');
+      // Score should be >= 0 (may be 0 if exam not closed, or > 0 after correct answer)
+      assert.isAtLeast(teamRow['Exam 14'], 0, 'Score should be at least 0');
+    });
+  });
+
+  describe('8. Verify points_by_group.csv content', function () {
+    it('should download and verify points_by_group.csv', async () => {
+      const downloadUrl =
+        groupLocals.instructorAssessmentDownloadsUrl +
+        '/' +
+        groupLocals.filenames.pointsTeamCsvFilename;
+      const res = await fetch(downloadUrl);
+      assert.equal(res.status, 200);
+      const csvContent = await res.text();
+      const data = csvParse<any>(csvContent, { columns: true, cast: true });
+
+      assert.isAtLeast(data.length, 1, 'points_by_group.csv should have at least 1 row');
+
+      // Find the row for our test team (column is 'Group name')
+      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      assert.isDefined(teamRow, 'points_by_group.csv should contain testteam');
+
+      // Verify usernames column contains both team members
+      const usernames = teamRow['Usernames'];
+      assert.isString(usernames, 'Usernames should be a string');
+
+      // Verify points column exists (assessment name is 'Exam 14')
+      assert.property(teamRow, 'Exam 14', 'Should have Exam 14 column');
+      assert.isNumber(teamRow['Exam 14'], 'Points should be a number');
+      // Points should be >= 0 (may be 0 if exam not closed, or > 0 after correct answer)
+      assert.isAtLeast(teamRow['Exam 14'], 0, 'Points should be at least 0');
+    });
+  });
+
+  describe('9. Verify all other downloads work', function () {
+    it('should download all remaining files successfully', async () => {
+      const filenames: string[] = Object.values(groupLocals.filenames);
 
       await Promise.all(
         filenames.map(async (filename) => {
