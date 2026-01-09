@@ -196,10 +196,7 @@ def prepare(html: str, data: pl.QuestionData) -> None:
     else:
         assert_never(order_blocks_options.source_blocks_order)
 
-    if (
-        order_blocks_options.source_blocks_order != SourceBlocksOrderType.RANDOM
-        and order_blocks_options.distractor_order == DistractorOrderType.RANDOM
-    ):
+    if order_blocks_options.distractor_order == DistractorOrderType.RANDOM:
         all_blocks = shuffle_distractor_groups(all_blocks)
 
     # prep for visual pairing

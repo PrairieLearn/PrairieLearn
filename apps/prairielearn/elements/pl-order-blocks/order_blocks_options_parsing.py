@@ -424,6 +424,14 @@ class OrderBlocksOptions:
                 "The indentation attribute may not be used when inline is true."
             )
 
+        if (
+            self.distractor_order == DistractorOrderType.RANDOM
+            and self.source_blocks_order == SourceBlocksOrderType.RANDOM
+        ):
+            raise ValueError(
+                'distractor-order="random" cannot be used with source-blocks-order="random".'
+            )
+
     def _validate_answer_options(self) -> None:
         used_tags = []
         used_groups = []
