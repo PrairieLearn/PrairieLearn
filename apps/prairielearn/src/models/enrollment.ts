@@ -11,7 +11,7 @@ import {
 import { run } from '@prairielearn/run';
 
 import {
-  PotentialEnterpriseEnrollmentStatus,
+  PotentialEnrollmentStatus,
   checkPotentialEnterpriseEnrollment,
 } from '../ee/models/enrollment.js';
 import {
@@ -235,6 +235,7 @@ export async function ensureEnrollment({
   authzData,
   requiredRole,
   actionDetail,
+  throwOnIneligible = true,
 }: {
   institution: Institution;
   course: Course;
@@ -242,13 +243,16 @@ export async function ensureEnrollment({
   authzData: Exclude<AuthzDataWithoutEffectiveUser, DangerousSystemAuthzData>;
   requiredRole: 'Student'[];
   actionDetail: SupportedActionsForTable<'enrollments'>;
-}) {
+  throwOnIneligible?: boolean;
+}): Promise<PotentialEnrollmentStatus> {
   // If the current user is not a student, bail.
   // We don't want to give instructors an enrollment.
-  if (!hasRole(authzData, requiredRole)) return;
+  if (!hasRole(authzData, requiredRole)) return PotentialEnrollmentStatus.INELIGIBLE;
+
+  let status = PotentialEnrollmentStatus.ALLOWED;
 
   if (isEnterprise()) {
-    const status = await checkPotentialEnterpriseEnrollment({
+    status = await checkPotentialEnterpriseEnrollment({
       institution,
       course,
       courseInstance,
@@ -256,11 +260,21 @@ export async function ensureEnrollment({
     });
 
     switch (status) {
-      case PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED:
-        throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
-      case PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED:
-        throw new HttpRedirect('/pl/enroll/limit_exceeded');
-      case PotentialEnterpriseEnrollmentStatus.ALLOWED:
+      case PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED: {
+        if (throwOnIneligible) {
+          throw new HttpRedirect(`/pl/course_instance/${courseInstance.id}/upgrade`);
+        } else {
+          return status;
+        }
+      }
+      case PotentialEnrollmentStatus.LIMIT_EXCEEDED: {
+        if (throwOnIneligible) {
+          throw new HttpRedirect('/pl/enroll/limit_exceeded');
+        } else {
+          return status;
+        }
+      }
+      case PotentialEnrollmentStatus.ALLOWED:
         break;
       default:
         assertNever(status);
@@ -274,6 +288,8 @@ export async function ensureEnrollment({
     authzData,
     actionDetail,
   });
+
+  return status;
 }
 
 export async function selectOptionalEnrollmentByUserId({
@@ -441,7 +457,7 @@ async function _inviteExistingEnrollment({
   lockedEnrollment: Enrollment;
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
@@ -476,7 +492,7 @@ async function inviteNewEnrollment({
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -513,7 +529,7 @@ export async function inviteStudentByUid({
   requiredRole,
 }: {
   uid: string;
-  requiredRole: 'Student Data Editor'[];
+  requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
 }): Promise<Enrollment> {

@@ -4,6 +4,8 @@ import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 
 interface InviteStudentForm {
@@ -14,10 +16,12 @@ const MAX_UIDS = 1000;
 
 export function InviteStudentsModal({
   show,
+  courseInstance,
   onHide,
   onSubmit,
 }: {
   show: boolean;
+  courseInstance: StaffCourseInstance;
   onHide: () => void;
   onSubmit: (uids: string[]) => Promise<void>;
 }) {
@@ -34,7 +38,13 @@ export function InviteStudentsModal({
   });
 
   const validateUidsFormat = (value: string): string | true => {
-    const uids = parseUniqueValuesFromString(value, MAX_UIDS);
+    let uids: string[] = [];
+    try {
+      uids = parseUniqueValuesFromString(value, MAX_UIDS);
+    } catch (error) {
+      return error instanceof Error ? error.message : 'An error occurred';
+    }
+
     if (uids.length === 0) {
       return 'At least one UID is required';
     }
@@ -73,6 +83,16 @@ export function InviteStudentsModal({
 
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
+          {courseInstance.modern_publishing &&
+            computeStatus(
+              courseInstance.publishing_start_date,
+              courseInstance.publishing_end_date,
+            ) !== 'published' && (
+              <Alert variant="warning">
+                Students will not be able to accept the invitation until the course instance is
+                published.
+              </Alert>
+            )}
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error instanceof Error
@@ -80,13 +100,13 @@ export function InviteStudentsModal({
                 : 'An error occurred'}
             </Alert>
           )}
-          <div class="mb-0">
-            <label for="invite-uids" class="form-label">
+          <div className="mb-0">
+            <label for="invite-uids" className="form-label">
               UIDs
             </label>
             <textarea
               id="invite-uids"
-              class={clsx('form-control', errors.uids && 'is-invalid')}
+              className={clsx('form-control', errors.uids && 'is-invalid')}
               rows={5}
               placeholder="student@example.com"
               aria-invalid={!!errors.uids}
@@ -97,11 +117,11 @@ export function InviteStudentsModal({
               })}
             />
             {errors.uids?.message && (
-              <div class="invalid-feedback" id="invite-uids-error">
+              <div className="invalid-feedback" id="invite-uids-error">
                 {errors.uids.message}
               </div>
             )}
-            <div class="form-text" id="invite-uids-help">
+            <div className="form-text" id="invite-uids-help">
               One UID per line, or comma/space separated.
             </div>
           </div>
@@ -109,13 +129,13 @@ export function InviteStudentsModal({
         <Modal.Footer>
           <button
             type="button"
-            class="btn btn-secondary"
+            className="btn btn-secondary"
             disabled={saveMutation.isPending}
             onClick={onHide}
           >
             Cancel
           </button>
-          <button type="submit" class="btn btn-primary" disabled={saveMutation.isPending}>
+          <button type="submit" className="btn btn-primary" disabled={saveMutation.isPending}>
             {saveMutation.isPending ? 'Inviting...' : 'Invite'}
           </button>
         </Modal.Footer>

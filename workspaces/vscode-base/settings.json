@@ -9,7 +9,6 @@
   "update.showReleaseNotes": false,
   "extensions.autoCheckUpdates": false,
   "extensions.autoUpdate": false,
-  "telemetry.enableTelemetry": false,
   "telemetry.telemetryLevel": "off",
   "window.menuBarVisibility": "visible",
   "workbench.secondarySideBar.defaultVisibility": "hidden",
