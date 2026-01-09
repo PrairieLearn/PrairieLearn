@@ -16,6 +16,7 @@ import { assertNever } from '../types.js';
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
 import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
+import { getPythonPath } from './python-path.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -53,6 +54,10 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
 
   if (workersExecutionMode === 'container') {
     await initCodeCallerDocker();
+  }
+
+  if (config.workersExecutionMode === 'native') {
+    await getPythonPath(config.pythonVenvSearchPaths);
   }
 
   const numWorkers = config.workersCount ?? Math.ceil(config.workersPerCpu * os.cpus().length);
