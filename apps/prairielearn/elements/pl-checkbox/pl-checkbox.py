@@ -310,7 +310,7 @@ def validate_min_max_options(
             f"The attribute min-select is {min_select}, but must be at least {min_select_default}"
         )
 
-        # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
+    # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     if min_select > max_select:
         raise ValueError(
             f"min-select ({min_select}) is greater than max-select ({max_select})"
