@@ -57,7 +57,7 @@ import * as assets from './lib/assets.js';
 import { makeAwsClientConfig } from './lib/aws.js';
 import { canonicalLoggerMiddleware } from './lib/canonical-logger.js';
 import * as codeCaller from './lib/code-caller/index.js';
-import { ensurePythonIsAvailable } from './lib/code-caller/python-path.js';
+import { getPythonPath } from './lib/code-caller/python-path.js';
 import { DEV_EXECUTION_MODE, config, loadConfig, setLocalsFromConfig } from './lib/config.js';
 import { pullAndUpdateCourse } from './lib/course.js';
 import { UserSchema } from './lib/db-types.js';
@@ -2544,9 +2544,9 @@ if (shouldStartServer) {
     load.initEstimator('python_worker_idle', 1, false);
     load.initEstimator('python_callback_waiting', 1);
 
-    // Check that Python is available before initializing the code caller.
+    // Check that Python venv is available before initializing the code caller.
     if (config.workersExecutionMode === 'native') {
-      await ensurePythonIsAvailable(config.pythonVenvSearchPaths);
+      await getPythonPath(config.pythonVenvSearchPaths);
     }
 
     await codeCaller.init();
