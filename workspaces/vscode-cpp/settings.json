@@ -1,0 +1,3 @@
+{
+  "lldb.launch.initCommands": ["command source ${env:HOME}/.lldbinit"]
+}

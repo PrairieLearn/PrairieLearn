@@ -1,9 +1,9 @@
 import * as path from 'path';
 
+// @ts-expect-error No types for ace-code/src/ext/modelist.js
 import { getModeForPath } from 'ace-code/src/ext/modelist.js';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { isBinaryFile } from 'isbinaryfile';
 
@@ -15,16 +15,19 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileEditSchema, IdSchema } from '../../lib/db-types.js';
-import { getErrorsAndWarningsForFilePath } from '../../lib/editorUtil.js';
+import { FileEditSchema } from '../../lib/db-types.js';
+import { getFileMetadataForPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
@@ -43,147 +46,145 @@ router.get(
     oneOfPermissions: ['has_course_permission_edit'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
-    // Do not allow users to edit the exampleCourse
-    if (res.locals.course.example_course) {
-      res.status(403).send(
-        InsufficientCoursePermissionsCardPage({
-          resLocals: res.locals,
-          navContext: {
-            type: res.locals.navbarType,
-            page: res.locals.navPage,
-            subPage: 'file_edit',
-          },
-          courseOwners: [],
-          pageTitle: 'File editor',
-          requiredPermissions: 'Editor',
-        }),
-      );
-      return;
-    }
-
-    if (!res.locals.authz_data.has_course_permission_edit) {
-      // Access denied, but instead of sending them to an error page, we'll show
-      // them an explanatory message and prompt them to get edit permissions.
-      const courseOwners = await getCourseOwners(res.locals.course.id);
-      res.status(403).send(
-        InsufficientCoursePermissionsCardPage({
-          resLocals: res.locals,
-          navContext: {
-            type: res.locals.navbarType,
-            page: res.locals.navPage,
-            subPage: 'file_edit',
-          },
-          courseOwners,
-          pageTitle: 'File editor',
-          requiredPermissions: 'Editor',
-        }),
-      );
-      return;
-    }
-
-    // Do not allow users to edit files in bad locations (e.g., outside the
-    // current course, outside the current course instance, etc.). Do this by
-    // wrapping everything in getPaths, which throws an error on a bad path.
-    const paths = getPaths(req.params[0], res.locals);
-
-    // We could also check if the file exists, if the file actually is a
-    // file and not a directory, if the file is non-binary, etc., and try
-    // to give a graceful error message on the edit page rather than send
-    // the user to an error page.
-    //
-    // We won't do that, on the assumption that most users get to an edit
-    // page through our UI, which already tries to prevent letting users
-    // go where they should not.
-
-    const fullPath = paths.workingPath;
-    const relPath = paths.workingPathRelativeToCourse;
-
-    const contents = await fs.readFile(fullPath);
-    if (await isBinaryFile(contents)) {
-      throw new Error('Cannot edit binary file');
-    }
-
-    const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
-    const { errors: sync_errors, warnings: sync_warnings } = await getErrorsAndWarningsForFilePath(
-      res.locals.course.id,
-      relPath,
-    );
-
-    const editorData: FileEditorData = {
-      fileName: path.basename(relPath),
-      normalizedFileName: path.normalize(relPath),
-      aceMode: getModeForPath(relPath).mode,
-      diskContents: encodedContents,
-      diskHash: getHash(encodedContents),
-      sync_errors,
-      sync_warnings,
-    };
-
-    const draftEdit = await readDraftEdit({
-      user_id: res.locals.user.user_id,
-      authn_user_id: res.locals.authn_user.user_id,
-      course_id: res.locals.course.id,
-      dir_name: path.dirname(relPath),
-      file_name: editorData.fileName,
-    });
-
-    if (draftEdit != null) {
-      if (draftEdit.fileEdit.job_sequence_id != null) {
-        draftEdit.jobSequence = await getJobSequence(
-          draftEdit.fileEdit.job_sequence_id,
-          res.locals.course.id,
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: NavPage }>(
+    async (req, res) => {
+      // Do not allow users to edit the exampleCourse
+      if (res.locals.course.example_course) {
+        res.status(403).send(
+          InsufficientCoursePermissionsCardPage({
+            resLocals: res.locals,
+            navContext: {
+              type: res.locals.navbarType,
+              page: res.locals.navPage,
+              subPage: 'file_edit',
+            },
+            courseOwners: [],
+            pageTitle: 'File editor',
+            requiredPermissions: 'Editor',
+          }),
         );
+        return;
       }
 
-      if (draftEdit.jobSequence) {
-        if (draftEdit.jobSequence.status === 'Running') {
-          // Because of the redirect, if the job sequence ends up failing to save,
-          // then the corresponding draft will be lost (all drafts are soft-deleted
-          // from the database on readDraftEdit).
-          res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
-          return;
+      if (!res.locals.authz_data.has_course_permission_edit) {
+        // Access denied, but instead of sending them to an error page, we'll show
+        // them an explanatory message and prompt them to get edit permissions.
+        const courseOwners = await getCourseOwners(res.locals.course.id);
+        res.status(403).send(
+          InsufficientCoursePermissionsCardPage({
+            resLocals: res.locals,
+            navContext: {
+              type: res.locals.navbarType,
+              page: res.locals.navPage,
+              subPage: 'file_edit',
+            },
+            courseOwners,
+            pageTitle: 'File editor',
+            requiredPermissions: 'Editor',
+          }),
+        );
+        return;
+      }
+
+      // Do not allow users to edit files in bad locations (e.g., outside the
+      // current course, outside the current course instance, etc.). Do this by
+      // wrapping everything in getPaths, which throws an error on a bad path.
+      const paths = getPaths(req.params[0], res.locals);
+
+      // We could also check if the file exists, if the file actually is a
+      // file and not a directory, if the file is non-binary, etc., and try
+      // to give a graceful error message on the edit page rather than send
+      // the user to an error page.
+      //
+      // We won't do that, on the assumption that most users get to an edit
+      // page through our UI, which already tries to prevent letting users
+      // go where they should not.
+
+      const fullPath = paths.workingPath;
+      const relPath = paths.workingPathRelativeToCourse;
+
+      const contents = await fs.readFile(fullPath);
+      if (await isBinaryFile(contents)) {
+        throw new Error('Cannot edit binary file');
+      }
+
+      const encodedContents = b64EncodeUnicode(contents.toString('utf8'));
+      const fileMetadata = await getFileMetadataForPath(res.locals.course.id, relPath);
+
+      const editorData: FileEditorData = {
+        fileName: path.basename(relPath),
+        normalizedFileName: path.normalize(relPath),
+        aceMode: getModeForPath(relPath).mode,
+        diskContents: encodedContents,
+        diskHash: getHash(encodedContents),
+        fileMetadata,
+      };
+
+      const draftEdit = await readDraftEdit({
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
+        course_id: res.locals.course.id,
+        dir_name: path.dirname(relPath),
+        file_name: editorData.fileName,
+      });
+
+      if (draftEdit != null) {
+        if (draftEdit.fileEdit.job_sequence_id != null) {
+          draftEdit.jobSequence = await getJobSequence(
+            draftEdit.fileEdit.job_sequence_id,
+            res.locals.course.id,
+          );
         }
 
-        const job = draftEdit.jobSequence.jobs[0];
+        if (draftEdit.jobSequence) {
+          if (draftEdit.jobSequence.status === 'Running') {
+            // Because of the redirect, if the job sequence ends up failing to save,
+            // then the corresponding draft will be lost (all drafts are soft-deleted
+            // from the database on readDraftEdit).
+            res.redirect(`${res.locals.urlPrefix}/jobSequence/${draftEdit.jobSequence.id}`);
+            return;
+          }
 
-        // We check for the presence of a `saveSucceeded` key to know if
-        // the edit was saved (i.e., written to disk in the case of no git,
-        // or written to disk and then pushed in the case of git). If this
-        // key exists, its value will be true.
-        if (job.data.saveSucceeded) {
-          draftEdit.didSave = true;
+          const job = draftEdit.jobSequence.jobs[0];
 
-          // We check for the presence of a `syncSucceeded` key to know
-          // if the sync was successful. If this key exists, its value will
-          // be true. Note that the cause of sync failure could be a file
-          // other than the one being edited.
-          //
-          // By "the sync" we mean "the sync after a successfully saved
-          // edit." Remember that, if using git, we pull before we push.
-          // So, if we error on save, then we still try to sync whatever
-          // was pulled from the remote repository, even though changes
-          // made by the edit will have been discarded. We ignore this
-          // in the UI for now.
-          if (job.data.syncSucceeded) {
-            draftEdit.didSync = true;
+          // We check for the presence of a `saveSucceeded` key to know if
+          // the edit was saved (i.e., written to disk in the case of no git,
+          // or written to disk and then pushed in the case of git). If this
+          // key exists, its value will be true.
+          if (job.data.saveSucceeded) {
+            draftEdit.didSave = true;
+
+            // We check for the presence of a `syncSucceeded` key to know
+            // if the sync was successful. If this key exists, its value will
+            // be true. Note that the cause of sync failure could be a file
+            // other than the one being edited.
+            //
+            // By "the sync" we mean "the sync after a successfully saved
+            // edit." Remember that, if using git, we pull before we push.
+            // So, if we error on save, then we still try to sync whatever
+            // was pulled from the remote repository, even though changes
+            // made by the edit will have been discarded. We ignore this
+            // in the UI for now.
+            if (job.data.syncSucceeded) {
+              draftEdit.didSync = true;
+            }
           }
         }
+
+        if (!draftEdit.didSave && draftEdit.hash !== editorData.diskHash) {
+          // There is a recently saved draft that was not written to disk and that differs from what is on disk.
+          draftEdit.alertChoice = true;
+        }
       }
 
-      if (!draftEdit.didSave && draftEdit.hash !== editorData.diskHash) {
-        // There is a recently saved draft that was not written to disk and that differs from what is on disk.
-        draftEdit.alertChoice = true;
-      }
-    }
-
-    res.send(InstructorFileEditor({ resLocals: res.locals, editorData, paths, draftEdit }));
-  }),
+      res.send(InstructorFileEditor({ resLocals: res.locals, editorData, paths, draftEdit }));
+    },
+  ),
 );
 
 router.post(
   '/*',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
     }
@@ -201,8 +202,8 @@ router.post(
 
     if (req.body.__action === 'save_and_sync') {
       const editID = await writeDraftEdit({
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         course_id: res.locals.course.id,
         dir_name: paths.workingDirectory,
         file_name: paths.workingFilename,
@@ -211,7 +212,7 @@ router.post(
       });
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container,
         filePath: paths.workingPath,
         editContents: req.body.file_edit_contents,

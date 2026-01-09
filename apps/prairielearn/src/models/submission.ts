@@ -1,6 +1,5 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-
-import { IdSchema } from '../lib/db-types.js';
+import { IdSchema } from '@prairielearn/zod';
 
 import { lockVariant } from './variant.js';
 

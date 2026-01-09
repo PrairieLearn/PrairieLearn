@@ -36,8 +36,8 @@ export async function processSubmission(
   }
   const submission = {
     variant_id,
-    user_id: res.locals.user.user_id,
-    auth_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    auth_user_id: res.locals.authn_user.id,
     submitted_answer,
     ...(options.studentSubmission
       ? {
@@ -73,12 +73,14 @@ export async function processSubmission(
 
   if (req.body.__action === 'grade') {
     const ignoreGradeRateLimit = !options.studentSubmission;
+    const ignoreRealTimeGradingDisabled = !options.studentSubmission;
     await saveAndGradeSubmission(
       submission,
       variant,
       res.locals.question,
       res.locals.course,
       ignoreGradeRateLimit,
+      ignoreRealTimeGradingDisabled,
     );
     return submission.variant_id;
   } else if (req.body.__action === 'save') {

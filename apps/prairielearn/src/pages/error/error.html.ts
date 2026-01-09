@@ -6,7 +6,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { config } from '../../lib/config.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 function formatJson(value: any): string {
   return jsonStringifySafe(value, null, '    ');
@@ -28,7 +28,7 @@ export function ErrorPage({
   errorInfo?: string;
   errorId: string;
   referrer: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const {
     outputStderr,
@@ -63,12 +63,12 @@ export function ErrorPage({
 
           <p><strong>Status:</strong> ${error.status}</p>
 
-          <div>
+          <div class="d-flex flex-column gap-2 align-items-start">
             <a href="${referrer}" class="btn btn-primary" ${!referrer ? 'disabled' : ''}>
               <i class="fa fa-arrow-left" aria-hidden="true"></i>
               Back to previous page
             </a>
-            <a href="${config.urlPrefix}" class="btn btn-primary">
+            <a href="/pl" class="btn btn-primary">
               <i class="fa fa-home" aria-hidden="true"></i>
               PrairieLearn home
             </a>

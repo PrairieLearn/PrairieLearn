@@ -92,7 +92,7 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
 
 const validateHtml = async (html: string) => {
   const rewrittenHtml = await rewriteValidatorFalsePositives(html);
-  const { valid, results } = await htmlvalidate.validateString(rewrittenHtml, {
+  const { results } = await htmlvalidate.validateString(rewrittenHtml, {
     extends: ['html-validate:recommended', 'html-validate:document'],
     rules: {
       // https://html-validate.org/rules/no-raw-characters.html
@@ -108,6 +108,10 @@ const validateHtml = async (html: string) => {
       // https://html-validate.org/rules/prefer-tbody.html
       // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
       'prefer-tbody': 'off',
+
+      // https://html-validate.org/rules/prefer-native-element.html
+      // pl-order-blocks uses role="listbox" for drag-and-drop selection which cannot use native <select>
+      'prefer-native-element': ['error', { exclude: ['listbox'] }],
 
       // False positive, since this attribute is controlled via JS. https://getbootstrap.com/docs/5.3/components/modal/#accessibility
       // https://html-validate.org/rules/hidden-focusable.html
@@ -177,11 +181,25 @@ const validateHtml = async (html: string) => {
       'element-permitted-content': 'off',
     },
   });
+
+  const filteredResults = results.map((result) => {
+    result.messages = result.messages.filter((m) => {
+      // Workaround for https://gitlab.com/html-validate/html-validate/-/issues/334
+      if (m.ruleId === 'aria-label-misuse' && m.selector && /^.*> option[^>]*$/.test(m.selector)) {
+        return false;
+      }
+      return true;
+    });
+    return result;
+  });
+
+  const valid = filteredResults.every((result) => result.messages.length === 0);
+
   if (!valid) {
-    const validationMessages = results.flatMap((result) =>
+    const validationMessages = filteredResults.flatMap((result) =>
       result.messages.map((m) => `L${m.line}:C${m.column} ${m.message} (${m.ruleId})`),
     );
-    assert.fail(`HTMLValidate failed:\n${validationMessages.join('\n')}\n${rewrittenHtml}`);
+    assert.fail(`HTMLValidate failed:\n${rewrittenHtml}\n${validationMessages.join('\n')}`);
   }
 };
 
@@ -294,7 +312,7 @@ describe('Internally graded question lifecycle tests', { timeout: 60_000 }, func
       // Render
       const locals = {
         urlPrefix: '/prefix1',
-        plainUrlPrefix: config.urlPrefix,
+        plainUrlPrefix: '/pl',
         questionRenderContext: undefined,
         ...buildQuestionUrls(
           '/prefix2',

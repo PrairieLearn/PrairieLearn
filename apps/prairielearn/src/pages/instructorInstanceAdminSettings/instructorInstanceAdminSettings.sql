@@ -1,6 +1,7 @@
--- BLOCK short_names
+-- BLOCK select_names
 SELECT
-  ci.short_name
+  ci.short_name,
+  ci.long_name
 FROM
   course_instances AS ci
 WHERE

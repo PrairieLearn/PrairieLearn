@@ -17,6 +17,10 @@ const StudentGradebookRowSchema = z
     show_closed_assessment_score: z.boolean(),
   })
   .transform((data) => {
+    // TODO: Instead of doing a single parse from the database,
+    // we should return the raw data from the database, and parse that data
+    // again with additional authorization context to narrow the return type.
+
     if (!data.show_closed_assessment_score) {
       data.assessment_instance.points = null;
       data.assessment_instance.score_perc = null;
@@ -46,6 +50,7 @@ function computeTitle({
   }
   return assessment.title ?? '';
 }
+
 function computeLabel({
   assessment,
   assessment_instance,

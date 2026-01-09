@@ -7,7 +7,6 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { copyQuestionBetweenCourses } from '../../lib/copy-content.js';
 import { CourseSchema, QuestionSchema } from '../../lib/db-types.js';
-import { idsEqual } from '../../lib/id.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
@@ -15,15 +14,6 @@ const sql = loadSqlEquiv(import.meta.url);
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    // It doesn't make much sense to transfer a template course question to
-    // the same template course, so we'll explicitly forbid that.
-    if (idsEqual(req.body.course_id, res.locals.course.id)) {
-      throw new error.HttpStatusError(
-        400,
-        'Template course questions cannot be copied to the same course.',
-      );
-    }
-
     // This query will implicitly check that the question belongs to the given
     // course. We ensure below that the course is in fact a template course.
     const result = await queryRow(

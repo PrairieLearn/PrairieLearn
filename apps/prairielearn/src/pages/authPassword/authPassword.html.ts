@@ -1,12 +1,13 @@
 import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function AuthPassword({
   resLocals,
   passwordInvalid,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   passwordInvalid: boolean;
 }) {
   return PageLayout({

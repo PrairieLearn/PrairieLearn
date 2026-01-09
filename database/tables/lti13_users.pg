@@ -12,4 +12,4 @@ indexes
 
 foreign-key constraints
     lti13_users_lti13_instance_id_fkey: FOREIGN KEY (lti13_instance_id) REFERENCES lti13_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
-    lti13_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    lti13_users_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

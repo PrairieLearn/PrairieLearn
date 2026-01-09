@@ -1,5 +1,35 @@
 # @prairielearn/preact-cjs
 
+## 2.0.0
+
+### Major Changes
+
+- e2bffd9: Remove `class`/`className` compatibility layer. `className` must be used with libraries that expect a `className` prop.
+
+## 1.1.7
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 1.1.6
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.1.5
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
+## 1.1.4
+
+### Patch Changes
+
+- c72a4b8: Upgrade dependencies
+
 ## 1.1.3
 
 ### Patch Changes

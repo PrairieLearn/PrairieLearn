@@ -1,6 +1,6 @@
 # Running in Docker for development
 
-This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on macOS, Linux, and Windows. When using Windows, you are strongly encouraged to perform the steps below inside a WSL 2 container.
+This page describes the procedure to run PrairieLearn within Docker, but using a locally-installed version of the PrairieLearn source code. This is the recommended way to do PrairieLearn development. This is tested and supported on macOS, Linux, and Windows. When using Windows, you are expected to perform the steps below inside a WSL 2 container, and to store all code and course files in the native WSL 2 filesystem (i.e., not inside the `/mnt` directory). Using the Windows filesystem or running the Docker container without WSL can result in performance issues and inconsistent functionality.
 
 !!! tip "Summary"
 

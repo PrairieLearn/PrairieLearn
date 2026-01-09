@@ -6,6 +6,7 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 
 import { ensureChunksForCourseAsync, getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
+import { sendCourseFile } from '../../lib/express/send-file.js';
 import { getQuestionCourse } from '../../lib/question-variant.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
@@ -40,13 +41,11 @@ export default function (options = { publicEndpoint: false }) {
         questionId: res.locals.question.id,
       });
 
-      const clientFilesDir = path.join(
+      await sendCourseFile(res, {
         coursePath,
-        'questions',
-        res.locals.question.directory,
-        'clientFilesQuestion',
-      );
-      res.sendFile(filename, { root: clientFilesDir });
+        directory: path.join('questions', res.locals.question.directory, 'clientFilesQuestion'),
+        filename,
+      });
     }),
   );
   return router;

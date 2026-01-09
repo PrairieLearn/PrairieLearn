@@ -35,7 +35,7 @@ autograder-python:
 preact:
   - changed-files:
       - any-glob-to-any-file:
-          - 'apps/prairielearn/assets/scripts/esm-bundles/react-fragments/*.ts'
+          - 'apps/prairielearn/assets/scripts/esm-bundles/hydrated-components/*.ts'
 schema:
   - changed-files:
       - any-glob-to-any-file:

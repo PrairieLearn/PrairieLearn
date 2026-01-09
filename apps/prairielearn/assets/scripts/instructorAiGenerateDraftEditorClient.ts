@@ -3,6 +3,8 @@ import { observe } from 'selector-observer';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
 
+import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
+
 import { configureAceBasePaths } from './lib/ace.js';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
@@ -33,7 +35,7 @@ class DraftFileEditor extends EventTarget {
       theme: 'ace/theme/chrome',
     } satisfies Partial<ace.Ace.EditorOptions>);
 
-    this.initialContents = this.b64DecodeUnicode(this.inputContentsElement.value);
+    this.initialContents = b64DecodeUnicode(this.inputContentsElement.value);
     this.setEditorContents(this.initialContents);
 
     this.editor.getSession().on('change', () => {
@@ -56,31 +58,8 @@ class DraftFileEditor extends EventTarget {
 
   syncFileToHiddenInput() {
     if (this.inputContentsElement) {
-      this.inputContentsElement.value = this.b64EncodeUnicode(this.editor.getValue());
+      this.inputContentsElement.value = b64EncodeUnicode(this.editor.getValue());
     }
-  }
-
-  b64DecodeUnicode(str: string) {
-    // Going backwards: from bytestream, to percent-encoding, to original string.
-    return decodeURIComponent(
-      atob(str)
-        .split('')
-        .map((c) => {
-          return '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2);
-        })
-        .join(''),
-    );
-  }
-
-  b64EncodeUnicode(str: string) {
-    // first we use encodeURIComponent to get percent-encoded UTF-8,
-    // then we convert the percent encodings into raw bytes which
-    // can be fed into btoa.
-    return btoa(
-      encodeURIComponent(str).replaceAll(/%([0-9A-F]{2})/g, (_match, p1) => {
-        return String.fromCharCode(Number(`0x${p1}`));
-      }),
-    );
   }
 
   didContentsChange(): boolean {

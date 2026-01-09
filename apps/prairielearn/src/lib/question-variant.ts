@@ -1,16 +1,24 @@
+import assert from 'node:assert';
+
 import fg from 'fast-glob';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { workspaceFastGlobDefaultOptions } from '@prairielearn/workspace-utils';
+import { IdSchema } from '@prairielearn/zod';
 
-import { selectOptionalCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { selectQuestionById, selectQuestionByInstanceQuestionId } from '../models/question.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { type Course, IdSchema, type Question, type Variant, VariantSchema } from './db-types.js';
+import {
+  type Course,
+  type CourseInstance,
+  type Question,
+  type Variant,
+  VariantSchema,
+} from './db-types.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 
@@ -24,7 +32,7 @@ type VariantWithFormattedDate = z.infer<typeof VariantWithFormattedDateSchema>;
 const InstanceQuestionDataSchema = z.object({
   question_id: IdSchema,
   user_id: IdSchema.nullable(),
-  group_id: IdSchema.nullable(),
+  team_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
   course_instance_id: IdSchema,
   instance_question_open: z.boolean().nullable(),
@@ -196,7 +204,7 @@ async function selectVariantForInstanceQuestion(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
+ * @param course_instance - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
  * @param options - Options controlling the creation.
@@ -209,7 +217,7 @@ async function makeAndInsertVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  course_instance_id: string | null,
+  course_instance: CourseInstance | null,
   variant_course: Course,
   question_course: Course,
   options: { variant_seed?: string | null },
@@ -225,7 +233,7 @@ async function makeAndInsertVariant(
 
   const variant = await sqldb.runInTransactionAsync(async () => {
     let real_user_id: string | null = user_id;
-    let real_group_id: string | null = null;
+    let real_team_id: string | null = null;
     let new_number: number | null = 1;
 
     if (instance_question_id != null) {
@@ -258,10 +266,13 @@ async function makeAndInsertVariant(
         throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
 
+      // We never expect these to fail, but we'll assert just to be sure.
+      assert(course_instance);
+      assert(instance_question.course_instance_id === course_instance.id);
+
       question_id = instance_question.question_id;
-      course_instance_id = instance_question.course_instance_id;
       real_user_id = instance_question.user_id;
-      real_group_id = instance_question.group_id;
+      real_team_id = instance_question.team_id;
 
       new_number = await sqldb.queryOptionalRow(
         sql.next_variant_number,
@@ -275,11 +286,8 @@ async function makeAndInsertVariant(
         );
       }
 
-      if (course_instance_id != null) {
-        const course_instance = await selectOptionalCourseInstanceById(course_instance_id);
-        if (!course_instance || !idsEqual(course_instance.course_id, variant_course.id)) {
-          throw new error.HttpStatusError(403, 'Course instance not found in course');
-        }
+      if (course_instance != null && !idsEqual(course_instance.course_id, variant_course.id)) {
+        throw new error.HttpStatusError(403, 'Course instance not found in course');
       }
     }
 
@@ -295,9 +303,9 @@ async function makeAndInsertVariant(
         ...variantData,
         instance_question_id,
         question_id,
-        course_instance_id,
+        course_instance_id: course_instance?.id ?? null,
         user_id: real_user_id,
-        group_id: real_group_id,
+        team_id: real_team_id,
         number: new_number ?? 1,
         authn_user_id,
         workspace_id,
@@ -328,7 +336,7 @@ async function makeAndInsertVariant(
  * @param instance_question_id - The instance question for the new variant, or null for a floating variant.
  * @param user_id - The user for the new variant.
  * @param authn_user_id - The current authenticated user.
- * @param course_instance_id - The course instance for this variant. Can be null for instructor questions.
+ * @param course_instance - The course instance for this variant. Can be null for instructor questions.
  * @param variant_course - The course for the variant.
  * @param question_course - The course for the question.
  * @param options - Options controlling the creation.
@@ -341,7 +349,7 @@ export async function ensureVariant(
   instance_question_id: string | null,
   user_id: string,
   authn_user_id: string,
-  course_instance_id: string | null,
+  course_instance: CourseInstance | null,
   variant_course: Course,
   question_course: Course,
   options: { variant_seed?: string | null },
@@ -364,7 +372,7 @@ export async function ensureVariant(
     instance_question_id,
     user_id,
     authn_user_id,
-    course_instance_id,
+    course_instance,
     variant_course,
     question_course,
     options,

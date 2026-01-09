@@ -10,6 +10,7 @@ import { config } from '../lib/config.js';
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
 import * as filePaths from '../lib/file-paths.js';
 import { REPOSITORY_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import {
   type GenerateResultData,
@@ -112,7 +113,7 @@ async function callFunction<Data>(
       // so we won't impose the same restriction here.
       return { data: res.result, courseIssues: [] };
     });
-  } catch (err) {
+  } catch (err: any) {
     err.fatal = true;
     return {
       // We don't have any useful data to return. We'll just lie to the type checker.
@@ -152,7 +153,7 @@ export async function render(
   _submission: Submission | null,
   submissions: Submission[],
   _course: Course,
-  _locals: Record<string, any>,
+  _locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   const data = {
     extraHeadersHtml: '',

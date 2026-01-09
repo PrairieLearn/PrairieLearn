@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import _ from 'lodash';
 import jose from 'node-jose';
 import { z } from 'zod';
@@ -16,6 +15,7 @@ import {
 
 import { config } from '../../../lib/config.js';
 import { type Lti13Instance, Lti13InstanceSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { getInstitution } from '../../lib/institution.js';
 
@@ -35,7 +35,7 @@ const lti13_instance_defaults = {
 
 router.get(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const lti13Instances = await queryRows(
       sql.select_instances,
@@ -72,6 +72,7 @@ router.get(
     let paramInstance: Lti13Instance | undefined;
 
     // Handle the / (no id passed case)
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (req.params.unsafe_lti13_instance_id === undefined) {
       if (lti13Instances.length > 0) {
         return res.redirect(
@@ -106,7 +107,7 @@ router.get(
 
 router.post(
   '/:unsafe_lti13_instance_id?',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'add_key') {
       const keystoreJson = await queryOptionalRow(
         sql.select_keystore,
@@ -232,7 +233,7 @@ router.post(
         unsafe_lti13_instance_id: req.params.unsafe_lti13_instance_id,
       });
       flash('success', 'Instance deleted.');
-      return res.redirect(req.originalUrl);
+      return res.redirect(`/pl/administrator/institution/${req.params.institution_id}/lti13`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

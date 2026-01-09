@@ -121,6 +121,9 @@ class TestSympy:
         ("atanh(m)", sympy.atanh(M)),
         ("asinh(m)", sympy.asinh(M)),
         ("acosh(m)", sympy.acosh(M)),
+        ("tanh(m)", sympy.tanh(M)),
+        ("sinh(m)", sympy.sinh(M)),
+        ("cosh(m)", sympy.cosh(M)),
     )
 
     # Using string-based comparisons here to bypass sympy's default simplification behavior
@@ -408,7 +411,7 @@ class TestExceptions:
 
 @pytest.mark.parametrize(
     ("input_str", "expected_output"),
-    [("abba", "abba"), ("\u03bc0", "mu0")],
+    [("abba", "abba"), ("\u03bc0", "mu0"), ("\u03bb", "lambda")],
 )
 def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
     assert psu.greek_unicode_transform(input_str) == expected_output

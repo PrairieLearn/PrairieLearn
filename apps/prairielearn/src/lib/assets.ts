@@ -4,11 +4,11 @@ import * as fs from 'node:fs';
 import { createRequire } from 'node:module';
 import * as path from 'node:path';
 
-import express, { Router } from 'express';
+import express, { type ErrorRequestHandler, Router } from 'express';
 import { type HashElementNode, hashElement } from 'folder-hash';
-import { v4 as uuid } from 'uuid';
 
 import * as compiledAssets from '@prairielearn/compiled-assets';
+import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
@@ -75,7 +75,7 @@ function getPackageVersion(packageName: string): string {
 
   try {
     return require(`${packageName}/package.json`).version;
-  } catch (e) {
+  } catch (e: any) {
     if (e.code !== 'ERR_PACKAGE_PATH_NOT_EXPORTED') {
       throw e;
     }
@@ -99,7 +99,7 @@ function getPackageVersion(packageName: string): string {
           packageName,
           'package.json',
         );
-      } catch (err) {
+      } catch (err: any) {
         // Some packages (namely `cropperjs`) have invalid `package.json` files
         // that refer to non-existent files. In this case, we can still try to
         // recover from things by using the path that couldn't be resolved.
@@ -135,7 +135,7 @@ function getNodeModulesAssetHash(assetPath: string): string {
     // a repeatable hash that would cause the browser to cache the asset. This
     // is because we want to be able to change them without changing the package
     // version number.
-    return uuid();
+    return crypto.randomUUID();
   }
 
   // Reading files synchronously and computing cryptographic hashes are both
@@ -229,6 +229,22 @@ export function applyMiddleware(app: express.Application) {
       coreElements: true,
     }),
   );
+
+  // If the request reaches this point, it means that the requested asset does
+  // not exist. Return a 404 error.
+  router.use('/', (req, res, next) => {
+    next(new HttpStatusError(404, 'Not Found'));
+  });
+
+  // Transform ENOENT errors from static file serving into 404 errors.
+  router.use('/', ((err, req, res, next) => {
+    if (err?.code === 'ENOENT') {
+      next(new HttpStatusError(404, 'Not Found'));
+      return;
+    }
+
+    next(err);
+  }) satisfies ErrorRequestHandler);
 
   app.use(assetsPrefix, router);
 }

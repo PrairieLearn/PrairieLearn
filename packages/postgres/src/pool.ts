@@ -4,7 +4,7 @@ import { Readable, Transform } from 'node:stream';
 import debugfn from 'debug';
 import _ from 'lodash';
 import multipipe from 'multipipe';
-import pg, { DatabaseError, type QueryResult } from 'pg';
+import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
 import { z } from 'zod';
 
@@ -135,11 +135,12 @@ function escapeIdentifier(identifier: string): string {
 function enhanceError(err: Error, sql: string, params: QueryParams): Error {
   // Copy the error so we don't end up with a circular reference in the
   // final error.
-  const sqlError = { ...err };
-
-  // `message` is a non-enumerable property, so we need to copy it manually to
-  // the error object.
-  sqlError.message = err.message;
+  const sqlError = {
+    ...err,
+    // `message` is a non-enumerable property, so we need to copy it manually to
+    // the error object.
+    message: err.message,
+  };
 
   const errorHasPosition = err instanceof DatabaseError && err.position != null;
 
@@ -209,9 +210,9 @@ export class PostgresPool {
         return;
       } catch (err: any) {
         if (retryCount === retryTimeouts.length) {
-          throw new Error(
-            `Could not connect to Postgres after ${retryTimeouts.length} attempts: ${err.message}`,
-          );
+          throw new Error(`Could not connect to Postgres after ${retryTimeouts.length} attempts`, {
+            cause: err,
+          });
         }
 
         const timeout = retryTimeouts[retryCount];
@@ -987,6 +988,40 @@ export class PostgresPool {
     const schema = `${truncPrefix}_${timestamp}_${suffix}`;
     await this.setSearchSchema(schema);
     return schema;
+  }
+
+  /**
+   * Deletes all schemas starting with the given prefix.
+   *
+   * @param prefix The prefix of the schemas to delete.
+   */
+  async clearSchemasStartingWith(prefix: string): Promise<void> {
+    // Sanity check against deleting public, pg_, information_schema, etc.
+    if (prefix === 'public' || prefix.startsWith('pg_') || prefix === 'information_schema') {
+      throw new Error(`Cannot clear schema starting with ${prefix}`);
+    }
+    // Sanity check against a bad prefix.
+    if (prefix.length < 4) {
+      throw new Error(`Prefix is too short: ${prefix}`);
+    }
+
+    await this.queryAsync(
+      `DO $$
+    DECLARE
+      r RECORD;
+    BEGIN
+      FOR r IN
+        SELECT nspname
+        FROM pg_namespace
+        WHERE nspname LIKE ${escapeLiteral(prefix + '%')}
+          AND nspname NOT LIKE 'pg_temp_%'
+      LOOP
+        EXECUTE format('DROP SCHEMA IF EXISTS %I CASCADE;', r.nspname);
+        COMMIT;  -- avoid shared memory exhaustion
+      END LOOP;
+    END $$;`,
+      {},
+    );
   }
 
   /** The number of established connections. */

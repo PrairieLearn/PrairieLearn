@@ -1,0 +1,2 @@
+ALTER TABLE course_instances
+ADD COLUMN self_enrollment_enabled_before_date_enabled BOOLEAN DEFAULT FALSE;

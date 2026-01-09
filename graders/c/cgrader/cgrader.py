@@ -573,7 +573,7 @@ class CGrader:
         if not name:
             name = "Manual Grading - to be reviewed by a human grader"
         if not description:
-            description = "This code will be manually reviewed by a human grader. The points associated to this component will be added based on evaluation of code style, programming practices and other manully checked criteria."
+            description = "This code will be manually reviewed by a human grader. The points associated to this component will be added based on evaluation of code style, programming practices and other manually checked criteria."
         return self.add_test_result(name, description, points=0, max_points=points)
 
     def add_test_result(

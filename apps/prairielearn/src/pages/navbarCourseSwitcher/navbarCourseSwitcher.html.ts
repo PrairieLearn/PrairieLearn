@@ -6,11 +6,9 @@ import { idsEqual } from '../../lib/id.js';
 export function NavbarCourseSwitcher({
   courses,
   current_course_id,
-  plainUrlPrefix,
 }: {
   courses: Course[];
   current_course_id: string;
-  plainUrlPrefix: string;
 }) {
   return html`
     ${courses.map((c) => {
@@ -18,7 +16,7 @@ export function NavbarCourseSwitcher({
         <a
           class="dropdown-item ${idsEqual(c.id, current_course_id) ? 'active' : ''}"
           aria-current="${idsEqual(c.id, current_course_id) ? 'page' : ''}"
-          href="${plainUrlPrefix}/course/${c.id}/course_admin"
+          href="/pl/course/${c.id}/course_admin"
         >
           ${c.short_name}
         </a>

@@ -168,6 +168,7 @@ export async function describeDatabase(
     max: 10,
     idleTimeoutMillis: 30000,
   };
+
   function idleErrorHandler(err: Error) {
     throw err;
   }

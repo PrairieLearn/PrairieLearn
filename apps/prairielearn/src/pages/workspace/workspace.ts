@@ -21,8 +21,8 @@ async function getNavTitleHref(res: Response, publicQuestionEndpoint: boolean): 
   } else if (res.locals.assessment == null) {
     // Instructor preview. This could be a preview at either the course or course
     // instance level. Generate a link appropriately.
-    if (res.locals.course_instance_id) {
-      return `/pl/course_instance/${res.locals.course_instance_id}/instructor/question/${res.locals.question_id}/preview?variant_id=${variant_id}`;
+    if (res.locals.course_instance) {
+      return `/pl/course_instance/${res.locals.course_instance.id}/instructor/question/${res.locals.question_id}/preview?variant_id=${variant_id}`;
     } else {
       return `/pl/course/${res.locals.course_id}/question/${res.locals.question_id}/preview?variant_id=${variant_id}`;
     }
@@ -30,7 +30,7 @@ async function getNavTitleHref(res: Response, publicQuestionEndpoint: boolean): 
     // Student assessment. If it's a homework, we'll include the variant ID in the URL
     // in case this workspace is for a non-current variant.
     const query = res.locals.assessment.type === 'Homework' ? `?variant_id=${variant_id}` : '';
-    return `/pl/course_instance/${res.locals.course_instance_id}/instance_question/${res.locals.instance_question_id}${query}`;
+    return `/pl/course_instance/${res.locals.course_instance.id}/instance_question/${res.locals.instance_question_id}${query}`;
   }
 }
 

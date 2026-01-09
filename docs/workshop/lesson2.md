@@ -4,7 +4,7 @@
 
 ## Quick overview
 
-Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [assessment documentation](../assessment/index.md).
+Let's take a look at some features available when customizing your assessments. You can find more information about assessment configuration [assessment documentation](../assessment/overview.md).
 
 The beginning of the `infoAssessment.json` usually looks like this:
 
@@ -61,7 +61,7 @@ Option to randomly select questions that will appear in the Assessment, out of a
 
 ### Assessment `allowAccess`
 
-There are many options to customize when and who should have access to your assessment. Take a look at the section [Access Control](https://prairielearn.readthedocs.io/en/latest/accessControl/) to learn more. Here I will briefly describe the option `mode`
+There are many options to customize when and who should have access to your assessment. Take a look at the section [Access Control](../assessment/accessControl.md) to learn more. Here I will briefly describe the option `mode`
 
 There are two available options:
 
@@ -90,7 +90,7 @@ Before you start creating your assessments, make sure you have at least 4 questi
 - Use `"mode": "Public"`
 - Use `"type":"Homework"`
 - Questions appear in randomized order
-- Students submitting by the deadline receive 100% credit. Students submitting up to 4 days late are capped at 70% credit. If students earn 100% at least 2 days before the deadline, they'll receive an additional 5% bonus for a total of 105%. Learn more about credit in the [access control docs](https://prairielearn.readthedocs.io/en/latest/accessControl/#credit).
+- Students submitting by the deadline receive 100% credit. Students submitting up to 4 days late are capped at 70% credit. If students earn 100% at least 2 days before the deadline, they'll receive an additional 5% bonus for a total of 105%. Learn more about credit in the [access control docs](../assessment/accessControl.md#credit).
 - Include two zones: one for easy questions, where each question has `"maxPoints": 5` and another one for more advanced questions, with `"maxPoints": 3`
 
 [Assessment template](https://us.prairielearn.com/pl/course_instance/4970/assessment/2316937) from the Example Course

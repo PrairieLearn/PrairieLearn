@@ -32,24 +32,24 @@ import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoEle
 import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
-  type QuestionCalculationOptionsJson,
-  QuestionCalculationOptionsJsonSchema,
+  type QuestionOptionsCalculationJson,
+  QuestionOptionsCalculationJsonSchema,
 } from './questionOptionsCalculation.js';
 import {
-  type QuestionCheckboxOptionsJson,
-  QuestionCheckboxOptionsJsonSchema,
+  type QuestionOptionsCheckboxJson,
+  QuestionOptionsCheckboxJsonSchema,
 } from './questionOptionsCheckbox.js';
 import {
-  type QuestionFileOptionsJson,
-  QuestionFileOptionsJsonSchema,
+  type QuestionOptionsFileJson,
+  QuestionOptionsFileJsonSchema,
 } from './questionOptionsFile.js';
 import {
-  type QuestionMultipleChoiceOptionsJson,
-  QuestionMultipleChoiceOptionsJsonSchema,
+  type QuestionOptionsMultipleChoiceJson,
+  QuestionOptionsMultipleChoiceJsonSchema,
 } from './questionOptionsMultipleChoice.js';
 import {
-  type QuestionMultipleTrueFalseOptionsJson,
-  QuestionMultipleTrueFalseOptionsJsonSchema,
+  type QuestionOptionsMultipleTrueFalseJson,
+  QuestionOptionsMultipleTrueFalseJsonSchema,
 } from './questionOptionsMultipleTrueFalse.js';
 import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
@@ -190,51 +190,51 @@ export const infoQuestion = prairielearnZodToJsonSchema(QuestionJsonSchema, {
 }) as JSONSchemaType<QuestionJson>;
 
 export const questionOptionsCalculation = prairielearnZodToJsonSchema(
-  QuestionCalculationOptionsJsonSchema,
+  QuestionOptionsCalculationJsonSchema,
   {
     name: 'Calculation question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
   },
-) as JSONSchemaType<QuestionCalculationOptionsJson>;
+) as JSONSchemaType<QuestionOptionsCalculationJson>;
 
 export const questionOptionsCheckbox = prairielearnZodToJsonSchema(
-  QuestionCheckboxOptionsJsonSchema,
+  QuestionOptionsCheckboxJsonSchema,
   {
     name: 'Checkbox question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
   },
-) as JSONSchemaType<QuestionCheckboxOptionsJson>;
+) as JSONSchemaType<QuestionOptionsCheckboxJson>;
 
-export const questionOptionsFile = prairielearnZodToJsonSchema(QuestionFileOptionsJsonSchema, {
+export const questionOptionsFile = prairielearnZodToJsonSchema(QuestionOptionsFileJsonSchema, {
   name: 'File question options',
   nameStrategy: 'title',
   target: 'jsonSchema7',
   definitions: { CommentJsonSchema },
-}) as JSONSchemaType<QuestionFileOptionsJson>;
+}) as JSONSchemaType<QuestionOptionsFileJson>;
 
 export const questionOptionsMultipleChoice = prairielearnZodToJsonSchema(
-  QuestionMultipleChoiceOptionsJsonSchema,
+  QuestionOptionsMultipleChoiceJsonSchema,
   {
     name: 'MultipleChoice question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
   },
-) as JSONSchemaType<QuestionMultipleChoiceOptionsJson>;
+) as JSONSchemaType<QuestionOptionsMultipleChoiceJson>;
 
 export const questionOptionsMultipleTrueFalse = prairielearnZodToJsonSchema(
-  QuestionMultipleTrueFalseOptionsJsonSchema,
+  QuestionOptionsMultipleTrueFalseJsonSchema,
   {
     name: 'MultipleTrueFalse question options',
     nameStrategy: 'title',
     target: 'jsonSchema7',
     definitions: { CommentJsonSchema },
   },
-) as JSONSchemaType<QuestionMultipleTrueFalseOptionsJson>;
+) as JSONSchemaType<QuestionOptionsMultipleTrueFalseJson>;
 
 export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3JsonSchema, {
   name: 'v3 question options',

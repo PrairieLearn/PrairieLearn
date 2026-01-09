@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringify } from '@prairielearn/csv';
@@ -13,13 +12,18 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 
+import {
+  AI_GRADING_MODEL_IDS,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-grading-stats.js';
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
-import { type Assessment } from '../../../lib/db-types.js';
+import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
 import { features } from '../../../lib/features/index.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
-import { selectAssessmentQuestions } from '../../../models/assessment-question.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { ManualGradingAssessment, ManualGradingQuestionSchema } from './assessment.html.js';
@@ -33,18 +37,20 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {
         assessment_id: res.locals.assessment.id,
-        user_id: res.locals.authz_data.user.user_id,
+        user_id: res.locals.authz_data.user.id,
       },
       ManualGradingQuestionSchema,
     );
     const num_open_instances = questions[0]?.num_open_instances || 0;
     const courseStaff = await selectCourseInstanceGraderStaff({
-      course_instance_id: res.locals.course_instance.id,
+      courseInstance: res.locals.course_instance,
+      authzData: res.locals.authz_data,
+      requiredRole: ['Student Data Viewer'],
     });
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
     res.send(
@@ -61,7 +67,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -77,9 +83,11 @@ router.post(
       const allowedGraderIds = new Set(
         (
           await selectCourseInstanceGraderStaff({
-            course_instance_id: res.locals.course_instance.id,
+            courseInstance: res.locals.course_instance,
+            authzData: res.locals.authz_data,
+            requiredRole: ['Student Data Editor'],
           })
-        ).map((user) => user.user_id),
+        ).map((user) => user.id),
       );
       if (assignedGraderIds.some((graderId) => !allowedGraderIds.has(graderId))) {
         flash(
@@ -126,7 +134,29 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const assessment = res.locals.assessment as Assessment;
+      const model_id = req.body.model_id as AiGradingModelId | undefined;
+
+      if (!model_id) {
+        throw new HttpStatusError(400, 'No AI grading model specified');
+      }
+
+      const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
+        'ai-grading-model-selection',
+        res.locals,
+      );
+
+      if (!aiGradingModelSelectionEnabled && model_id !== DEFAULT_AI_GRADING_MODEL) {
+        throw new HttpStatusError(
+          403,
+          `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+        );
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(model_id)) {
+        throw new HttpStatusError(400, 'Invalid AI grading model specified');
+      }
+
+      const assessment = res.locals.assessment;
 
       const assessmentQuestionRows = await selectAssessmentQuestions({
         assessment_id: assessment.id,
@@ -147,11 +177,13 @@ router.post(
         await aiGrade({
           question: row.question,
           course: res.locals.course,
-          course_instance_id: assessment.course_instance_id,
+          course_instance: res.locals.course_instance,
+          assessment,
           assessment_question: row.assessment_question,
           urlPrefix: res.locals.urlPrefix,
-          authn_user_id: res.locals.authn_user.user_id,
-          user_id: res.locals.user.user_id,
+          authn_user_id: res.locals.authn_user.id,
+          user_id: res.locals.user.id,
+          model_id,
           mode: 'all',
         });
       }
@@ -167,7 +199,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const stats = await generateAssessmentAiGradingStats(res.locals.assessment as Assessment);
+      const stats = await generateAssessmentAiGradingStats(res.locals.assessment);
       res.attachment('assessment_statistics.csv');
       stringify([...stats.perQuestion, stats.total], {
         header: true,
@@ -193,14 +225,14 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const assessment = res.locals.assessment as Assessment;
+      const assessment = res.locals.assessment;
       const assessmentQuestionRows = await selectAssessmentQuestions({
         assessment_id: assessment.id,
       });
 
       await deleteAiGradingJobs({
         assessment_question_ids: assessmentQuestionRows.map((row) => row.assessment_question.id),
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
 
       flash('success', 'AI grading data deleted successfully.');

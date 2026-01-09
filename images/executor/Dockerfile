@@ -1,5 +1,5 @@
 FROM prairielearn/prairielearn:latest
-ARG CACHEBUST=2025-08-15-14-16-03
+ARG CACHEBUST=2025-12-15-14-21-51
 
 WORKDIR /PrairieLearn/
 

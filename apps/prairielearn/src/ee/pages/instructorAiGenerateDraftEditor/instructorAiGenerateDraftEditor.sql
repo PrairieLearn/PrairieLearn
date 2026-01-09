@@ -8,7 +8,6 @@ WHERE
   questions.id = $question_id
   AND questions.course_id = $course_id
   AND questions.deleted_at IS NULL
-  AND ai_question_generation_prompts.prompt_type <> 'auto_revision'
 ORDER BY
   ai_question_generation_prompts.id;
 

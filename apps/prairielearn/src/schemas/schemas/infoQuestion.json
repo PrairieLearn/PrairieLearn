@@ -37,6 +37,38 @@
       },
       "default": []
     },
+    "authors": {
+      "type": "array",
+      "items": {
+        "description": "An author (individual person, or staff of a course of origin) credited with creating a question.",
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "name": {
+            "description": "A human-readable name of a question author.",
+            "type": "string",
+            "minLength": 3,
+            "maxLength": 255
+          },
+          "email": {
+            "description": "An email address to contact a question author.",
+            "type": "string",
+            "maxLength": 255
+          },
+          "orcid": {
+            "description": "An ORCID identifier that uniquely identifies an individual question author.",
+            "type": "string",
+            "pattern": "^[0-9]{4}-[0-9]{4}-[0-9]{4}-[0-9X]{4}$"
+          },
+          "originCourse": {
+            "description": "The sharing name of a course whose staff is a question author.",
+            "type": "string"
+          }
+        }
+      },
+      "maxItems": 10,
+      "default": []
+    },
     "clientFiles": {
       "description": "The list of question files accessible by the client.",
       "type": "array",

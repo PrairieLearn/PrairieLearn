@@ -28,11 +28,11 @@ FROM
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id),
+  JOIN courses AS c ON (c.id = ci.course_id),
   LATERAL (
     SELECT
-      min(ar.start_date) AS start_date,
-      max(ar.end_date) AS end_date
+      COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+      COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
     FROM
       course_instance_access_rules AS ar
     WHERE

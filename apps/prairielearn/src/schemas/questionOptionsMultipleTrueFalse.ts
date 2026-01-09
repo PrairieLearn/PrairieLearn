@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
 
-export const QuestionMultipleTrueFalseOptionsJsonSchema = z
+export const QuestionOptionsMultipleTrueFalseJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
     text: z.string().describe('Text to precede the set of statements being given.').optional(),
@@ -16,6 +16,6 @@ export const QuestionMultipleTrueFalseOptionsJsonSchema = z
   .strict()
   .describe('Options for a MultipleTrueFalse question.');
 
-export type QuestionMultipleTrueFalseOptionsJson = z.infer<
-  typeof QuestionMultipleTrueFalseOptionsJsonSchema
+export type QuestionOptionsMultipleTrueFalseJson = z.infer<
+  typeof QuestionOptionsMultipleTrueFalseJsonSchema
 >;

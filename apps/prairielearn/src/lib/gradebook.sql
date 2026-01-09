@@ -14,15 +14,15 @@ WHERE
   ci.id = $course_instance_id
   AND (
     ai.user_id = $user_id
-    OR ai.group_id IN (
+    OR ai.team_id IN (
       SELECT
-        g.id
+        t.id
       FROM
-        groups g
-        JOIN group_users AS gu ON g.id = gu.group_id
+        teams AS t
+        JOIN team_users AS tu ON t.id = tu.team_id
       WHERE
-        g.deleted_at IS NULL
-        AND gu.user_id = $user_id
+        t.deleted_at IS NULL
+        AND tu.user_id = $user_id
     )
   )
   AND a.deleted_at IS NULL

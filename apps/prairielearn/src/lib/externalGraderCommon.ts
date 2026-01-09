@@ -22,6 +22,7 @@ export interface Grader {
     configOverrides?: Partial<Config>,
   ): EventEmitter;
 }
+
 /**
  * Returns the directory where job files should be written to while running
  * with AWS infrastructure.
@@ -141,7 +142,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     return makeGradingFailureWithMessage(jobId, dataStr, 'Could not parse the grading results.');
   }
 
-  function replaceNull(d: any) {
+  function replaceNull(d: any): any {
     if (typeof d === 'string') {
       // replace NULL with unicode replacement character
       return d.replaceAll('\0', '\ufffd');

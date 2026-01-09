@@ -1,10 +1,12 @@
 # PrairieDraw
 
-**WARNING**: This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](elements.md#pl-drawing-element) element instead.
+!!! warning
+
+    This page describes the old PrairieDraw library. This library will be supported indefinitely, but it is strongly recommended that all new questions use the [`pl-drawing`](./pl-drawing/index.md) element instead.
 
 ---
 
-The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the [`pl-prairiedraw-figure` element](elements.md#pl-prairiedraw-figure-element).
+The PrairieDraw library (`PrairieDraw.js`) is a figure-drawing library which allows dynamic figures to be rendered through the [`pl-prairiedraw-figure` element](elements/pl-prairiedraw-figure.md).
 
 Any parameters passed to the script from the `params-names` option in the `pl-prairiedraw-figure` element can be accessed with `this.params.get([parameter])`
 
@@ -211,7 +213,7 @@ These files should be committed to the `git` repository and pushed to the live s
 
 ## Advanced: Running without Docker
 
-If you want to generate LaTeX label images without Docker then you will need to install [Python](https://www.python.org), [ImageMagick](http://www.imagemagick.org/), and [LaTeX](http://tug.org/texlive/) and then run the following command in the root of the PrairieLearn repository:
+If you want to generate LaTeX label images without Docker then you will need to install [Python](https://www.python.org), [ImageMagick](https://imagemagick.org/), and [LaTeX](https://tug.org/texlive/) and then run the following command in the root of the PrairieLearn repository:
 
 ```sh
 python contrib/generate_text.py --subdir /path/to/course

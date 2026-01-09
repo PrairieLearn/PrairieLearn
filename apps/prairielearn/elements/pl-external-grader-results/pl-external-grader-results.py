@@ -55,6 +55,9 @@ def round_value(value: float, digits: int = 2) -> str:
     Round the given value to the specified precision; default is 2 digits.
 
     Remove trailing 0s and '.'s, e.g., convert "1.00" to "1".
+
+    Returns:
+        The value rounded to the specified precision
     """
     return f"{value:.{digits}f}".rstrip("0").rstrip(".")
 

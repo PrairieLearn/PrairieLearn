@@ -1,0 +1,2 @@
+ALTER TABLE course_instances
+ADD COLUMN self_enrollment_restrict_to_institution BOOLEAN DEFAULT TRUE;

@@ -8,15 +8,15 @@ Consider **[adding the question or issue](https://github.com/PrairieLearn/Prairi
 
 There are three different ways to let a student re-attempt or continue an exam:
 
-1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](accessControl/index.md) with their UID.
+1. **Continue working on the same copy of the exam:** Two things are needed: (1) Make sure the assessment is "Open" by going to the "Students" tab. If the exam is "Closed" then use the "Action" menu to re-open it. (2) Make sure the student has access to the exam. This is automatic if they are using a PrairieTest session and have a new reservation, otherwise they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
-2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](accessControl/index.md) with their UID.
+2. **Start a new randomized version of the exam:** Two things are needed: (1) Delete the student's existing copy of the exam using the "Action" menu on the "Students" tab. (2) Make sure the student has access to the exam. If they are using PrairieTest they need to sign up for a new reservation, or outside a PrairieTest environment they will need a custom [access rule](assessment/accessControl.md) with their UID.
 
 3. **Make a custom retry exam with a different selection of questions on it:** This is normally used if many students are going to take a second-chance exam. You can copy the original exam to a new assessment in PrairieLearn (use the "Copy" button on the "Settings" tab for the assessment) and adjust the question selection and access controls as appropriate.
 
 ## How do I give students access to view their exams after they are over?
 
-To allow students to see their entire exam after it is over, you can add an [access rule](accessControl/index.md) like this:
+To allow students to see their entire exam after it is over, you can add an [access rule](assessment/accessControl.md) like this:
 
 ```json title="infoAssessment.json"
 {
@@ -38,9 +38,9 @@ Note that when granting access via `"active": false`, students can still access 
 Writing and maintaining a large pool of questions is a lot of work. There are many strategies for managing this process. The approach taken by the TAM 2XX courses (Introductory Mechanics sequence) at Illinois is:
 
 1. Homework questions are always re-used semester-to-semester. It is assumed that solutions to these will be posted by students on the internet, so they are strictly for practice. Students do get credit for homeworks, but it assumed that any student who puts in the effort will get 100%.
-2. Some questions in the pool are [tagged](https://prairielearn.readthedocs.io/en/latest/question/#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
+2. Some questions in the pool are [tagged](question/overview.md#metadata-infojson) as "secret". These questions are only used on exams. Exams consist of a few homework questions, as well as secret questions on that topic. Secret questions are re-used for multiple semesters. Exams are only administered until highly secure conditions in a testing center or similar environment.
 3. Every semester a small number of secret questions are written, and some older secret questions are moved to homeworks. This keeps the secret pool reasonably fresh and grows the homework pool over time. It also ensures that homework and exam questions are truly comparable in topics and difficulty.
-4. For homeworks, the [`maxPoints`](https://prairielearn.readthedocs.io/en/latest/assessment/#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
+4. For homeworks, the [`maxPoints`](assessment/configuration.md#question-specification) option is used so that students don't need to complete all homework questions to get 100% on the homework. This allows the homework to be quite long, and to be partially for credit and partially as a set of extra questions that students can practice.
 5. Homeworks can be accessed for 100% credit until the due date, for 80% credit for a week after that, and for 0% credit (but students can still practice the questions) for the rest of the semester.
 
 As an exception to the above strategy, during the COVID-19 semesters all exams were given remotely under conditions that were not as secure as the in-person CBTF. For this reason, all secret questions used on these exams are considered to be immediately "burned" and moved to the homework pool.
@@ -71,23 +71,14 @@ You need to give the student access to both the course instance itself for the c
 
 For example, suppose Fall 2017 is the completed semester, and it is now Spring 2018. We have one student (`student@example.com`) that needs to take the final exam from Fall 2017 in February 2018. We will extend the Fall 2017 course instance and final exam access to include February 2018, but only for `student@example.com`.
 
-First, edit `pl-exp101/courseInstance/Fa17/infoCourseInstance.json` to add a section for `student@example.com`:
+First, for the course instance, create a extension for the student:
 
-```json title="infoCourseInstance.json"
-{
-  "allowAccess": [
-    {
-      "startDate": "2017-08-19T00:00:01",
-      "endDate": "2017-12-31T23:59:59"
-    },
-    {
-      "uids": ["student@example.com"],
-      "startDate": "2018-02-01T00:00:01",
-      "endDate": "2018-02-28T23:59:59"
-    }
-  ]
-}
-```
+1. Go to the course instance's **Publishing** page (Admin → Publishing)
+2. Click **Add extension** to create a new extension
+3. Enter the student's UID and set the new end date to February 28th, 2018.
+4. Save the extension
+
+This will allow the student to access the course instance beyond the original end date.
 
 Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/infoAssessment.json` to add a section for `student@example.com`:
 
@@ -111,7 +102,7 @@ Second, edit the assessment `pl-exp101/courseInstance/Fa17/assessments/final/inf
 }
 ```
 
-See [Access control](accessControl/index.md) for more details.
+See [Access control](assessment/accessControl.md) for more details.
 
 ## Why does a user have the role of None?
 
@@ -135,7 +126,7 @@ then the feature can be disabled by specifying in the `infoAssessment.json`:
 }
 ```
 
-See [Auto-closing Exam assessments](assessment/index.md#auto-closing-exam-assessments)
+See [Auto-closing Exam assessments](assessment/configuration.md#auto-closing-exam-assessments)
 for more details.
 
 ## How can we provide a cheat sheet for exams held in a testing center?
@@ -182,7 +173,7 @@ use the relative path from the base of the question.
 The same pattern holds for referencing material in any subdirectory of the question directory.
 
 To learn more about where files are stored, please see
-[clientFiles and serverFiles](https://prairielearn.readthedocs.io/en/latest/clientServerFiles/).
+[clientFiles and serverFiles](clientServerFiles.md).
 
 ## Why is my QID invalid?
 
@@ -200,7 +191,7 @@ To resolve this issue, first check the name of the folder inside `questions/`
 and, then, check the question name listed in `infoAssessments.json`. Either
 rename the folder or change the name listed in assessments to be the same.
 
-See [Directory Structure](question/index.md#directory-structure) for more details.
+See [Directory Structure](question/overview.md#directory-structure) for more details.
 
 ## Why do I have a Syntax Error in my JSON file?
 
@@ -248,7 +239,7 @@ For example, this error would be triggered under:
 }
 ```
 
-See [Question Specification](assessment/index.md#question-specification) for more details.
+See [Question Specification](assessment/configuration.md#question-specification) for more details.
 
 ## Why is the UUID used in multiple questions?
 
@@ -307,15 +298,15 @@ To address this, there are a variety of different ways. In particular, we have:
 
 ## Why do special characters like `<` and `>` break my question display?
 
-The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements.md#pl-code-element). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
+The HTML specification disallows inserting special characters onto the page (i.e. `<`, `>`, `&`), and using these characters in your question, for example with inline code, may break rendering. To fix this, either escape the characters (`&lt;`, `&gt;`, `&amp;`, more with [this escaping tool](https://www.freeformatter.com/html-entities.html)), or load code snippets from external files into `pl-code` with `source-file-name` attribute. For more information, see the [`pl-code` element documentation](elements/pl-code.md). Additionally, you may use the `<markdown>` tag which will correctly escape any special characters.
 
 ## Why can't I connect to PrairieLearn with Docker Toolbox?
 
-Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](https://prairielearn.readthedocs.io/en/latest/installing/).
+Docker Toolbox is no longer supported. [Docker Community Edition](https://www.docker.com/community-edition) is required to [run PrairieLearn locally](installing.md).
 
 ## How can I make a block that can be re-used in many questions?
 
-If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements.md#pl-template-element). This element allows you to define a template in one place and then use it in many questions.
+If you have a block of text that you want to re-use in many questions, possibly with a few parameters substituted into it, you can use the [`<pl-template>` element](./elements/pl-template.md). This element allows you to define a template in one place and then use it in many questions.
 
 !!! danger
 
@@ -323,7 +314,7 @@ If you have a block of text that you want to re-use in many questions, possibly 
 
 ## How can I hide the correct answer when students see their grading results?
 
-Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/index.md#metadata-infojson).
+Questions can specify the `showCorrectAnswer: false` property in `info.json` to hide the correct answer box entirely. For more information on this option, see [the documentation for question info.json files](question/overview.md#metadata-infojson).
 
 For more granular control, some elements in PL have their own options for specifying whether to hide individual correct answers (for example, `pl-checkbox` has a `hide-answer-panel` attribute). Not all element types offer this as an attribute (e.g., `pl-multiple-choice` currently does not). However, to hide the correct answer for any kind of element, you can surround the particular graded pl-element with `pl-hide-in-panel` in the `question.html` file.
 
@@ -335,11 +326,11 @@ For example:
 </pl-hide-in-panel>
 ```
 
-For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements.md#pl-hide-in-panel-element).
+For more information on this granular technique, see [the documentation for pl-hide-in-panel](elements/pl-hide-in-panel.md).
 
 ## I forgot to set `"credit":100` and now my students all have 0%. How do I fix this?
 
-PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](accessControl/index.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
+PrairieLearn access rules default to zero-credit so leaving off the credit means that students will accumulate points, but their percentage score will stay at 0%. To correct this, you should add `"credit":100` to [the appropriate access rule](assessment/accessControl.md#credit). The next time that a student answers a question their percentage score will be recalculated to be the correct value (as if they'd had full credit all along).
 
 To fix student scores without requiring them to answer another question you can:
 
@@ -362,7 +353,7 @@ You are highly encouraged to avoid changes such as the ones above to questions w
 
 Neither of these options will affect the score a student may already have obtained in any previous variants. However, any work a student may have started on an open variant but not yet submitted will be lost.
 
-For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](regrading.md).
+For exams and other summative assessments where students may have been negatively impacted by such a change, you are encouraged to consider [giving students credit for issues such as these](assessment/regrading.md).
 
 ## When I open some CSV downloads, some data is in the wrong columns
 
@@ -405,4 +396,4 @@ There are a few possible ways to address these cases:
 
 - Alternatively, you can remove the `group_name` column altogether. While the column is used to match a row to a specific submission, if the column is not found, the row can be identified with other columns such as the `submission_id`.
 
-One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/index.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.
+One way to avoid this problem is to remove the ability for students to specify their own group names. This can be done by [setting `"studentGroupChooseName": false`](./assessment/configuration.md#enabling-group-work-for-collaborative-assessments) in the assessment configuration. When this option is set, all student-created groups are named with a default pattern of `groupXXX`, where `XXX` is an integer number. This pattern does not typically cause issues with spreadsheet applications.

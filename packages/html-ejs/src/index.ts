@@ -4,6 +4,7 @@ import { fileURLToPath } from 'url';
 import ejs from 'ejs';
 
 import { type HtmlSafeString, unsafeHtml } from '@prairielearn/html';
+
 /**
  * This is a shim to allow for the use of EJS templates inside of HTML tagged
  * template literals.

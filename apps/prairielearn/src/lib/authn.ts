@@ -48,7 +48,7 @@ async function handlePendingLti13User({
 
   // Store the `sub` claim.
   await updateLti13UserSub({
-    user_id: user.user_id,
+    user_id: user.id,
     lti13_instance_id: lti13Instance.id,
     sub,
   });
@@ -140,7 +140,7 @@ export async function loadUser(
   }
 
   if (options.redirect) {
-    let redirUrl = config.homeUrl;
+    let redirUrl = '/';
     if ('pl2_pre_auth_url' in req.cookies) {
       redirUrl = req.cookies.pl2_pre_auth_url;
       clearCookie(res, ['preAuthUrl', 'pl2_pre_auth_url']);
@@ -172,7 +172,7 @@ export async function loadUser(
         sql.select_is_institution_admin,
         {
           institution_id: res.locals.authn_institution.id,
-          user_id: res.locals.authn_user.user_id,
+          user_id: res.locals.authn_user.id,
         },
         z.boolean(),
       ));

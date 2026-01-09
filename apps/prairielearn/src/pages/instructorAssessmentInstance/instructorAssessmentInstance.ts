@@ -1,11 +1,10 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
-import * as error from '@prairielearn/error';
+import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
@@ -17,6 +16,7 @@ import {
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
@@ -35,7 +35,7 @@ const DateDurationResultSchema = z.object({
   assessment_instance_duration: z.string(),
 });
 
-function makeLogCsvFilename(locals) {
+function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -43,7 +43,7 @@ function makeLogCsvFilename(locals) {
       locals.course_instance,
       locals.course,
     ) +
-    sanitizeString(locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown') +
+    sanitizeString(locals.instance_team?.name ?? locals.instance_user?.uid ?? 'unknown') +
     '_' +
     locals.assessment_instance.number +
     '_' +
@@ -57,7 +57,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
@@ -105,7 +105,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
@@ -154,16 +154,16 @@ router.get(
       res.attachment(req.params.filename);
       await pipeline(cursor.stream(100), stringifier, res);
     } else {
-      throw new error.HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
+      throw new HttpStatusError(404, 'Unknown filename: ' + req.params.filename);
     }
   }),
 );
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
+      throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
     // TODO: parse req.body with Zod
 
@@ -171,7 +171,7 @@ router.post(
       await updateAssessmentInstancePoints(
         res.locals.assessment_instance.id,
         req.body.points,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
@@ -179,13 +179,13 @@ router.post(
       await updateAssessmentInstanceScore(
         res.locals.assessment_instance.id,
         req.body.score_perc,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       await ltiOutcomes.updateScore(res.locals.assessment_instance.id);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'edit_question_points') {
       const { modified_at_conflict, grading_job_id } = await updateInstanceQuestionScore(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.body.instance_question_id,
         null, // submission_id
         req.body.modified_at ? new Date(req.body.modified_at) : null, // check_modified_at
@@ -195,7 +195,7 @@ router.post(
           auto_points: req.body.auto_points,
           score_perc: req.body.score_perc,
         },
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       if (modified_at_conflict) {
         return res.redirect(
@@ -204,14 +204,19 @@ router.post(
       }
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'reset_question_variants') {
+      if (res.locals.assessment.type === 'Exam') {
+        // See https://github.com/PrairieLearn/PrairieLearn/issues/12977
+        throw new HttpStatusError(403, 'Cannot reset variants for Exam assessments');
+      }
+
       await resetVariantsForInstanceQuestion({
         assessment_instance_id: res.locals.assessment_instance.id,
         unsafe_instance_question_id: req.body.unsafe_instance_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {
-      throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
   }),
 );

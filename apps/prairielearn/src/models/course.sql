@@ -2,21 +2,30 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id;
+
+-- BLOCK select_course_by_short_name
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.short_name = $short_name
+  AND c.deleted_at IS NULL;
 
 -- BLOCK select_course_by_instance_id
 SELECT
   c.*
 FROM
   course_instances AS ci
-  JOIN pl_courses AS c ON ci.course_id = c.id
+  JOIN courses AS c ON ci.course_id = c.id
 WHERE
   ci.id = $course_instance_id;
 
 -- BLOCK update_course_commit_hash
-UPDATE pl_courses
+UPDATE courses
 SET
   commit_hash = $commit_hash
 WHERE
@@ -27,15 +36,17 @@ SELECT
   c.*,
   to_jsonb(permissions_course) AS permissions_course
 FROM
-  pl_courses AS c
-  JOIN authz_course ($user_id, c.id, $is_administrator, TRUE) AS permissions_course ON TRUE
+  courses AS c
+  JOIN authz_course ($user_id, c.id) AS permissions_course ON TRUE
 WHERE
   c.deleted_at IS NULL
   -- returns a list of courses that are either example courses or are courses
-  -- in which the user has a non-None course role
+  -- in which the user has a non-None course role.
+  -- If the user is an administrator, return all courses.
   AND (
     (permissions_course ->> 'course_role')::enum_course_role > 'None'
     OR c.example_course IS TRUE
+    OR $is_administrator IS TRUE
   )
 ORDER BY
   c.short_name,
@@ -48,7 +59,7 @@ WITH
     SELECT
       c.*
     FROM
-      pl_courses AS c
+      courses AS c
     WHERE
       path = $path
     ORDER BY
@@ -58,7 +69,7 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      pl_courses AS c (path, display_timezone, institution_id)
+      courses AS c (path, display_timezone, institution_id)
     SELECT
       $path,
       i.display_timezone,
@@ -87,7 +98,7 @@ FROM
   inserted_course;
 
 -- BLOCK delete_course
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   deleted_at = current_timestamp
 WHERE
@@ -97,7 +108,7 @@ RETURNING
 
 -- BLOCK insert_course
 INSERT INTO
-  pl_courses AS c (
+  courses AS c (
     short_name,
     title,
     display_timezone,
@@ -122,15 +133,23 @@ RETURNING
   *;
 
 -- BLOCK update_course_show_getting_started
-UPDATE pl_courses
+UPDATE courses
 SET
   show_getting_started = $show_getting_started
 WHERE
   id = $course_id;
 
 -- BLOCK update_course_sharing_name
-UPDATE pl_courses
+UPDATE courses
 SET
   sharing_name = $sharing_name
 WHERE
   id = $course_id;
+
+-- BLOCK find_courses_by_sharing_names
+SELECT
+  *
+FROM
+  courses
+WHERE
+  sharing_name = ANY ($sharing_names::text[]);

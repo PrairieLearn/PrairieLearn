@@ -15,7 +15,7 @@ describe('Initial Sync', () => {
   it('correctly syncs content from disk to the database', async () => {
     const { courseData, courseDir } = await util.createAndSyncCourseData();
 
-    const courses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+    const courses = await util.dumpTableWithSchema('courses', CourseSchema);
     assert.lengthOf(courses, 1);
     const [course] = courses;
     assert.equal(course.short_name, courseData.course.name);

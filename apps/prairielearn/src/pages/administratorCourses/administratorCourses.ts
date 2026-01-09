@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
@@ -10,6 +9,7 @@ import {
   selectPendingCourseRequests,
   updateCourseRequest,
 } from '../../lib/course-request.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
 import { selectAllInstitutions } from '../../models/institution.js';
 
@@ -20,7 +20,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const course_requests = await selectPendingCourseRequests();
     const institutions = await selectAllInstitutions();
     const courses = await sqldb.queryRows(sql.select_courses, CourseWithInstitutionSchema);
@@ -38,7 +38,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'courses_insert') {
       await insertCourse({
         institution_id: req.body.institution_id,
@@ -48,7 +48,7 @@ router.post(
         path: req.body.path,
         repository: req.body.repository,
         branch: req.body.branch,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_update_column') {
@@ -56,7 +56,7 @@ router.post(
         req.body.course_id,
         req.body.column_name,
         req.body.value,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       ]);
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'courses_delete') {
@@ -69,7 +69,7 @@ router.post(
       }
       await deleteCourse({
         course_id: req.body.course_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'approve_deny_course_request') {

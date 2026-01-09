@@ -1,14 +1,17 @@
 import { z } from 'zod';
 
+import { Hydrate } from '@prairielearn/preact/server';
+
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { Hydrate } from '../../lib/preact.js';
+import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import { computeStatus } from '../../lib/publishing.js';
 
-import { StudentCoursesCard } from './StudentCoursesCard.js';
+import { HomeCards } from './components/HomeCards.js';
 
 export const InstructorHomePageCourseSchema = z.object({
   id: RawStudentCourseSchema.shape.id,
@@ -26,13 +29,19 @@ export const InstructorHomePageCourseSchema = z.object({
 export type InstructorHomePageCourse = z.infer<typeof InstructorHomePageCourseSchema>;
 
 export const StudentHomePageCourseSchema = z.object({
-  id: RawStudentCourseInstanceSchema.shape.id,
+  course_instance: RawStudentCourseInstanceSchema,
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
-  long_name: RawStudentCourseInstanceSchema.shape.long_name,
   enrollment: StudentEnrollmentSchema,
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
+
+export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
+  latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
+});
+export type StudentHomePageCourseWithExtension = z.infer<
+  typeof StudentHomePageCourseWithExtensionSchema
+>;
 
 export function Home({
   canAddCourses,
@@ -42,6 +51,7 @@ export function Home({
   adminInstitutions,
   urlPrefix,
   isDevMode,
+  search,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -50,70 +60,41 @@ export function Home({
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
+  search: string;
 }) {
-  return (
-    <>
-      <h1 class="visually-hidden">PrairieLearn Homepage</h1>
-      <ActionsHeader urlPrefix={urlPrefix} />
+  const listedStudentCourses = studentCourses.filter((ci) => {
+    if (ci.enrollment.status === 'joined') return true;
+    if (ci.enrollment.status === 'invited') {
+      if (!ci.course_instance.modern_publishing) {
+        return false;
+      }
+      return (
+        computeStatus(
+          ci.course_instance.publishing_start_date,
+          ci.course_instance.publishing_end_date,
+        ) === 'published'
+      );
+    }
+    return false;
+  });
 
-      <div class="container pt-5">
-        <DevModeCard isDevMode={isDevMode} />
-        <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-        <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
-        <Hydrate>
-          <StudentCoursesCard
-            studentCourses={studentCourses}
-            hasInstructorCourses={instructorCourses.length > 0}
-            canAddCourses={canAddCourses}
-            csrfToken={csrfToken}
-            urlPrefix={urlPrefix}
-            isDevMode={isDevMode}
-          />
-        </Hydrate>
-      </div>
-    </>
-  );
-}
-
-function ActionsHeader({ urlPrefix }: { urlPrefix: string }) {
   return (
-    <div class="container">
-      <div class="row">
-        <div class="col-md-6">
-          <div class="card rounded-pill my-1">
-            <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x me-1" aria-hidden="true">
-                <i class="fas fa-circle fa-stack-2x text-secondary" />
-                <i class="fas fa-user-graduate fa-stack-1x text-light" />
-              </span>
-              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Students</h2>
-              <a href={`${urlPrefix}/enroll`} class="btn btn-xs btn-outline-primary">
-                Add or remove courses
-              </a>
-            </div>
-          </div>
-        </div>
-        <div class="col-md-6">
-          <div class="card rounded-pill my-1">
-            <div class="card-body d-flex align-items-center p-2">
-              <span class="fa-stack fa-1x me-1" aria-hidden="true">
-                <i class="fas fa-circle fa-stack-2x text-secondary" />
-                <i class="fas fa-user-tie fa-stack-1x text-light" />
-              </span>
-              <h2 class="small p-2 fw-bold text-uppercase text-secondary mb-0">Instructors</h2>
-              <a href={`${urlPrefix}/request_course`} class="btn btn-xs btn-outline-primary">
-                Request course
-              </a>
-              <a
-                href="https://prairielearn.readthedocs.io/en/latest"
-                class="btn btn-xs btn-outline-primary ms-2"
-              >
-                View docs
-              </a>
-            </div>
-          </div>
-        </div>
-      </div>
+    <div className="pt-5">
+      <h1 className="visually-hidden">PrairieLearn Homepage</h1>
+      <DevModeCard isDevMode={isDevMode} />
+      <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
+      <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
+      <Hydrate>
+        <HomeCards
+          studentCourses={listedStudentCourses}
+          hasInstructorCourses={instructorCourses.length > 0}
+          canAddCourses={canAddCourses}
+          csrfToken={csrfToken}
+          urlPrefix={urlPrefix}
+          isDevMode={isDevMode}
+          search={search}
+        />
+      </Hydrate>
     </div>
   );
 }
@@ -122,11 +103,11 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
   if (!isDevMode) return null;
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white">
         <h2>Development Mode</h2>
       </div>
-      <div class="card-body">
+      <div className="card-body">
         <p>
           PrairieLearn is running in Development Mode. Click the
           <strong>"Load from disk"</strong> button above to load question and assessment definitions
@@ -137,7 +118,7 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           to other files (JS, HTML, etc) will be automatically loaded every time you navigate to a
           different page or if you reload the current page in your web browser.
         </p>
-        <p class="mb-0">
+        <p className="mb-0">
           See the
           <a href="https://prairielearn.readthedocs.io">PrairieLearn documentation</a>
           for information on creating questions and assessments.
@@ -155,13 +136,13 @@ function AdminInstitutionsCard({ adminInstitutions }: AdminInstitutionsCardProps
   if (adminInstitutions.length === 0) return null;
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white">
         <h2>Institutions with admin access</h2>
       </div>
-      <ul class="list-group list-group-flush">
+      <ul className="list-group list-group-flush">
         {adminInstitutions.map((institution) => (
-          <li key={institution.id} class="list-group-item">
+          <li key={institution.id} className="list-group-item">
             <a href={`/pl/institution/${institution.id}/admin/courses`}>
               {institution.short_name}: {institution.long_name}
             </a>
@@ -181,20 +162,29 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
   if (instructorCourses.length === 0) return null;
 
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>Courses with instructor access</h2>
+        <a
+          href="https://prairielearn.readthedocs.io/en/latest"
+          className="btn btn-light btn-sm ms-auto"
+          target="_blank"
+          rel="noopener noreferrer"
+        >
+          <i className="bi bi-journal-text me-sm-1" aria-hidden="true" />
+          <span className="d-none d-sm-inline">View docs</span>
+        </a>
       </div>
 
-      <div class="table-responsive">
+      <div className="table-responsive">
         <table
-          class="table table-sm table-hover table-striped"
+          className="table table-sm table-hover table-striped"
           aria-label="Courses with instructor access"
         >
           <tbody>
             {instructorCourses.map((course) => (
               <tr key={course.id}>
-                <td class="w-50 align-middle">
+                <td className="w-50 align-middle">
                   {course.can_open_course ? (
                     <a href={`${urlPrefix}/course/${course.id}`}>
                       {course.short_name}: {course.title}
@@ -203,14 +193,14 @@ function InstructorCoursesCard({ instructorCourses, urlPrefix }: InstructorCours
                     `${course.short_name}: ${course.title}`
                   )}
                 </td>
-                <td class="js-course-instance-list">
+                <td className="js-course-instance-list">
                   <CourseInstanceList
                     courseInstances={course.course_instances.filter((ci) => !ci.expired)}
                     urlPrefix={urlPrefix}
                   />
                   {course.course_instances.some((ci) => ci.expired) && (
                     <details>
-                      <summary class="text-muted small">Older instances</summary>
+                      <summary className="text-muted small">Older instances</summary>
                       <CourseInstanceList
                         courseInstances={course.course_instances.filter((ci) => ci.expired)}
                         urlPrefix={urlPrefix}
@@ -234,11 +224,11 @@ interface CourseInstanceListProps {
 
 function CourseInstanceList({ courseInstances, urlPrefix }: CourseInstanceListProps) {
   return (
-    <div class="d-flex flex-wrap gap-2 my-1">
+    <div className="d-flex flex-wrap gap-2 my-1">
       {courseInstances.map((courseInstance) => (
         <a
           key={courseInstance.id}
-          class="btn btn-outline-primary btn-sm"
+          className="btn btn-outline-primary btn-sm"
           href={`${urlPrefix}/course_instance/${courseInstance.id}/instructor`}
         >
           {courseInstance.long_name}

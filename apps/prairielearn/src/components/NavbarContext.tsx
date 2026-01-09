@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 
 import { type NavPage, type NavSubPage, type TabInfo } from './Navbar.types.js';
 
@@ -9,13 +10,13 @@ export function ContextNavigation({
   navPage,
   navSubPage,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   navPage: NavPage;
   navSubPage: NavSubPage;
 }) {
   if (!navPage) return '';
 
-  const navPagesTabs = getNavPageTabs(resLocals.has_enhanced_navigation);
+  const navPagesTabs: Partial<Record<Exclude<NavPage, undefined>, TabInfo[]>> = getNavPageTabs();
   const navPageTabs = navPagesTabs[navPage];
 
   // Some navPages do not have tabs
@@ -23,16 +24,7 @@ export function ContextNavigation({
 
   return html`
     <nav>
-      <ul
-        class="
-          nav 
-          nav-tabs 
-          pl-nav-tabs-bar 
-          pt-2
-          px-3 
-          bg-light
-        "
-      >
+      <ul class="nav nav-tabs pl-nav-tabs-bar pt-2 px-3 bg-light">
         ${navPageTabs.map((tabInfo) => NavbarTab({ navSubPage, resLocals, tabInfo }))}
       </ul>
     </nav>
@@ -45,7 +37,7 @@ function NavbarTab({
   tabInfo,
 }: {
   navSubPage: NavSubPage;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   tabInfo: TabInfo;
 }) {
   const { urlPrefix } = resLocals;

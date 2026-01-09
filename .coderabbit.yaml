@@ -24,6 +24,9 @@ reviews:
     drafts: false
     base_branches:
       - master
+  pre_merge_checks:
+    docstrings:
+      mode: 'off'
   finishing_touches:
     docstrings:
       enabled: true
@@ -39,6 +42,10 @@ reviews:
     # Biome is flagging issues in our test suite that aren't relevant (lint/suspicious/noDuplicateTestHooks)
     biome:
       enabled: false
+
+issue_enrichment:
+  auto_enrich:
+    enabled: false
 
 chat:
   auto_reply: true

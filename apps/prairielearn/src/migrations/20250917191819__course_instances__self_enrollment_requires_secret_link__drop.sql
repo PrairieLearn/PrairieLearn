@@ -1,0 +1,2 @@
+ALTER TABLE course_instances
+DROP COLUMN self_enrollment_requires_secret_link;

@@ -1,12 +1,13 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../lib/db-types.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 
 import { type CourseData } from './course-db.js';
 import { isDraftQid } from './question.js';
+
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 interface SharedQuestion {

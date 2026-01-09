@@ -4,7 +4,7 @@ import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
-import { CourseInstanceSchema } from './db-types.js';
+import { type Course, CourseInstanceSchema } from './db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -19,11 +19,11 @@ export interface GettingStartedTaskInfo {
  * Retrieve the getting started checklist tasks and if they are complete for a course.
  */
 export async function getGettingStartedTasks({
-  course_id,
+  course,
 }: {
-  course_id: string;
+  course: Course;
 }): Promise<GettingStartedTaskInfo[]> {
-  const courseHasCourseInstance = await selectCourseHasCourseInstances({ course_id });
+  const courseHasCourseInstance = await selectCourseHasCourseInstances({ course });
 
   let assessmentsPageLink: string | undefined;
 
@@ -31,7 +31,7 @@ export async function getGettingStartedTasks({
   if (courseHasCourseInstance) {
     const firstCourseInstance = await queryRow(
       sql.select_first_course_instance,
-      { course_id },
+      { course_id: course.id },
       CourseInstanceSchema,
     );
     assessmentsPageLink = `/pl/course_instance/${firstCourseInstance.id}/instructor/instance_admin/assessments`;
@@ -41,21 +41,21 @@ export async function getGettingStartedTasks({
   // course creator is added by default.
   const courseHasAddedStaff = await queryRow(
     sql.select_course_has_staff,
-    { course_id },
+    { course_id: course.id },
     z.boolean(),
   );
 
   // Check if the course has at least one non-deleted question
   const courseHasQuestions = await queryRow(
     sql.select_course_has_questions,
-    { course_id },
+    { course_id: course.id },
     z.boolean(),
   );
 
   // Check if the course has at least one non-deleted assessment
   const courseHasAssessments = await queryRow(
     sql.select_course_has_assessments,
-    { course_id },
+    { course_id: course.id },
     z.boolean(),
   );
 

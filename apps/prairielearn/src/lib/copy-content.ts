@@ -2,17 +2,16 @@ import * as path from 'node:path';
 
 import { type Response } from 'express';
 import fs from 'fs-extra';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
-import { generateSignedToken } from '@prairielearn/signed-token';
 
+import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../models/course.js';
+import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
-import { idsEqual } from './id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -24,43 +23,36 @@ export interface CopyTarget {
 }
 
 async function getCopyTargets({
-  course,
   is_administrator,
   authn_user,
   user,
   urlSuffix,
 }: {
-  course: Course;
   is_administrator: boolean;
   authn_user: User;
   user: User;
   urlSuffix: string;
 }): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
-    user_id: user.user_id,
+    user_id: user.id,
     is_administrator,
   });
 
   return editableCourses
+
     .filter(
-      (editableCourse) =>
-        // The example course cannot be updated in the web interface.
-        !editableCourse.example_course &&
-        // Question copying cannot be done within the same course.
-        !idsEqual(editableCourse.id, course.id),
+      // The example course cannot be updated in the web interface.
+      (editableCourse) => !editableCourse.example_course,
     )
     .map((editableCourse) => {
       const copyUrl = `/pl/course/${editableCourse.id}/${urlSuffix}`;
 
       // The copy form will POST to a different URL for each course, so
       // we need to generate a corresponding CSRF token for each one.
-      const csrfToken = generateSignedToken(
-        {
-          url: copyUrl,
-          authn_user_id: authn_user.user_id,
-        },
-        config.secretKey,
-      );
+      const csrfToken = generateCsrfToken({
+        url: copyUrl,
+        authnUserId: authn_user.id,
+      });
 
       return {
         id: editableCourse.id,
@@ -89,7 +81,6 @@ export async function getQuestionCopyTargets({
   }
   return getCopyTargets({
     urlSuffix: 'copy_public_question',
-    course,
     is_administrator,
     authn_user,
     user,
@@ -114,7 +105,6 @@ export async function getCourseInstanceCopyTargets({
   }
   return getCopyTargets({
     urlSuffix: 'copy_public_course_instance',
-    course,
     is_administrator,
     authn_user,
     user,
@@ -126,13 +116,15 @@ async function initiateFileTransfer({
   fromCourse,
   toCourseId,
   transferType,
-  fromFilename,
+  fromFolderPath,
+  metadataOverrides,
 }: {
   userId: string;
   fromCourse: Course;
   toCourseId: string;
-  transferType: string;
-  fromFilename: string;
+  transferType: 'CopyQuestion' | 'CopyCourseInstance';
+  fromFolderPath: string;
+  metadataOverrides?: Record<string, any>;
 }): Promise<string> {
   // When copying content from one course to another, instead of just directly
   // copying it, we first copy content from the source course to a temporary
@@ -152,20 +144,44 @@ async function initiateFileTransfer({
   // directly. This would allow us to completely get rid of the endpoints ending in
   // 'copy_public_*' and the file_transfers database table.
 
-  const f = uuidv4();
+  const f = crypto.randomUUID();
   const relDir = path.join(f.slice(0, 3), f.slice(3, 6));
   const params = {
     from_course_id: fromCourse.id,
     to_course_id: toCourseId,
     user_id: userId,
     transfer_type: transferType,
-    from_filename: fromFilename,
+    from_filename: fromFolderPath,
     storage_filename: path.join(relDir, f.slice(6)),
   };
 
   await fs.copy(params.from_filename, path.join(config.filesRoot, params.storage_filename), {
     errorOnExist: true,
   });
+
+  const metadataFileName =
+    transferType === 'CopyQuestion' ? 'infoQuestion.json' : 'infoCourseInstance.json';
+
+  // After we copy the contents of the directory, we apply any overrides to the metadata file.
+  if (metadataOverrides) {
+    const destMetadataFilePath = path.join(
+      config.filesRoot,
+      params.storage_filename,
+      metadataFileName,
+    );
+
+    // If we have overrides for a JSON file, we need to apply them to the file.
+    const metadataFileContents = await fs.readJson(
+      path.join(params.from_filename, metadataFileName),
+    );
+    const metadataFileContentsWithOverrides = {
+      ...metadataFileContents,
+      ...metadataOverrides,
+    };
+    await fs.writeJson(destMetadataFilePath, metadataFileContentsWithOverrides, {
+      spaces: 4,
+    });
+  }
 
   return await sqldb.queryRow(sql.insert_file_transfer, params, z.string());
 }
@@ -186,43 +202,49 @@ export async function copyQuestionBetweenCourses(
     throw new Error(`Question ${question.id} does not have a qid`);
   }
 
-  const fromFilename = path.join(fromCourse.path, 'questions', question.qid);
+  const fromFolderPath = path.join(fromCourse.path, 'questions', question.qid);
 
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId: res.locals.user.id,
     fromCourse,
     toCourseId,
     transferType: 'CopyQuestion',
-    fromFilename,
+    fromFolderPath,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  res.redirect(`/pl/course/${toCourseId}/file_transfer/${fileTransferId}`);
 }
 
-export async function copyCourseInstanceBetweenCourses(
-  res: Response,
-  {
-    fromCourse,
-    toCourseId,
-    fromCourseInstance,
-  }: {
-    fromCourse: Course;
-    toCourseId: string;
-    fromCourseInstance: CourseInstance;
-  },
-) {
+export async function copyCourseInstanceBetweenCourses({
+  fromCourse,
+  toCourseId,
+  fromCourseInstance,
+  userId,
+  metadataOverrides,
+}: {
+  fromCourse: Course;
+  toCourseId: string;
+  fromCourseInstance: CourseInstance;
+  userId: string;
+  metadataOverrides: Partial<CourseInstanceJsonInput>;
+}) {
   if (!fromCourseInstance.short_name) {
     throw new Error(`Course Instance ${fromCourseInstance.long_name} does not have a short_name`);
   }
 
-  const fromFilename = path.join(fromCourse.path, 'courseInstances', fromCourseInstance.short_name);
+  const fromFolderPath = path.join(
+    fromCourse.path,
+    'courseInstances',
+    fromCourseInstance.short_name,
+  );
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId,
     fromCourse,
     toCourseId,
     transferType: 'CopyCourseInstance',
-    fromFilename,
+    fromFolderPath,
+    metadataOverrides,
   });
 
-  res.redirect(`${res.locals.plainUrlPrefix}/course/${toCourseId}/file_transfer/${fileTransferId}`);
+  return fileTransferId;
 }

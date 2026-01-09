@@ -46,6 +46,22 @@ $custom-colors: (
   'gray3': #505050,
 );
 
+$color-contrast-overrides: (
+  // Override foreground colors for specific entries in `$custom-colors` when
+  // the automatically generated `color-contrast()` value isn't desirable.
+  // Keys must match the color names above; anything not listed falls back to
+  // the contrast function.
+  'turquoise3': #fff,
+  'green3': #fff,
+  'yellow3': #fff
+);
+
+:root {
+  @each $color, $value in $custom-colors {
+    --color-#{$color}: #{$value};
+  }
+}
+
 .btn.btn-badge {
   --bs-badge-padding-x: #{$badge-padding-x};
   --bs-badge-padding-y: #{$badge-padding-y};
@@ -64,13 +80,33 @@ $custom-colors: (
 }
 
 @each $color, $value in $custom-colors {
+  $has-override: map-has-key($color-contrast-overrides, $color);
+  $text-color: if(
+    $has-override,
+    map-get($color-contrast-overrides, $color),
+    color-contrast($value)
+  );
+
   .color-#{$color} {
-    color: color-contrast($value);
+    color: $text-color;
     background-color: $value;
   }
 
   .btn.color-#{$color} {
-    @include button-variant($value, $value);
+    // Ensure button foregrounds (default, hover, active, disabled) respect the
+    // same override/fallback color.
+    @if $has-override {
+      @include button-variant(
+        $value,
+        $value,
+        $color: $text-color,
+        $hover-color: $text-color,
+        $active-color: $text-color,
+        $disabled-color: $text-color
+      );
+    } @else {
+      @include button-variant($value, $value);
+    }
   }
 
   .btn.color-#{$color}:focus:focus-visible {

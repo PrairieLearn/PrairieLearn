@@ -24,11 +24,30 @@ const AccessRuleJsonSchema = z
     'An access rule that permits people to access this course instance. All restrictions present in the rule must be satisfied for the rule to allow access.',
   );
 
-const AccessControlJsonSchema = z
+export type AccessRuleJson = z.infer<typeof AccessRuleJsonSchema>;
+
+const AllowAccessJsonSchema = z
   .array(AccessRuleJsonSchema)
   .describe(
     'List of access rules for the course instance. Access is permitted if any access rule is satisfied.',
   );
+
+const PublishingJsonSchema = z.object({
+  startDate: z
+    .string()
+    .describe(
+      'When the course instance is published. If specified, endDate must also be specified.',
+    )
+    .optional(),
+  endDate: z
+    .string()
+    .describe(
+      'When the course instance is unpublished. If specified, startDate must also be specified.',
+    )
+    .optional(),
+});
+
+export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -51,20 +70,27 @@ export const CourseInstanceJsonSchema = z
         enabled: z
           .boolean()
           .describe(
-            'If true, self-enrollment access is controlled by the beforeDate and requiresSecretLink properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+            'If true, self-enrollment access is controlled by the beforeDate and useEnrollmentCode properties. If false, users can never enroll themselves, and must be either invited or added in the UI. You likely want to set this to true if you are configuring self-enrollment.',
+          )
+          .optional()
+          .default(true),
+        restrictToInstitution: z
+          .boolean()
+          .describe(
+            'If true, self-enrollment is restricted to users from the same institution as the course. If false, any user can self-enroll.',
           )
           .optional()
           .default(true),
         beforeDate: z
           .string()
           .describe(
-            'Before this date, self-enrollment is enabled. After this date, self-enrollment is disabled. If not specified, self-enrollment depends on the enabled property.',
+            'If specified, self-enrollment is allowed before this date and forbidden after this date. If not specified, self-enrollment depends on enabled property.',
           )
           .optional(),
-        requiresSecretLink: z
+        useEnrollmentCode: z
           .boolean()
           .describe(
-            'If true, self-enrollment requires a secret link to enroll. If false, any link to the course instance will allow self-enrollment.',
+            'If true, self-enrollment requires an enrollment code to enroll. If false, any link to the course instance will allow self-enrollment.',
           )
           .optional()
           .default(false),
@@ -74,12 +100,12 @@ export const CourseInstanceJsonSchema = z
     hideInEnrollPage: z
       .boolean()
       .describe(
-        'If set to true, hides the course instance in the enrollment page, so that only direct links to the course can be used for enrollment.',
+        'DEPRECATED -- The enrollment listing page has been removed. This setting is no longer used.',
       )
-      .optional()
-      .default(false),
+      .optional(),
     userRoles: z.object({}).catchall(z.any()).describe('DEPRECATED -- do not use.').optional(),
-    allowAccess: AccessControlJsonSchema.optional().default([]),
+    publishing: PublishingJsonSchema.optional(),
+    allowAccess: AllowAccessJsonSchema.optional(),
     groupAssessmentsBy: z
       .enum(['Set', 'Module'])
       .describe(

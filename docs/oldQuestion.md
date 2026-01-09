@@ -2,7 +2,7 @@
 
 !!! warning
 
-    This page describes the old PrairieLearn question format, as used in v1 and v2. This question format will be supported indefinitely, but it is strongly recommended that all new questions be written in the [v3 format](question/index.md).
+    This page describes the old PrairieLearn question format, as used in v1 and v2. This question format will be supported indefinitely, but it is strongly recommended that all new questions be written in the [v3 format](question/overview.md).
 
 ## Partial credit
 

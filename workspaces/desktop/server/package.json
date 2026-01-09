@@ -9,7 +9,7 @@
     "@novnc/novnc": "1.4.0",
     "command-line-args": "^6.0.1",
     "command-line-usage": "^7.0.2",
-    "express": "^5.1.0",
+    "express": "^5.2.1",
     "express-ws": "^5.0.2",
     "http-proxy": "^1.18.1",
     "spin.js": "^4.1.1"

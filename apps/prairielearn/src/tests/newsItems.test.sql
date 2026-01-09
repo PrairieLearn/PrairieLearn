@@ -2,8 +2,8 @@
 SELECT
   *
 FROM
-  news_item_notifications
-  JOIN users USING (user_id)
+  news_item_notifications AS nin
+  JOIN users AS u ON (u.id = nin.user_id)
 WHERE
-  news_item_id = $news_item_id
-  AND uid = $uid;
+  nin.news_item_id = $news_item_id
+  AND u.uid = $uid;

@@ -1,7 +1,11 @@
+import { execute, loadSqlEquiv } from '@prairielearn/postgres';
+
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { makeMockLogger } from './mockLogger.js';
+
+const sql = loadSqlEquiv(import.meta.url);
 
 export async function syncCourse(courseDir = TEST_COURSE_PATH) {
   const { logger, getOutput } = makeMockLogger();
@@ -10,4 +14,14 @@ export async function syncCourse(courseDir = TEST_COURSE_PATH) {
     console.log(getOutput());
     throw new Error(`Errors or warnings found during sync of ${courseDir}`);
   }
+}
+
+export async function updateCourseRepository({
+  courseId,
+  repository,
+}: {
+  courseId: string;
+  repository: string;
+}) {
+  await execute(sql.update_course_repo, { courseId, repository });
 }

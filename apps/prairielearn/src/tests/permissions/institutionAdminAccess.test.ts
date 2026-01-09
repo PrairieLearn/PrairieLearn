@@ -8,6 +8,7 @@ import { config } from '../../lib/config.js';
 import { type Assessment, type CourseInstance, UserSchema } from '../../lib/db-types.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
+import { selectCourseById } from '../../models/course.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 import * as helperServer from '../helperServer.js';
 import { withUser } from '../utils/auth.js';
@@ -58,7 +59,7 @@ async function insertUser(user: AuthUser) {
 
   if (user.isAdministrator) {
     await execute('INSERT INTO administrators (user_id) VALUES ($user_id);', {
-      user_id: newUser.user_id,
+      user_id: newUser.id,
     });
   }
 }
@@ -75,7 +76,10 @@ describe('institution administrators', () => {
   beforeAll(async () => {
     await insertUser(ADMIN_USER);
     await insertUser(INSTITUTION_ADMIN_USER);
-    courseInstance = await selectCourseInstanceByShortName({ course_id: '1', short_name: 'Sp15' });
+    courseInstance = await selectCourseInstanceByShortName({
+      course: await selectCourseById('1'),
+      shortName: 'Sp15',
+    });
     assessment = await selectAssessmentByTid({
       course_instance_id: courseInstance.id,
       tid: 'hw1-automaticTestSuite',
@@ -131,7 +135,7 @@ describe('institution administrators', () => {
     assert(user);
     await ensureInstitutionAdministrator({
       institution_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
       authn_user_id: '1',
     });
   });

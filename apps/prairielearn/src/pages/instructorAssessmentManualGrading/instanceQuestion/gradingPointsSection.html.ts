@@ -1,5 +1,7 @@
 import { html } from '@prairielearn/html';
 
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+
 export function ManualPointsSection({
   context,
   disable,
@@ -9,7 +11,7 @@ export function ManualPointsSection({
   context: 'main' | 'existing' | 'conflicting';
   disable: boolean;
   manual_points: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return GradingPointsSection({
     context,
@@ -37,7 +39,7 @@ export function AutoPointsSection({
   context: string;
   disable: boolean;
   auto_points: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return GradingPointsSection({
     context,
@@ -62,7 +64,7 @@ export function TotalPointsSection({
   context: 'main' | 'existing' | 'conflicting';
   disable: boolean;
   points: number;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     ${context === 'main' && resLocals.rubric_data?.replace_auto_points && !disable

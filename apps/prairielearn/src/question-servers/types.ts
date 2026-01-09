@@ -1,5 +1,8 @@
 import { type Course, type Question, type Submission, type Variant } from '../lib/db-types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import type { ElementExtensionJson } from '../schemas/index.js';
+
+export type EffectiveQuestionType = 'Calculation' | 'Freeform';
 
 export interface RenderSelection {
   question?: boolean;
@@ -88,7 +91,7 @@ export interface QuestionServer {
     submission: Submission | null,
     submissions: Submission[],
     course: Course,
-    locals: Record<string, any>,
+    locals: UntypedResLocals,
   ) => QuestionServerReturnValue<RenderResultData>;
   parse: (
     submission: ParseSubmission,

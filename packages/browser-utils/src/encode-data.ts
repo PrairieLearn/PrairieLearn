@@ -22,7 +22,7 @@ export function EncodedData<T = unknown>(data: T, elementId: string): HtmlSafeSt
  * @param elementId The element ID that stores the encoded data, from from EncodedData().
  * @returns The decoded data.
  */
-export function decodeData<T = any>(elementId: string): T {
+export function decodeData<T = unknown>(elementId: string): T {
   const base64Data = document.getElementById(elementId)?.textContent;
   if (base64Data == null) {
     throw new Error(`No data found in element with ID "${elementId}"`);

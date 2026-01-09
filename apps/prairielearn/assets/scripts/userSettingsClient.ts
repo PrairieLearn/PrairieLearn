@@ -17,11 +17,7 @@ onDocumentReady(() => {
   if (initialEnhancedNavState) {
     enhancedNavToggle.addEventListener('change', (event) => {
       const newState = (event.target as HTMLInputElement).checked;
-      if (!newState) {
-        enhancedNavFeedback.classList.remove('d-none');
-      } else {
-        enhancedNavFeedback.classList.add('d-none');
-      }
+      enhancedNavFeedback.classList.toggle('d-none', !!newState);
     });
   }
 });

@@ -1,6 +1,7 @@
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { CourseInstanceRequiredPlanSchema, IdSchema } from '../../lib/db-types.js';
+import { CourseInstanceRequiredPlanSchema } from '../../lib/db-types.js';
 import { insertAuditLog } from '../../models/audit-log.js';
 import { type PlanName } from '../lib/billing/plans-types.js';
 

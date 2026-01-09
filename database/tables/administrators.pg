@@ -7,4 +7,4 @@ indexes
     administrators_user_id_key: UNIQUE (user_id) USING btree (user_id)
 
 foreign-key constraints
-    administrators_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    administrators_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

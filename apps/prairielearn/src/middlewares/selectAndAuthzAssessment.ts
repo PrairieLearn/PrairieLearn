@@ -39,6 +39,11 @@ export default asyncHandler(async (req, res, next) => {
     res.status(403).send(AccessDenied({ resLocals: res.locals }));
     return;
   }
+  // TODO: consider row.assessment.modern_access_control
+  if (!row.authz_result.authorized) {
+    res.status(403).send(AccessDenied({ resLocals: res.locals }));
+    return;
+  }
   Object.assign(res.locals, row);
   next();
 });
