@@ -19,6 +19,7 @@ import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { withUser } from './utils/auth.js';
 
 const locals = {} as {
   $: cheerio.CheerioAPI;
@@ -66,12 +67,6 @@ async function downloadCsv(url: string): Promise<any[]> {
   const res = await fetch(url);
   assert.equal(res.status, 200);
   return csvParse<any>(await res.text(), { columns: true, cast: true });
-}
-
-function switchUser(user: Record<string, any>) {
-  config.authUid = user.uid;
-  config.authName = user.name;
-  config.authUin = user.uin;
 }
 
 describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
@@ -361,15 +356,9 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   });
 
   describe('Group Work Downloads', function () {
-    const storedConfig: Record<string, any> = {};
     const ctx: Record<string, any> = {};
 
     beforeAll(async function () {
-      storedConfig.authUid = config.authUid;
-      storedConfig.authName = config.authName;
-      storedConfig.authUin = config.authUin;
-
-      // 1. Get group work assessment
       const assessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: 'exam14-groupWork',
@@ -383,7 +372,6 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       ctx.instructorAssessmentDownloadsUrl =
         ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/downloads';
 
-      // 2. Create users and team
       ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
       ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
       let res = await fetch(ctx.instructorAssessmentGroupsUrl, {
@@ -397,64 +385,54 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 200);
 
-      // 3. Start assessment as student
-      switchUser(ctx.studentUsers[0]);
-      ctx.$ = await fetchPage(ctx.assessmentUrl);
-      res = await fetch(ctx.assessmentUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'new_instance',
-          __csrf_token: getCsrfToken(ctx.$),
-        }),
+      await withUser(ctx.studentUsers[0], async () => {
+        ctx.$ = await fetchPage(ctx.assessmentUrl);
+        res = await fetch(ctx.assessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: getCsrfToken(ctx.$),
+          }),
+        });
+        assert.equal(res.status, 200);
+        ctx.$ = cheerio.load(await res.text());
+
+        const questionLinks = ctx.$('a[href*="/instance_question/"]');
+        assert.isAtLeast(questionLinks.length, 1, 'Should have at least one question link');
+        ctx.questionUrl = ctx.siteUrl + questionLinks[0].attribs.href;
+        ctx.$ = await fetchPage(ctx.questionUrl);
+        const variantInput = ctx.$('input[name="__variant_id"]');
+        assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
+        ctx.variant_id = variantInput[0].attribs.value;
+
+        const { queryRow } = await import('@prairielearn/postgres');
+        const { VariantSchema } = await import('../lib/db-types.js');
+        ctx.variant = await queryRow(
+          'SELECT * FROM variants WHERE id = $1',
+          [ctx.variant_id],
+          VariantSchema,
+        );
+
+        res = await fetch(ctx.questionUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'grade',
+            __csrf_token: getCsrfToken(ctx.$),
+            __variant_id: ctx.variant_id,
+            wx: String(ctx.variant.true_answer.wx),
+            wy: String(ctx.variant.true_answer.wy),
+          }),
+        });
+        assert.equal(res.status, 200);
       });
-      assert.equal(res.status, 200);
-      ctx.$ = cheerio.load(await res.text());
 
-      // 4. Answer a question
-      const questionLinks = ctx.$('a[href*="/instance_question/"]');
-      assert.isAtLeast(questionLinks.length, 1, 'Should have at least one question link');
-      ctx.questionUrl = ctx.siteUrl + questionLinks[0].attribs.href;
-      ctx.$ = await fetchPage(ctx.questionUrl);
-      const variantInput = ctx.$('input[name="__variant_id"]');
-      assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
-      ctx.variant_id = variantInput[0].attribs.value;
-
-      const { queryRow } = await import('@prairielearn/postgres');
-      const { VariantSchema } = await import('../lib/db-types.js');
-      ctx.variant = await queryRow(
-        'SELECT * FROM variants WHERE id = $1',
-        [ctx.variant_id],
-        VariantSchema,
-      );
-
-      res = await fetch(ctx.questionUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: 'grade',
-          __csrf_token: getCsrfToken(ctx.$),
-          __variant_id: ctx.variant_id,
-          wx: String(ctx.variant.true_answer.wx),
-          wy: String(ctx.variant.true_answer.wy),
-        }),
-      });
-      assert.equal(res.status, 200);
-
-      // 5. Switch back to instructor and get filenames
-      config.authUid = storedConfig.authUid;
-      config.authName = storedConfig.authName;
-      config.authUin = storedConfig.authUin;
       ctx.assessment = await selectAssessmentById(ctx.assessment_id);
-
       ctx.filenames = getFilenames({
         assessment: ctx.assessment,
         assessment_set: await selectAssessmentSetById(ctx.assessment.assessment_set_id),
         course_instance: await selectCourseInstanceById(ctx.variant.course_instance_id),
         course: await selectCourseById(ctx.variant.course_id),
       } as ResLocalsForPage<'assessment'>);
-    });
-
-    afterAll(function () {
-      Object.assign(config, storedConfig);
     });
 
     it('should have team_work assessment with group-specific filenames', function () {
