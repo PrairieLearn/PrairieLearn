@@ -78,13 +78,6 @@ const rewriteValidatorFalsePositives = async (html: string): Promise<string> => 
         }
       },
     })
-    .on('.pl-order-blocks-connected-sortable', {
-      element(el) {
-        // pl-order-blocks containers have a label to make it clear where, but
-        // html-validate claims that it's not recommended to set aria-label on a `ul` element.
-        el.removeAttribute('aria-label');
-      },
-    })
     .on('select > option[aria-label]', {
       element(el) {
         // Our blank option has no text by default.
@@ -115,6 +108,10 @@ const validateHtml = async (html: string) => {
       // https://html-validate.org/rules/prefer-tbody.html
       // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
       'prefer-tbody': 'off',
+
+      // https://html-validate.org/rules/prefer-native-element.html
+      // pl-order-blocks uses role="listbox" for drag-and-drop selection which cannot use native <select>
+      'prefer-native-element': ['error', { exclude: ['listbox'] }],
 
       // False positive, since this attribute is controlled via JS. https://getbootstrap.com/docs/5.3/components/modal/#accessibility
       // https://html-validate.org/rules/hidden-focusable.html
