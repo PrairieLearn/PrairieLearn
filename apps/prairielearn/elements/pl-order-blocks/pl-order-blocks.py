@@ -90,6 +90,41 @@ def extract_dag(
     return depends_graph, group_belonging
 
 
+def build_grading_dag(
+    answers_list: list[OrderBlocksAnswerData],
+    grading_method: GradingMethodType,
+) -> tuple[Dag, dict[str, str | None]]:
+    """Build the depends_graph and group_belonging for DAG/RANKING grading methods."""
+    if grading_method is GradingMethodType.DAG:
+        return extract_dag(answers_list)
+    elif grading_method in (GradingMethodType.RANKING, GradingMethodType.ORDERED):
+        if grading_method is GradingMethodType.ORDERED:
+            for index, answer in enumerate(answers_list):
+                answer["ranking"] = index
+
+        sorted_answers = sorted(answers_list, key=lambda x: int(x["ranking"]))
+        tag_to_rank = {ans["tag"]: ans["ranking"] for ans in sorted_answers}
+        lines_of_rank = {
+            rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
+            for rank in set(tag_to_rank.values())
+        }
+
+        depends_graph: Dag = {}
+        cur_rank_depends: list[str] = []
+        prev_rank = None
+        for ans in sorted_answers:
+            tag = ans["tag"]
+            ranking = tag_to_rank[tag]
+            if prev_rank is not None and ranking != prev_rank:
+                cur_rank_depends = lines_of_rank[prev_rank]
+            depends_graph[tag] = cur_rank_depends
+            prev_rank = ranking
+
+        return depends_graph, {}
+    else:
+        raise ValueError(f"Unsupported grading method: {grading_method}")
+
+
 def shuffle_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
@@ -612,50 +647,28 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
-        depends_graph = {}
-        group_belonging = {}
+        depends_graph: Dag = {}
+        group_belonging: dict[str, str | None] = {}
 
         if (
-            grading_method is GradingMethodType.RANKING
-            or grading_method is GradingMethodType.ORDERED
+            grading_method is GradingMethodType.DAG
+            and order_blocks_options.has_optional_blocks
         ):
-            if grading_method is GradingMethodType.ORDERED:
-                for index, answer in enumerate(true_answer_list):
-                    answer["ranking"] = index
-
-            true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
-            true_answer = [answer["tag"] for answer in true_answer_list]
-            tag_to_rank = {
-                answer["tag"]: answer["ranking"] for answer in true_answer_list
-            }
-            lines_of_rank = {
-                rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
-                for rank in set(tag_to_rank.values())
-            }
-
-            cur_rank_depends = []
-            prev_rank = None
-            for tag in true_answer:
-                ranking = tag_to_rank[tag]
-                if prev_rank is not None and ranking != prev_rank:
-                    cur_rank_depends = lines_of_rank[prev_rank]
-                depends_graph[tag] = cur_rank_depends
-                prev_rank = ranking
-
+            depends_multigraph, final = extract_multigraph(true_answer_list)
+            num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
+                submission, depends_multigraph, final
+            )
+        elif grading_method in (
+            GradingMethodType.RANKING,
+            GradingMethodType.ORDERED,
+            GradingMethodType.DAG,
+        ):
+            depends_graph, group_belonging = build_grading_dag(
+                true_answer_list, grading_method
+            )
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif grading_method is GradingMethodType.DAG:
-            if order_blocks_options.has_optional_blocks:
-                depends_multigraph, final = extract_multigraph(true_answer_list)
-                num_initial_correct, true_answer_length, depends_graph = (
-                    grade_multigraph(submission, depends_multigraph, final)
-                )
-            else:
-                depends_graph, group_belonging = extract_dag(true_answer_list)
-                num_initial_correct, true_answer_length = grade_dag(
-                    submission, depends_graph, group_belonging
-                )
         elif grading_method is GradingMethodType.EXTERNAL:
             raise NotImplementedError(
                 "grade function should never be called for EXTERNAL grading method"
@@ -790,36 +803,12 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
-        if grading_method in [
-            GradingMethodType.DAG,
-            GradingMethodType.RANKING,
-        ]:
+        if grading_method in (GradingMethodType.DAG, GradingMethodType.RANKING):
             # Determine first_wrong using the actual DAG grading logic
             submission = [ans["tag"] for ans in answer]
-            depends_graph: Dag = {}
-            group_belonging: dict[str, str | None] = {}
-
-            if grading_method is GradingMethodType.RANKING:
-                sorted_answers = sorted(
-                    correct_answers, key=lambda x: int(x["ranking"])
-                )
-                tag_to_rank = {ans["tag"]: ans["ranking"] for ans in sorted_answers}
-                lines_of_rank = {
-                    rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
-                    for rank in set(tag_to_rank.values())
-                }
-                cur_rank_depends: list[str] = []
-                prev_rank = None
-                for ans in sorted_answers:
-                    tag = ans["tag"]
-                    ranking = tag_to_rank[tag]
-                    if prev_rank is not None and ranking != prev_rank:
-                        cur_rank_depends = lines_of_rank[prev_rank]
-                    depends_graph[tag] = cur_rank_depends
-                    prev_rank = ranking
-            else:  # DAG
-                depends_graph, group_belonging = extract_dag(correct_answers)
-
+            depends_graph, group_belonging = build_grading_dag(
+                correct_answers, grading_method
+            )
             num_initial_correct, _ = grade_dag(
                 submission, depends_graph, group_belonging
             )
