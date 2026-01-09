@@ -7,7 +7,7 @@ WORKDIR /PrairieLearn
 COPY --parents scripts/pl-install.sh /PrairieLearn/
 
 # Ensures that running Python in the container will use the correct Python version, and that PostgreSQL binaries are available.
-ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:/usr/lib/postgresql/16/bin:$PATH"
+ENV PATH="/PrairieLearn/.venv/bin:/PrairieLearn/node_modules/.bin:/usr/lib/postgresql/17/bin:$PATH"
 
 RUN /bin/bash /PrairieLearn/scripts/pl-install.sh
 
@@ -60,7 +60,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
-    && su postgres -c "/usr/lib/postgresql/16/bin/createuser -s root" \
+    && su postgres -c "/usr/lib/postgresql/17/bin/createuser -s root" \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \

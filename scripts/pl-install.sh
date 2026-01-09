@@ -2,12 +2,12 @@
 set -ex
 
 export DEBIAN_FRONTEND=noninteractive
-export PATH="/usr/lib/postgresql/16/bin:$PATH"
+export PATH="/usr/lib/postgresql/17/bin:$PATH"
 
 apt-get update -y
 apt-get upgrade -y
 
-# Add PostgreSQL APT repository for PostgreSQL 16 (from https://www.postgresql.org/download/linux/ubuntu/)
+# Add PostgreSQL APT repository for PostgreSQL 17 (from https://www.postgresql.org/download/linux/ubuntu/)
 apt-get install -y curl ca-certificates
 install -d /usr/share/postgresql-common/pgdg
 curl -o /usr/share/postgresql-common/pgdg/apt.postgresql.org.asc --fail https://www.postgresql.org/media/keys/ACCC4CF8.asc
@@ -31,8 +31,8 @@ apt-get install -y --no-install-recommends \
     libjpeg-dev \
     lsof \
     openssl \
-    postgresql-16 \
-    postgresql-contrib-16 \
+    postgresql-17 \
+    postgresql-contrib-17 \
     procps \
     redis-server \
     tar \
@@ -52,10 +52,10 @@ for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
-su postgres -c "/usr/lib/postgresql/16/bin/initdb -D /var/postgres"
+su postgres -c "/usr/lib/postgresql/17/bin/initdb -D /var/postgres"
 
 echo "installing pgvector..."
-apt-get install -y --no-install-recommends postgresql-server-dev-16
+apt-get install -y --no-install-recommends postgresql-server-dev-17
 cd /tmp
 git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
 cd pgvector
@@ -66,7 +66,7 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-apt-get remove -y postgresql-server-dev-16
+apt-get remove -y postgresql-server-dev-17
 apt-get autoremove -y
 
 echo "setting up uv + venv..."

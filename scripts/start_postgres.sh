@@ -1,7 +1,7 @@
 #!/bin/bash
 
 export PGDATA=${PGDATA:=/var/postgres}
-export PATH="/usr/lib/postgresql/16/bin:$PATH"
+export PATH="/usr/lib/postgresql/17/bin:$PATH"
 
 if [[ -z "$1" ]]; then
     ACTION=start
