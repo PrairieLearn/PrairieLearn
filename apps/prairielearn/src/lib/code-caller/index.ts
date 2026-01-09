@@ -56,7 +56,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
     await initCodeCallerDocker();
   }
 
-  if (config.workersExecutionMode === 'native') {
+  if (workersExecutionMode === 'native') {
     // Try to fetch the venv. This will throw an error if no venv is found.
     await getPythonPath(config.pythonVenvSearchPaths);
   }
