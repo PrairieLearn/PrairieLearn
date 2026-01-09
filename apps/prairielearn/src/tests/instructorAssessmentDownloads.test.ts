@@ -39,6 +39,10 @@ const locals = {} as {
     points: number;
   };
   getSubmittedAnswer: (variant: any) => object;
+  variant: {
+    course_instance_id: string;
+    course_id: string;
+  };
 };
 
 const assessmentPoints = helperExam.exams['exam1-automaticTestSuite'].maxPoints;
@@ -292,7 +296,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     it('should attempt to download every file in getFilenames', async () => {
       const assessment = await selectAssessmentById(locals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);
-      assert.isFalse(assessment.group_work);
+      assert.isFalse(assessment.team_work);
 
       const filenames: string[] = Object.values(
         getFilenames({
@@ -403,7 +407,7 @@ describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, fu
     it('should attempt to download every file in getFilenames', async () => {
       const assessment = await selectAssessmentById(locals.assessment_id);
       assert.isNotNull(assessment.assessment_set_id);
-      assert.isTrue(assessment.group_work);
+      assert.isTrue(assessment.team_work);
 
       const filenames: string[] = Object.values(
         getFilenames({
