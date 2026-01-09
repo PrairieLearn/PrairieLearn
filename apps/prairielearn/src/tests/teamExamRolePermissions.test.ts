@@ -22,7 +22,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const TEAM_WORK_EXAM_TID = 'exam16-groupWorkRoles';
+const TEAM_WORK_EXAM_TID = 'exam16-teamRoles';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';

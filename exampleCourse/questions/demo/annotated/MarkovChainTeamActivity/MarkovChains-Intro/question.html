@@ -1,4 +1,5 @@
 <pl-question-panel>
+
   <pl-card>
     <p>Open the workspace below and complete the IPython notebook. </p>
     <p>
@@ -9,11 +10,12 @@
       Once you complete each one of the <code>#grade</code> cells, you can click
       "Save & Grade" to see if you got the correct solution. </p>
   </pl-card>
+  
   <p>To get points for this question, you will need to define the following variables inside the notebook:</p>
   <pl-external-grader-variables params-name="names_from_user">
-    <pl-variable name="M2" type="2d numpy array">markov matrix M2</pl-variable>
-    <pl-variable name="M3" type="2d numpy array">markov matrix M3</pl-variable>
+    <pl-variable name="power_iteration" type="function">function that performs power iteration</pl-variable>
   </pl-external-grader-variables>
+
 </pl-question-panel>
 
 <pl-submission-panel>
@@ -25,7 +27,7 @@
   <!-- This is not part of the question, and is included for documentation purposes -->
   <div class="alert alert-info p-2" role="alert">
       <small>Note: this is an example of a question including JupyterLab for a collaborative learning activity.
-        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/groupWork/jupyter/__docs/docs.md" target="_blank" rel="noreferrer">here</a>.</small>
+        Read more <a href="https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse/courseInstances/SectionA/assessments/teams/jupyter/__docs/docs.md" target="_blank" rel="noreferrer">here</a>.</small>
         <pl-github-link></pl-github-link>
   </div>
 </pl-question-panel>
