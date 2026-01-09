@@ -377,10 +377,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         html_params["parse_error"] = parse_error
         showscore = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
         if showscore and name in data["partial_scores"]:
-            feedback = data["partial_scores"][name].get("feedback", {})
-            html_params["correct"] = feedback.get("correct", False)
-            html_params["partial"] = feedback.get("partial", False)
-            html_params["incorrect"] = feedback.get("incorrect", False)
+            score = data["partial_scores"][name].get("score")
+            if score is not None:
+                score_type, score_value = pl.determine_score_params(score)
+                html_params[score_type] = score_value
     return chevron.render(template, html_params).strip()
 
 
@@ -453,7 +453,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 "weight": weight,
                 "feedback": {
                     "correct": False,
-                    "partial": 0,
+                    "partial": False,
                     "incorrect": True,
                     "missing": {},
                     "matches": {},
@@ -537,13 +537,14 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         else:
             score = percent_correct
 
+    score_type, score_value = pl.determine_score_params(score)
     data["partial_scores"][name] = {
         "score": score,
         "weight": weight,
         "feedback": {
-            "correct": (score == 1),
-            "incorrect": (score == 0),
-            "partial": (score * 100 if (score not in {0, 1}) else False),
+            "correct": score_type == "correct",
+            "incorrect": score_type == "incorrect",
+            "partial": score_value if score_type == "partial" else False,
             "missing": {},
             "matches": matches,
         },
@@ -579,7 +580,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "weight": weight,
             "feedback": {
                 "correct": True,
-                "partial": 0,
+                "partial": False,
                 "incorrect": False,
                 "missing": {},
                 "matches": {
@@ -651,7 +652,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "weight": weight,
             "feedback": {
                 "correct": False,
-                "partial": 0,
+                "partial": False,
                 "incorrect": True,
                 "missing": {},
                 "matches": {
