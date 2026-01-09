@@ -8,7 +8,6 @@ import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { features } from '../../lib/features/index.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -43,16 +42,12 @@ router.get(
       });
     });
 
-    const enrollmentManagementEnabled = await features.enabledFromLocals(
-      'enrollment-management',
-      res.locals,
-    );
-
-    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
+    const needsToSelfEnroll =
+      existingEnrollment == null ||
+      !['joined', 'invited', 'removed'].includes(existingEnrollment.status);
 
     const institutionRestrictionSatisfied =
       res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-      !enrollmentManagementEnabled ||
       // The default value for self-enrollment restriction is true.
       // In the old system (before publishing was introduced), the default was false.
       // So if publishing is not set up, we should ignore the restriction.
@@ -63,45 +58,55 @@ router.get(
       courseInstance.self_enrollment_enabled_before_date != null &&
       new Date() >= courseInstance.self_enrollment_enabled_before_date;
 
-    if (!selfEnrollmentEnabled && !existingEnrollment) {
+    const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
+
+    if (!selfEnrollmentEnabled && needsToSelfEnroll) {
       res
         .status(403)
         .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
       return;
     }
 
-    if (selfEnrollmentExpired && !existingEnrollment) {
+    if (selfEnrollmentExpired && needsToSelfEnroll) {
       res
         .status(403)
         .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-expired' }));
       return;
     }
 
-    if (!institutionRestrictionSatisfied && !existingEnrollment) {
+    if (!institutionRestrictionSatisfied && needsToSelfEnroll) {
       res
         .status(403)
         .send(EnrollmentPage({ resLocals: res.locals, type: 'institution-restriction' }));
       return;
     }
 
-    const canJoin =
+    // Check if the user is enrolled, but is in a status where they cannot rejoin the course.
+    if (
       existingEnrollment != null &&
-      ['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status);
-
-    if (existingEnrollment && !canJoin) {
+      !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+    ) {
       res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
     }
+
+    const userBypassesEnrollmentCodeRequirement =
+      existingEnrollment != null &&
+      ['joined', 'invited', 'removed'].includes(existingEnrollment.status);
 
     if (
       // No enrollment code required
       !courseInstance.self_enrollment_use_enrollment_code ||
       // Enrollment code is correct
       code?.toUpperCase() === enrollmentCode.toUpperCase() ||
-      // Existing enrollments can transition immediately
-      existingEnrollment
+      // Existing joined, invited, or removed enrollments can transition immediately.
+      // Rejected enrollments are treated as if they had no status.
+      userBypassesEnrollmentCodeRequirement
     ) {
-      if (code?.toUpperCase() === enrollmentCode.toUpperCase() || canJoin) {
+      if (
+        code?.toUpperCase() === enrollmentCode.toUpperCase() ||
+        userBypassesEnrollmentCodeRequirement
+      ) {
         // Authorize the user for the course instance
         req.params.course_instance_id = courseInstance.id;
         await authzCourseOrInstance(req, res);

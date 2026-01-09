@@ -1,9 +1,7 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export interface Filenames {
   scoresCsvFilename: string;
@@ -25,21 +23,21 @@ export interface Filenames {
   finalFilesZipFilename: string;
   bestFilesZipFilename: string;
   allFilesZipFilename: string;
-  groupsCsvFilename?: string;
-  scoresGroupCsvFilename?: string;
-  scoresGroupAllCsvFilename?: string;
-  pointsGroupCsvFilename?: string;
-  pointsGroupAllCsvFilename?: string;
+  teamsCsvFilename?: string;
+  scoresTeamCsvFilename?: string;
+  scoresTeamAllCsvFilename?: string;
+  pointsTeamCsvFilename?: string;
+  pointsTeamAllCsvFilename?: string;
 }
 
 export function InstructorAssessmentDownloads({
   resLocals,
   filenames,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   filenames: Filenames;
 }) {
-  const identity = resLocals.assessment.group_work ? 'group' : 'student';
+  const identity = resLocals.assessment.team_work ? 'group' : 'student';
 
   return PageLayout({
     resLocals,
@@ -53,16 +51,6 @@ export function InstructorAssessmentDownloads({
       fullWidth: true,
     },
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
-
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Downloads</h1>
@@ -154,14 +142,14 @@ export function InstructorAssessmentDownloads({
                     </tr>
                   `
                 : ''}
-              ${resLocals.assessment.group_work
+              ${resLocals.assessment.team_work
                 ? html`
                     <tr>
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.groupsCsvFilename}"
-                          >${filenames.groupsCsvFilename}</a
+                            .id}/downloads/${filenames.teamsCsvFilename}"
+                          >${filenames.teamsCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -172,8 +160,8 @@ export function InstructorAssessmentDownloads({
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.scoresGroupCsvFilename}"
-                          >${filenames.scoresGroupCsvFilename}</a
+                            .id}/downloads/${filenames.scoresTeamCsvFilename}"
+                          >${filenames.scoresTeamCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -187,8 +175,8 @@ export function InstructorAssessmentDownloads({
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.scoresGroupAllCsvFilename}"
-                                >${filenames.scoresGroupAllCsvFilename}</a
+                                  .id}/downloads/${filenames.scoresTeamAllCsvFilename}"
+                                >${filenames.scoresTeamAllCsvFilename}</a
                               >
                             </td>
                             <td>
@@ -202,8 +190,8 @@ export function InstructorAssessmentDownloads({
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.pointsGroupCsvFilename}"
-                          >${filenames.pointsGroupCsvFilename}</a
+                            .id}/downloads/${filenames.pointsTeamCsvFilename}"
+                          >${filenames.pointsTeamCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -217,8 +205,8 @@ export function InstructorAssessmentDownloads({
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.pointsGroupAllCsvFilename}"
-                                >${filenames.pointsGroupAllCsvFilename}</a
+                                  .id}/downloads/${filenames.pointsTeamAllCsvFilename}"
+                                >${filenames.pointsTeamAllCsvFilename}</a
                               >
                             </td>
                             <td>

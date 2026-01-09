@@ -95,11 +95,13 @@ router.get(
         content: (
           <>
             {!editable && (
-              <div class="alert alert-warning">Only course owners can change billing settings.</div>
+              <div className="alert alert-warning">
+                Only course owners can change billing settings.
+              </div>
             )}
-            <div class="card mb-4">
-              <div class="card-header bg-primary text-white d-flex">Billing</div>
-              <div class="card-body">
+            <div className="card mb-4">
+              <div className="card-header bg-primary text-white d-flex">Billing</div>
+              <div className="card-body">
                 <Hydrate>
                   <InstructorInstanceAdminBillingForm
                     initialRequiredPlans={requiredPlans}
@@ -164,7 +166,7 @@ router.post(
     await updateRequiredPlansForCourseInstance(
       res.locals.course_instance.id,
       desiredRequiredPlans,
-      res.locals.authn_user.user_id,
+      res.locals.authn_user.id,
     );
     res.redirect(req.originalUrl);
   }),

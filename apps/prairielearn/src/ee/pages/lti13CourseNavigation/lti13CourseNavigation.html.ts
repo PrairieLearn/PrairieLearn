@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type Course } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { STUDENT_ROLE } from '../../lib/lti13.js';
 
 export function Lti13CourseNavigationInstructor({
@@ -13,7 +13,7 @@ export function Lti13CourseNavigationInstructor({
   lti13_instance_id,
 }: {
   courseName: string;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
   courses: Course[];
   lti13_instance_id: string;
 }): string {
@@ -21,9 +21,6 @@ export function Lti13CourseNavigationInstructor({
     resLocals,
     pageTitle: 'LTI 1.3 - Course',
     navContext: { type: 'plain', page: 'lti13_course_navigation' },
-    options: {
-      enableEnhancedNav: false,
-    },
     content: html`
       ${TerminologyModal()}
       <h1>Welcome to PrairieLearn</h1>
@@ -112,16 +109,13 @@ export function Lti13CourseNavigationNotReady({
   ltiRoles,
 }: {
   courseName: string;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
   ltiRoles: string[];
 }): string {
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3 - Course',
     navContext: { type: 'student', page: 'lti13_course_navigation' },
-    options: {
-      enableEnhancedNav: false,
-    },
     content: html`
       <h1 class="h1">Welcome to PrairieLearn</h1>
       <h2 class="h2">... but your course isn't ready yet!</h2>
@@ -159,16 +153,13 @@ export function Lti13CourseNavigationDone({
   resLocals,
   lti13_instance_id,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
   lti13_instance_id: string;
 }): string {
   return PageLayout({
     resLocals,
     pageTitle: 'LTI 1.3 - Course',
     navContext: { type: 'plain', page: 'lti13_course_navigation' },
-    options: {
-      enableEnhancedNav: false,
-    },
     content: html`
       <h1 class="h1">Welcome to PrairieLearn</h1>
 

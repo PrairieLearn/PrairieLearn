@@ -13,10 +13,10 @@ SELECT
   ) AS news_item_notification_count
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON (adm.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
   JOIN institutions AS i ON (i.id = u.institution_id)
 WHERE
-  u.user_id = $user_id;
+  u.id = $user_id;
 
 -- BLOCK select_is_institution_admin
 SELECT

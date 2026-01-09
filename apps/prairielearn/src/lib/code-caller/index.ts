@@ -16,6 +16,7 @@ import { assertNever } from '../types.js';
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
 import { type CodeCaller, FunctionMissingError } from './code-caller-shared.js';
+import { getPythonPath } from './python-path.js';
 
 const debug = debugfn('prairielearn:code-caller');
 
@@ -53,6 +54,11 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
 
   if (workersExecutionMode === 'container') {
     await initCodeCallerDocker();
+  }
+
+  if (workersExecutionMode === 'native') {
+    // Try to fetch the venv. This will throw an error if no venv is found.
+    await getPythonPath(config.pythonVenvSearchPaths);
   }
 
   const numWorkers = config.workersCount ?? Math.ceil(config.workersPerCpu * os.cpus().length);
@@ -210,7 +216,7 @@ export async function withCodeCaller<T>(
       // no error logged here, everything is still ok
       needsFullRestart = true;
     }
-  } catch (err) {
+  } catch (err: any) {
     restartErr = err;
     debug(`returnPythonCaller(): restart errored: ${err}`);
     logger.error('Error restarting pythonCaller', err);

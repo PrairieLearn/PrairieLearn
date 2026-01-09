@@ -4,8 +4,7 @@ import { z } from 'zod';
 
 import { makeBatchedMigration } from '@prairielearn/migrations';
 import { executeRow, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
-
-import { DateFromISOString, IdSchema } from '../lib/db-types.js';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
 

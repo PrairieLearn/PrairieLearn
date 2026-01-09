@@ -1,5 +1,11 @@
 # @prairielearn/run
 
+## 1.0.18
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 1.0.17
 
 ### Patch Changes

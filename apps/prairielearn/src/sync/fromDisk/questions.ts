@@ -2,8 +2,8 @@ import * as shlex from 'shlex';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../../lib/db-types.js';
 import {
   type QuestionJson,
   defaultExternalGradingOptions,
