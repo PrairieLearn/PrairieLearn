@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
+
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { EnrollmentLimitExceededMessage } from './enroll.html.js';
 
@@ -12,7 +13,7 @@ router.get('/', (_req, res) => {
 
 router.get(
   '/limit_exceeded',
-  asyncHandler((_req, res) => {
+  typedAsyncHandler<'plain'>((_req, res) => {
     // Note that we deliberately omit the `forbidAccessInExamMode` middleware
     // here. A student could conceivably hit an enrollment limit while in exam
     // mode, so we'll allow them to see the error message. This page doesn't

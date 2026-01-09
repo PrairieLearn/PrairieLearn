@@ -315,7 +315,7 @@ interface ResLocalsCourseAuthz {
   overrides: Override[];
 }
 
-interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
+export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   authn_course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
@@ -337,6 +337,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  is_administrator: boolean;
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {

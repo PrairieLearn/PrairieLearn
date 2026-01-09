@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -13,6 +12,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
@@ -27,7 +27,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
@@ -105,7 +105,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const { course, authz_data: authzData } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -215,7 +215,7 @@ router.post(
           : undefined;
 
       const editor = new CourseInstanceAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         short_name,
         long_name,
         metadataOverrides: {

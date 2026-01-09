@@ -9,7 +9,7 @@ import {
   CoursePermissionSchema,
   UserSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const CourseRolesSchema = z.object({
   available_course_roles: CoursePermissionSchema.shape.course_role.unwrap().array(),
@@ -25,20 +25,25 @@ export function InstructorEffectiveUser({
   ipAddress,
   courseRoles,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   ipAddress: string | undefined;
   courseRoles: CourseRoles;
 }) {
-  const { authz_data, course_instance, __csrf_token, req_date, true_req_date, user } = resLocals;
+  const {
+    authz_data,
+    course_instance,
+    course,
+    __csrf_token,
+    req_date,
+    true_req_date,
+    user,
+    navbarType,
+  } = resLocals;
 
   // This page can be mounted under `/pl/course/...`, in which case we won't
   // have a course instance to get a display timezone from. In that case, we'll
-  // fall back to the course, and then to the institution. All institutions must
-  // have a display timezone, so we're always guaranteed to have one.
-  const displayTimezone =
-    resLocals.course_instance?.display_timezone ??
-    resLocals.course.display_timezone ??
-    resLocals.institution.display_timezone;
+  // fall back to the course, which is guaranteed to have a display timezone.
+  const displayTimezone = course_instance?.display_timezone ?? course.display_timezone;
 
   const formattedTrueReqDate = format(
     toZonedTime(true_req_date, displayTimezone),
@@ -55,7 +60,7 @@ export function InstructorEffectiveUser({
     pageTitle: 'Change Effective User',
     resLocals,
     navContext: {
-      type: resLocals.navbarType,
+      type: navbarType,
       page: 'effective',
     },
     options: {
@@ -72,7 +77,7 @@ export function InstructorEffectiveUser({
           <p><strong>Authenticated UID:</strong> ${authz_data.authn_user.uid}</p>
           <p><strong>Authenticated name:</strong> ${authz_data.authn_user.name}</p>
           <p><strong>Authenticated course role:</strong> ${authz_data.authn_course_role}</p>
-          ${course_instance
+          ${'authn_course_instance_role' in authz_data
             ? html`
                 <p>
                   <strong>Authenticated course instance role:</strong>
@@ -205,7 +210,7 @@ export function InstructorEffectiveUser({
         </div>
       </div>
 
-      ${course_instance
+      ${'course_instance_role' in authz_data
         ? html`
             <div class="card mb-4">
               <div class="card-header bg-primary text-white">
