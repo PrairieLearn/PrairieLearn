@@ -74,10 +74,20 @@ function AssessmentSetRow({
               <i className="fa fa-grip-vertical" aria-hidden="true" />
             </button>
 
-            <button className="btn btn-sm btn-ghost" type="button" onClick={onEdit}>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              aria-label="Edit"
+              onClick={onEdit}
+            >
               <i className="fa fa-edit" aria-hidden="true" />
             </button>
-            <button className="btn btn-sm btn-ghost" type="button" onClick={onDelete}>
+            <button
+              className="btn btn-sm btn-ghost"
+              type="button"
+              aria-label="Delete"
+              onClick={onDelete}
+            >
               <i className="fa fa-trash text-danger" aria-hidden="true" />
             </button>
           </div>
