@@ -3,9 +3,9 @@ import { html } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function AdministratorSettings({ resLocals }: { resLocals: UntypedResLocals }) {
+export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPage<'plain'> }) {
   const showAiSettings =
     isEnterprise() &&
     config.aiQuestionGenerationOpenAiApiKey &&

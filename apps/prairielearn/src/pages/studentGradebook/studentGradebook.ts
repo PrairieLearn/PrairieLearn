@@ -1,7 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { stringifyNonblocking } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
@@ -12,7 +11,7 @@ import {
   computeLabel,
   computeTitle,
 } from '../../lib/gradebook.shared.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import logPageView from '../../middlewares/logPageView.js';
 
@@ -20,7 +19,7 @@ import { StudentGradebook, type StudentGradebookTableRow } from './studentGradeb
 
 const router = Router();
 
-function buildCsvFilename(locals: UntypedResLocals) {
+function buildCsvFilename(locals: ResLocalsForPage<'course-instance'>) {
   return courseInstanceFilenamePrefix(locals.course_instance, locals.course) + 'gradebook.csv';
 }
 
@@ -49,7 +48,7 @@ function mapRow(
 router.get(
   '/',
   logPageView('studentGradebook'),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const rawRows = await getGradebookRows({
       course_instance_id: res.locals.course_instance.id,
       user_id: res.locals.user.id,
@@ -70,7 +69,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.params.filename !== buildCsvFilename(res.locals)) {
       throw new HttpStatusError(404, `Unknown filename: ${req.params.filename}`);
     }

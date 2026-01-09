@@ -1,7 +1,6 @@
 import * as async from 'async';
 import debugfn from 'debug';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
@@ -12,6 +11,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { type User } from '../../lib/db-types.js';
 import { httpPrefixForCourseRepo } from '../../lib/github.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
@@ -51,7 +51,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_own'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -91,7 +91,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',

@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { AdministratorSchema, UserSchema } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorAdmins } from './administratorAdmins.html.js';
 
@@ -13,7 +13,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const admins = await sqldb.queryRows(sql.select_admins, UserSchema);
     res.send(AdministratorAdmins({ admins, resLocals: res.locals }));
   }),
@@ -21,7 +21,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (!res.locals.is_administrator) throw new Error('Insufficient permissions');
 
     if (req.body.__action === 'administrators_insert_by_user_uid') {

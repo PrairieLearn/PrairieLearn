@@ -7,20 +7,18 @@ export function EnrollmentCodeRequired({ courseInstanceId }: { courseInstanceId:
         <div className="col-lg-8 col-xl-6">
           <div className="card">
             <div className="card-header bg-primary text-white">
-              <h4 className="mb-0">Enter Enrollment Code</h4>
+              <h1 className="mb-0">Join course via enrollment code</h1>
             </div>
             <div className="card-body">
-              <p className="mb-4">
-                To access this course, you need to enter a valid enrollment code. Please enter the
-                code provided by your instructor.
-              </p>
-
-              <EnrollmentCodeForm style="raw-form" courseInstanceId={courseInstanceId} />
-            </div>
-            <div className="card-footer">
-              <div className="text-center text-muted small my-2">
-                Don't have an enrollment code? Contact your instructor for assistance.
-              </div>
+              <EnrollmentCodeForm
+                style="raw-form"
+                courseInstanceId={courseInstanceId}
+                leadingContent={
+                  <p>
+                    To access this course, enter the enrollment code provided by your instructor.
+                  </p>
+                }
+              />
             </div>
           </div>
         </div>

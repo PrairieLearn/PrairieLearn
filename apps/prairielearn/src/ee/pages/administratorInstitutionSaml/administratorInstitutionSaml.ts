@@ -1,6 +1,5 @@
 import { SAML } from '@node-saml/passport-saml';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 // We import from this instead of `pem` directly because the latter includes
 // code that messes up the display of source maps in dev mode:
 // https://github.com/Dexus/pem/issues/389#issuecomment-2043258753
@@ -12,6 +11,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getSamlOptions } from '../../auth/saml/index.js';
 import {
   getInstitution,
@@ -40,7 +40,7 @@ function createCertificate(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const samlProvider = await getInstitutionSamlProvider(req.params.institution_id);
     const institutionAuthenticationProviders = await getInstitutionAuthenticationProviders(
@@ -61,7 +61,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'save') {
       await runInTransactionAsync(async () => {
         // Check if there's an existing SAML provider configured. We'll use
