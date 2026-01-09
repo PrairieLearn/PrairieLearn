@@ -101,7 +101,7 @@ def shuffle_distractor_groups(
         tag = block["tag"]
         group = [
             block,
-            *(block for block in all_blocks if block.get("distractor_for") == tag),
+            *(b for b in all_blocks if b.get("distractor_for") == tag),
         ]
         random.shuffle(group)
         new_block_ordering += group
