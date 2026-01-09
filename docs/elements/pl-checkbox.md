@@ -29,8 +29,8 @@ as checkboxes.
 | `min-correct`         | integer | See description | The minimum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `max-correct`         | integer | See description | The maximum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `order`               | string  | `"random"`      | Order of answer choices: `"random"` (randomized) or `"fixed"` (as written).                                                                                                                                                          |
-| `partial-credit`      | string  | `"off"`         | Grading method: `"off"` (all-or-nothing, default), `"net-correct"`, `"coverage"`, or `"each-answer"`.                                                                                                                               |
-| `hide-help-text`      | boolean | false           | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"off"`, `"coverage"`, `"each-answer"`, or `"net-correct"`).                                                                     |
+| `partial-credit`      | string  | `"off"`         | Grading method: `"off"` (all-or-nothing, default), `"net-correct"`, `"coverage"`, or `"each-answer"`.                                                                                                                                |
+| `hide-help-text`      | boolean | false           | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"off"`, `"coverage"`, `"each-answer"`, or `"net-correct"`).                                                        |
 | `detailed-help-text`  | boolean | false           | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.                                                                                                                 |
 | `hide-answer-panel`   | boolean | false           | Option to not display the correct answer in the correct panel.                                                                                                                                                                       |
 | `hide-letter-keys`    | boolean | false           | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                                                                   |
@@ -58,6 +58,19 @@ Four grading methods are available using the `partial-credit` attribute:
 - `"coverage"` (Coverage): The final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
 
 - `"each-answer"` (Every Decision Counts): The checkbox answers are considered as a list of true/false answers. If `n` is the total number of answers, each answer is assigned `1/n` points. The total score is the summation of the points for every correct answer selected and every incorrect answer left unselected.
+
+### Migrating from deprecated attributes
+
+The following deprecated attributes are still supported for backward compatibility:
+
+| Old syntax                                          | New syntax                     |
+| --------------------------------------------------- | ------------------------------ |
+| `partial-credit="false"`                            | `partial-credit="off"`         |
+| `partial-credit="true"`                             | `partial-credit="net-correct"` |
+| `partial-credit="true" partial-credit-method="EDC"` | `partial-credit="each-answer"` |
+| `partial-credit="true" partial-credit-method="COV"` | `partial-credit="coverage"`    |
+| `inline="true"`                                     | `display="inline"`             |
+| `fixed-order="true"`                                | `order="fixed"`                |
 
 ## Using the `detailed-help-text` attribute
 
