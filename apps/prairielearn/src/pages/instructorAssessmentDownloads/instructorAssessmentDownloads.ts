@@ -9,8 +9,12 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
+  type Assessment,
   AssessmentInstanceSchema,
   AssessmentQuestionSchema,
+  type AssessmentSet,
+  type Course,
+  type CourseInstance,
   InstanceQuestionSchema,
   QuestionSchema,
   RubricGradingItemSchema,
@@ -24,7 +28,7 @@ import {
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { getTeamConfig } from '../../lib/teams.js';
 
@@ -111,7 +115,12 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
+export function getFilenames(locals: {
+  assessment: Pick<Assessment, 'number' | 'team_work'>;
+  assessment_set: Pick<AssessmentSet, 'abbreviation'>;
+  course_instance: Pick<CourseInstance, 'short_name'>;
+  course: Pick<Course, 'short_name'>;
+}) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
