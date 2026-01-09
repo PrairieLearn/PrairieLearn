@@ -11,7 +11,7 @@ from typing_extensions import assert_never
 
 
 class PartialCreditType(Enum):
-    OFF = "none"
+    OFF = "off"
     NET_CORRECT = "NET"
     EACH_ANSWER = "EACH"
     COVERAGE = "COV"
@@ -219,36 +219,26 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
 
     try:
         # Try to parse as boolean first (old style)
+        # For modern attributes, this will raise an exception as they are part of an enum.
         partial_credit_bool = pl.get_boolean_attrib(element, "partial-credit")
 
-        # Handle backward compatibility: old boolean + method style
-        if pl.has_attrib(element, "partial-credit-method"):
-            # Old style: partial-credit="true" + partial-credit-method="PC|COV|EDC"
-            if not partial_credit_bool:
-                return PartialCreditType.OFF
+        if not partial_credit_bool:
+            # Old style: partial-credit="false"
+            return PartialCreditType.OFF
 
-            partial_credit_method = pl.get_string_attrib(
-                element, "partial-credit-method", "NET"
+        partial_credit_method = pl.get_string_attrib(
+            element, "partial-credit-method", "PC"
+        )
+        old_to_new_mapping = {
+            "PC": PartialCreditType.NET_CORRECT,
+            "COV": PartialCreditType.COVERAGE,
+            "EDC": PartialCreditType.EACH_ANSWER,
+        }
+        if partial_credit_method not in old_to_new_mapping:
+            raise ValueError(
+                f'Invalid partial-credit-method: {partial_credit_method}. Must be "PC", "COV", or "EDC".'
             )
-            old_to_new_mapping = {
-                "PC": PartialCreditType.NET_CORRECT,
-                "NET": PartialCreditType.NET_CORRECT,
-                "COV": PartialCreditType.COVERAGE,
-                "EDC": PartialCreditType.EACH_ANSWER,
-                "EACH": PartialCreditType.EACH_ANSWER,
-            }
-            if partial_credit_method not in old_to_new_mapping:
-                raise ValueError(
-                    f'Invalid partial-credit-method: {partial_credit_method}. Must be "NET" (or "PC"), "COV", or "EACH" (or "EDC").'
-                )
-            return old_to_new_mapping[partial_credit_method]
-        else:
-            # Old style: partial-credit="true|false" without method (defaults to PC)
-            return (
-                PartialCreditType.NET_CORRECT
-                if partial_credit_bool
-                else PartialCreditType.OFF
-            )
+        return old_to_new_mapping[partial_credit_method]
     except ValueError:
         # Silently fall over to new style parsing if the old style doesn't work
         pass
@@ -256,7 +246,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
     # New style: partial-credit="off|coverage|each-answer|net-correct"
     if pl.has_attrib(element, "partial-credit-method"):
         raise ValueError(
-            'partial-credit-method is deprecated. Use partial-credit="off|coverage|each-answer|net-correct" instead.'
+            'You cannot set partial-credit-method and a non-boolean value for partial-credit. You likely want to remove partial-credit-method and use partial-credit="off|coverage|each-answer|net-correct" instead.'
         )
     try:
         return pl.get_enum_attrib(

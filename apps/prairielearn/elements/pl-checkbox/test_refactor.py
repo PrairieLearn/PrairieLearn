@@ -325,8 +325,33 @@ def test_partial_credit_type_conversion() -> None:
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    with pytest.raises(ValueError, match=r"partial-credit-method is deprecated.*"):
+    # Invalid method with old-style partial-credit="true" - the ValueError from invalid method
+    # is caught and falls through to new-style parsing, which then errors on partial-credit-method being set
+    with pytest.raises(ValueError, match=r"You cannot set partial-credit-method"):
         pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
+
+
+def test_partial_credit_default() -> None:
+    """Test that default partial credit mode is OFF when no attributes specified."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-checkbox answers-name="test"></pl-checkbox>'
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(element)
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+
+def test_partial_credit_method_without_partial_credit() -> None:
+    """Test that partial-credit-method is ignored when partial-credit is not set."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-checkbox answers-name="test" partial-credit-method="COV"></pl-checkbox>'
+    )
+    # partial-credit-method without partial-credit is silently ignored, returns default
+    assert (
+        pl_checkbox.get_partial_credit_mode(element)
+        == pl_checkbox.PartialCreditType.OFF
+    )
 
 
 def test_partial_credit_new() -> None:
