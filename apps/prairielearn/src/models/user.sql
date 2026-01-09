@@ -4,7 +4,7 @@ SELECT
 FROM
   users
 WHERE
-  user_id = $user_id;
+  id = $user_id;
 
 -- BLOCK select_user_by_uid
 SELECT
@@ -29,7 +29,7 @@ SELECT
 FROM
   users
 WHERE
-  user_id = $user_id
+  id = $user_id
 FOR NO KEY UPDATE;
 
 -- BLOCK select_or_insert_user_by_uid
@@ -72,7 +72,7 @@ UPDATE users
 SET
   uid = $uid
 WHERE
-  user_id = $user_id
+  id = $user_id
 RETURNING
   *;
 

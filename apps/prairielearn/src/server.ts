@@ -72,6 +72,7 @@ import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
+import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
@@ -876,7 +877,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
     ],
   );
   app.use(
@@ -2153,8 +2154,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2569,6 +2570,7 @@ if (shouldStartServer) {
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
+    serverJobProgressSocket.init();
 
     workspace.init();
     serverJobs.init();

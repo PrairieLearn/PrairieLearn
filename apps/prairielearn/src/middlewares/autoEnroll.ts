@@ -5,7 +5,6 @@ import { run } from '@prairielearn/run';
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
 import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
@@ -19,11 +18,6 @@ export default asyncHandler(async (req, res, next) => {
   // TODO: check if self-enrollment requires a secret link.
 
   const courseInstance: CourseInstance = res.locals.course_instance;
-
-  const enrollmentManagementEnabled = await features.enabledFromLocals(
-    'enrollment-management',
-    res.locals,
-  );
 
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await run(async () => {
@@ -42,7 +36,6 @@ export default asyncHandler(async (req, res, next) => {
   // Check if the self-enrollment institution restriction is satisfied
   const institutionRestrictionSatisfied =
     res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-    !enrollmentManagementEnabled ||
     // The default value for self-enrollment restriction is true.
     // In the old system (before publishing was introduced), the default was false.
     // So if publishing is not set up, we should ignore the restriction.
@@ -69,7 +62,7 @@ export default asyncHandler(async (req, res, next) => {
     ['invited', 'joined', 'removed'].includes(existingEnrollment.status);
 
   if (
-    idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
+    idsEqual(res.locals.user.id, res.locals.authn_user.id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&

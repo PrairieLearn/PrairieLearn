@@ -9,7 +9,7 @@ import { JobStatus } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -32,10 +32,14 @@ export function CourseSyncs({
   resLocals,
   images,
   jobSequences,
+  jobSequenceCount,
+  showAllJobSequences,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
+  jobSequenceCount: number;
+  showAllJobSequences: boolean;
 }) {
   const { course, __csrf_token, urlPrefix } = resLocals;
 
@@ -147,6 +151,14 @@ export function CourseSyncs({
             </tbody>
           </table>
         </div>
+        ${!showAllJobSequences && jobSequenceCount > jobSequences.length
+          ? html`
+              <div class="card-footer">
+                Showing ${jobSequences.length} of ${jobSequenceCount} sync jobs.
+                <a href="?all" aria-label="View all sync jobs">View all</a>
+              </div>
+            `
+          : ''}
       </div>
     `,
   });
