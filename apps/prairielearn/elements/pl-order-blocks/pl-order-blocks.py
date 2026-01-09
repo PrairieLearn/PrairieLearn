@@ -800,7 +800,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             group_belonging: dict[str, str | None] = {}
 
             if grading_method is GradingMethodType.RANKING:
-                sorted_answers = sorted(correct_answers, key=lambda x: int(x["ranking"]))
+                sorted_answers = sorted(
+                    correct_answers, key=lambda x: int(x["ranking"])
+                )
                 tag_to_rank = {ans["tag"]: ans["ranking"] for ans in sorted_answers}
                 lines_of_rank = {
                     rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
@@ -818,21 +820,21 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             else:  # DAG
                 depends_graph, group_belonging = extract_dag(correct_answers)
 
-            num_initial_correct, _ = grade_dag(submission, depends_graph, group_belonging)
+            num_initial_correct, _ = grade_dag(
+                submission, depends_graph, group_belonging
+            )
             first_wrong = (
                 None if num_initial_correct == len(submission) else num_initial_correct
             )
 
-            first_wrong_is_distractor = (
-                first_wrong is not None
-                and answer[first_wrong]["uuid"]
-                in {
-                    block["uuid"]
-                    for block in get_distractors(
-                        data["params"][answer_name], correct_answers
-                    )
-                }
-            )
+            first_wrong_is_distractor = first_wrong is not None and answer[first_wrong][
+                "uuid"
+            ] in {
+                block["uuid"]
+                for block in get_distractors(
+                    data["params"][answer_name], correct_answers
+                )
+            }
             feedback = construct_feedback(
                 order_block_options.feedback,
                 first_wrong,
