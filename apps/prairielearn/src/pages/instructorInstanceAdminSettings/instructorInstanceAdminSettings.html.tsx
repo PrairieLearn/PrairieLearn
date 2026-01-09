@@ -35,6 +35,7 @@ export function InstructorInstanceAdminSettings({
   selfEnrollLink,
   infoCourseInstancePath,
   isDevMode,
+  isAdministrator,
 }: {
   csrfToken: string;
   urlPrefix: string;
@@ -52,6 +53,7 @@ export function InstructorInstanceAdminSettings({
   selfEnrollLink: string;
   infoCourseInstancePath: string;
   isDevMode: boolean;
+  isAdministrator: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -311,6 +313,7 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
+          isAdministrator={isAdministrator}
           onHide={() => setShowCopyModal(false)}
         />
       </div>

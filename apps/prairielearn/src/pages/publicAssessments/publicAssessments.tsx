@@ -75,6 +75,7 @@ router.get(
             course={safeCourse}
             courseInstanceCopyTargets={safeCourseInstanceCopyTargets}
             questionsForCopy={safeQuestionsForCopy}
+            isAdministrator={res.locals.is_administrator}
           />
         ),
       }),

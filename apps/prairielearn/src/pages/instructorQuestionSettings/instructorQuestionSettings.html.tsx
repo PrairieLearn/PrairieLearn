@@ -22,7 +22,7 @@ import {
   type Topic,
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -66,7 +66,7 @@ export function InstructorQuestionSettings({
   courseTopics,
   courseTags,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'instructor-question'>;
   questionTestPath: string;
   questionTestCsrfToken: string;
   questionGHLink: string | null;
@@ -96,7 +96,7 @@ export function InstructorQuestionSettings({
       subPage: 'settings',
     },
     options: {
-      pageNote: resLocals.question.qid,
+      pageNote: resLocals.question.qid!,
     },
     headContent: html`
       ${compiledScriptTag('instructorQuestionSettingsClient.tsx')}
@@ -230,7 +230,7 @@ export function InstructorQuestionSettings({
                         : renderHtml(<TagBadgeList tags={questionTags} />)}
                     </td>
                   </tr>
-                  ${shouldShowAssessmentsList
+                  ${shouldShowAssessmentsList && resLocals.course_instance
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
                         <td>
@@ -686,7 +686,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                         <i class="fa fa-times" aria-hidden="true"></i> Delete this question
                       </button>
                       ${DeleteQuestionModal({
-                        qid: resLocals.question.qid,
+                        qid: resLocals.question.qid!,
                         assessmentsWithQuestion,
                         csrfToken: resLocals.__csrf_token,
                       })}

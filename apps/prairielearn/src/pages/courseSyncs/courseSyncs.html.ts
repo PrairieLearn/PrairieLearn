@@ -9,7 +9,7 @@ import { JobStatus } from '../../components/JobStatus.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { type Course, JobSequenceSchema, QuestionSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const ImageRowSchema = z.object({
   image: z.string(),
@@ -35,7 +35,7 @@ export function CourseSyncs({
   jobSequenceCount,
   showAllJobSequences,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   images: ImageRow[];
   jobSequences: JobSequenceRow[];
   jobSequenceCount: number;

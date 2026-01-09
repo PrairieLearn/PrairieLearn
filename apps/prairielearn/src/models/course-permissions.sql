@@ -9,6 +9,9 @@ WITH
     SET
       course_role = EXCLUDED.course_role
     WHERE
+      -- This query will only step up in permission. If a permission already
+      -- exists for this user and it has higher permissions than what we're
+      -- trying to insert, this will be a no-op.
       cp.course_role < EXCLUDED.course_role
     RETURNING
       cp.*
@@ -200,6 +203,9 @@ WITH
     SET
       course_instance_role = EXCLUDED.course_instance_role
     WHERE
+      -- This query will only step up in permission. If a permission already
+      -- exists for this user and it has higher permissions than what we're
+      -- trying to insert, this will be a no-op.
       cip.course_instance_role < EXCLUDED.course_instance_role
     RETURNING
       cip.*
@@ -344,6 +350,25 @@ SELECT
   cip.old_state
 FROM
   deleted_course_instance_permissions AS cip;
+
+-- BLOCK select_course_instance_permission_for_user
+SELECT
+  cip.course_instance_role
+FROM
+  course_instance_permissions AS cip
+  JOIN course_permissions AS cp ON cip.course_permission_id = cp.id
+WHERE
+  cip.course_instance_id = $course_instance_id
+  AND cp.user_id = $user_id;
+
+-- BLOCK select_course_permission_for_user
+SELECT
+  cp.course_role
+FROM
+  course_permissions AS cp
+WHERE
+  cp.course_id = $course_id
+  AND cp.user_id = $user_id;
 
 -- BLOCK user_is_instructor_in_any_course
 SELECT

@@ -4,6 +4,10 @@ import { Alert, Modal } from 'react-bootstrap';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
+  CourseInstancePermissionsForm,
+  type PermissionsFormValues,
+} from '../../../components/CourseInstancePermissionsForm.js';
+import {
   CourseInstancePublishingForm,
   type PublishingFormValues,
 } from '../../../components/CourseInstancePublishingForm.js';
@@ -14,7 +18,8 @@ import {
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { getCourseEditErrorUrl, getCourseInstanceSettingsUrl } from '../../../lib/client/url.js';
 
-interface CreateFormValues extends PublishingFormValues, SelfEnrollmentFormValues {
+interface CreateFormValues
+  extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
   short_name: string;
   long_name: string;
 }
@@ -24,11 +29,13 @@ export function CreateCourseInstanceModal({
   onHide,
   course,
   csrfToken,
+  isAdministrator,
 }: {
   show: boolean;
   onHide: () => void;
   course: StaffCourse;
   csrfToken: string;
+  isAdministrator: boolean;
 }) {
   const methods = useForm<CreateFormValues>({
     defaultValues: {
@@ -38,6 +45,7 @@ export function CreateCourseInstanceModal({
       end_date: '',
       self_enrollment_enabled: true,
       self_enrollment_use_enrollment_code: true,
+      course_instance_permission: isAdministrator ? 'None' : 'Student Data Editor',
     },
     mode: 'onSubmit',
   });
@@ -60,6 +68,7 @@ export function CreateCourseInstanceModal({
         end_date: data.end_date,
         self_enrollment_enabled: data.self_enrollment_enabled,
         self_enrollment_use_enrollment_code: data.self_enrollment_use_enrollment_code,
+        course_instance_permission: data.course_instance_permission,
       };
 
       const resp = await fetch(window.location.pathname, {
@@ -199,6 +208,15 @@ export function CreateCourseInstanceModal({
             </p>
 
             <CourseInstanceSelfEnrollmentForm formId="create-course-instance" />
+
+            <hr />
+
+            <h3 className="h5">Course instance permissions</h3>
+            <p className="text-muted small">
+              Choose your initial permissions for this course instance. This can be changed later.
+            </p>
+
+            <CourseInstancePermissionsForm formId="create-course-instance" />
           </Modal.Body>
 
           <Modal.Footer>

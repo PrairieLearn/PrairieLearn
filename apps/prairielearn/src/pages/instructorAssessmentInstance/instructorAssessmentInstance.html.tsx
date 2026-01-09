@@ -19,7 +19,7 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -71,7 +71,7 @@ export function InstructorAssessmentInstance({
   instance_questions,
   assessmentInstanceLog,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   assessment_instance_date_formatted: string;
@@ -81,7 +81,7 @@ export function InstructorAssessmentInstance({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.instance_team?.name || resLocals.instance_user?.uid,
+    pageTitle: resLocals.instance_team?.name ?? resLocals.instance_user?.uid ?? '',
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -719,7 +719,11 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
   `;
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: UntypedResLocals }) {
+function EditTotalPointsForm({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'assessment-instance'>;
+}) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -754,7 +758,11 @@ function EditTotalPointsForm({ resLocals }: { resLocals: UntypedResLocals }) {
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: UntypedResLocals }) {
+function EditTotalScorePercForm({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'assessment-instance'>;
+}) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
