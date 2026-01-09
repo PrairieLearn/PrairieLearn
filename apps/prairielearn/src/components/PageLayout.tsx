@@ -17,6 +17,7 @@ import { HeadContents } from './HeadContents.js';
 import { Navbar } from './Navbar.js';
 import type { NavContext } from './Navbar.types.js';
 import { ContextNavigation } from './NavbarContext.js';
+import { PageFooter } from './PageFooter.js';
 import { SideNav } from './SideNav.js';
 import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
@@ -148,9 +149,12 @@ function UnpublishedBannerComponent({
   });
 
   return (
-    <div class="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small" role="alert">
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
       {message}{' '}
-      <a href={`${urlPrefix}/instance_admin/publishing`} class="alert-link">
+      <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
         Configure publishing settings
       </a>
     </div>
@@ -196,6 +200,8 @@ export function PageLayout({
      * will not be persisted to the user's session.
      */
     forcedInitialNavToggleState?: boolean;
+    /** Whether or not to show the branded page footer. */
+    showFooter?: boolean;
   };
   /** Include scripts and other additional head content here. */
   headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
@@ -213,6 +219,7 @@ export function PageLayout({
     hxExt: '',
     dataAttributes: {},
     enableNavbar: true,
+    showFooter: false,
     ...options,
   };
 
@@ -264,6 +271,10 @@ export function PageLayout({
     }
   }
 
+  if (sideNavEnabled && resolvedOptions.showFooter) {
+    throw new Error('Cannot show the footer when the side nav is enabled.');
+  }
+
   return html`
     <!doctype html>
     <html lang="en">
@@ -277,7 +288,11 @@ export function PageLayout({
         ${sideNavEnabled ? compiledScriptTag('pageLayoutClient.ts') : ''}
       </head>
       <body
-        class="${resolvedOptions.fullHeight ? 'd-flex flex-column h-100' : ''}"
+        class="${clsx({
+          'd-flex flex-column': resolvedOptions.fullHeight || resolvedOptions.showFooter,
+          'h-100': resolvedOptions.fullHeight,
+          'min-vh-100': resolvedOptions.showFooter,
+        })}"
         hx-ext="${resolvedOptions.hxExt}"
         ${unsafeHtml(
           Object.entries(resolvedOptions.dataAttributes)
@@ -297,6 +312,7 @@ export function PageLayout({
             // Not persisted.
             'mobile-collapsed',
             resolvedOptions.fullHeight && 'h-100',
+            resolvedOptions.showFooter && 'flex-grow-1',
           )}"
         >
           ${resolvedOptions.enableNavbar
@@ -329,7 +345,9 @@ export function PageLayout({
           <div class="${clsx(sideNavEnabled && 'app-main', resolvedOptions.fullHeight && 'h-100')}">
             <div
               class="${clsx(
-                sideNavEnabled ? 'app-main-container' : 'h-100 w-100',
+                sideNavEnabled && 'app-main-container',
+                !sideNavEnabled && resolvedOptions.fullWidth && 'w-100',
+                !sideNavEnabled && resolvedOptions.fullHeight && 'h-100',
                 'd-flex flex-column',
               )}"
             >
@@ -375,6 +393,7 @@ export function PageLayout({
             </div>
           </div>
         </div>
+        ${resolvedOptions.showFooter ? renderHtml(<PageFooter />) : ''}
       </body>
     </html>
   `.toString();

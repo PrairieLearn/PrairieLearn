@@ -15,7 +15,7 @@ SELECT
 FROM
   enrollments AS e
   JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
-  JOIN pl_courses AS c ON (ci.course_id = c.id)
+  JOIN courses AS c ON (ci.course_id = c.id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN plan_grants AS pg ON (
     pg.institution_id = i.id
@@ -45,7 +45,7 @@ SELECT
 FROM
   enrollments AS e
   JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
-  JOIN pl_courses AS c ON (ci.course_id = c.id)
+  JOIN courses AS c ON (ci.course_id = c.id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN plan_grants AS pg ON (
     pg.institution_id = i.id
@@ -75,7 +75,7 @@ SELECT
 FROM
   enrollments AS e
   JOIN course_instances AS ci ON (e.course_instance_id = ci.id)
-  JOIN pl_courses AS c ON (ci.course_id = c.id)
+  JOIN courses AS c ON (ci.course_id = c.id)
   JOIN institutions AS i ON (i.id = c.institution_id)
   LEFT JOIN plan_grants AS pg ON (
     pg.institution_id = i.id
