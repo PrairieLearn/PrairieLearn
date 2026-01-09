@@ -32,14 +32,40 @@ If you need support for [workspaces](../workspaces/index.md), ensure Docker is i
 
 ```sh
 sudo make dev-workspace-host # or sudo make start-workspace-host
+# Make sure to run PrairieLearn as root
+sudo make dev
 ```
+
+On a macOS native installation, you should set the following in your `config.json`:
+
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "localhost",
+  "workspaceJobsDirectoryOwnerUid": 1001,
+  "workspaceJobsDirectoryOwnerGid": 1001
+}
+```
+
+More information can be found in the [config.json](configJson.md#running-workspaces-external-graders-natively-on-macos) documentation.
+
+??? note "Troubleshooting workspaces"
+
+    You can list the active hosts with:
+
+    ```sql
+    SELECT * FROM workspace_hosts;
+    ```
+
+    If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
+
+    Since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
 
 ## Documentation
 
 If you want to preview the documentation, run:
 
 ```sh
-make preview-docs
+make dev-docs
 ```
 
 ## Testing
@@ -49,14 +75,16 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
-make test
+make test-all
 ```
 
-Or, to run tests for just a specific language:
+Or, to run just a specific subset of tests:
 
 ```sh
-make test-js     # Javascript only
-make test-python # Python only
+make test-js           # Javascript tests (both packages and applications)
+make test-prairielearn # PrairieLearn application tests
+make test-python       # Python tests
+make test-e2e          # E2E tests (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests

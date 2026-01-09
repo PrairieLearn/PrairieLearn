@@ -8,15 +8,17 @@ import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
-  GroupConfig,
   InstanceQuestion,
-  Issue,
   Question,
+  TeamConfig,
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { IssueRenderData } from '../lib/question-render.types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { type TeamInfo, getRoleNamesForUser } from '../lib/teams.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +39,7 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -73,7 +75,9 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${issues.map((issue: IssueRenderData) =>
+        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+      )}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -231,12 +235,7 @@ export function IssuePanel({
   authz_data,
   is_administrator,
 }: {
-  issue: Issue & {
-    user_name: User['name'];
-    user_email: User['email'];
-    user_uid: User['uid'];
-    formatted_date: string;
-  };
+  issue: IssueRenderData;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -417,9 +416,9 @@ interface QuestionFooterResLocals {
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
-  group_config: GroupConfig | null;
-  group_info: GroupInfo | null;
-  group_role_permissions: {
+  team_config: TeamConfig | null;
+  team_info: TeamInfo | null;
+  team_role_permissions: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
@@ -488,9 +487,9 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
-    group_config,
-    group_info,
-    group_role_permissions,
+    team_config,
+    team_info,
+    team_role_permissions,
     user,
   } = resLocals;
 
@@ -549,13 +548,13 @@ export function QuestionFooterContent({
                   </button>
                 `
               : ''}
-            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+            ${team_config?.has_roles && !team_role_permissions?.can_submit && team_info
               ? html`
                   <button
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
                     data-bs-toggle="popover"
-                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    data-bs-content="Your group role (${getRoleNamesForUser(team_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"
@@ -588,7 +587,9 @@ export function QuestionFooterContent({
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info.previous_variants?.some(
+                        (variant: SimpleVariantWithScore) => variant.open,
+                      )
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -778,7 +779,7 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -884,7 +885,7 @@ function SubmissionList({
   submissionCount,
   renderSubmissionSearchParams,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
@@ -916,7 +917,7 @@ function CopyQuestionModal({
   resLocals,
 }: {
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { question, course } = resLocals;
   if (questionCopyTargets == null) return '';

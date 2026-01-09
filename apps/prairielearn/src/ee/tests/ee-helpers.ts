@@ -3,7 +3,7 @@ import { afterAll, beforeAll } from 'vitest';
 import { config } from '../../lib/config.js';
 
 export function enableEnterpriseEdition() {
-  let originalIsEnterprise;
+  let originalIsEnterprise: boolean;
 
   beforeAll(() => {
     originalIsEnterprise = config.isEnterprise;

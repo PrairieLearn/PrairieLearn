@@ -8,7 +8,6 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import MemoryStream from 'memorystream';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 
 import * as bindMount from '@prairielearn/bind-mount';
 import { setupDockerAuth } from '@prairielearn/docker-utils';
@@ -51,6 +50,7 @@ const debug = debugfn('prairielearn:code-caller-container');
 const docker = new Docker();
 
 let executorImageTag = 'latest';
+
 async function updateExecutorImageTag() {
   if (config.workerExecutorImageTag) {
     // Give precedence to any value provided by config.
@@ -95,7 +95,7 @@ async function ensureImage() {
     logger.info(`Checking for executor image ${imageName}`);
     await image.inspect();
     logger.info(`Executor image ${imageName} found`);
-  } catch (e) {
+  } catch (e: any) {
     if (e.statusCode === 404) {
       logger.info('Image not found, pulling from registry');
       const start = performance.now();
@@ -159,7 +159,7 @@ export class CodeCallerContainer implements CodeCaller {
 
   private constructor(options: CodeCallerContainerOptions) {
     this.state = CREATED;
-    this.uuid = uuidv4();
+    this.uuid = crypto.randomUUID();
 
     this.debug('enter constructor()');
 
@@ -558,7 +558,7 @@ export class CodeCallerContainer implements CodeCaller {
           this.outputBoth = data.errorData.outputBoth;
         }
       }
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerContainer JSON: ' + e.message);
     }
     this.state = WAITING;
@@ -597,7 +597,7 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.container) {
       try {
         await this.container.kill();
-      } catch (e) {
+      } catch (e: any) {
         logger.error(`Error killing Docker container ${this.container.id}`, e);
       }
     }
@@ -605,12 +605,12 @@ export class CodeCallerContainer implements CodeCaller {
     if (this.hostDirectory) {
       try {
         await this.removeBindMountIfNeeded(this.hostDirectory.path);
-      } catch (e) {
+      } catch (e: any) {
         logger.error('Error unmounting host directory', e);
       }
       try {
         await this.hostDirectory.cleanup();
-      } catch (e) {
+      } catch (e: any) {
         logger.error(`Error removing host directory ${this.hostDirectory.path}`, e);
       }
     }
@@ -745,13 +745,13 @@ async function cleanupMountDirectories() {
 
         try {
           await fs.rmdir(absolutePath);
-        } catch (e) {
+        } catch (e: any) {
           logger.error(`Failed to remove temporary directory ${absolutePath}`);
           logger.error(e);
         }
       }),
     );
-  } catch (e) {
+  } catch (e: any) {
     logger.error(e);
   }
 }

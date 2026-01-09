@@ -55,13 +55,24 @@ SELECT
   to_jsonb(e) AS enrollment
 FROM
   enrollments AS e
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   e.course_instance_id = $course_instance_id
   AND (
     e.pending_uid = $uid
     OR u.uid = $uid
   );
+
+-- BLOCK select_enrollments_by_uids_in_course_instance
+SELECT
+  to_jsonb(e) AS enrollment,
+  to_jsonb(u) AS user
+FROM
+  enrollments AS e
+  JOIN users AS u ON (u.id = e.user_id)
+WHERE
+  u.uid = ANY ($uids::text[])
+  AND e.course_instance_id = $course_instance_id;
 
 -- BLOCK invite_existing_enrollment
 UPDATE enrollments

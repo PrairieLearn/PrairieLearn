@@ -11,7 +11,6 @@ import { ESLintUtils } from '@typescript-eslint/utils';
  * ```
  */
 export default ESLintUtils.RuleCreator.withoutDocs({
-  name: 'jsx-no-dollar-interpolation',
   meta: {
     type: 'problem',
     messages: {

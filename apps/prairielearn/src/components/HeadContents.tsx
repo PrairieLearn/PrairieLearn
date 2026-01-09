@@ -1,6 +1,11 @@
 import { html } from '@prairielearn/html';
 
-import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../lib/assets.js';
+import {
+  assetPath,
+  compiledScriptTag,
+  compiledStylesheetTag,
+  nodeModulesAssetPath,
+} from '../lib/assets.js';
 import { config } from '../lib/config.js';
 import {
   type Assessment,
@@ -43,7 +48,8 @@ export function HeadContents(titleOptions: TitleOptions) {
     <script src="${nodeModulesAssetPath('jquery/dist/jquery.min.js')}"></script>
     <script src="${nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}"></script>
     <script src="${nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}"></script>
-    ${compiledScriptTag('application.ts')} ${compiledScriptTag('navbarClient.ts')}
+    ${compiledStylesheetTag('prairielearn-ui.css')} ${compiledScriptTag('application.ts')}
+    ${compiledScriptTag('navbarClient.ts')}
   `;
 }
 
@@ -66,9 +72,6 @@ function displayFriendlyPage(page: string) {
  * 5. The string "PrairieLearn" (fixed).
  */
 function getTitle({ resLocals, pageTitle, pageNote }: TitleOptions) {
-  if (config.titleOverride) {
-    return config.titleOverride;
-  }
   const {
     assessment,
     assessment_set,

@@ -1,33 +1,24 @@
-import { type Options as CsvParseOptions, parse as csvParse } from 'csv-parse';
 import isPlainObject from 'is-plain-obj';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
-import { IdSchema } from './db-types.js';
+import { createCsvParser } from './csv.js';
+import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const DEFAULT_CSV_PARSE_OPTIONS: CsvParseOptions = {
-  columns: (header) => header.map((column) => column.toLowerCase()),
-  info: true, // include line number info
-  bom: true, // handle byte order mark if present (sometimes present in files from Excel)
-  trim: true, // trim whitespace around values
-  skipEmptyLines: true,
-  relaxColumnCount: true, // allow rows with different number of columns
-  maxRecordSize: 10000,
-};
-
 /**
  * Update question instance scores from a CSV file.
  *
- * @param assessment_id - The assessment to update.
+ * @param assessment - The assessment to update.
  * @param csvFile - An object with keys {originalname, size, buffer}.
  * @param user_id - The current user performing the update.
  * @param authn_user_id - The current authenticated user.
@@ -35,7 +26,7 @@ const DEFAULT_CSV_PARSE_OPTIONS: CsvParseOptions = {
  * @returns The ID of the job sequence
  */
 export async function uploadInstanceQuestionScores(
-  assessment_id: string,
+  assessment: Assessment,
   csvFile: Express.Multer.File | null | undefined,
   user_id: string,
   authn_user_id: string,
@@ -44,17 +35,18 @@ export async function uploadInstanceQuestionScores(
     throw new Error('No CSV file uploaded');
   }
 
-  const { assessment_label, course_instance_id, course_id } =
-    await selectAssessmentInfoForJob(assessment_id);
+  const { assessment_label, course_instance_id, course_id } = await selectAssessmentInfoForJob(
+    assessment.id,
+  );
 
   const serverJob = await createServerJob({
-    courseId: course_id,
-    courseInstanceId: course_instance_id,
-    assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
     type: 'upload_instance_question_scores',
     description: 'Upload question scores for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
+    courseId: course_id,
+    courseInstanceId: course_instance_id,
+    assessmentId: assessment.id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -71,34 +63,25 @@ export async function uploadInstanceQuestionScores(
     let skippedCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
-      csvParse({
-        ...DEFAULT_CSV_PARSE_OPTIONS,
-        cast: (value, context) => {
-          if (value === '') return null;
-          if (context.header) return value; // do not cast header row
-          if (context.column === 'instance') return Number.parseInt(value);
-          if (
-            [
-              'score_perc',
-              'points',
-              'manual_score_perc',
-              'manual_points',
-              'auto_score_perc',
-              'auto_points',
-            ].includes(context.column.toString())
-          ) {
-            return Number.parseFloat(value);
-          }
-          return value;
-        },
-      }),
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      {
+        integerColumns: ['instance'],
+        floatColumns: [
+          'score_perc',
+          'points',
+          'manual_score_perc',
+          'manual_points',
+          'auto_score_perc',
+          'auto_points',
+        ],
+      },
     );
 
     try {
       for await (const { info, record } of csvParser) {
         try {
-          if (await updateInstanceQuestionFromCsvRow(record, assessment_id, authn_user_id)) {
+          if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
             successCount++;
             const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
             if (output == null) {
@@ -110,7 +93,7 @@ export async function uploadInstanceQuestionScores(
             skippedCount++;
             // NO OUTPUT
           }
-        } catch (err) {
+        } catch (err: any) {
           errorCount++;
           const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {
@@ -171,13 +154,13 @@ export async function uploadAssessmentInstanceScores(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'upload_assessment_instance_scores',
+    description: 'Upload total scores for ' + assessment_label,
+    authnUserId: authn_user_id,
+    userId: user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_assessment_instance_scores',
-    description: 'Upload total scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -193,19 +176,9 @@ export async function uploadAssessmentInstanceScores(
     let errorCount = 0;
 
     job.info(`Parsing uploaded CSV file "${csvFile.originalname}" (${csvFile.size} bytes)`);
-    const csvParser = streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }).pipe(
-      csvParse({
-        ...DEFAULT_CSV_PARSE_OPTIONS,
-        cast: (value, context) => {
-          if (value === '') return null;
-          if (context.header) return value; // do not cast header row
-          if (context.column === 'instance') return Number.parseInt(value);
-          if (['score_perc', 'points'].includes(context.column.toString())) {
-            return Number.parseFloat(value);
-          }
-          return value;
-        },
-      }),
+    const csvParser = createCsvParser(
+      streamifier.createReadStream(csvFile.buffer, { encoding: 'utf8' }),
+      { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
     );
 
     try {
@@ -270,8 +243,8 @@ function getFeedbackOrNull(record: Record<string, any>): Record<string, any> | n
     let feedback_obj: Record<string, any> | null = null;
     try {
       feedback_obj = JSON.parse(record.feedback_json);
-    } catch (e) {
-      throw new Error(`Unable to parse "feedback_json" field as JSON: ${e}`);
+    } catch (err) {
+      throw new Error('Unable to parse "feedback_json" field as JSON', { cause: err });
     }
     if (feedback_obj == null || !isPlainObject(feedback_obj)) {
       throw new Error(`Parsed "feedback_json" is not a JSON object: ${record.feedback_json}`);
@@ -289,8 +262,8 @@ function getPartialScoresOrNull(record: Record<string, any>): Record<string, any
   if (record.partial_scores != null) {
     try {
       partial_scores = JSON.parse(record.partial_scores);
-    } catch (e) {
-      throw new Error(`Unable to parse "partial_scores" field as JSON: ${e}`);
+    } catch (err) {
+      throw new Error('Unable to parse "partial_scores" field as JSON', { cause: err });
     }
     if (partial_scores != null && !isPlainObject(partial_scores)) {
       throw new Error(`Parsed "partial_scores" is not a JSON object: ${record.partial_scores}`);
@@ -303,43 +276,43 @@ function getPartialScoresOrNull(record: Record<string, any>): Record<string, any
  * Update the score of an instance question based on a single row from the CSV file.
  *
  * @param record Data from the CSV row.
- * @param assessment_id ID of the assessment being updated.
+ * @param assessment The assessment being updated.
  * @param authn_user_id User ID currently authenticated.
  * @returns True if the record included an update, or false if the record included no scores or feedback to be changed.
  */
 async function updateInstanceQuestionFromCsvRow(
   record: Record<string, any>,
-  assessment_id: string,
+  assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
-  const uid_or_group = record.group_name ?? record.uid;
+  const uid_or_team = record.group_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
       sql.select_submission_to_update,
       {
-        assessment_id,
+        assessment_id: assessment.id,
         submission_id: record.submission_id,
-        uid_or_group,
+        uid_or_team,
         ai_number: record.instance,
         qid: record.qid,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
-        uid_or_group: z.string(),
+        uid_or_team: z.string(),
         qid: z.string(),
       }),
     );
 
     if (submission_data == null) {
       throw new Error(
-        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_group}, qid=${record.qid} for this assessment.`,
+        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_team}, qid=${record.qid} for this assessment.`,
       );
     }
-    if (uid_or_group !== null && submission_data.uid_or_group !== uid_or_group) {
+    if (uid_or_team !== null && submission_data.uid_or_team !== uid_or_team) {
       throw new Error(
-        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
+        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_team}.`,
       );
     }
     if (record.qid !== null && submission_data.qid !== record.qid) {
@@ -360,7 +333,7 @@ async function updateInstanceQuestionFromCsvRow(
     };
     if (Object.values(new_score).some((value) => value != null)) {
       await manualGrading.updateInstanceQuestionScore(
-        assessment_id,
+        assessment,
         submission_data.instance_question_id,
         submission_data.submission_id,
         null, // check_modified_at
@@ -392,10 +365,10 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
     return {
       id: record.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
-        sql.select_assessment_instance_group,
+        sql.select_assessment_instance_team,
         {
           assessment_id,
-          group_name: record.group_name,
+          team_name: record.group_name,
           instance_number: record.instance,
         },
         IdSchema,

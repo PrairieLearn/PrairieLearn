@@ -13,6 +13,7 @@ import * as Sentry from '@prairielearn/sentry';
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
 import { pullAndUpdateCourse } from '../../lib/course.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 const docker = new Docker();
@@ -21,11 +22,11 @@ const docker = new Docker();
  * @param locals res.locals
  * @returns The ID of the job sequence created for this process
  */
-export async function pullAndUpdate(locals: Record<string, any>): Promise<string> {
+export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
   const { jobSequenceId } = await pullAndUpdateCourse({
     courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
     ...locals.course,
   });
   return jobSequenceId;
@@ -35,13 +36,13 @@ export async function pullAndUpdate(locals: Record<string, any>): Promise<string
  * @param locals res.locals
  * @returns The ID of the job sequence created for this process
  */
-export async function gitStatus(locals: Record<string, any>): Promise<string> {
+export async function gitStatus(locals: UntypedResLocals): Promise<string> {
   const serverJob = await createServerJob({
-    courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'git_status',
     description: 'Show server git status',
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
+    courseId: locals.course.id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -202,7 +203,7 @@ async function pullAndPushToECR(image: string, dockerAuth: DockerAuth, job: Serv
 
 export async function ecrUpdate(
   images: { image: string }[],
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): Promise<string> {
   if (!config.cacheImageRegistry) {
     throw new Error('cacheImageRegistry not defined');
@@ -212,11 +213,11 @@ export async function ecrUpdate(
   const auth = await setupDockerAuth(ecr);
 
   const serverJob = await createServerJob({
-    courseId: locals.course.id,
-    userId: locals.user.user_id,
-    authnUserId: locals.authz_data.authn_user.user_id,
     type: 'images_sync',
     description: 'Sync Docker images from Docker Hub to PL registry',
+    userId: locals.user.id,
+    authnUserId: locals.authz_data.authn_user.id,
+    courseId: locals.course.id,
   });
 
   serverJob.executeInBackground(async (job) => {

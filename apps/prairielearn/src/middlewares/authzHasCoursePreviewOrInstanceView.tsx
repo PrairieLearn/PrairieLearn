@@ -5,7 +5,7 @@ import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../components/PageLayout.js';
-import { getPageContext } from '../lib/client/page-context.js';
+import { extractPageContext } from '../lib/client/page-context.js';
 
 import { AuthzAccessMismatch } from './AuthzAccessMismatch.js';
 import { getRedirectForEffectiveAccessDenied } from './redirectEffectiveAccessDenied.js';
@@ -31,7 +31,7 @@ export async function authzHasCoursePreviewOrInstanceView(
     // This is a dumb hack to work around the fact that this function is called from
     // the `authzWorkspace` middleware. That middleware is mounted on the container
     // proxy paths, but our CSRF middleware intentionally doesn't run there. The
-    // `getPageContext` function requires a CSRF token to be present, so we can't
+    // `extractPageContext` function requires a CSRF token to be present, so we can't
     // safely call it without one.
     //
     // If a CSRF token is not present, we fall through to the error below.
@@ -43,7 +43,10 @@ export async function authzHasCoursePreviewOrInstanceView(
       return { type: 'redirect', url: redirectUrl };
     }
 
-    const pageContext = getPageContext(res.locals);
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'instructor',
+    });
     return {
       type: 'body',
       html: PageLayout({

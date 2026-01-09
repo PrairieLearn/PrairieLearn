@@ -1,5 +1,23 @@
 # @prairielearn/session
 
+## 3.0.25
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 3.0.24
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 3.0.23
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 3.0.22
 
 ### Patch Changes

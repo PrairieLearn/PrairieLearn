@@ -581,7 +581,7 @@ def create_table_for_html_display(
             )
             format_errors = data["format_errors"].get(each_entry_name, None)
             if format_errors is None:
-                display_array += '<td class="allborder"><code class="user-output">'
+                display_array += '<td class="allborder"><code>'
             else:
                 display_array += (
                     '<td class="allborder"><code class="user-output-invalid">'
@@ -602,7 +602,7 @@ def create_table_for_html_display(
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += '<td class="allborder"><code class="user-output">'
+                    display_array += '<td class="allborder"><code>'
                 else:
                     display_array += (
                         '<td class="allborder"><code class="user-output-invalid">'

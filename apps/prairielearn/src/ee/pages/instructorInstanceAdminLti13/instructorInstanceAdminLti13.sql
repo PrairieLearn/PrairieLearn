@@ -77,12 +77,10 @@ FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   LEFT JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN LATERAL authz_assessment (a.id, $authz_data, $req_date, ci.display_timezone) AS aa ON TRUE
   LEFT JOIN assessment_modules AS am ON (am.id = a.assessment_module_id)
 WHERE
   ci.id = $course_instance_id
   AND a.deleted_at IS NULL
-  AND aa.authorized
 ORDER BY
   (
     CASE

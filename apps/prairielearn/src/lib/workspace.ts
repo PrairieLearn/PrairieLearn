@@ -13,7 +13,6 @@ import mustache from 'mustache';
 import fetch from 'node-fetch';
 import type { Socket } from 'socket.io';
 import * as tmp from 'tmp-promise';
-import { v4 as uuidv4 } from 'uuid';
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
@@ -22,12 +21,12 @@ import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { checkSignedToken } from '@prairielearn/signed-token';
 import * as workspaceUtils from '@prairielearn/workspace-utils';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import {
   CourseSchema,
-  DateFromISOString,
   QuestionSchema,
   VariantSchema,
   WorkspaceHostSchema,
@@ -60,6 +59,7 @@ interface DiskWorkspaceFile {
 interface BufferWorkspaceFile {
   name: string;
   buffer: Buffer | string;
+  mode?: number;
 }
 
 type WorkspaceFile = DiskWorkspaceFile | BufferWorkspaceFile;
@@ -70,6 +70,7 @@ interface DynamicWorkspaceFile {
   encoding?: BufferEncoding;
   questionFile?: string;
   serverFilesCourseFile?: string;
+  mode?: number;
 }
 
 interface InitializeResult {
@@ -88,7 +89,7 @@ interface FileGenerationError {
  * Internal error type for tracking submission with format issues.
  */
 export class SubmissionFormatError extends Error {
-  constructor(message) {
+  constructor(message: string) {
     super(message);
     this.name = 'SubmissionFormatError';
   }
@@ -171,6 +172,7 @@ async function controlContainer(
   action: 'init',
   options: { useInitialZip: boolean },
 ): Promise<void>;
+
 async function controlContainer(
   workspace_id: string,
   action: 'init' | 'getGradedFiles',
@@ -285,7 +287,7 @@ async function startup(workspace_id: string): Promise<void> {
             `${initializeResult.destinationPath}-bak-${timestampSuffix}`,
             { overwrite: true },
           );
-        } catch (err) {
+        } catch (err: any) {
           // If the directory couldn't be moved because it didn't exist, ignore the error.
           // But otherwise, rethrow it.
           if (err.code !== 'ENOENT') {
@@ -377,7 +379,7 @@ async function initialize(workspace_id: string): Promise<InitializeResult> {
 
   const root = config.workspaceHomeDirRoot;
   const destinationPath = path.join(root, remotePath);
-  const sourcePath = `${destinationPath}-${uuidv4()}`;
+  const sourcePath = `${destinationPath}-${crypto.randomUUID()}`;
 
   const { fileGenerationErrors } = await generateWorkspaceFiles({
     serverFilesCoursePath,
@@ -473,8 +475,9 @@ export async function generateWorkspaceFiles({
               await fsPromises.readFile(file.path, { encoding: 'utf-8' }),
               mustacheParams,
             ),
+            mode: file.stats.mode,
           };
-        } catch (err) {
+        } catch (err: any) {
           fileGenerationErrors.push({
             file: generatedFileName,
             err,
@@ -547,6 +550,19 @@ export async function generateWorkspaceFiles({
             return null;
           }
 
+          // Validate mode if provided. We're open to supporting other modes in the future,
+          // but for now we're keeping things simple and consistent with the file permissions
+          // that we'd get from reading Git-tracked files off disk, as Git doesn't track
+          // permission bits other than the executable bit.
+          if (file.mode !== undefined && file.mode !== 0o644 && file.mode !== 0o755) {
+            fileGenerationErrors.push({
+              file: file.name,
+              msg: `Dynamic workspace file has unsupported mode (${file.mode.toString(8)}). Only 0o644 and 0o755 are supported. File ignored.`,
+              data: file,
+            });
+            return null;
+          }
+
           if (!('contents' in file)) {
             fileGenerationErrors.push({
               file: file.name,
@@ -558,8 +574,9 @@ export async function generateWorkspaceFiles({
           return {
             name: normalizedFilename,
             buffer: Buffer.from(file.contents ?? '', file.encoding || 'utf-8'),
+            mode: file.mode,
           };
-        } catch (err) {
+        } catch (err: any) {
           // Error retrieving contents of dynamic file. Ignoring file.
           fileGenerationErrors.push({
             file: file.name,
@@ -584,9 +601,20 @@ export async function generateWorkspaceFiles({
         if ('localPath' in workspaceFile) {
           await fs.copy(workspaceFile.localPath, targetFile);
         } else {
-          await fs.writeFile(targetFile, workspaceFile.buffer);
+          // Preserve executable bits if they were captured by setting mode during writeFile
+          if (workspaceFile.mode !== undefined) {
+            // Only preserve executable bits, use 644 or 755 based on whether source was executable.
+            // We do this for consistent behavior in local development. Git doesn't track r/w bits,
+            // so we don't want instructors to have something that works locally but not in production.
+            const isExecutable = (workspaceFile.mode & 0o111) !== 0;
+            await fs.writeFile(targetFile, workspaceFile.buffer, {
+              mode: isExecutable ? 0o755 : 0o644,
+            });
+          } else {
+            await fs.writeFile(targetFile, workspaceFile.buffer);
+          }
         }
-      } catch (err) {
+      } catch (err: any) {
         fileGenerationErrors.push({
           file: workspaceFile.name,
           msg: `Workspace file could not be written to workspace: ${err.message}`,
@@ -628,7 +656,7 @@ export async function getGradedFiles(workspace_id: string): Promise<string | nul
     // Attempt to get the files directly from the host.
     try {
       zipPath = await controlContainer(workspace_id, 'getGradedFiles');
-    } catch (err) {
+    } catch (err: any) {
       logger.error('Error getting graded files from container', err);
       if (err instanceof SubmissionFormatError) throw err;
     }
@@ -664,7 +692,7 @@ async function getGradedFilesFromFileSystem(workspace_id: string): Promise<strin
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     // Turn any error into a `SubmissionFormatError` so that it is handled correctly.
     throw new SubmissionFormatError(err.message);
   }

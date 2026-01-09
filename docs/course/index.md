@@ -1,6 +1,8 @@
 # Course configuration
 
-**NOTE:** Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
+!!! note
+
+    Any time you edit the `infoCourse.json` file on a local copy of PrairieLearn, you need to click the “Load from disk” button in the page header so that the local PrairieLearn server reloads the changes.
 
 ## Directory layout
 
@@ -28,14 +30,14 @@ exampleCourse
     `-- secret1.js
 ```
 
-1. See the [questions documentation](../question/index.md) for more information.
-2. See the [course instance documentation](../courseInstance.md) for more information.
+1. See the [questions documentation](../question/overview.md) for more information.
+2. See the [course instance documentation](../courseInstance/index.md) for more information.
 3. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 4. See the [`clientFiles` and `serverFiles` documentation](../clientServerFiles.md) for information.
 
 - See an [example course directory](https://github.com/PrairieLearn/PrairieLearn/blob/master/exampleCourse) in PrairieLearn
 
-- See [HTML element list](../elements.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
+- See [HTML element list](../elements/index.md) for a list of elements provided by PrairieLearn to all courses; PrairieLearn will use a course version of an element whenever it exists.
 
 - See [clientFiles and serverFiles](../clientServerFiles.md) for information on the `clientFilesCourse` and `serverFilesCourse` directories.
 
@@ -268,7 +270,7 @@ Properties for assessmentModules are as follows.
 | `name`    | Brief name for the module. Shorter is better.    |
 | `heading` | Longer title for the module, displayed to users. |
 
-The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance.md#assessment-page-organization) for more details.
+The organization of the assessment page is configured at the course instance level. In the same PrairieLearn course, some course instances may group assessments by `"Module"`, and some others may group assessments by `"Set"`. See [Course Instance](../courseInstance/index.md#assessment-page-organization) for more details.
 
 ## Topics
 
@@ -367,7 +369,7 @@ The tag order in `infoCourse.json` is the order in which the tags will be listed
 
 ## Sharing Sets
 
-Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/index.md), or the [sharing documentation](../contentSharing.md).
+Questions can be added to sharing sets to enable other courses to use your questions in their assessments. Sharing sets are designed for sharing questions only to specific courses, if you would like to make questions available for anyone to use, you should make them publicly shared as explained in the [question documentation](../question/overview.md), or the [sharing documentation](../contentSharing.md).
 
 | Property      | Description                                                                                                                                                                                          |
 | ------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

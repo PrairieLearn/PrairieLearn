@@ -8,7 +8,7 @@ import { createServerJob, getJobSequence } from '../lib/server-jobs.js';
 import * as helperServer from './helperServer.js';
 
 function disableLoggingForTests() {
-  let originalSilent;
+  let originalSilent: boolean;
   beforeAll(() => {
     originalSilent = logger.silent;
     logger.silent = true;
@@ -29,6 +29,8 @@ describe('server-jobs', () => {
       const serverJob = await createServerJob({
         type: 'test',
         description: 'test server job',
+        userId: null,
+        authnUserId: null,
       });
 
       await serverJob.execute(async (job) => {
@@ -56,6 +58,8 @@ describe('server-jobs', () => {
       const serverJob = await createServerJob({
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(
@@ -79,6 +83,8 @@ describe('server-jobs', () => {
       const serverJob = await createServerJob({
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(
@@ -106,6 +112,8 @@ describe('server-jobs', () => {
       const serverJob = await createServerJob({
         type: 'test',
         description: 'test job sequence',
+        userId: null,
+        authnUserId: null,
       });
 
       await expect(

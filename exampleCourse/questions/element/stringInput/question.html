@@ -61,13 +61,16 @@ c = "{{params.c}}"
 <pl-card>
   <pl-question-panel>
     <p> To allow for case insensitivity, use <code>ignore-case="true"</code>.
-      This will autoconvert both the student answer and the correct answer to lower case. Entering the string below with
-      any choice of uppercase and lowercase letters will yield the correct answer as a result. </p>
+      This will autoconvert both the student answer and the correct answer to lower case. Changing the case of
+      any letter in the string below will yield the correct answer as a result. The attribute 
+      <code>initial-value</code> fills the textbox with the attribute's value when 
+      the question is first rendered. This attribute may save students time by not requiring
+      them to copy-paste text into the box.</p>
 
     <pl-code language="python">"{{params.e}}"</pl-code>
   </pl-question-panel>
 
-  <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true">
+  <pl-string-input answers-name="ans6" label="Input box is case insensitive = " ignore-case="true" initial-value="{{params.e}}">
   </pl-string-input>
 </pl-card>
 

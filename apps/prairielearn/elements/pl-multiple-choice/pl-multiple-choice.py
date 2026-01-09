@@ -162,6 +162,9 @@ def get_nota_aota_attrib(
     interpreted as true or false are assumed to be older
     interpretations. If the value cannot be interpreted as boolean,
     the string representation is used.
+
+    Returns:
+        The NOTA or AOTA attribute value
     """
     try:
         boolean_value = pl.get_boolean_attrib(

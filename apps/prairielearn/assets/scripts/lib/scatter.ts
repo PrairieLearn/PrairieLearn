@@ -52,14 +52,8 @@ export function scatter(
     ...options,
   };
 
-  const width =
-    (resolvedOptions.width ?? 600) -
-    (resolvedOptions.leftMargin ?? 70) -
-    (resolvedOptions.rightMargin ?? 0);
-  const height =
-    (resolvedOptions.height ?? 600) -
-    (resolvedOptions.topMargin ?? 10) -
-    (resolvedOptions.bottomMargin ?? 55);
+  const width = resolvedOptions.width - resolvedOptions.leftMargin - resolvedOptions.rightMargin;
+  const height = resolvedOptions.height - resolvedOptions.topMargin - resolvedOptions.bottomMargin;
 
   const xmin =
     resolvedOptions.xmin === null ? Math.min(...resolvedOptions.xgrid) : resolvedOptions.xmin;
@@ -100,11 +94,8 @@ export function scatter(
 
   const svg = select(selector)
     .append('svg')
-    .attr('width', width + (resolvedOptions.leftMargin ?? 70) + (resolvedOptions.rightMargin ?? 20))
-    .attr(
-      'height',
-      height + (resolvedOptions.topMargin ?? 10) + (resolvedOptions.bottomMargin ?? 55),
-    )
+    .attr('width', width + resolvedOptions.leftMargin + resolvedOptions.rightMargin)
+    .attr('height', height + resolvedOptions.topMargin + resolvedOptions.bottomMargin)
     .attr('class', 'center-block statsPlot')
     // We are deliberately setting role="none" here as we do not have any meaningful information to expose to screen readers.
     .attr('role', 'none')

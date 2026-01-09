@@ -48,7 +48,7 @@ async function doTransfer(res: Response, editor: Editor, fileTransferId: string)
 
   await sqldb.execute(sql.soft_delete_file_transfer, {
     id: fileTransferId,
-    user_id: res.locals.user.user_id,
+    user_id: res.locals.user.id,
   });
 }
 
@@ -61,10 +61,7 @@ export function getContentDir(fullPath: string, parentDir: string): string {
 router.get(
   '/:file_transfer_id',
   asyncHandler(async (req, res) => {
-    const file_transfer = await getFileTransfer(
-      req.params.file_transfer_id,
-      res.locals.user.user_id,
-    );
+    const file_transfer = await getFileTransfer(req.params.file_transfer_id, res.locals.user.id);
     const from_course = await selectCourseById(file_transfer.from_course_id);
 
     switch (file_transfer.transfer_type) {
@@ -72,8 +69,8 @@ router.get(
         const qid = getContentDir(file_transfer.from_filename, 'questions');
         const editor = new QuestionCopyEditor({
           locals: res.locals as any,
+          from_course,
           from_qid: qid,
-          from_course_short_name: from_course.short_name,
           from_path: path.join(config.filesRoot, file_transfer.storage_filename),
           is_transfer: true,
         });
@@ -97,8 +94,8 @@ router.get(
         const shortName = getContentDir(file_transfer.from_filename, 'courseInstances');
 
         const fromCourseInstance = await selectCourseInstanceByShortName({
-          course_id: file_transfer.from_course_id,
-          short_name: shortName,
+          course,
+          shortName,
         });
 
         const editor = new CourseInstanceCopyEditor({
@@ -112,7 +109,7 @@ router.get(
 
         const courseInstance = await selectCourseInstanceByUuid({
           uuid: editor.uuid,
-          course_id: res.locals.course.id,
+          course: res.locals.course,
         });
 
         flash(
@@ -121,7 +118,7 @@ router.get(
         );
         // Redirect to the copied course instance
         res.redirect(
-          `${res.locals.plainUrlPrefix}/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
+          `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/assessments`,
         );
         break;
       }

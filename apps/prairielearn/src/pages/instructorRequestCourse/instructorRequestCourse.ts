@@ -1,36 +1,36 @@
 import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
 import { logger } from '@prairielearn/logger';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Lti13Claim } from '../../ee/lib/lti13.js';
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
+import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
   CourseRequestRowSchema,
   type Lti13CourseRequestInput,
-  RequestCourse,
-} from './instructorRequestCourse.html.js';
+} from './instructorRequestCourse.types.js';
 
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const rows = await queryRows(
       sql.get_requests,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       CourseRequestRowSchema,
     );
 
@@ -47,7 +47,7 @@ router.get(
             ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'label']) ?? '',
           'cr-title':
             ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'title']) ?? '',
-          'cr-institution': res.locals.authn_institution.long_name ?? '',
+          'cr-institution': res.locals.authn_institution.long_name,
         };
       } catch {
         // If LTI information expired or otherwise errors, don't error here.
@@ -62,7 +62,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const short_name = req.body['cr-shortname'].toUpperCase() || '';
     const title = req.body['cr-title'] || '';
     const github_user = req.body['cr-ghuser'] || null;
@@ -112,7 +112,7 @@ router.post(
     const hasExistingCourseRequest = await queryRow(
       sql.get_existing_course_requests,
       {
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         short_name,
       },
       z.boolean(),
@@ -134,7 +134,7 @@ router.post(
       {
         short_name,
         title,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
         github_user,
         first_name,
         last_name,
@@ -148,7 +148,7 @@ router.post(
     // Check if we can automatically approve and create the course.
     const canAutoCreateCourse = await queryRow(
       sql.can_auto_create_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       z.boolean(),
     );
 
@@ -156,7 +156,7 @@ router.post(
       // Automatically fill in institution ID and display timezone from the user's other courses.
       const existingSettingsResult = await queryRow(
         sql.get_existing_owner_course_settings,
-        { user_id: res.locals.authn_user.user_id },
+        { user_id: res.locals.authn_user.id },
         z.object({
           institution_id: IdSchema,
           display_timezone: z.string(),

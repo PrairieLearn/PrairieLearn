@@ -1,6 +1,6 @@
 # SAML SSO configuration
 
-SAML SSO is available for users of us.prairielearn.com and ca.prairielearn.com. Reach out to <support@prairielearn.com> to get it set up.
+SAML SSO is available for users of [us.prairielearn.com](https://us.prairielearn.com). Reach out to <support@prairielearn.com> to get it set up.
 
 ## Required attributes
 

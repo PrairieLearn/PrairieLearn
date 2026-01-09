@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { getGettingStartedTasks } from '../../lib/getting-started.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
 
 import { InstructorCourseAdminGettingStarted } from './instructorCourseAdminGettingStarted.html.js';
@@ -13,11 +13,11 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     res.send(
       InstructorCourseAdminGettingStarted({
         resLocals: res.locals,
-        tasks: await getGettingStartedTasks({ course_id: res.locals.course.id }),
+        tasks: await getGettingStartedTasks({ course: res.locals.course }),
       }),
     );
   }),
@@ -25,7 +25,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }

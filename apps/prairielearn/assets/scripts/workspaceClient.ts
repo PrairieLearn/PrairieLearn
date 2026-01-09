@@ -67,14 +67,11 @@ onDocumentReady(function () {
   function setMessage(message: string) {
     messageBadge.textContent = message;
     failedMessage.textContent = message;
-    if (message) {
-      stateBadge.classList.add('badge-prepend');
-    } else {
-      stateBadge.classList.remove('badge-prepend');
-    }
+    stateBadge.classList.toggle('badge-prepend', !!message);
   }
 
   let previousState: null | string = null;
+
   function setState(state: string) {
     // Simplify the state machine by ignoring duplicate states.
     if (state === previousState) return;

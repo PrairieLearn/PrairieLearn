@@ -43,6 +43,10 @@ reviews:
     biome:
       enabled: false
 
+issue_enrichment:
+  auto_enrich:
+    enabled: false
+
 chat:
   auto_reply: true
 

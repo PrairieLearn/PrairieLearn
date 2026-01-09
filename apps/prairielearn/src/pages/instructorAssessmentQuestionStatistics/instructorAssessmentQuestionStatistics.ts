@@ -1,7 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -13,6 +12,7 @@ import {
   updateAssessmentStatistics,
 } from '../../lib/assessment.js';
 import { AssessmentSchema } from '../../lib/db-types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
@@ -25,7 +25,7 @@ import {
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-function makeStatsCsvFilename(locals) {
+function makeStatsCsvFilename(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -37,7 +37,7 @@ function makeStatsCsvFilename(locals) {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     // make sure statistics are up to date
     await updateAssessmentStatistics(res.locals.assessment.id);
 
@@ -79,7 +79,7 @@ router.get(
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.params.filename === makeStatsCsvFilename(res.locals)) {
       const cursor = await sqldb.queryCursor(
         sql.questions,
@@ -150,7 +150,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     // The action "refresh_stats" (from the button "Recalculate statistics") does
     // not change student data. Statistics *should* be recalculated automatically,
     // e.g., every time this page is loaded, but until then we will let anyone who

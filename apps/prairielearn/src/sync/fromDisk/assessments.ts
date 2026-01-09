@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -14,7 +15,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -314,7 +315,7 @@ function getParamsForAssessment(
     });
   });
 
-  const groupRoles = assessment.groupRoles.map((role) => ({
+  const teamRoles = assessment.groupRoles.map((role) => ({
     role_name: role.name,
     minimum: role.minimum,
     maximum: role.maximum,
@@ -348,22 +349,27 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    group_work: assessment.groupWork,
-    group_max_size: assessment.groupMaxSize ?? null,
-    group_min_size: assessment.groupMinSize ?? null,
-    student_group_create: assessment.studentGroupCreate,
-    student_group_choose_name: assessment.studentGroupChooseName,
-    student_group_join: assessment.studentGroupJoin,
-    student_group_leave: assessment.studentGroupLeave,
+    // TODO: Fix up schemas to refer to teams and not groups
+    // https://github.com/PrairieLearn/PrairieLearn/issues/13545
+    team_work: assessment.groupWork,
+    team_max_size: assessment.groupMaxSize ?? null,
+    team_min_size: assessment.groupMinSize ?? null,
+    student_team_create: assessment.studentGroupCreate,
+    student_team_choose_name: assessment.studentGroupChooseName,
+    student_team_join: assessment.studentGroupJoin,
+    student_team_leave: assessment.studentGroupLeave,
+
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
+    // TODO: This will be conditional based on the access control settings in the future.
+    modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
-    groupRoles,
+    teamRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
@@ -402,10 +408,17 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null) {
+    return false;
+  }
+
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(

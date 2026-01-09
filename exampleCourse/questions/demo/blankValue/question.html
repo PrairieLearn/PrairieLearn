@@ -1,0 +1,21 @@
+<pl-card>
+  <pl-question-panel>
+    <p>This question tests the blank-value attribute for various elements. 
+      For each element, the correct answer is 2. 
+      The blank-value attribute is set to 0 for the first version, and to the empty string for the second version.
+    </p>
+</pl-question-panel>
+
+<pl-number-input answers-name="q1" label="a = " correct-answer="2" allow-blank="true" blank-value="0"></pl-number-input>
+<pl-number-input answers-name="q2" label="a = " correct-answer="2" allow-blank="true" blank-value=""></pl-number-input><br>
+
+<pl-integer-input answers-name="q3" label="a = " correct-answer="2" allow-blank="true" blank-value="0"></pl-integer-input><br>
+<pl-integer-input answers-name="q4" label="a = " correct-answer="2" allow-blank="true" blank-value=""></pl-integer-input><br>
+
+<pl-units-input answers-name="q5" correct-answer="2m" label="a = " allow-blank="true" blank-value="0" atol="1cm"></pl-units-input><br>
+<pl-units-input answers-name="q6" correct-answer="2m" label="a = " allow-blank="true" blank-value="" atol="1cm"></pl-units-input><br>
+
+<pl-big-o-input answers-name="q7" correct-answer="2" variable="n" allow-blank="true" blank-value="0"></pl-big-o-input><br>
+<pl-big-o-input answers-name="q8" correct-answer="2" variable="n" allow-blank="true" blank-value=""></pl-big-o-input>
+
+</pl-card>

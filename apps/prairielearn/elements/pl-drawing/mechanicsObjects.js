@@ -1,4 +1,4 @@
-/* eslint-disable no-alert */
+/* eslint-disable no-alert, unicorn/no-immediate-mutation */
 /* global _, fabric, Sylvester, PLDrawingBaseElement, MathJax */
 
 const $V = Sylvester.Vector.create;

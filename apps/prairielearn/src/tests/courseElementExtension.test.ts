@@ -9,6 +9,7 @@ import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectQuestionByQid } from '../models/question.js';
 import * as freeform from '../question-servers/freeform.js';
+import type { ElementExtensionNameDirMap } from '../question-servers/freeform.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -24,7 +25,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
       'extension-clientfiles',
     ];
 
-    const check_ext = (loaded) => {
+    const check_ext = (loaded: ElementExtensionNameDirMap) => {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
         _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
@@ -78,8 +79,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
 
     afterAll(helperServer.after);
 
-    const locals: Record<string, any> = {};
-    locals.siteUrl = 'http://localhost:' + config.serverPort;
+    const locals: Record<string, any> = { siteUrl: 'http://localhost:' + config.serverPort };
     locals.baseUrl = locals.siteUrl + '/pl';
     locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1/instructor';
     locals.questionBaseUrl = locals.courseInstanceBaseUrl + '/question';

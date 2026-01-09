@@ -85,6 +85,7 @@ There are also utility methods that can make assertions about the results:
 
 There are also functions that make it easy to call a stored procedure with a given set of arguments. Consider a database that has the following sproc defined:
 
+<!-- prettier-ignore -->
 ```sql
 CREATE PROCEDURE insert_data (a integer, b integer) LANGUAGE SQL
 BEGIN ATOMIC

@@ -17,6 +17,7 @@ import * as util from 'node:util';
 import blocked from 'blocked';
 import blockedAt from 'blocked-at';
 import bodyParser from 'body-parser';
+import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
 import express, {
@@ -33,7 +34,6 @@ import multer from 'multer';
 import onFinished from 'on-finished';
 import passport from 'passport';
 import favicon from 'serve-favicon';
-import { v4 as uuidv4 } from 'uuid';
 
 import { cache } from '@prairielearn/cache';
 import { flashMiddleware } from '@prairielearn/flash';
@@ -48,7 +48,9 @@ import {
 import * as namedLocks from '@prairielearn/named-locks';
 import * as nodeMetrics from '@prairielearn/node-metrics';
 import * as sqldb from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
+import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -70,6 +72,7 @@ import * as load from './lib/load.js';
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from './lib/paths.js';
 import { isServerInitialized, isServerPending, setServerState } from './lib/server-initialized.js';
 import * as serverJobs from './lib/server-jobs.js';
+import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
@@ -179,8 +182,22 @@ export async function initExpress(): Promise<Express> {
     next();
   });
 
-  // API routes don't utilize sessions; don't run the session/flash middleware for them.
-  app.use(excludeRoutes(['/pl/api/'], sessionRouter));
+  app.use(
+    excludeRoutes(
+      [
+        // API routes don't utilize sessions; don't run the session/flash middleware for them.
+        '/pl/api/',
+        // Static assets don't need to read from or write to sessions.
+        //
+        // Note that the `/assets` route is configured to turn any missing files into 404
+        // errors, not to fall through and allow other routes to try to serve them. If they
+        // did fall through, we'd likely end up running code that does expect sessions to
+        // be present, e.g. `middlewares/authn`.
+        '/assets',
+      ],
+      sessionRouter,
+    ),
+  );
 
   // special parsing of file upload paths -- this is inelegant having it
   // separate from the route handlers but it seems to be necessary
@@ -385,7 +402,7 @@ export async function initExpress(): Promise<Express> {
   // Middleware for all requests
   // response_id is logged on request, response, and error to link them together
   app.use(function (req, res, next) {
-    res.locals.response_id = uuidv4();
+    res.locals.response_id = crypto.randomUUID();
     res.set('X-Response-ID', res.locals.response_id);
     next();
   });
@@ -584,6 +601,12 @@ export async function initExpress(): Promise<Express> {
     res.redirect(`${req.params[0]}/instance_admin/assessments`);
   });
 
+  // API route for looking up a course instance by enrollment code
+  app.use(
+    '/pl/course_instance/lookup',
+    (await import('./pages/course_instance/lookup/lookupByEnrollmentCode.js')).default,
+  );
+
   // is the course instance being accessed through the student or instructor page route
   app.use('/pl/course_instance/:course_instance_id(\\d+)', function (req, res, next) {
     res.locals.viewType = 'student';
@@ -598,6 +621,15 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)',
     (await import('./middlewares/authzCourseOrInstance.js')).default,
+  );
+
+  // This must come after `authzCourseOrInstance` but before the
+  // `studentCourseInstanceUpgrade` middleware and the `requireEnrollmentCode` middleware.
+  // so that it can render it even when the student hasn't upgraded yet.
+  // Otherwise, we might ask the student to upgrade before they know the enrollment code.
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/join',
+    (await import('./pages/enrollmentCodeRequired/enrollmentCodeRequired.js')).default,
   );
 
   if (isEnterprise()) {
@@ -619,6 +651,7 @@ export async function initExpress(): Promise<Express> {
 
   // all pages under /pl/course_instance require authorization
   app.use('/pl/course_instance/:course_instance_id(\\d+)', [
+    (await import('./middlewares/requireEnrollmentCode.js')).default,
     await enterpriseOnly(async () => (await import('./ee/middlewares/checkPlanGrants.js')).default),
     (await import('./middlewares/autoEnroll.js')).default,
     await enterpriseOnly(
@@ -813,10 +846,7 @@ export async function initExpress(): Promise<Express> {
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    [
-      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
-      (await import('./middlewares/selectAssessments.js')).default,
-    ],
+    [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
@@ -860,7 +890,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
+      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
     ],
   );
   app.use(
@@ -892,9 +922,7 @@ export async function initExpress(): Promise<Express> {
         next();
       },
       (
-        await import(
-          './pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js'
-        )
+        await import('./pages/instructorAssessmentQuestionStatistics/instructorAssessmentQuestionStatistics.js')
       ).default,
     ],
   );
@@ -963,9 +991,7 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzAssessmentQuestion.js')).default,
       (
-        await import(
-          './pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js'
-        )
+        await import('./pages/instructorAssessmentManualGrading/assessmentQuestion/assessmentQuestion.js')
       ).default,
     ],
   );
@@ -978,9 +1004,7 @@ export async function initExpress(): Promise<Express> {
       },
       (await import('./middlewares/selectAndAuthzInstanceQuestion.js')).default,
       (
-        await import(
-          './pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js'
-        )
+        await import('./pages/instructorAssessmentManualGrading/instanceQuestion/instanceQuestion.js')
       ).default,
     ],
   );
@@ -1043,7 +1067,6 @@ export async function initExpress(): Promise<Express> {
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment_instance/:assessment_instance_id(\\d+)',
     [
       (await import('./middlewares/selectAndAuthzAssessmentInstance.js')).default,
-      (await import('./middlewares/selectAssessments.js')).default,
       (await import('./pages/instructorAssessmentInstance/instructorAssessmentInstance.js'))
         .default,
     ],
@@ -1177,18 +1200,14 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/getting_started',
     (
-      await import(
-        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
-      )
+      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
     ).default,
   );
   if (isEnterprise()) {
     app.use(
       '/pl/course_instance/:course_instance_id(\\d+)/instructor/ai_generate_editor/:question_id(\\d+)',
       (
-        await import(
-          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
-        )
+        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
       ).default,
     );
     app.use(
@@ -1248,8 +1267,8 @@ export async function initExpress(): Promise<Express> {
       .default,
   );
   app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/access',
-    (await import('./pages/instructorInstanceAdminAccess/instructorInstanceAdminAccess.js'))
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/publishing',
+    (await import('./pages/instructorInstanceAdminPublishing/instructorInstanceAdminPublishing.js'))
       .default,
   );
   app.use(
@@ -1441,9 +1460,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/assessment_instance/:assessment_instance_id(\\d+)/time_remaining',
     (
-      await import(
-        './pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js'
-      )
+      await import('./pages/studentAssessmentInstanceTimeRemaining/studentAssessmentInstanceTimeRemaining.js')
     ).default,
   );
   app.use(
@@ -1646,9 +1663,7 @@ export async function initExpress(): Promise<Express> {
   );
   app.use('/pl/course/:course_id(\\d+)/course_admin/getting_started', [
     (
-      await import(
-        './pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js'
-      )
+      await import('./pages/instructorCourseAdminGettingStarted/instructorCourseAdminGettingStarted.js')
     ).default,
   ]);
   app.use(
@@ -1663,9 +1678,7 @@ export async function initExpress(): Promise<Express> {
     app.use(
       '/pl/course/:course_id(\\d+)/ai_generate_editor/:question_id(\\d+)',
       (
-        await import(
-          './ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js'
-        )
+        await import('./ee/pages/instructorAiGenerateDraftEditor/instructorAiGenerateDraftEditor.js')
       ).default,
     );
     app.use(
@@ -1726,9 +1739,7 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/copy_public_course_instance',
     (
-      await import(
-        './pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js'
-      )
+      await import('./pages/instructorCopyPublicCourseInstance/instructorCopyPublicCourseInstance.js')
     ).default,
   );
 
@@ -1798,7 +1809,7 @@ export async function initExpress(): Promise<Express> {
     },
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'public_question';
       next();
     },
@@ -1898,17 +1909,6 @@ export async function initExpress(): Promise<Express> {
   // Administrator pages ///////////////////////////////////////////////
 
   app.use('/pl/administrator', (await import('./middlewares/authzIsAdministrator.js')).default);
-
-  app.use(
-    '/pl/administrator',
-    asyncHandler(async (req, res, next) => {
-      const usesLegacyNavigation = await features.enabled('legacy-navigation', {
-        user_id: res.locals.authn_user.user_id,
-      });
-      res.locals.has_enhanced_navigation = !usesLegacyNavigation;
-      next();
-    }),
-  );
 
   app.use(
     '/pl/administrator/admins',
@@ -2149,8 +2149,8 @@ export async function insertDevUser() {
     " VALUES ('dev@example.com', 'Dev User')" +
     ' ON CONFLICT (uid) DO UPDATE' +
     ' SET name = EXCLUDED.name' +
-    ' RETURNING user_id;';
-  const user_id = await sqldb.queryRow(sql, UserSchema.shape.user_id);
+    ' RETURNING id;';
+  const user_id = await sqldb.queryRow(sql, UserSchema.shape.id);
   const adminSql =
     'INSERT INTO administrators (user_id)' +
     ' VALUES ($user_id)' +
@@ -2177,7 +2177,14 @@ if (isHMR && isServerPending()) {
   throw new Error('The server was restarted, but it was not fully initialized.');
 }
 
-if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startServer) {
+const shouldStartServer = run(() => {
+  if (!config.startServer) return false;
+  if (esMain(import.meta)) return true;
+  if (isHMR && !isServerInitialized()) return true;
+  return false;
+});
+
+if (shouldStartServer) {
   try {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
@@ -2198,6 +2205,18 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       configPaths = [argv.config];
     }
 
+    // If `PL_CONFIG_PATH` is set, it takes precedence over all other config paths.
+    if (process.env.PL_CONFIG_PATH) {
+      // If the path is specified, it must exist. We'll fail fast if it doesn't.
+      if (!fs.existsSync(process.env.PL_CONFIG_PATH)) {
+        throw new Error(
+          `Config file specified by PL_CONFIG_PATH does not exist: ${process.env.PL_CONFIG_PATH}`,
+        );
+      }
+
+      configPaths = [process.env.PL_CONFIG_PATH];
+    }
+
     // Load config immediately so we can use it configure everything else.
     await loadConfig(configPaths);
 
@@ -2214,6 +2233,32 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
       // is used, 100% of traces will be sent to Sentry, despite us never having set
       // `tracesSampleRate` in the Sentry configuration.
       contextManager: config.sentryDsn ? new Sentry.SentryContextManager() : undefined,
+      // This is a convoluted way to allow us to force sampling of 100% of traces
+      // for specific users. We'll provide the user with a little bit of JS to set
+      // a cookie in their browser. If that cookie is present, and passes a signature
+      // check, we'll sample the trace.
+      //
+      // See `scripts/gen-trace-sample-cookie.mjs` for a script that generates the cookie-setting script.
+      incomingHttpRequestHook: (request) => {
+        const cookies = cookie.parse(request.headers.cookie ?? '');
+        const samplingCookie = cookies.prairielearn_trace_sample;
+
+        // If the cookie isn't present, do nothing.
+        if (!samplingCookie) return {};
+
+        // Ensure that the signature is valid.
+        const data = getCheckedSignedTokenData(samplingCookie, config.secretKey);
+        if (!data) return {};
+
+        // Ensure that the validity hasn't expired. We use the `exp` field
+        // for this purpose.
+        const now = Math.floor(Date.now() / 1000);
+        if (!Number.isFinite(data.exp) || data.exp < now) return {};
+
+        // Sample this trace! This attribute will be picked up by a custom sampler
+        // in `@prairielearn/opentelemetry`.
+        return { force_sample: true };
+      },
     });
 
     // Same with Sentry configuration.
@@ -2520,6 +2565,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     externalGradingSocket.init();
     externalGrader.init();
     externalImageCaptureSocket.init();
+    serverJobProgressSocket.init();
 
     workspace.init();
     serverJobs.init();
@@ -2569,12 +2615,20 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
     //
     // We use `allSettled()` here to ensure that all tasks can gracefully
     // shut down, even if some of them fail.
-    logger.info('Shutting down async processing');
+    if (process.env.NODE_ENV !== 'test') {
+      logger.info('Shutting down async processing');
+    }
     const results = await Promise.allSettled([
       externalGraderResults.stop(),
       cron.stop(),
       serverJobs.stop(),
+      socketServer.close(),
+      cache.close(),
+      assets.close(),
+      codeCaller.finish(),
       stopBatchedMigrations(),
+      namedLocks.close(),
+      sqldb.closeAsync(),
     ]);
     results.forEach((r) => {
       if (r.status === 'rejected') {
@@ -2609,7 +2663,7 @@ if ((esMain(import.meta) || (isHMR && !isServerInitialized())) && config.startSe
 
   setServerState('initialized');
   logger.info('PrairieLearn server ready, press Control-C to quit');
-  if (config.devMode) {
+  if (config.devMode && process.env.NODE_ENV !== 'test') {
     logger.info('Go to ' + config.serverType + '://localhost:' + config.serverPort);
   }
 } else if (isHMR && isServerInitialized()) {

@@ -28,7 +28,7 @@ jobs:
     name: JavaScript
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # This makes Actions fetch all Git history so that Changesets can generate changelogs with the correct commits
           fetch-depth: 0
@@ -38,7 +38,7 @@ jobs:
           sudo curl -fsSL https://raw.githubusercontent.com/rhysd/actionlint/main/scripts/download-actionlint.bash | sudo bash -s -- latest /bin
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
           cache: 'yarn'
@@ -48,7 +48,7 @@ jobs:
         run: yarn install --immutable --inline-builds
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -57,16 +57,8 @@ jobs:
 
       - name: Build all code
         run: make build
-      - name: Set up Prettier and ESLint cache
-        uses: actions/cache@v4
-        with:
-          path: |
-            node_modules/.cache/prettier/.prettier-cache
-            .eslintcache
-          key: ${{ runner.os }}-prettier-eslint-${{ hashFiles('yarn.lock', '.eslintignore', '.eslintrc.cjs', '.prettierrc.json', '.prettierignore') }}-${{ hashFiles('packages/*/src/**') }}
-
       - name: Run the JavaScript linter
-        run: make lint-js-cached
+        run: make lint-js
       - name: Run the links linter
         run: make lint-links
 
@@ -82,11 +74,16 @@ jobs:
         run: make typecheck-scripts
       - name: Start Postgres
         run: |
-          sudo apt-get install -y --no-install-recommends postgresql-16-pgvector
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo apt-get purge -y man-db
+          sudo apt-get install -y --no-install-recommends postgresql-common
+          # Configure Postgres repository, purge existing postgres version, and install v17
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
+          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector
 
-          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
+
+          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
           fsync = off
           full_page_writes = off
           synchronous_commit = off
@@ -122,10 +119,12 @@ jobs:
     name: Python
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev
 
       - name: Install additional dependencies
         run: |-
@@ -137,15 +136,17 @@ jobs:
         with:
           python-version: '3.10'
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
       - name: Install all Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps
 
       - name: Set up Node
-        uses: actions/setup-node@v5
+        uses: actions/setup-node@v6
         with:
           node-version: '22'
       - name: Set up Yarn
@@ -169,7 +170,7 @@ jobs:
       - name: Run the HTML linter
         run: make lint-html
       - name: Upload Python coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           directory: apps/prairielearn/python
@@ -179,27 +180,30 @@ jobs:
     name: Other
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Install additional dependencies
         run: |-
-          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.12.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
-          sudo chmod +x /bin/hadolint && \
-          sudo apt-get install -y shellcheck
+          sudo curl -fsSL https://github.com/hadolint/hadolint/releases/download/v2.14.0/hadolint-Linux-x86_64 -o /bin/hadolint && \
+          sudo chmod +x /bin/hadolint
 
       - name: Install OS packages
-        run: sudo apt-get install -y graphviz libgraphviz-dev
+        run: |-
+          sudo apt-get update
+          sudo apt-get install -y graphviz libgraphviz-dev shellcheck
 
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
           python-version: '3.10'
       - name: Install uv
-        uses: astral-sh/setup-uv@v6
+        uses: astral-sh/setup-uv@v7
         with:
           enable-cache: true
           cache-dependency-glob: 'pyproject.toml'
           cache-suffix: 'dev'
       - name: Install Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps-dev
 
       - name: Run the Dockerfile linter

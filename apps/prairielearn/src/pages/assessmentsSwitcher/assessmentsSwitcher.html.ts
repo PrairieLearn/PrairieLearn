@@ -1,7 +1,7 @@
 import { html } from '@prairielearn/html';
 
-import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
-import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
+import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
+import { AssessmentSetHeadingHtml } from '../../components/AssessmentSetHeading.js';
 import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import type { NavSubPage } from '../../components/Navbar.types.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
@@ -13,21 +13,19 @@ export function AssessmentSwitcher({
   assessmentsGroupBy,
   currentAssessmentId,
   courseInstanceId,
-  plainUrlPrefix,
   targetSubPage,
 }: {
   assessmentRows: AssessmentRow[];
   assessmentsGroupBy: 'Set' | 'Module';
   currentAssessmentId: string;
   courseInstanceId: string;
-  plainUrlPrefix: string;
   /** The subPage that assessment links should redirect to. */
   targetSubPage?: NavSubPage;
 }) {
   return html`
     <div id="assessment-switcher-container" class="d-flex flex-column">
       ${assessmentRows.map((row, index) => {
-        const assessmentUrl = `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
+        const assessmentUrl = `/pl/course_instance/${courseInstanceId}/instructor/assessment/${row.id}/${targetSubPage ?? ''}`;
 
         const isActive = idsEqual(currentAssessmentId, row.id);
 
@@ -36,8 +34,8 @@ export function AssessmentSwitcher({
             ? html`
                 <div class="fw-bold ${index === 0 ? 'mt-0' : 'mt-3'}">
                   ${assessmentsGroupBy === 'Set'
-                    ? AssessmentSetHeading({ assessment_set: row.assessment_set })
-                    : AssessmentModuleHeading({
+                    ? AssessmentSetHeadingHtml({ assessment_set: row.assessment_set })
+                    : AssessmentModuleHeadingHtml({
                         assessment_module: row.assessment_module,
                       })}
                 </div>
@@ -70,11 +68,11 @@ export function AssessmentSwitcher({
                   : ''}
               <a href="${assessmentUrl}" class="${isActive ? 'text-white' : ''}">
                 ${row.title}
-                ${row.group_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
+                ${row.team_work ? html` <i class="fas fa-users" aria-hidden="true"></i> ` : ''}
               </a>
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
-                urlPrefix: `${plainUrlPrefix}/course_instance/${courseInstanceId}/instructor`,
+                urlPrefix: `/pl/course_instance/${courseInstanceId}/instructor`,
                 issueAid: row.tid,
               })}
             </div>

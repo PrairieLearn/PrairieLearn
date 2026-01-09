@@ -1,5 +1,27 @@
 # @prairielearn/zod
 
+## 1.5.0
+
+### Minor Changes
+
+- 36b46ef: Add `UniqueUidsFromStringSchema` and `DatetimeLocalStringSchema`
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
+## 1.4.3
+
+### Patch Changes
+
+- 0425922: Upgrade all JavaScript dependencies
+
+## 1.4.2
+
+### Patch Changes
+
+- c0b1c74: Enable `declarationMap`
+
 ## 1.4.1
 
 ### Patch Changes

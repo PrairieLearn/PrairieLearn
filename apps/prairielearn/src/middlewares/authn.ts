@@ -62,19 +62,19 @@ export default asyncHandler(async (req, res, next) => {
     // Enroll the load test user in the example course.
     const enrollment = await sqldb.queryOptionalRow(
       sql.enroll_user_in_example_course,
-      { user_id: res.locals.authn_user.user_id },
+      { user_id: res.locals.authn_user.id },
       EnrollmentSchema,
     );
 
     if (enrollment) {
       await insertAuditEvent({
-        table_name: 'enrollments',
+        tableName: 'enrollments',
         action: 'insert',
-        action_detail: 'implicit_joined',
-        row_id: enrollment.id,
-        new_row: enrollment,
-        agent_user_id: null,
-        agent_authn_user_id: null,
+        actionDetail: 'implicit_joined',
+        rowId: enrollment.id,
+        newRow: enrollment,
+        agentUserId: res.locals.user.id,
+        agentAuthnUserId: res.locals.authn_user.id,
       });
     }
 
