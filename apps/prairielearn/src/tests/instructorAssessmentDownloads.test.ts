@@ -50,6 +50,30 @@ const locals = {} as {
 
 const addNumbersMaxPoints = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.maxPoints;
 
+async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
+  const res = await fetch(url);
+  assert.equal(res.status, 200);
+  return cheerio.load(await res.text());
+}
+
+function getCsrfToken($: cheerio.CheerioAPI): string {
+  const elemList = $('form input[name="__csrf_token"]');
+  assert.isAtLeast(elemList.length, 1);
+  return elemList[0].attribs.value;
+}
+
+async function downloadCsv(url: string): Promise<any[]> {
+  const res = await fetch(url);
+  assert.equal(res.status, 200);
+  return csvParse<any>(await res.text(), { columns: true, cast: true });
+}
+
+function switchUser(user: Record<string, any>) {
+  config.authUid = user.uid;
+  config.authName = user.name;
+  config.authUin = user.uin;
+}
+
 describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
@@ -335,311 +359,160 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       );
     });
   });
-});
 
-describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, function () {
-  const storedConfig: Record<string, any> = {};
+  describe('Group Work Downloads', function () {
+    const storedConfig: Record<string, any> = {};
+    const ctx: Record<string, any> = {};
 
-  beforeAll(helperServer.before());
+    beforeAll(async function () {
+      storedConfig.authUid = config.authUid;
+      storedConfig.authName = config.authName;
+      storedConfig.authUin = config.authUin;
 
-  beforeAll(function () {
-    // Save the original config so we can restore it later
-    storedConfig.authUid = config.authUid;
-    storedConfig.authName = config.authName;
-    storedConfig.authUin = config.authUin;
-  });
-
-  afterAll(helperServer.after);
-
-  afterAll(function () {
-    // Restore the original config
-    Object.assign(config, storedConfig);
-  });
-
-  const groupLocals: Record<string, any> = {};
-
-  describe('1. Initialize group work assessment', function () {
-    it('should get the group work assessment', async () => {
+      // 1. Get group work assessment
       const assessment = await selectAssessmentByTid({
         course_instance_id: '1',
         tid: 'exam14-groupWork',
       });
-      groupLocals.assessment_id = assessment.id;
-      groupLocals.siteUrl = 'http://localhost:' + config.serverPort;
-      groupLocals.courseInstanceBaseUrl = groupLocals.siteUrl + '/pl/course_instance/1';
-      groupLocals.assessmentUrl =
-        groupLocals.courseInstanceBaseUrl + '/assessment/' + assessment.id;
-      groupLocals.instructorAssessmentGroupsUrl =
-        groupLocals.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/groups';
-      groupLocals.instructorAssessmentDownloadsUrl =
-        groupLocals.courseInstanceBaseUrl +
-        '/instructor/assessment/' +
-        assessment.id +
-        '/downloads';
-    });
-  });
+      ctx.assessment_id = assessment.id;
+      ctx.siteUrl = 'http://localhost:' + config.serverPort;
+      ctx.courseInstanceBaseUrl = ctx.siteUrl + '/pl/course_instance/1';
+      ctx.assessmentUrl = ctx.courseInstanceBaseUrl + '/assessment/' + assessment.id;
+      ctx.instructorAssessmentGroupsUrl =
+        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/groups';
+      ctx.instructorAssessmentDownloadsUrl =
+        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/downloads';
 
-  describe('2. Create users and team via instructor interface', function () {
-    it('should create 2 users for the team', async () => {
-      // exam14-groupWork requires minimum 2 users
-      groupLocals.studentUsers = await generateAndEnrollUsers({
-        count: 2,
-        course_instance_id: '1',
-      });
-      assert.lengthOf(groupLocals.studentUsers, 2);
-    });
-
-    it('should load the groups page', async () => {
-      const res = await fetch(groupLocals.instructorAssessmentGroupsUrl);
-      assert.equal(res.status, 200);
-      const page = await res.text();
-      groupLocals.$ = cheerio.load(page);
-    });
-
-    it('should have a CSRF token', function () {
-      const elemList = groupLocals.$('form input[name="__csrf_token"]');
-      assert.isAtLeast(elemList.length, 1);
-      groupLocals.__csrf_token = elemList[0].attribs.value;
-    });
-
-    it('should create a team with 2 users', async () => {
-      const res = await fetch(groupLocals.instructorAssessmentGroupsUrl, {
+      // 2. Create users and team
+      ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
+      ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
+      let res = await fetch(ctx.instructorAssessmentGroupsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_team',
-          __csrf_token: groupLocals.__csrf_token,
+          __csrf_token: getCsrfToken(ctx.$),
           team_name: 'testteam',
-          uids: groupLocals.studentUsers[0].uid + ',' + groupLocals.studentUsers[1].uid,
+          uids: ctx.studentUsers.map((u: any) => u.uid).join(','),
         }),
       });
       assert.equal(res.status, 200);
-    });
-  });
 
-  describe('3. Start the assessment as first student', function () {
-    it('should switch to first student user', function () {
-      const student = groupLocals.studentUsers[0];
-      config.authUid = student.uid;
-      config.authName = student.name;
-      config.authUin = student.uin;
-    });
-
-    it('should load assessment page', async () => {
-      const res = await fetch(groupLocals.assessmentUrl);
-      assert.equal(res.status, 200);
-      const page = await res.text();
-      groupLocals.$ = cheerio.load(page);
-    });
-
-    it('should have a CSRF token', function () {
-      const elemList = groupLocals.$('form input[name="__csrf_token"]');
-      assert.isAtLeast(elemList.length, 1);
-      groupLocals.__csrf_token = elemList[0].attribs.value;
-    });
-
-    it('should start the assessment', async () => {
-      const res = await fetch(groupLocals.assessmentUrl, {
+      // 3. Start assessment as student
+      switchUser(ctx.studentUsers[0]);
+      ctx.$ = await fetchPage(ctx.assessmentUrl);
+      res = await fetch(ctx.assessmentUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'new_instance',
-          __csrf_token: groupLocals.__csrf_token,
+          __csrf_token: getCsrfToken(ctx.$),
         }),
       });
       assert.equal(res.status, 200);
-      const page = await res.text();
-      groupLocals.$ = cheerio.load(page);
-      groupLocals.assessmentInstanceUrl = res.url;
-    });
-  });
+      ctx.$ = cheerio.load(await res.text());
 
-  describe('4. Answer the first question (addVectors)', function () {
-    it('should find the question link', function () {
-      // Find any question link in the assessment instance
-      const questionLinks = groupLocals.$('a[href*="/instance_question/"]');
+      // 4. Answer a question
+      const questionLinks = ctx.$('a[href*="/instance_question/"]');
       assert.isAtLeast(questionLinks.length, 1, 'Should have at least one question link');
-      groupLocals.questionUrl = groupLocals.siteUrl + questionLinks[0].attribs.href;
-    });
+      ctx.questionUrl = ctx.siteUrl + questionLinks[0].attribs.href;
+      ctx.$ = await fetchPage(ctx.questionUrl);
+      const variantInput = ctx.$('input[name="__variant_id"]');
+      assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
+      ctx.variant_id = variantInput[0].attribs.value;
 
-    it('should load the question page', async () => {
-      const res = await fetch(groupLocals.questionUrl);
-      assert.equal(res.status, 200);
-      const page = await res.text();
-      groupLocals.$ = cheerio.load(page);
-    });
-
-    it('should have variant_id and CSRF token', function () {
-      const variantInput = groupLocals.$('.question-form input[name="__variant_id"]');
-      assert.lengthOf(variantInput, 1);
-      groupLocals.variant_id = variantInput[0].attribs.value;
-
-      const csrfInput = groupLocals.$('.question-form input[name="__csrf_token"]');
-      assert.lengthOf(csrfInput, 1);
-      groupLocals.__csrf_token = csrfInput[0].attribs.value;
-    });
-
-    it('should get the variant from the database', async () => {
       const { queryRow } = await import('@prairielearn/postgres');
       const { VariantSchema } = await import('../lib/db-types.js');
-      groupLocals.variant = await queryRow(
+      ctx.variant = await queryRow(
         'SELECT * FROM variants WHERE id = $1',
-        [groupLocals.variant_id],
+        [ctx.variant_id],
         VariantSchema,
       );
-    });
 
-    it('should submit the correct answer', async () => {
-      const res = await fetch(groupLocals.questionUrl, {
+      res = await fetch(ctx.questionUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'grade',
-          __csrf_token: groupLocals.__csrf_token,
-          __variant_id: groupLocals.variant_id,
-          wx: String(groupLocals.variant.true_answer.wx),
-          wy: String(groupLocals.variant.true_answer.wy),
+          __csrf_token: getCsrfToken(ctx.$),
+          __variant_id: ctx.variant_id,
+          wx: String(ctx.variant.true_answer.wx),
+          wy: String(ctx.variant.true_answer.wy),
         }),
       });
       assert.equal(res.status, 200);
-    });
-  });
 
-  describe('5. Switch back to instructor and verify group work downloads', function () {
-    it('should switch back to instructor user', function () {
-      // Restore instructor credentials to access download URLs
+      // 5. Switch back to instructor and get filenames
       config.authUid = storedConfig.authUid;
       config.authName = storedConfig.authName;
       config.authUin = storedConfig.authUin;
-    });
+      ctx.assessment = await selectAssessmentById(ctx.assessment_id);
 
-    it('should verify assessment is team_work', async () => {
-      const assessment = await selectAssessmentById(groupLocals.assessment_id);
-      assert.isNotNull(assessment.assessment_set_id);
-      assert.isTrue(assessment.team_work);
-      groupLocals.assessment = assessment;
-    });
-
-    it('should store filenames for group work assessment', async () => {
-      groupLocals.filenames = getFilenames({
-        assessment: groupLocals.assessment,
-        assessment_set: await selectAssessmentSetById(groupLocals.assessment.assessment_set_id),
-        course_instance: await selectCourseInstanceById(groupLocals.variant.course_instance_id),
-        course: await selectCourseById(groupLocals.variant.course_id),
+      ctx.filenames = getFilenames({
+        assessment: ctx.assessment,
+        assessment_set: await selectAssessmentSetById(ctx.assessment.assessment_set_id),
+        course_instance: await selectCourseInstanceById(ctx.variant.course_instance_id),
+        course: await selectCourseById(ctx.variant.course_id),
       } as ResLocalsForPage<'assessment'>);
-
-      // Verify group work specific files exist in filenames
-      assert.isDefined(groupLocals.filenames.teamsCsvFilename, 'Should have groups.csv filename');
-      assert.isDefined(
-        groupLocals.filenames.scoresTeamCsvFilename,
-        'Should have scores_by_group.csv filename',
-      );
-      assert.isDefined(
-        groupLocals.filenames.pointsTeamCsvFilename,
-        'Should have points_by_group.csv filename',
-      );
     });
-  });
 
-  describe('6. Verify groups.csv content', function () {
-    it('should download and verify groups.csv', async () => {
-      const downloadUrl =
-        groupLocals.instructorAssessmentDownloadsUrl + '/' + groupLocals.filenames.teamsCsvFilename;
-      const res = await fetch(downloadUrl);
-      assert.equal(res.status, 200);
-      const csvContent = await res.text();
-      const data = csvParse<any>(csvContent, { columns: true, cast: true });
+    afterAll(function () {
+      Object.assign(config, storedConfig);
+    });
 
-      // groups.csv has one row per team member, so we expect at least 2 rows for our team
-      assert.isAtLeast(data.length, 2, 'groups.csv should have at least 2 rows (one per team member)');
+    it('should have team_work assessment with group-specific filenames', function () {
+      assert.isTrue(ctx.assessment.team_work);
+      assert.isDefined(ctx.filenames.teamsCsvFilename);
+      assert.isDefined(ctx.filenames.scoresTeamCsvFilename);
+      assert.isDefined(ctx.filenames.pointsTeamCsvFilename);
+    });
 
-      // Find rows for our test team (column is 'groupName', not 'Group name')
+    it('groups.csv should contain both team members', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.teamsCsvFilename,
+      );
       const teamRows = data.filter((row: any) => row['groupName'] === 'testteam');
-      assert.lengthOf(teamRows, 2, 'groups.csv should contain 2 rows for testteam');
+      assert.lengthOf(teamRows, 2);
 
-      // Verify both team members are listed
       const uids = teamRows.map((row: any) => row['UID']);
-      assert.include(uids, groupLocals.studentUsers[0].uid, 'Should include first student UID');
-      assert.include(uids, groupLocals.studentUsers[1].uid, 'Should include second student UID');
+      assert.include(uids, ctx.studentUsers[0].uid);
+      assert.include(uids, ctx.studentUsers[1].uid);
     });
-  });
 
-  describe('7. Verify scores_by_group.csv content', function () {
-    it('should download and verify scores_by_group.csv', async () => {
-      const downloadUrl =
-        groupLocals.instructorAssessmentDownloadsUrl +
-        '/' +
-        groupLocals.filenames.scoresTeamCsvFilename;
-      const res = await fetch(downloadUrl);
-      assert.equal(res.status, 200);
-      const csvContent = await res.text();
-      const data = csvParse<any>(csvContent, { columns: true, cast: true });
-
-      assert.isAtLeast(data.length, 1, 'scores_by_group.csv should have at least 1 row');
-
-      // Find the row for our test team (column is 'Group name')
+    it('scores_by_group.csv should contain team with valid score', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresTeamCsvFilename,
+      );
       const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
-      assert.isDefined(teamRow, 'scores_by_group.csv should contain testteam');
-
-      // Verify usernames column contains both team members
-      const usernames = teamRow['Usernames'];
-      assert.isString(usernames, 'Usernames should be a string');
-
-      // Verify score column exists (assessment name is 'Exam 14')
-      assert.property(teamRow, 'Exam 14', 'Should have Exam 14 column');
-      assert.isNumber(teamRow['Exam 14'], 'Score should be a number');
-      // Score should be >= 0 (may be 0 if exam not closed, or > 0 after correct answer)
-      assert.isAtLeast(teamRow['Exam 14'], 0, 'Score should be at least 0');
+      assert.isDefined(teamRow);
+      assert.isString(teamRow['Usernames']);
+      assert.property(teamRow, 'Exam 14');
+      assert.isNumber(teamRow['Exam 14']);
+      assert.isAtLeast(teamRow['Exam 14'], 0);
     });
-  });
 
-  describe('8. Verify points_by_group.csv content', function () {
-    it('should download and verify points_by_group.csv', async () => {
-      const downloadUrl =
-        groupLocals.instructorAssessmentDownloadsUrl +
-        '/' +
-        groupLocals.filenames.pointsTeamCsvFilename;
-      const res = await fetch(downloadUrl);
-      assert.equal(res.status, 200);
-      const csvContent = await res.text();
-      const data = csvParse<any>(csvContent, { columns: true, cast: true });
-
-      assert.isAtLeast(data.length, 1, 'points_by_group.csv should have at least 1 row');
-
-      // Find the row for our test team (column is 'Group name')
+    it('points_by_group.csv should contain team with valid points', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsTeamCsvFilename,
+      );
       const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
-      assert.isDefined(teamRow, 'points_by_group.csv should contain testteam');
-
-      // Verify usernames column contains both team members
-      const usernames = teamRow['Usernames'];
-      assert.isString(usernames, 'Usernames should be a string');
-
-      // Verify points column exists (assessment name is 'Exam 14')
-      assert.property(teamRow, 'Exam 14', 'Should have Exam 14 column');
-      assert.isNumber(teamRow['Exam 14'], 'Points should be a number');
-      // Points should be >= 0 (may be 0 if exam not closed, or > 0 after correct answer)
-      assert.isAtLeast(teamRow['Exam 14'], 0, 'Points should be at least 0');
+      assert.isDefined(teamRow);
+      assert.isString(teamRow['Usernames']);
+      assert.property(teamRow, 'Exam 14');
+      assert.isNumber(teamRow['Exam 14']);
+      assert.isAtLeast(teamRow['Exam 14'], 0);
     });
-  });
 
-  describe('9. Verify all other downloads work', function () {
-    it('should download all remaining files successfully', async () => {
-      const filenames: string[] = Object.values(groupLocals.filenames);
+    it('should download all files successfully', async () => {
+      const filenames: string[] = Object.values(ctx.filenames);
 
       await Promise.all(
         filenames.map(async (filename) => {
-          const downloadUrl = groupLocals.instructorAssessmentDownloadsUrl + '/' + filename;
-          const res = await fetch(downloadUrl);
+          const res = await fetch(ctx.instructorAssessmentDownloadsUrl + '/' + filename);
           assert.equal(res.status, 200, `Failed to download ${filename}`);
           if (filename.endsWith('.csv')) {
-            const csvContent = await res.text();
-            const data = csvParse<any>(csvContent, { columns: true, cast: true });
-            assert.isAtLeast(data.length, 1, `CSV file ${filename} should have at least 1 row`);
+            const data = csvParse<any>(await res.text(), { columns: true, cast: true });
+            assert.isAtLeast(data.length, 1);
           } else if (filename.endsWith('.zip')) {
-            const zipContent = Buffer.from(await res.arrayBuffer());
-            const zip = await unzipper.Open.buffer(zipContent);
-            assert.isAtLeast(
-              zip.files.length,
-              1,
-              `ZIP file ${filename} should have at least 1 file`,
-            );
+            const zip = await unzipper.Open.buffer(Buffer.from(await res.arrayBuffer()));
+            assert.isAtLeast(zip.files.length, 1);
           } else {
             assert.fail(`Unknown file type: ${filename}`);
           }
