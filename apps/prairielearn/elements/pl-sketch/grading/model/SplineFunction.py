@@ -1,7 +1,5 @@
 import numpy as np
 
-from grading.utils import collapse_ranges
-
 from .CurveFunction import CurveFunction
 from .MultiFunction import MultiFunction
 
@@ -12,8 +10,17 @@ class SplineFunction(MultiFunction):
     # self.functions = []
 
     # only provide path_info or curves, not both
-    def __init__(self, xaxis, yaxis, path_info=[], functions=[], tolerance=dict()):
-        super().__init__(xaxis, yaxis, path_info, tolerance)
+    def __init__(
+        self,
+        xaxis,
+        yaxis,
+        path_info,
+        grader,
+        current_tool,
+        functions=[],
+        tolerance=dict(),
+    ):
+        super().__init__(xaxis, yaxis, path_info, grader, current_tool, tolerance)
         # self.tolerance['straight_line'] = 0.1 # threshold for straight lines
         if functions:
             self.functions = functions
@@ -75,7 +82,7 @@ class SplineFunction(MultiFunction):
         for i in range(len(xvals)):
             if len(xvals[i]) != 0:
                 real_domain.append([np.min(xvals[i]), np.max(xvals[i])])
-        real_domain = collapse_ranges(real_domain)
+        real_domain = self.collapse_ranges(real_domain)
         self.domain = real_domain
 
     def create_from_path_info(self, path_info):

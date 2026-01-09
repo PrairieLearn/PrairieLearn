@@ -1,10 +1,20 @@
 import ast
+import copy
 import math
+from collections.abc import Callable
 
-import numpy as np
+from .model import (
+    Asymptote,
+    GradeableFunction,
+    LineSegment,
+    Polygon,
+)
+from .model.fit_curve import fitCurve
+from .model.GradeableFunction import function_to_spline
+from .types import SketchCanvasSize, SketchGrader, SketchInitial, SketchTool
 
 
-def parse_function_string(s: str):
+def parse_function_string(s: str) -> Callable[[float], float]:
     # If xyflip is set to true, functions might be defined using y as variable name
     # This does not affect function evaluation, so we simply rename the variable before parsing
     s = s.replace("y", "x")
@@ -68,302 +78,405 @@ def parse_function_string(s: str):
     return lambda x: eval(code, {"__builtins__": None, **name_whitelist}, {"x": x})
 
 
-def collapse_ranges(ranges):
-    all_ranges = ranges
-    if len(ranges) == 1:
-        return ranges
-    sorted_ranges = sorted(all_ranges, key=lambda x: x[0], reverse=False)
+def graph_to_screen(start: float, end: float, canvas_size: int, value: float) -> float:
+    return (value - start) * canvas_size / (end - start)
+
+
+def graph_to_screen_submission(
+    submission: dict, use_xaxis: bool, value: float
+) -> float:
+    start = (
+        submission["meta"]["config"]["xrange"][0]
+        if use_xaxis
+        else submission["meta"]["config"]["yrange"][0]
+    )
+    end = (
+        submission["meta"]["config"]["xrange"][1]
+        if use_xaxis
+        else submission["meta"]["config"]["yrange"][1]
+    )
+    canvas_size = (
+        submission["meta"]["config"]["width"]
+        if use_xaxis
+        else submission["meta"]["config"]["height"]
+    )
+
+    return graph_to_screen(start, end, canvas_size, value)
+
+
+def screen_to_graph(start: float, end: float, canvas_size: int, value: float) -> float:
+    return start + value * (end - start) / canvas_size
+
+
+def screen_to_graph_submission(
+    submission: dict, use_xaxis: bool, value: float
+) -> float:
+    start = (
+        submission["meta"]["config"]["xrange"][0]
+        if use_xaxis
+        else submission["meta"]["config"]["yrange"][0]
+    )
+    end = (
+        submission["meta"]["config"]["xrange"][1]
+        if use_xaxis
+        else submission["meta"]["config"]["yrange"][1]
+    )
+    canvas_size = (
+        submission["meta"]["config"]["width"]
+        if use_xaxis
+        else submission["meta"]["config"]["height"]
+    )
+
+    return screen_to_graph(start, end, canvas_size, value)
+
+
+def get_gap_length_px(
+    rd: list[list[float]], x1: float, x2: float, submission: dict
+) -> float:
+    if rd == []:
+        return graph_to_screen_submission(submission, True, (x2 - x1))
+    gap_total = 0
+    rstart = [float("-inf"), submission["meta"]["config"]["xrange"][0]]
+    rend = [submission["meta"]["config"]["xrange"][1], float("inf")]
+    rd.insert(0, rstart)
+    rd.append(rend)
+    for i in range(len(rd) - 1):
+        r = rd[i]
+        r_next = rd[i + 1]
+        # TODO: Both x1 and x2 between
+        if x1 >= r[1] and x1 < r_next[0]:
+            gap_total += r_next[0] - x1
+        if x2 > r[1] and x2 <= r_next[0]:
+            gap_total += x2 - r[1]
+        if r[1] > x1 and r_next[0] < x2:
+            gap_total += r_next[0] - r[1]
+
+    gap_total_px = graph_to_screen_submission(submission, True, gap_total)
+    return gap_total_px
+
+
+def get_coverage_length_px(
+    grader: SketchGrader,
+    submission: dict,
+    tools_to_check: list[str],
+    tool_dict: dict[str, SketchTool],
+    x1: float,
+    x2: float,
+) -> float:
+
+    if len(tools_to_check) == 0:
+        return True
+
+    gf_tools = ["spline", "freeform", "polyline", "point"]
     xrange = []
-    highest_end = None
-    for i in range(len(sorted_ranges)):
-        if i == 0:
-            xrange.append(sorted_ranges[i][0])
-            highest_end = sorted_ranges[i][1]
-        elif highest_end < sorted_ranges[i][0]:
-            xrange.extend((highest_end, sorted_ranges[i][0]))
-            highest_end = sorted_ranges[i][1]
-        elif highest_end < sorted_ranges[i][1]:
-            highest_end = sorted_ranges[i][1]
-    xrange.append(highest_end)
-    ls = [[xrange[i], xrange[i + 1]] for i in range(0, len(xrange) - 1, 2)]
-    return ls
+    tool_grader = None
+    for toolid in tools_to_check:
+        tool_used = tool_dict[toolid]["name"]
+        if tool_used == "polygon":
+            tool_grader = Polygon.Polygons(grader, submission, tool_used)
+        elif tool_used in gf_tools:
+            tool_grader = GradeableFunction.GradeableFunction(
+                grader, submission, tool_used
+            )
+        elif tool_used == "horizontal-line":
+            tool_grader = Asymptote.HorizontalAsymptotes(grader, submission, tool_used)
+        elif tool_used == "vertical-line":
+            tool_grader = Asymptote.VerticalAsymptotes(grader, submission, tool_used)
+        else:  # line-segment
+            tool_grader = LineSegment.LineSegments(grader, submission, tool_used)
+        # add tool's range to all ranges
+        if tool_grader:
+            xrange += tool_grader.get_range_defined()
+
+    if not tool_grader:
+        return True
+
+    rd = tool_grader.collapse_ranges(xrange)
+
+    gap_length = get_gap_length_px(rd, x1, x2, submission)
+    width_px = graph_to_screen_submission(submission, True, (x2 - x1))
+    return width_px - gap_length
 
 
-def function_to_spline(f, x_min, x_max, range_data):
-    spline = []
-
-    # set up values that are needed to convert the coordinates from graph to screen coordinates
-    x_start = range_data["x_start"]
-    x_end = range_data["x_end"]
-    y_start = range_data["y_start"]
-    y_end = range_data["y_end"]
-    width = range_data["width"]
-    height = range_data["height"]
-
-    # TODO: Compare different rates and potentially make a parameter?
-    sampling_rate = 102
-    for i in range(
-        1, sampling_rate
-    ):  # exclude the edges to avoid asymptote-related errors
-        x = x_min + ((x_max - x_min) / sampling_rate) * i
-        try:
-            x_screen = graph_to_screen_x(x_start, x_end, width, x)
-            y = f(x)
-            if type(y) is complex:
-                raise ArithmeticError
-            y_screen = graph_to_screen_y(y_start, y_end, height, y)
-            if x_screen is not None and y_screen is not None:
-                spline.append([x_screen, y_screen])
-        except Exception:
-            return spline, True, x + 0.001
-    return spline, False, None
+def get_tools_to_check(
+    grader: SketchGrader,
+    submission: dict,
+    tool_dict: dict[str, SketchTool],
+    not_allowed: list[str] | None = None,
+) -> list[str]:
+    if not_allowed is None:
+        not_allowed = []
+        tools_to_check = [
+            t["id"]
+            for t in grader["toolid"]
+            if len(submission["gradeable"][t["id"]]) != 0
+        ]
+    else:
+        tools_to_check = [
+            t
+            for t in submission["gradeable"]
+            if len(submission["gradeable"][t]) != 0
+            and not tool_dict[t]["helper"]
+            and tool_dict[t]["name"] not in not_allowed
+        ]
+    return tools_to_check
 
 
-def point_on_function(grader, point, func, tolerance):  # pixel tolerance
-    """Returns whether the point is on the function specified within tolerance
-    Args:
-        point: a list of two values representing the point's coordinates in an [x,y] format (ex. [1,1])
-        func: a callable function (ex. lambda x : x^2)
+def get_num_in_bound_occurrences(
+    toolid: str,
+    tool_dict: dict[str, SketchTool],
+    submission: dict,
+    x1: float,
+    x2: float,
+) -> int:
+    tool_used = tool_dict[toolid]["name"]
+    occs = []
+    gradeable = submission["gradeable"]
+    data = gradeable[toolid]
+    if tool_used == "point":
+        for point in data:
+            if point["point"] not in occs and point_in_range(
+                point["point"], x1, x2, submission, pix=True
+            ):
+                occs.append(point["point"])
+    elif tool_used == "horizontal-line":
+        for spline in data:
+            if spline["spline"] not in occs and spline_in_range(
+                spline["spline"], x1, x2, submission, pix=True, hl=True
+            ):
+                occs.append(spline["spline"])
+    else:  # spline_tools = "spline", "freeform", "polyline", "vertical-line", "horizontal-line"
+        for spline in data:
+            if spline["spline"] not in occs and spline_in_range(
+                spline["spline"], x1, x2, submission, pix=True
+            ):
+                occs.append(spline["spline"])
+    return len(occs)
+
+
+def spline_in_range(
+    spline: list[tuple[float, float]],
+    x1: float,
+    x2: float,
+    submission: dict,
+    pix: bool = False,
+    hl: bool = False,
+) -> bool:
+    real_points = [spline[i] for i in range(len(spline)) if i % 3 == 0]
+    for point in real_points:
+        if point_in_range(point, x1, x2, submission, pix=pix, hl=hl):
+            return True
+    return False
+
+
+def point_in_range(
+    point: tuple[float, float],
+    x1: float,
+    x2: float,
+    submission: dict,
+    pix: bool = False,
+    hl: bool = False,
+) -> bool:
+    xrange = submission["meta"]["config"]["xrange"]
+    yrange = submission["meta"]["config"]["yrange"]
+    width = submission["meta"]["config"]["width"]
+    height = submission["meta"]["config"]["height"]
+    if pix:  # convert to graph coordinates
+        x = screen_to_graph(xrange[0], xrange[1], width, point[0])
+        y = screen_to_graph(yrange[0], yrange[1], height, point[1])
+        point = (x, y)
+    if hl:
+        return in_range(point[1], yrange[0], yrange[0])
+    return in_range(point[1], yrange[0], yrange[1]) and in_range(point[0], x1, x2)
+
+
+def flip_grader_data(submission: dict) -> dict:
+    range_data: SketchCanvasSize = {
+        "x_start": submission["meta"]["config"]["xrange"][0],
+        "x_end": submission["meta"]["config"]["xrange"][1],
+        "y_start": submission["meta"]["config"]["yrange"][0],
+        "y_end": submission["meta"]["config"]["yrange"][1],
+        "width": submission["meta"]["config"]["width"],
+        "height": submission["meta"]["config"]["height"],
+    }
+    submission_new = copy.deepcopy(submission)
+    submission_data = submission_new["gradeable"]
+    for toolid in submission_data:
+        for i in range(len(submission_data[toolid])):
+            if "spline" in submission_data[toolid][i]:
+                new_points = [
+                    flip_point(point, range_data)
+                    for point in submission_data[toolid][i]["spline"]
+                ]
+                submission_data[toolid][i]["spline"] = new_points
+            if "point" in submission_data[toolid][i]:
+                submission_data[toolid][i]["point"] = flip_point(
+                    submission_data[toolid][i]["point"], range_data
+                )
+    submission_new["config"]["xrange"] = [
+        range_data["y_start"],
+        range_data["y_end"],
+    ]
+    submission_new["meta"]["config"]["yrange"] = [
+        range_data["x_start"],
+        range_data["x_end"],
+    ]
+    submission_new["meta"]["config"]["width"] = range_data["height"]
+    submission_new["meta"]["config"]["height"] = range_data["width"]
+
+    return submission
+
+
+def flip_point(
+    point: tuple[float, float], range_data: SketchCanvasSize
+) -> tuple[float, float]:  # point = [x,y]
+    x, y = point
+    # convert the point back to a graph coordinate
+    x_g = screen_to_graph(
+        range_data["x_start"],
+        range_data["x_end"],
+        range_data["width"],
+        x,
+    )
+    y_g = screen_to_graph(
+        range_data["y_start"],
+        range_data["y_end"],
+        range_data["height"],
+        y,
+    )
+    # convert the swapped point to a screen coordinate with the swapped screen dimensions
+    x_s = graph_to_screen(
+        range_data["y_start"],
+        range_data["y_end"],
+        range_data["height"],
+        y_g,
+    )
+    y_s = graph_to_screen(
+        range_data["x_start"],
+        range_data["x_end"],
+        range_data["width"],
+        x_g,
+    )
+    return (x_s, y_s)
+
+
+def in_range(val: float, start: float, end: float, tolerance: float = 0) -> bool:
+    return bool(val >= start + tolerance and val <= end - tolerance)
+
+
+def format_initials(
+    initials: list[SketchInitial], tool: SketchTool, ranges: SketchCanvasSize
+) -> list:
+    """
+    Convert initial drawing data for one sketching tool into the data format that is used by the client.
+    Note that this function does not validate the inputs and assumes that attribute combinations are all
+    appropriate for the given tool type.
 
     Returns:
-        boolean value representing whether the point is on the function
+        A list that can be converted into JSON for the client
     """
-    # set up debugger vars
-    if grader.debug:
-        grader.debugger.clear_vars()
-        grader.debugger.var2 = float("inf")
-
-    np.seterr(invalid="ignore")
-    test_range = [
-        point[0] - tolerance / grader.xscale,
-        point[0] + tolerance / grader.xscale,
-    ]
-    one_unit = 1 / grader.xscale  # check each pixel in test_range
-
-    for i in range(tolerance * 2 + 1):
-        x = test_range[0] + i * one_unit
-        try:
-            fun_y = func(x)
-            if not grader.within_y_range(fun_y, negative_tolerance=10):
-                continue
-            d = abs(point[1] - fun_y) * grader.yscale
-            if d <= tolerance:
-                np.seterr(invalid="warn")
-                return True
-            if grader.debug:
-                grader.debugger.var1 = (
-                    [x, fun_y] if d < grader.debugger.var2 else grader.debugger.var1
-                )
-                grader.debugger.var2 = min(grader.debugger.var2, d)
-        except Exception as e:
-            if grader.debug:
-                grader.debugger.add(
-                    f"Error calculating function at x = {point[0]}: {e}"
-                )
-            continue
-    np.seterr(invalid="warn")
-    if grader.debug:
-        grader.debugger.add(f"Submitted Point: {point}")
-        grader.debugger.add(f"Closest Actual Point: {grader.debugger.var1}")
-        grader.debugger.add(f"y-Distance: {grader.debugger.var2} px")
-    return False
-
-
-def point_on_function_x_compare(grader, point, splines, tolerance):
-    # set up debugger vars
-    if grader.debug:
-        grader.debugger.clear_vars()
-        grader.debugger.var2 = float("inf")
-
-    test_range = [
-        point[1] - tolerance / grader.yscale,
-        point[1] + tolerance / grader.yscale,
-    ]
-    one_unit = 1 / grader.yscale  # check (x,y) at each pixel in test_range
-    function_within_range = False
-    for s in splines:
-        for c in s.functions:  # CurveFunctions
-            for i in range(tolerance * 2 + 1):
-                y = test_range[0] + i * one_unit
-                try:
-                    if c.exists_at_y(y):
-                        function_within_range = True
-                        x = c.get_horizontal_line_crossings(y)
-                        x = [val for val in x if grader.within_x_range(val)]
-                        for val in x:
-                            d = abs(val - point[0]) * grader.xscale
-                            if d <= tolerance:
-                                return True
-                            if grader.debug:
-                                grader.debugger.var1 = (
-                                    [x, y]
-                                    if d < grader.debugger.var2
-                                    else grader.debugger.var1
-                                )
-                                grader.debugger.var2 = min(grader.debugger.var2, d)
-                except Exception:
-                    continue
-    # no values on the function at the corresponding y value (can happen for functions that have asymptote at y axis)
-    if not function_within_range:
-        min_distance = float("inf")
-        closest_ep_x = []
-        for s in splines:
-            ep = s.get_closest_endpoint(yval=point[1])
-            if abs(ep[1] - point[1]) < min_distance:
-                if grader.debug:
-                    grader.debugger.var3 = ep[1]
-                min_distance = abs(ep[1] - point[1])
-                closest_ep_x = ep[0]
-        if abs(closest_ep_x - point[0]) * grader.xscale <= tolerance:
-            return True
-        if grader.debug:
-            grader.debugger.var1 = [closest_ep_x, grader.debugger.var3]
-            grader.debugger.var2 = abs(closest_ep_x - point[0]) * grader.xscale
-    if grader.debug:
-        grader.debugger.add(f"Submitted Point: {point}")
-        grader.debugger.add(f"Closest Actual Point: {grader.debugger.var1}")
-        grader.debugger.add(f"x-Distance: {grader.debugger.var2} px")
-    return False
-
-
-def point_ltgt_function(grader, point, func, greater, tolerance):  # pixel tolerance
-    # set up debug
-    if grader.debug:
-        grader.debugger.clear_vars()
-        grader.debugger.var1 = float("inf")  # store lowest distance
-    test_range = [
-        point[0] - tolerance / grader.xscale,
-        point[0] + tolerance / grader.xscale,
-    ]
-    one_unit = 1 / grader.xscale  # check each pixel in test_range
-    g_tol = tolerance / grader.yscale
-    for i in range(tolerance * 2 + 1):
-        x = test_range[0] + i * one_unit
-        try:
-            fun_y = func(x)
-            if greater:
-                if point[1] >= fun_y - g_tol:
-                    return True
-            elif point[1] <= fun_y + g_tol:
-                return True
-            if grader.debug:
-                grader.debugger.var1 = min(
-                    grader.debugger.var1, abs(point[1] - fun_y) * grader.yscale
-                )
-        except Exception:
-            continue
-    if grader.debug:
-        if greater:
-            grader.debugger.add(
-                f"Point [{point[0]},{point[1]}] is {grader.debugger.var1} pixels below the function."
-            )
-            grader.debugger.add(f"Max allowed is {tolerance}.")
-        else:
-            grader.debugger.add(
-                f"Point [{point[0]},{point[1]}] is {grader.debugger.var1} pixels above the function."
-            )
-            grader.debugger.add(f"Max allowed is {tolerance}.")
-    return False
-
-
-# Helper function for matches_function_domain. Returns how much one
-# part of the submission domain(x1, x2) overlaps with all the domains
-# of the specified function (rd)
-def get_coverage_px(grader, rd, x1, x2):
-    coverage = 0
-    for i in range(len(rd)):
-        r = rd[i]
-        if x1 < r[0] and x2 > r[1]:
-            coverage += r[1] - r[0]
-            continue
-        if x1 > r[0] and x1 < r[1] and x2 > r[0] and x2 < r[1]:
-            coverage += x2 - x1
-            continue
-        if x1 > r[0] and x1 < r[1]:
-            coverage += r[1] - x1
-            continue
-        if x2 > r[0] and x2 < r[1]:
-            coverage += x2 - r[0]
-            continue
-    cov_total_px = coverage * grader.xscale
-    return cov_total_px
-
-
-def graph_to_screen_x(x_start, x_end, width, x):
-    xrange = abs(x_end - x_start)
-    conv_scale = width / xrange
-    if x < x_start:
-        x_graph_dist = x_start - x
-        x_screen_dist = x_graph_dist * conv_scale
-        return x_screen_dist
-    x_graph_dist = abs(x_start - x)
-    x_screen_dist = x_graph_dist * conv_scale
-    return x_screen_dist
-
-
-def graph_to_screen_y(y_start, y_end, height, y):
-    yrange = abs(y_end - y_start)
-    conv_scale = height / yrange
-    if y > y_end:
-        y_graph_dist = y_end - y
-        y_screen_dist = y_graph_dist * conv_scale
-        return y_screen_dist
-    y_graph_dist = abs(y_end - y)
-    y_screen_dist = y_graph_dist * conv_scale
-    return y_screen_dist
-
-
-def screen_to_graph_x(x_start, x_end, width, x):
-    xrange = abs(x_end - x_start)
-    conv_scale = xrange / width
-    x_screen_dist = x
-    x_graph_location = x_start + x_screen_dist * conv_scale
-    return x_graph_location
-
-
-def screen_to_graph_y(y_start, y_end, height, y):
-    yrange = abs(y_end - y_start)
-    conv_scale = yrange / height
-    y_screen_dist = y
-    y_graph_location = y_end - y_screen_dist * conv_scale
-    return y_graph_location
-
-
-def screen_to_graph(value, info, x=True):
-    config_data = info["submission"]["meta"]["config"]
-    graph_range = (
-        abs(config_data["xrange"][1] - config_data["xrange"][0])
-        if x
-        else abs(config_data["yrange"][1] - config_data["yrange"][0])
-    )
-    converted_value = screen_to_graph_dist(
-        graph_range=graph_range,
-        screen_range=config_data["width"] if x else config_data["height"],
-        screen_dist=value,
-    )
-    return converted_value
-
-
-def graph_to_screen(value, info, x=True):
-    config_data = info["submission"]["meta"]["config"]
-    graph_range = (
-        abs(config_data["xrange"][1] - config_data["xrange"][0])
-        if x
-        else abs(config_data["yrange"][1] - config_data["yrange"][0])
-    )
-    converted_value = graph_to_screen_dist(
-        graph_range=graph_range,
-        screen_range=config_data["width"] if x else config_data["height"],
-        graph_dist=value,
-    )
-    return converted_value
-
-
-def screen_to_graph_dist(graph_range, screen_range, screen_dist):
-    conversion_scale = graph_range / screen_range
-    return screen_dist * conversion_scale
-
-
-def graph_to_screen_dist(graph_range, screen_range, graph_dist):
-    conversion_scale = screen_range / graph_range
-    return graph_dist * conversion_scale
+    new_format = []
+    if tool["name"] in ["horizontal-line", "vertical-line"]:
+        for initial in initials:
+            if initial["toolid"] == tool["id"]:
+                coordinates = initial["coordinates"]
+                if tool["name"] == "horizontal-line":
+                    new_format = [
+                        {
+                            "x": graph_to_screen(
+                                ranges["x_start"],
+                                ranges["x_end"],
+                                ranges["width"],
+                                coord,
+                            )
+                        }
+                        for coord in coordinates
+                    ]
+                else:
+                    new_format = [
+                        {
+                            "y": graph_to_screen(
+                                ranges["y_start"],
+                                ranges["y_end"],
+                                ranges["height"],
+                                coord,
+                            )
+                        }
+                        for coord in coordinates
+                    ]
+    elif tool["name"] in ["spline", "freeform", "polyline"]:
+        for initial in initials:
+            if initial["toolid"] == tool["id"]:
+                if initial["fun"] is None:
+                    coordinates = initial["coordinates"]
+                    x_y_vals = [
+                        [
+                            graph_to_screen(
+                                ranges["x_start"],
+                                ranges["x_end"],
+                                ranges["width"],
+                                coordinates[i],
+                            ),
+                            graph_to_screen(
+                                ranges["y_start"],
+                                ranges["y_end"],
+                                ranges["height"],
+                                coordinates[i + 1],
+                            ),
+                        ]
+                        for i in range(0, len(coordinates), 2)
+                    ]
+                    # Free-draw needs special handling since it is stored in a different data format on the client side
+                    if tool["name"] == "freeform":
+                        x_y_vals = fitCurve(x_y_vals, 5)
+                    formatted_x_y_vals = [
+                        {"x": val[0], "y": val[1]} for val in x_y_vals
+                    ]
+                    new_format.append(formatted_x_y_vals)
+                else:
+                    function = None
+                    x1, x2 = initial["xrange"]
+                    function = parse_function_string(initial["fun"])
+                    # Automatically try to handle discontinuities by splitting up functions if sampling leads to undefined values
+                    broken = True
+                    while broken:
+                        x_y_vals, broken, new_start = function_to_spline(
+                            function,
+                            x1,
+                            x2,
+                            ranges,
+                        )
+                        if len(x_y_vals) > 0:
+                            # Free-draw needs special handling since it is stored in a different data format on the client side
+                            if tool["name"] == "freeform":
+                                x_y_vals = fitCurve(x_y_vals, 5)
+                            formatted_x_y_vals = [
+                                {"x": val[0], "y": val[1]} for val in x_y_vals
+                            ]
+                            new_format.append(formatted_x_y_vals)
+                        if broken:
+                            x1 = new_start
+        return new_format
+    else:  # one and two point tools
+        new_format = []
+        for initial in initials:
+            if initial["toolid"] == tool["id"]:
+                coordinates = initial["coordinates"]
+                new_format += [
+                    {
+                        "x": graph_to_screen(
+                            ranges["x_start"],
+                            ranges["x_end"],
+                            ranges["width"],
+                            coordinates[i],
+                        ),
+                        "y": graph_to_screen(
+                            ranges["y_start"],
+                            ranges["y_end"],
+                            ranges["height"],
+                            coordinates[i + 1],
+                        ),
+                    }
+                    for i in range(0, len(coordinates), 2)
+                ]
+    return new_format

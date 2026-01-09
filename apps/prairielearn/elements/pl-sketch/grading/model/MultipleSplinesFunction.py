@@ -2,8 +2,6 @@ import math
 
 import numpy as np
 
-from grading.utils import collapse_ranges
-
 from .MultiFunction import MultiFunction
 from .SplineFunction import SplineFunction
 
@@ -38,16 +36,27 @@ def greater_or_equal(a, b, delta=0):
 
 
 class MultipleSplinesFunction(MultiFunction):  # noqa: PLR0904
-    def __init__(self, xaxis, yaxis, path_info=[], functions=[], tolerance=dict()):
+    def __init__(
+        self,
+        xaxis,
+        yaxis,
+        path_info,
+        grader,
+        submission,
+        current_tool,
+        functions=[],
+        tolerance=dict(),
+    ):
         super().__init__(
-            xaxis, yaxis, path_info=path_info, functions=functions, tolerance=tolerance
+            xaxis, yaxis, path_info, grader, current_tool, functions, tolerance
         )
+        self.submission = submission
         self.set_default_tolerance("gap", 40)  # allow gaps up to x pixels in size
         self.set_default_tolerance(
             "angle", 10
         )  # x degrees allowed for angle difference
         self.set_default_tolerance(
-            "domain", path_info["grader"]["tolerance"]
+            "domain", grader["tolerance"]
         )  # allows x pixels outside of domains #25 default, used in range_empty
         self.set_default_tolerance(
             "approach angle", 45 * math.radians(1)
@@ -62,20 +71,24 @@ class MultipleSplinesFunction(MultiFunction):  # noqa: PLR0904
     def create_from_path_info(self, path_info):
         self.functions = []
         xvals = []
-        toolid = path_info["grader"]["currentTool"]
-        submission_data = path_info["submission"]["gradeable"][toolid]  # CHECK
+        toolid = self.current_tool
+        submission_data = self.submission["gradeable"][toolid]  # CHECK
         for i in range(len(submission_data)):
             if "spline" in submission_data[i]:
                 spline = SplineFunction(
-                    self.xaxis, self.yaxis, submission_data[i]["spline"]
+                    self.xaxis,
+                    self.yaxis,
+                    submission_data[i]["spline"],
+                    self.grader,
+                    self.current_tool,
                 )
                 self.functions.append(spline)
                 xvals += spline.get_domain()
 
         if len(xvals) == 0:
-            self.domain = [[None, None]]
+            self.domain = []
         else:
-            self.domain = collapse_ranges(xvals)
+            self.domain = self.collapse_ranges(xvals)
 
     # Grader Functions ###
     def get_domain(self):
@@ -324,7 +337,7 @@ class MultipleSplinesFunction(MultiFunction):  # noqa: PLR0904
             margin = 6 / self.xscale
             for point in self.points:
                 xvals.append([point.x - margin, point.x + margin])
-        rd = collapse_ranges(xvals)
+        rd = self.collapse_ranges(xvals)
         return rd
 
     def x_in_rd(self, x):

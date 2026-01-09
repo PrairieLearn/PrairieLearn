@@ -2,34 +2,31 @@ import math
 
 import numpy as np
 
-from grading.utils import collapse_ranges, point_ltgt_function, point_on_function
-
 from .Gradeable import Gradeable
 from .Point import Point
 from .Tag import Tag
 
 
 class LineSegments(Gradeable):  # noqa: PLR0904
-    def __init__(self, info, tolerance=dict()):
-        super().__init__(info, tolerance)
+    def __init__(self, grader, submission, current_tool, tolerance=dict()):
+        super().__init__(grader, submission, current_tool, tolerance)
 
         self.set_default_tolerance(
-            "line_distance", info["grader"]["tolerance"]
+            "line_distance", grader["tolerance"]
         )  # consider an line segment to be at a value if it is within tolerance pixels
         self.set_default_tolerance(
             "line_distance_squared",
-            info["grader"]["tolerance"] * info["grader"]["tolerance"],
+            grader["tolerance"] * grader["tolerance"],
         )
         self.set_default_tolerance("line_angle", 10)
-        self.set_default_tolerance("pixel", info["grader"]["tolerance"])
+        self.set_default_tolerance("pixel", grader["tolerance"])
         self.set_default_tolerance("extrema", 20)
         self.set_default_tolerance("comparison", 20)
         self.set_default_tolerance("min_percent_overlap", 0.1)
         self.set_default_tolerance("max_percent_overlap", 0.95)
 
         self.segments = []
-        toolid = info["grader"]["currentTool"]
-        submission_data = info["submission"]["gradeable"][toolid]
+        submission_data = submission["gradeable"][current_tool]
         for spline in submission_data:
             if len(spline["spline"]) == 4 and self.isALine(spline["spline"]):
                 seg = self.value_from_spline(spline["spline"])
@@ -100,14 +97,14 @@ class LineSegments(Gradeable):  # noqa: PLR0904
             ep2 = segment[1]
             x1, x2 = self.swap(ep1[0], ep2[0])
             xrange.append([x1, x2])
-        return collapse_ranges(xrange)
+        return self.collapse_ranges(xrange)
 
     def is_increasing_between(self, xmin, xmax):
         segments = self.get_segments_between_strict(xmin, xmax)
         if len(segments) == 0:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         for seg in segments:
             p1 = seg.getStartPoint()
             p2 = seg.getEndPoint()
@@ -129,7 +126,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if len(segments) == 0:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         for seg in segments:
             p1 = seg.getStartPoint()
             p2 = seg.getEndPoint()
@@ -151,7 +148,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if len(segments) == 0:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         for segment in segments:
             p1 = segment.getStartPoint()
             p2 = segment.getEndPoint()
@@ -165,7 +162,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
             for i in range(10):  # need 4 out of 5 hits to be considered
                 x = x1 + i * interval
                 y = self.get_y_value_at_x(segment, x)
-                if point_on_function(self, [x, y], func, tolerance):
+                if self.point_on_function((x, y), func, tolerance):
                     hits += 1
                 total += 1
             return hits == total  # general estimate
@@ -182,7 +179,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if len(segments) == 0:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         for segment in segments:
             p1 = segment.getStartPoint()
             p2 = segment.getEndPoint()
@@ -194,7 +191,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
             for i in range(10):
                 x = start_x + i * interval
                 y = self.get_y_value_at_x(segment, x)
-                if not point_ltgt_function(self, [x, y], func, greater, tolerance):
+                if not self.point_ltgt_function((x, y), func, greater, tolerance):
                     return False
         return True
 
@@ -231,6 +228,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
                 f"Line is {min(abs(c - x) for c in closest if c != float('-inf')) * self.xscale} pixels away from x = {x}."
             )
             self.debugger.add(f"Max allowed is {tolerance} pixels.")
+        return False
 
     def defined_at_y(self, y, tolerance):
         endpoints = []
@@ -267,6 +265,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
                 f"Line is {min(abs(c - y) for c in closest if c != float('-inf')) * self.yscale} pixels away from y = {y}."
             )
             self.debugger.add(f"Max allowed is {tolerance} pixels.")
+        return False
 
     def has_value_y_at_x(self, y, x, yTolerance=None, xTolerance=None):
         """Return whether the function has the value y at x.
@@ -344,7 +343,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if min_val is None:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         else:
             if self.get_min_value_between(xmin, xmax) > y - tolerance:
                 return True
@@ -353,6 +352,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
                     f"Line is less than y = {y} by {(y - min_val) * self.yscale} pixels."
                 )
                 self.debugger.add(f"Max allowed is {tolerance * self.yscale} pixels.")
+        return False
 
     def is_less_than_y_between(self, y, xmin, xmax, tolerance=None):
         """Return whether function is always less than y in the range xmin to xmax.
@@ -378,7 +378,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if max_val is None:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         else:
             if max_val < y + tolerance:
                 return True
@@ -387,6 +387,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
                     f"Line is greater than y = {y} by {(max_val - y) * self.yscale} pixels."
                 )
                 self.debugger.add(f"Max allowed is {tolerance * self.yscale} pixels.")
+        return False
 
     def check_eps(self, point, mode, tolerance):
         for segment in self.segments:
@@ -496,7 +497,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if len(self.segments) == 0:
             if self.debug:
                 self.debugger.add("Line not within range.")
-            return "ndef"
+            return True
         for segment in self.segments:
             total_length_px.append(self.get_segment_length(segment, pixel=True))
             total_length_graph.append(self.get_segment_length(segment, pixel=False))
@@ -533,7 +534,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if len(self.segments) == 0:
             if self.debug:
                 self.debugger.add("Line not found.")
-            return "ndef"
+            return True
         all_angles = [self.get_segment_angle(segment) for segment in self.segments]
         if not allow_flip:
             if all(
@@ -838,14 +839,13 @@ class LineSegments(Gradeable):  # noqa: PLR0904
             ):
                 segmentsBetween.append(segment)
 
-        segmentsBetweenStrict = []
-        for segment in segmentsBetween:
-            if self.get_percent_overlap_of_range(
-                segment, xmin, xmax
-            ) > 0.10 and self.segment_within_y_range_between_x(
-                segment, xmin, xmax
-            ):  # NOTE: test this value
-                segmentsBetweenStrict.append(segment)
+        # NOTE: test this value
+        segmentsBetweenStrict = [
+            segment
+            for segment in segmentsBetween
+            if self.get_percent_overlap_of_range(segment, xmin, xmax) > 0.10
+            and self.segment_within_y_range_between_x(segment, xmin, xmax)
+        ]
 
         return segmentsBetweenStrict
 
@@ -1059,7 +1059,7 @@ class LineSegments(Gradeable):  # noqa: PLR0904
         if tolerance is None:
             tolerance = self.tolerance["line_angle"] * math.radians(1)
         else:
-            tolerance = tolerance * math.radians(1)
+            tolerance *= math.radians(1)
 
         dist_tolerance = self.tolerance["line_distance"] / self.xscale
 

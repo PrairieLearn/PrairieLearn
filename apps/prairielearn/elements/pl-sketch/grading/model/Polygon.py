@@ -1,8 +1,6 @@
 from sympy.geometry import Line, Point, Segment, intersection
 from sympy.geometry import Polygon as SymPyPolygon
 
-from grading.utils import collapse_ranges, point_ltgt_function
-
 from .Gradeable import Gradeable
 from .LineSegment import LineSegment
 from .Point import Point as SR_Point
@@ -10,16 +8,15 @@ from .Tag import Tag
 
 
 class Polygons(Gradeable):  # noqa: PLR0904
-    def __init__(self, info, tolerance=dict()):
-        super().__init__(info, tolerance)
+    def __init__(self, grader, submission, current_tool, tolerance=dict()):
+        super().__init__(grader, submission, current_tool, tolerance)
         self.set_default_tolerance(
-            "point_distance", info["grader"]["tolerance"]
+            "point_distance", grader["tolerance"]
         )  # threshold for finding a point close to an x value (prev 10)
         self.polygons = []
 
         # self.version = self.get_plugin_version(info)
-        toolid = info["grader"]["currentTool"]
-        submission_data = info["submission"]["gradeable"][toolid]
+        submission_data = grader["gradeable"][current_tool]
         for spline in submission_data:
             if spline is not None:
                 points = self.convert_to_real_points(spline["spline"])
@@ -32,7 +29,7 @@ class Polygons(Gradeable):  # noqa: PLR0904
                         self.polygons[-1].set_tag(spline["tag"])
 
         # check the grader being used
-        if info["grader"]["type"] != "match":
+        if grader["type"] != "match":
             for polygon in self.polygons:
                 self.set_polygon_range_defined(polygon)
 
@@ -111,7 +108,7 @@ class Polygons(Gradeable):  # noqa: PLR0904
             all_ranges += (
                 polygon.range_defined if polygon.range_defined is not None else []
             )
-        rd = collapse_ranges(all_ranges)
+        rd = self.collapse_ranges(all_ranges)
         return rd
 
     # helper function for set_polygon_range_defined
@@ -338,7 +335,7 @@ class Polygons(Gradeable):  # noqa: PLR0904
             if incorrect_count > max_incorrect:
                 return False
             try:
-                if not point_ltgt_function(self, p, func, greater, tolerance):
+                if not self.point_ltgt_function(p, func, greater, tolerance):
                     incorrect_count += 1
             except Exception:
                 continue

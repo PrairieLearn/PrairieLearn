@@ -2,19 +2,13 @@ import base64
 import json
 import random
 import string
-from typing import TypedDict
 
 import chevron
 import lxml.html
 import prairielearn as pl
 from grading.grade_modes import grade_submission
-from grading.model.fit_curve import fitCurve
-from grading.utils import (
-    function_to_spline,
-    graph_to_screen_x,
-    graph_to_screen_y,
-    parse_function_string,
-)
+from grading.types import SketchCanvasSize, SketchGrader, SketchInitial, SketchTool
+from grading.utils import format_initials, parse_function_string
 
 WEIGHT_DEFAULT = 1
 XRANGE_DEFAULT = "-5,5"
@@ -26,65 +20,6 @@ READ_ONLY_DEFAULT = False
 COORDINATES_DEFAULT = "cartesian"
 ADD_DEFAULT_TOOLS_DEFAULT = False
 ALLOW_BLANK_DEFAULT = False
-
-
-# tool, graders, initials definitions
-class SketchTool(TypedDict):
-    name: str
-    id: str | None
-    label: str | None
-    color: str | None
-    readonly: bool | None
-    helper: bool | None
-    limit: int | None
-    group: str | None
-    dashstyle: str | None
-    directionconstraint: str | None
-    lengthconstraint: float | None
-    size: int | None
-    hollow: bool | None
-    opacity: float | None
-    closed: (
-        bool | None
-    )  # Polygons are internally "closed polylines" - this flag is the only difference
-    fillcolor: str | None
-    arrowhead: int | None
-
-
-class SketchGrader(TypedDict):
-    type: str | None
-    toolid: list[SketchTool] | None
-    x: float | str | None
-    y: float | None
-    endpoint: str | None
-    xrange: list[float] | None
-    yrange: list[float] | None
-    count: int | None
-    fun: str | None
-    xyflip: bool | None
-    mode: str | None
-    allowundefined: bool | None
-    weight: int | None
-    stage: int | None
-    tolerance: int | None
-    feedback: str | None
-    debug: bool | None
-
-
-class SketchCanvasSize(TypedDict):
-    x_start: float
-    x_end: float
-    y_start: float
-    y_end: float
-    height: int
-    width: int
-
-
-class SketchInitial(TypedDict):
-    toolid: str
-    fun: str | None
-    xrange: list[float]
-    coordinates: list[float]
 
 
 def prepare(element_html: str, data: pl.QuestionData) -> None:
@@ -146,7 +81,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len(tool_data) == 0:
         fd = {"name": "freeform", "id": "fd", "label": "Function f(x)", "color": "blue"}
         tool_data["fd"] = {
-            "type": "free-draw",
+            "name": "free-draw",
             "helper": False,
             "readonly": False,
             "label": "Function f(x)",
@@ -649,8 +584,8 @@ def check_grader(
         "toolid": tools,
         "weight": pl.get_integer_attrib(grader_tag, "weight", defaults["weight"]),
         "stage": pl.get_integer_attrib(grader_tag, "stage", defaults["stage"]),
-        "tolerance": pl.get_boolean_attrib(
-            grader_tag, "xyflip", defaults.get("tolerance", 15)
+        "tolerance": pl.get_integer_attrib(
+            grader_tag, "tolerance", int(defaults.get("tolerance", 15))
         ),
         "debug": pl.get_boolean_attrib(grader_tag, "xyflip", defaults["debug"]),
         "feedback": pl.get_string_attrib(grader_tag, "feedback", None),
@@ -759,124 +694,6 @@ def check_initial(
         "xrange": initial_xrange,
     }
     return initial
-
-
-def format_initials(
-    initials: list[SketchInitial], tool: SketchTool, ranges: SketchCanvasSize
-) -> list:
-    """
-    Convert initial drawing data for one sketching tool into the data format that is used by the client.
-    Note that this function does not validate the inputs and assumes that attribute combinations are all
-    appropriate for the given tool type.
-
-    Returns:
-        A list that can be converted into JSON for the client
-    """
-    new_format = []
-    if tool["name"] in ["horizontal-line", "vertical-line"]:
-        for initial in initials:
-            if initial["toolid"] == tool["id"]:
-                coordinates = initial["coordinates"]
-                if tool["name"] == "horizontal-line":
-                    new_format = [
-                        {
-                            "x": graph_to_screen_x(
-                                ranges["x_start"],
-                                ranges["x_end"],
-                                ranges["width"],
-                                float(coord),
-                            )
-                        }
-                        for coord in coordinates
-                    ]
-                else:
-                    new_format = [
-                        {
-                            "y": graph_to_screen_y(
-                                ranges["y_start"],
-                                ranges["y_end"],
-                                ranges["height"],
-                                float(coord),
-                            )
-                        }
-                        for coord in coordinates
-                    ]
-    elif tool["name"] in ["spline", "freeform", "polyline"]:
-        for initial in initials:
-            if initial["toolid"] == tool["id"]:
-                if initial["fun"] is None:
-                    coordinates = initial["coordinates"]
-                    x_y_vals = [
-                        [
-                            graph_to_screen_x(
-                                ranges["x_start"],
-                                ranges["x_end"],
-                                ranges["width"],
-                                coordinates[i],
-                            ),
-                            graph_to_screen_y(
-                                ranges["y_start"],
-                                ranges["y_end"],
-                                ranges["height"],
-                                coordinates[i + 1],
-                            ),
-                        ]
-                        for i in range(0, len(coordinates), 2)
-                    ]
-                    # Free-draw needs special handling since it is stored in a different data format on the client side
-                    if tool["name"] == "freeform":
-                        x_y_vals = fitCurve(x_y_vals, 5)
-                    formatted_x_y_vals = [
-                        {"x": val[0], "y": val[1]} for val in x_y_vals
-                    ]
-                    new_format.append(formatted_x_y_vals)
-                else:
-                    function = None
-                    x1, x2 = initial["xrange"]
-                    function = parse_function_string(initial["fun"])
-                    # Automatically try to handle discontinuities by splitting up functions if sampling leads to undefined values
-                    broken = True
-                    while broken:
-                        x_y_vals, broken, new_start = function_to_spline(
-                            function,
-                            x1,
-                            x2,
-                            ranges,
-                        )
-                        if len(x_y_vals) > 0:
-                            # Free-draw needs special handling since it is stored in a different data format on the client side
-                            if tool["name"] == "freeform":
-                                x_y_vals = fitCurve(x_y_vals, 5)
-                            formatted_x_y_vals = [
-                                {"x": val[0], "y": val[1]} for val in x_y_vals
-                            ]
-                            new_format.append(formatted_x_y_vals)
-                        if broken:
-                            x1 = new_start
-        return new_format
-    else:  # one and two point tools
-        new_format = []
-        for initial in initials:
-            if initial["toolid"] == tool["id"]:
-                coordinates = initial["coordinates"]
-                new_format += [
-                    {
-                        "x": graph_to_screen_x(
-                            ranges["x_start"],
-                            ranges["x_end"],
-                            ranges["width"],
-                            coordinates[i],
-                        ),
-                        "y": graph_to_screen_y(
-                            ranges["y_start"],
-                            ranges["y_end"],
-                            ranges["height"],
-                            coordinates[i + 1],
-                        ),
-                    }
-                    for i in range(0, len(coordinates), 2)
-                ]
-    return new_format
 
 
 def render(element_html: str, data: pl.QuestionData) -> str:
@@ -1043,18 +860,18 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     # each grading criterion. Arguably, drawing a non-function when a function is requested is an incorrect answer
     # and does not need to be flagged as invalid.
     spline_based_tool_names = ["free-draw", "spline", "polyline"]
-    tool_info = data["params"][name]["sketch_config"]["tool_info"]
+    tool_data = data["params"][name]["sketch_config"]["tool_data"]
 
     # we don't want to check overlap if the graph is flipped for f(y) grading
     no_overlap_check = []
     for grader in data["params"][name]["sketch_config"]["graders"]:
         if "xyflip" in grader and grader["xyflip"] is True:
             no_overlap_check += [
-                tool_info[tool.strip()]["type"] for tool in grader["toolid"].split(",")
+                tool_data[tool.strip()]["name"] for tool in grader["toolid"].split(",")
             ]
 
     for toolid in gradeable:
-        tool_type = tool_info[toolid]["type"]
+        tool_type = tool_data[toolid]["name"]
         if tool_type == "polygon":
             for spline in gradeable[toolid]:
                 if (len(spline["spline"]) - 1) / 3 > 30:
@@ -1084,7 +901,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 if total_overlap > overlap_tolerance:
                     data["format_errors"][name] = (
                         'Multiple "'
-                        + tool_info[toolid]["label"]
+                        + tool_data[toolid]["label"]
                         + (
                             '" lines are defined in the same range. These lines are interpreted as functions, and only one y-value can exist for any x-coordinate.'
                         )
@@ -1139,8 +956,6 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             else:
                 # Incorrect answers block later stages and also trigger feedback
                 scores.append(0)
-                if type(feedback) is str:
-                    feedback = [feedback]
                 feedbacks.add(feedback[0])
                 if debug:
                     debug_messages += [feedback]

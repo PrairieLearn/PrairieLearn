@@ -1,7 +1,5 @@
 import numpy as np
 
-from grading.utils import collapse_ranges
-
 from .Function import Function
 
 # "interface" for Functions that are composed of multiple Functions
@@ -13,8 +11,17 @@ class MultiFunction(Function):
 
     # only provide path_info or functions, not both
     # will use functions if they exist
-    def __init__(self, xaxis, yaxis, path_info=[], functions=[], tolerance=dict()):
-        super().__init__(xaxis, yaxis, path_info, tolerance)
+    def __init__(
+        self,
+        xaxis,
+        yaxis,
+        path_info,
+        grader,
+        current_tool,
+        functions=[],
+        tolerance=dict(),
+    ):
+        super().__init__(xaxis, yaxis, path_info, grader, current_tool, tolerance)
         self.set_default_tolerance("straight_line", 0.1)  # threshold for straight lines
         if functions:
             self.functions = functions
@@ -59,7 +66,7 @@ class MultiFunction(Function):
         xvals = []
         for function in self.functions:
             xvals += function.get_domain()
-        return collapse_ranges(xvals)
+        return self.collapse_ranges(xvals)
 
     def get_min_value_between(self, xmin, xmax):
         """Return the minimum value of the function in the domain [xmin, xmax].
@@ -192,3 +199,23 @@ class MultiFunction(Function):
         length = np.sqrt((xvals[-1] - xvals[0]) ** 2 + (yvals[-1] - yvals[0]) ** 2)
 
         return bool(max_dist < 0.4 * self.tolerance["straight_line"] * length)
+
+    def collapse_ranges(self, ranges: list[list[float]]) -> list[list[float]]:
+        all_ranges = ranges
+        if len(ranges) == 1:
+            return ranges
+        sorted_ranges = sorted(all_ranges, key=lambda x: x[0], reverse=False)
+        xrange = []
+        highest_end = None
+        for i in range(len(sorted_ranges)):
+            if highest_end is None:
+                xrange.append(sorted_ranges[i][0])
+                highest_end = sorted_ranges[i][1]
+            elif highest_end < sorted_ranges[i][0]:
+                xrange.extend((highest_end, sorted_ranges[i][0]))
+                highest_end = sorted_ranges[i][1]
+            elif highest_end < sorted_ranges[i][1]:
+                highest_end = sorted_ranges[i][1]
+        xrange.append(highest_end)
+        ls = [[xrange[i], xrange[i + 1]] for i in range(0, len(xrange) - 1, 2)]
+        return ls

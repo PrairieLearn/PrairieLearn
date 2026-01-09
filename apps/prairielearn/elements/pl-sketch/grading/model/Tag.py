@@ -35,7 +35,7 @@ class Tag:
         return tag1 == tag2
 
 
-class Tagables:
+class Tagable:
     def __init__(self):
         self.tags = None
 

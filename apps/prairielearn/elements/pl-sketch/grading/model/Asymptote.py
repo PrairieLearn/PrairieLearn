@@ -1,5 +1,3 @@
-from grading.utils import point_ltgt_function, point_on_function
-
 from .Gradeable import Gradeable
 from .Tag import Tag
 
@@ -22,8 +20,8 @@ class Asymptotes(Gradeable):
     #        VerticalAsymptotes or the HorizontalAsymptotes class to use the
     #        grading functions below.
     #    """
-    def __init__(self, info, tolerance=dict()):
-        super().__init__(info, tolerance)
+    def __init__(self, grader, submission, current_tool, tolerance=dict()):
+        super().__init__(grader, submission, current_tool, tolerance)
 
         self.set_default_tolerance(
             "asym_distance", 20
@@ -34,8 +32,7 @@ class Asymptotes(Gradeable):
 
         self.asyms = []
         self.px_asyms = []
-        toolid = info["grader"]["currentTool"]
-        submission_data = info["submission"]["gradeable"][toolid]
+        submission_data = submission["gradeable"][current_tool]
         for spline in submission_data:
             px, val = self.value_from_spline(spline["spline"])
             include = True
@@ -140,7 +137,7 @@ class Asymptotes(Gradeable):
         for i in range(4):  # need 4 out of 5 hits to be considered
             x = x1 + i * interval
             try:
-                if point_on_function(self, [x, asyms[0].value], func, tolerance):
+                if self.point_on_function((x, asyms[0].value), func, tolerance):
                     hits += 1
             except Exception:
                 continue
@@ -170,8 +167,8 @@ class Asymptotes(Gradeable):
             try:
                 broke = False
                 for asy in asyms:
-                    if not point_ltgt_function(
-                        self, [x, asy.value], func, greater, tolerance
+                    if not self.point_ltgt_function(
+                        (x, asy.value), func, greater, tolerance
                     ):
                         broke = True
                         break
@@ -193,8 +190,8 @@ class VerticalAsymptotes(Asymptotes):
         function you are grading.
     """
 
-    def __init__(self, info):
-        Asymptotes.__init__(self, info)
+    def __init__(self, grader, submission, current_tool):
+        Asymptotes.__init__(self, grader, submission, current_tool)
         self.scale = self.xscale
 
     def value_from_spline(self, spline):
@@ -220,8 +217,8 @@ class HorizontalAsymptotes(Asymptotes):
         function you are grading.
     """
 
-    def __init__(self, info):
-        Asymptotes.__init__(self, info)
+    def __init__(self, grader, submission, current_tool):
+        Asymptotes.__init__(self, grader, submission, current_tool)
         self.scale = self.yscale
 
     def value_from_spline(self, spline):

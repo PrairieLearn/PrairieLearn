@@ -17,8 +17,8 @@ class CurveFunction(Function):
     # self.dxdt, self.dydt
     # self.ddx, self.ddy
 
-    def __init__(self, xaxis, yaxis, path_info, tolerance=dict()):
-        super().__init__(xaxis, yaxis, path_info, tolerance)
+    def __init__(self, xaxis, yaxis, path_info, grader, current_tool, tolerance=dict()):
+        super().__init__(xaxis, yaxis, path_info, grader, current_tool, tolerance)
 
         self.set_default_tolerance(
             "imag_threshold", 1e-5

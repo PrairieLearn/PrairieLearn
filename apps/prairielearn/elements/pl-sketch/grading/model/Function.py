@@ -1,17 +1,19 @@
 from .Debugger import Debugger
-from .Tag import Tag, Tagables
+from .Tag import Tag, Tagable
 
 
 # Function interface
-class Function(Tag, Tagables):  # noqa: PLR0904
+class Function(Tag, Tagable):  # noqa: PLR0904
     """Base class for Functions."""
 
     # create the Function
     # establishes the axes, the size (from the axes), and the tolerance, with default tolerance of 20 pixels
     # Function info will be stored in terms of the function itself, not the pixel information
     # the actual path is yet to be specified
-    def __init__(self, xaxis, yaxis, path_info=[], tolerance=dict()):
+    def __init__(self, xaxis, yaxis, path_info, grader, current_tool, tolerance=dict()):
         super().__init__()
+        self.grader = grader
+        self.current_tool = current_tool
         self.xaxis = xaxis
         self.yaxis = yaxis
         self.width = xaxis.pixels
@@ -22,15 +24,9 @@ class Function(Tag, Tagables):  # noqa: PLR0904
         self.tolerance = tolerance
         self.set_default_tolerance("pixel", 20)
         self.set_default_tolerance("comparison", 20)
-        if "grader" in path_info:
-            self.debug = path_info["grader"]["debug"]
-            if self.debug:
-                self.debugger = Debugger(
-                    path_info["grader"]["type"],
-                    path_info["grader"]["currentTool"],
-                    path_info["grader"]["tolerance"],
-                    path_info["grader"].get("pt_tolerance", None),
-                )
+        self.debug = grader["debug"]
+        if self.debug:
+            self.debugger = Debugger(grader["type"], current_tool, grader["tolerance"])
 
         self.create_from_path_info(path_info)
 
@@ -72,10 +68,7 @@ class Function(Tag, Tagables):  # noqa: PLR0904
         dom_end = dom[-1]
         xleft = dom_start[0]
         xright = dom_end[-1]
-        if xleft > xmax or xright < xmin:
-            return False
-        else:
-            return True
+        return not (xleft > xmax or xright < xmin)
 
     def within_y_range(self, y_val, negative_tolerance=0, positive_tolerance=0):
         if y_val is None:
