@@ -37,7 +37,7 @@ class AnswerTuple(NamedTuple):
 
 
 WEIGHT_DEFAULT = 1
-PARTIAL_CREDIT_DEFAULT = PartialCreditType.NET_CORRECT
+PARTIAL_CREDIT_DEFAULT = PartialCreditType.OFF
 HIDE_ANSWER_PANEL_DEFAULT = False
 HIDE_HELP_TEXT_DEFAULT = False
 DETAILED_HELP_TEXT_DEFAULT = False
@@ -218,7 +218,7 @@ def get_partial_credit_mode(element: lxml.html.HtmlElement) -> PartialCreditType
         return PARTIAL_CREDIT_DEFAULT
 
     try:
-        # Try to parse as enum first (new style)
+        # Try to parse as boolean first (old style)
         partial_credit_bool = pl.get_boolean_attrib(element, "partial-credit")
 
         # Handle backward compatibility: old boolean + method style
@@ -417,24 +417,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         len_correct, number_answers, max(0, number_answers - len_incorrect, min_correct)
     )
     max_correct = min(len_correct, number_answers, max(min_correct, max_correct))
-    if not (0 <= min_correct <= max_correct <= len_correct):
-        raise ValueError(
-            f"Invalid configuration: min-correct ({min_correct}) and max-correct ({max_correct}) must be between 0 and the number of correct answers ({len_correct})"
-        )
-    min_incorrect = number_answers - max_correct
-    max_incorrect = number_answers - min_correct
-    if not (0 <= min_incorrect <= max_incorrect <= len_incorrect):
-        raise ValueError(
-            f"Invalid configuration: The number of incorrect answers needed ({min_incorrect} to {max_incorrect}) exceeds the number of incorrect answers available ({len_incorrect})"
-        )
 
     min_select = pl.get_integer_attrib(element, "min-select", MIN_SELECT_DEFAULT)
     max_select = pl.get_integer_attrib(element, "max-select", number_answers)
-
-    if min_select < 1:
-        raise ValueError(
-            f"The attribute min-select is {min_select} but must be at least 1"
-        )
 
     # Check that min_select, max_select, number_answers, min_correct, and max_correct all have sensible values relative to each other.
     validate_min_max_options(
@@ -455,8 +440,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     sampled_incorrect = random.sample(incorrect_answers, number_incorrect)
 
     sampled_answers = sampled_correct + sampled_incorrect
-    random.shuffle(sampled_answers)
-
     order_type = get_order_type(element)
 
     if order_type is OrderType.FIXED:
@@ -464,7 +447,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         # order by separating into correct/incorrect lists
         sampled_answers.sort(key=lambda a: a.idx)  # sort by stored original index
     elif order_type is OrderType.RANDOM:
-        pass  # TODO: fix this
+        random.shuffle(sampled_answers)
     else:
         assert_never(order_type)
 

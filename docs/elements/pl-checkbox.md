@@ -29,8 +29,8 @@ as checkboxes.
 | `min-correct`         | integer | See description | The minimum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `max-correct`         | integer | See description | The maximum number of correct answers to display. Defaults to displaying all correct answers.                                                                                                                                        |
 | `order`               | string  | `"random"`      | Order of answer choices: `"random"` (randomized) or `"fixed"` (as written).                                                                                                                                                          |
-| `partial-credit`      | string  | `"net-correct"` | Grading method: `"off"` (all-or-nothing), `"net-correct"` (default), `"coverage"`, or `"each-answer"`.                                                                                                                               |
-| `hide-help-text`      | boolean | false           | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"all-or-nothing"`, `"COV"`, `"EDC"` or `"PC"`)                                                                     |
+| `partial-credit`      | string  | `"off"`         | Grading method: `"off"` (all-or-nothing, default), `"net-correct"`, `"coverage"`, or `"each-answer"`.                                                                                                                               |
+| `hide-help-text`      | boolean | false           | Help text with hint regarding the selection of answers. Popover button describes the selected grading algorithm (`"off"`, `"coverage"`, `"each-answer"`, or `"net-correct"`).                                                                     |
 | `detailed-help-text`  | boolean | false           | Display the minimum and maximum number of options that can be selected in a valid submission. See explanation below.                                                                                                                 |
 | `hide-answer-panel`   | boolean | false           | Option to not display the correct answer in the correct panel.                                                                                                                                                                       |
 | `hide-letter-keys`    | boolean | false           | Hide the letter keys in the answer list, i.e., (a), (b), (c), etc.                                                                                                                                                                   |
@@ -51,9 +51,9 @@ a `pl-answer` that has attributes:
 
 Four grading methods are available using the `partial-credit` attribute:
 
-- `"off"` (All-or-nothing): Students receive full credit only if they select all correct answers and no incorrect answers. Otherwise, they receive zero credit.
+- `"off"` (All-or-nothing, default): Students receive full credit only if they select all correct answers and no incorrect answers. Otherwise, they receive zero credit.
 
-- `"net-correct"` (Net Correct, default): 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero. This is the default partial credit method.
+- `"net-correct"` (Net Correct): 1 point is added for each correct answer that is marked as correct and 1 point is subtracted for each incorrect answer that is marked as correct. The final score is the resulting summation of points divided by the total number of correct answers. The minimum final score is set to zero.
 
 - `"coverage"` (Coverage): The final score is calculated by multiplying the **base score** (the proportion of correct answers that are chosen) with the **guessing factor** (the proportion of chosen answers that are correct). Specifically, if `t` is the number of correct answers chosen, `c` is the total number of correct answers, and `n` is the total number of answers chosen, then the final score is `(t / c) * (t / n)`. This grading scheme rewards submissions that include (i.e. "cover") all true options.
 
