@@ -9,7 +9,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
 
   const popoverContent = (
     <pre
-      class="text-white rounded p-3 mb-0"
+      className="text-white rounded p-3 mb-0"
       style="background-color: black;"
       // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
       dangerouslySetInnerHTML={{ __html: ansiToHtml(output) }}
@@ -18,7 +18,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
 
   return (
     <button
-      class="btn btn-xs btn-ghost me-1"
+      className="btn btn-xs btn-ghost me-1"
       type="button"
       data-bs-toggle="popover"
       data-bs-container="body"
@@ -28,7 +28,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
       data-bs-custom-class="popover-wide"
     >
       <i
-        class={clsx({
+        className={clsx({
           fa: true,
           'fa-times text-danger': type === 'error',
           'fa-exclamation-triangle text-warning': type === 'warning',

@@ -1,4 +1,4 @@
-import { CloudWatch, type MetricDatum } from '@aws-sdk/client-cloudwatch';
+import { CloudWatch, type MetricDatum, type StandardUnit } from '@aws-sdk/client-cloudwatch';
 import { EC2 } from '@aws-sdk/client-ec2';
 import { z } from 'zod';
 
@@ -52,7 +52,7 @@ async function getLoadStats() {
   );
 }
 
-const cloudwatch_definitions = {
+const cloudwatch_definitions: Record<string, { name: string; unit: StandardUnit }> = {
   workspace_jobs_capacity_desired: {
     name: 'DesiredJobCapacity',
     unit: 'Count',

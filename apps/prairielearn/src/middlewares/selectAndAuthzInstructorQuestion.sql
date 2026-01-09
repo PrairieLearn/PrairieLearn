@@ -4,7 +4,7 @@ WITH
     SELECT
       id
     FROM
-      pl_courses AS c
+      courses AS c
     WHERE
       c.id = $course_id
   ),

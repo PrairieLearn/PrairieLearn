@@ -802,6 +802,8 @@ describe('Course instance syncing', () => {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        // You can't configure selfEnrollment and allowAccess at the same time.
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = undefined;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);

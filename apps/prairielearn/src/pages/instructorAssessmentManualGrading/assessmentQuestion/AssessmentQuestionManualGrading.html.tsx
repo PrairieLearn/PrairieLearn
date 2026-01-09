@@ -1,9 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'preact/compat';
 import { Alert } from 'react-bootstrap';
 
+import { NuqsAdapter } from '@prairielearn/ui';
+
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -23,8 +24,6 @@ import {
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
-const queryClient = new QueryClient();
-
 export interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
@@ -36,11 +35,13 @@ export interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
+  aiGradingModelSelectionEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
@@ -64,15 +65,18 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
+  aiGradingModelSelectionEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
+  const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
@@ -89,34 +93,34 @@ function AssessmentQuestionManualGradingInner({
       {setAiGradingModeMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => setAiGradingModeMutation.reset()}
         >
           <strong>Error:</strong> {setAiGradingModeMutation.error.message}
         </Alert>
       )}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+      <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
-          <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
               <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">
+            <li className="breadcrumb-item active" aria-current="page">
               Question {questionNumber}. {questionTitle}
             </li>
           </ol>
         </nav>
         {aiGradingEnabled && (
-          <div class="card px-3 py-2 mb-0">
-            <div class="form-check form-switch mb-0">
+          <div className="card px-3 py-2 mb-0">
+            <div className="form-check form-switch mb-0">
               <input
-                class="form-check-input"
+                className="form-check-input"
                 type="checkbox"
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending}
+                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
                 onChange={() =>
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
@@ -125,8 +129,8 @@ function AssessmentQuestionManualGradingInner({
                   })
                 }
               />
-              <label class="form-check-label" for="switchCheckDefault">
-                <i class="bi bi-stars" />
+              <label className="form-check-label" for="switchCheckDefault">
+                <i className="bi bi-stars" />
                 AI grading mode
               </label>
             </div>
@@ -144,11 +148,13 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
+        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
+        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />
@@ -179,6 +185,7 @@ export function AssessmentQuestionManualGrading({
   isDevMode,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>

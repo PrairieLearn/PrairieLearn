@@ -4,7 +4,7 @@ Students who are using PrairieLearn for the first time often have questions abou
 
 ## Grading of Homework-type assessments
 
-See the [Assessment page](assessment/index.md) for a description of how grading works. See below for an example (a piazza post from AE353, Spring 2017) of how this process might be explained to students.
+See the [Assessment page](assessment/overview.md) for a description of how grading works. See below for an example (a piazza post from AE353, Spring 2017) of how this process might be explained to students.
 
 ### An example note to students about how grading works
 

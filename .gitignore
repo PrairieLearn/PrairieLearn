@@ -111,6 +111,7 @@ coverage.xml
 .vitest-reports
 
 ## Playwright
+test-results/
 apps/prairielearn/test-results/
 apps/prairielearn/playwright/.cache/
 

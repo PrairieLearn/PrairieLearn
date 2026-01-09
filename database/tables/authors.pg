@@ -10,7 +10,7 @@ indexes
     authors_author_name_orcid_email_origin_course_key: UNIQUE NULLS NOT DISTINCT (author_name, orcid, email, origin_course) USING btree (author_name, orcid, email, origin_course) NULLS NOT DISTINCT
 
 foreign-key constraints
-    authors_origin_course_fkey: FOREIGN KEY (origin_course) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
+    authors_origin_course_fkey: FOREIGN KEY (origin_course) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE SET NULL
 
 referenced by
     question_authors: FOREIGN KEY (author_id) REFERENCES authors(id) ON UPDATE CASCADE ON DELETE CASCADE

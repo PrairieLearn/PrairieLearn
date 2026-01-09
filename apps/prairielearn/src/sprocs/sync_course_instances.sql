@@ -150,7 +150,6 @@ BEGIN
         long_name = src.data->>'long_name',
         assessments_group_by = (src.data->>'assessments_group_by')::enum_assessment_grouping,
         display_timezone = COALESCE(src.data->>'display_timezone', c.display_timezone),
-        hide_in_enroll_page = (src.data->>'hide_in_enroll_page')::boolean,
         json_comment = (src.data->>'comment')::jsonb,
         modern_publishing = (src.data->>'modern_publishing')::boolean,
         publishing_start_date = input_date(src.data->>'publishing_start_date', COALESCE(src.data->>'display_timezone', c.display_timezone)),
@@ -163,7 +162,7 @@ BEGIN
         sync_warnings = src.warnings
     FROM
         disk_course_instances AS src
-        JOIN pl_courses AS c ON (c.id = syncing_course_id)
+        JOIN courses AS c ON (c.id = syncing_course_id)
     WHERE
         dest.short_name = src.short_name
         AND dest.deleted_at IS NULL

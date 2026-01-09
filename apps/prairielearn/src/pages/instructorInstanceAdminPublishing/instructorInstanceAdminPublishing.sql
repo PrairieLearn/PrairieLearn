@@ -10,7 +10,7 @@ ORDER BY
 
 -- BLOCK select_publishing_extensions_with_users_by_course_instance
 SELECT
-  ci_extensions.*,
+  to_jsonb(ci_extensions.*) AS course_instance_publishing_extension,
   COALESCE(
     json_agg(
       json_build_object(
@@ -35,7 +35,7 @@ FROM
     ci_enrollment_extensions.course_instance_publishing_extension_id = ci_extensions.id
   )
   LEFT JOIN enrollments AS e ON (e.id = ci_enrollment_extensions.enrollment_id)
-  LEFT JOIN users AS u ON (u.user_id = e.user_id)
+  LEFT JOIN users AS u ON (u.id = e.user_id)
 WHERE
   ci_extensions.course_instance_id = $course_instance_id
 GROUP BY

@@ -1,14 +1,15 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
-import { OverlayTrigger, Tooltip } from 'react-bootstrap';
 
 import { run } from '@prairielearn/run';
-import { numericColumnFilterFn } from '@prairielearn/ui';
+import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
 
 import type { StaffAssessment } from '../../../../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../../../../lib/client/url.js';
 import type { AssessmentQuestion, InstanceQuestionGroup } from '../../../../lib/db-types.js';
 import { formatPoints } from '../../../../lib/format.js';
+import type { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
 import type { InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow } from '../assessmentQuestion.types.js';
+import { GradingStatusCell } from '../components/GradingStatusCell.js';
 
 import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from './columnUtils.js';
 
@@ -22,20 +23,41 @@ interface CreateColumnsParams {
   urlPrefix: string;
   csrfToken: string;
   assessment: StaffAssessment;
+  courseInstanceId: string;
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
   scrollRef: React.RefObject<HTMLDivElement> | null;
+  displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
+
+export type ColumnId =
+  | 'select'
+  | 'ai_grading_status'
+  | 'index'
+  | 'instance_question_group_name'
+  | 'user_or_team_name'
+  | 'uid'
+  | 'requires_manual_grading'
+  | 'assigned_grader_name'
+  | 'auto_points'
+  | 'manual_points'
+  | 'points'
+  | 'score_perc'
+  | 'last_grader_name'
+  | 'rubric_difference'
+  | 'rubric_grading_item_ids';
 
 export function createColumns({
   aiGradingMode,
   instanceQuestionGroups,
+  displayedStatuses,
   assessment,
   assessmentQuestion,
   hasCourseInstancePermissionEdit,
   urlPrefix,
   csrfToken,
+  courseInstanceId,
   createCheckboxProps,
   onEditPointsSuccess,
   onEditPointsConflict,
@@ -92,8 +114,9 @@ export function createColumns({
       header: 'Instance',
       cell: (info) => {
         const row = info.row.original;
+        const rowId = row.instance_question.id;
         return (
-          <div class="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2">
             <a
               href={`${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${row.instance_question.id}`}
             >
@@ -101,18 +124,28 @@ export function createColumns({
             </a>
             {row.open_issue_count ? (
               <OverlayTrigger
-                overlay={
-                  <Tooltip id={`open-issues-${row.instance_question.id}`}>
-                    Instance question has {row.open_issue_count} open{' '}
-                    {row.open_issue_count > 1 ? 'issues' : 'issue'}
-                  </Tooltip>
-                }
+                tooltip={{
+                  props: { id: `instance-${rowId}-issue-tooltip` },
+                  body: (
+                    <>
+                      Instance question has {row.open_issue_count} open{' '}
+                      {row.open_issue_count > 1 ? 'issues' : 'issue'}
+                    </>
+                  ),
+                }}
               >
-                <button class="btn btn-danger badge rounded-pill">{row.open_issue_count}</button>
+                <button className="btn btn-danger badge rounded-pill">
+                  {row.open_issue_count}
+                </button>
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
-              <OverlayTrigger overlay={<Tooltip>Assessment instance is still open</Tooltip>}>
+              <OverlayTrigger
+                tooltip={{
+                  body: 'Assessment instance is still open',
+                  props: { id: `assessment-instance-${rowId}-open-tooltip` },
+                }}
+              >
                 <button
                   // This is a tricky case: we need an interactive element to trigger the tooltip
                   // for keyboard users, but we don't want it to be announced as a button by screen
@@ -120,11 +153,11 @@ export function createColumns({
                   // It's possible there are better ways to handle this?
                   // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
                   role="status"
-                  class="btn btn-xs btn-ghost"
+                  className="btn btn-xs btn-ghost"
                   aria-label="Assessment instance is still open"
                 >
                   <i
-                    class="fas fa-exclamation-triangle fa-width-auto text-warning"
+                    className="fas fa-exclamation-triangle fa-width-auto text-warning"
                     aria-hidden="true"
                   />
                 </button>
@@ -140,25 +173,27 @@ export function createColumns({
       id: 'instance_question_group_name',
       header: 'Submission group',
       cell: (info) => {
-        const row = info.row.original;
         const value = info.getValue();
         if (!value) {
-          return <span class="text-secondary">No Group</span>;
+          return <span className="text-secondary">No Group</span>;
         }
         const group = instanceQuestionGroups.find((g) => g.instance_question_group_name === value);
+        const rowId = info.row.original.instance_question.id;
         return (
-          <span class="d-flex align-items-center gap-2">
+          <span className="d-flex align-items-center gap-2">
             {value}
             {group && (
               <OverlayTrigger
-                overlay={
-                  <Tooltip id={`group-description-${row.instance_question.id}`}>
-                    {group.instance_question_group_description}
-                  </Tooltip>
-                }
+                tooltip={{
+                  body: group.instance_question_group_description,
+                  props: { id: `submission-group-${rowId}-description-tooltip` },
+                }}
               >
-                <button class="btn btn-xs btn-ghost" aria-label="Group description">
-                  <i class="fas fa-circle-info fa-width-auto text-secondary" aria-hidden="true" />
+                <button className="btn btn-xs btn-ghost" aria-label="Group description">
+                  <i
+                    className="fas fa-circle-info fa-width-auto text-secondary"
+                    aria-hidden="true"
+                  />
                 </button>
               </OverlayTrigger>
             )}
@@ -181,21 +216,21 @@ export function createColumns({
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
 
-    columnHelper.accessor('user_or_group_name', {
-      id: 'user_or_group_name',
-      header: assessment.group_work ? 'Group name' : 'Name',
+    columnHelper.accessor('user_or_team_name', {
+      id: 'user_or_team_name',
+      header: assessment.team_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),
 
     columnHelper.accessor('uid', {
       id: 'uid',
-      header: assessment.group_work ? 'UIDs' : 'UID',
+      header: assessment.team_work ? 'UIDs' : 'UID',
       cell: (info) => {
         const uid = info.getValue();
         const enrollmentId = info.row.original.enrollment_id;
         if (!uid) return '—';
         if (enrollmentId) {
-          return <a href={getStudentEnrollmentUrl(urlPrefix, enrollmentId)}>{uid}</a>;
+          return <a href={getStudentEnrollmentUrl(courseInstanceId, enrollmentId)}>{uid}</a>;
         }
         return uid;
       },
@@ -204,12 +239,24 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.requires_manual_grading, {
       id: 'requires_manual_grading',
       header: 'Grading status',
-      cell: (info) => (info.getValue() ? 'Requires grading' : 'Graded'),
+      cell: (info) => {
+        return (
+          <GradingStatusCell
+            aiGradingMode={aiGradingMode}
+            instanceQuestionId={info.row.original.instance_question.id}
+            requiresGrading={info.getValue()}
+            displayedStatuses={displayedStatuses}
+          />
+        );
+      },
       filterFn: ({ getValue }, columnId, filterValues: string[]) => {
         if (filterValues.length === 0) return true;
         const requiresGrading = getValue(columnId);
         const status = requiresGrading ? 'Requires grading' : 'Graded';
         return filterValues.includes(status);
+      },
+      meta: {
+        autoSize: true,
       },
     }),
 
@@ -222,6 +269,9 @@ export function createColumns({
         const current = row.getValue<InstanceQuestionRow['assigned_grader_name']>(columnId);
         if (!current) return filterValues.includes('Unassigned');
         return filterValues.includes(current);
+      },
+      meta: {
+        autoSize: true,
       },
     }),
 
@@ -238,6 +288,9 @@ export function createColumns({
       header: 'Manual points',
       cell: (info) => <PointsCell row={info.row.original} field="manual_points" />,
       filterFn: numericColumnFilterFn,
+      meta: {
+        autoSize: true,
+      },
     }),
 
     columnHelper.accessor((row) => row.instance_question.points, {
@@ -279,7 +332,7 @@ export function createColumns({
             <span>
               {row.instance_question.ai_grading_status !== 'None' && (
                 <span
-                  class={`badge rounded-pill text-bg-light border ${
+                  className={`badge rounded-pill text-bg-light border ${
                     row.instance_question.ai_grading_status === 'Graded' ||
                     row.instance_question.ai_grading_status === 'LatestRubric'
                       ? ''
@@ -299,7 +352,9 @@ export function createColumns({
           if (!info.getValue()) return 'Unassigned';
           if (row.instance_question.is_ai_graded) {
             return (
-              <span class="badge rounded-pill text-bg-light border">{generateAiGraderName()}</span>
+              <span className="badge rounded-pill text-bg-light border">
+                {generateAiGraderName()}
+              </span>
             );
           }
           return info.getValue();
@@ -344,7 +399,7 @@ export function createColumns({
     columnHelper.accessor((row) => row.instance_question.rubric_difference, {
       id: 'rubric_difference',
       header: 'AI agreement',
-      size: 300,
+      size: 400,
       minSize: 200,
       maxSize: 600,
       meta: {
@@ -352,18 +407,19 @@ export function createColumns({
       },
       cell: (info) => {
         const row = info.row.original;
+        const rowId = row.instance_question.id;
         if (row.instance_question.point_difference === null) {
           return '—';
         }
 
         if (row.instance_question.rubric_difference === null) {
           if (!row.instance_question.point_difference) {
-            return <i class="bi bi-check-square-fill text-success" />;
+            return <i className="bi bi-check-square-fill text-success" />;
           } else {
             const prefix = row.instance_question.point_difference < 0 ? '' : '+';
             return (
-              <span class="text-danger">
-                <i class="bi bi-x-square-fill" /> {prefix}
+              <span className="text-danger">
+                <i className="bi bi-x-square-fill" /> {prefix}
                 {formatPoints(row.instance_question.point_difference)}
               </span>
             );
@@ -372,8 +428,13 @@ export function createColumns({
 
         if (row.instance_question.rubric_difference.length === 0) {
           return (
-            <OverlayTrigger overlay={<Tooltip>AI and human grading are in agreement</Tooltip>}>
-              <i class="bi bi-check-square-fill text-success" />
+            <OverlayTrigger
+              tooltip={{
+                body: 'AI and human grading are in agreement',
+                props: { id: `ai-agreement-${rowId}-agreement-tooltip` },
+              }}
+            >
+              <i className="bi bi-check-square-fill text-success" />
             </OverlayTrigger>
           );
         }
@@ -383,12 +444,22 @@ export function createColumns({
             {row.instance_question.rubric_difference.map((item) => (
               <div key={item.description}>
                 {item.false_positive ? (
-                  <OverlayTrigger overlay={<Tooltip>Selected by AI but not by human</Tooltip>}>
-                    <i class="bi bi-plus-square-fill text-danger" />
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'Selected by AI but not by human',
+                      props: { id: `ai-agreement-${rowId}-false-positive-tooltip` },
+                    }}
+                  >
+                    <i className="bi bi-plus-square-fill text-danger" />
                   </OverlayTrigger>
                 ) : (
-                  <OverlayTrigger overlay={<Tooltip>Selected by human but not by AI</Tooltip>}>
-                    <i class="bi bi-dash-square-fill text-danger" />
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'Selected by human but not by AI',
+                      props: { id: `ai-agreement-${rowId}-false-negative-tooltip` },
+                    }}
+                  >
+                    <i className="bi bi-dash-square-fill text-danger" />
                   </OverlayTrigger>
                 )}{' '}
                 <span>{item.description}</span>

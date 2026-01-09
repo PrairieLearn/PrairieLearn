@@ -12,7 +12,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -310,29 +309,20 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <AssessmentSyncErrorsAndWarnings
-              authzData={pageContext.authz_data}
-              assessment={pageContext.assessment}
-              courseInstance={pageContext.course_instance}
+          <Hydrate>
+            <InstructorAssessmentQuestionsTable
               course={pageContext.course}
+              questionRows={questionRows}
               urlPrefix={pageContext.urlPrefix}
+              assessment={pageContext.assessment}
+              assessmentSetName={pageContext.assessment_set.name}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              canEdit={canEdit ?? false}
+              csrfToken={res.locals.__csrf_token}
+              origHash={origHash}
+              editorEnabled={editorEnabled}
             />
-            <Hydrate>
-              <InstructorAssessmentQuestionsTable
-                course={pageContext.course}
-                questionRows={questionRows}
-                urlPrefix={pageContext.urlPrefix}
-                assessment={pageContext.assessment}
-                assessmentSetName={pageContext.assessment_set.name}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                canEdit={canEdit ?? false}
-                csrfToken={res.locals.__csrf_token}
-                origHash={origHash}
-                editorEnabled={editorEnabled}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
@@ -371,7 +361,7 @@ router.post(
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'save_questions') {

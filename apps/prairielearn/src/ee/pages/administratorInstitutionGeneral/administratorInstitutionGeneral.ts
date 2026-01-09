@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 
 import { InstitutionSchema } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../../lib/timezones.js';
 import { insertAuditLog } from '../../../models/audit-log.js';
 import { parseDesiredPlanGrants } from '../../lib/billing/components/PlanGrantsEditor.js';
@@ -25,7 +25,7 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await getInstitution(req.params.institution_id);
     const availableTimezones = await getCanonicalTimezones([institution.display_timezone]);
     const statistics = await queryRow(
@@ -48,7 +48,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'update_enrollment_limits') {
       await runInTransactionAsync(async () => {
         const institution = await getInstitution(req.params.institution_id);
@@ -66,7 +66,7 @@ router.post(
           InstitutionSchema,
         );
         await insertAuditLog({
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
           table_name: 'institutions',
           action: 'update',
           institution_id: req.params.institution_id,
@@ -87,7 +87,7 @@ router.post(
       await reconcilePlanGrantsForInstitution(
         req.params.institution_id,
         desiredPlans,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       flash('success', 'Successfully updated institution plan grants.');
       res.redirect(req.originalUrl);

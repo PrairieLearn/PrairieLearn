@@ -392,8 +392,8 @@ export function InstructorAssessmentQuestionsTable({
 
   return (
     <>
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
             {assessmentSetName} {assessment.number}: Questions
           </h1>
@@ -414,8 +414,8 @@ export function InstructorAssessmentQuestionsTable({
             )}
           </div>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover" aria-label="Assessment questions">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
                 {editMode && (
@@ -429,7 +429,7 @@ export function InstructorAssessmentQuestionsTable({
                   </>
                 )}
                 <th>
-                  <span class="visually-hidden">Name</span>
+                  <span className="visually-hidden">Name</span>
                 </th>
                 <th>QID</th>
                 <th>Topic</th>
@@ -440,12 +440,17 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+<<<<<<< HEAD
                 {!editMode && <th class="text-end">Actions</th>}
+=======
+                <th className="text-end">Actions</th>
+>>>>>>> master
               </tr>
             </thead>
             <tbody>
               {mappedQuestions.map((zone, index) => {
                 return (
+<<<<<<< HEAD
                   <Zone
                     key={`zone-${index + 1}-${zone.title || 'untitled'}`}
                     zone={zone}
@@ -466,6 +471,120 @@ export function InstructorAssessmentQuestionsTable({
                     handleResetButtonClick={handleResetButtonClick}
                     getNextQuestionNumber={getNextQuestionNumber}
                   />
+=======
+                  <Fragment key={question.qid}>
+                    <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
+                    <tr>
+                      <td>
+                        <Title
+                          questionRow={questionRow}
+                          hasCoursePermissionPreview={hasCoursePermissionPreview}
+                          urlPrefix={urlPrefix}
+                        />
+                        <IssueBadge
+                          urlPrefix={urlPrefix}
+                          count={questionRow.open_issue_count}
+                          issueQid={question.qid}
+                        />
+                      </td>
+                      <td>
+                        {question.sync_errors ? (
+                          <SyncProblemButton output={question.sync_errors} type="error" />
+                        ) : question.sync_warnings ? (
+                          <SyncProblemButton output={question.sync_warnings} type="warning" />
+                        ) : (
+                          ''
+                        )}
+                        {idsEqual(course.id, questionRow.course.id)
+                          ? question.qid
+                          : `@${questionRow.course.sharing_name}/${question.qid}`}
+                      </td>
+                      <td>
+                        <TopicBadge topic={questionRow.topic} />
+                      </td>
+                      <td>
+                        <TagBadgeList tags={questionRow.tags} />
+                      </td>
+                      <td>
+                        {maxPointsText({
+                          max_auto_points: assessment_question.max_auto_points,
+                          max_manual_points: assessment_question.max_manual_points,
+                          points_list: assessment_question.points_list,
+                          init_points: assessment_question.init_points,
+                        })}
+                      </td>
+                      <td>{assessment_question.max_manual_points || '—'}</td>
+                      {showAdvanceScorePercCol && (
+                        <td
+                          className={clsx(
+                            assessment_question.effective_advance_score_perc === 0 && 'text-muted',
+                          )}
+                          data-testid="advance-score-perc"
+                        >
+                          {assessment_question.effective_advance_score_perc}%
+                        </td>
+                      )}
+                      <td>
+                        {assessment_question.mean_question_score
+                          ? `${assessment_question.mean_question_score.toFixed(3)}%`
+                          : ''}
+                      </td>
+                      <td className="text-center">
+                        {assessment_question.number_submissions_hist ? (
+                          <HistMini
+                            data={assessment_question.number_submissions_hist}
+                            options={{ width: 60, height: 20 }}
+                          />
+                        ) : (
+                          ''
+                        )}
+                      </td>
+                      <td>
+                        {other_assessments?.map((assessment) => {
+                          return (
+                            <div
+                              key={`${question.qid}-${assessment.assessment_id}`}
+                              className="d-inline-block me-1"
+                            >
+                              <AssessmentBadge
+                                urlPrefix={urlPrefix}
+                                assessment={{
+                                  assessment_id: assessment.assessment_id,
+                                  color: assessment.assessment_set_color,
+                                  label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
+                                }}
+                              />
+                            </div>
+                          );
+                        })}
+                      </td>
+                      <td className="text-end">
+                        <Dropdown>
+                          <Dropdown.Toggle
+                            variant="secondary"
+                            size="sm"
+                            id={`question-actions-${question.qid}`}
+                          >
+                            Action
+                          </Dropdown.Toggle>
+                          <Dropdown.Menu>
+                            {hasCourseInstancePermissionEdit ? (
+                              <Dropdown.Item
+                                as="button"
+                                type="button"
+                                onClick={() => handleResetButtonClick(assessment_question.id)}
+                              >
+                                Reset question variants
+                              </Dropdown.Item>
+                            ) : (
+                              <Dropdown.Item disabled>Must have editor permission</Dropdown.Item>
+                            )}
+                          </Dropdown.Menu>
+                        </Dropdown>
+                      </td>
+                    </tr>
+                  </Fragment>
+>>>>>>> master
                 );
               })}
             </tbody>

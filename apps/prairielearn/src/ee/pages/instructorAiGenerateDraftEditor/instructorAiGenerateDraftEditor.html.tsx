@@ -16,6 +16,7 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
@@ -26,7 +27,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   variantId,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
   richTextEditorEnabled: boolean;
@@ -56,9 +57,16 @@ export function InstructorAiGenerateDraftEditor({
         <div class="app-container" style="--chat-width: 400px;">
           <div class="app-grid">
             <div class="app-navbar">
+              <!-- This is the last page directly rendering a Navbar component.
+
+              It was not converted to avoid merge conflicts with the upcoming agentic question generation feature.
+              
+              We should rip out the remaining bits of the legacy Navbar
+              logic when we convert this. -->
               ${Navbar({
                 navPage: 'course_admin',
                 navSubPage: 'questions',
+                navbarType: 'instructor',
                 resLocals,
                 marginBottom: false,
               })}
@@ -297,7 +305,7 @@ function QuestionAndFilePreview({
   resLocals,
 }: {
   prompts: AiQuestionGenerationPrompt[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <div class="tab-content" style="height: 100%">

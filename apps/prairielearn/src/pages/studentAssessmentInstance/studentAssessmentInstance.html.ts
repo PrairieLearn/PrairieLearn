@@ -3,12 +3,12 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import {
   RegenerateInstanceAlert,
   RegenerateInstanceModal,
 } from '../../components/AssessmentRegenerate.js';
-import { GroupWorkInfoContainer } from '../../components/GroupWorkInfoContainer.js';
 import { InstructorInfoPanel } from '../../components/InstructorInfoPanel.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -21,18 +21,18 @@ import {
 } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
 import { StudentAccessRulesPopover } from '../../components/StudentAccessRulesPopover.js';
+import { TeamWorkInfoContainer } from '../../components/TeamWorkInfoContainer.js';
 import { TimeLimitExpiredModal } from '../../components/TimeLimitExpiredModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import {
   type AssessmentInstance,
   AssessmentQuestionSchema,
-  DateFromISOString,
-  type GroupConfig,
-  IdSchema,
   InstanceQuestionSchema,
+  type TeamConfig,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import { type GroupInfo, getRoleNamesForUser } from '../../lib/groups.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { type TeamInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
@@ -60,7 +60,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   allow_grade_date: DateFromISOString.nullable(),
   allow_grade_interval: z.string(),
   previous_variants: z.array(SimpleVariantWithScoreSchema).optional(),
-  group_role_permissions: z
+  team_role_permissions: z
     .object({
       can_view: z.boolean(),
       can_submit: z.boolean(),
@@ -72,8 +72,8 @@ export type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
 export function StudentAssessmentInstance({
   instance_question_rows,
   showTimeLimitExpiredModal,
-  groupConfig,
-  groupInfo,
+  teamConfig,
+  teamInfo,
   userCanAssignRoles,
   userCanDeleteAssessmentInstance,
   resLocals,
@@ -81,16 +81,20 @@ export function StudentAssessmentInstance({
   instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
 } & (
   | {
-      groupConfig: GroupConfig;
-      groupInfo: GroupInfo;
+      teamConfig: TeamConfig;
+      teamInfo: TeamInfo;
       userCanAssignRoles: boolean;
     }
   | {
-      groupConfig?: undefined;
-      groupInfo?: undefined;
+      teamConfig?: undefined;
+      teamInfo?: undefined;
       userCanAssignRoles?: undefined;
     }
 )) {
@@ -148,8 +152,8 @@ export function StudentAssessmentInstance({
         : 1 + trailingColumnsCount;
   });
 
-  const userGroupRoles = groupInfo
-    ? getRoleNamesForUser(groupInfo, resLocals.authz_data.user).join(', ')
+  const userTeamRoles = teamInfo
+    ? getRoleNamesForUser(teamInfo, resLocals.authz_data.user).join(', ')
     : null;
 
   return PageLayout({
@@ -196,7 +200,7 @@ export function StudentAssessmentInstance({
             ${resLocals.assessment_set.abbreviation}${resLocals.assessment.number}:
             ${resLocals.assessment.title}
           </h1>
-          ${resLocals.assessment.group_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
+          ${resLocals.assessment.team_work ? html`&nbsp;<i class="fas fa-users"></i>` : ''}
         </div>
 
         <div class="card-body">
@@ -255,12 +259,12 @@ export function StudentAssessmentInstance({
                     })}
                   </div>
                 `}
-            ${groupConfig != null
+            ${teamConfig != null
               ? html`
                   <div class="col-lg-12">
-                    ${GroupWorkInfoContainer({
-                      groupConfig,
-                      groupInfo,
+                    ${TeamWorkInfoContainer({
+                      teamConfig,
+                      teamInfo,
                       userCanAssignRoles,
                       csrfToken: resLocals.__csrf_token,
                     })}
@@ -338,7 +342,7 @@ export function StudentAssessmentInstance({
                     <td>
                       ${RowLabel({
                         instance_question_row,
-                        userGroupRoles,
+                        userTeamRoles,
                         urlPrefix: resLocals.urlPrefix,
                         rowLabelText:
                           resLocals.assessment.type === 'Exam'
@@ -363,8 +367,9 @@ export function StudentAssessmentInstance({
                                   ${instance_question_row.max_auto_points
                                     ? ExamQuestionAvailablePoints({
                                         open:
-                                          resLocals.assessment_instance.open &&
-                                          instance_question_row.open,
+                                          (resLocals.assessment_instance.open &&
+                                            instance_question_row.open) ??
+                                          false,
                                         currentWeight:
                                           (instance_question_row.points_list_original?.[
                                             instance_question_row.number_attempts
@@ -630,8 +635,8 @@ export function StudentAssessmentInstance({
         course_instance: resLocals.course_instance,
         assessment: resLocals.assessment,
         assessment_instance: resLocals.assessment_instance,
-        instance_group: resLocals.instance_group,
-        instance_group_uid_list: resLocals.instance_group_uid_list,
+        instance_team: resLocals.instance_team,
+        instance_team_uid_list: resLocals.instance_team_uid_list,
         instance_user: resLocals.instance_user,
         authz_data: resLocals.authz_data,
         questionContext: resLocals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
@@ -698,7 +703,11 @@ function InstanceQuestionTableHeader({
   resLocals,
   someQuestionsAllowRealTimeGrading,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
   someQuestionsAllowRealTimeGrading: boolean;
 }) {
   const trailingColumns =
@@ -793,12 +802,12 @@ function ZoneInfoPopover({ label, content }: { label: string; content: string })
 
 function RowLabel({
   instance_question_row,
-  userGroupRoles,
+  userTeamRoles,
   rowLabelText,
   urlPrefix,
 }: {
   instance_question_row: InstanceQuestionRow;
-  userGroupRoles: string | null;
+  userTeamRoles: string | null;
   rowLabelText: string;
   urlPrefix: string;
 }) {
@@ -807,8 +816,8 @@ function RowLabel({
     lockedPopoverText = instance_question_row.prev_sequence_locked
       ? 'A previous question must be completed before you can access this one.'
       : `You must score at least ${instance_question_row.prev_advance_score_perc}% on ${instance_question_row.prev_title} to unlock this question.`;
-  } else if (!(instance_question_row.group_role_permissions?.can_view ?? true)) {
-    lockedPopoverText = `Your current group role (${userGroupRoles}) restricts access to this question.`;
+  } else if (!(instance_question_row.team_role_permissions?.can_view ?? true)) {
+    lockedPopoverText = `Your current group role (${userTeamRoles}) restricts access to this question.`;
   }
 
   return html`

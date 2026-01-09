@@ -8,6 +8,7 @@ import { z } from 'zod';
 import { markdownToHtml } from '@prairielearn/markdown';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import type { SubmissionForRender } from '../components/SubmissionPanel.js';
 import { selectInstanceQuestionGroups } from '../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
@@ -16,7 +17,6 @@ import {
   type Assessment,
   type AssessmentQuestion,
   AssessmentQuestionSchema,
-  IdSchema,
   RubricItemSchema,
   RubricSchema,
   SprocAssessmentInstancesGradeSchema,
@@ -49,6 +49,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
  * @param options.user_id - The user_id of the current grader. Typically the current effective user.
  * @param options.prior_instance_question_id - The instance question previously graded. Used to ensure a consistent order if a grader starts grading from the middle of a list or skips an instance.
  * @param options.skip_graded_submissions - If true, the returned next submission must require manual grading. Otherwise, it does not, but will have a higher pseudorandomly-generated stable order.
+ * @param options.show_submissions_assigned_to_me_only - If true, the returned next submission must be assigned to the current grader or unassigned. Otherwise, submissions assigned to any grader may be returned.
  * @param options.use_instance_question_groups - Whether or not to use the instance question groups to determine the next instance question.
  */
 export async function nextInstanceQuestionUrl({
@@ -58,6 +59,7 @@ export async function nextInstanceQuestionUrl({
   user_id,
   prior_instance_question_id,
   skip_graded_submissions,
+  show_submissions_assigned_to_me_only,
   use_instance_question_groups,
 }: {
   urlPrefix: string;
@@ -66,6 +68,7 @@ export async function nextInstanceQuestionUrl({
   user_id: string;
   prior_instance_question_id: string | null;
   skip_graded_submissions: boolean;
+  show_submissions_assigned_to_me_only: boolean;
   use_instance_question_groups: boolean;
 }): Promise<string> {
   const prior_instance_question_group_id = await run(async () => {
@@ -97,6 +100,7 @@ export async function nextInstanceQuestionUrl({
       prior_instance_question_id,
       prior_instance_question_group_id,
       skip_graded_submissions,
+      show_submissions_assigned_to_me_only,
       use_instance_question_groups,
     },
     IdSchema.nullable(),
@@ -126,6 +130,7 @@ export async function nextInstanceQuestionUrl({
         prior_instance_question_id: null,
         prior_instance_question_group_id: next_instance_question_group_id,
         skip_graded_submissions,
+        show_submissions_assigned_to_me_only,
         use_instance_question_groups,
       },
       IdSchema,
@@ -174,14 +179,16 @@ export async function selectRubricData({
     };
 
     for (const item of rubric_data?.rubric_items || []) {
-      item.description_rendered = item.description
-        ? markdownToHtml(mustache.render(item.description || '', mustache_data), { inline: true })
+      item.description_rendered = item.rubric_item.description
+        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustache_data), {
+            inline: true,
+          })
         : '';
-      item.explanation_rendered = item.explanation
-        ? markdownToHtml(mustache.render(item.explanation || '', mustache_data))
+      item.explanation_rendered = item.rubric_item.explanation
+        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustache_data))
         : '';
-      item.grader_note_rendered = item.grader_note
-        ? markdownToHtml(mustache.render(item.grader_note || '', mustache_data))
+      item.grader_note_rendered = item.rubric_item.grader_note
+        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustache_data))
         : '';
 
       // Yield to the event loop to avoid blocking too long.
@@ -225,6 +232,7 @@ export async function populateManualGradingData(submission: Record<string, any>)
  * @param max_extra_points - The maximum number of points to assign based on a rubric beyond the question's assigned points (ceiling). Computed points from rubric items over the assigned points are never assigned more than this, even if items bring the total to more than this value, unless an adjustment is used.
  * @param rubric_items - An array of items available for grading. The `order` property is used to determine the order of the items. If an item has an `id` property that corresponds to an existing rubric item, it is updated, otherwise it is inserted.
  * @param tag_for_manual_grading - If true, tags all currently graded instance questions to be graded again using the new rubric values. If false, existing gradings are recomputed if necessary, but their grading status is retained.
+ * @param grader_guidelines - General guidance and instructions for applying and interpreting the rubric.
  * @param authn_user_id - The user_id of the logged in user.
  */
 export async function updateAssessmentQuestionRubric(
@@ -237,6 +245,7 @@ export async function updateAssessmentQuestionRubric(
   max_extra_points: number,
   rubric_items: RubricItemInput[],
   tag_for_manual_grading: boolean,
+  grader_guidelines: string | null,
   authn_user_id: string,
 ): Promise<void> {
   // Basic validation: points and description must exist, description must be within size limits
@@ -292,7 +301,7 @@ export async function updateAssessmentQuestionRubric(
       // Rubric does not exist yet, but should, insert new rubric
       new_rubric_id = await sqldb.queryRow(
         sql.insert_rubric,
-        { starting_points, min_points, max_extra_points, replace_auto_points },
+        { starting_points, min_points, max_extra_points, replace_auto_points, grader_guidelines },
         IdSchema,
       );
     } else {
@@ -302,6 +311,7 @@ export async function updateAssessmentQuestionRubric(
         starting_points,
         min_points,
         max_extra_points,
+        grader_guidelines,
         replace_auto_points,
       });
     }

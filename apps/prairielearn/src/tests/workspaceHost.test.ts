@@ -60,7 +60,7 @@ async function insertWorkspace(
   );
 }
 
-async function selectWorkspaceHost(id) {
+async function selectWorkspaceHost(id: string | number) {
   return sqldb.queryRow(
     'SELECT * FROM workspace_hosts WHERE id = $id;',
     { id },
@@ -68,7 +68,7 @@ async function selectWorkspaceHost(id) {
   );
 }
 
-async function selectWorkspace(id) {
+async function selectWorkspace(id: string | number) {
   return sqldb.queryRow('SELECT * FROM workspaces WHERE id = $id;', { id }, WorkspaceSchema);
 }
 

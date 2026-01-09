@@ -157,3 +157,7 @@ code.doc-symbol-json::after {
 .md-tooltip2__inner.md-typeset > .md-content__button.md-icon {
   display: none;
 }
+
+.muted {
+  color: var(--md-default-fg-color--light);
+}

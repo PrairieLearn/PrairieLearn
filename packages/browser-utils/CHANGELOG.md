@@ -1,5 +1,11 @@
 # @prairielearn/browser-utils
 
+## 2.6.0
+
+### Minor Changes
+
+- f7d6b62: Export `FocusTrap` type
+
 ## 2.5.1
 
 ### Patch Changes

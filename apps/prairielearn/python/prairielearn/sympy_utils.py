@@ -792,8 +792,8 @@ def validate_string_as_sympy(
         )
     except HasComplexError:
         err_string = [
-            "Your answer contains a complex number. "
-            "All numbers must be expressed as integers (or ratios of integers). "
+            "Your answer contains a complex number. ",
+            "All numbers must be expressed as integers (or ratios of integers). ",
         ]
 
         if allow_complex:

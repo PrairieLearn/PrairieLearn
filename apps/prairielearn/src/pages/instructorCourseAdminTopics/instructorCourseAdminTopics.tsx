@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -11,7 +10,7 @@ import { flash } from '@prairielearn/flash';
 import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { TagsTopicsTable } from '../../components/TagsTopicsTable.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTopicSchema } from '../../lib/client/safe-db-types.js';
@@ -19,15 +18,14 @@ import { TopicSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
-
-import { InstructorCourseAdminTopicsTable } from './components/InstructorCourseAdminTopicsTable.js';
 
 const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const pageContext = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -63,21 +61,15 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <CourseSyncErrorsAndWarnings
-              authzData={res.locals.authz_data}
-              course={pageContext.course}
-              urlPrefix={pageContext.urlPrefix}
+          <Hydrate>
+            <TagsTopicsTable
+              entities={z.array(StaffTopicSchema).parse(topics)}
+              entityType="topic"
+              allowEdit={allowEdit}
+              origHash={origHash}
+              csrfToken={pageContext.__csrf_token}
             />
-            <Hydrate>
-              <InstructorCourseAdminTopicsTable
-                topics={z.array(StaffTopicSchema).parse(topics)}
-                allowEdit={allowEdit}
-                csrfToken={pageContext.__csrf_token}
-                origHash={origHash}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
@@ -86,7 +78,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -95,7 +87,7 @@ router.post(
       throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
-    if (req.body.__action === 'save_topics') {
+    if (req.body.__action === 'save_data') {
       if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
@@ -108,7 +100,7 @@ router.post(
       const body = z
         .object({
           orig_hash: z.string(),
-          topics: z.string().transform((s) =>
+          data: z.string().transform((s) =>
             z
               .array(
                 TopicSchema.pick({
@@ -125,7 +117,7 @@ router.post(
         .parse(req.body);
 
       const origHash = body.orig_hash;
-      const resolveTopics = body.topics
+      const resolveTopics = body.data
         .map((topic) => {
           if (topic.implicit) {
             return;
@@ -142,13 +134,13 @@ router.post(
       courseInfo.topics = propertyValueWithDefault(
         courseInfo.topics,
         resolveTopics,
-        (v) => !v || v.length === 0,
+        (v: any) => !v || v.length === 0,
       );
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -163,7 +155,7 @@ router.post(
       } catch {
         return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
-      flash('success', 'Topic configuration updated successfully');
+      flash('success', 'Topics updated successfully');
       return res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);

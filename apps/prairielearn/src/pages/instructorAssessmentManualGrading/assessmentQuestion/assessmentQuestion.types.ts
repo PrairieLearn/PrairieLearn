@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { AIGradingStatsSchema } from '../../../ee/lib/ai-grading/types.js';
 import {
   RawStaffInstanceQuestionSchema,
@@ -7,7 +9,6 @@ import {
   type StaffInstanceQuestionGroup,
   StaffInstanceQuestionSchema,
 } from '../../../lib/client/safe-db-types.js';
-import { IdSchema } from '../../../lib/db-types.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 export const InstanceQuestionRowSchema = z.object({
@@ -17,7 +18,7 @@ export const InstanceQuestionRowSchema = z.object({
   assigned_grader_name: z.string().nullable(),
   last_grader_name: z.string().nullable(),
   assessment_question: StaffAssessmentQuestionSchema,
-  user_or_group_name: z.string().nullable(),
+  user_or_team_name: z.string().nullable(),
   open_issue_count: z.number().nullable(),
   rubric_grading_item_ids: z.array(IdSchema),
   enrollment_id: IdSchema.nullable(),
@@ -39,7 +40,7 @@ export interface InstanceQuestionTableData {
   hasCourseInstancePermissionEdit: boolean;
   urlPrefix: string;
   instancesUrl: string;
-  groupWork: boolean;
+  teamWork: boolean;
   maxPoints: number | null;
   maxAutoPoints: number | null;
   aiGradingMode: boolean;

@@ -24,7 +24,7 @@ export const IssueRenderDataSchema = IssueSchema.extend({
   user_email: z.string().nullable(),
 });
 
-type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
+export type IssueRenderData = z.infer<typeof IssueRenderDataSchema>;
 
 export interface QuestionUrls {
   questionUrl: string;
@@ -78,6 +78,7 @@ export interface ResLocalsBuildLocals {
   variantAttemptsTotal: number;
   submissions: SubmissionForRender[];
   variantToken: string;
+  jobSequenceTokens: Record<string, string>;
 }
 
 export type ResLocalsQuestionRender = ResLocalsBuildLocals & ResLocalsQuestionRenderAdded;

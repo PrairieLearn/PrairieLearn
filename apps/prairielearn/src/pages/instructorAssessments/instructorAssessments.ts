@@ -7,6 +7,7 @@ import { stringifyStream } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   updateAssessmentStatistics,
@@ -17,9 +18,9 @@ import {
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
 } from '../../lib/db-types.js';
 import { AssessmentAddEditor } from '../../lib/editors.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import {
   type AssessmentRow,
@@ -32,13 +33,13 @@ import { AssessmentStats, InstructorAssessments } from './instructorAssessments.
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function buildCsvFilename(locals: Record<string, any>) {
+function buildCsvFilename(locals: ResLocalsForPage<'assessment'>) {
   return `${courseInstanceFilenamePrefix(locals.course_instance, locals.course)}assessment_stats.csv`;
 }
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const csvFilename = buildCsvFilename(res.locals);
 
     const rows = await selectAssessments({
@@ -108,7 +109,7 @@ router.get(
 
 router.get(
   '/file/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.params.filename === buildCsvFilename(res.locals)) {
       // There is no need to check if the user has permission to view student
       // data, because this file only has aggregate data.
@@ -185,7 +186,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'add_assessment') {
       if (!req.body.title) {
         throw new HttpStatusError(400, 'title is required');
@@ -207,7 +208,7 @@ router.post(
       }
 
       const editor = new AssessmentAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         title: req.body.title,
         aid: req.body.aid,
         type: req.body.type,

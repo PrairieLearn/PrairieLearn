@@ -1,11 +1,16 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
+import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
 export type BatchActionData =
   | { assigned_grader: string | null }
   | { requires_manual_grading: boolean }
-  | { batch_action: 'ai_grade_assessment_selected'; closed_instance_questions_only?: boolean }
+  | {
+      batch_action: 'ai_grade_assessment_selected';
+      model_id: AiGradingModelId;
+      closed_instance_questions_only?: boolean;
+    }
   | {
       batch_action: 'ai_instance_question_group_selected';
       closed_instance_questions_only?: boolean;
@@ -23,7 +28,18 @@ export type BatchActionParams =
         | 'ai_grade_assessment_all'
         | 'ai_instance_question_group_assessment_all'
         | 'ai_instance_question_group_assessment_ungrouped';
+      modelId: AiGradingModelId;
     };
+
+type BatchActionResponse =
+  | {
+      job_sequence_id: string;
+      job_sequence_token: string;
+    }
+  | {
+      job_sequence_id: string;
+    }
+  | null;
 
 interface UseManualGradingActionsParams {
   csrfToken: string;
@@ -36,11 +52,7 @@ export function useManualGradingActions({
 }: UseManualGradingActionsParams) {
   const queryClient = useQueryClient();
 
-  const batchActionMutation = useMutation<
-    { job_sequence_id: string } | null,
-    Error,
-    BatchActionParams
-  >({
+  const batchActionMutation = useMutation<BatchActionResponse, Error, BatchActionParams>({
     mutationFn: async (params: BatchActionParams) => {
       // TODO: Once we use Zod on the backend, we should improve how this is constructed.
       const requestBody: Record<string, any> = {
@@ -59,10 +71,16 @@ export function useManualGradingActions({
           if (actionData.closed_instance_questions_only !== undefined) {
             requestBody.closed_instance_questions_only = actionData.closed_instance_questions_only;
           }
+
+          if ('model_id' in actionData) {
+            requestBody.model_id = actionData.model_id;
+          }
         } else {
           // For regular batch actions
           requestBody.batch_action_data = actionData;
         }
+      } else {
+        requestBody.model_id = params.modelId;
       }
 
       const response = await fetch(window.location.pathname, {
@@ -86,12 +104,7 @@ export function useManualGradingActions({
       return data;
     },
     onSuccess: (data) => {
-      if (data) {
-        window.location.href = getCourseInstanceJobSequenceUrl(
-          courseInstanceId,
-          data.job_sequence_id,
-        );
-      } else {
+      if (!data) {
         void queryClient.invalidateQueries({
           queryKey: ['instance-questions'],
         });
@@ -99,7 +112,11 @@ export function useManualGradingActions({
     },
   });
 
-  const handleBatchAction = (actionData: BatchActionData, instanceQuestionIds: string[]) => {
+  const handleBatchAction = (
+    actionData: BatchActionData,
+    instanceQuestionIds: string[],
+    onSuccess?: (data: BatchActionResponse) => void,
+  ) => {
     if (instanceQuestionIds.length === 0) return;
 
     batchActionMutation.mutate(
@@ -110,15 +127,13 @@ export function useManualGradingActions({
       },
       {
         onSuccess: (data) => {
-          if (data) {
-            window.location.href = getCourseInstanceJobSequenceUrl(
-              courseInstanceId,
-              data.job_sequence_id,
-            );
-          } else {
+          if (!data) {
             void queryClient.invalidateQueries({
               queryKey: ['instance-questions'],
             });
+          }
+          if (onSuccess) {
+            onSuccess(data);
           }
         },
       },

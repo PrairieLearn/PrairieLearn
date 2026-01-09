@@ -11,7 +11,10 @@ import { ArrayFromCheckboxSchema, IdSchema } from '@prairielearn/zod';
 import { PageLayout } from '../../components/PageLayout.js';
 import { getSupportedAuthenticationProviders } from '../../lib/authn-providers.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { AdminInstitutionSchema } from '../../lib/client/safe-db-types.js';
+import {
+  AdminInstitutionSchema,
+  StaffAuthnProviderSchema,
+} from '../../lib/client/safe-db-types.js';
 import { AuthnProviderSchema } from '../../lib/db-types.js';
 import { isEnterprise } from '../../lib/license.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
@@ -36,9 +39,9 @@ router.get(
 
     // Only show Google and Microsoft for institution creation. Other providers
     // can be enabled later via SSO settings.
-    const supportedAuthenticationProviders = allSupportedProviders.filter(
-      (provider) => provider.name === 'Google' || provider.name === 'Azure',
-    );
+    const supportedAuthenticationProviders = allSupportedProviders
+      .filter((provider) => provider.name === 'Google' || provider.name === 'Azure')
+      .map((provider) => StaffAuthnProviderSchema.parse(provider));
 
     const pageContext = extractPageContext(res.locals, {
       pageType: 'plain',
@@ -113,7 +116,7 @@ router.post(
         institution_id: institutionId,
         enabled_authn_provider_ids: enabledProviders,
         default_authn_provider_id: null,
-        authn_user_id: res.locals.authn_user.user_id.toString(),
+        authn_user_id: res.locals.authn_user.id.toString(),
       });
 
       flash('success', `Institution "${body.short_name}" created successfully.`);

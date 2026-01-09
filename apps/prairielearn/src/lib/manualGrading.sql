@@ -67,8 +67,11 @@ WITH
         OR iq.requires_manual_grading
       )
       AND (
-        iq.assigned_grader = $user_id
-        OR iq.assigned_grader IS NULL
+        NOT ($show_submissions_assigned_to_me_only)
+        OR (
+          iq.assigned_grader = $user_id
+          OR iq.assigned_grader IS NULL
+        )
       )
       AND EXISTS (
         SELECT
@@ -95,8 +98,14 @@ WHERE
     OR iq_stable_order > prior_iq_stable_order
   )
 ORDER BY
-  -- Choose one assigned to current user if one exists, unassigned if not
-  assigned_grader ASC NULLS LAST,
+  -- If show_submissions_assigned_to_me_only is true, choose an instance question assigned to current user if one exists, unassigned if not.
+  -- Otherwise, select an instance question without using the grader assignment.
+  CASE
+    WHEN NOT $show_submissions_assigned_to_me_only THEN 0
+    WHEN assigned_grader = $user_id THEN 1
+    WHEN assigned_grader IS NULL THEN 2
+    ELSE 3
+  END ASC,
   -- Choose question that list after the prior if one exists. Follow the same
   -- default pseudo-random deterministic stable order used in the instance
   -- questions page.
@@ -129,7 +138,9 @@ WITH
   rubric_items_data AS (
     SELECT
       JSONB_AGG(
-        TO_JSONB(ri) || JSONB_BUILD_OBJECT(
+        JSONB_BUILD_OBJECT(
+          'rubric_item',
+          to_jsonb(ri),
           'num_submissions',
           COALESCE(scpri.num_submissions, 0)
         )
@@ -145,7 +156,7 @@ WITH
       AND ri.deleted_at IS NULL
   )
 SELECT
-  r.*,
+  to_jsonb(r.*) AS rubric,
   rid.items_data AS rubric_items
 FROM
   rubrics r
@@ -210,14 +221,16 @@ INSERT INTO
     starting_points,
     min_points,
     max_extra_points,
-    replace_auto_points
+    replace_auto_points,
+    grader_guidelines
   )
 VALUES
   (
     $starting_points,
     $min_points,
     $max_extra_points,
-    $replace_auto_points
+    $replace_auto_points,
+    $grader_guidelines
   )
 RETURNING
   id;
@@ -229,6 +242,7 @@ SET
   min_points = $min_points,
   max_extra_points = $max_extra_points,
   replace_auto_points = $replace_auto_points,
+  grader_guidelines = $grader_guidelines,
   modified_at = CURRENT_TIMESTAMP
 WHERE
   id = $rubric_id;

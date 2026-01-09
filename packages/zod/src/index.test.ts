@@ -5,9 +5,11 @@ import {
   ArrayFromCheckboxSchema,
   ArrayFromStringOrArraySchema,
   BooleanFromCheckboxSchema,
+  DatetimeLocalStringSchema,
   IdSchema,
   IntegerFromStringOrEmptySchema,
   IntervalSchema,
+  UniqueUidsFromStringSchema,
 } from './index.js';
 
 describe('BooleanFromCheckboxSchema', () => {
@@ -103,6 +105,38 @@ describe('IntervalSchema', () => {
   });
 });
 
+describe('DatetimeLocalStringSchema', () => {
+  it('parses a valid datetime-local string without seconds', () => {
+    const result = DatetimeLocalStringSchema.parse('2024-01-15T14:30');
+    assert.equal(result, '2024-01-15T14:30:00');
+  });
+
+  it('parses a valid datetime-local string with seconds', () => {
+    const result = DatetimeLocalStringSchema.parse('2024-01-15T14:30:45');
+    assert.equal(result, '2024-01-15T14:30:45');
+  });
+
+  it('rejects an invalid format (missing time)', () => {
+    const result = DatetimeLocalStringSchema.safeParse('2024-01-15');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an invalid format (ISO with timezone)', () => {
+    const result = DatetimeLocalStringSchema.safeParse('2024-01-15T14:30:00Z');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an empty string', () => {
+    const result = DatetimeLocalStringSchema.safeParse('');
+    assert.isFalse(result.success);
+  });
+
+  it('rejects an invalid date', () => {
+    const result = DatetimeLocalStringSchema.safeParse('2024-13-45T25:99');
+    assert.isFalse(result.success);
+  });
+});
+
 describe('IntegerFromStringOrEmptySchema', () => {
   it('parses a valid integer string', () => {
     const result = IntegerFromStringOrEmptySchema.parse('123');
@@ -161,5 +195,60 @@ describe('ArrayFromCheckboxSchema', () => {
   it('parses an array of strings', () => {
     const result = ArrayFromCheckboxSchema.parse(['a', 'b', 'c']);
     assert.deepEqual(result, ['a', 'b', 'c']);
+  });
+});
+
+describe('UniqueUidsFromStringSchema', () => {
+  it('parses a single UID', () => {
+    const result = UniqueUidsFromStringSchema(10).parse('user@example.com');
+    assert.deepEqual(result, ['user@example.com']);
+  });
+
+  it('parses UIDs with mixed separators', () => {
+    const result = UniqueUidsFromStringSchema(10).parse(
+      'user1@example.com, user2@example.com; user3@example.com',
+    );
+    assert.deepEqual(result, ['user1@example.com', 'user2@example.com', 'user3@example.com']);
+  });
+
+  it('deduplicates UIDs', () => {
+    const result = UniqueUidsFromStringSchema(10).parse(
+      'user@example.com, user@example.com, user@example.com',
+    );
+    assert.deepEqual(result, ['user@example.com']);
+  });
+
+  it('trims whitespace from UIDs', () => {
+    const result = UniqueUidsFromStringSchema(10).parse(
+      '  user1@example.com  ,  user2@example.com  ',
+    );
+    assert.deepEqual(result, ['user1@example.com', 'user2@example.com']);
+  });
+
+  it('rejects when UIDs exceed limit', () => {
+    const result = UniqueUidsFromStringSchema(2).safeParse('a@b.com, b@c.com, c@d.com');
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.include(result.error.issues[0].message, 'Cannot provide more than 2 UIDs');
+    }
+  });
+
+  it('rejects invalid email addresses', () => {
+    const result = UniqueUidsFromStringSchema(10).safeParse('invalid-email');
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.include(result.error.issues[0].message, 'Invalid UID format: invalid-email');
+    }
+  });
+
+  it('rejects when any email in list is invalid', () => {
+    const result = UniqueUidsFromStringSchema(10).safeParse(
+      'user@example.com, not-an-email, not-an-email-2',
+    );
+    assert.isFalse(result.success);
+    if (!result.success) {
+      assert.include(result.error.issues[0].message, 'Invalid UID format: not-an-email');
+      assert.include(result.error.issues[1].message, 'Invalid UID format: not-an-email-2');
+    }
   });
 });

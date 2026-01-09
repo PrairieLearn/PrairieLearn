@@ -1,12 +1,11 @@
 import { z } from 'zod';
 
 import { type HtmlSafeString, escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { CourseSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag } from '../../lib/assets.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const SharingSetRowSchema = z.object({
   name: z.string(),
@@ -20,7 +19,7 @@ function AddCourseToSharingSetPopover({
   resLocals,
 }: {
   sharing_set: SharingSetRow;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'course'>;
 }) {
   return html`
     <form name="sharing-set-access-add-${sharing_set.id}" method="POST">
@@ -128,10 +127,8 @@ export function InstructorCourseAdminSharing({
   sharingSets: SharingSetRow[];
   publicSharingLink: string;
   canChooseSharingName: boolean;
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'course'>;
 }) {
-  const isCourseOwner = resLocals.authz_data.has_course_permission_own;
-
   return PageLayout({
     resLocals,
     pageTitle: 'Course sharing',
@@ -145,13 +142,6 @@ export function InstructorCourseAdminSharing({
     },
     headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
-      ${renderHtml(
-        <CourseSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex">
           <h1>Course sharing details</h1>
@@ -166,24 +156,20 @@ export function InstructorCourseAdminSharing({
                 <th>Sharing name</th>
                 <td data-testid="sharing-name">
                   ${sharingName !== null ? sharingName : ''}
-                  ${isCourseOwner
-                    ? html`
-                        <button
-                          type="button"
-                          class="btn btn-xs btn-secondary mx-2"
-                          aria-label="Choose Sharing Name"
-                          data-bs-toggle="modal"
-                          data-bs-target="#chooseSharingNameModal"
-                        >
-                          <i class="fas fa-share-nodes" aria-hidden="true"></i>
-                          <span class="d-none d-sm-inline">Choose Sharing Name</span>
-                        </button>
-                        ${ChooseSharingNameModal({
-                          canChooseSharingName,
-                          csrfToken: resLocals.__csrf_token,
-                        })}
-                      `
-                    : ''}
+                  <button
+                    type="button"
+                    class="btn btn-xs btn-secondary mx-2"
+                    aria-label="Choose Sharing Name"
+                    data-bs-toggle="modal"
+                    data-bs-target="#chooseSharingNameModal"
+                  >
+                    <i class="fas fa-share-nodes" aria-hidden="true"></i>
+                    <span class="d-none d-sm-inline">Choose Sharing Name</span>
+                  </button>
+                  ${ChooseSharingNameModal({
+                    canChooseSharingName,
+                    csrfToken: resLocals.__csrf_token,
+                  })}
                 </td>
               </tr>
               <tr>
@@ -199,22 +185,14 @@ export function InstructorCourseAdminSharing({
                     <i class="fa fa-copy"></i>
                     <span>Copy</span>
                   </button>
-                  ${isCourseOwner
-                    ? html`
-                        <form name="sharing-id-regenerate" method="POST" class="d-inline">
-                          <input type="hidden" name="__action" value="sharing_token_regenerate" />
-                          <input
-                            type="hidden"
-                            name="__csrf_token"
-                            value="${resLocals.__csrf_token}"
-                          />
-                          <button type="submit" class="btn btn-xs btn-secondary">
-                            <i class="fa fa-rotate"></i>
-                            <span>Regenerate</span>
-                          </button>
-                        </form>
-                      `
-                    : ''}
+                  <form name="sharing-id-regenerate" method="POST" class="d-inline">
+                    <input type="hidden" name="__action" value="sharing_token_regenerate" />
+                    <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                    <button type="submit" class="btn btn-xs btn-secondary">
+                      <i class="fa fa-rotate"></i>
+                      <span>Regenerate</span>
+                    </button>
+                  </form>
                 </td>
               </tr>
               <tr>
@@ -258,31 +236,28 @@ export function InstructorCourseAdminSharing({
                         (course_shared_with) => html`
                           <span class="badge color-gray1"> ${course_shared_with} </span>
                         `,
-                      )}${isCourseOwner
-                        ? html`
-                            <div class="btn-group btn-group-sm" role="group">
-                              <button
-                                type="button"
-                                class="btn btn-sm btn-outline-dark"
-                                aria-label="Add course to sharing set"
-                                data-bs-toggle="popover"
-                                data-bs-container="body"
-                                data-bs-html="true"
-                                data-bs-placement="auto"
-                                data-bs-title="Add Course to Sharing Set"
-                                data-bs-content="${escapeHtml(
-                                  AddCourseToSharingSetPopover({
-                                    resLocals,
-                                    sharing_set,
-                                  }),
-                                )}"
-                              >
-                                Add...
-                                <i class="fas fa-plus" aria-hidden="true"></i>
-                              </button>
-                            </div>
-                          `
-                        : ''}
+                      )}
+                      <div class="btn-group btn-group-sm" role="group">
+                        <button
+                          type="button"
+                          class="btn btn-sm btn-outline-dark"
+                          aria-label="Add course to sharing set"
+                          data-bs-toggle="popover"
+                          data-bs-container="body"
+                          data-bs-html="true"
+                          data-bs-placement="auto"
+                          data-bs-title="Add Course to Sharing Set"
+                          data-bs-content="${escapeHtml(
+                            AddCourseToSharingSetPopover({
+                              resLocals,
+                              sharing_set,
+                            }),
+                          )}"
+                        >
+                          Add...
+                          <i class="fas fa-plus" aria-hidden="true"></i>
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 `,

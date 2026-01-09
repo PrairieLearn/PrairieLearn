@@ -2,6 +2,9 @@ import { defineConfig, devices } from '@playwright/test';
 
 /**
  * See https://playwright.dev/docs/test-configuration.
+ *
+ * Note: Image snapshots will not work as expected since
+ * we run CI in a different environment than local development.
  */
 export default defineConfig({
   testDir: './src/tests/e2e',

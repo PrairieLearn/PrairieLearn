@@ -5,16 +5,13 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { execute, loadSqlEquiv } from '@prairielearn/postgres';
-
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
+import { updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-
-const sql = loadSqlEquiv(import.meta.url);
 
 const baseDir = tmp.dirSync().name;
 
@@ -47,7 +44,7 @@ describe('Updating a course instance ID', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await execute(sql.update_course_repo, { repo: courseOriginDir });
+    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
   });
 
   afterAll(helperServer.after);

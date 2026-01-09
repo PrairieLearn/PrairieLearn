@@ -47,7 +47,7 @@ interface HydrateProps {
   /** Whether to apply full height styles. */
   fullHeight?: boolean;
   /** Optional CSS class to apply to the container. */
-  class?: string;
+  className?: string;
 }
 
 /**
@@ -59,7 +59,7 @@ interface HydrateProps {
 export function Hydrate({
   children,
   nameOverride,
-  class: className,
+  className,
   fullHeight = false,
 }: HydrateProps): VNode {
   if (!isValidElement(children)) {
@@ -135,7 +135,7 @@ registerHydratedComponent(${componentName});</code></pre>
       />
       <div
         data-component={componentName}
-        class={clsx('js-hydrated-component', { 'h-100': fullHeight }, className)}
+        className={clsx('js-hydrated-component', { 'h-100': fullHeight }, className)}
       >
         <Component {...props} />
       </div>

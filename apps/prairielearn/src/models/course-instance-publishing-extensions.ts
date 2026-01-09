@@ -34,14 +34,14 @@ export async function selectPublishingExtensionById({
   id,
   courseInstance,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   id: string;
   courseInstance: CourseInstance;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
 }) {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   const extension = await queryRow(
     sql.select_publishing_extension_by_id,
     { id },
@@ -56,13 +56,13 @@ export async function selectPublishingExtensionById({
 export async function selectLatestPublishingExtensionByEnrollment({
   enrollment,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   enrollment: Enrollment;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student' | 'Student Data Viewer' | 'Student Data Editor')[];
 }) {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await queryOptionalRow(
     sql.select_latest_publishing_extension_by_enrollment_id,
     { enrollment_id: enrollment.id },
@@ -77,14 +77,14 @@ export async function selectPublishingExtensionByName({
   name,
   courseInstance,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   name: string;
   courseInstance: CourseInstance;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
 }): Promise<CourseInstancePublishingExtension | null> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   const extension = await queryOptionalRow(
     sql.select_publishing_extension_by_name,
     { name, course_instance_id: courseInstance.id },
@@ -104,15 +104,15 @@ export async function insertPublishingExtension({
   name,
   endDate,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   courseInstance: CourseInstance;
   name: string | null;
   endDate: Date | null;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<CourseInstancePublishingExtension> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await queryRow(
     sql.insert_publishing_extension,
     {
@@ -131,14 +131,14 @@ export async function addEnrollmentToPublishingExtension({
   courseInstancePublishingExtension,
   enrollment,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   courseInstancePublishingExtension: CourseInstancePublishingExtension;
   enrollment: Enrollment;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<CourseInstancePublishingExtensionEnrollment> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await queryRow(
     sql.add_enrollment_to_publishing_extension,
     {
@@ -156,14 +156,14 @@ export async function removeStudentFromPublishingExtension({
   courseInstancePublishingExtension,
   enrollment,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   courseInstancePublishingExtension: CourseInstancePublishingExtension;
   enrollment: Enrollment;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<void> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   await execute(sql.remove_enrollment_from_publishing_extension, {
     extension_id: courseInstancePublishingExtension.id,
     enrollment_id: enrollment.id,
@@ -176,23 +176,23 @@ export async function createPublishingExtensionWithEnrollments({
   endDate,
   enrollments,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   courseInstance: CourseInstance;
   name: string | null;
   endDate: Date | null;
   enrollments: Enrollment[];
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<CourseInstancePublishingExtension> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await runInTransactionAsync(async () => {
     const extension = await insertPublishingExtension({
       courseInstance,
       name,
       endDate,
       authzData,
-      requestedRole,
+      requiredRole,
     });
 
     for (const enrollment of enrollments) {
@@ -200,7 +200,7 @@ export async function createPublishingExtensionWithEnrollments({
         courseInstancePublishingExtension: extension,
         enrollment,
         authzData,
-        requestedRole,
+        requiredRole,
       });
     }
 
@@ -215,14 +215,14 @@ export async function deletePublishingExtension({
   extension,
   courseInstance,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   extension: CourseInstancePublishingExtension;
   courseInstance: CourseInstance;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<void> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   assertPublishingExtensionBelongsToCourseInstance(extension, courseInstance);
   await execute(sql.delete_publishing_extension, {
     extension_id: extension.id,
@@ -232,13 +232,13 @@ export async function deletePublishingExtension({
 export async function selectEnrollmentsForPublishingExtension({
   extension,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   extension: CourseInstancePublishingExtension;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Viewer' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
 }) {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   return await queryRows(
     sql.select_enrollments_for_publishing_extension,
     {
@@ -255,15 +255,15 @@ export async function updatePublishingExtension({
   name,
   endDate,
   authzData,
-  requestedRole,
+  requiredRole,
 }: {
   extension: CourseInstancePublishingExtension;
   name: string | null;
   endDate: Date | null;
   authzData: AuthzData;
-  requestedRole: 'System' | 'Student Data Editor' | 'Any';
+  requiredRole: ('System' | 'Student Data Editor')[];
 }): Promise<CourseInstancePublishingExtension> {
-  assertHasRole(authzData, requestedRole);
+  assertHasRole(authzData, requiredRole);
   const updatedExtension = await queryRow(
     sql.update_publishing_extension,
     {

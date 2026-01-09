@@ -3,12 +3,13 @@ import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { type Assessment, IdSchema } from './db-types.js';
+import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -39,13 +40,13 @@ export async function uploadInstanceQuestionScores(
   );
 
   const serverJob = await createServerJob({
+    type: 'upload_instance_question_scores',
+    description: 'Upload question scores for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_instance_question_scores',
-    description: 'Upload question scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -92,7 +93,7 @@ export async function uploadInstanceQuestionScores(
             skippedCount++;
             // NO OUTPUT
           }
-        } catch (err) {
+        } catch (err: any) {
           errorCount++;
           const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
           if (output == null) {
@@ -153,13 +154,13 @@ export async function uploadAssessmentInstanceScores(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'upload_assessment_instance_scores',
+    description: 'Upload total scores for ' + assessment_label,
+    authnUserId: authn_user_id,
+    userId: user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_assessment_instance_scores',
-    description: 'Upload total scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -284,7 +285,7 @@ async function updateInstanceQuestionFromCsvRow(
   assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
-  const uid_or_group = record.group_name ?? record.uid;
+  const uid_or_team = record.group_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
@@ -292,26 +293,26 @@ async function updateInstanceQuestionFromCsvRow(
       {
         assessment_id: assessment.id,
         submission_id: record.submission_id,
-        uid_or_group,
+        uid_or_team,
         ai_number: record.instance,
         qid: record.qid,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
-        uid_or_group: z.string(),
+        uid_or_team: z.string(),
         qid: z.string(),
       }),
     );
 
     if (submission_data == null) {
       throw new Error(
-        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_group}, qid=${record.qid} for this assessment.`,
+        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_team}, qid=${record.qid} for this assessment.`,
       );
     }
-    if (uid_or_group !== null && submission_data.uid_or_group !== uid_or_group) {
+    if (uid_or_team !== null && submission_data.uid_or_team !== uid_or_team) {
       throw new Error(
-        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
+        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_team}.`,
       );
     }
     if (record.qid !== null && submission_data.qid !== record.qid) {
@@ -364,10 +365,10 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
     return {
       id: record.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
-        sql.select_assessment_instance_group,
+        sql.select_assessment_instance_team,
         {
           assessment_id,
-          group_name: record.group_name,
+          team_name: record.group_name,
           instance_number: record.instance,
         },
         IdSchema,

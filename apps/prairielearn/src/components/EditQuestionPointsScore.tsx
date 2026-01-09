@@ -1,9 +1,9 @@
 import { useMutation } from '@tanstack/react-query';
 import { useEffect, useRef, useState } from 'preact/compat';
-import { Alert, Button, OverlayTrigger, Popover } from 'react-bootstrap';
+import { Alert, Button } from 'react-bootstrap';
 
-import { type FocusTrap, focusFirstFocusableChild, trapFocus } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import {
   type StaffAssessmentQuestion,
@@ -240,7 +240,7 @@ function EditQuestionPointsScoreForm({
           This question is configured to use rubrics for grading. Changes must be performed in{' '}
           <a href={manualGradingUrl}>the manual grading page</a>.
         </p>
-        <div class="text-end">
+        <div className="text-end">
           <Button variant="secondary" onClick={onCancel}>
             Cancel
           </Button>
@@ -280,26 +280,24 @@ function EditQuestionPointsScoreForm({
 
   return (
     <form onSubmit={handleSubmit}>
-      <div class="mb-3">
-        <div class="input-group">
+      <div className="mb-3">
+        <div className="input-group">
           <input
             type="number"
             step="any"
-            class="form-control"
+            className="form-control"
             value={value}
             aria-label={findLabel(field)}
             required
-            onChange={(e) => {
-              setValue((e.target as HTMLInputElement).value);
-            }}
+            onChange={(e) => setValue(e.currentTarget.value)}
           />
-          <span class="input-group-text">
+          <span className="input-group-text">
             {field === 'score_perc' ? '%' : `/${maxPoints ?? 0}`}
           </span>
         </div>
-        {error && <div class="text-danger mt-2">{error}</div>}
+        {error && <div className="text-danger mt-2">{error}</div>}
         {mutation.isError && (
-          <Alert variant="danger" class="mt-2" dismissible onClose={() => mutation.reset()}>
+          <Alert variant="danger" className="mt-2" dismissible onClose={() => mutation.reset()}>
             {mutation.error.message}
           </Alert>
         )}
@@ -317,7 +315,7 @@ function EditQuestionPointsScoreForm({
           )}
         </small>
       </p>
-      <div class="text-end">
+      <div className="text-end">
         <Button disabled={mutation.isPending} variant="secondary" onClick={onCancel}>
           Cancel
         </Button>
@@ -348,11 +346,9 @@ export function EditQuestionPointsScoreButton({
   onConflict: (conflictDetailsUrl: string) => void;
   scrollRef?: React.RefObject<HTMLDivElement> | null;
 }) {
-  const popoverBodyRef = useRef<HTMLDivElement>(null);
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);
   const buttonRef = useRef<HTMLButtonElement>(null);
-  const focusTrapRef = useRef<FocusTrap | null>(null);
 
   const handleSuccess = () => {
     setShow(false);
@@ -393,7 +389,6 @@ export function EditQuestionPointsScoreButton({
       }
     };
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
     scrollContainer.addEventListener('scroll', handleScroll, { passive: true });
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
@@ -401,53 +396,35 @@ export function EditQuestionPointsScoreButton({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
-  const popover = (
-    <Popover>
-      <Popover.Body ref={popoverBodyRef}>
-        <EditQuestionPointsScoreForm
-          assessmentQuestion={assessmentQuestion}
-          field={field}
-          instanceQuestion={instanceQuestion}
-          mutation={mutation}
-          urlPrefix={urlPrefix}
-          onCancel={handleCancel}
-          onConflict={handleConflict}
-          onSuccess={handleSuccess}
-        />
-      </Popover.Body>
-    </Popover>
-  );
-
   return (
     <OverlayTrigger
-      overlay={popover}
+      popover={{
+        body: (
+          <EditQuestionPointsScoreForm
+            assessmentQuestion={assessmentQuestion}
+            field={field}
+            instanceQuestion={instanceQuestion}
+            mutation={mutation}
+            urlPrefix={urlPrefix}
+            onCancel={handleCancel}
+            onConflict={handleConflict}
+            onSuccess={handleSuccess}
+          />
+        ),
+      }}
       placement="auto"
       rootClose={true}
       show={show}
       trigger="click"
       onToggle={setShow}
-      onEntered={() => {
-        if (popoverBodyRef.current) {
-          focusFirstFocusableChild(popoverBodyRef.current);
-          focusTrapRef.current = trapFocus(popoverBodyRef.current);
-        }
-      }}
-      onExit={() => {
-        focusTrapRef.current?.deactivate();
-        focusTrapRef.current = null;
-
-        // Move focus back to the button that opened the popover so that focus
-        // isn't left somewhere random at the end of the document.
-        buttonRef.current?.focus();
-      }}
     >
       <button
         ref={buttonRef}
         type="button"
-        class="btn btn-xs btn-ghost text-muted"
+        className="btn btn-xs btn-ghost text-muted"
         aria-label={`Change question ${findLabel(field)}`}
       >
-        <i class="bi bi-pencil-square" aria-hidden="true" />
+        <i className="bi bi-pencil-square" aria-hidden="true" />
       </button>
     </OverlayTrigger>
   );

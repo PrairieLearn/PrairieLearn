@@ -15,16 +15,16 @@
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.926.0",
+    "@aws-sdk/client-ecr": "^3.958.0",
     "@prairielearn/logger": "workspace:^",
     "date-fns": "^4.1.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.0",
-    "@vitest/coverage-v8": "^4.0.7",
-    "tsx": "^4.20.6",
+    "@types/node": "^22.19.3",
+    "@vitest/coverage-v8": "^4.0.16",
+    "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.7"
+    "vitest": "^4.0.16"
   }
 }

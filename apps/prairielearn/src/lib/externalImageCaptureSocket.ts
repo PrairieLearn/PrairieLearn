@@ -6,6 +6,7 @@ import { logger } from '@prairielearn/logger';
 import * as Sentry from '@prairielearn/sentry';
 
 import { checkVariantToken } from './checkVariantToken.js';
+import { ensureProps } from './ensureProps.js';
 import type {
   StatusMessage,
   StatusMessageWithFileContent,
@@ -21,12 +22,16 @@ export function init() {
 }
 
 export function connection(socket: Socket) {
-  socket.on('joinExternalImageCapture', (msg, callback) => {
-    if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
+  socket.on('joinExternalImageCapture', (msg: StatusMessage, callback) => {
+    if (
+      !ensureProps({
+        data: msg,
+        props: ['variant_id', 'variant_token', 'file_name'],
+        socketName: 'external image capture',
+      })
+    ) {
       return callback(null);
     }
-
-    msg = msg as StatusMessage;
 
     if (!validateMessageContent(msg)) {
       return callback(null);
@@ -34,12 +39,16 @@ export function connection(socket: Socket) {
 
     void socket.join(`variant-${msg.variant_id}-file-${msg.file_name}`);
 
-    socket.on('externalImageCaptureAck', (msg, callback) => {
-      if (!ensureProps(msg, ['variant_id', 'variant_token', 'file_name'])) {
+    socket.on('externalImageCaptureAck', (msg: StatusMessage, callback) => {
+      if (
+        !ensureProps({
+          data: msg,
+          props: ['variant_id', 'variant_token', 'file_name'],
+          socketName: 'external image capture',
+        })
+      ) {
         return callback(null);
       }
-
-      msg = msg as StatusMessage;
 
       if (!validateMessageContent(msg)) {
         return callback(null);
@@ -54,19 +63,6 @@ export function connection(socket: Socket) {
 
     callback(msg);
   });
-}
-
-function ensureProps(data: Record<string, any>, props: string[]): boolean {
-  for (const prop of props) {
-    if (!Object.hasOwn(data, prop)) {
-      logger.error(`socket.io external image capture connected without ${prop}`);
-      Sentry.captureException(
-        new Error(`socket.io external image capture connected without property ${prop}`),
-      );
-      return false;
-    }
-  }
-  return true;
 }
 
 /**

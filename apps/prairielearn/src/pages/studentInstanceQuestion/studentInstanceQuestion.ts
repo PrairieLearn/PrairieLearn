@@ -5,18 +5,19 @@ import { type Request, type Response, Router } from 'express';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import checkPlanGrantsForQuestion from '../../ee/middlewares/checkPlanGrantsForQuestion.js';
 import { canDeleteAssessmentInstance, gradeAssessmentInstance } from '../../lib/assessment.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
+import { type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
-import { getQuestionGroupPermissions } from '../../lib/groups.js';
 import { idsEqual } from '../../lib/id.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { getQuestionTeamPermissions } from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import { enterpriseOnly } from '../../middlewares/enterpriseOnly.js';
 import { logPageView } from '../../middlewares/logPageView.js';
@@ -84,8 +85,8 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -121,8 +122,8 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: res.locals.instance_question.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 
   return variant.id;
@@ -153,7 +154,7 @@ async function processDeleteFile(req: Request, res: Response) {
 
   // Check the requested file belongs to the current instance question
   const validFiles =
-    res.locals.file_list?.filter((file) => idsEqual(file.id, req.body.file_id)) ?? [];
+    res.locals.file_list?.filter((file: File) => idsEqual(file.id, req.body.file_id)) ?? [];
   if (validFiles.length === 0) {
     throw new HttpStatusError(404, `No such file_id: ${req.body.file_id}`);
   }
@@ -163,7 +164,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 
   return variant.id;
 }
@@ -178,7 +179,7 @@ async function validateAndProcessSubmission(req: Request, res: Response) {
   if (!res.locals.authz_result.active) {
     throw new HttpStatusError(400, 'This assessment is not accepting submissions at this time.');
   }
-  if (res.locals.group_config?.has_roles && !res.locals.group_role_permissions.can_submit) {
+  if (res.locals.team_config?.has_roles && !res.locals.team_role_permissions.can_submit) {
     throw new HttpStatusError(
       403,
       'Your current group role does not give you permission to submit to this question.',
@@ -228,8 +229,8 @@ router.post(
 
       await gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         requireOpen: true,
         close: true,
         ignoreGradeRateLimit: false,
@@ -294,7 +295,7 @@ router.get(
       questionContext: res.locals.assessment.type === 'Exam' ? 'student_exam' : 'student_homework',
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
-      groupRolePermissions: res.locals.group_role_permissions ?? null,
+      teamRolePermissions: res.locals.team_role_permissions ?? null,
     });
     res.json(panels);
   }),
@@ -353,25 +354,25 @@ router.get(
     });
 
     if (
-      res.locals.group_config?.has_roles &&
+      res.locals.team_config?.has_roles &&
       !res.locals.authz_data.has_course_instance_permission_view
     ) {
       assert(
-        res.locals.assessment_instance.group_id !== null,
-        'assessment_instance.group_id is null',
+        res.locals.assessment_instance.team_id !== null,
+        'assessment_instance.team_id is null',
       );
       if (res.locals.instance_question_info.prev_instance_question.id != null) {
-        res.locals.prev_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.prev_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.prev_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
       if (res.locals.instance_question_info.next_instance_question.id) {
-        res.locals.next_instance_question_role_permissions = await getQuestionGroupPermissions(
+        res.locals.next_instance_question_role_permissions = await getQuestionTeamPermissions(
           res.locals.instance_question_info.next_instance_question.id,
-          res.locals.assessment_instance.group_id,
-          res.locals.authz_data.user.user_id,
+          res.locals.assessment_instance.team_id,
+          res.locals.authz_data.user.id,
         );
       }
     }

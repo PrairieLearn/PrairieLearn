@@ -1,4 +1,4 @@
-import { OIDCStrategy } from 'passport-azure-ad';
+import { type IProfile, OIDCStrategy, type VerifyCallback } from 'passport-azure-ad';
 
 import { config } from '../../../lib/config.js';
 
@@ -28,7 +28,14 @@ export function getAzureStrategy() {
       // We don't want to use Express sessions, so we disable session support.
       useCookieInsteadOfSession: true,
     },
-    function (iss, sub, profile, accessToken, refreshToken, done) {
+    function (
+      iss: string,
+      sub: string,
+      profile: IProfile,
+      accessToken: string,
+      refreshToken: string,
+      done: VerifyCallback,
+    ) {
       return done(null, profile);
     },
   );
