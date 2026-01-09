@@ -28,7 +28,7 @@ class SourceBlocksOrderType(Enum):
 
 class DistractorOrderType(Enum):
     RANDOM = "random"
-    INHERIT = "inherit"
+    PRESERVE = "preserve"
 
 
 class SolutionPlacementType(Enum):
@@ -73,7 +73,7 @@ ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
-DISTRACTOR_ORDER_DEFAULT = DistractorOrderType.INHERIT
+DISTRACTOR_ORDER_DEFAULT = DistractorOrderType.PRESERVE
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -238,6 +238,7 @@ class OrderBlocksOptions:
     allow_blank: bool
     file_name: str
     source_blocks_order: SourceBlocksOrderType
+    distractor_order: DistractorOrderType
     indentation: bool
     source_header: str
     solution_header: str
