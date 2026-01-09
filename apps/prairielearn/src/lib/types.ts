@@ -74,6 +74,11 @@ export function withBrand<B extends Brand<any, any>>(
 }
 
 /**
+ * Detects if T is a union type (e.g., 'a' | 'b') vs a single literal (e.g., 'a')
+ */
+export type IsUnion<T, U = T> = T extends unknown ? ([U] extends [T] ? false : true) : never;
+
+/**
  * The Prettify helper is a utility type that takes an object type and makes the hover overlay more readable.
  *
  * https://www.totaltypescript.com/concepts/the-prettify-helper

@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type Course, type CourseInstance, type Institution } from '../../lib/db-types.js';
 import type { FeatureName } from '../../lib/features/index.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const FeatureGrantRowSchema = z.object({
   id: z.string(),
@@ -33,7 +33,7 @@ export function AdministratorFeatures({
   resLocals,
 }: {
   features: FeatureName[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,
@@ -82,7 +82,7 @@ export function AdministratorFeature({
   institutions: Institution[];
   featureGrants: FeatureGrantRow[];
   featureInConfig: boolean | null;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,

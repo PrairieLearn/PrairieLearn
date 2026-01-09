@@ -3,7 +3,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import z from 'zod';
 
@@ -23,6 +22,7 @@ import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/d
 import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   addEnrollmentToPublishingExtension,
@@ -70,7 +70,7 @@ export async function selectPublishingExtensionsWithUsersByCourseInstance({
 // Supports a client-side table refresh.
 router.get(
   '/extension/data.json',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const { authz_data: authzData, course_instance: courseInstance } = extractPageContext(
       res.locals,
       {
@@ -98,7 +98,7 @@ router.get(
 // Returns the list of UIDs that are NOT enrolled (invalidUids).
 router.get(
   '/extension/check',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const { course_instance: courseInstance, authz_data: authzData } = extractPageContext(
       res.locals,
       {
@@ -140,7 +140,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_view', 'has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       authz_data: authzData,
       __csrf_token: csrfToken,
@@ -233,7 +233,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       authz_data: authzData,
       course,
@@ -309,7 +309,7 @@ router.post(
       // JSON file has been formatted and is ready to be written
       const paths = getPaths(undefined, res.locals);
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
