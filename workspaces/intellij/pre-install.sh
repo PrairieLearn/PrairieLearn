@@ -30,5 +30,5 @@ mv /opt/idea-IC-*/ /opt/idea/
 
 # Set up IntelliJ IDEA to use the system Java.
 # The java binary is in the bin/ subdirectory of JAVA_HOME, so we go up two levels.
-JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+JAVA_HOME=$(dirname "$(dirname "$(readlink -f "$(which java)")")")
 ln -s $JAVA_HOME /opt/idea/java_home
