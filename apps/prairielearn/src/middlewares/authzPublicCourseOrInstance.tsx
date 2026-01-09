@@ -75,7 +75,9 @@ export default typedAsyncHandler<'public-course' | 'public-course-instance'>(
     res.locals.course = course;
     if (course_instance) res.locals.course_instance = course_instance;
 
-    if (!course.sharing_name) {
+    // We specifically allow content from the example course to be shared without
+    // a sharing name being set.
+    if (!course.sharing_name && !course.example_course) {
       res.send(
         PageLayout({
           resLocals: res.locals,
