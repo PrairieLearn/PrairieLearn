@@ -12,8 +12,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   describe('Exam assessment with real-time grading disabled', function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
@@ -91,8 +90,7 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
   //
   // We have disabled question shuffling to ensure a consistent order for the tests.
   describe('Mixed real-time grading control', function () {
-    const context: Record<string, any> = {};
-    context.siteUrl = `http://localhost:${config.serverPort}`;
+    const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
     context.baseUrl = `${context.siteUrl}/pl`;
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 

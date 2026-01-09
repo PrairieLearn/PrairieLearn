@@ -9,10 +9,10 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getRuntimeDirectoryForCourse } from '../../lib/chunks.js';
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { reportIssueFromForm } from '../../lib/issues.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
@@ -138,7 +138,7 @@ router.get(
     let readmeHtml = '';
     if (questionReadmeExists) {
       const readme = await fs.readFile(questionReadmePath, 'utf8');
-      readmeHtml = await markdownToHtml(readme, { allowHtml: false });
+      readmeHtml = markdownToHtml(readme, { allowHtml: false });
     }
 
     res.send(
@@ -195,8 +195,8 @@ router.get(
       authorizedEdit: false,
       // Score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
-      // Group role permissions are not used in this context.
-      groupRolePermissions: null,
+      // Team role permissions are not used in this context.
+      teamRolePermissions: null,
     });
 
     res.json(panels);

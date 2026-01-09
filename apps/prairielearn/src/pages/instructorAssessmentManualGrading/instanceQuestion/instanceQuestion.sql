@@ -7,7 +7,7 @@ FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)
   JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+  LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
   JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
 WHERE
   gj.id = $grading_job_id
@@ -77,6 +77,27 @@ SELECT
 FROM
   updated_issues AS i;
 
+-- BLOCK select_instance_question_ids_in_group
+SELECT
+  iq.id AS instance_question_id,
+  s.id AS submission_id
+FROM
+  instance_questions AS iq
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN variants AS v ON v.instance_question_id = iq.id
+  JOIN submissions AS s ON s.variant_id = v.id
+WHERE
+  COALESCE(
+    iq.manual_instance_question_group_id,
+    iq.ai_instance_question_group_id
+  ) = $selected_instance_question_group_id
+  AND ai.assessment_id = $assessment_id
+  -- If skipping graded submissions, only include instance questions that require manual grading. 
+  AND (
+    NOT $skip_graded_submissions
+    OR iq.requires_manual_grading
+  );
+
 -- BLOCK select_ai_grading_job_data_for_submission
 SELECT
   gj.id,
@@ -107,3 +128,15 @@ SELECT
       AND gj.grading_method = 'Manual'
       AND gj.deleted_at IS NULL
   );
+
+-- BLOCK select_submission_credit_values
+SELECT DISTINCT
+  s.credit
+FROM
+  assessment_instances AS ai
+  JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
+  JOIN variants AS v ON (v.instance_question_id = iq.id)
+  JOIN submissions AS s ON (s.variant_id = v.id)
+WHERE
+  ai.id = $assessment_instance_id
+  AND s.credit IS NOT NULL;

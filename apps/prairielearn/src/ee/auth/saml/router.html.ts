@@ -1,6 +1,7 @@
 import { html } from '@prairielearn/html';
 
 import { HeadContents } from '../../../components/HeadContents.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 export const SamlTest = ({
   uid,
@@ -13,6 +14,17 @@ export const SamlTest = ({
   emailAttribute,
   attributes,
   resLocals,
+}: {
+  uid: string | null;
+  uin: string | null;
+  name: string | null;
+  email: string | null;
+  uidAttribute: string | null;
+  uinAttribute: string | null;
+  nameAttribute: string | null;
+  emailAttribute: string | null;
+  attributes: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) => {
   const hasUidAttribute = !!uidAttribute;
   const hasUinAttribute = !!uinAttribute;

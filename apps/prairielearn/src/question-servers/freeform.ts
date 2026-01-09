@@ -24,6 +24,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { assertNever } from '../lib/types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
@@ -64,7 +65,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
@@ -75,24 +79,20 @@ type ElementNameMap = Record<
 // Maps core element names to element info
 let coreElementsCache: ElementNameMap = {};
 // Maps course IDs to course element info
-let courseElementsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementNameMap;
-    }
-  >
+let courseElementsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementNameMap;
+  }
 > = {};
 // Maps course IDs to course element extension info
-let courseExtensionsCache: Partial<
-  Record<
-    string,
-    {
-      commit_hash: string | null;
-      data: ElementExtensionNameDirMap;
-    }
-  >
+let courseExtensionsCache: Record<
+  string,
+  {
+    commit_hash: string | null;
+    data: ElementExtensionNameDirMap;
+  }
 > = {};
 
 class CourseIssueError extends Error {
@@ -141,8 +141,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
-  } catch (err) {
-    if (err && err.code === 'ENOENT') {
+  } catch (err: any) {
+    if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
       return {};
@@ -164,8 +164,8 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
-    } catch (err) {
-      if (err && err.code === 'ENOENT') {
+    } catch (err: any) {
+      if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
       }
@@ -199,10 +199,11 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
 
 export async function loadElementsForCourse(course: Course) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseElementsCache[course.id]?.commit_hash &&
-    courseElementsCache[course.id]!.commit_hash === course.commit_hash
+    courseElementsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseElementsCache[course.id]!.data;
+    return courseElementsCache[course.id].data;
   }
 
   const coursePath = chunks.getRuntimeDirectoryForCourse(course);
@@ -227,7 +228,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   let elementFolders: string[];
   try {
     elementFolders = await fs.readdir(sourceDir);
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') {
       // We don't really care if there are no extensions, just return an empty object.
       return {};
@@ -261,7 +262,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJson(infoPath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
         return;
@@ -293,10 +294,11 @@ async function loadExtensionsForCourse({
   course_dir_host: string;
 }) {
   if (
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     courseExtensionsCache[course.id]?.commit_hash &&
-    courseExtensionsCache[course.id]!.commit_hash === course.commit_hash
+    courseExtensionsCache[course.id].commit_hash === course.commit_hash
   ) {
-    return courseExtensionsCache[course.id]!.data;
+    return courseExtensionsCache[course.id].data;
   }
 
   const extensions = await loadExtensions(
@@ -374,7 +376,7 @@ async function execPythonServer(
     );
     debug('execPythonServer(): completed');
     return { result, output };
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
@@ -516,7 +518,7 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-  } catch (err) {
+  } catch (err: any) {
     courseIssues.push(
       new CourseIssueError(err.message, {
         data: err.data,
@@ -579,7 +581,7 @@ async function processQuestionHtml<T extends ExecutionData>(
   let html: string;
   try {
     html = await execTemplate(htmlFilename, data);
-  } catch (err) {
+  } catch (err: any) {
     return {
       courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
@@ -654,7 +656,7 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-  } catch (err) {
+  } catch (err: any) {
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
@@ -882,7 +884,7 @@ async function renderPanel(
   variant: Variant,
   submission: Submission | null,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -1027,7 +1029,7 @@ async function renderPanelInstrumented(
   variant: Variant,
   question: Question,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1058,7 +1060,7 @@ export async function render(
   submission: Submission | null,
   submissions: Submission[],
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1095,26 +1097,29 @@ export async function render(
       }
 
       if (renderSelection.submissions) {
-        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'submission',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
-          );
+        htmls.submissionHtmls = await async.mapSeries(
+          submissions,
+          async (submission: Submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+            } = await renderPanelInstrumented(
+              'submission',
+              codeCaller,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context,
+            );
 
-          courseIssues.push(...newCourseIssues);
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-          return html;
-        });
+            courseIssues.push(...newCourseIssues);
+            allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+            return html;
+          },
+        );
       }
 
       if (renderSelection.answer) {
@@ -1167,7 +1172,9 @@ export async function render(
         if (!(type in dependencies)) continue;
 
         for (const dep of question.dependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           if (!dependencies[type].includes(dep)) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             dependencies[type].push(dep);
           }
         }
@@ -1215,8 +1222,11 @@ export async function render(
 
           if (!(resolvedType in dependencies)) continue;
 
-          for (const dep of elementDependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+          for (const dep of elementDependencies[type] ?? []) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!dependencies[resolvedType].includes(dep)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dependencies[resolvedType].push(dep);
             }
           }
@@ -1233,17 +1243,26 @@ export async function render(
             return type;
           });
 
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           for (const key in elementDynamicDependencies[type]) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
             } else if (
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
             ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
                     dependencyType: type,
-                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                    values: [
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      dynamicDependencies[resolvedType][key],
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      elementDynamicDependencies[type][key],
+                    ],
                   },
                   fatal: true,
                 }),
@@ -1286,24 +1305,40 @@ export async function render(
             for (const type in extension) {
               if (!(type in dependencies)) continue;
 
-              for (const dep of extension[type]) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+              for (const dep of extension[type] ?? []) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!dependencies[type].includes(dep)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dependencies[type].push(dep);
                 }
               }
             }
             for (const type in extensionDynamic) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               for (const key in extensionDynamic[type]) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!Object.hasOwn(dynamicDependencies[type], key)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
-                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+                } else if (
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  dynamicDependencies[type][key] !==
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  extensionDynamic[type][key]
+                ) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
+                          values: [
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            dynamicDependencies[type][key],
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            extensionDynamic[type][key],
+                          ],
                         },
                         fatal: true,
                       },
@@ -1774,7 +1809,7 @@ async function getCachedDataOrCompute(
 
     try {
       cachedData = await cache.get(cacheKey);
-    } catch (err) {
+    } catch (err: any) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);

@@ -6,6 +6,9 @@ const MIN_ZOOM_SCALE = 1;
 /** Maximum zoom scale for the submitted image preview */
 const MAX_ZOOM_SCALE = 5;
 
+/** Maximum side length for the captured image */
+const MAX_IMAGE_SIDE_LENGTH = 2000;
+
 (() => {
   class PLImageCapture {
     constructor(uuid) {
@@ -37,12 +40,21 @@ const MAX_ZOOM_SCALE = 5;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
+      this.manual_upload_enabled = options.manual_upload_enabled;
 
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
       this.previousCropRotateState = null;
       this.selectedContainerName = 'capture-preview';
       this.handwritingEnhanced = false;
+
+      /** Resizing canvas and context used for image scaling */
+      this.resizingCanvas = null;
+      this.resizingCtx = null;
+
+      /** Original captured image width and height */
+      this.originalImageWidth = null;
+      this.originalImageHeight = null;
 
       if (!this.editable) {
         // If the image capture is not editable, only load the most recent submitted image
@@ -65,8 +77,11 @@ const MAX_ZOOM_SCALE = 5;
         this.listenForExternalImageCapture();
       }
 
+      if (this.manual_upload_enabled) {
+        this.createManualUploadListener();
+      }
+
       this.createCropRotateListeners();
-      this.createApplyChangesListeners();
     }
 
     /**
@@ -118,6 +133,41 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
+    createManualUploadListener() {
+      const manualUploadButtons = this.getManualUploadButtons();
+      const manualUploadInput = this.imageCaptureDiv.querySelector('.js-manual-upload-input');
+
+      this.ensureElementsExist({
+        manualUploadInput,
+      });
+
+      for (const manualUploadButton of manualUploadButtons) {
+        this.ensureElementsExist({
+          manualUploadButton,
+        });
+
+        manualUploadButton.addEventListener('click', () => {
+          manualUploadInput.click();
+        });
+      }
+
+      manualUploadInput.addEventListener('change', (event) => {
+        const target = event.target;
+        const file = target.files && target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          this.loadCapturePreviewFromDataUrl({
+            dataUrl: reader.result,
+          });
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
     createLocalCameraCaptureListeners() {
       const localCaptureButtons = this.getUseLocalCaptureButtons();
 
@@ -146,12 +196,12 @@ const MAX_ZOOM_SCALE = 5;
         this.handleCaptureImage();
       });
 
-      cancelLocalCameraButton.addEventListener('click', () => {
-        this.cancelLocalCameraCapture();
+      cancelLocalCameraButton.addEventListener('click', async () => {
+        await this.cancelLocalCameraCapture();
       });
 
-      applyChangesButton.addEventListener('click', () => {
-        this.confirmCropRotateChanges();
+      applyChangesButton.addEventListener('click', async () => {
+        await this.confirmCropRotateChanges();
       });
     }
 
@@ -167,6 +217,15 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
+    }
+
+    /** Retrieve the manual upload button elements for the horizontal and dropdown layouts. */
+    getManualUploadButtons() {
+      if (!this.manual_upload_enabled) {
+        throw new Error('Manual upload is not enabled, cannot get manual upload buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-manual-upload-button');
     }
 
     createCropRotateListeners() {
@@ -327,24 +386,6 @@ const MAX_ZOOM_SCALE = 5;
           confirmDeletionButton,
         });
         confirmDeletionButton.removeEventListener('click', confirmDeletion);
-      });
-    }
-
-    /**
-     * When the user clicks Enter or Space, apply any pending changes based on the current container.
-     * - If in crop-rotate, confirm the crop/rotate changes.
-     * - If in local-camera-capture, capture the current image.
-     */
-    createApplyChangesListeners() {
-      document.addEventListener('keypress', (event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault();
-          if (this.selectedContainerName === 'crop-rotate') {
-            this.confirmCropRotateChanges();
-          } else if (this.selectedContainerName === 'local-camera-capture') {
-            this.handleCaptureImage();
-          }
-        }
       });
     }
 
@@ -590,7 +631,7 @@ const MAX_ZOOM_SCALE = 5;
       }
     }
 
-    setHiddenCaptureInputValue(dataUrl) {
+    async setHiddenCaptureInputValue(dataUrl) {
       const hiddenCaptureInput = this.imageCaptureDiv.querySelector('.js-hidden-capture-input');
 
       this.ensureElementsExist({
@@ -604,7 +645,42 @@ const MAX_ZOOM_SCALE = 5;
       }
 
       if (dataUrl) {
-        hiddenCaptureInput.value = dataUrl;
+        // Perform scaling to ensure that captured images are not too large.
+        // The scale factor ensures that the width and height of the image do not exceed 2000px.
+        // If the image width and height are both less than 2000px, no scaling is applied.
+        const image = new Image();
+        image.src = dataUrl;
+
+        try {
+          await image.decode();
+        } catch (error) {
+          throw new Error('Failed to decode image', { cause: error });
+        }
+
+        const imageScaleFactor = MAX_IMAGE_SIDE_LENGTH / Math.max(image.width, image.height);
+        if (imageScaleFactor >= 1) {
+          // If we don't need to shrink the image, just use it directly.
+          hiddenCaptureInput.value = dataUrl;
+          return;
+        }
+        const targetWidth = Math.round(image.width * imageScaleFactor);
+        const targetHeight = Math.round(image.height * imageScaleFactor);
+
+        if (!this.resizingCanvas) {
+          this.resizingCanvas = document.createElement('canvas');
+        }
+        if (!this.resizingCtx) {
+          this.resizingCtx = this.resizingCanvas.getContext('2d');
+          if (!this.resizingCtx) {
+            throw new Error('Failed to get canvas context');
+          }
+        }
+
+        this.resizingCanvas.width = targetWidth;
+        this.resizingCanvas.height = targetHeight;
+        this.resizingCtx.drawImage(image, 0, 0, targetWidth, targetHeight);
+
+        hiddenCaptureInput.value = this.resizingCanvas.toDataURL('image/jpeg');
       } else {
         hiddenCaptureInput.removeAttribute('value');
       }
@@ -652,12 +728,12 @@ const MAX_ZOOM_SCALE = 5;
      * Sets the hidden capture input value to the capture preview, which is the last
      * image that was ready for submission.
      */
-    setHiddenCaptureInputToCapturePreview() {
+    async setHiddenCaptureInputToCapturePreview() {
       const capturePreviewImg = this.imageCaptureDiv.querySelector(
         '.js-uploaded-image-container .pl-image-capture-preview',
       );
 
-      this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
+      await this.setHiddenCaptureInputValue(capturePreviewImg ? capturePreviewImg.src : '');
     }
 
     loadCapturePreviewFromDataUrl({ dataUrl, originalCapture = true }) {
@@ -826,6 +902,15 @@ const MAX_ZOOM_SCALE = 5;
 
           if (dataUrl) {
             hiddenOriginalCaptureInput.value = dataUrl;
+            if (capturePreview.complete) {
+              this.originalImageWidth = capturePreview.naturalWidth;
+              this.originalImageHeight = capturePreview.naturalHeight;
+            } else {
+              capturePreview.onload = () => {
+                this.originalImageWidth = capturePreview.naturalWidth;
+                this.originalImageHeight = capturePreview.naturalHeight;
+              };
+            }
           } else {
             hiddenOriginalCaptureInput.removeAttribute('value');
           }
@@ -903,7 +988,13 @@ const MAX_ZOOM_SCALE = 5;
 
       try {
         // Stream the local camera video to the video element
-        this.localCameraStream = await navigator.mediaDevices.getUserMedia({ video: true });
+        this.localCameraStream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 7680 },
+            aspectRatio: { min: 1, max: 1.9 },
+          },
+        });
+
         localCameraVideo.srcObject = this.localCameraStream;
 
         await localCameraVideo.play();
@@ -997,7 +1088,7 @@ const MAX_ZOOM_SCALE = 5;
       this.openContainer('capture-preview');
     }
 
-    cancelLocalCameraCapture() {
+    async cancelLocalCameraCapture() {
       const capturePreviewContainer = this.imageCaptureDiv.querySelector(
         '.js-capture-preview-container',
       );
@@ -1015,7 +1106,7 @@ const MAX_ZOOM_SCALE = 5;
       });
 
       this.openContainer('capture-preview');
-      this.setHiddenCaptureInputToCapturePreview();
+      await this.setHiddenCaptureInputToCapturePreview();
 
       localCameraErrorMessage.classList.add('d-none');
 
@@ -1283,14 +1374,14 @@ const MAX_ZOOM_SCALE = 5;
 
       rotationSlider.value = 0;
 
-      const selection = this.cropper.getCropperSelection();
+      const cropperSelection = this.cropper.getCropperSelection();
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: 0,
         offsetRotationAngle: 0,
@@ -1323,23 +1414,39 @@ const MAX_ZOOM_SCALE = 5;
 
     timeoutId = null;
 
-    /**
-     * Helper function for saveCropperSelectionToHiddenInput to implement debounce.
-     * Do not use this function; use saveCropperSelectionToHiddenInput instead.
-     */
-    async saveCropperSelectionToHiddenInputHelper() {
+    /** Retrieve the Base64-encoded image data of the cropper selection and its CropperJS selection object. */
+    async getCropperSelection() {
       this.ensureCropperExists();
-      // Obtain the data URL of the image selection.
-      const selection = this.cropper.getCropperSelection();
-      let dataUrl;
+
+      const cropperSelection = this.cropper.getCropperSelection();
+      const cropperImageDims = this.cropper.getCropperImage().getBoundingClientRect();
+
       try {
-        const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
+        // The width and height of the selection and cropper are relative to the display dimensions.
+        // We need to scale them to be relative to the original image dimensions instead.
+
+        // We use the dimensions of the cropper image instead of the entire canvas since the image
+        // may not fill the entire canvas (e.g. tall images viewed on wide windows).
+
+        const canvas = await cropperSelection.$toCanvas({
+          width: Math.floor(
+            (cropperSelection.width / cropperImageDims.width) * this.originalImageWidth,
+          ),
+          height: Math.floor(
+            (cropperSelection.height / cropperImageDims.height) * this.originalImageHeight,
+          ),
+          beforeDraw: (ctx) => {
+            ctx.imageSmoothingEnabled = true;
+            ctx.imageSmoothingQuality = 'high';
+          },
+        });
+        return {
+          dataUrl: canvas.toDataURL('image/jpeg'),
+          cropperSelection,
+        };
       } catch {
         throw new Error('Failed to convert cropper selection to canvas');
       }
-
-      this.setHiddenCaptureInputValue(dataUrl);
     }
 
     /**
@@ -1356,22 +1463,15 @@ const MAX_ZOOM_SCALE = 5;
 
       clearTimeout(this.timeoutId);
       this.timeoutId = setTimeout(async () => {
-        await this.saveCropperSelectionToHiddenInputHelper();
+        const { dataUrl } = await this.getCropperSelection();
+        await this.setHiddenCaptureInputValue(dataUrl);
       }, 200);
     }
 
     async confirmCropRotateChanges() {
       this.ensureCropperExists();
 
-      // Obtain the data URL of the image selection.
-      const selection = this.cropper.getCropperSelection();
-      let dataUrl;
-      try {
-        const canvas = await selection.$toCanvas();
-        dataUrl = canvas.toDataURL('image/jpeg');
-      } catch {
-        throw new Error('Failed to convert cropper selection to canvas');
-      }
+      const { dataUrl, cropperSelection } = await this.getCropperSelection();
 
       this.loadCapturePreviewFromDataUrl({
         dataUrl,
@@ -1381,10 +1481,10 @@ const MAX_ZOOM_SCALE = 5;
       this.previousCropRotateState = {
         transformation: this.cropper.getCropperImage().$getTransform(),
         selection: {
-          x: selection.x,
-          y: selection.y,
-          width: selection.width,
-          height: selection.height,
+          x: cropperSelection.x,
+          y: cropperSelection.y,
+          width: cropperSelection.width,
+          height: cropperSelection.height,
         },
         baseRotationAngle: this.baseRotationAngle,
         offsetRotationAngle: this.offsetRotationAngle,
@@ -1432,7 +1532,7 @@ const MAX_ZOOM_SCALE = 5;
       rotationSlider.value = this.offsetRotationAngle;
     }
 
-    cancelCropRotate(revertToLastImage = true) {
+    async cancelCropRotate(revertToLastImage = true) {
       this.ensureCropperExists();
 
       this.removeCropperChangeListeners();
@@ -1445,7 +1545,7 @@ const MAX_ZOOM_SCALE = 5;
 
       this.openContainer('capture-preview');
       if (revertToLastImage) {
-        this.setHiddenCaptureInputToCapturePreview();
+        await this.setHiddenCaptureInputToCapturePreview();
       }
 
       // Restore the previous hidden capture changed flag value.

@@ -76,6 +76,7 @@ function getRequestPath(req: Request): string {
   // `req.originalUrl` won't be defined for websocket requests, but for
   // non-websocket requests, `req.url` won't contain the full path. So we
   // need to handle both.
+  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
   return req.originalUrl ?? req.url;
 }
 
@@ -119,7 +120,7 @@ export function makeWorkspaceProxyMiddleware(containerPathRegex: RegExp) {
         const pathSuffix = match[2];
         const newPath = '/' + pathSuffix;
         return newPath;
-      } catch (err) {
+      } catch (err: any) {
         logger.error(`Error in pathRewrite for path=${path}: ${err}`);
         return path;
       }

@@ -2,8 +2,18 @@ import z from 'zod';
 
 import type { HtmlValue } from '@prairielearn/html';
 
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+
 export const NavbarTypeSchema = z
-  .enum(['plain', 'student', 'instructor', 'administrator_institution', 'institution', 'public'])
+  .enum([
+    'plain',
+    'student',
+    'instructor',
+    'administrator_institution',
+    'administrator',
+    'institution',
+    'public',
+  ])
   .optional();
 
 export type NavbarType = z.infer<typeof NavbarTypeSchema>;
@@ -23,12 +33,14 @@ export const NavPageSchema = z
     'assessments',
     'gradebook',
     'assessment_instance',
+    'workspace',
     'effective',
     'lti13_course_navigation',
     'error',
     'enroll',
     'request_course',
     'home',
+    'upgrade',
     'news_item',
     'news_items',
     'user_settings',
@@ -51,9 +63,9 @@ export interface NavContext {
 
 export interface TabInfo {
   activeSubPage: NavSubPage | NavSubPage[];
-  urlSuffix: string | ((resLocals: Record<string, any>) => string);
+  urlSuffix: string | ((resLocals: UntypedResLocals) => string);
   iconClasses: string;
   tabLabel: string;
-  htmlSuffix?: (resLocals: Record<string, any>) => HtmlValue;
-  renderCondition?: (resLocals: Record<string, any>) => boolean;
+  htmlSuffix?: (resLocals: UntypedResLocals) => HtmlValue;
+  renderCondition?: (resLocals: UntypedResLocals) => boolean;
 }

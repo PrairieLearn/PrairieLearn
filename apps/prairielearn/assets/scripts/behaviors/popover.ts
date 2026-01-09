@@ -20,9 +20,9 @@ function closeOpenPopovers() {
  * If the trigger mode cannot be determined, an empty array is returned.
  */
 function getPopoverTriggerModes(trigger: HTMLElement): string[] {
-  const instance = window.bootstrap?.Popover?.getInstance?.(trigger);
+  const instance = window.bootstrap.Popover.getInstance(trigger);
   if (instance) {
-    return (instance as any)._config?.trigger?.split?.(' ') ?? [];
+    return (instance as any)._config.trigger.split(' ') ?? [];
   }
 
   return [];
@@ -52,7 +52,7 @@ onDocumentReady(() => {
       // attribute is already present, we leave it alone.
       if (!el.hasAttribute('aria-label')) {
         const title = el.dataset.bsTitle;
-        if (title && !el.textContent?.trim()) {
+        if (title && !el.textContent.trim()) {
           el.setAttribute('aria-label', title);
         }
       }

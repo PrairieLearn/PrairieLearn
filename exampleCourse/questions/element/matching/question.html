@@ -1,7 +1,7 @@
 <pl-question-panel>
     <p>
         This question illustrates different use cases for the
-        <a href="https://prairielearn.readthedocs.io/en/latest/elements/#pl-matching-element"><code>pl-matching</code></a>
+        <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-matching"><code>pl-matching</code></a>
         element.
     </p>
 </pl-question-panel>
@@ -126,28 +126,53 @@
 <pl-card>
     <pl-question-panel>
         <p>
-            Example 7: options can be added manually if they require more than simple text.
-            All PrairieLearn and HTML elements are supported in options and statements.
+            Example 7: options can be added manually if they require more than
+            simple text (e.g., images, equations or formatting). In that case,
+            the <code>name</code> attribute of each <code>pl-option</code> must
+            match the corresponding <code>match</code> attribute of the
+            appropriate <code>pl-statement</code>.
         </p>
     </pl-question-panel>
         
     <pl-matching answers-name="ex7">
-        <pl-statement match="Matt">Matt</pl-statement>
-        <pl-statement match="Mariana">Mariana</pl-statement>
-        
-        <pl-option name="Matt"><pl-figure alt="headshot of Matt" file-name="matt.png" width="140" directory="clientFilesQuestion"></pl-figure></pl-option>
-        <pl-option name="Mariana"><pl-figure alt="headshot of Mariana" file-name="mariana.png" width="140" directory="clientFilesQuestion"></pl-figure></pl-option>
+      <pl-statement match="golden">$\phi$</pl-statement>
+      <pl-statement match="e">$e$</pl-statement>
+      <pl-statement match="i">$i$</pl-statement>
+      <pl-option name="golden">$\cfrac{1+\sqrt{5}}{2}$</pl-option>
+      <pl-option name="e">$ \displaystyle \lim_{n \to \infty} \left(1 + \frac{1}{n}\right)^{n}$</pl-option>
+      <pl-option name="i">$\sqrt{-1}$</pl-option>
     </pl-matching>
 </pl-card>
 
 <pl-card>
     <pl-question-panel>
         <p>
-            Example 8: This example uses the <code>options-placement="bottom"</code> argument. This is useful for questions with long statements and options, which may wrap over multiple lines or cause formatting issues in the default "right" placement.
+            Example 8: HTML formatting and other PrairieLearn elements can be
+            used inside statements and options. If used in options, an explicit
+            <code>pl-option</code> must be defined with a <code>name</code>
+            attribute matching the corresponding <code>match</code> attribute of
+            the appropriate <code>pl-statement</code>.
+        </p>
+    </pl-question-panel>
+
+    <pl-matching answers-name="ex8">
+      <pl-statement match="filter"><pl-code language="python">list(filter(lambda item: item > 0, lst))</pl-code></pl-statement>
+      <pl-statement match="map"><pl-code language="python">list(map(lambda item: item * 2, lst))</pl-code></pl-statement>
+      <pl-statement match="product"><pl-code language="python">list(itertools.product(lst1, lst2))</pl-code></pl-statement>
+      <pl-option name="filter"><pl-code language="python">[item for item in lst if item > 0]</pl-code></pl-option>
+      <pl-option name="map"><pl-code language="python">[item * 2 for item in lst]</pl-code></pl-option>
+      <pl-option name="product"><pl-code language="python">[(a, b) for a in lst1 for b in lst2]</pl-code></pl-option>
+    </pl-matching>
+</pl-card>
+
+<pl-card>
+    <pl-question-panel>
+        <p>
+            Example 9: This example uses the <code>options-placement="bottom"</code> argument. This is useful for questions with long statements and options, which may wrap over multiple lines or cause formatting issues in the default "right" placement.
         </p>
     </pl-question-panel>
         
-    <pl-matching answers-name="ex8" options-placement="bottom">
+    <pl-matching answers-name="ex9" options-placement="bottom">
         <pl-statement match="The theory of relativity">Which theory revolutionized our understanding of space, time, and gravity?</pl-statement>
         <pl-statement match="Quantum mechanics">What is a branch of physics that challenges classical intuition and underpins technologies like quantum computing?</pl-statement>
         <pl-statement match="Artificial intelligence">What field of computer science encompasses machine learning, natural language processing, and computer vision?</pl-statement>

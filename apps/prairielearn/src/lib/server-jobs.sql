@@ -1,13 +1,17 @@
+-- BLOCK course_advisory_lock
+-- Use an advisory lock to prevent race conditions when computing the next
+-- job sequence number. We use the course_id as the lock key, with a fixed
+-- namespace (1) to avoid collisions with other advisory locks. For NULL
+-- course_id, we use 0 as the key.
+--
+-- Note that the two-argument form here uses integers, not bigints, so this
+-- will cause problems if we ever have course IDs outside the range of an
+-- integer. In practice, this is highly unlikely to be a problem.
+SELECT
+  pg_advisory_xact_lock(1, coalesce($course_id::integer, 0));
+
 -- BLOCK insert_job_sequence
 WITH
-  max_over_job_sequences_with_same_course AS (
-    SELECT
-      coalesce(max(js.number) + 1, 1) AS new_number
-    FROM
-      job_sequences AS js
-    WHERE
-      js.course_id IS NOT DISTINCT FROM $course_id
-  ),
   new_job_sequence AS (
     INSERT INTO
       job_sequences (
@@ -15,6 +19,7 @@ WITH
         course_instance_id,
         course_request_id,
         assessment_id,
+        assessment_question_id,
         number,
         user_id,
         authn_user_id,
@@ -27,14 +32,17 @@ WITH
       $course_instance_id,
       $course_request_id,
       $assessment_id,
-      new_number,
+      $assessment_question_id,
+      coalesce(max(js.number) + 1, 1),
       $user_id,
       $authn_user_id,
       $type,
       $description,
       FALSE
     FROM
-      max_over_job_sequences_with_same_course
+      job_sequences AS js
+    WHERE
+      js.course_id IS NOT DISTINCT FROM $course_id
     RETURNING
       id
   ),
@@ -45,6 +53,7 @@ WITH
         course_instance_id,
         course_request_id,
         assessment_id,
+        assessment_question_id,
         job_sequence_id,
         number_in_sequence,
         last_in_sequence,
@@ -59,6 +68,7 @@ WITH
       $course_instance_id,
       $course_request_id,
       $assessment_id,
+      $assessment_question_id,
       new_job_sequence.id,
       1,
       TRUE,
@@ -221,8 +231,8 @@ WITH
       authn_u.uid AS authn_user_uid
     FROM
       jobs AS j
-      LEFT JOIN users AS u ON (u.user_id = j.user_id)
-      LEFT JOIN users AS authn_u ON (authn_u.user_id = j.authn_user_id)
+      LEFT JOIN users AS u ON (u.id = j.user_id)
+      LEFT JOIN users AS authn_u ON (authn_u.id = j.authn_user_id)
     WHERE
       j.job_sequence_id = $job_sequence_id
       AND j.course_id IS NOT DISTINCT FROM $course_id
@@ -252,8 +262,8 @@ SELECT
   aggregated_member_jobs.*
 FROM
   job_sequences AS js
-  LEFT JOIN users AS u ON (u.user_id = js.user_id)
-  LEFT JOIN users AS authn_u ON (authn_u.user_id = js.authn_user_id),
+  LEFT JOIN users AS u ON (u.id = js.user_id)
+  LEFT JOIN users AS authn_u ON (authn_u.id = js.authn_user_id),
   aggregated_member_jobs
 WHERE
   js.id = $job_sequence_id
@@ -265,3 +275,30 @@ SET
   heartbeat_at = CURRENT_TIMESTAMP
 WHERE
   j.id = ANY ($job_ids::bigint[]);
+
+-- BLOCK select_job_sequence_ids
+SELECT
+  js.id
+FROM
+  job_sequences AS js
+WHERE
+  (
+    $assessment_question_id::bigint IS NULL
+    OR js.assessment_question_id = $assessment_question_id::bigint
+  )
+  AND (
+    $course_id::bigint IS NULL
+    OR js.course_id = $course_id::bigint
+  )
+  AND (
+    $course_instance_id::bigint IS NULL
+    OR js.course_instance_id = $course_instance_id::bigint
+  )
+  AND (
+    $status::enum_job_status IS NULL
+    OR js.status = $status::enum_job_status
+  )
+  AND (
+    $type::text IS NULL
+    OR js.type = $type::text
+  );

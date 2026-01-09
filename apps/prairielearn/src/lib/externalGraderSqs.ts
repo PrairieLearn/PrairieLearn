@@ -92,11 +92,11 @@ export class ExternalGraderSqs implements Grader {
   }
 }
 
-function getS3RootKey(jobId) {
+function getS3RootKey(jobId: string) {
   return `job_${jobId}`;
 }
 
-async function sendJobToQueue(jobId, question, config) {
+async function sendJobToQueue(jobId: string, question: Question, config: Config) {
   const sqs = new SQSClient(makeAwsClientConfig());
 
   await async.series([
@@ -122,7 +122,7 @@ async function sendJobToQueue(jobId, question, config) {
           config.externalGradingMaximumTimeout,
         ),
         enableNetworking: question.external_grading_enable_networking || false,
-        environment: question.external_grading_environment || {},
+        environment: question.external_grading_environment,
       };
       await sqs.send(
         new SendMessageCommand({

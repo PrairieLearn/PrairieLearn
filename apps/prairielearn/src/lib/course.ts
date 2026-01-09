@@ -3,6 +3,7 @@ import fs from 'fs-extra';
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   getCourseCommitHash,
@@ -15,7 +16,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
-import { IdSchema, type User, UserSchema } from './db-types.js';
+import { type User, UserSchema } from './db-types.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -68,11 +69,11 @@ export async function pullAndUpdateCourse({
   commit_hash?: string | null;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
-    courseId,
-    userId: userId ?? undefined,
-    authnUserId: authnUserId ?? undefined,
     type: 'sync',
     description: 'Pull from remote git repository',
+    userId,
+    authnUserId,
+    courseId,
   });
 
   const gitEnv = process.env;
@@ -138,7 +139,20 @@ export async function pullAndUpdateCourse({
           await job.exec('git', ['remote', 'set-url', 'origin', repository], gitOptions);
 
           job.info('Fetch from remote git repository');
-          await job.exec('git', ['fetch'], gitOptions);
+          await job.exec('git', ['fetch'], {
+            ...gitOptions,
+            // During GitHub incidents, fetches could take a long time. We use a
+            // timeout to ensure that the sync won't hang indefinitely.
+            //
+            // Our editor code, which also interacts with GitHub, uses a shorter
+            // timeout. This is important for editors, which typically complete
+            // during the lifetime of a single request. We use a longer one here
+            // to allow a full sync to be used as a backup method if a normal
+            // fetch takes an inordinate amount of time. A full course sync occurs
+            // in a server job in the background, so we don't have to worry about
+            // serving 504 errors to clients from a long request.
+            cancelSignal: AbortSignal.timeout(30_000),
+          });
 
           job.info('Restore staged and unstaged changes');
           await job.exec('git', ['restore', '--staged', '--worktree', '.'], gitOptions);

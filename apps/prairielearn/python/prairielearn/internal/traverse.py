@@ -110,21 +110,19 @@ def traverse_and_replace(
                 new_elements = fragments
 
             if isinstance(new_elements, list):
-                # Modify count stack for new elements and decrement for element that was replaced
-                count_stack[-1] += len(new_elements) - 1
-
                 # Add element tail before processing replaced element
                 if element.tail is not None:
                     count_stack[-1] += 1
                     work_stack.append(element.tail)
 
-                # Extend and go to the next iteration
-                if new_elements:
+                # If there are new elements, extend and go to the next iteration
+                if len(new_elements) > 0:
+                    # Modify count stack for new elements and decrement for element that was replaced
+                    count_stack[-1] += len(new_elements) - 1
                     work_stack.extend(reversed(new_elements))
+                    continue
 
-                continue
-
-            if isinstance(new_elements, lxml.html.HtmlComment):
+            elif isinstance(new_elements, lxml.html.HtmlComment):
                 result.append(lxml.html.tostring(new_elements, encoding="unicode"))
             elif isinstance(new_elements, lxml.html.HtmlProcessingInstruction):
                 # Handling processing instructions is necessary for elements like `<pl-graph>`
@@ -135,7 +133,8 @@ def traverse_and_replace(
                 tail = new_elements.tail
                 new_elements.tail = None
                 instruction = (
-                    lxml.html.tostring(new_elements, encoding="unicode")
+                    lxml.html
+                    .tostring(new_elements, encoding="unicode")
                     .removeprefix("<?")
                     .removesuffix("?>")
                 )

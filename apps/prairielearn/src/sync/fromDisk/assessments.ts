@@ -2,9 +2,10 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema, SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
+import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { assertNever } from '../../lib/types.js';
 import {
@@ -14,7 +15,7 @@ import {
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData } from '../course-db.js';
-import { isAccessRuleAccessibleInFuture } from '../dates.js';
+import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -121,9 +122,7 @@ function getParamsForAssessment(
           'id' | 'maxPoints' | 'points' | 'maxAutoPoints' | 'autoPoints' | 'manualPoints'
         > & {
           qid: QuestionAlternativeJson['id'];
-          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
           allowRealTimeGrading: boolean;
-          jsonAllowRealTimeGrading: boolean | undefined;
           canView: ZoneQuestionJson['canView'];
           canSubmit: ZoneQuestionJson['canSubmit'];
           maxPoints: number | null;
@@ -131,6 +130,15 @@ function getParamsForAssessment(
           maxAutoPoints: number | null;
           autoPoints: number | number[] | null;
           manualPoints: number | null;
+          jsonAllowRealTimeGrading: boolean | undefined;
+          jsonAutoPoints: number | number[] | null;
+          jsonForceMaxPoints: boolean | null;
+          jsonGradeRateMinutes: QuestionAlternativeJson['gradeRateMinutes'];
+          jsonManualPoints: number | null;
+          jsonMaxPoints: number | null;
+          jsonMaxAutoPoints: number | null;
+          jsonPoints: number | number[] | null;
+          jsonTriesPerVariant: number | null;
         })[] = [];
       const questionGradeRateMinutes = question.gradeRateMinutes ?? zoneGradeRateMinutes;
       const questionAllowRealTimeGrading =
@@ -150,13 +158,20 @@ function getParamsForAssessment(
             triesPerVariant: alternative.triesPerVariant ?? question.triesPerVariant,
             advanceScorePerc: alternative.advanceScorePerc,
             gradeRateMinutes: alternative.gradeRateMinutes ?? questionGradeRateMinutes,
-            jsonGradeRateMinutes: alternative.gradeRateMinutes,
             allowRealTimeGrading:
               alternative.allowRealTimeGrading ?? questionAllowRealTimeGrading ?? true,
-            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             comment: alternative.comment,
+            jsonAllowRealTimeGrading: alternative.allowRealTimeGrading,
+            jsonAutoPoints: alternative.autoPoints ?? null,
+            jsonForceMaxPoints: alternative.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: alternative.gradeRateMinutes,
+            jsonManualPoints: alternative.manualPoints ?? null,
+            jsonMaxAutoPoints: alternative.maxAutoPoints ?? null,
+            jsonMaxPoints: alternative.maxPoints ?? null,
+            jsonPoints: alternative.points ?? null,
+            jsonTriesPerVariant: alternative.triesPerVariant ?? null,
           };
         });
       } else if (question.id) {
@@ -172,9 +187,7 @@ function getParamsForAssessment(
             triesPerVariant: question.triesPerVariant,
             advanceScorePerc: question.advanceScorePerc,
             gradeRateMinutes: questionGradeRateMinutes,
-            jsonGradeRateMinutes: question.gradeRateMinutes,
             allowRealTimeGrading: questionAllowRealTimeGrading ?? true,
-            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
             canView: questionCanView,
             canSubmit: questionCanSubmit,
             // If a question has alternatives, the comment is stored on the alternative
@@ -182,6 +195,15 @@ function getParamsForAssessment(
             // just a single question with no alternatives, the comment is stored on
             // the assessment question itself.
             comment: question.comment,
+            jsonAllowRealTimeGrading: question.allowRealTimeGrading,
+            jsonAutoPoints: question.autoPoints ?? null,
+            jsonForceMaxPoints: question.forceMaxPoints ?? null,
+            jsonGradeRateMinutes: question.gradeRateMinutes,
+            jsonManualPoints: question.manualPoints ?? null,
+            jsonMaxPoints: question.maxPoints ?? null,
+            jsonMaxAutoPoints: question.maxAutoPoints ?? null,
+            jsonPoints: question.points ?? null,
+            jsonTriesPerVariant: question.triesPerVariant ?? null,
           },
         ];
       }
@@ -241,12 +263,10 @@ function getParamsForAssessment(
           force_max_points: alternative.forceMaxPoints ?? false,
           tries_per_variant: alternative.triesPerVariant ?? 1,
           grade_rate_minutes: alternative.gradeRateMinutes,
-          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
           // This is the "resolved" setting that takes into account configuration at
           // all levels of the assessment hierarchy, with lower levels overriding
           // higher ones.
           allow_real_time_grading: alternative.allowRealTimeGrading,
-          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
           question_id: questionId,
           number_in_alternative_group: alternativeIndex + 1,
           can_view: alternative.canView,
@@ -259,6 +279,15 @@ function getParamsForAssessment(
             assessment.advanceScorePerc ??
             0,
           comment: alternative.comment,
+          json_allow_real_time_grading: alternative.jsonAllowRealTimeGrading,
+          json_auto_points: alternative.jsonAutoPoints,
+          json_force_max_points: alternative.jsonForceMaxPoints,
+          json_grade_rate_minutes: alternative.jsonGradeRateMinutes,
+          json_points: alternative.jsonPoints,
+          json_manual_points: alternative.jsonManualPoints,
+          json_max_points: alternative.jsonMaxPoints,
+          json_max_auto_points: alternative.jsonMaxAutoPoints,
+          json_tries_per_variant: alternative.jsonTriesPerVariant,
         };
       });
 
@@ -266,20 +295,27 @@ function getParamsForAssessment(
         number: alternativeGroupNumber,
         number_choose: question.numberChoose ?? null,
         advance_score_perc: question.advanceScorePerc,
-        json_allow_real_time_grading: question.allowRealTimeGrading,
-        json_grade_rate_minutes: question.gradeRateMinutes,
-        json_can_view: question.canView,
-        json_can_submit: question.canSubmit,
-        json_has_alternatives: !!question.alternatives,
         questions,
         // If the question doesn't have any alternatives, we store the comment
         // on the assessment question itself, not the alternative group.
         comment: question.alternatives ? question.comment : undefined,
+        json_allow_real_time_grading: question.allowRealTimeGrading,
+        json_auto_points: question.autoPoints ?? null,
+        json_can_view: question.canView,
+        json_can_submit: question.canSubmit,
+        json_force_max_points: question.forceMaxPoints ?? null,
+        json_grade_rate_minutes: question.gradeRateMinutes,
+        json_has_alternatives: !!question.alternatives,
+        json_manual_points: question.manualPoints ?? null,
+        json_max_points: question.maxPoints ?? null,
+        json_max_auto_points: question.maxAutoPoints ?? null,
+        json_points: question.points ?? null,
+        json_tries_per_variant: question.triesPerVariant ?? null,
       };
     });
   });
 
-  const groupRoles = assessment.groupRoles.map((role) => ({
+  const teamRoles = assessment.groupRoles.map((role) => ({
     role_name: role.name,
     minimum: role.minimum,
     maximum: role.maximum,
@@ -297,7 +333,6 @@ function getParamsForAssessment(
         ? assessment.type === 'Exam'
         : assessment.shuffleQuestions,
     allow_issue_reporting: assessment.allowIssueReporting,
-    allow_real_time_grading: assessment.allowRealTimeGrading ?? true,
     json_allow_real_time_grading: assessment.allowRealTimeGrading,
     allow_personal_notes: assessment.allowPersonalNotes,
     // If requireHonorCode is not set, it's implicitly false for Homework and true for Exams.
@@ -314,22 +349,27 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    group_work: assessment.groupWork,
-    group_max_size: assessment.groupMaxSize ?? null,
-    group_min_size: assessment.groupMinSize ?? null,
-    student_group_create: assessment.studentGroupCreate,
-    student_group_choose_name: assessment.studentGroupChooseName,
-    student_group_join: assessment.studentGroupJoin,
-    student_group_leave: assessment.studentGroupLeave,
+    // TODO: Fix up schemas to refer to teams and not groups
+    // https://github.com/PrairieLearn/PrairieLearn/issues/13545
+    team_work: assessment.groupWork,
+    team_max_size: assessment.groupMaxSize ?? null,
+    team_min_size: assessment.groupMinSize ?? null,
+    student_team_create: assessment.studentGroupCreate,
+    student_team_choose_name: assessment.studentGroupChooseName,
+    student_team_join: assessment.studentGroupJoin,
+    student_team_leave: assessment.studentGroupLeave,
+
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: assessment.groupRoles.length > 0,
     json_can_view: assessment.canView,
     json_can_submit: assessment.canSubmit,
+    // TODO: This will be conditional based on the access control settings in the future.
+    modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
-    groupRoles,
+    teamRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
@@ -368,10 +408,17 @@ function isCourseInstanceAccessible(courseInstanceData: CourseInstanceData) {
   // not accessible.
   if (!courseInstance) return false;
 
-  // If there are no access rules, the course instance is not accessible.
-  if (courseInstance.allowAccess.length === 0) return false;
+  if (courseInstance.allowAccess != null) {
+    // If there are no access rules, the course instance is not accessible.
+    if (courseInstance.allowAccess.length === 0) return false;
+    return courseInstance.allowAccess.some((rule) => isDateInFuture(rule.endDate));
+  }
 
-  return courseInstance.allowAccess.some(isAccessRuleAccessibleInFuture);
+  if (courseInstance.publishing?.endDate == null) {
+    return false;
+  }
+
+  return isDateInFuture(courseInstance.publishing.endDate);
 }
 
 export async function sync(

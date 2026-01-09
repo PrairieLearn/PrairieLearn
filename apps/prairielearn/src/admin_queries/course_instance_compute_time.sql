@@ -17,7 +17,7 @@ WITH
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-      JOIN pl_courses AS c ON (c.id = ci.course_id)
+      JOIN courses AS c ON (c.id = ci.course_id)
       JOIN institutions AS i ON (i.id = c.institution_id)
     WHERE
       (
@@ -47,7 +47,7 @@ WITH
       JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
       JOIN assessments AS a ON (a.id = ai.assessment_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-      JOIN pl_courses AS c ON (c.id = ci.course_id)
+      JOIN courses AS c ON (c.id = ci.course_id)
       JOIN institutions AS i ON (i.id = c.institution_id)
     WHERE
       (
@@ -85,7 +85,7 @@ FROM
   JOIN course_instances AS ci ON (
     ci.id = coalesce(wd.course_instance_id, gjd.course_instance_id)
   )
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN institutions AS i ON (i.id = c.institution_id)
 WHERE
   coalesce(wd.duration_hours, 0) + coalesce(gjd.duration_hours, 0) >= $minimum_compute_hours

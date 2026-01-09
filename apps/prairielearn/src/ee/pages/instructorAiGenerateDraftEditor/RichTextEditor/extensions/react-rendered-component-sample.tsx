@@ -4,7 +4,7 @@
  * It should NOT be used yet.
  */
 import { mergeAttributes } from '@tiptap/core';
-import { CodeBlock, type CodeBlockOptions } from '@tiptap/extension-code-block';
+import { CodeBlock } from '@tiptap/extension-code-block';
 import {
   NodeViewContent,
   NodeViewWrapper,
@@ -21,12 +21,12 @@ def square(x):
 const PLCodeBlockComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
   const updateAttributes = props.updateAttributes as (attrs: Partial<PlCodeAttrs>) => void;
   return (
-    <NodeViewWrapper class="react-component">
+    <NodeViewWrapper className="react-component">
       <button type="button" onClick={() => updateAttributes({ language: 'python' })}>
         Python
       </button>
       <div contenteditable="false">This is a code block</div>
-      <NodeViewContent class="content" />
+      <NodeViewContent className="content" />
     </NodeViewWrapper>
   );
 };
@@ -68,7 +68,7 @@ export const PLCodeBlock = CodeBlock.extend({
     ];
   },
 
-  renderHTML({ HTMLAttributes }: CodeBlockOptions) {
+  renderHTML({ HTMLAttributes }) {
     return ['pl-code', mergeAttributes(this.options.HTMLAttributes, HTMLAttributes), 0];
   },
   addNodeView() {

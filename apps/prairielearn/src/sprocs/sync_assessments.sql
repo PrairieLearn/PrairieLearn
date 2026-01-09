@@ -12,8 +12,8 @@ DECLARE
     missing_src_tids TEXT;
     mismatched_uuid_tids TEXT;
     valid_assessment record;
-    group_role JSONB;
-    valid_group_role record;
+    team_role JSONB;
+    valid_team_role record;
     access_rule JSONB;
     zone JSONB;
     alternative_group JSONB;
@@ -27,8 +27,8 @@ DECLARE
     new_assessment_question_id bigint;
     new_assessment_question_ids bigint[];
     bad_assessments text;
-    new_group_role_names text[];
-    new_group_role_name text;
+    new_team_role_names text[];
+    new_team_role_name text;
     question_grading_method enum_grading_method;
     computed_manual_points double precision;
     computed_max_auto_points double precision;
@@ -162,16 +162,16 @@ BEGIN
             assessment_module_id = aggregates.assessment_module_id,
             constant_question_value = (valid_assessment.data->>'constant_question_value')::boolean,
             allow_issue_reporting = (valid_assessment.data->>'allow_issue_reporting')::boolean,
-            allow_real_time_grading = (valid_assessment.data->>'allow_real_time_grading')::boolean,
             json_allow_real_time_grading = (valid_assessment.data->>'json_allow_real_time_grading')::boolean,
             require_honor_code = (valid_assessment.data->>'require_honor_code')::boolean,
             honor_code = valid_assessment.data->>'honor_code',
             allow_personal_notes = (valid_assessment.data->>'allow_personal_notes')::boolean,
-            group_work = (valid_assessment.data->>'group_work')::boolean,
+            team_work = (valid_assessment.data->>'team_work')::boolean,
             advance_score_perc = (valid_assessment.data->>'advance_score_perc')::double precision,
             json_grade_rate_minutes = (valid_assessment.data->>'grade_rate_minutes')::double precision,
             json_can_view = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_view')),
             json_can_submit = ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(valid_assessment.data->'json_can_submit')),
+            modern_access_control = (valid_assessment.data->>'modern_access_control')::boolean,
             json_comment = (valid_assessment.data->'comment'),
             share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
@@ -192,9 +192,9 @@ BEGIN
         RETURNING id INTO new_assessment_id;
         new_assessment_ids = array_append(new_assessment_ids, new_assessment_id);
 
-        -- if it is a group work try to insert a group_config
-        IF (valid_assessment.data->>'group_work')::boolean THEN
-            INSERT INTO group_configs (
+        -- if it is a team work try to insert a team_config
+        IF (valid_assessment.data->>'team_work')::boolean THEN
+            INSERT INTO team_configs (
                 course_instance_id,
                 assessment_id,
                 maximum,
@@ -207,12 +207,12 @@ BEGIN
             ) VALUES (
                 syncing_course_instance_id,
                 new_assessment_id,
-                (valid_assessment.data->>'group_max_size')::bigint,
-                (valid_assessment.data->>'group_min_size')::bigint,
-                (valid_assessment.data->>'student_group_create')::boolean,
-                (valid_assessment.data->>'student_group_choose_name')::boolean,
-                (valid_assessment.data->>'student_group_join')::boolean,
-                (valid_assessment.data->>'student_group_leave')::boolean,
+                (valid_assessment.data->>'team_max_size')::bigint,
+                (valid_assessment.data->>'team_min_size')::bigint,
+                (valid_assessment.data->>'student_team_create')::boolean,
+                (valid_assessment.data->>'student_team_choose_name')::boolean,
+                (valid_assessment.data->>'student_team_join')::boolean,
+                (valid_assessment.data->>'student_team_leave')::boolean,
                 (valid_assessment.data->>'has_roles')::boolean
             ) ON CONFLICT (assessment_id)
             DO UPDATE
@@ -226,21 +226,21 @@ BEGIN
                 has_roles = EXCLUDED.has_roles,
                 deleted_at = NULL;
 
-            -- Insert all group roles
-            FOR group_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'groupRoles') LOOP
-                INSERT INTO group_roles (
+            -- Insert all team roles
+            FOR team_role IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'teamRoles') LOOP
+                INSERT INTO team_roles (
                     role_name,
                     assessment_id,
                     minimum,
                     maximum,
                     can_assign_roles
                 ) VALUES (
-                    (group_role->>'role_name'),
+                    (team_role->>'role_name'),
                     new_assessment_id,
                     -- Insert default values where necessary
-                    CASE WHEN group_role ? 'minimum' THEN (group_role->>'minimum')::integer ELSE 0 END,
-                    (group_role->>'maximum')::integer,
-                    CASE WHEN group_role ? 'can_assign_roles' THEN (group_role->>'can_assign_roles')::boolean ELSE FALSE END
+                    CASE WHEN team_role ? 'minimum' THEN (team_role->>'minimum')::integer ELSE 0 END,
+                    (team_role->>'maximum')::integer,
+                    CASE WHEN team_role ? 'can_assign_roles' THEN (team_role->>'can_assign_roles')::boolean ELSE FALSE END
                 ) ON CONFLICT (role_name, assessment_id)
                 DO UPDATE
                 SET
@@ -248,18 +248,18 @@ BEGIN
                     minimum = EXCLUDED.minimum,
                     maximum = EXCLUDED.maximum,
                     can_assign_roles = EXCLUDED.can_assign_roles
-                RETURNING group_roles.role_name INTO new_group_role_name;
-                new_group_role_names := array_append(new_group_role_names, new_group_role_name);
+                RETURNING team_roles.role_name INTO new_team_role_name;
+                new_team_role_names := array_append(new_team_role_names, new_team_role_name);
             END LOOP;
 
-            -- Delete excess group roles
-            DELETE FROM group_roles
+            -- Delete excess team roles
+            DELETE FROM team_roles
             WHERE
                 assessment_id = new_assessment_id
-                AND role_name != ALL (new_group_role_names);
+                AND role_name != ALL (new_team_role_names);
 
         ELSE
-            UPDATE group_configs
+            UPDATE team_configs
             SET deleted_at = now()
             WHERE assessment_id = new_assessment_id;
         END IF;
@@ -373,40 +373,61 @@ BEGIN
             -- Insert each alternative group in this zone
             FOR alternative_group IN SELECT * FROM JSONB_ARRAY_ELEMENTS(valid_assessment.data->'alternativeGroups'->zone_index) LOOP
                 INSERT INTO alternative_groups (
-                    number,
-                    number_choose,
                     advance_score_perc,
                     assessment_id,
-                    zone_id,
                     json_allow_real_time_grading,
-                    json_grade_rate_minutes,
-                    json_can_view,
+                    json_auto_points,
                     json_can_submit,
+                    json_can_view,
+                    json_comment,
+                    json_force_max_points,
+                    json_grade_rate_minutes,
                     json_has_alternatives,
-                    json_comment
+                    json_manual_points,
+                    json_max_auto_points,
+                    json_max_points,
+                    json_points,
+                    json_tries_per_variant,
+                    number,
+                    number_choose,
+                    zone_id
                 ) VALUES (
-                    (alternative_group->>'number')::integer,
-                    (alternative_group->>'number_choose')::integer,
                     (alternative_group->>'advance_score_perc')::double precision,
                     new_assessment_id,
-                    new_zone_id,
                     (alternative_group->>'json_allow_real_time_grading')::boolean,
-                    (alternative_group->>'json_grade_rate_minutes')::double precision,
-                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    alternative_group->'json_auto_points',
                     ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_submit')),
+                    ARRAY(SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(alternative_group->'json_can_view')),
+                    (alternative_group->'comment'),
+                    (alternative_group->>'json_force_max_points')::boolean,
+                    (alternative_group->>'json_grade_rate_minutes')::double precision,
                     (alternative_group->>'json_has_alternatives')::boolean,
-                    (alternative_group->'comment')
-                ) ON CONFLICT (number, assessment_id) DO UPDATE
+                    (alternative_group->>'json_manual_points')::double precision,
+                    (alternative_group->>'json_max_auto_points')::double precision,
+                    (alternative_group->>'json_max_points')::double precision,
+                    alternative_group->'json_points',
+                    (alternative_group->>'json_tries_per_variant')::integer,
+                    (alternative_group->>'number')::integer,
+                    (alternative_group->>'number_choose')::integer,
+                    new_zone_id
+                )                 ON CONFLICT (number, assessment_id) DO UPDATE
                 SET
-                    number_choose = EXCLUDED.number_choose,
-                    zone_id = EXCLUDED.zone_id,
                     advance_score_perc = EXCLUDED.advance_score_perc,
                     json_allow_real_time_grading = EXCLUDED.json_allow_real_time_grading,
-                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
-                    json_can_view = EXCLUDED.json_can_view,
+                    json_auto_points = EXCLUDED.json_auto_points,
                     json_can_submit = EXCLUDED.json_can_submit,
+                    json_can_view = EXCLUDED.json_can_view,
+                    json_comment = EXCLUDED.json_comment,
+                    json_force_max_points = EXCLUDED.json_force_max_points,
+                    json_grade_rate_minutes = EXCLUDED.json_grade_rate_minutes,
                     json_has_alternatives = EXCLUDED.json_has_alternatives,
-                    json_comment = EXCLUDED.json_comment
+                    json_manual_points = EXCLUDED.json_manual_points,
+                    json_max_auto_points = EXCLUDED.json_max_auto_points,
+                    json_max_points = EXCLUDED.json_max_points,
+                    json_points = EXCLUDED.json_points,
+                    json_tries_per_variant = EXCLUDED.json_tries_per_variant,
+                    number_choose = EXCLUDED.number_choose,
+                    zone_id = EXCLUDED.zone_id
                 RETURNING id INTO new_alternative_group_id;
 
                 -- Insert an assessment question for each question in this alternative group
@@ -462,7 +483,14 @@ BEGIN
                         number_in_alternative_group,
                         advance_score_perc,
                         effective_advance_score_perc,
-                        json_comment
+                        json_comment,
+                        json_points,
+                        json_auto_points,
+                        json_manual_points,
+                        json_max_points,
+                        json_max_auto_points,
+                        json_force_max_points,
+                        json_tries_per_variant
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -483,8 +511,15 @@ BEGIN
                         (assessment_question->>'number_in_alternative_group')::integer,
                         (assessment_question->>'advance_score_perc')::double precision,
                         (assessment_question->>'effective_advance_score_perc')::double precision,
-                        (assessment_question->'comment')
-                    ) ON CONFLICT (question_id, assessment_id) DO UPDATE
+                        (assessment_question->'comment'),
+                        assessment_question->'json_points',
+                        assessment_question->'json_auto_points',
+                        (assessment_question->>'json_manual_points')::double precision,
+                        (assessment_question->>'json_max_points')::double precision,
+                        (assessment_question->>'json_max_auto_points')::double precision,
+                        (assessment_question->>'json_force_max_points')::boolean,
+                        (assessment_question->>'json_tries_per_variant')::integer
+                    )                     ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
                         max_points = EXCLUDED.max_points,
@@ -504,25 +539,32 @@ BEGIN
                         question_id = EXCLUDED.question_id,
                         advance_score_perc = EXCLUDED.advance_score_perc,
                         effective_advance_score_perc = EXCLUDED.effective_advance_score_perc,
-                        json_comment = EXCLUDED.json_comment
+                        json_comment = EXCLUDED.json_comment,
+                        json_points = EXCLUDED.json_points,
+                        json_auto_points = EXCLUDED.json_auto_points,
+                        json_manual_points = EXCLUDED.json_manual_points,
+                        json_max_points = EXCLUDED.json_max_points,
+                        json_max_auto_points = EXCLUDED.json_max_auto_points,
+                        json_force_max_points = EXCLUDED.json_force_max_points,
+                        json_tries_per_variant = EXCLUDED.json_tries_per_variant
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
-                    -- If the assessment is configured as group work, sync the role permissions.
-                    IF (valid_assessment.data->>'group_work')::boolean THEN
+                    -- If the assessment is configured as team work, sync the role permissions.
+                    IF (valid_assessment.data->>'team_work')::boolean THEN
                         INSERT INTO assessment_question_role_permissions (
                             assessment_question_id,
-                            group_role_id,
+                            team_role_id,
                             can_view,
                             can_submit
                         ) SELECT
                             new_assessment_question_id,
-                            gr.id,
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
-                            (gr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
-                        FROM group_roles AS gr
-                        WHERE gr.assessment_id = new_assessment_id
-                        ON CONFLICT (assessment_question_id, group_role_id)
+                            tr.id,
+                            (tr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_view'))),
+                            (tr.role_name IN (SELECT * FROM JSONB_ARRAY_ELEMENTS_TEXT(assessment_question->'can_submit')))
+                        FROM team_roles AS tr
+                        WHERE tr.assessment_id = new_assessment_id
+                        ON CONFLICT (assessment_question_id, team_role_id)
                         DO UPDATE
                         SET
                             can_view = EXCLUDED.can_view,

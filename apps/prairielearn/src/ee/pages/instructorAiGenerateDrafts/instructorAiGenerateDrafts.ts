@@ -1,15 +1,18 @@
+import { createOpenAI } from '@ai-sdk/openai';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import OpenAI from 'openai';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
-import { AiQuestionGenerationPromptSchema, IdSchema } from '../../../lib/db-types.js';
+import { AiQuestionGenerationPromptSchema } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import {
+  QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
   approximatePromptCost,
   generateQuestion,
@@ -26,7 +29,7 @@ import {
 const router = Router();
 const sql = loadSqlEquiv(import.meta.url);
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
@@ -95,44 +98,48 @@ router.post(
       throw new error.HttpStatusError(403, 'Not implemented (feature not available)');
     }
 
-    const client = new OpenAI({
+    const openai = createOpenAI({
       apiKey: config.aiQuestionGenerationOpenAiApiKey,
       organization: config.aiQuestionGenerationOpenAiOrganization,
     });
 
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
       });
 
-      const approxPromptCost = approximatePromptCost(req.body.prompt);
+      const approxPromptCost = approximatePromptCost({
+        model: QUESTION_GENERATION_OPENAI_MODEL,
+        prompt: req.body.prompt,
+      });
 
       if (intervalCost + approxPromptCost > config.aiQuestionGenerationRateLimitDollars) {
+        const modelPricing = config.costPerMillionTokens[QUESTION_GENERATION_OPENAI_MODEL];
+
         res.send(
           RateLimitExceeded({
             // If the user has more tokens than the threshold of 100 tokens,
             // they can shorten their message to avoid exceeding the rate limit.
             canShortenMessage:
-              config.aiQuestionGenerationRateLimitDollars - intervalCost >
-              config.costPerMillionPromptTokens * 100,
+              config.aiQuestionGenerationRateLimitDollars - intervalCost > modelPricing.input * 100,
           }),
         );
         return;
       }
 
       const result = await generateQuestion({
-        client,
+        model: openai(QUESTION_GENERATION_OPENAI_MODEL),
+        embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
+        authnUserId: res.locals.authn_user.id,
         prompt: req.body.prompt,
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-        promptTokens: result.promptTokens ?? 0,
-        completionTokens: result.completionTokens ?? 0,
+        userId: res.locals.authn_user.id,
+        usage: result.usage,
         intervalCost,
       });
 
@@ -160,8 +167,8 @@ router.post(
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_ids: questions,
       });

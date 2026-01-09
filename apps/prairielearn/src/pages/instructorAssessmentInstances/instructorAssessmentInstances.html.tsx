@@ -2,11 +2,14 @@ import { html } from '@prairielearn/html';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
-import { renderHtml } from '../../lib/preact-html.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
-export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record<string, any> }) {
+export function InstructorAssessmentInstances({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'assessment'>;
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'Instances',
@@ -37,21 +40,12 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
       ${compiledScriptTag('instructorAssessmentInstancesClient.tsx')}
     `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${resLocals.authz_data.has_course_instance_permission_edit
         ? html`
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentGroupWork: resLocals.assessment.group_work,
+              assessmentTeamWork: resLocals.assessment.team_work ?? false,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({
@@ -75,68 +69,64 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex align-items-center gap-2">
           <h1>${resLocals.assessment_set.name} ${resLocals.assessment.number}: Students</h1>
-          ${resLocals.authz_data.has_course_instance_permission_edit
-            ? html`
-                <div class="ms-auto">
-                  <div class="dropdown d-flex flex-row">
-                    <button
-                      type="button"
-                      class="btn btn-light dropdown-toggle"
-                      data-bs-toggle="dropdown"
-                      aria-haspopup="true"
-                      aria-expanded="false"
-                    >
-                      Action for all instances <span class="caret"></span>
-                    </button>
-                    <div class="dropdown-menu dropdown-menu-end">
-                      ${resLocals.authz_data.has_course_instance_permission_edit
-                        ? html`
-                            <button
-                              type="button"
-                              class="dropdown-item"
-                              data-bs-toggle="modal"
-                              data-bs-target="#deleteAllAssessmentInstancesModal"
-                            >
-                              <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
-                            </button>
-                            <button
-                              type="button"
-                              class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
-                              data-bs-placement="left"
-                              data-bs-toggle-popover
-                            >
-                              <i class="far fa-clock" aria-hidden="true"></i> Change time limit for
-                              all instances
-                            </button>
-                            <button
-                              type="button"
-                              class="dropdown-item"
-                              data-bs-toggle="modal"
-                              data-bs-target="#grade-all-form"
-                            >
-                              <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all
-                              instances
-                            </button>
-                            <button
-                              type="button"
-                              class="dropdown-item"
-                              data-bs-toggle="modal"
-                              data-bs-target="#closeAllAssessmentInstancesModal"
-                            >
-                              <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all
-                              instances
-                            </button>
-                          `
-                        : html`
-                            <button class="dropdown-item disabled" disabled>
-                              Must have editor permission
-                            </button>
-                          `}
-                    </div>
-                  </div>
-                </div>
-              `
-            : ''}
+
+          <div class="ms-auto">
+            <div class="dropdown d-flex flex-row">
+              <button
+                type="button"
+                class="btn btn-light dropdown-toggle"
+                data-bs-toggle="dropdown"
+                aria-haspopup="true"
+                aria-expanded="false"
+              >
+                Action for all instances <span class="caret"></span>
+              </button>
+              <div class="dropdown-menu dropdown-menu-end">
+                ${resLocals.authz_data.has_course_instance_permission_edit
+                  ? html`
+                      <button
+                        type="button"
+                        class="dropdown-item"
+                        data-bs-toggle="modal"
+                        data-bs-target="#deleteAllAssessmentInstancesModal"
+                      >
+                        <i class="fas fa-times" aria-hidden="true"></i> Delete all instances
+                      </button>
+                      <button
+                        type="button"
+                        class="dropdown-item time-limit-edit-button time-limit-edit-all-button"
+                        data-bs-placement="left"
+                        data-bs-toggle-popover
+                      >
+                        <i class="far fa-clock" aria-hidden="true"></i> Change time limit for all
+                        instances
+                      </button>
+                      <button
+                        type="button"
+                        class="dropdown-item"
+                        data-bs-toggle="modal"
+                        data-bs-target="#grade-all-form"
+                      >
+                        <i class="fas fa-clipboard-check" aria-hidden="true"></i> Grade all
+                        instances
+                      </button>
+                      <button
+                        type="button"
+                        class="dropdown-item"
+                        data-bs-toggle="modal"
+                        data-bs-target="#closeAllAssessmentInstancesModal"
+                      >
+                        <i class="fas fa-ban" aria-hidden="true"></i> Grade and close all instances
+                      </button>
+                    `
+                  : html`
+                      <button class="dropdown-item disabled" disabled>
+                        Must have editor permission
+                      </button>
+                    `}
+              </div>
+            </div>
+          </div>
         </div>
 
         <table
@@ -165,7 +155,7 @@ export function InstructorAssessmentInstances({ resLocals }: { resLocals: Record
           data-smart-display="false"
           data-show-extended-pagination="true"
           data-sticky-header="true"
-          data-assessment-group-work="${resLocals.assessment.group_work}"
+          data-assessment-team-work="${resLocals.assessment.team_work}"
           data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
           data-assessment-number="${resLocals.assessment.number}"
           data-url-prefix="${resLocals.urlPrefix}"
@@ -325,12 +315,12 @@ function TimeRemainingHelpModal() {
 function DeleteAssessmentInstanceModal({
   assessmentSetName,
   assessmentNumber,
-  assessmentGroupWork,
+  assessmentTeamWork,
   csrfToken,
 }: {
   assessmentSetName: string;
-  assessmentNumber: number;
-  assessmentGroupWork: boolean;
+  assessmentNumber: string;
+  assessmentTeamWork: boolean;
   csrfToken: string;
 }) {
   return Modal({
@@ -341,9 +331,9 @@ function DeleteAssessmentInstanceModal({
       <span class="modal-number"></span> of
       <strong> ${assessmentSetName} ${assessmentNumber} </strong>
       for
-      ${assessmentGroupWork
+      ${assessmentTeamWork
         ? html`
-            <strong><span class="modal-group-name"></span></strong>
+            <strong><span class="modal-team-name"></span></strong>
             (<span class="modal-uid-list"></span>)
           `
         : html`
@@ -375,7 +365,7 @@ function DeleteAllAssessmentInstancesModal({
   csrfToken,
 }: {
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   csrfToken: string;
 }) {
   return Modal({
@@ -401,7 +391,7 @@ function GradeAllAssessmentInstancesModal({
   csrfToken,
 }: {
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   csrfToken: string;
 }) {
   return Modal({
@@ -426,7 +416,7 @@ function CloseAllAssessmentInstancesModal({
   csrfToken,
 }: {
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   csrfToken: string;
 }) {
   return Modal({

@@ -16,10 +16,11 @@ import {
 } from '../apps/prairielearn/src/lib/config.js';
 import { ajvSchemas } from '../apps/prairielearn/src/schemas/jsonSchemas.js';
 import { ConfigSchema as WorkspaceHostConfigSchema } from '../apps/workspace-host/src/lib/config.js';
+
 // determine if we are checking or writing
 const check = process.argv[2] === 'check';
 
-const orderedStringify = (schema) => {
+const orderedStringify = (schema: any) => {
   // TODO: this is a hack to get the schemas to be in a consistent order
   // Remove in a future PR
   const headKeys = [
@@ -82,7 +83,7 @@ const orderedStringify = (schema) => {
             }
             return 0;
           })
-          .reduce((acc, key) => {
+          .reduce<Record<string, any>>((acc, key) => {
             acc[key] = value[key];
             return acc;
           }, {});

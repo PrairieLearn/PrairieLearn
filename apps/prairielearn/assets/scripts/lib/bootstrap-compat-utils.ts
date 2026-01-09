@@ -58,12 +58,12 @@ function addClass(el: Element, newClass: string | string[], message: string) {
   const newClasses = Array.isArray(newClass) ? newClass : [newClass];
 
   let didAddClass = false;
-  newClasses.forEach((newClass) => {
+  for (const newClass of newClasses) {
     if (!el.classList.contains(newClass)) {
       el.classList.add(newClass);
       didAddClass = true;
     }
-  });
+  }
 
   if (didAddClass) {
     console.warn(message, el);

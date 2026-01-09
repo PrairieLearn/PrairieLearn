@@ -8,6 +8,8 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
   });
 }
 
+// TODO: This schema is being deprecated
+// https://github.com/PrairieLearn/PrairieLearn/issues/13545
 export const GroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
@@ -139,6 +141,7 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
   forceMaxPoints: ForceMaxPointsJsonSchema.optional(),
   triesPerVariant: z
     .number()
+    .int()
     .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
@@ -182,6 +185,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   triesPerVariant: z
     .number()
+    .int()
+    .gte(1)
     .describe('The maximum number of graded submissions allowed for each question instance.')
     .optional(),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),

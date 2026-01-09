@@ -1,19 +1,24 @@
+import * as cheerio from 'cheerio';
 import fs from 'fs-extra';
+import fetch from 'node-fetch';
 import * as tmp from 'tmp-promise';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
+import type { CourseInstance } from '../../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
+import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
   updateCourseInstancePermissionsRole,
   updateCoursePermissionsRole,
 } from '../../models/course-permissions.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as helperClient from '../helperClient.js';
 import * as helperServer from '../helperServer.js';
 import { getOrCreateUser } from '../utils/auth.js';
@@ -21,8 +26,9 @@ import { getOrCreateUser } from '../utils/auth.js';
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('effective user', { timeout: 60_000 }, function () {
-  const context: Record<string, any> = {};
-  context.siteUrl = `http://localhost:${config.serverPort}`;
+  let courseInstance: CourseInstance;
+
+  const context: Record<string, any> = { siteUrl: `http://localhost:${config.serverPort}` };
   context.baseUrl = `${context.siteUrl}/pl`;
   context.pageUrlTestCourse = `${context.baseUrl}/course/1`;
   context.pageUrlExampleCourse = `${context.baseUrl}/course/2`;
@@ -57,7 +63,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'institution-admin@example.com',
     });
-    institutionAdminId = institutionAdmin.user_id;
+    institutionAdminId = institutionAdmin.id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
@@ -70,7 +76,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '100000000',
       email: 'instructor@example.com',
     });
-    instructorId = instructor.user_id;
+    instructorId = instructor.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -84,7 +90,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'staff@example.com',
     });
-    staffId = staff.user_id;
+    staffId = staff.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'staff@example.com',
@@ -98,10 +104,14 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '000000001',
       email: 'student@example.com',
     });
-    studentId = student.user_id;
-    await ensureEnrollment({
-      user_id: studentId,
-      course_instance_id: '1',
+    studentId = student.id;
+    courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: studentId,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
     });
   });
 
@@ -176,7 +186,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -191,7 +201,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -207,7 +217,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1900-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1950-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 200);
@@ -219,7 +229,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     async () => {
       const headers = {
         cookie:
-          'pl_test_user=test_instructor; pl2_requested_date=1700-01-19T00:00:01; pl2_requested_uid=student@example.com',
+          'pl_test_user=test_instructor; pl2_requested_date=1890-01-19T00:00:01; pl2_requested_uid=student@example.com',
       };
       const res = await helperClient.fetchCheerio(context.pageUrlStudent, { headers });
       assert.equal(res.status, 403);
@@ -327,7 +337,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await insertCourseInstancePermissions({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -343,14 +353,14 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: staffId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -390,7 +400,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -406,7 +416,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Viewer',
       authn_user_id: '2',
     });
@@ -488,7 +498,7 @@ describe('effective user', { timeout: 60_000 }, function () {
     await updateCourseInstancePermissionsRole({
       course_id: '1',
       user_id: instructorId,
-      course_instance_id: '1',
+      course_instance_id: courseInstance.id,
       course_instance_role: 'Student Data Editor',
       authn_user_id: '2',
     });
@@ -541,6 +551,62 @@ describe('effective user', { timeout: 60_000 }, function () {
         headers,
       });
       assert.equal(res.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is denied access when emulating student, and no redirect is available',
+    async () => {
+      const headers = {
+        cookie: 'pl2_requested_uid=student@example.com; pl2_requested_data_changed=true',
+      };
+      // Test that instructor is denied access to instructor pages when emulating student
+      const instructorPageUrl = `${context.baseUrl}/course/1/course_admin/instance_admin`;
+      const response = await fetch(instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+      // This should result in a fancy 403 error page
+      const body = await response.text();
+      const $ = cheerio.load(body);
+      const authzAccessMismatch = $('div[data-component="AuthzAccessMismatch"]');
+      assert.equal(authzAccessMismatch.length, 1);
+      assert.equal(response.status, 403);
+    },
+  );
+
+  test.sequential(
+    'instructor is allowed access when emulating student, and a redirect is available',
+    async () => {
+      const courseInstanceId = '1';
+      const studentUid = 'student@example.com';
+      const user = await getOrCreateUser({
+        uid: studentUid,
+        name: 'Example Student',
+        uin: 'student',
+        email: 'student@example.com',
+      });
+      await ensureUncheckedEnrollment({
+        courseInstance,
+        userId: user.id,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+        actionDetail: 'implicit_joined',
+      });
+
+      const headers = {
+        // We don't include the pl_test_user cookie since that will short-circuit the authzHelper middleware
+        cookie: `pl2_requested_uid=${studentUid}; pl2_requested_data_changed=true`,
+      };
+      const instructorPageUrl = `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/assessments`;
+      const studentPageUrl = `/pl/course_instance/${courseInstanceId}`;
+      const response = await fetch(context.siteUrl + instructorPageUrl, {
+        headers,
+        redirect: 'manual',
+      });
+
+      assert.equal(response.status, 302);
+      assert.equal(response.headers.get('Location'), studentPageUrl);
     },
   );
 });

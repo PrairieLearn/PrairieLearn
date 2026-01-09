@@ -6,6 +6,7 @@ import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
 } from '../middlewares/authzCourseOrInstance.js';
+import type { ResLocalsDate } from '../middlewares/date.js';
 import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.js';
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
@@ -17,18 +18,19 @@ import type {
 import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCount.js';
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
+import type { ResLocalsConfig } from './config.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
-} from './question-render.js';
+} from './question-render.types.js';
+import type { IsUnion, MergeUnion, Prettify } from './types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
-  urlPrefix: string;
-  navbarType: 'student' | 'instructor' | 'public';
 }
 
-export interface ResLocalsForPage {
+interface ResLocalsForPageLookup {
+  plain: ResLocals;
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
   'course-instance': ResLocals & ResLocalsCourseInstance;
   'instructor-instance-question': ResLocals &
@@ -41,13 +43,15 @@ export interface ResLocalsForPage {
       navbarType: 'instructor';
     };
   'instructor-question': ResLocals &
-    ResLocalsCourseInstance &
+    ResLocalsCourse &
+    Partial<ResLocalsCourseInstance> &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender;
   'instructor-assessment-question': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender &
+    ResLocalsAssessment &
     ResLocalsAssessmentQuestion;
   'instance-question': ResLocals &
     ResLocalsCourseInstance &
@@ -57,19 +61,47 @@ export interface ResLocalsForPage {
     ResLocalsAssessment &
     ResLocalsAssessmentQuestion &
     ResLocalsInstanceQuestionRender;
-  'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
-  assessment: ResLocals & ResLocalsAssessment;
+  'assessment-instance': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsAssessment &
+    ResLocalsAssessmentInstance;
+  assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
-export type PageType = keyof ResLocalsForPage;
+// Only apply MergeUnion when T is a union of page types; preserve unions for single types
+export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
+  true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
-export function getResLocalsForPage<T extends PageType>(
-  locals: Record<string, any>,
-): ResLocalsForPage[T] {
-  return locals as ResLocalsForPage[T];
-}
+export type PageType = keyof ResLocalsForPageLookup;
 
-export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals = object>(
+/**
+ * A wrapper around {@link asyncHandler} that ensures that the locals
+ * are typed correctly for the given page type.
+ *
+ * @example
+ * ```ts
+ * router.get('/', typedAsyncHandler<'course'>(async (req, res) => {
+ *   res.send(`Hello, ${res.locals.course.short_name}`);
+ * }));
+ * ```
+ *
+ * The page types include:
+ *
+ * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
+ * - `course`: A course page.
+ * - `course-instance`: A course instance page.
+ * - `instructor-instance-question`: An instructor instance question page.
+ * - `instructor-question`: An instructor question page.
+ * - `instructor-assessment-question`: An instructor assessment question page.
+ * - `instance-question`: An instance question page.
+ * - `assessment-question`: An assessment question page.
+ * - `assessment-instance`: An assessment instance page.
+ * - `assessment`: An assessment page.
+ *
+ * @param handler - The handler function to wrap.
+ * @returns A wrapped handler function.
+ */
+export const typedAsyncHandler = <T extends PageType, ExtraLocals = object>(
   handler: (
     ...args: Parameters<
       express.RequestHandler<
@@ -77,7 +109,7 @@ export const typedAsyncHandler = <T extends keyof ResLocalsForPage, ExtraLocals 
         any,
         any,
         core.Query,
-        ResLocalsForPage[T] & ExtraLocals
+        Prettify<ResLocalsForPage<T> & ExtraLocals>
       >
     >
   ) => void | Promise<void>,

@@ -1,21 +1,25 @@
 import { z } from 'zod';
 
+import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/preact/server';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { PersonalNotesPanel } from '../../../components/PersonalNotesPanel.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
-import { QuestionSyncErrorsAndWarnings } from '../../../components/SyncErrorsAndWarnings.js';
-import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
+import { RubricSettings } from '../../../components/RubricSettings.js';
+import type {
+  AiGradingGeneralStats,
+  InstanceQuestionAIGradingInfo,
+} from '../../../ee/lib/ai-grading/types.js';
 import { assetPath, compiledScriptTag, nodeModulesAssetPath } from '../../../lib/assets.js';
-import { GradingJobSchema, type User } from '../../../lib/db-types.js';
-import { renderHtml } from '../../../lib/preact-html.js';
+import { StaffAssessmentQuestionSchema } from '../../../lib/client/safe-db-types.js';
+import { GradingJobSchema, type InstanceQuestionGroup, type User } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 import { GradingPanel } from './gradingPanel.html.js';
-import { RubricSettingsModal } from './rubricSettingsModal.html.js';
 
 export const GradingJobDataSchema = GradingJobSchema.extend({
   score_perc: z.number().nullable(),
@@ -29,16 +33,22 @@ export function InstanceQuestion({
   graders,
   assignedGrader,
   lastGrader,
+  selectedInstanceQuestionGroup,
   aiGradingEnabled,
   aiGradingMode,
   aiGradingInfo,
+  aiGradingStats,
+  instanceQuestionGroups,
   skipGradedSubmissions,
+  showSubmissionsAssignedToMeOnly,
+  submissionCredits,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData | null;
   graders: User[] | null;
   assignedGrader: User | null;
   lastGrader: User | null;
+  selectedInstanceQuestionGroup: InstanceQuestionGroup | null;
   aiGradingEnabled: boolean;
   aiGradingMode: boolean;
   /**
@@ -47,8 +57,17 @@ export function InstanceQuestion({
    * 2. The question was AI graded
    */
   aiGradingInfo?: InstanceQuestionAIGradingInfo;
+  aiGradingStats: AiGradingGeneralStats | null;
+  instanceQuestionGroups?: InstanceQuestionGroup[];
   skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
+  submissionCredits: number[];
 }) {
+  const instanceQuestionGroupsExist = instanceQuestionGroups
+    ? instanceQuestionGroups.length > 0
+    : false;
+  const { __csrf_token, rubric_data } = resLocals;
+
   return PageLayout({
     resLocals: {
       ...resLocals,
@@ -81,18 +100,13 @@ export function InstanceQuestion({
         : ''}
       ${unsafeHtml(resLocals.extraHeadersHtml)}
       ${compiledScriptTag('instructorAssessmentManualGradingInstanceQuestion.js')}
-    `,
-    preContent: html`
-      <div class="container-fluid">
-        ${renderHtml(
-          <QuestionSyncErrorsAndWarnings
-            authzData={resLocals.authz_data}
-            question={resLocals.question}
-            course={resLocals.course}
-            urlPrefix={resLocals.urlPrefix}
-          />,
-        )}
-      </div>
+      ${EncodedData(
+        {
+          instanceQuestionId: resLocals.instance_question.id,
+          instanceQuestionGroupsExist,
+        },
+        'instance-question-data',
+      )}
     `,
     content: html`
       <h1 class="visually-hidden">Instance Question Manual Grading</h1>
@@ -101,6 +115,15 @@ export function InstanceQuestion({
             <div class="alert alert-danger" role="alert">
               This assessment instance is still open. Student may still be able to submit new
               answers.
+            </div>
+          `
+        : ''}
+      ${submissionCredits.some((credit) => credit !== 100)
+        ? html`
+            <div class="alert alert-warning" role="alert">
+              There are submissions in this assessment instance with credit different than 100%.
+              Submitting a manual grade will override any credit limits set for this assessment
+              instance.
             </div>
           `
         : ''}
@@ -148,6 +171,29 @@ export function InstanceQuestion({
             `
           : ''}
       </div>
+
+      <div class="mb-3">
+        ${hydrateHtml(
+          <RubricSettings
+            hasCourseInstancePermissionEdit={
+              resLocals.authz_data.has_course_instance_permission_edit
+            }
+            assessmentQuestion={StaffAssessmentQuestionSchema.parse(resLocals.assessment_question)}
+            rubricData={rubric_data}
+            csrfToken={__csrf_token}
+            aiGradingStats={aiGradingStats}
+            context={{
+              course_short_name: resLocals.course.short_name,
+              course_instance_short_name: resLocals.course_instance.short_name,
+              assessment_tid: resLocals.assessment.tid,
+              question_qid: resLocals.question.qid,
+              variant_params: resLocals.variant.params,
+              variant_true_answer: resLocals.variant.true_answer,
+              submission_submitted_answer: resLocals.submission?.submitted_answer,
+            }}
+          />,
+        )}
+      </div>
       ${conflict_grading_job
         ? ConflictGradingJobModal({
             resLocals,
@@ -155,6 +201,7 @@ export function InstanceQuestion({
             graders,
             lastGrader,
             skipGradedSubmissions,
+            showSubmissionsAssignedToMeOnly,
           })
         : ''}
       <div class="row">
@@ -176,7 +223,11 @@ export function InstanceQuestion({
                 context: 'main',
                 graders,
                 aiGradingInfo,
+                selectedInstanceQuestionGroup,
+                showInstanceQuestionGroup: instanceQuestionGroupsExist && aiGradingMode,
+                instanceQuestionGroups,
                 skip_graded_submissions: skipGradedSubmissions,
+                show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
               })}
             </div>
           </div>
@@ -203,8 +254,8 @@ export function InstanceQuestion({
             lastGrader,
             question: resLocals.question,
             variant: resLocals.variant,
-            instance_group: resLocals.instance_group,
-            instance_group_uid_list: resLocals.instance_group_uid_list,
+            instance_team: resLocals.instance_team,
+            instance_team_uid_list: resLocals.instance_team_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
             question_is_shared: resLocals.question_is_shared,
@@ -214,7 +265,6 @@ export function InstanceQuestion({
         </div>
       </div>
     `,
-    postContent: RubricSettingsModal({ resLocals }),
   });
 }
 
@@ -224,12 +274,14 @@ function ConflictGradingJobModal({
   graders,
   lastGrader,
   skipGradedSubmissions,
+  showSubmissionsAssignedToMeOnly,
 }: {
-  resLocals: ResLocalsForPage['instance-question'];
+  resLocals: ResLocalsForPage<'instance-question'>;
   conflict_grading_job: GradingJobData;
   graders: User[] | null;
   lastGrader: User | null;
   skipGradedSubmissions: boolean;
+  showSubmissionsAssignedToMeOnly: boolean;
 }) {
   const lastGraderName = lastGrader?.name ?? lastGrader?.uid ?? 'an unknown grader';
   return html`
@@ -267,7 +319,9 @@ function ConflictGradingJobModal({
                     disable: true,
                     skip_text: 'Accept existing score',
                     context: 'existing',
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
+                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
                   })}
                 </div>
               </div>
@@ -293,7 +347,9 @@ function ConflictGradingJobModal({
                     grading_job: conflict_grading_job,
                     context: 'conflicting',
                     graders,
+                    showInstanceQuestionGroup: false,
                     skip_graded_submissions: skipGradedSubmissions,
+                    show_submissions_assigned_to_me_only: showSubmissionsAssignedToMeOnly,
                   })}
                 </div>
               </div>

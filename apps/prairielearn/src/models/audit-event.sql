@@ -1,3 +1,14 @@
+-- BLOCK select_audit_events_by_enrollment_id_table_names
+SELECT
+  *
+FROM
+  audit_events
+WHERE
+  enrollment_id = $enrollment_id
+  AND table_name = ANY ($table_names::text[])
+ORDER BY
+  date DESC;
+
 -- BLOCK select_audit_events_by_subject_user_id_table_names_course_instance_id
 SELECT
   *
@@ -27,7 +38,7 @@ WITH
   assessment_instance_meta AS (
     SELECT
       id,
-      group_id,
+      team_id,
       assessment_id
     FROM
       assessment_instances
@@ -35,26 +46,36 @@ WITH
       id = $assessment_instance_id
       AND id IS NOT NULL
   ),
-  group_meta AS (
+  enrollment_meta AS (
+    SELECT
+      id,
+      course_instance_id
+    FROM
+      enrollments
+    WHERE
+      id = $enrollment_id
+      AND id IS NOT NULL
+  ),
+  team_meta AS (
     SELECT
       id,
       (
         SELECT
           assessment_id
         FROM
-          group_configs
+          team_configs
         WHERE
-          id = g.group_config_id
+          id = t.team_config_id
       ) AS assessment_id,
       course_instance_id
     FROM
-      groups AS g
+      teams AS t
     WHERE
       id = coalesce(
-        $group_id,
+        $team_id,
         (
           SELECT
-            group_id
+            team_id
           FROM
             assessment_instance_meta
         )
@@ -96,7 +117,7 @@ WITH
           SELECT
             assessment_id
           FROM
-            group_meta
+            team_meta
         )
       )
       AND id IS NOT NULL
@@ -114,7 +135,13 @@ WITH
           SELECT
             course_instance_id
           FROM
-            group_meta
+            enrollment_meta
+        ),
+        (
+          SELECT
+            course_instance_id
+          FROM
+            team_meta
         ),
         (
           SELECT
@@ -130,7 +157,7 @@ WITH
       id,
       institution_id
     FROM
-      pl_courses
+      courses
     WHERE
       id = coalesce(
         $course_id,
@@ -175,10 +202,11 @@ INSERT INTO
     agent_user_id,
     institution_id,
     course_id,
+    enrollment_id,
     assessment_id,
     assessment_instance_id,
     assessment_question_id,
-    group_id
+    team_id
   )
 SELECT
   $action,
@@ -194,6 +222,7 @@ SELECT
   $agent_user_id,
   institution_meta.id AS institution_id,
   course_meta.id AS course_id,
+  enrollment_meta.id AS enrollment_id,
   assessment_meta.id AS assessment_id,
   -- We coalesce here since it is possible that assessment_instance_meta.id is null, and $assessment_instance_id is not null.
   -- There is no foreign key constraint on assessment_instance_id since it can be hard-deleted, and we want to preserve the nonexistent ID for auditing.
@@ -202,7 +231,7 @@ SELECT
     $assessment_instance_id
   ) AS assessment_instance_id,
   assessment_question_meta.id AS assessment_question_id,
-  group_meta.id AS group_id
+  team_meta.id AS team_id
 FROM
   (
     SELECT
@@ -211,9 +240,10 @@ FROM
   LEFT JOIN course_instance_meta ON (TRUE)
   LEFT JOIN institution_meta ON (TRUE)
   LEFT JOIN course_meta ON (TRUE)
+  LEFT JOIN enrollment_meta ON (TRUE)
   LEFT JOIN assessment_meta ON (TRUE)
   LEFT JOIN assessment_instance_meta ON (TRUE)
   LEFT JOIN assessment_question_meta ON (TRUE)
-  LEFT JOIN group_meta ON (TRUE)
+  LEFT JOIN team_meta ON (TRUE)
 RETURNING
   *;

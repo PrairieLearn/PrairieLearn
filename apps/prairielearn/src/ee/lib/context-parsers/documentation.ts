@@ -31,57 +31,6 @@ function stringify(content: any) {
   });
 }
 
-function extractElementSections(ast: any) {
-  const elementSections: ElementSection[] = [];
-
-  // Find the first level-three heading.
-  let startIndex = ast.children.findIndex((child) => {
-    return child.type === 'heading' && child.depth === 3;
-  });
-
-  if (startIndex === -1) {
-    throw new Error('No element sections found');
-  }
-
-  while (startIndex !== -1) {
-    const heading = ast.children[startIndex];
-
-    // All element headings should be level 3.
-    if (heading.type !== 'heading' || heading.depth !== 3) {
-      throw new Error('Expected heading');
-    }
-
-    // Element headings should contain an `inlineCode` node.
-    const inlineCode = heading.children[0];
-    if (inlineCode.type !== 'inlineCode') {
-      throw new Error('Expected inline code');
-    }
-
-    const elementName = inlineCode.value;
-
-    // Find the next level 2/3 heading.
-    let endIndex = ast.children.findIndex((child, index) => {
-      return (
-        index > startIndex && child.type === 'heading' && (child.depth === 2 || child.depth === 3)
-      );
-    });
-
-    // If there is no next heading, use the end of the document.
-    if (endIndex === -1) {
-      endIndex = ast.children.length;
-    }
-
-    const content = ast.children.slice(startIndex + 1, endIndex);
-    elementSections.push({ elementName, content });
-
-    startIndex = ast.children.findIndex((child, index) => {
-      return index >= endIndex && child.type === 'heading' && child.depth === 3;
-    });
-  }
-
-  return elementSections;
-}
-
 function removeHeadingAndContent(headingName: string, contents: any[]) {
   const headingIndex = contents.findIndex((node) => {
     return (
@@ -104,34 +53,6 @@ function removeHeadingAndContent(headingName: string, contents: any[]) {
   }
 
   contents.splice(headingIndex, nextHeadingIndex - headingIndex);
-}
-
-function cleanElementSections(elementSections: ElementSection[]) {
-  elementSections.forEach((section) => {
-    // Remove sections that aren't useful for the context.
-    removeHeadingAndContent('Example implementations', section.content);
-    removeHeadingAndContent('See also', section.content);
-
-    // Remove thematic breaks.
-    section.content = section.content.filter((node) => node.type !== 'thematicBreak');
-
-    // Rewrite all headings so that they can be nested under L2 headings.
-    section.content.forEach((node) => {
-      if (node.type === 'heading') {
-        // Safety check: all headings should be at least level 4.
-        if (node.depth < 4) {
-          console.error(section.content);
-          throw new Error('Expected heading to be at least level 4');
-        }
-        node.depth -= 1;
-      }
-      return node;
-    });
-    return section;
-  });
-
-  // Remove deprecated elements.
-  return elementSections.filter((section) => !DEPRECATED_ELEMENTS.has(section.elementName));
 }
 
 function writeOutTables(elementSections: ElementSection[]) {
@@ -190,25 +111,75 @@ function writeOutTables(elementSections: ElementSection[]) {
   return elementSections;
 }
 
-export function buildContextForElementDocs(rawMarkdown: string): DocumentChunk[] {
+/**
+ * Processes a single element documentation file and returns a DocumentChunk.
+ *
+ * @param rawMarkdown The markdown content of a single element file.
+ * @param elementName The name of the element (extracted from filename).
+ * @returns A DocumentChunk for the element, or null if the element is not allowed or deprecated.
+ */
+export function buildContextForSingleElementDoc(
+  rawMarkdown: string,
+  elementName: string,
+): DocumentChunk | null {
+  // Skip deprecated elements.
+  if (DEPRECATED_ELEMENTS.has(elementName)) {
+    return null;
+  }
+
+  // Skip elements that are not in the allowed list.
+  if (!ALLOWED_ELEMENTS.has(elementName)) {
+    return null;
+  }
+
   const file = unified().use(remarkParse).use(remarkGfm).parse(rawMarkdown);
 
-  const elementSections = writeOutTables(cleanElementSections(extractElementSections(file)));
+  // Get all content after the first heading (which should be the element name).
+  // The first heading is typically "# `element-name` element" or similar.
+  let contentStartIndex = 0;
+  if (file.children.length > 0 && file.children[0].type === 'heading') {
+    contentStartIndex = 1;
+  }
 
-  const contexts = elementSections.map((section) => {
-    section.content.unshift({
-      type: 'heading',
-      depth: 2,
-      children: [{ type: 'text', value: section.elementName }],
-    });
+  const content = file.children.slice(contentStartIndex);
 
-    const markdown = stringify(section.content);
+  // Remove sections that aren't useful for the context.
+  removeHeadingAndContent('Example implementations', content);
+  removeHeadingAndContent('See also', content);
 
-    return {
-      chunkId: section.elementName,
-      text: markdown,
-    };
+  // Remove thematic breaks.
+  const filteredContent = content.filter((node) => node.type !== 'thematicBreak');
+
+  // Rewrite all headings so that they can be nested under L2 headings.
+  // In individual files, headings start at level 2 (##), so we need to convert
+  // them to level 3+ to match the structure expected by the processing functions.
+  filteredContent.forEach((node) => {
+    if (node.type === 'heading') {
+      // Safety check: all headings should be at least level 2.
+      if (node.depth < 2) {
+        throw new Error('Expected heading to be at least level 2');
+      }
+      // Convert level 2 to level 3, level 3 to level 4, etc.
+      // This matches the behavior in cleanElementSections which expects level 4+.
+      node.depth += 1;
+    }
   });
 
-  return contexts.filter((x) => ALLOWED_ELEMENTS.has(x.chunkId));
+  // Process tables in the same way as the multi-file version.
+  const elementSection: ElementSection = { elementName, content: filteredContent };
+  const processedSections = writeOutTables([elementSection]);
+
+  // Add a level 2 heading with the element name.
+  processedSections[0].content.unshift({
+    type: 'heading',
+    depth: 2,
+    children: [{ type: 'text', value: elementName }],
+  });
+
+  const markdown = stringify(processedSections[0].content);
+
+  return {
+    chunkId: elementName,
+    text: markdown,
+  };
 }

@@ -1,3 +1,4 @@
+import { type Temporal } from '@js-temporal/polyfill';
 import { type FC, createContext, useContext } from 'preact/compat';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
@@ -5,7 +6,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 import { formatDate, formatDateFriendly } from '@prairielearn/formatter';
 
 export interface FriendlyDateProps {
-  date: Date;
+  date: Date | Temporal.PlainDateTime;
   timezone?: string;
   tooltip?: boolean;
   options?: Parameters<typeof formatDateFriendly>[2];

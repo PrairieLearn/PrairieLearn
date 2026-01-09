@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../../lib/config.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   uploadAssessmentInstanceScores,
   uploadInstanceQuestionScores,
@@ -26,7 +26,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const uploadJobSequences = await sqldb.queryRows(
       sql.select_upload_job_sequences,
       { assessment_id: res.locals.assessment.id },
@@ -38,25 +38,25 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
 
     if (req.body.__action === 'upload_instance_question_scores') {
       const jobSequenceId = await uploadInstanceQuestionScores(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_assessment_instance_scores') {
       const jobSequenceId = await uploadAssessmentInstanceScores(
         res.locals.assessment.id,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else if (req.body.__action === 'upload_submissions') {
@@ -65,10 +65,10 @@ router.post(
       }
 
       const jobSequenceId = await uploadSubmissions(
-        res.locals.assessment.id,
+        res.locals.assessment,
         req.file,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
+        res.locals.user.id,
+        res.locals.authn_user.id,
       );
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {

@@ -1,8 +1,10 @@
 import fetch from 'node-fetch';
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
+import { dangerousFullSystemAuthz } from '../../../lib/authz-data-lib.js';
 import { config } from '../../../lib/config.js';
-import { ensureEnrollment } from '../../../models/enrollment.js';
+import { selectCourseInstanceById } from '../../../models/course-instances.js';
+import { ensureUncheckedEnrollment } from '../../../models/enrollment.js';
 import * as helperServer from '../../../tests/helperServer.js';
 import {
   type AuthUser,
@@ -29,7 +31,6 @@ const studentUser: AuthUser = {
 
 describe('studentCourseInstanceUpgrade', () => {
   enableEnterpriseEdition();
-
   beforeEach(helperServer.before());
   afterEach(helperServer.after);
 
@@ -55,7 +56,7 @@ describe('studentCourseInstanceUpgrade', () => {
       // Grant `basic` to student in course instance.
       const user = await getConfiguredUser();
       await reconcilePlanGrantsForCourseInstanceUser(
-        { institution_id: '1', course_instance_id: '1', user_id: user.user_id },
+        { institution_id: '1', course_instance_id: '1', user_id: user.id },
         [{ plan: 'basic', grantType: 'stripe' }],
         '1',
       );
@@ -80,7 +81,14 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: user.id,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
 
     // Simulates the dev user (an instructor) using "Student view" for themselves.
     const res = await fetch(assessmentsUrl, {
@@ -96,7 +104,14 @@ describe('studentCourseInstanceUpgrade', () => {
     await updateRequiredPlansForCourseInstance('1', ['basic', 'compute'], '1');
 
     const user = await getOrCreateUser(studentUser);
-    await ensureEnrollment({ user_id: user.user_id, course_instance_id: '1' });
+    const courseInstance = await selectCourseInstanceById('1');
+    await ensureUncheckedEnrollment({
+      userId: user.id,
+      courseInstance,
+      requiredRole: ['System'],
+      authzData: dangerousFullSystemAuthz(),
+      actionDetail: 'implicit_joined',
+    });
 
     // Simulates the dev user (an instructor) using "Student view" for an
     // actual enrolled student user.
