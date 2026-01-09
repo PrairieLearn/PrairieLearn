@@ -32,7 +32,6 @@ interface StudentDetailProps {
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit?: boolean;
-  enrollmentManagementEnabled: boolean;
   hasModernPublishing: boolean;
 }
 
@@ -44,7 +43,6 @@ export function InstructorStudentDetail({
   courseInstanceUrl,
   csrfToken,
   hasCourseInstancePermissionEdit,
-  enrollmentManagementEnabled,
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
@@ -75,7 +73,6 @@ export function InstructorStudentDetail({
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
-        enrollmentManagementEnabled={enrollmentManagementEnabled}
         hasModernPublishing={hasModernPublishing}
       />
 

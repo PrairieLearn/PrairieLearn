@@ -593,7 +593,6 @@ export const CourseInstanceSchema = z.object({
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
-  hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
@@ -890,19 +889,6 @@ export const TeamUserRoleSchema = z.object({
   user_id: IdSchema,
 });
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
-
-// Backwards compatibility aliases for renamed group/team tables
-export const GroupSchema = TeamSchema;
-export type Group = Team;
-export const GroupConfigSchema = TeamConfigSchema;
-export type GroupConfig = TeamConfig;
-export const GroupRoleSchema = TeamRoleSchema;
-export type GroupRole = TeamRole;
-export const GroupUserSchema = TeamUserSchema;
-export type GroupUser = TeamUser;
-export const GroupUserRoleSchema = TeamUserRoleSchema;
-export type GroupUserRole = TeamUserRole;
-export const GroupLogSchema = TeamLogSchema;
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
@@ -1363,19 +1349,6 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
-export const SubmissionGradingContextEmbeddingSchema = z.object({
-  assessment_question_id: IdSchema,
-  created_at: DateFromISOString,
-  embedding: z.string(),
-  id: IdSchema,
-  submission_id: IdSchema,
-  submission_text: z.string(),
-  updated_at: DateFromISOString,
-});
-export type SubmissionGradingContextEmbedding = z.infer<
-  typeof SubmissionGradingContextEmbeddingSchema
->;
-
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
@@ -1654,7 +1627,6 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
-  'submission_grading_context_embeddings',
   'submissions',
   'tags',
   'time_series',

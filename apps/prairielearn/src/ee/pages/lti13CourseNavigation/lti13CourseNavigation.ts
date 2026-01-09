@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { type HtmlSafeString, html, joinHtml } from '@prairielearn/html';
@@ -12,6 +11,7 @@ import {
   CourseInstanceSchema,
   Lti13CourseInstanceSchema,
 } from '../../../lib/db-types.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { selectCourseInstancesWithStaffAccess } from '../../../models/course-instances.js';
 import { selectCoursesWithEditAccess } from '../../../models/course.js';
 import { Lti13Claim } from '../../lib/lti13.js';
@@ -76,7 +76,7 @@ async function coursesAllowedToLink({
 
 router.get(
   '/course_instances',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const unsafe_course_id = req.query.unsafe_course_id?.toString();
     if (!unsafe_course_id) {
       throw new HttpStatusError(400, 'Missing required parameter: unsafe_course_id');
@@ -123,7 +123,7 @@ router.get(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if ('done' in req.query) {
       res.send(
         Lti13CourseNavigationDone({
@@ -208,7 +208,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const { authzData, courseInstance } = await constructCourseOrInstanceContext({
       user: res.locals.authn_user,
       course_id: null,

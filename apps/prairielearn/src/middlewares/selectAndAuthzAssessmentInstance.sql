@@ -57,14 +57,14 @@ SELECT
   assessment_instance_label (ai, a, aset) AS assessment_instance_label,
   aset.abbreviation || a.number AS assessment_label,
   fl.list AS file_list,
-  to_jsonb(g) AS instance_group,
-  teams_uid_list (g.id) AS instance_group_uid_list
+  to_jsonb(t) AS instance_team,
+  teams_uid_list (t.id) AS instance_team_uid_list
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN teams AS g ON (g.id = ai.team_id) -- Ignore deleted_at, as we want to show the team even if it's deleted
+  LEFT JOIN teams AS t ON (t.id = ai.team_id) -- Ignore deleted_at, as we want to show the team even if it's deleted
   LEFT JOIN users AS u ON (u.id = ai.user_id) -- Only used for non-team instances
   JOIN LATERAL authz_assessment_instance (
     ai.id,

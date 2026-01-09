@@ -1,7 +1,6 @@
 import assert from 'node:assert';
 import * as path from 'path';
 
-import { type Temporal } from '@js-temporal/polyfill';
 import * as async from 'async';
 import sha256 from 'crypto-js/sha256.js';
 import debugfn from 'debug';
@@ -9,7 +8,6 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
-import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -201,27 +199,14 @@ export async function getOrigHash(path: string) {
  * that accepts a value and returns a boolean to indicate if it should be considered
  * a default value.
  *
- * You should set `isUIBoolean` to true if the property is a UI boolean that controls whether another field is enabled.
- * For example, `beforeDateEnabled` is a UI boolean that controls whether the `beforeDate` field is enabled.
  */
-export function propertyValueWithDefault(
-  existingValue: any,
-  newValue: any,
-  defaultValue: any,
-  { isUIBoolean = false }: { isUIBoolean?: boolean } = {},
-) {
+export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
   const isExistingDefault =
     typeof defaultValue === 'function'
       ? defaultValue(existingValue)
       : existingValue === defaultValue;
   const isNewDefault =
     typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
-
-  // If this is a UI boolean where the default value is false, we want to write that out as false, not as undefined.
-  const writeFalse = isUIBoolean && defaultValue === false && newValue === false;
-  if (writeFalse) {
-    return false;
-  }
 
   if (existingValue === undefined) {
     if (!isNewDefault) {
@@ -958,13 +943,7 @@ export class CourseInstanceCopyEditor extends Editor {
     await fs.copy(this.from_path, toPath, { overwrite: false, errorOnExist: true });
 
     debug('Read infoCourseInstance.json');
-    let infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
-
-    // Clear access rules to avoid leaking student PII or unexpectedly
-    // making the copied course instance available to users.
-    // Note: this means that copied course instances will be switched to the modern publishing
-    // system.
-    infoJson.allowAccess = undefined;
+    const infoJson = await fs.readJson(path.join(courseInstancePath, 'infoCourseInstance.json'));
 
     const pathsToAdd: string[] = [];
     if (this.is_transfer) {
@@ -1063,12 +1042,16 @@ export class CourseInstanceCopyEditor extends Editor {
     infoJson.longName = longName;
     infoJson.uuid = this.uuid;
 
+    // Clear access rules to avoid leaking student PII or unexpectedly
+    // making the copied course instance available to users.
+    // Note: this means that copied course instances will be switched to the modern publishing
+    // system.
+    delete infoJson.allowAccess;
+
     // We do not want to preserve sharing settings when copying a course instance
     delete infoJson.shareSourcePublicly;
 
-    if (this.metadataOverrides) {
-      infoJson = { ...infoJson, ...this.metadataOverrides };
-    }
+    Object.assign(infoJson, this.metadataOverrides ?? {});
 
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
     await fs.writeFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson);
@@ -1229,15 +1212,13 @@ export class CourseInstanceAddEditor extends Editor {
   public readonly uuid: string;
   private short_name: string;
   private long_name: string;
-  private start_access_date?: Temporal.ZonedDateTime;
-  private end_access_date?: Temporal.ZonedDateTime;
+  private metadataOverrides?: Record<string, any>;
 
   constructor(
     params: BaseEditorOptions & {
       short_name: string;
       long_name: string;
-      start_access_date?: Temporal.ZonedDateTime;
-      end_access_date?: Temporal.ZonedDateTime;
+      metadataOverrides?: Record<string, any>;
     },
   ) {
     super({
@@ -1249,17 +1230,7 @@ export class CourseInstanceAddEditor extends Editor {
 
     this.short_name = params.short_name;
     this.long_name = params.long_name;
-
-    if (
-      params.start_access_date &&
-      params.end_access_date &&
-      params.start_access_date.epochMilliseconds > params.end_access_date.epochMilliseconds
-    ) {
-      throw new HttpStatusError(400, 'Start date must be before end date');
-    }
-
-    this.start_access_date = params.start_access_date;
-    this.end_access_date = params.end_access_date;
+    this.metadataOverrides = params.metadataOverrides;
   }
 
   async write() {
@@ -1290,35 +1261,11 @@ export class CourseInstanceAddEditor extends Editor {
 
     debug('Write infoCourseInstance.json');
 
-    const publishing = {
-      startDate: this.start_access_date
-        ? formatDate(
-            new Date(this.start_access_date.epochMilliseconds),
-            this.course.display_timezone,
-            {
-              includeTz: false,
-            },
-          )
-        : undefined,
-      endDate: this.end_access_date
-        ? formatDate(
-            new Date(this.end_access_date.epochMilliseconds),
-            this.course.display_timezone,
-            {
-              includeTz: false,
-            },
-          )
-        : undefined,
-    };
-
     const infoJson: Record<string, any> = {
       uuid: this.uuid,
       longName: this.long_name,
+      ...this.metadataOverrides,
     };
-
-    if (publishing.startDate || publishing.endDate) {
-      infoJson.publishing = publishing;
-    }
 
     // We use outputJson to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
