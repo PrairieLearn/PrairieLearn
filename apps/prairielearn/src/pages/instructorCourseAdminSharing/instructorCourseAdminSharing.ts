@@ -68,6 +68,10 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'course'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_own) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
+    }
+
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
