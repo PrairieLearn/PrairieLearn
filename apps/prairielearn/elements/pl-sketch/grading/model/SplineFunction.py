@@ -103,7 +103,9 @@ class SplineFunction(MultiFunction):
             p = p_info.pop(0)
             points.append(p)
             if len(points) == 4:
-                curve = CurveFunction(self.xaxis, self.yaxis, points)
+                curve = CurveFunction(
+                    self.xaxis, self.yaxis, points, self.grader, self.current_tool
+                )
                 self.functions.append(curve)  # KEEPING CURVE??
                 points = [points[-1]]
 

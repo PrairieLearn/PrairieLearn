@@ -607,7 +607,7 @@ def check_ltgt(
     y = grader["y"]
     func = parse_function_string(grader["fun"]) if grader["fun"] else None
 
-    tolerance = screen_to_graph_submission(submission, False, grader["tolerance"])
+    tolerance = grader["tolerance"]
 
     correct = True
     num_tools_in_range = 0

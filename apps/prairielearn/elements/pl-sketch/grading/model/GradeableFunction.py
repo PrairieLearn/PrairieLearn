@@ -146,7 +146,6 @@ class GradeableFunction(MultipleSplinesFunction):  # noqa: PLR0904
                     self.yaxis,
                     submission_data[i]["spline"],
                     self.grader,
-                    self.submission,
                     self.current_tool,
                 )
                 self.functions.append(spline)
@@ -332,7 +331,7 @@ class GradeableFunction(MultipleSplinesFunction):  # noqa: PLR0904
         for p in points:
             if count_incorrect > max_incorrect:
                 return False
-            if not self.point_ltgt_function(self, p, func, greater, tolerance):
+            if not self.point_ltgt_function((p[0], p[1]), func, greater, tolerance):
                 count_incorrect += 1  # see if we want to do a nicer tolerance for how many points can be off.
         return count_incorrect <= max_incorrect
 

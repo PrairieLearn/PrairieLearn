@@ -47,10 +47,11 @@ class MultipleSplinesFunction(MultiFunction):  # noqa: PLR0904
         functions=[],
         tolerance=dict(),
     ):
+        self.submission = submission
         super().__init__(
             xaxis, yaxis, path_info, grader, current_tool, functions, tolerance
         )
-        self.submission = submission
+
         self.set_default_tolerance("gap", 40)  # allow gaps up to x pixels in size
         self.set_default_tolerance(
             "angle", 10
