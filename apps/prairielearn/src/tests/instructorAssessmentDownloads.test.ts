@@ -6,12 +6,12 @@ import fetch from 'node-fetch';
 import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { config } from '../lib/config.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 import { selectAssessmentSetById } from '../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
-import { config } from '../lib/config.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
 
@@ -367,18 +367,25 @@ describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, fu
       groupLocals.assessment_id = assessment.id;
       groupLocals.siteUrl = 'http://localhost:' + config.serverPort;
       groupLocals.courseInstanceBaseUrl = groupLocals.siteUrl + '/pl/course_instance/1';
-      groupLocals.assessmentUrl = groupLocals.courseInstanceBaseUrl + '/assessment/' + assessment.id;
+      groupLocals.assessmentUrl =
+        groupLocals.courseInstanceBaseUrl + '/assessment/' + assessment.id;
       groupLocals.instructorAssessmentGroupsUrl =
         groupLocals.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/groups';
       groupLocals.instructorAssessmentDownloadsUrl =
-        groupLocals.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/downloads';
+        groupLocals.courseInstanceBaseUrl +
+        '/instructor/assessment/' +
+        assessment.id +
+        '/downloads';
     });
   });
 
   describe('2. Create users and team via instructor interface', function () {
     it('should create 2 users for the team', async () => {
       // exam14-groupWork requires minimum 2 users
-      groupLocals.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
+      groupLocals.studentUsers = await generateAndEnrollUsers({
+        count: 2,
+        course_instance_id: '1',
+      });
       assert.lengthOf(groupLocals.studentUsers, 2);
     });
 
@@ -535,7 +542,11 @@ describe('Instructor Assessment Downloads - Group Work', { timeout: 60_000 }, fu
           } else if (filename.endsWith('.zip')) {
             const zipContent = Buffer.from(await res.arrayBuffer());
             const zip = await unzipper.Open.buffer(zipContent);
-            assert.isAtLeast(zip.files.length, 1, `ZIP file ${filename} should have at least 1 file`);
+            assert.isAtLeast(
+              zip.files.length,
+              1,
+              `ZIP file ${filename} should have at least 1 file`,
+            );
           } else {
             assert.fail(`Unknown file type: ${filename}`);
           }
