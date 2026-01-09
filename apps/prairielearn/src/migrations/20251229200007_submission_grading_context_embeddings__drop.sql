@@ -1,0 +1,1 @@
+DROP TABLE IF EXISTS submission_grading_context_embeddings CASCADE;

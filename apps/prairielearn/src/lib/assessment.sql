@@ -19,7 +19,7 @@ WITH
       ai.assessment_id = $assessment_id
       AND (
         CASE
-          WHEN $group_id::bigint IS NOT NULL THEN ai.group_id = $group_id
+          WHEN $team_id::bigint IS NOT NULL THEN ai.team_id = $team_id
           ELSE ai.user_id = $user_id
         END
       )
@@ -34,7 +34,7 @@ WITH
         auth_user_id,
         assessment_id,
         user_id,
-        group_id,
+        team_id,
         mode,
         auto_close,
         date_limit,
@@ -46,9 +46,9 @@ WITH
       $authn_user_id,
       $assessment_id,
       CASE
-        WHEN $group_id::bigint IS NULL THEN $user_id
+        WHEN $team_id::bigint IS NULL THEN $user_id
       END,
-      $group_id,
+      $team_id,
       $mode,
       a.auto_close
       AND a.type = 'Exam',
@@ -90,26 +90,26 @@ WITH
   -- Use separate CTEs for last_access because Postgres does not support
   -- multiple ON CONFLICT clauses in a single INSERT statement. Only one of
   -- these CTEs will actually insert a row.
-  inserted_last_access_group AS (
+  inserted_last_access_team AS (
     INSERT INTO
-      last_accesses (group_id, last_access)
+      last_accesses (team_id, last_access)
     SELECT
-      $group_id,
+      $team_id,
       current_timestamp
     WHERE
-      $group_id::bigint IS NOT NULL
-    ON CONFLICT (group_id) DO UPDATE
+      $team_id::bigint IS NOT NULL
+    ON CONFLICT (team_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
   ),
-  inserted_last_access_non_group AS (
+  inserted_last_access_non_team AS (
     INSERT INTO
       last_accesses (user_id, last_access)
     SELECT
       $user_id,
       current_timestamp
     WHERE
-      $group_id::bigint IS NULL
+      $team_id::bigint IS NULL
     ON CONFLICT (user_id) DO UPDATE
     SET
       last_access = EXCLUDED.last_access
@@ -275,7 +275,7 @@ WITH
         authn_user_id,
         course_id,
         user_id,
-        group_id,
+        team_id,
         table_name,
         row_id,
         action,
@@ -285,7 +285,7 @@ WITH
       $authn_user_id,
       ci.course_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'instance_questions',
       iq.id,
       'insert',
@@ -353,7 +353,7 @@ WITH
         authn_user_id,
         course_id,
         user_id,
-        group_id,
+        team_id,
         table_name,
         column_name,
         row_id,
@@ -365,7 +365,7 @@ WITH
       $authn_user_id,
       ci.course_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'assessment_instances',
       'max_points',
       ai.id,
@@ -397,15 +397,15 @@ FROM
 SELECT
   ai.id AS assessment_instance_id,
   ai.number AS instance_number,
-  COALESCE(u.uid, 'group ' || g.name) AS username
+  COALESCE(u.uid, 'group ' || t.name) AS username
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN groups AS g ON (
-    g.id = ai.group_id
-    AND g.deleted_at IS NULL
+  LEFT JOIN teams AS t ON (
+    t.id = ai.team_id
+    AND t.deleted_at IS NULL
   )
-  LEFT JOIN users AS u ON (u.user_id = ai.user_id)
+  LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
   AND ai.open;
@@ -503,7 +503,7 @@ FROM
   JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
   JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
   JOIN questions AS q ON (q.id = v.question_id)
-  JOIN pl_courses AS vc ON (vc.id = v.course_id)
+  JOIN courses AS vc ON (vc.id = v.course_id)
 WHERE
   ai.id = $assessment_instance_id
 ORDER BY
@@ -569,22 +569,22 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.deleted_at IS NULL
+      -- Only select teams that are not soft-deleted
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
       a.id = $assessment_id
       AND ai.include_in_statistics
     GROUP BY
-      u.user_id
+      u.id
   ),
   score_stats AS (
     SELECT
@@ -656,15 +656,15 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.deleted_at IS NULL
+      -- Only select teams that are not soft-deleted
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
@@ -713,15 +713,15 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      -- Only select groups that are not soft-deleted
-      LEFT JOIN groups AS g ON (
-        g.id = ai.group_id
-        AND g.deleted_at IS NULL
+      -- Only select teams that are not soft-deleted
+      LEFT JOIN teams AS t ON (
+        t.id = ai.team_id
+        AND t.deleted_at IS NULL
       )
-      LEFT JOIN group_users AS gu ON (gu.group_id = g.id)
-      JOIN users AS u ON (u.user_id = COALESCE(ai.user_id, gu.user_id))
+      LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+      JOIN users AS u ON (u.id = COALESCE(ai.user_id, tu.user_id))
       JOIN enrollments AS e ON (
-        e.user_id = u.user_id
+        e.user_id = u.id
         AND e.course_instance_id = a.course_instance_id
       )
     WHERE
@@ -797,22 +797,22 @@ FROM
 
 -- BLOCK assessment_instance_log
 WITH
-  ai_group_users AS (
-    -- This selects not only all users who are currently in the group,
-    -- but all users who were EVER in the group at some point. We've
-    -- seen real-world examples of a user creating and joining a group,
-    -- completing the assessment, and then leaving the group. If we
-    -- didn't include past group members as well, we'd end up with an
+  ai_team_users AS (
+    -- This selects not only all users who are currently in the team,
+    -- but all users who were EVER in the team at some point. We've
+    -- seen real-world examples of a user creating and joining a team,
+    -- completing the assessment, and then leaving the team. If we
+    -- didn't include past team members as well, we'd end up with an
     -- assessment log that didn't include any `page_view_logs` events,
     -- which would be undesirable for the instructor.
     SELECT
-      gl.user_id
+      tl.user_id
     FROM
       assessment_instances AS ai
-      JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
+      JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
     WHERE
       ai.id = $assessment_instance_id
-      AND gl.action = 'join'
+      AND tl.action = 'join'
   ),
   user_page_view_logs AS (
     SELECT
@@ -823,15 +823,15 @@ WITH
     WHERE
       pvl.assessment_instance_id = $assessment_instance_id
       -- Include events for the assessment's owner and, in case of
-      -- group assessments, for any user that at some point was part
-      -- of the group.
+      -- team assessments, for any user that at some point was part
+      -- of the team.
       AND (
         pvl.authn_user_id = ai.user_id
         OR pvl.authn_user_id IN (
           SELECT
             *
           FROM
-            ai_group_users
+            ai_team_users
         )
       )
   ),
@@ -842,7 +842,7 @@ WITH
         'Begin'::text AS event_name,
         'gray3'::text AS event_color,
         ai.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -855,7 +855,7 @@ WITH
         NULL::jsonb AS data
       FROM
         assessment_instances AS ai
-        LEFT JOIN users AS u ON (u.user_id = ai.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = ai.auth_user_id)
       WHERE
         ai.id = $assessment_instance_id
     )
@@ -866,7 +866,7 @@ WITH
         'New variant'::text AS event_name,
         'gray1'::text AS event_color,
         v.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -894,7 +894,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = v.authn_user_id)
+        LEFT JOIN users AS u ON (u.id = v.authn_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
     )
@@ -905,7 +905,7 @@ WITH
         'Broken variant'::text AS event_name,
         'red3'::text AS event_color,
         v.broken_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -921,7 +921,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = v.broken_by)
+        LEFT JOIN users AS u ON (u.id = v.broken_by)
       WHERE
         v.broken_at IS NOT NULL
         AND iq.assessment_instance_id = $assessment_instance_id
@@ -933,7 +933,7 @@ WITH
         'Submission'::text AS event_name,
         'blue3'::text AS event_color,
         s.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -971,7 +971,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = s.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
     )
@@ -982,7 +982,7 @@ WITH
         'External grading results'::text AS event_name,
         'blue1'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1000,7 +1000,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = s.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = s.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'External'
@@ -1016,7 +1016,7 @@ WITH
         END AS event_name,
         'blue2'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1073,7 +1073,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
         LEFT JOIN rubric_gradings AS rg ON (rg.id = gj.manual_rubric_grading_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
@@ -1088,7 +1088,7 @@ WITH
         'AI grading results deleted'::text AS event_name,
         'red2'::text AS event_color,
         gj.deleted_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1107,7 +1107,7 @@ WITH
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
         -- Show the user that actually deleted the grading job, if available.
-        LEFT JOIN users AS u ON (u.user_id = gj.deleted_by)
+        LEFT JOIN users AS u ON (u.id = gj.deleted_by)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method IN ('AI')
@@ -1120,7 +1120,7 @@ WITH
         'Grade submission'::text AS event_name,
         'orange3'::text AS event_color,
         gj.graded_at AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1152,7 +1152,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
       WHERE
         iq.assessment_instance_id = $assessment_instance_id
         AND gj.grading_method = 'Internal'
@@ -1165,7 +1165,7 @@ WITH
         'Score question'::text AS event_name,
         'brown1'::text AS event_color,
         qsl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1190,7 +1190,7 @@ WITH
         JOIN instance_questions AS iq ON (iq.id = qsl.instance_question_id)
         JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
         JOIN questions AS q ON (q.id = aq.question_id)
-        LEFT JOIN users AS u ON (u.user_id = qsl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = qsl.auth_user_id)
         LEFT JOIN grading_jobs AS gj ON (gj.id = qsl.grading_job_id)
         LEFT JOIN submissions AS s ON (s.id = gj.submission_id)
         LEFT JOIN variants AS v ON (v.id = s.variant_id)
@@ -1204,7 +1204,7 @@ WITH
         'Score assessment'::text AS event_name,
         'brown3'::text AS event_color,
         asl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1224,7 +1224,7 @@ WITH
         ) AS data
       FROM
         assessment_score_logs AS asl
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
     )
@@ -1238,7 +1238,7 @@ WITH
         END AS event_name,
         'gray3'::text AS event_color,
         asl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1273,7 +1273,7 @@ WITH
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
         JOIN assessments AS a ON (a.id = ai.assessment_id)
         JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
     )
@@ -1284,7 +1284,7 @@ WITH
         'Time limit expiry'::text AS event_name,
         'red2'::text AS event_color,
         asl.date_limit AS date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1301,7 +1301,7 @@ WITH
       FROM
         assessment_state_logs AS asl
         JOIN assessment_instances AS ai ON (ai.id = $assessment_instance_id)
-        LEFT JOIN users AS u ON (u.user_id = asl.auth_user_id)
+        LEFT JOIN users AS u ON (u.id = asl.auth_user_id)
       WHERE
         asl.assessment_instance_id = $assessment_instance_id
         AND asl.open
@@ -1329,7 +1329,7 @@ WITH
         'View variant'::text AS event_name,
         'green3'::text AS event_color,
         pvl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         q.qid,
         q.id AS question_id,
@@ -1345,7 +1345,7 @@ WITH
         JOIN variants AS v ON (v.id = pvl.variant_id)
         JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
         JOIN questions AS q ON (q.id = pvl.question_id)
-        JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        JOIN users AS u ON (u.id = pvl.authn_user_id)
         JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
       WHERE
         pvl.page_type = 'studentInstanceQuestion'
@@ -1357,7 +1357,7 @@ WITH
         'View assessment overview'::text AS event_name,
         'green1'::text AS event_color,
         pvl.date,
-        u.user_id AS auth_user_id,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1370,7 +1370,7 @@ WITH
         NULL::jsonb AS data
       FROM
         user_page_view_logs AS pvl
-        JOIN users AS u ON (u.user_id = pvl.authn_user_id)
+        JOIN users AS u ON (u.id = pvl.authn_user_id)
         JOIN assessment_instances AS ai ON (ai.id = pvl.assessment_instance_id)
       WHERE
         pvl.page_type = 'studentAssessmentInstance'
@@ -1379,10 +1379,10 @@ WITH
     (
       SELECT
         10 AS event_order,
-        ('Group ' || gl.action)::text AS event_name,
+        ('Group ' || tl.action)::text AS event_name,
         'gray2'::text AS event_color,
-        gl.date,
-        u.user_id AS auth_user_id,
+        tl.date,
+        u.id AS auth_user_id,
         u.uid AS auth_user_uid,
         NULL::text AS qid,
         NULL::integer AS question_id,
@@ -1390,16 +1390,16 @@ WITH
         NULL::integer AS variant_id,
         NULL::integer AS variant_number,
         NULL::integer AS submission_id,
-        gl.id AS log_id,
+        tl.id AS log_id,
         NULL::bigint AS client_fingerprint_id,
         jsonb_strip_nulls(
-          jsonb_build_object('user', gu.uid, 'roles', gl.roles)
+          jsonb_build_object('user', tu.uid, 'roles', tl.roles)
         ) AS data
       FROM
         assessment_instances AS ai
-        JOIN group_logs AS gl ON (gl.group_id = ai.group_id)
-        JOIN users AS u ON (u.user_id = gl.authn_user_id)
-        LEFT JOIN users AS gu ON (gu.user_id = gl.user_id)
+        JOIN team_logs AS tl ON (tl.team_id = ai.team_id)
+        JOIN users AS u ON (u.id = tl.authn_user_id)
+        LEFT JOIN users AS tu ON (tu.id = tl.user_id)
       WHERE
         ai.id = $assessment_instance_id
     )
@@ -1466,28 +1466,28 @@ WITH
   relevant_instance_questions AS (
     SELECT DISTINCT
       iq.*,
-      -- Determine a unique ID for each user or group by making group IDs
-      -- negative. Exactly one of user_id or group_id will be NULL, so this
+      -- Determine a unique ID for each user or team by making team IDs
+      -- negative. Exactly one of user_id or team_id will be NULL, so this
       -- results in a unqiue non-NULL ID for each assessment instance.
-      coalesce(ai.user_id, - ai.group_id) AS u_gr_id
+      coalesce(ai.user_id, - ai.team_id) AS u_tm_id
     FROM
       instance_questions AS iq
       JOIN relevant_assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
     WHERE
       iq.assessment_question_id = $assessment_question_id
   ),
-  assessment_scores_by_user_or_group AS (
+  assessment_scores_by_user_or_team AS (
     SELECT
-      coalesce(ai.user_id, - ai.group_id) AS u_gr_id,
+      coalesce(ai.user_id, - ai.team_id) AS u_tm_id,
       max(ai.score_perc) AS score_perc
     FROM
       relevant_assessment_instances AS ai
     GROUP BY
-      coalesce(ai.user_id, - ai.group_id)
+      coalesce(ai.user_id, - ai.team_id)
   ),
-  question_stats_by_user_or_group AS (
+  question_stats_by_user_or_team AS (
     SELECT
-      iq.u_gr_id,
+      iq.u_tm_id,
       avg(iq.score_perc) AS score_perc,
       100 * count(iq.id) FILTER (
         WHERE
@@ -1512,24 +1512,24 @@ WITH
     FROM
       relevant_instance_questions AS iq
     GROUP BY
-      iq.u_gr_id
+      iq.u_tm_id
   ),
   user_quintiles AS (
     SELECT
-      assessment_scores_by_user_or_group.u_gr_id,
+      assessment_scores_by_user_or_team.u_tm_id,
       ntile(5) OVER (
         ORDER BY
-          assessment_scores_by_user_or_group.score_perc
+          assessment_scores_by_user_or_team.score_perc
       ) AS quintile
     FROM
-      assessment_scores_by_user_or_group
+      assessment_scores_by_user_or_team
   ),
   quintile_scores AS (
     SELECT
-      avg(question_stats_by_user_or_group.score_perc) AS quintile_score
+      avg(question_stats_by_user_or_team.score_perc) AS quintile_score
     FROM
-      question_stats_by_user_or_group
-      JOIN user_quintiles USING (u_gr_id)
+      question_stats_by_user_or_team
+      JOIN user_quintiles USING (u_tm_id)
     GROUP BY
       user_quintiles.quintile
     ORDER BY
@@ -1545,126 +1545,119 @@ WITH
     SELECT
       least(
         100,
-        greatest(
-          0,
-          avg(question_stats_by_user_or_group.score_perc)
-        )
+        greatest(0, avg(question_stats_by_user_or_team.score_perc))
       ) AS mean_question_score,
       percentile_cont(0.5) WITHIN GROUP (
         ORDER BY
-          question_stats_by_user_or_group.score_perc
+          question_stats_by_user_or_team.score_perc
       ) AS median_question_score,
       sqrt(
-        var_pop(question_stats_by_user_or_group.score_perc)
+        var_pop(question_stats_by_user_or_team.score_perc)
       ) AS question_score_variance,
       coalesce(
         corr(
-          question_stats_by_user_or_group.score_perc,
-          assessment_scores_by_user_or_group.score_perc
+          question_stats_by_user_or_team.score_perc,
+          assessment_scores_by_user_or_team.score_perc
         ) * 100,
         CASE
-          WHEN count(question_stats_by_user_or_group.score_perc) > 0 THEN 0
+          WHEN count(question_stats_by_user_or_team.score_perc) > 0 THEN 0
           ELSE NULL
         END
       ) AS discrimination,
       avg(
-        question_stats_by_user_or_group.some_submission_perc
+        question_stats_by_user_or_team.some_submission_perc
       ) AS some_submission_perc,
       avg(
-        question_stats_by_user_or_group.some_perfect_submission_perc
+        question_stats_by_user_or_team.some_perfect_submission_perc
       ) AS some_perfect_submission_perc,
       avg(
-        question_stats_by_user_or_group.some_nonzero_submission_perc
+        question_stats_by_user_or_team.some_nonzero_submission_perc
       ) AS some_nonzero_submission_perc,
       avg(
-        question_stats_by_user_or_group.first_submission_score
+        question_stats_by_user_or_team.first_submission_score
       ) AS average_first_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_group.first_submission_score
+          question_stats_by_user_or_team.first_submission_score
         )
       ) AS first_submission_score_variance,
       histogram (
-        question_stats_by_user_or_group.first_submission_score,
+        question_stats_by_user_or_team.first_submission_score,
         0,
         1,
         10
       ) AS first_submission_score_hist,
       avg(
-        question_stats_by_user_or_group.last_submission_score
+        question_stats_by_user_or_team.last_submission_score
       ) AS average_last_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_group.last_submission_score
+          question_stats_by_user_or_team.last_submission_score
         )
       ) AS last_submission_score_variance,
       histogram (
-        question_stats_by_user_or_group.last_submission_score,
+        question_stats_by_user_or_team.last_submission_score,
         0,
         1,
         10
       ) AS last_submission_score_hist,
       avg(
-        question_stats_by_user_or_group.max_submission_score
+        question_stats_by_user_or_team.max_submission_score
       ) AS average_max_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_group.max_submission_score
+          question_stats_by_user_or_team.max_submission_score
         )
       ) AS max_submission_score_variance,
       histogram (
-        question_stats_by_user_or_group.max_submission_score,
+        question_stats_by_user_or_team.max_submission_score,
         0,
         1,
         10
       ) AS max_submission_score_hist,
       avg(
-        question_stats_by_user_or_group.average_submission_score
+        question_stats_by_user_or_team.average_submission_score
       ) AS average_average_submission_score,
       sqrt(
         var_pop(
-          question_stats_by_user_or_group.average_submission_score
+          question_stats_by_user_or_team.average_submission_score
         )
       ) AS average_submission_score_variance,
       histogram (
-        question_stats_by_user_or_group.average_submission_score,
+        question_stats_by_user_or_team.average_submission_score,
         0,
         1,
         10
       ) AS average_submission_score_hist,
       array_avg (
-        question_stats_by_user_or_group.submission_score_array
+        question_stats_by_user_or_team.submission_score_array
       ) AS submission_score_array_averages,
       array_var (
-        question_stats_by_user_or_group.submission_score_array
+        question_stats_by_user_or_team.submission_score_array
       ) AS submission_score_array_variances,
       array_avg (
-        question_stats_by_user_or_group.incremental_submission_score_array
+        question_stats_by_user_or_team.incremental_submission_score_array
       ) AS incremental_submission_score_array_averages,
       array_var (
-        question_stats_by_user_or_group.incremental_submission_score_array
+        question_stats_by_user_or_team.incremental_submission_score_array
       ) AS incremental_submission_score_array_variances,
       array_avg (
-        question_stats_by_user_or_group.incremental_submission_points_array
+        question_stats_by_user_or_team.incremental_submission_points_array
       ) AS incremental_submission_points_array_averages,
       array_var (
-        question_stats_by_user_or_group.incremental_submission_points_array
+        question_stats_by_user_or_team.incremental_submission_points_array
       ) AS incremental_submission_points_array_variances,
-      avg(
-        question_stats_by_user_or_group.number_submissions
-      ) AS average_number_submissions,
-      var_pop(
-        question_stats_by_user_or_group.number_submissions
-      ) AS number_submissions_variance,
+      avg(question_stats_by_user_or_team.number_submissions) AS average_number_submissions,
+      var_pop(question_stats_by_user_or_team.number_submissions) AS number_submissions_variance,
       histogram (
-        question_stats_by_user_or_group.number_submissions,
+        question_stats_by_user_or_team.number_submissions,
         0,
         10,
         10
       ) AS number_submissions_hist
     FROM
-      question_stats_by_user_or_group
-      JOIN assessment_scores_by_user_or_group USING (u_gr_id)
+      question_stats_by_user_or_team
+      JOIN assessment_scores_by_user_or_team USING (u_tm_id)
   )
 UPDATE assessment_questions AS aq
 SET
@@ -1736,7 +1729,7 @@ WITH
         course_id,
         course_instance_id,
         user_id,
-        group_id,
+        team_id,
         table_name,
         row_id,
         action,
@@ -1747,7 +1740,7 @@ WITH
       ci.course_id,
       a.course_instance_id,
       ai.user_id,
-      ai.group_id,
+      ai.team_id,
       'assessment_instances',
       ai.id,
       'delete',
@@ -1777,7 +1770,7 @@ INSERT INTO
     course_id,
     course_instance_id,
     user_id,
-    group_id,
+    team_id,
     table_name,
     row_id,
     action,
@@ -1788,7 +1781,7 @@ SELECT
   ci.course_id,
   a.course_instance_id,
   ai.user_id,
-  ai.group_id,
+  ai.team_id,
   'assessment_instances',
   ai.id,
   'delete',

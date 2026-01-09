@@ -22,7 +22,7 @@ import type { JobSequenceResultsData } from '../components/JobSequenceResults.js
 
 import { ansiToHtml, chalk } from './chalk.js';
 import { config } from './config.js';
-import { type Job, JobSchema, JobSequenceSchema } from './db-types.js';
+import { type EnumJobStatus, type Job, JobSchema, JobSequenceSchema } from './db-types.js';
 import { JobSequenceWithJobsSchema, type JobSequenceWithTokens } from './server-jobs.types.js';
 import * as socketServer from './socket-server.js';
 
@@ -33,9 +33,9 @@ interface CreateServerJobOptionsBase {
   type: string;
   /** A description of the job. */
   description: string;
-  /** The effective user ID (res.locals.authz_data.user.user_id) */
+  /** The effective user ID (res.locals.authz_data.user.id) */
   userId: string | null;
-  /** The authenticated user ID (res.locals.authz_data.authn_user.user_id) */
+  /** The authenticated user ID (res.locals.authz_data.authn_user.id) */
   authnUserId: string | null;
   /** The course request ID */
   courseRequestId?: string;
@@ -46,12 +46,14 @@ type CreateServerJobOptions =
       courseId?: string;
       courseInstanceId?: undefined;
       assessmentId?: undefined;
+      assessmentQuestionId?: undefined;
     })
   | (CreateServerJobOptionsBase & {
       /** Required when courseInstanceId is provided. */
       courseId: string;
       courseInstanceId: string;
       assessmentId?: undefined;
+      assessmentQuestionId?: undefined;
     })
   | (CreateServerJobOptionsBase & {
       /** Required when assessmentId is provided. */
@@ -59,6 +61,16 @@ type CreateServerJobOptions =
       /** Required when assessmentId is provided. */
       courseInstanceId: string;
       assessmentId: string;
+      assessmentQuestionId?: undefined;
+    })
+  | (CreateServerJobOptionsBase & {
+      /** Required when assessmentQuestionId is provided. */
+      courseId: string;
+      /** Required when assessmentQuestionId is provided. */
+      courseInstanceId: string;
+      /** Required when assessmentQuestionId is provided. */
+      assessmentId: string;
+      assessmentQuestionId: string;
     });
 
 interface ServerJobExecOptions {
@@ -321,6 +333,7 @@ export async function createServerJob(options: CreateServerJobOptions): Promise<
         course_instance_id: options.courseInstanceId,
         course_request_id: options.courseRequestId,
         assessment_id: options.assessmentId,
+        assessment_question_id: options.assessmentQuestionId,
         user_id: options.userId,
         authn_user_id: options.authnUserId,
         type: options.type,
@@ -540,4 +553,33 @@ export async function getJobSequence(
       return { ...job, token: generateSignedToken(jobTokenData, config.secretKey) };
     }),
   };
+}
+
+/**
+ * Retrieve the IDs of job sequences matching the provided filters.
+ */
+export async function getJobSequenceIds({
+  assessment_question_id,
+  course_id,
+  course_instance_id,
+  status,
+  type,
+}: {
+  assessment_question_id?: string;
+  course_id?: string;
+  course_instance_id?: string;
+  status?: EnumJobStatus;
+  type?: string;
+}) {
+  return await queryRows(
+    sql.select_job_sequence_ids,
+    {
+      assessment_question_id: assessment_question_id ?? null,
+      course_id: course_id ?? null,
+      course_instance_id: course_instance_id ?? null,
+      status: status ?? null,
+      type: type ?? null,
+    },
+    IdSchema,
+  );
 }
