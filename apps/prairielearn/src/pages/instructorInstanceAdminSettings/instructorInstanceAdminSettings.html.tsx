@@ -10,7 +10,7 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX } from '../../lib/short-name.js';
+import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -123,7 +123,6 @@ export function InstructorInstanceAdminSettings({
                 className={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
                 id="ciid"
                 aria-invalid={errors.ciid ? 'true' : 'false'}
-                pattern={SHORT_NAME_PATTERN}
                 disabled={!canEdit}
                 required
                 {...register('ciid', {

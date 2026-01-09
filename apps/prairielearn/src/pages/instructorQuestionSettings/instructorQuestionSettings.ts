@@ -171,6 +171,7 @@ router.post(
         })
         .parse(req.body);
 
+      // We want to make sure QIDs that were not modified are allowed, even if they don't match our valid short name pattern.
       if (!isValidShortName(body.qid) && body.qid !== res.locals.question.qid) {
         throw new error.HttpStatusError(
           400,
