@@ -27,3 +27,8 @@ echo "24b4596027c3173b4c08f0b1dc25edbf8153e83a5a1be9a8df507bdfdd1d328e  /tmp/ide
 tar -xzf /tmp/idea.tar.gz -C /opt/
 rm /tmp/idea.tar.gz
 mv /opt/idea-IC-*/ /opt/idea/
+
+# Set up IntelliJ IDEA to use the system Java.
+# The java binary is in the bin/ subdirectory of JAVA_HOME, so we go up two levels.
+JAVA_HOME=$(dirname $(dirname $(readlink -f $(which java))))
+ln -s $JAVA_HOME /opt/idea/java_home
