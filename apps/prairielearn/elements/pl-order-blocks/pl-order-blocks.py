@@ -777,7 +777,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = (
+        answer = list(
             solve_problem(correct_answers, grading_method, has_optional_blocks)
             if order_block_options.has_optional_blocks
             else correct_answers
