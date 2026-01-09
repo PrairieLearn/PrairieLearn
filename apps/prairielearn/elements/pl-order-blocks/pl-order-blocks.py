@@ -794,17 +794,45 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             GradingMethodType.DAG,
             GradingMethodType.RANKING,
         ]:
-            first_wrong = 0
-            group_belonging = {
-                ans["tag"]: ans["group_info"]["tag"]
-                for ans in data["correct_answers"][answer_name]
-            }
-            first_wrong_is_distractor = answer[first_wrong]["uuid"] in {
-                block["uuid"]
-                for block in get_distractors(
-                    data["params"][answer_name], correct_answers
-                )
-            }
+            # Determine first_wrong using the actual DAG grading logic
+            submission = [ans["tag"] for ans in answer]
+            depends_graph: Dag = {}
+            group_belonging: dict[str, str | None] = {}
+
+            if grading_method is GradingMethodType.RANKING:
+                sorted_answers = sorted(correct_answers, key=lambda x: int(x["ranking"]))
+                tag_to_rank = {ans["tag"]: ans["ranking"] for ans in sorted_answers}
+                lines_of_rank = {
+                    rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
+                    for rank in set(tag_to_rank.values())
+                }
+                cur_rank_depends: list[str] = []
+                prev_rank = None
+                for ans in sorted_answers:
+                    tag = ans["tag"]
+                    ranking = tag_to_rank[tag]
+                    if prev_rank is not None and ranking != prev_rank:
+                        cur_rank_depends = lines_of_rank[prev_rank]
+                    depends_graph[tag] = cur_rank_depends
+                    prev_rank = ranking
+            else:  # DAG
+                depends_graph, group_belonging = extract_dag(correct_answers)
+
+            num_initial_correct, _ = grade_dag(submission, depends_graph, group_belonging)
+            first_wrong = (
+                None if num_initial_correct == len(submission) else num_initial_correct
+            )
+
+            first_wrong_is_distractor = (
+                first_wrong is not None
+                and answer[first_wrong]["uuid"]
+                in {
+                    block["uuid"]
+                    for block in get_distractors(
+                        data["params"][answer_name], correct_answers
+                    )
+                }
+            )
             feedback = construct_feedback(
                 order_block_options.feedback,
                 first_wrong,
