@@ -7,9 +7,9 @@ RUN /bin/bash /pre-install.sh
 
 COPY pl-gosu-helper.sh /pl-gosu-helper.sh
 COPY start-vnc.sh /start-vnc.sh
-COPY config /opt/defaults/config
-COPY local /opt/defaults/local
-COPY java /opt/defaults/java
+COPY config /home/prairielearner/.config
+COPY local /home/prairielearner/.local
+COPY java /home/prairielearner/.java
 COPY openbox /etc/xdg/openbox
 COPY server /opt/server
 

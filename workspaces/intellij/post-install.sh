@@ -1,11 +1,11 @@
 #!/usr/bin/env bash
 set -ex
 
-cp /root/.profile /opt/defaults/.profile
-cp /root/.bashrc /opt/defaults/.bashrc
-echo "export HOME=/home/prairielearner" >> /opt/defaults/.bashrc
+cp /root/.profile /home/prairielearner/.profile
+cp /root/.bashrc /home/prairielearner/.bashrc
+echo "export HOME=/home/prairielearner" >> /home/prairielearner/.bashrc
 
-chown -R 1001:1001 /opt/defaults
+chown -R 1001:1001 /home/prairielearner
 chown -R root:root /opt/server
 
 npm install -g yarn

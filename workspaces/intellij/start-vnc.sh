@@ -1,14 +1,5 @@
 #!/usr/bin/env bash
 
-# Copy over config files
-cp -r /opt/defaults/config /home/prairielearner/.config
-cp -r /opt/defaults/local /home/prairielearner/.local
-cp -r /opt/defaults/java /home/prairielearner/.java
-cp /opt/defaults/.profile /home/prairielearner/.profile
-cp /opt/defaults/.bashrc /home/prairielearner/.bashrc
-
-chown -R 1001:1001 /home/prairielearner/.java /home/prairielearner/.config /home/prairielearner/.local /home/prairielearner/.profile /home/prairielearner/.bashrc
-
 # VNC -> Websocket proxy layer
 websockify :5901 localhost:5900 &
 
