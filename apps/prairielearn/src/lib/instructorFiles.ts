@@ -6,6 +6,13 @@ import { contains } from '@prairielearn/path-utils';
 
 import type { UntypedResLocals } from './res-locals.types.js';
 
+export type FileNavPage =
+  | 'course_admin'
+  | 'instance_admin'
+  | 'assessment'
+  | 'question'
+  | 'public_question';
+
 export interface InstructorFilePaths {
   coursePath: string;
   courseId: string;
@@ -35,7 +42,7 @@ export interface InstructorFilePaths {
 
 function getContextPaths(
   locals: UntypedResLocals,
-  navPage: 'course_admin' | 'instance_admin' | 'assessment' | 'question' | 'public_question',
+  navPage: FileNavPage,
 ): Pick<
   InstructorFilePaths,
   | 'rootPath'
@@ -115,7 +122,7 @@ function getContextPaths(
 export function getPaths(
   requestedPath: string | undefined,
   locals: UntypedResLocals,
-  navPage: 'course_admin' | 'instance_admin' | 'assessment' | 'question' | 'public_question',
+  navPage: FileNavPage,
 ): InstructorFilePaths {
   const coursePath: string = locals.course.path;
   const courseId: string = locals.course.id;

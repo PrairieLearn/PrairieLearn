@@ -6,10 +6,9 @@ import * as error from '@prairielearn/error';
 
 import { createFileBrowser } from '../../components/FileBrowser.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import type { NavPage } from '../../components/Navbar.types.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileDeleteEditor, FileRenameEditor, FileUploadEditor } from '../../lib/editors.js';
-import { getPaths } from '../../lib/instructorFiles.js';
+import { type FileNavPage, getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -22,7 +21,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_view'],
     unauthorizedUsers: 'passthrough',
   }),
-  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: NavPage }>(
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: FileNavPage }>(
     async (req, res) => {
       if (!res.locals.authz_data.has_course_permission_view) {
         // Access denied, but instead of sending them to an error page, we'll show
@@ -44,7 +43,7 @@ router.get(
         return;
       }
 
-      const paths = getPaths(req.params[0], res.locals);
+      const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
 
       try {
         const fileBrowser = await createFileBrowser({
@@ -67,13 +66,13 @@ router.get(
 
 router.post(
   '/*',
-  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: NavPage }>(
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: FileNavPage }>(
     async (req, res) => {
       if (!res.locals.authz_data.has_course_permission_edit) {
         throw new error.HttpStatusError(403, 'Access denied (must be a course Editor)');
       }
 
-      const paths = getPaths(req.params[0], res.locals);
+      const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
       const container = {
         rootPath: paths.rootPath,
         invalidRootPaths: paths.invalidRootPaths,
