@@ -1,9 +1,9 @@
 import { setTimeout as sleep } from 'timers/promises';
 
 import { parseLinkHeader } from '@web3-storage/parse-link-header';
+import { get } from 'es-toolkit/compat';
 import type { Request } from 'express';
 import * as jose from 'jose';
-import _ from 'lodash';
 import fetch, { type RequestInfo, type RequestInit, type Response } from 'node-fetch';
 import * as client from 'openid-client';
 import { z } from 'zod';
@@ -358,11 +358,10 @@ export class Lti13Claim {
     return role_instructor;
   }
 
-  get(property: _.PropertyPath): any {
+  get(property: Parameters<typeof get>[1]): any {
     this.assertValid();
-    // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-    // eslint-disable-next-line you-dont-need-lodash-underscore/get
-    return _.get(this.claims, property);
+    // Uses es-toolkit's get to expand path representation in text to the object, like 'a[0].b.c'
+    return get(this.claims, property);
   }
 
   /**

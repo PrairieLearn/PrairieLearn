@@ -1,7 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
-import _ from 'lodash';
+import { omit, sum, sumBy } from 'es-toolkit';
 import mustache from 'mustache';
 import { z } from 'zod';
 
@@ -346,9 +346,9 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.execute(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+            await sqldb.queryRow(sql.update_rubric_item, omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -420,7 +420,7 @@ export async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = _.sum(
+    const sum_rubric_item_points = sum(
       rubric_items.map(
         (item) =>
           (item.score ?? 1) *
@@ -532,11 +532,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          _.sumBy(
+          sumBy(
             Object.values(score.partial_scores),
             (value) => (value.score ?? 0) * (value.weight ?? 1),
           )) /
-        _.sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
+        sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 

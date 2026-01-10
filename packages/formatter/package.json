@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "lodash": "^4.17.21"
+    "es-toolkit": "^1.43.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

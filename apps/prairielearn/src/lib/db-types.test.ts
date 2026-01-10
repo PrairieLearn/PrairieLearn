@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { difference } from 'es-toolkit';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import type z from 'zod';
 
@@ -75,8 +75,8 @@ describe('Database Schema Sync Test', () => {
 
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys((schema as z.ZodObject<any>).shape);
-      const extraColumns = _.difference(dbColumnNames, schemaKeys);
-      const missingColumns = _.difference(schemaKeys, dbColumnNames);
+      const extraColumns = difference(dbColumnNames, schemaKeys);
+      const missingColumns = difference(schemaKeys, dbColumnNames);
 
       if (extraColumns.length > 0 || missingColumns.length > 0) {
         const extraColumnsDiff = extraColumns.map((column) => `+ ${column}`).join('\n');
@@ -104,8 +104,8 @@ describe('Database Schema Sync Test', () => {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);
     }
 
-    const remainingTableNames = _.difference(nonPtTables, TableNames);
-    const remainingSchemaNames = _.difference(TableNames, nonPtTables);
+    const remainingTableNames = difference(nonPtTables, TableNames);
+    const remainingSchemaNames = difference(TableNames, nonPtTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
         `table definitions missing from TableNames: ${remainingTableNames.join(', ')}`,

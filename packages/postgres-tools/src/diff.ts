@@ -2,8 +2,8 @@ import path from 'node:path';
 
 import chalk from 'chalk';
 import { structuredPatch } from 'diff';
+import { difference, intersection } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 
 import { describeDatabase, formatDatabaseDescription } from './describe.js';
 
@@ -45,11 +45,11 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   const description2 = await loadDescription(db2);
 
   // Determine if both databases have the same tables
-  const tablesMissingFrom1 = _.difference(
+  const tablesMissingFrom1 = difference(
     Object.keys(description2.tables),
     Object.keys(description1.tables),
   );
-  const tablesMissingFrom2 = _.difference(
+  const tablesMissingFrom2 = difference(
     Object.keys(description1.tables),
     Object.keys(description2.tables),
   );
@@ -71,11 +71,11 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   }
 
   // Determine if both databases have the same enums
-  const enumsMissingFrom1 = _.difference(
+  const enumsMissingFrom1 = difference(
     Object.keys(description2.enums),
     Object.keys(description1.enums),
   );
-  const enumsMissingFrom2 = _.difference(
+  const enumsMissingFrom2 = difference(
     Object.keys(description1.enums),
     Object.keys(description2.enums),
   );
@@ -97,11 +97,11 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   }
 
   // Determine if the columns of any table differ
-  const intersection = _.intersection(
+  const tableIntersection = intersection(
     Object.keys(description1.tables),
     Object.keys(description2.tables),
   );
-  for (const table of intersection) {
+  for (const table of tableIntersection) {
     const patch = structuredPatch(
       `tables/${table}`,
       `tables/${table}`,
@@ -129,7 +129,7 @@ async function diff(db1: DiffTarget, db2: DiffTarget, options: DiffOptions): Pro
   }
 
   // Determine if the values of any enums differ
-  const enumsIntersection = _.intersection(
+  const enumsIntersection = intersection(
     Object.keys(description1.enums),
     Object.keys(description2.enums),
   );

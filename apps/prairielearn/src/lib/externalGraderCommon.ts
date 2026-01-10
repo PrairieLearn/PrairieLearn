@@ -2,8 +2,8 @@ import type { EventEmitter } from 'node:events';
 import * as fsPromises from 'node:fs/promises';
 import * as path from 'path';
 
+import { mapValues } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 
 import { logger } from '@prairielearn/logger';
 import { contains } from '@prairielearn/path-utils';
@@ -149,7 +149,7 @@ export function makeGradingResult(jobId: string, rawData: Record<string, any> | 
     } else if (Array.isArray(d)) {
       return d.map((x) => replaceNull(x));
     } else if (d != null && typeof d === 'object') {
-      return _.mapValues(d, (x) => replaceNull(x));
+      return mapValues(d, (x) => replaceNull(x));
     } else {
       return d;
     }

@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { range } from 'es-toolkit';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -119,8 +119,8 @@ export function InstructorAssessmentQuestionStatistics({
                   data-xdata="${JSON.stringify(rows.map((q) => q.mean_question_score))}"
                   data-ydata="${JSON.stringify(rows.map((q) => q.discrimination))}"
                   data-options="${JSON.stringify({
-                    xgrid: _.range(0, 110, 10),
-                    ygrid: _.range(0, 110, 10),
+                    xgrid: range(0, 110, 10),
+                    ygrid: range(0, 110, 10),
                     xlabel: 'mean score / %',
                     ylabel: 'discrimination / %',
                     radius: 2,

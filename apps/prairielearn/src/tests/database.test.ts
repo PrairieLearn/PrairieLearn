@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import _ from 'lodash';
+import { partition } from 'es-toolkit';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
@@ -63,7 +63,7 @@ describe('database', { timeout: 20_000 }, function () {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
 
-    const [softDeleteTables, hardDeleteTables] = _.partition(Object.keys(data.tables), (table) =>
+    const [softDeleteTables, hardDeleteTables] = partition(Object.keys(data.tables), (table) =>
       data.tables[table].columns.some((column) => column.name === 'deleted_at'),
     );
 

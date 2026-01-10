@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { isError } from 'es-toolkit';
 
 import { type HtmlSafeString } from '@prairielearn/html';
 
@@ -43,14 +43,14 @@ export function makeWithInfo(message: string, info: string): ErrorWithInfo {
 }
 
 export function addData(err: any, data: any): ErrorWithData {
-  const newErr = (_.isError(err) ? err : new Error(String(err))) as ErrorWithData;
+  const newErr = (isError(err) ? err : new Error(String(err))) as ErrorWithData;
   newErr.data = newErr.data || {};
   Object.assign(newErr.data, data);
   return newErr;
 }
 
 export function newMessage(err: any, newMsg: string): ErrorWithData {
-  const newErr = (_.isError(err) ? err : new Error(String(err))) as ErrorWithData;
+  const newErr = (isError(err) ? err : new Error(String(err))) as ErrorWithData;
   newErr.data = newErr.data || {};
   newErr.data._previousMessages = newErr.data._previousMessages || [];
   newErr.data._previousMessages.splice(0, 0, newErr.message);

@@ -1,7 +1,7 @@
 import { setTimeout as sleep } from 'node:timers/promises';
 
 import debugfn from 'debug';
-import _ from 'lodash';
+import { groupBy } from 'es-toolkit';
 
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
@@ -165,7 +165,7 @@ export async function init() {
     jobs.map(({ name, intervalSec }) => ({ name, intervalSec })),
   );
 
-  const jobsByPeriodSec = _.groupBy(jobs, 'intervalSec');
+  const jobsByPeriodSec = groupBy(jobs, (jobs) => jobs.intervalSec);
   for (const [intervalSec, jobsList] of Object.entries(jobsByPeriodSec)) {
     const intervalSecNum = Number.parseInt(intervalSec);
     if (intervalSec === 'daily') {
