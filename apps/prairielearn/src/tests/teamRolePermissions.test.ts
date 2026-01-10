@@ -307,7 +307,7 @@ describe('Assessment instance with team roles & permissions - Homework', functio
         const popoverText = $(element).attr('data-bs-content');
         assert.strictEqual(
           popoverText,
-          'Your current group role (Manager) restricts access to this question.',
+          'Your current team role (Manager) restricts access to this question.',
         );
       });
 
@@ -370,7 +370,7 @@ describe('Assessment instance with team roles & permissions - Homework', functio
       const popoverContent = popover.attr('data-bs-content');
       assert.strictEqual(
         popoverContent,
-        'Your group role (Manager) is not allowed to submit this question.',
+        'Your team role (Manager) is not allowed to submit this question.',
       );
 
       // Save button should be disabled without correct permission

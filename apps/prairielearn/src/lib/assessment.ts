@@ -129,7 +129,7 @@ export async function makeAssessmentInstance({
     if (assessment.team_work) {
       team_id = await getTeamId(assessment.id, user_id);
       if (team_id == null) {
-        throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
+        throw new error.HttpStatusError(403, 'No team found for this user in this assessment');
       }
     }
 

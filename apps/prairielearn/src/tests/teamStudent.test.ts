@@ -49,12 +49,12 @@ describe('Team based homework assess control on student side', { timeout: 20_000
       locals.assessment_id = assessment_ids[0];
       locals.assessmentUrl = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id;
       locals.instructorAssessmentsUrlTeamTab =
-        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/groups';
+        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id + '/teams';
 
       locals.assessment_id_2 = assessment_ids[1];
       locals.assessmentUrl_2 = locals.courseInstanceUrl + '/assessment/' + locals.assessment_id_2;
       locals.instructorAssessmentsUrlTeamTab_2 =
-        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/groups';
+        locals.courseInstanceUrl + '/instructor/assessment/' + locals.assessment_id_2 + '/teams';
     });
   });
 
@@ -180,7 +180,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
         }),
       });
       assert.equal(response.status, 200);
-      assertAlert(response.$, 'already in another group');
+      assertAlert(response.$, 'already in another team');
     });
   });
 
@@ -416,7 +416,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
       assert.equal(response.status, 200);
       const page = await response.text();
       locals.$ = cheerio.load(page);
-      assertAlert(locals.$, 'You are already in another group');
+      assertAlert(locals.$, 'You are already in another team');
     });
   });
 

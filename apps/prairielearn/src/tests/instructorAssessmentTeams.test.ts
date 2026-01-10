@@ -35,7 +35,7 @@ describe('Instructor team controls', () => {
 
   test.sequential('has team-based homework assessment', async () => {
     assessment_id = await queryRow(sql.select_team_work_assessment, IdSchema);
-    instructorAssessmentTeamsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/groups`;
+    instructorAssessmentTeamsUrl = `${courseInstanceUrl}/instructor/assessment/${assessment_id}/teams`;
   });
 
   test.sequential('enroll random users', async () => {
@@ -85,7 +85,7 @@ describe('Instructor team controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assertAlert(response.$, 'in another group');
+    assertAlert(response.$, 'in another team');
     assert.lengthOf(response.$('#usersTable td:contains(TeamTeam2)'), 0);
   });
 
@@ -176,7 +176,7 @@ describe('Instructor team controls', () => {
       }),
     });
     assert.equal(response.status, 200);
-    assertAlert(response.$, 'in another group');
+    assertAlert(response.$, 'in another team');
     assert.lengthOf(response.$(`#usersTable tr:contains(TestTeam):contains(${users[4].uid})`), 1);
     assert.lengthOf(response.$(`#usersTable tr:contains(TeamTeam2):contains(${users[4].uid})`), 0);
   });

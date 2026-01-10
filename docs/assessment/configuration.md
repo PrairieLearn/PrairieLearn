@@ -421,31 +421,31 @@ By default, assessment instances are tied to only one user. By setting `"groupWo
 
 Note that changing an assessment from individual to group or vice versa after students have started working on it will cause student work to be lost.
 
-### Managing groups
+### Managing teams
 
-Instructors can manage groups on the "Groups" tab of an assessment. This page allows instructors to create individual groups, delete existing groups, and add or remove users from groups.
+Instructors can manage teams on the "Teams" tab of an assessment. This page allows instructors to create individual teams, delete existing teams, and add or remove users from teams.
 
-To create groups in bulk, upload a CSV file in the following format:
+To create teams in bulk, upload a CSV file in the following format:
 
 ```csv
-groupName,UID
-groupA,one@example.com
-groupA,two@example.com
-groupB,three@example.com
-groupB,four@example.com
+teamName,UID
+teamA,one@example.com
+teamA,two@example.com
+teamB,three@example.com
+teamB,four@example.com
 ```
 
-The assessment's "Downloads" tab has an `<assessment>_groups.csv` file that contains the current group assignments. This can be used to copy group assignments from one assessment to another. The same file is also listed at the bottom of the groups page.
+The assessment's "Downloads" tab has an `<assessment>_teams.csv` file that contains the current team assignments. This can be used to copy team assignments from one assessment to another. The same file is also listed at the bottom of the teams page.
 
-Alternatively, the "Random" button can be used to randomly assign students to groups based on a desired minimum/maximum group size.
+Alternatively, the "Random" button can be used to randomly assign students to teams based on a desired minimum/maximum team size.
 
 ### Student options for group work
 
-![Student perspective for joining a group](groupwork_student_perspective_join.png)
+![Student perspective for joining a team](groupwork_student_perspective_join.png)
 
-If an instructor does not assign a student to a group, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing group via a join code, which they can get from another classmate.
+If an instructor does not assign a student to a team, the student will need to join one before opening their assessment instance. They can either create a new one or join an existing team via a join code, which they can get from another classmate.
 
-When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their group's assessment instance.
+When calculating a student's grade for a group assessment, PrairieLearn will always use the score of their team's assessment instance.
 
 !!! info
 
@@ -453,7 +453,7 @@ When calculating a student's grade for a group assessment, PrairieLearn will alw
 
 ![Student view of assessment with groupwork enabled](groupwork_student_perspective_assessment.png)
 
-Students are able to see their groupmates' UIDs, which can become a point of contact to communicate with each other outside PrairieLearn. They are also able to leave their group to join a different one.
+Students are able to see their teammates' UIDs, which can become a point of contact to communicate with each other outside PrairieLearn. They are also able to leave their team to join a different one.
 
 ### Enabling custom group roles
 
@@ -461,9 +461,9 @@ By default, students working in a collaborative group assessments can view and s
 
 - Submitting specific questions
 - Viewing specific questions
-- Assigning group roles for other students
+- Assigning team roles for other students
 
-Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join groups after assessments have started.
+Although in most cases each student is expected to take one role, students are allowed to take on multiple roles in some narrow scenarios, such as when users leave and join teams after assessments have started.
 
 To opt in to custom group roles, group roles must be defined at the root of the `infoAssessment.json` file. For example:
 
@@ -545,31 +545,31 @@ In the example above, question 1 can be viewed by students in Manager, Reflector
 
 #### Assigning roles to students
 
-When students join a group, they are automatically assigned a role. Students can always view the roles of other students in the group, both before and during an assessment. Students can click "View role info" to see more information about the assessment's group roles.
+When students join a team, they are automatically assigned a role. Students can always view the roles of other students in the team, both before and during an assessment. Students can click "View role info" to see more information about the assessment's team roles.
 
-![Joining a group assessment with custom group roles](grouproles_join.png)
+![Joining a team assessment with custom team roles](grouproles_join.png)
 
-When expanded, group assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
+When expanded, team assessments display information about each role, such as the min/max number of assignments and whether a role can assign other roles.
 
-![Group info from student perspective](grouproles_groupinfo.png)
+![Team info from student perspective](grouproles_groupinfo.png)
 
-Any student with an assigner role can view additional controls to change the roles of other users in the group. Students with assigner roles can re-assign group roles both before and during an assessment.
+Any student with an assigner role can view additional controls to change the roles of other users in the team. Students with assigner roles can re-assign team roles both before and during an assessment.
 
-![Group role assignment controls](grouproles_assign_roles.png)
+![Team role assignment controls](grouproles_assign_roles.png)
 
 #### Restrictions based on role permissions
 
 When an instructor restricts the viewing of a question to certain roles, users without those roles will be unable to view that question.
 
-![Question cannot be viewed due to group role](grouproles_view_question.png)
+![Question cannot be viewed due to team role](grouproles_view_question.png)
 
 Additionally, when an instructor restricts the submitting of a question to certain roles, users without those roles will be unable to submit that question.
 
-![Question cannot be submitted due to group role](grouproles_submit_question.png)
+![Question cannot be submitted due to team role](grouproles_submit_question.png)
 
-When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
+When a role configuration is invalid, which may occur when a user leaves the team or a new user joins the team, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
 
-![Group configuration errors](grouproles_invalid_config_errors.png)
+![Team configuration errors](grouproles_invalid_config_errors.png)
 
 ## Forcing students to complete questions in-order
 

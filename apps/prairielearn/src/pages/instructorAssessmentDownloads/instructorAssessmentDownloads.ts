@@ -77,7 +77,7 @@ const AssessmentInstanceSubmissionRowSchema = z.object({
   submission_number: z.number(),
   final_submission_per_variant: z.boolean(),
   best_submission_per_variant: z.boolean(),
-  group_name: TeamSchema.shape.name.nullable(),
+  team_name: TeamSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
   submission_user: UserSchema.shape.uid.nullable(),
   assigned_grader: UserSchema.shape.uid.nullable(),
@@ -105,7 +105,7 @@ const ManualGradingSubmissionRowSchema = z.object({
   true_answer: SubmissionSchema.shape.true_answer,
   submitted_answer: SubmissionSchema.shape.submitted_answer,
   old_partial_scores: SubmissionSchema.shape.partial_scores,
-  group_name: TeamSchema.shape.name.nullable(),
+  team_name: TeamSchema.shape.name.nullable(),
   uid_list: z.array(z.string()).nullable(),
 });
 
@@ -141,11 +141,11 @@ function getFilenames(locals: ResLocalsForPage<'assessment'>) {
     allFilesZipFilename: prefix + 'all_files.zip',
   };
   if (locals.assessment.team_work) {
-    filenames.teamsCsvFilename = prefix + 'groups.csv';
-    filenames.scoresTeamCsvFilename = prefix + 'scores_by_group.csv';
-    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_group_all.csv';
-    filenames.pointsTeamCsvFilename = prefix + 'points_by_group.csv';
-    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_group_all.csv';
+    filenames.teamsCsvFilename = prefix + 'teams.csv';
+    filenames.scoresTeamCsvFilename = prefix + 'scores_by_team.csv';
+    filenames.scoresTeamAllCsvFilename = prefix + 'scores_by_team_all.csv';
+    filenames.pointsTeamCsvFilename = prefix + 'points_by_team.csv';
+    filenames.pointsTeamAllCsvFilename = prefix + 'points_by_team_all.csv';
   }
   return filenames;
 }
@@ -193,7 +193,7 @@ function extractFilesForSubmissions(row: AssessmentInstanceSubmissionRow): Archi
   //
   // We should probably rethink the directory structure that this will spit out.
   const filenamePrefix = [
-    row.group_name ?? row.uid,
+    row.team_name ?? row.uid,
     row.assessment_instance_number,
     row.qid,
     row.variant_number,
@@ -216,7 +216,7 @@ function extractFilesForManualGrading(row: ManualGradingSubmissionRow): ArchiveF
   // We should also aim for more consistency between this function and
   // `extractFilesForSubmissions`.
   const filenamePrefix = [
-    row.group_name ?? [row.uid, row.uin].join('_'),
+    row.team_name ?? [row.uid, row.uin].join('_'),
     row.qid,
     row.submission_id,
   ].join('_');
@@ -334,7 +334,7 @@ router.get(
     ];
     const usernameColumn: Columns = [['Username', 'username']];
     const teamNameColumn: Columns = [
-      ['Group name', 'group_name'],
+      ['Team name', 'team_name'],
       ['Usernames', 'uid_list'],
     ];
     const scoreColumn: Columns = [[assessmentName, 'score_perc']];
@@ -561,7 +561,7 @@ router.get(
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
+        ['teamName', 'name'],
         ['UID', 'uid'],
       ];
       if (teamConfig.has_roles) columns.push(['Role(s)', 'roles']);

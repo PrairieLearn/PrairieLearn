@@ -149,13 +149,13 @@ router.post(
         const teamConfig = await getTeamConfig(res.locals.assessment.id);
         const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
         if (teamId === null) {
-          throw new HttpStatusError(403, 'Cannot create a new instance while not in a group.');
+          throw new HttpStatusError(403, 'Cannot create a new instance while not in a team.');
         }
         const teamInfo = await getTeamInfo(teamId, teamConfig);
         if (!teamInfo.start) {
           throw new HttpStatusError(
             403,
-            'Group has invalid composition or role assignment. Cannot start assessment.',
+            'Team has invalid composition or role assignment. Cannot start assessment.',
           );
         }
       }
@@ -176,7 +176,7 @@ router.post(
     } else if (req.body.__action === 'join_team') {
       const teamConfig = await getTeamConfig(res.locals.assessment.id);
       if (!teamConfig.student_authz_join) {
-        throw new HttpStatusError(403, 'You are not authorized to join a group.');
+        throw new HttpStatusError(403, 'You are not authorized to join a team.');
       }
       await joinTeam({
         course_instance: res.locals.course_instance,
@@ -196,7 +196,7 @@ router.post(
     } else if (req.body.__action === 'create_team') {
       const teamConfig = await getTeamConfig(res.locals.assessment.id);
       if (!teamConfig.student_authz_create) {
-        throw new HttpStatusError(403, 'You are not authorized to create a group.');
+        throw new HttpStatusError(403, 'You are not authorized to create a team.');
       }
       await createTeam({
         course_instance: res.locals.course_instance,
@@ -217,7 +217,7 @@ router.post(
       // Check whether the user is currently in a team
       const teamId = await getTeamId(res.locals.assessment.id, res.locals.user.id);
       if (teamId == null) {
-        throw new HttpStatusError(403, 'Cannot change group roles while not in a group.');
+        throw new HttpStatusError(403, 'Cannot change team roles while not in a team.');
       }
       await updateTeamRoles(
         req.body,
@@ -231,7 +231,7 @@ router.post(
     } else if (req.body.__action === 'leave_team') {
       const teamConfig = await getTeamConfig(res.locals.assessment.id);
       if (!teamConfig.student_authz_leave) {
-        throw new HttpStatusError(403, 'You are not authorized to leave your group.');
+        throw new HttpStatusError(403, 'You are not authorized to leave your team.');
       }
       await leaveTeam(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(req.originalUrl);

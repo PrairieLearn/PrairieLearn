@@ -266,7 +266,7 @@ export async function addUserToTeam({
       TeamForUpdateSchema,
     );
     if (team == null) {
-      throw new TeamOperationError('Group does not exist.');
+      throw new TeamOperationError('Team does not exist.');
     }
 
     const user = await selectUserInCourseInstance({
@@ -284,14 +284,14 @@ export async function addUserToTeam({
     if (existingTeamId != null) {
       // Otherwise, the user is in a different team, which is an error
       if (idsEqual(user.id, authn_user_id)) {
-        throw new TeamOperationError('You are already in another group.');
+        throw new TeamOperationError('You are already in another team.');
       } else {
-        throw new TeamOperationError('User is already in another group.');
+        throw new TeamOperationError('User is already in another team.');
       }
     }
 
     if (enforceTeamSize && team.max_size != null && team.cur_size >= team.max_size) {
-      throw new TeamOperationError('Group is already full.');
+      throw new TeamOperationError('Team is already full.');
     }
 
     // Find a team role. If none of the roles can be assigned, assign no role.
@@ -346,7 +346,7 @@ export async function joinTeam({
         TeamSchema,
       );
       if (team?.join_code !== join_code) {
-        throw new TeamOperationError('Group does not exist.');
+        throw new TeamOperationError('Team does not exist.');
       }
       await addUserToTeam({
         course_instance,
@@ -360,7 +360,7 @@ export async function joinTeam({
     });
   } catch (err) {
     if (err instanceof TeamOperationError) {
-      throw new TeamOperationError(`Cannot join group "${fullJoinCode}": ${err.message}`);
+      throw new TeamOperationError(`Cannot join team "${fullJoinCode}": ${err.message}`);
     }
     throw err;
   }
@@ -384,12 +384,12 @@ export async function createTeam({
   if (team_name) {
     if (team_name.length > 30) {
       throw new TeamOperationError(
-        'The group name is too long. Use at most 30 alphanumerical characters.',
+        'The team name is too long. Use at most 30 alphanumerical characters.',
       );
     }
     if (!/^[0-9a-zA-Z]+$/.test(team_name)) {
       throw new TeamOperationError(
-        'The group name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
+        'The team name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
     }
     if (/^group[0-9]{7,}$/.test(team_name)) {
@@ -401,13 +401,13 @@ export async function createTeam({
       // process to generate team names that don't take these numbers into
       // account is possible, this validation is simpler.
       throw new TeamOperationError(
-        'User-specified group names cannot start with "group" followed by a large number.',
+        'User-specified team names cannot start with "group" followed by a large number.',
       );
     }
   }
 
   if (uids.length === 0) {
-    throw new TeamOperationError('There must be at least one user in the group.');
+    throw new TeamOperationError('There must be at least one user in the team.');
   }
 
   try {
@@ -422,7 +422,7 @@ export async function createTeam({
           // 23505 is the Postgres error code for unique constraint violation
           // (https://www.postgresql.org/docs/current/errcodes-appendix.html)
           if (err.code === '23505' && err.constraint === 'unique_team_name') {
-            throw new TeamOperationError('Group name is already taken.');
+            throw new TeamOperationError('Team name is already taken.');
           }
           // Any other error is unexpected and should be handled by the main processes
           throw err;
@@ -444,10 +444,10 @@ export async function createTeam({
   } catch (err) {
     if (err instanceof TeamOperationError) {
       if (team_name) {
-        throw new TeamOperationError(`Failed to create the group ${team_name}. ${err.message}`);
+        throw new TeamOperationError(`Failed to create the team ${team_name}. ${err.message}`);
       } else {
         throw new TeamOperationError(
-          `Failed to create a group for: ${uids.join(', ')}. ${err.message}`,
+          `Failed to create a team for: ${uids.join(', ')}. ${err.message}`,
         );
       }
     }
@@ -585,12 +585,12 @@ export async function leaveTeam(
   await sqldb.runInTransactionAsync(async () => {
     const teamId = await getTeamId(assessmentId, userId);
     if (teamId === null) {
-      throw new error.HttpStatusError(404, 'User is not part of a group in this assessment');
+      throw new error.HttpStatusError(404, 'User is not part of a team in this assessment');
     }
     if (checkTeamId != null && !idsEqual(teamId, checkTeamId)) {
       throw new error.HttpStatusError(
         403,
-        'Group ID does not match the user ID and assessment ID provided',
+        'Team ID does not match the user ID and assessment ID provided',
       );
     }
 
@@ -674,7 +674,7 @@ export async function updateTeamRoles(
     const roleAssignments = roleKeys.map((roleKey) => {
       const [roleId, userId] = roleKey.replace('user_role_', '').split('-');
       if (!teamInfo.teamMembers.some((member) => idsEqual(member.id, userId))) {
-        throw new error.HttpStatusError(403, `User ${userId} is not a member of this group`);
+        throw new error.HttpStatusError(403, `User ${userId} is not a member of this team`);
       }
       if (!teamInfo.rolesInfo?.teamRoles.some((role) => idsEqual(role.id, roleId))) {
         throw new error.HttpStatusError(403, `Role ${roleId} does not exist for this assessment`);
@@ -719,7 +719,7 @@ export async function deleteTeam(assessment_id: string, team_id: string, authn_u
     IdSchema,
   );
   if (deleted_team_id == null) {
-    throw new error.HttpStatusError(404, 'Group does not exist.');
+    throw new error.HttpStatusError(404, 'Team does not exist.');
   }
 }
 
