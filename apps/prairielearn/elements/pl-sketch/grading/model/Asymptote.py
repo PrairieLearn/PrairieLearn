@@ -233,7 +233,7 @@ class HorizontalAsymptotes(Asymptotes):
         else:
             return [self.xaxis.domain]
 
-    def less_than_y(self, y, tolerance):  # graph tolerance
+    def is_less_than_y_between(self, y, x1, x2, tolerance):  # graph tolerance
         if len(self.asyms) == 0:
             if self.debug:
                 self.debugger.add("Horizontal line not found.")
@@ -250,7 +250,7 @@ class HorizontalAsymptotes(Asymptotes):
                 return False
         return True
 
-    def greater_than_y(self, y, tolerance):  # graph tolerance
+    def is_greater_than_y_between(self, y, x1, x2, tolerance):  # graph tolerance
         if len(self.asyms) == 0:
             if self.debug:
                 self.debugger.add("Horizontal line not found.")

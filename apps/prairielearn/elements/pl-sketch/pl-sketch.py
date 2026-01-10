@@ -212,19 +212,23 @@ def split_range(
             result.append(float(x))
     if len(result) != 2:
         if not default_start:
-            raise ValueError("Ranges must contain two values separated by a comma.")
+            raise ValueError(
+                f"Invalid range: {xrange}. Ranges must contain two values separated by a comma."
+            )
         raise ValueError(
-            "Ranges must contain two values (or empty placeholders) separated by a comma."
+            f"Invalid range: {xrange}. Ranges must contain two values (or empty placeholders) separated by a comma."
         )
     if result[0] is None:
         result[0] = default_start
     if result[1] is None:
         result[1] = default_end
     if result[0] is None or result[1] is None:
-        raise ValueError("No empty range placeholders are allowed for canvas ranges.")
+        raise ValueError(
+            f"Invalid range: {xrange}.No empty range placeholders are allowed for canvas ranges."
+        )
     if result[0] >= result[1]:
         raise ValueError(
-            "Ranges must be ordered from low to high numbers and within the canvas bounds."
+            f"Invalid range: {xrange}. Ranges must be ordered from low to high numbers and within the canvas bounds."
         )
     return result
 
@@ -251,8 +255,8 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
     ]
 
     # check that required parameters are there for all
-    tool_type = pl.get_string_attrib(tool_tag, "type")
-    tool_id = pl.get_string_attrib(tool_tag, "id")
+    tool_type = pl.get_string_attrib(tool_tag, "type").strip()
+    tool_id = pl.get_string_attrib(tool_tag, "id").strip()
     defaults = {}
     defaults["readonly"] = False
     defaults["helper"] = False
@@ -287,7 +291,7 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
             defaults["name"] = "polyline"
             defaults["label"] = "Polygon"
             defaults["color"] = "mediumseagreen"
-            defaults["fillcolor"] = "mediumseagreen"
+            defaults["fillColor"] = "mediumseagreen"
             defaults["opacity"] = 0.5
             defaults["closed"] = True
         case "line":
@@ -300,22 +304,22 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
             defaults["name"] = "line-segment"
             defaults["label"] = "Line"
             defaults["color"] = "red"
-            defaults["dashstyle"] = "solid"
-            defaults["directionconstraint"] = None
-            defaults["lengthconstraint"] = 0
-            defaults["arrowhead"] = 0
+            defaults["dashStyle"] = "solid"
+            defaults["directionConstraint"] = None
+            defaults["lengthConstraint"] = 0
+            defaults["arrowHead"] = 0
         case "horizontal-line":
             optional_attribs.append("dash-style")
             defaults["name"] = "horizontal-line"
             defaults["label"] = "Horizontal Line"
             defaults["color"] = "dimgray"
-            defaults["dashstyle"] = "dashdotted"
+            defaults["dashStyle"] = "dashdotted"
         case "vertical-line":
             optional_attribs.append("dash-style")
             defaults["name"] = "vertical-line"
             defaults["label"] = "Vertical Line"
             defaults["color"] = "dimgray"
-            defaults["dashstyle"] = "dashdotted"
+            defaults["dashStyle"] = "dashdotted"
         case _:
             raise ValueError("Invalid tool type used: " + tool_type)
 
@@ -330,23 +334,23 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
         "helper": pl.get_boolean_attrib(tool_tag, "helper", defaults["helper"]),
         "limit": pl.get_integer_attrib(tool_tag, "limit", defaults["limit"]),
         "group": pl.get_string_attrib(tool_tag, "group", defaults["group"]),
-        "dashstyle": pl.get_string_attrib(
-            tool_tag, "dash-style", defaults.get("dashstyle")
+        "dashStyle": pl.get_string_attrib(
+            tool_tag, "dash-style", defaults.get("dashStyle")
         ),
-        "directionconstraint": pl.get_string_attrib(
-            tool_tag, "direction-constraint", defaults.get("directionconstraint")
+        "directionConstraint": pl.get_string_attrib(
+            tool_tag, "direction-constraint", defaults.get("directionConstraint")
         ),
-        "lengthconstraint": pl.get_float_attrib(
-            tool_tag, "length-constraint", defaults.get("lengthconstraint")
+        "lengthConstraint": pl.get_float_attrib(
+            tool_tag, "length-constraint", defaults.get("lengthConstraint")
         ),
         "size": pl.get_integer_attrib(tool_tag, "size", defaults.get("size")),
         "hollow": pl.get_boolean_attrib(tool_tag, "hollow", defaults.get("hollow")),
         "opacity": pl.get_float_attrib(tool_tag, "opacity", defaults.get("opacity")),
-        "fillcolor": pl.get_string_attrib(
-            tool_tag, "fillcolor", defaults.get("fillcolor")
+        "fillColor": pl.get_string_attrib(
+            tool_tag, "fill-color", defaults.get("fillColor")
         ),
-        "arrowhead": pl.get_integer_attrib(
-            tool_tag, "arrowhead", defaults.get("arrowhead")
+        "arrowHead": pl.get_integer_attrib(
+            tool_tag, "arrowhead", defaults.get("arrowHead")
         ),
         "closed": defaults.get("closed"),
     }
@@ -355,7 +359,7 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
         raise ValueError('A tool cannot be set to be both a "helper" and "read-only".')
     if tool_params["limit"] and tool_params["limit"] < 1:
         raise ValueError("A tool cannot have a limit of less than 1.")
-    if tool_params["dashstyle"] and tool_params["dashstyle"] not in {
+    if tool_params["dashStyle"] and tool_params["dashStyle"] not in {
         "solid",
         "dashed",
         "longdashed",
@@ -363,25 +367,25 @@ def check_tool(tool_tag: lxml.html.HtmlElement) -> SketchTool:
         "dashdotted",
     }:
         raise ValueError(
-            f'A tool cannot have a dash-style "{tool_params["dashstyle"]}"'
+            f'A tool cannot have a dash-style "{tool_params["dashStyle"]}"'
         )
-    if tool_params["directionconstraint"] and tool_params[
-        "directionconstraint"
+    if tool_params["directionConstraint"] and tool_params[
+        "directionConstraint"
     ] not in {
         "horizontal",
         "vertical",
         "none",
     }:
         raise ValueError(
-            f'A tool cannot have a directional constraint "{tool_params["directionconstraint"]}"'
+            f'A tool cannot have a directional constraint "{tool_params["directionConstraint"]}"'
         )
     if tool_params["opacity"] and (
         tool_params["opacity"] < 0 or tool_params["opacity"] > 1
     ):
         raise ValueError("A tool cannot have an opacity outside the range [0,1].")
-    if tool_params["lengthconstraint"] and tool_params["lengthconstraint"] < 0:
+    if tool_params["lengthConstraint"] and tool_params["lengthConstraint"] < 0:
         raise ValueError("A tool cannot have a negative length constraint.")
-    if tool_params["arrowhead"] and tool_params["arrowhead"] < 0:
+    if tool_params["arrowHead"] and tool_params["arrowHead"] < 0:
         raise ValueError("A tool cannot have a negative arrowhead size.")
     return tool_params
 
@@ -410,10 +414,11 @@ def check_grader(
         "feedback",
         "debug",
     ]
-    grader_type = pl.get_string_attrib(grader_tag, "type")
+    grader_type = pl.get_string_attrib(grader_tag, "type").strip()
     grader_tools = pl.get_string_attrib(grader_tag, "toolid")
     tools: list[SketchTool] = []
-    for tool in grader_tools.split(","):
+    for tool_raw in grader_tools.split(","):
+        tool = tool_raw.strip()
         if tool in tool_data:
             tools.append(tool_data[tool])
         else:
@@ -587,7 +592,7 @@ def check_grader(
         "tolerance": pl.get_integer_attrib(
             grader_tag, "tolerance", int(defaults.get("tolerance", 15))
         ),
-        "debug": pl.get_boolean_attrib(grader_tag, "xyflip", defaults["debug"]),
+        "debug": pl.get_boolean_attrib(grader_tag, "debug", defaults["debug"]),
         "feedback": pl.get_string_attrib(grader_tag, "feedback", None),
         "x": pl.get_float_attrib(grader_tag, "x", None),
         "y": pl.get_float_attrib(grader_tag, "y", None),
@@ -677,7 +682,7 @@ def check_initial(
                 raise ValueError(
                     "Initial drawings for lines with multiple segments need an even number and at least four coordinates (x/y pairs for start and end)."
                 )
-        case "spline" | "free-draw":
+        case "spline" | "freeform":
             if initial_fun is not None:
                 parse_function_string(initial_fun)
             elif len(coords) < 4 or len(coords) % 2 != 0:
@@ -866,13 +871,11 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     no_overlap_check = []
     for grader in data["params"][name]["sketch_config"]["graders"]:
         if "xyflip" in grader and grader["xyflip"] is True:
-            no_overlap_check += [
-                tool_data[tool.strip()]["name"] for tool in grader["toolid"].split(",")
-            ]
+            no_overlap_check += [tool["name"] for tool in grader["toolid"]]
 
     for toolid in gradeable:
         tool_type = tool_data[toolid]["name"]
-        if tool_type == "polygon":
+        if tool_type == "polyline" and tool_data[toolid]["closed"]:
             for spline in gradeable[toolid]:
                 if (len(spline["spline"]) - 1) / 3 > 30:
                     data["format_errors"][name] = (
@@ -942,13 +945,16 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     prev_stage_correct = True
     for stage, graders in sorted_graders.items():
+        ignore_score = False
+        if not prev_stage_correct:
+            ignore_score = True
         for grader in graders:
             # We grade all criteria (even if a previous stage failed)
             score, weight, feedback = grade_submission(grader, data, name)
             weights.append(weight)
             if score == 1:
-                # Correct answers are only worth points if the previous stage has passed
-                if prev_stage_correct:
+                if not ignore_score:
+                    # Correct answers are only worth points if the previous stage has passed
                     scores.append(1)
                     num_correct += 1
                 else:
@@ -959,7 +965,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                 feedbacks.add(feedback[0])
                 if debug:
                     debug_messages += [feedback]
-                if stage != -1:
+                if stage != 0:
                     prev_stage_correct = False
 
     total_weights = sum(weights)

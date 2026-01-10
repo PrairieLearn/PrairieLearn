@@ -16,7 +16,7 @@ class Polygons(Gradeable):  # noqa: PLR0904
         self.polygons = []
 
         # self.version = self.get_plugin_version(info)
-        submission_data = grader["gradeable"][current_tool]
+        submission_data = submission["gradeable"][current_tool]
         for spline in submission_data:
             if spline is not None:
                 points = self.convert_to_real_points(spline["spline"])
@@ -218,7 +218,7 @@ class Polygons(Gradeable):  # noqa: PLR0904
         if len(points) == 0:
             if self.debug:
                 self.debugger.add("No values found within range.")
-            return "ndef"
+            return True
         max_incorrect = 0
         incorrect_count = 0
         for p in points:

@@ -49,16 +49,18 @@ class GradeableFunction(MultipleSplinesFunction):  # noqa: PLR0904
             ranges += spline.get_domain()
         coverage = 0
         for d in self.get_domain():
-            coverage += self.get_coverage_px(self.xscale, ranges, d[0], d[1])
+            coverage += self.get_coverage_px(ranges, d[0], d[1])
         total_coverage_needed = 0
+
         for r in ranges:
             total_coverage_needed += (r[1] - r[0]) * self.xscale
+
         overlap_percentage = coverage / total_coverage_needed
         if self.debug and overlap_percentage < tolerance:
             self.debugger.add(
-                f"Submission covered only {overlap_percentage}% of function domain."
+                f"Submission covered only {overlap_percentage * 100}% of function domain."
             )
-            self.debugger.add(f"Lowest allowed is {tolerance}%.")
+            self.debugger.add(f"Lowest allowed is {tolerance * 100}%.")
         return (coverage / total_coverage_needed) >= tolerance
 
     def get_spline_graders_from_function(self, func, xmin, xmax):
@@ -89,7 +91,6 @@ class GradeableFunction(MultipleSplinesFunction):  # noqa: PLR0904
                 self.yaxis,
                 s,
                 self.grader,
-                self.submission,
                 self.current_tool,
             )
             splines.append(spline)
@@ -633,16 +634,16 @@ class GradeableFunction(MultipleSplinesFunction):  # noqa: PLR0904
         coverage = 0
         for i in range(len(rd)):
             r = rd[i]
-            if x1 < r[0] and x2 > r[1]:
+            if x1 <= r[0] and x2 >= r[1]:
                 coverage += r[1] - r[0]
                 continue
-            if x1 > r[0] and x1 < r[1] and x2 > r[0] and x2 < r[1]:
+            if x1 >= r[0] and x1 <= r[1] and x2 >= r[0] and x2 <= r[1]:
                 coverage += x2 - x1
                 continue
-            if x1 > r[0] and x1 < r[1]:
+            if x1 >= r[0] and x1 <= r[1]:
                 coverage += r[1] - x1
                 continue
-            if x2 > r[0] and x2 < r[1]:
+            if x2 >= r[0] and x2 <= r[1]:
                 coverage += x2 - r[0]
                 continue
         cov_total_px = coverage * self.xscale
@@ -676,7 +677,7 @@ def function_to_spline(
             y = f(x)
             if type(y) is complex:
                 raise ArithmeticError
-            y_screen = (y - y_start) * height / (y_end - y_start)
+            y_screen = (-y - y_start) * height / (y_end - y_start)
             spline.append([x_screen, y_screen])
         except Exception:
             return spline, True, x + 0.001

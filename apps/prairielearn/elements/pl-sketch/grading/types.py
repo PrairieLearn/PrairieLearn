@@ -10,17 +10,17 @@ class SketchTool(TypedDict):
     helper: bool | None
     limit: int | None
     group: str | None
-    dashstyle: str | None
-    directionconstraint: str | None
-    lengthconstraint: float | None
+    dashStyle: str | None
+    directionConstraint: str | None
+    lengthConstraint: float | None
     size: int | None
     hollow: bool | None
     opacity: float | None
     closed: (
         bool | None
     )  # Polygons are internally "closed polylines" - this flag is the only difference
-    fillcolor: str | None
-    arrowhead: int | None
+    fillColor: str | None
+    arrowHead: int | None
 
 
 class SketchGrader(TypedDict):

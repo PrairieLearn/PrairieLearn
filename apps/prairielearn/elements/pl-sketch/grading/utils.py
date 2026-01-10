@@ -83,17 +83,21 @@ def graph_to_screen(start: float, end: float, canvas_size: int, value: float) ->
 
 
 def graph_to_screen_submission(
-    submission: dict, use_xaxis: bool, value: float
+    submission: dict, use_xaxis: bool, distance: bool, value: float
 ) -> float:
     start = (
-        submission["meta"]["config"]["xrange"][0]
-        if use_xaxis
-        else submission["meta"]["config"]["yrange"][0]
+        0
+        if distance
+        else (
+            submission["meta"]["config"]["xrange"][0]
+            if use_xaxis
+            else submission["meta"]["config"]["yrange"][1]
+        )
     )
     end = (
         submission["meta"]["config"]["xrange"][1]
         if use_xaxis
-        else submission["meta"]["config"]["yrange"][1]
+        else submission["meta"]["config"]["yrange"][0]
     )
     canvas_size = (
         submission["meta"]["config"]["width"]
@@ -109,17 +113,21 @@ def screen_to_graph(start: float, end: float, canvas_size: int, value: float) ->
 
 
 def screen_to_graph_submission(
-    submission: dict, use_xaxis: bool, value: float
+    submission: dict, use_xaxis: bool, distance: bool, value: float
 ) -> float:
     start = (
-        submission["meta"]["config"]["xrange"][0]
-        if use_xaxis
-        else submission["meta"]["config"]["yrange"][0]
+        0
+        if distance
+        else (
+            submission["meta"]["config"]["xrange"][0]
+            if use_xaxis
+            else submission["meta"]["config"]["yrange"][1]
+        )
     )
     end = (
         submission["meta"]["config"]["xrange"][1]
         if use_xaxis
-        else submission["meta"]["config"]["yrange"][1]
+        else submission["meta"]["config"]["yrange"][0]
     )
     canvas_size = (
         submission["meta"]["config"]["width"]
@@ -134,7 +142,7 @@ def get_gap_length_px(
     rd: list[list[float]], x1: float, x2: float, submission: dict
 ) -> float:
     if rd == []:
-        return graph_to_screen_submission(submission, True, (x2 - x1))
+        return graph_to_screen_submission(submission, True, False, (x2 - x1))
     gap_total = 0
     rstart = [float("-inf"), submission["meta"]["config"]["xrange"][0]]
     rend = [submission["meta"]["config"]["xrange"][1], float("inf")]
@@ -151,7 +159,7 @@ def get_gap_length_px(
         if r[1] > x1 and r_next[0] < x2:
             gap_total += r_next[0] - r[1]
 
-    gap_total_px = graph_to_screen_submission(submission, True, gap_total)
+    gap_total_px = graph_to_screen_submission(submission, True, True, gap_total)
     return gap_total_px
 
 
@@ -173,52 +181,49 @@ def get_coverage_length_px(
     for toolid in tools_to_check:
         tool_used = tool_dict[toolid]["name"]
         if tool_used == "polygon":
-            tool_grader = Polygon.Polygons(grader, submission, tool_used)
+            tool_grader = Polygon.Polygons(grader, submission, toolid)
         elif tool_used in gf_tools:
             tool_grader = GradeableFunction.GradeableFunction(
-                grader, submission, tool_used
+                grader, submission, toolid
             )
         elif tool_used == "horizontal-line":
-            tool_grader = Asymptote.HorizontalAsymptotes(grader, submission, tool_used)
+            tool_grader = Asymptote.HorizontalAsymptotes(grader, submission, toolid)
         elif tool_used == "vertical-line":
-            tool_grader = Asymptote.VerticalAsymptotes(grader, submission, tool_used)
+            tool_grader = Asymptote.VerticalAsymptotes(grader, submission, toolid)
         else:  # line-segment
-            tool_grader = LineSegment.LineSegments(grader, submission, tool_used)
+            tool_grader = LineSegment.LineSegments(grader, submission, toolid)
         # add tool's range to all ranges
         if tool_grader:
             xrange += tool_grader.get_range_defined()
 
     if not tool_grader:
-        return True
+        return 0
 
     rd = tool_grader.collapse_ranges(xrange)
 
     gap_length = get_gap_length_px(rd, x1, x2, submission)
-    width_px = graph_to_screen_submission(submission, True, (x2 - x1))
+
+    width_px = graph_to_screen_submission(submission, True, True, (x2 - x1))
     return width_px - gap_length
 
 
 def get_tools_to_check(
     grader: SketchGrader,
     submission: dict,
-    tool_dict: dict[str, SketchTool],
     not_allowed: list[str] | None = None,
 ) -> list[str]:
     if not_allowed is None:
         not_allowed = []
-        tools_to_check = [
-            t["id"]
-            for t in grader["toolid"]
-            if len(submission["gradeable"][t["id"]]) != 0
-        ]
-    else:
-        tools_to_check = [
-            t
-            for t in submission["gradeable"]
-            if len(submission["gradeable"][t]) != 0
-            and not tool_dict[t]["helper"]
-            and tool_dict[t]["name"] not in not_allowed
-        ]
+    tools_to_check = [
+        tool["id"]
+        for tool in grader["toolid"]
+        if len(submission["gradeable"][tool["id"]]) != 0
+        and not tool["helper"]
+        and tool["name"] not in not_allowed
+        and not (
+            "polygon" in not_allowed and tool["name"] == "polyline" and tool["closed"]
+        )
+    ]
     return tools_to_check
 
 
@@ -239,16 +244,16 @@ def get_num_in_bound_occurrences(
                 point["point"], x1, x2, submission, pix=True
             ):
                 occs.append(point["point"])
-    elif tool_used == "horizontal-line":
+    else:
         for spline in data:
             if spline["spline"] not in occs and spline_in_range(
-                spline["spline"], x1, x2, submission, pix=True, hl=True
-            ):
-                occs.append(spline["spline"])
-    else:  # spline_tools = "spline", "freeform", "polyline", "vertical-line", "horizontal-line"
-        for spline in data:
-            if spline["spline"] not in occs and spline_in_range(
-                spline["spline"], x1, x2, submission, pix=True
+                spline["spline"],
+                x1,
+                x2,
+                submission,
+                pix=True,
+                vl=(tool_used == "vertical-line"),
+                hl=(tool_used == "horizontal-line"),
             ):
                 occs.append(spline["spline"])
     return len(occs)
@@ -261,10 +266,11 @@ def spline_in_range(
     submission: dict,
     pix: bool = False,
     hl: bool = False,
+    vl: bool = False,
 ) -> bool:
     real_points = [spline[i] for i in range(len(spline)) if i % 3 == 0]
     for point in real_points:
-        if point_in_range(point, x1, x2, submission, pix=pix, hl=hl):
+        if point_in_range(point, x1, x2, submission, pix=pix, hl=hl, vl=vl):
             return True
     return False
 
@@ -276,6 +282,7 @@ def point_in_range(
     submission: dict,
     pix: bool = False,
     hl: bool = False,
+    vl: bool = False,
 ) -> bool:
     xrange = submission["meta"]["config"]["xrange"]
     yrange = submission["meta"]["config"]["yrange"]
@@ -283,10 +290,12 @@ def point_in_range(
     height = submission["meta"]["config"]["height"]
     if pix:  # convert to graph coordinates
         x = screen_to_graph(xrange[0], xrange[1], width, point[0])
-        y = screen_to_graph(yrange[0], yrange[1], height, point[1])
+        y = -screen_to_graph(yrange[0], yrange[1], height, point[1])
         point = (x, y)
     if hl:
-        return in_range(point[1], yrange[0], yrange[0])
+        return in_range(point[1], yrange[0], yrange[1])
+    elif vl:
+        in_range(point[0], x1, x2)
     return in_range(point[1], yrange[0], yrange[1]) and in_range(point[0], x1, x2)
 
 
@@ -313,7 +322,7 @@ def flip_grader_data(submission: dict) -> dict:
                 submission_data[toolid][i]["point"] = flip_point(
                     submission_data[toolid][i]["point"], range_data
                 )
-    submission_new["config"]["xrange"] = [
+    submission_new["meta"]["config"]["xrange"] = [
         range_data["y_start"],
         range_data["y_end"],
     ]
@@ -324,7 +333,7 @@ def flip_grader_data(submission: dict) -> dict:
     submission_new["meta"]["config"]["width"] = range_data["height"]
     submission_new["meta"]["config"]["height"] = range_data["width"]
 
-    return submission
+    return submission_new
 
 
 def flip_point(
@@ -338,7 +347,7 @@ def flip_point(
         range_data["width"],
         x,
     )
-    y_g = screen_to_graph(
+    y_g = -screen_to_graph(
         range_data["y_start"],
         range_data["y_end"],
         range_data["height"],
@@ -355,7 +364,7 @@ def flip_point(
         range_data["x_start"],
         range_data["x_end"],
         range_data["width"],
-        x_g,
+        -x_g,
     )
     return (x_s, y_s)
 
@@ -377,33 +386,35 @@ def format_initials(
     """
     new_format = []
     if tool["name"] in ["horizontal-line", "vertical-line"]:
+        coordinates = []
         for initial in initials:
             if initial["toolid"] == tool["id"]:
-                coordinates = initial["coordinates"]
-                if tool["name"] == "horizontal-line":
-                    new_format = [
-                        {
-                            "x": graph_to_screen(
-                                ranges["x_start"],
-                                ranges["x_end"],
-                                ranges["width"],
-                                coord,
-                            )
-                        }
-                        for coord in coordinates
-                    ]
-                else:
-                    new_format = [
-                        {
-                            "y": graph_to_screen(
-                                ranges["y_start"],
-                                ranges["y_end"],
-                                ranges["height"],
-                                coord,
-                            )
-                        }
-                        for coord in coordinates
-                    ]
+                coordinates += initial["coordinates"]
+
+        if tool["name"] == "vertical-line":
+            new_format = [
+                {
+                    "x": graph_to_screen(
+                        ranges["x_start"],
+                        ranges["x_end"],
+                        ranges["width"],
+                        coord,
+                    )
+                }
+                for coord in coordinates
+            ]
+        else:
+            new_format = [
+                {
+                    "y": graph_to_screen(
+                        ranges["y_start"],
+                        ranges["y_end"],
+                        ranges["height"],
+                        -coord,
+                    )
+                }
+                for coord in coordinates
+            ]
     elif tool["name"] in ["spline", "freeform", "polyline"]:
         for initial in initials:
             if initial["toolid"] == tool["id"]:
@@ -421,7 +432,7 @@ def format_initials(
                                 ranges["y_start"],
                                 ranges["y_end"],
                                 ranges["height"],
-                                coordinates[i + 1],
+                                -coordinates[i + 1],
                             ),
                         ]
                         for i in range(0, len(coordinates), 2)
@@ -456,7 +467,6 @@ def format_initials(
                             new_format.append(formatted_x_y_vals)
                         if broken:
                             x1 = new_start
-        return new_format
     else:  # one and two point tools
         new_format = []
         for initial in initials:
@@ -474,7 +484,7 @@ def format_initials(
                             ranges["y_start"],
                             ranges["y_end"],
                             ranges["height"],
-                            coordinates[i + 1],
+                            -coordinates[i + 1],
                         ),
                     }
                     for i in range(0, len(coordinates), 2)
