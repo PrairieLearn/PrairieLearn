@@ -464,13 +464,7 @@ export async function initExpress(): Promise<Express> {
   if (config.devMode) {
     app.use('/pl/dev_login', (await import('./pages/authLoginDev/authLoginDev.js')).default);
   }
-  app.use('/pl/logout', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'logout';
-      next();
-    },
-    (await import('./pages/authLogout/authLogout.js')).default,
-  ]);
+  app.use('/pl/logout', (await import('./pages/authLogout/authLogout.js')).default);
   app.use((await import('./middlewares/authn.js')).default); // authentication, set res.locals.authn_user
   app.use('/pl/api/v1', (await import('./middlewares/authnToken.js')).default); // authn for the API, set res.locals.authn_user
 
@@ -846,19 +840,18 @@ export async function initExpress(): Promise<Express> {
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navPage = 'assessment';
+        next();
+      },
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+    ],
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
     (req, res, _next) => {
       res.redirect(`${req.params[0]}/questions`);
-    },
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    function (req, res, next) {
-      res.locals.navPage = 'assessment';
-      next();
     },
   );
   app.use(
@@ -971,10 +964,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'assessment';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'assessment';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1075,6 +1076,10 @@ export async function initExpress(): Promise<Express> {
   // single question
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
     (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
@@ -1090,13 +1095,6 @@ export async function initExpress(): Promise<Express> {
           search: getSearchParams(req).toString(),
         }),
       );
-    },
-  );
-  app.use(
-    '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'question';
-      next();
     },
   );
   app.use(
@@ -1120,10 +1118,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1158,7 +1164,7 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin',
-    function (req, res, next) {
+    function (req: Request, res: Response, next: NextFunction) {
       res.locals.navPage = 'course_admin';
       next();
     },
@@ -1229,10 +1235,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1293,10 +1307,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'instance_admin';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'instance_admin';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1570,6 +1592,10 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
   );
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -1582,10 +1608,6 @@ export async function initExpress(): Promise<Express> {
         search: getSearchParams(req).toString(),
       }),
     );
-  });
-  app.use('/pl/course/:course_id(\\d+)/question/:question_id(\\d+)', function (req, res, next) {
-    res.locals.navPage = 'question';
-    next();
   });
 
   app.use(
@@ -1607,10 +1629,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1629,12 +1659,12 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
   );
-  app.use('/pl/course/:course_id(\\d+)/course_admin', function (req, res, next) {
-    res.locals.navPage = 'course_admin';
-    next();
-  });
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/settings',
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
@@ -1700,10 +1730,18 @@ export async function initExpress(): Promise<Express> {
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_edit',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorFileEditor/instructorFileEditor.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/file_view',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorFileBrowser/instructorFileBrowser.js')).default,
   );
   app.use(
@@ -1810,10 +1848,6 @@ export async function initExpress(): Promise<Express> {
     (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
-    function (req: Request, res: Response, next: NextFunction) {
-      res.locals.navPage = 'public_question';
-      next();
-    },
     (await import('./pages/publicQuestionFileBrowser/publicQuestionFileBrowser.js')).default,
   ]);
   app.use(

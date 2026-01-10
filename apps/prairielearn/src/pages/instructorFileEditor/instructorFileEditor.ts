@@ -18,7 +18,6 @@ import {
 import { IdSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
-import type { NavPage } from '../../components/Navbar.types.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../lib/base64-util.js';
 import { getCourseOwners } from '../../lib/course.js';
 import { FileEditSchema } from '../../lib/db-types.js';
@@ -26,7 +25,7 @@ import { getFileMetadataForPath } from '../../lib/editorUtil.js';
 import { FileModifyEditor } from '../../lib/editors.js';
 import { deleteFile, getFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
-import { getPaths } from '../../lib/instructorFiles.js';
+import { type FileNavPage, getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -46,7 +45,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_edit'],
     unauthorizedUsers: 'passthrough',
   }),
-  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: NavPage }>(
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: FileNavPage }>(
     async (req, res) => {
       // Do not allow users to edit the exampleCourse
       if (res.locals.course.example_course) {
@@ -89,7 +88,7 @@ router.get(
       // Do not allow users to edit files in bad locations (e.g., outside the
       // current course, outside the current course instance, etc.). Do this by
       // wrapping everything in getPaths, which throws an error on a bad path.
-      const paths = getPaths(req.params[0], res.locals);
+      const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
 
       // We could also check if the file exists, if the file actually is a
       // file and not a directory, if the file is non-binary, etc., and try
@@ -184,57 +183,59 @@ router.get(
 
 router.post(
   '/*',
-  typedAsyncHandler<'course' | 'course-instance' | 'assessment'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_edit) {
-      throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
-    }
-
-    const paths = getPaths(req.params[0], res.locals);
-
-    const container = {
-      rootPath: paths.rootPath,
-      invalidRootPaths: paths.invalidRootPaths,
-    };
-
-    // NOTE: All actions are meant to do things to *files* and not to directories
-    // (or anything else). However, nowhere do we check that it is actually being
-    // applied to a file and not to a directory.
-
-    if (req.body.__action === 'save_and_sync') {
-      const editID = await writeDraftEdit({
-        user_id: res.locals.user.id,
-        authn_user_id: res.locals.authn_user.id,
-        course_id: res.locals.course.id,
-        dir_name: paths.workingDirectory,
-        file_name: paths.workingFilename,
-        orig_hash: req.body.file_edit_orig_hash,
-        editContents: req.body.file_edit_contents,
-      });
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container,
-        filePath: paths.workingPath,
-        editContents: req.body.file_edit_contents,
-        origHash: req.body.file_edit_orig_hash,
-      });
-
-      const serverJob = await editor.prepareServerJob();
-      await updateJobSequenceId(editID, serverJob.jobSequenceId);
-
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch {
-        // We're deliberately choosing to ignore errors here. If there was an
-        // error, we'll still redirect the user back to the same page, which will
-        // allow them to handle the error.
+  typedAsyncHandler<'course' | 'course-instance' | 'assessment', { navPage: FileNavPage }>(
+    async (req, res) => {
+      if (!res.locals.authz_data.has_course_permission_edit) {
+        throw new HttpStatusError(403, 'Access denied (must be a course Editor)');
       }
 
-      res.redirect(req.originalUrl);
-    } else {
-      throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
-    }
-  }),
+      const paths = getPaths(req.params[0], res.locals, res.locals.navPage);
+
+      const container = {
+        rootPath: paths.rootPath,
+        invalidRootPaths: paths.invalidRootPaths,
+      };
+
+      // NOTE: All actions are meant to do things to *files* and not to directories
+      // (or anything else). However, nowhere do we check that it is actually being
+      // applied to a file and not to a directory.
+
+      if (req.body.__action === 'save_and_sync') {
+        const editID = await writeDraftEdit({
+          user_id: res.locals.user.id,
+          authn_user_id: res.locals.authn_user.id,
+          course_id: res.locals.course.id,
+          dir_name: paths.workingDirectory,
+          file_name: paths.workingFilename,
+          orig_hash: req.body.file_edit_orig_hash,
+          editContents: req.body.file_edit_contents,
+        });
+
+        const editor = new FileModifyEditor({
+          locals: res.locals,
+          container,
+          filePath: paths.workingPath,
+          editContents: req.body.file_edit_contents,
+          origHash: req.body.file_edit_orig_hash,
+        });
+
+        const serverJob = await editor.prepareServerJob();
+        await updateJobSequenceId(editID, serverJob.jobSequenceId);
+
+        try {
+          await editor.executeWithServerJob(serverJob);
+        } catch {
+          // We're deliberately choosing to ignore errors here. If there was an
+          // error, we'll still redirect the user back to the same page, which will
+          // allow them to handle the error.
+        }
+
+        res.redirect(req.originalUrl);
+      } else {
+        throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
+      }
+    },
+  ),
 );
 
 function getHash(contents: string) {
