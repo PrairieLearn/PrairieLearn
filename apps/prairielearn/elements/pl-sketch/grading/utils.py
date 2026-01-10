@@ -288,14 +288,15 @@ def point_in_range(
     yrange = submission["meta"]["config"]["yrange"]
     width = submission["meta"]["config"]["width"]
     height = submission["meta"]["config"]["height"]
+
     if pix:  # convert to graph coordinates
         x = screen_to_graph(xrange[0], xrange[1], width, point[0])
-        y = -screen_to_graph(yrange[0], yrange[1], height, point[1])
+        y = screen_to_graph(yrange[1], yrange[0], height, point[1])
         point = (x, y)
     if hl:
         return in_range(point[1], yrange[0], yrange[1])
     elif vl:
-        in_range(point[0], x1, x2)
+        return in_range(point[0], x1, x2)
     return in_range(point[1], yrange[0], yrange[1]) and in_range(point[0], x1, x2)
 
 
@@ -347,9 +348,9 @@ def flip_point(
         range_data["width"],
         x,
     )
-    y_g = -screen_to_graph(
-        range_data["y_start"],
+    y_g = screen_to_graph(
         range_data["y_end"],
+        range_data["y_start"],
         range_data["height"],
         y,
     )
@@ -361,10 +362,10 @@ def flip_point(
         y_g,
     )
     y_s = graph_to_screen(
-        range_data["x_start"],
         range_data["x_end"],
+        range_data["x_start"],
         range_data["width"],
-        -x_g,
+        x_g,
     )
     return (x_s, y_s)
 
@@ -407,10 +408,10 @@ def format_initials(
             new_format = [
                 {
                     "y": graph_to_screen(
-                        ranges["y_start"],
                         ranges["y_end"],
+                        ranges["y_start"],
                         ranges["height"],
-                        -coord,
+                        coord,
                     )
                 }
                 for coord in coordinates
@@ -429,10 +430,10 @@ def format_initials(
                                 coordinates[i],
                             ),
                             graph_to_screen(
-                                ranges["y_start"],
                                 ranges["y_end"],
+                                ranges["y_start"],
                                 ranges["height"],
-                                -coordinates[i + 1],
+                                coordinates[i + 1],
                             ),
                         ]
                         for i in range(0, len(coordinates), 2)
@@ -481,10 +482,10 @@ def format_initials(
                             coordinates[i],
                         ),
                         "y": graph_to_screen(
-                            ranges["y_start"],
                             ranges["y_end"],
+                            ranges["y_start"],
                             ranges["height"],
-                            -coordinates[i + 1],
+                            coordinates[i + 1],
                         ),
                     }
                     for i in range(0, len(coordinates), 2)

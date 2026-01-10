@@ -552,7 +552,7 @@ def check_grader(
                         'The "match-fun" grading criterion does not support the line, polygon, or horizontal/vertical line tools.'
                     )
             pl.get_boolean_attrib(grader_tag, "allow-undefined", False)
-            defaults["tolerance"] = 15
+            defaults["tolerance"] = 20
         case "less-than" | "greater-than":
             optional_attribs.extend([
                 "y",
@@ -922,8 +922,15 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         return
 
     graders = data["params"][name]["sketch_config"]["graders"]
+
     if len(graders) == 0:
-        data["partial_scores"][name] = {"score": 1, "weight": 0, "feedback": None}
+        data["partial_scores"][name] = {
+            "score": 1,
+            "weight": weight,
+            "feedback": [{"correct": True, "fb": "Correct!"}],
+        }
+        return
+
     graders = sorted(graders, key=lambda grader: grader["stage"])
     sorted_graders = {}
     for grader in graders:
@@ -939,7 +946,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     # get the score, weight, feedback for each grader
     scores = []
     weights = []
-    feedbacks = set()
+    all_feedback = []
     debug_messages = []
     num_correct = 0
 
@@ -962,7 +969,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             else:
                 # Incorrect answers block later stages and also trigger feedback
                 scores.append(0)
-                feedbacks.add(feedback[0])
+                all_feedback.append(feedback[0])
                 if debug:
                     debug_messages += [feedback]
                 if stage != 0:
@@ -977,17 +984,17 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     )
 
     # Print feedback and potentially debug output (if the attribute is set)
-    feedback = []
-    if len(feedbacks) == 0:
-        feedback += [{"correct": True, "fb": "Correct!"}]
+    feedback_out = []
+    if len(all_feedback) == 0:
+        feedback_out += [{"correct": True, "fb": "Correct!"}]
     elif not debug:
-        feedback += [
+        feedback_out += [
             {"correct": False, "fb": feedback}
-            for feedback in feedbacks
+            for feedback in all_feedback
             if feedback != ""
         ]
     else:
-        feedback += [
+        feedback_out += [
             {
                 "correct": False,
                 "fb": debug[0],
@@ -1000,5 +1007,5 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     data["partial_scores"][name] = {
         "score": score,
         "weight": weight,
-        "feedback": feedback,
+        "feedback": feedback_out,
     }
