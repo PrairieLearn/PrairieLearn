@@ -840,7 +840,13 @@ export async function initExpress(): Promise<Express> {
   // single assessment
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/assessment/:assessment_id(\\d+)',
-    [(await import('./middlewares/selectAndAuthzAssessment.js')).default],
+    [
+      function (req: Request, res: Response, next: NextFunction) {
+        res.locals.navPage = 'assessment';
+        next();
+      },
+      (await import('./middlewares/selectAndAuthzAssessment.js')).default,
+    ],
   );
   app.use(
     /^(\/pl\/course_instance\/[0-9]+\/instructor\/assessment\/[0-9]+)\/?$/,
@@ -1070,6 +1076,10 @@ export async function initExpress(): Promise<Express> {
   // single question
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/question/:question_id(\\d+)',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
     (await import('./middlewares/authzHasCoursePreview.js')).default,
   );
@@ -1152,6 +1162,13 @@ export async function initExpress(): Promise<Express> {
   app.use(/^(\/pl\/course_instance\/[0-9]+\/instructor\/course_admin)\/?$/, (req, res, _next) => {
     res.redirect(`${req.params[0]}/instances`);
   });
+  app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
+  );
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/settings',
     (await import('./pages/instructorCourseAdminSettings/instructorCourseAdminSettings.js'))
@@ -1243,6 +1260,10 @@ export async function initExpress(): Promise<Express> {
   });
   app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin',
+    function (req, res, next) {
+      res.locals.navPage = 'instance_admin';
+      next();
+    },
     asyncHandler(async (req, res, next) => {
       // The navigation tabs rely on these values to know when to show/hide themselves
       // so we need to load it for all instance admin pages.
@@ -1571,6 +1592,10 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/question/:question_id(\\d+)',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'question';
+      next();
+    },
     (await import('./middlewares/selectAndAuthzInstructorQuestion.js')).default,
   );
   app.use(/^(\/pl\/course\/[0-9]+\/question\/[0-9]+)\/?$/, (req, res, _next) => {
@@ -1634,6 +1659,10 @@ export async function initExpress(): Promise<Express> {
 
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin',
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navPage = 'course_admin';
+      next();
+    },
     (await import('./pages/instructorCourseAdmin/instructorCourseAdmin.js')).default,
   );
   app.use(
