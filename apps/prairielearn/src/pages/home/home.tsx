@@ -13,10 +13,10 @@ import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
+import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
@@ -124,9 +124,7 @@ router.get(
       withAuthzData: false,
     });
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: res.locals.authn_institution.id,
-    });
+    const search = getUrl(req).search;
 
     res.send(
       PageLayout({
@@ -148,7 +146,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
+            search={search}
           />
         ),
       }),

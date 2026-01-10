@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
@@ -16,7 +16,7 @@ export function InstructorCourseAdminSettings({
   origHash,
   courseGHLink,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
   aiQuestionGenerationEnabled: boolean;
   aiQuestionGenerationCourseToggleEnabled: boolean;
   coursePathExists: boolean;
@@ -235,7 +235,7 @@ function CourseDirectoryMissingAlert({
   coursePathExists,
   courseInfoExists,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
   coursePathExists: boolean;
   courseInfoExists: boolean;
 }) {

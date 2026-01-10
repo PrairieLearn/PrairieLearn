@@ -7,7 +7,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -21,7 +21,7 @@ export function InstructorAssessmentSettings({
   assessmentModules,
   canEdit,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   origHash: string;
   assessmentGHLink: string | null;
   tids: string[];
@@ -114,7 +114,7 @@ export function InstructorAssessmentSettings({
                   (set) => html`
                     <option
                       value="${set.name}"
-                      ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                      ${resLocals.assessment_set.id === set.id ? 'selected' : ''}
                     >
                       ${set.name}
                     </option>
@@ -148,7 +148,7 @@ export function InstructorAssessmentSettings({
                   (module) => html`
                     <option
                       value="${module.name}"
-                      ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
+                      ${resLocals.assessment_module?.id === module.id ? 'selected' : ''}
                     >
                       ${module.name}
                     </option>

@@ -1,6 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -10,14 +9,15 @@ import { Hydrate } from '@prairielearn/preact/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { CourseInstanceSchema } from '../../lib/db-types.js';
+import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
 } from '../../models/course-instances.js';
+import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 
 import { InstructorCourseAdminInstances } from './InstructorCourseAdminInstances.html.js';
 import { InstructorCourseAdminInstanceRowSchema } from './instructorCourseAdminInstances.shared.js';
@@ -27,7 +27,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
@@ -42,9 +42,9 @@ router.get(
     const {
       authz_data: authzData,
       course,
-      institution,
       __csrf_token,
       urlPrefix,
+      is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -73,11 +73,6 @@ router.get(
         })),
       );
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-    });
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -93,13 +88,13 @@ router.get(
         content: (
           <Hydrate>
             <InstructorCourseAdminInstances
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               courseInstances={safeCourseInstancesWithEnrollmentCounts}
               course={course}
               canEditCourse={authzData.has_course_permission_edit}
               needToSync={needToSync}
               csrfToken={__csrf_token}
               urlPrefix={urlPrefix}
+              isAdministrator={isAdministrator}
             />
           </Hydrate>
         ),
@@ -110,15 +105,10 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
-    const { course, institution } = extractPageContext(res.locals, {
+  typedAsyncHandler<'course'>(async (req, res) => {
+    const { course, authz_data: authzData } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
-    });
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
     });
 
     if (req.body.__action === 'add_course_instance') {
@@ -129,6 +119,7 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        course_instance_permission,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -137,6 +128,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean().optional(),
           self_enrollment_use_enrollment_code: z.boolean().optional(),
+          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
         })
         .parse(req.body);
 
@@ -215,8 +207,7 @@ router.post(
       );
 
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
-        enrollmentManagementEnabled
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
@@ -224,7 +215,7 @@ router.post(
           : undefined;
 
       const editor = new CourseInstanceAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         short_name,
         long_name,
         metadataOverrides: {
@@ -245,6 +236,17 @@ router.post(
         uuid: editor.uuid,
         course,
       });
+
+      // Assign course instance permissions if a non-None permission was selected.
+      if (course_instance_permission !== 'None') {
+        await insertCourseInstancePermissions({
+          course_id: course.id,
+          course_instance_id: courseInstance.id,
+          user_id: authzData.authn_user.id,
+          course_instance_role: course_instance_permission,
+          authn_user_id: authzData.authn_user.id,
+        });
+      }
 
       res.json({ course_instance_id: courseInstance.id });
     } else {
