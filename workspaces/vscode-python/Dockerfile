@@ -31,7 +31,7 @@ USER coder
 WORKDIR "/home/coder"
 
 # Create the virtual environment as the coder user
-RUN uv venv --python-preference managed --python 3.12 /home/coder/.venv
+RUN uv venv --python-preference managed --python 3.13 /home/coder/.venv
 
 COPY requirements.txt /home/coder/requirements.txt
 RUN uv pip install -r /home/coder/requirements.txt
