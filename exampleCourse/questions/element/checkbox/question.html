@@ -51,11 +51,11 @@
 
 <pl-card header="Part 3">
     <pl-question-panel>
-        <p>Here, the <code>pl-checkbox</code> element displays options as they were written, e.g. <code>fixed-order="true"</code>, and gives more point weight to this question vs. priors, e.g. <code>weight="3"</code>  </p>
+        <p>Here, the <code>pl-checkbox</code> element displays options as they were written, e.g. <code>order="fixed"</code>, and gives more point weight to this question vs. priors, e.g. <code>weight="3"</code>  </p>
         <p> Group work provides which of the following benefits: </p>
     </pl-question-panel>
 
-    <pl-checkbox answers-name="group_ans_fixed" fixed-order="true" weight="3">
+    <pl-checkbox answers-name="group_ans_fixed" order="fixed" weight="3">
         <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
         <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
         <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -70,12 +70,12 @@
 
 <pl-card header="Part 4">
     <pl-question-panel>
-        <p>Here, options are displayed on the same line with <code>inline="true"</code> and the help text is suppressed with <code>hide-help-text="true"</code>.
+        <p>Here, options are displayed on the same line with <code>display="inline"</code> and the help text is suppressed with <code>hide-help-text="true"</code>.
             Displaying options inline is only ideal if the choice options are not verbose and the number of choices is low. </p>
         <p> Group work provides which of the following benefits: </p>
     </pl-question-panel>
 
-    <pl-checkbox answers-name="group_ans_v4" inline="true" number-answers="3" hide-help-text="true">
+    <pl-checkbox answers-name="group_ans_v4" display="inline" number-answers="3" hide-help-text="true">
         <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
         <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
         <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -90,12 +90,12 @@
 
 <pl-card header="Part 5">
     <pl-question-panel>
-        <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the default grading algorithm (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
+        <p>Here, partial credit is given with <code>partial-credit="net-correct"</code>, using the net correct grading algorithm (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
 
         <p> Group work provides which of the following benefits: </p>
     </pl-question-panel>
 
-    <pl-checkbox answers-name="group_ans_v5" partial-credit="true">
+    <pl-checkbox answers-name="group_ans_v5" partial-credit="net-correct">
         <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
         <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
         <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -110,12 +110,12 @@
 
 <pl-card header="Part 6">
     <pl-question-panel>
-        <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "every decision counts (EDC)" grading algorithm with <code>partial-credit-method="EDC"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
+        <p>Here, partial credit is given with <code>partial-credit="each-answer"</code>, using the "every decision counts" grading algorithm (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).</p>
 
         <p> Group work provides which of the following benefits: </p>
     </pl-question-panel>
 
-    <pl-checkbox answers-name="group_ans_v6" partial-credit="true" partial-credit-method="EDC">
+    <pl-checkbox answers-name="group_ans_v6" partial-credit="each-answer">
         <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
         <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
         <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -130,13 +130,13 @@
 
 <pl-card header="Part 7">
     <pl-question-panel>
-        <p>Here, partial credit is given with <code>partial-credit="true"</code>, using the "coverage (COV)" grading algorithm with <code>partial-credit-method="COV"</code> (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).
+        <p>Here, partial credit is given with <code>partial-credit="coverage"</code>, using the "coverage" grading algorithm (click the question mark to see help text that explains this algorithm). Since partial credit is given, no feedback is provided on the correctness of individual selections until this question variant can no longer be answered (view in student mode to see the result).
             We have also set <code>show-number-correct="true"</code> so that the number of correct options is displayed in the help text at the bottom of the question.</p>
 
         <p> Group work provides which of the following benefits: </p>
     </pl-question-panel>
 
-    <pl-checkbox answers-name="group_ans_v7" partial-credit="true" partial-credit-method="COV" show-number-correct="true">
+    <pl-checkbox answers-name="group_ans_v7" partial-credit="coverage" show-number-correct="true">
         <pl-answer correct="true">Exposure to new viewpoints from different fields and life experiences.</pl-answer>
         <pl-answer correct="true">Improved creativity and overall work quality.</pl-answer>
         <pl-answer>               The ability to work on a project by yourself.</pl-answer>
@@ -190,7 +190,7 @@
 
 <pl-card header="Part 10">
     <pl-question-panel>
-        <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an 
+        <p>Here, you can observe the behavior of the <code>feedback</code> attribute in <code>pl-answer</code>. Feedback is expected to convey a small piece of information that explains why an
             answer is correct or incorrect. When an answer with a feedback setting is selected and graded, a small box containing the feedback is displayed next to the answer.</p>
 
         <p>Group work provides which of the following benefits:</p>
