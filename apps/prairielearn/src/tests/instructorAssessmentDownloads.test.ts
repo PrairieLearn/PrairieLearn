@@ -3,12 +3,23 @@ import * as cheerio from 'cheerio';
 import { parse as csvParse } from 'csv-parse/sync';
 import type { Element } from 'domhandler';
 import fetch from 'node-fetch';
+import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
+
+import { config } from '../lib/config.js';
+import type { ResLocalsForPage } from '../lib/res-locals.js';
+import { selectAssessmentSetById } from '../models/assessment-set.js';
+import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
+import { selectCourseById } from '../models/course.js';
+import { generateAndEnrollUsers } from '../models/enrollment.js';
+import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import { withUser } from './utils/auth.js';
 
 const locals = {} as {
   $: cheerio.CheerioAPI;
@@ -32,9 +43,31 @@ const locals = {} as {
     points: number;
   };
   getSubmittedAnswer: (variant: any) => object;
+  variant: {
+    course_instance_id: string;
+    course_id: string;
+  };
 };
 
-const assessmentPoints = 5;
+const addNumbersMaxPoints = helperExam.exam1AutomaticTestSuite.keyedQuestions.addNumbers.maxPoints;
+
+async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
+  const res = await fetch(url);
+  assert.equal(res.status, 200);
+  return cheerio.load(await res.text());
+}
+
+function getCsrfToken($: cheerio.CheerioAPI): string {
+  const elemList = $('form input[name="__csrf_token"]');
+  assert.isAtLeast(elemList.length, 1);
+  return elemList[0].attribs.value;
+}
+
+async function downloadCsv(url: string): Promise<any[]> {
+  const res = await fetch(url);
+  assert.equal(res.status, 200);
+  return csvParse<any>(await res.text(), { columns: true, cast: true });
+}
 
 describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
@@ -55,11 +88,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
         locals.expectedResult = {
           submission_score: 1,
           submission_correct: true,
-          instance_question_points: assessmentPoints,
-          instance_question_score_perc: (assessmentPoints / 5) * 100,
-          assessment_instance_points: assessmentPoints,
+          instance_question_points: addNumbersMaxPoints,
+          instance_question_score_perc: 100,
+          assessment_instance_points: addNumbersMaxPoints,
           assessment_instance_score_perc:
-            (assessmentPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
+            (addNumbersMaxPoints / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
         locals.getSubmittedAnswer = function (variant: any) {
           return {
@@ -278,6 +311,191 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.equal(data[0]['Correct'], 'TRUE');
       assert.equal(data[0]['Max points'], 5);
       assert.equal(data[0]['Question % score'], 100);
+    });
+  });
+
+  describe('13. Comprehensive test of all downloads', function () {
+    it('should attempt to download every file in getFilenames', async () => {
+      const assessment = await selectAssessmentById(locals.assessment_id);
+      assert.isNotNull(assessment.assessment_set_id);
+      assert.isFalse(assessment.team_work);
+
+      const filenames: string[] = Object.values(
+        getFilenames({
+          assessment,
+          assessment_set: await selectAssessmentSetById(assessment.assessment_set_id),
+          course_instance: await selectCourseInstanceById(locals.variant.course_instance_id),
+          course: await selectCourseById(locals.variant.course_id),
+        } as ResLocalsForPage<'assessment'>),
+      );
+
+      await Promise.all(
+        filenames.map(async (filename) => {
+          const downloadUrl =
+            locals.courseInstanceBaseUrl +
+            '/instructor/assessment/' +
+            locals.assessment_id +
+            '/downloads/' +
+            filename;
+          const res = await fetch(downloadUrl);
+          assert.equal(res.status, 200, `Failed to download ${filename}`);
+          if (filename.endsWith('.csv')) {
+            const csvContent = await res.text();
+            const data = csvParse<any>(csvContent, { columns: true, cast: true });
+            assert.isAtLeast(data.length, 1);
+          } else if (filename.endsWith('.zip')) {
+            const zipContent = Buffer.from(await res.arrayBuffer());
+            const zip = await unzipper.Open.buffer(zipContent);
+            assert.isAtLeast(zip.files.length, 1);
+          } else {
+            assert.fail(`Unknown file type: ${filename}`);
+          }
+        }),
+      );
+    });
+  });
+
+  describe('Group Work Downloads', function () {
+    const ctx: Record<string, any> = {};
+
+    beforeAll(async function () {
+      const assessment = await selectAssessmentByTid({
+        course_instance_id: '1',
+        tid: 'exam14-groupWork',
+      });
+      ctx.assessment_id = assessment.id;
+      ctx.siteUrl = 'http://localhost:' + config.serverPort;
+      ctx.courseInstanceBaseUrl = ctx.siteUrl + '/pl/course_instance/1';
+      ctx.assessmentUrl = ctx.courseInstanceBaseUrl + '/assessment/' + assessment.id;
+      ctx.instructorAssessmentGroupsUrl =
+        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/groups';
+      ctx.instructorAssessmentDownloadsUrl =
+        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/downloads';
+
+      ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
+      ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
+      let res = await fetch(ctx.instructorAssessmentGroupsUrl, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __action: 'add_team',
+          __csrf_token: getCsrfToken(ctx.$),
+          team_name: 'testteam',
+          uids: ctx.studentUsers.map((u: any) => u.uid).join(','),
+        }),
+      });
+      assert.equal(res.status, 200);
+
+      await withUser(ctx.studentUsers[0], async () => {
+        ctx.$ = await fetchPage(ctx.assessmentUrl);
+        res = await fetch(ctx.assessmentUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'new_instance',
+            __csrf_token: getCsrfToken(ctx.$),
+          }),
+        });
+        assert.equal(res.status, 200);
+        ctx.$ = cheerio.load(await res.text());
+
+        const questionLinks = ctx.$('a[href*="/instance_question/"]');
+        assert.isAtLeast(questionLinks.length, 1, 'Should have at least one question link');
+        ctx.questionUrl = ctx.siteUrl + questionLinks[0].attribs.href;
+        ctx.$ = await fetchPage(ctx.questionUrl);
+        const variantInput = ctx.$('input[name="__variant_id"]');
+        assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
+        ctx.variant_id = variantInput[0].attribs.value;
+
+        const { queryRow } = await import('@prairielearn/postgres');
+        const { VariantSchema } = await import('../lib/db-types.js');
+        ctx.variant = await queryRow(
+          'SELECT * FROM variants WHERE id = $1',
+          [ctx.variant_id],
+          VariantSchema,
+        );
+
+        res = await fetch(ctx.questionUrl, {
+          method: 'POST',
+          body: new URLSearchParams({
+            __action: 'grade',
+            __csrf_token: getCsrfToken(ctx.$),
+            __variant_id: ctx.variant_id,
+            wx: String(ctx.variant.true_answer.wx),
+            wy: String(ctx.variant.true_answer.wy),
+          }),
+        });
+        assert.equal(res.status, 200);
+      });
+
+      ctx.assessment = await selectAssessmentById(ctx.assessment_id);
+      ctx.filenames = getFilenames({
+        assessment: ctx.assessment,
+        assessment_set: await selectAssessmentSetById(ctx.assessment.assessment_set_id),
+        course_instance: await selectCourseInstanceById(ctx.variant.course_instance_id),
+        course: await selectCourseById(ctx.variant.course_id),
+      } as ResLocalsForPage<'assessment'>);
+    });
+
+    it('should have team_work assessment with group-specific filenames', function () {
+      assert.isTrue(ctx.assessment.team_work);
+      assert.isDefined(ctx.filenames.teamsCsvFilename);
+      assert.isDefined(ctx.filenames.scoresTeamCsvFilename);
+      assert.isDefined(ctx.filenames.pointsTeamCsvFilename);
+    });
+
+    it('groups.csv should contain both team members', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.teamsCsvFilename,
+      );
+      const teamRows = data.filter((row: any) => row['groupName'] === 'testteam');
+      assert.lengthOf(teamRows, 2);
+
+      const uids = teamRows.map((row: any) => row['UID']);
+      assert.include(uids, ctx.studentUsers[0].uid);
+      assert.include(uids, ctx.studentUsers[1].uid);
+    });
+
+    it('scores_by_group.csv should contain team with valid score', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresTeamCsvFilename,
+      );
+      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      assert.isDefined(teamRow);
+      assert.isString(teamRow['Usernames']);
+      assert.property(teamRow, 'Exam 14');
+      assert.isNumber(teamRow['Exam 14']);
+      assert.isAtLeast(teamRow['Exam 14'], 0);
+    });
+
+    it('points_by_group.csv should contain team with valid points', async () => {
+      const data = await downloadCsv(
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsTeamCsvFilename,
+      );
+      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      assert.isDefined(teamRow);
+      assert.isString(teamRow['Usernames']);
+      assert.property(teamRow, 'Exam 14');
+      assert.isNumber(teamRow['Exam 14']);
+      assert.isAtLeast(teamRow['Exam 14'], 0);
+    });
+
+    it('should download all files successfully', async () => {
+      const filenames: string[] = Object.values(ctx.filenames);
+
+      await Promise.all(
+        filenames.map(async (filename) => {
+          const res = await fetch(ctx.instructorAssessmentDownloadsUrl + '/' + filename);
+          assert.equal(res.status, 200, `Failed to download ${filename}`);
+          if (filename.endsWith('.csv')) {
+            const data = csvParse<any>(await res.text(), { columns: true, cast: true });
+            assert.isAtLeast(data.length, 1);
+          } else if (filename.endsWith('.zip')) {
+            const zip = await unzipper.Open.buffer(Buffer.from(await res.arrayBuffer()));
+            assert.isAtLeast(zip.files.length, 1);
+          } else {
+            assert.fail(`Unknown file type: ${filename}`);
+          }
+        }),
+      );
     });
   });
 });

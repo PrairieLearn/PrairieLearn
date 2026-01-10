@@ -111,7 +111,7 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-function getFilenames(locals: ResLocalsForPage<'assessment'>) {
+export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
