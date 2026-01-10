@@ -10,10 +10,10 @@
 <pl-card>
   <pl-question-panel>
     <p>Within this question, you can observe the default behavior of the <a href="https://prairielearn.readthedocs.io/en/latest/elements/pl-number-input"><code>pl-number-input</code></a> element.
-      In particular, the default input field has help text as a placeholder as well as a question button and is set to use <code>"relabs"</code> to check the tolerance, which is a combination of relative (<code>"rtol"</code>) and absolute (<code>"atol"</code>) tolerances.</p>
+      In particular, the default input field has help text as a placeholder as well as a question button and is set to use <code>"relabs"</code> to check the tolerance, which is a combination of relative (<code>"rtol"</code>) and absolute (<code>"atol"</code>) tolerances. The attribute <code>initial-value</code> fills the box the first time it is rendered, which can save students from retyping a suggested starting value.</p>
     <p> Solve for the value of $c$ given $c^2 = {{params.a}}^2 + {{params.b}}^2$ </p>
   </pl-question-panel>
-  <pl-number-input aria-label="c" answers-name="c_1"></pl-number-input>
+  <pl-number-input aria-label="c" answers-name="c_1" initial-value="{{correct_answers.c_1}}"></pl-number-input>
 </pl-card>
 
 <pl-card>
