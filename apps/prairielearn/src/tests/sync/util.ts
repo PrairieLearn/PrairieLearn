@@ -119,7 +119,6 @@ export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
 const course = {
-  uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
   assessmentSets: [

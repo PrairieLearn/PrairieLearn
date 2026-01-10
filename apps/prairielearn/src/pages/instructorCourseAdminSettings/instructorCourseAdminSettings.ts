@@ -1,4 +1,3 @@
-import * as crypto from 'node:crypto';
 import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
@@ -141,7 +140,6 @@ router.post(
       return res.redirect(req.originalUrl);
     } else if (req.body.__action === 'add_configuration') {
       const infoJson = {
-        uuid: crypto.randomUUID(),
         name: path.basename(res.locals.course.path),
         title: path.basename(res.locals.course.path),
         timezone: res.locals.institution.display_timezone,
