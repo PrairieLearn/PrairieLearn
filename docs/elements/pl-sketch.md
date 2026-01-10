@@ -8,16 +8,18 @@ Display and sketch curves and other mathematical objects (e.g., points, asymptot
 
 <!-- prettier-ignore -->
 ```html title="question.html"
-<pl-sketch answers-name="sketch-input">
+  <pl-sketch answers-name="sketch-example" xrange="-1,2" yrange="-1,5">
     <pl-sketch-tool id="fd" type="free-draw"></pl-sketch-tool>
     <pl-sketch-tool id="hl" type="horizontal-line"></pl-sketch-tool>
     <pl-sketch-tool id="pt" type="point" read-only="true"></pl-sketch-tool>
-    <pl-sketch-initial toolid="pt" coordinates="0,2"></pl-sketch-initial>
-    <pl-sketch-initial toolid="hl" coordinates="-1"></pl-sketch-initial>
-    <pl-sketch-grade type="match" toolid="hl" y="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="count" toolid="hl" count="1"></pl-sketch-grade> 
-    <pl-sketch-grade type="match-fun" toolid="fd" fun="x**2"></pl-sketch-grade> 
-</pl-sketch>
+    <pl-sketch-initial toolid="pt" coordinates="-1,0.5"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="0,1"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="1,2"></pl-sketch-initial>
+    <pl-sketch-initial toolid="pt" coordinates="2,4"></pl-sketch-initial>
+    <pl-sketch-grade type="match" debug="true" toolid="hl" y="0"></pl-sketch-grade> 
+    <pl-sketch-grade type="count" debug="true" toolid="hl" count="1"></pl-sketch-grade> 
+    <pl-sketch-grade type="match-fun" debug="true" toolid="fd" fun="2**x"></pl-sketch-grade> 
+  </pl-sketch>
 ```
 
 ## Customizations
