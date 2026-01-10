@@ -28,7 +28,7 @@ export function PublicQuestionPreview({
     },
     headContent: html`
       ${compiledScriptTag('question.ts')}
-      <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>

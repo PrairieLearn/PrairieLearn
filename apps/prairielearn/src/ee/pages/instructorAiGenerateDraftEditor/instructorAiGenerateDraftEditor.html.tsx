@@ -50,7 +50,7 @@ export function InstructorAiGenerateDraftEditor({
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
-        <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">

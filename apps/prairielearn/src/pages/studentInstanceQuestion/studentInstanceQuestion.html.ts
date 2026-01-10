@@ -60,7 +60,7 @@ export function StudentInstanceQuestion({
             )}
           `
         : ''}
-      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
