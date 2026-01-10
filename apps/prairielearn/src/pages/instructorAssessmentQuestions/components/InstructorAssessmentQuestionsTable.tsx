@@ -1,127 +1,433 @@
-import clsx from 'clsx';
-import { useState } from 'preact/hooks';
-import { Fragment } from 'preact/jsx-runtime';
-import { Dropdown } from 'react-bootstrap';
+import { useRef, useState } from 'preact/hooks';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
-import {
-  AssessmentQuestionHeaders,
-  AssessmentQuestionNumber,
-} from '../../../components/AssessmentQuestions.js';
-import { HistMini } from '../../../components/HistMini.js';
-import { IssueBadge } from '../../../components/IssueBadge.js';
-import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
-import { TagBadgeList } from '../../../components/TagBadge.js';
-import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
-import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
-import { idsEqual } from '../../../lib/id.js';
-import { assertNever } from '../../../lib/types.js';
+import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type { EnumAssessmentType } from '../../../lib/db-types.js';
+import type {
+  QuestionAlternativeJson,
+  ZoneAssessmentJson,
+  ZoneQuestionJson,
+} from '../../../schemas/infoAssessment.js';
 
+import { EditQuestionModal, type EditQuestionModalState } from './EditQuestionModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+import { Zone } from './Zone.js';
 
-function Title({
-  questionRow,
-  hasCoursePermissionPreview,
-  urlPrefix,
-}: {
-  questionRow: StaffAssessmentQuestionRow;
-  hasCoursePermissionPreview: boolean;
+export interface AssessmentState {
+  nTableCols: number;
+  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
   urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  canEdit: boolean;
+  showAdvanceScorePercCol: boolean;
+  assessmentType: EnumAssessmentType;
+}
+
+function EditModeButtons({
+  csrfToken,
+  origHash,
+  zones,
+  editMode,
+  setEditMode,
+  saveButtonDisabled,
+}: {
+  csrfToken: string;
+  origHash: string;
+  zones: ZoneAssessmentJson[];
+  editMode: boolean;
+  setEditMode: (editMode: boolean) => void;
+  saveButtonDisabled: boolean;
 }) {
-  const { question, assessment_question, alternative_group, alternative_group_size } = questionRow;
-  const title = (
-    <>
-      <AssessmentQuestionNumber
-        assessmentQuestion={assessment_question}
-        alternativeGroup={alternative_group}
-        alternativeGroupSize={alternative_group_size}
-      />
-      {question.title}
-    </>
-  );
-  if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.id}/`}>{title}</a>;
+  if (!editMode) {
+    return (
+      <button class="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
+        <i class="fa fa-edit" aria-hidden="true" /> Edit questions
+      </button>
+    );
   }
-  return title;
+
+  return (
+    <form method="POST">
+      <input type="hidden" name="__action" value="save_questions" />
+      <input type="hidden" name="__csrf_token" value={csrfToken} />
+      <input type="hidden" name="orig_hash" value={origHash} />
+      <input type="hidden" name="zones" value={JSON.stringify(zones)} />
+      <button class="btn btn-sm btn-light mx-1" type="submit" disabled={saveButtonDisabled}>
+        <i class="fa fa-save" aria-hidden="true" /> Save and sync
+      </button>
+      <button class="btn btn-sm btn-light" type="button" onClick={() => window.location.reload()}>
+        Cancel
+      </button>
+    </form>
+  );
+}
+
+function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuestionRow) {
+  if (!question.question.qid) throw new Error('Question QID is required');
+  if (course.id === question.question.course_id) {
+    return question.question.qid;
+  }
+  return `@${question.course.sharing_name}/${question.question.qid || ''}`;
+}
+
+function mapQuestions(
+  course: StaffCourse,
+  rows: StaffAssessmentQuestionRow[],
+): ZoneAssessmentJson[] {
+  const zones: ZoneAssessmentJson[] = [];
+  const zoneAlternativeGroupCounts: Record<number, number> = {};
+
+  for (const row of rows) {
+    if (row.zone.number == null) throw new Error('Zone number required');
+
+    zones[row.zone.number - 1] ??= {
+      title: row.zone.title ?? undefined,
+      comment: row.zone.json_comment ?? undefined,
+      maxPoints: row.zone.max_points ?? undefined,
+      numberChoose: row.zone.number_choose ?? undefined,
+      bestQuestions: row.zone.best_questions ?? undefined,
+      questions: [],
+      advanceScorePerc: row.zone.advance_score_perc ?? undefined,
+      gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
+      canView: row.zone.json_can_view ?? [],
+      canSubmit: row.zone.json_can_submit ?? [],
+    };
+
+    if (row.alternative_group.number == null) throw new Error('Alternative group number required');
+
+    const zoneNumber = row.zone.number;
+    zoneAlternativeGroupCounts[zoneNumber] ??= -1;
+
+    // If this is a new alternative group in this zone, increment the count
+    if (row.start_new_alternative_group) {
+      zoneAlternativeGroupCounts[zoneNumber]++;
+    }
+
+    // Use the count as the position within the zone
+    const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
+    if (!zones[zoneNumber - 1].questions[positionInZone]) {
+      zones[zoneNumber - 1].questions[positionInZone] ??= {
+        id: row.alternative_group.id ? questionDisplayName(course, row) : undefined,
+        comment: row.alternative_group.json_comment ?? undefined,
+        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
+        canView: row.alternative_group.json_can_view ?? [],
+        canSubmit: row.alternative_group.json_can_submit ?? [],
+        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
+        numberChoose: row.alternative_group.number_choose ?? 1,
+        triesPerVariant: row.alternative_group.json_tries_per_variant ?? 1,
+        points: row.alternative_group.json_points ?? undefined,
+        autoPoints: row.alternative_group.json_auto_points ?? undefined,
+        maxPoints: row.alternative_group.json_max_points ?? undefined,
+        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
+        manualPoints: row.alternative_group.json_manual_points ?? undefined,
+        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
+      };
+    }
+
+    if (row.alternative_group.json_has_alternatives) {
+      if (row.assessment_question.number_in_alternative_group == null) {
+        throw new Error('Assessment question number is required');
+      }
+
+      zones[zoneNumber - 1].questions[positionInZone].alternatives ??= [];
+      zones[zoneNumber - 1].questions[positionInZone].alternatives![
+        row.assessment_question.number_in_alternative_group - 1
+      ] = {
+        comment: row.assessment_question.json_comment ?? undefined,
+        id: questionDisplayName(course, row),
+        forceMaxPoints: row.assessment_question.json_force_max_points ?? undefined,
+        triesPerVariant: row.assessment_question.json_tries_per_variant ?? undefined,
+        advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
+        gradeRateMinutes: row.assessment_question.grade_rate_minutes ?? undefined,
+        allowRealTimeGrading: row.assessment_question.json_allow_real_time_grading ?? undefined,
+        points: row.assessment_question.json_points ?? undefined,
+        autoPoints: row.assessment_question.json_auto_points ?? undefined,
+        maxPoints: row.assessment_question.json_max_points ?? undefined,
+        maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
+        manualPoints: row.assessment_question.json_manual_points ?? undefined,
+      };
+    } else {
+      zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
+    }
+  }
+  return zones;
 }
 
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
   urlPrefix,
-  assessmentType,
+  assessment,
   assessmentSetName,
-  assessmentNumber,
   hasCoursePermissionPreview,
-  hasCourseInstancePermissionEdit,
+  canEdit,
   csrfToken,
+  origHash,
+  editorEnabled,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
-  assessmentType: 'Homework' | 'Exam';
+  assessment: StaffAssessment;
   assessmentSetName: string;
-  assessmentNumber: string;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
-  hasCourseInstancePermissionEdit: boolean;
+  canEdit: boolean;
   csrfToken: string;
+  origHash: string;
+  editorEnabled: boolean;
 }) {
-  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState('');
+  const [questionMap, setQuestionMap] = useState(() =>
+    Object.fromEntries(questionRows.map((r) => [questionDisplayName(course, r), r])),
+  );
+
+  const [mappedQuestions, setMappedQuestions] = useState(() => mapQuestions(course, questionRows));
+  const initialMappedQuestionsRef = useRef(JSON.stringify(mappedQuestions));
+  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
+  const [editMode, setEditMode] = useState(false);
+  const [selectedQuestionPosition, setSelectedQuestionPosition] = useState<{
+    zoneNumber: number;
+    alternativeGroupNumber: number;
+    alternativeNumber?: number;
+  } | null>(null);
+  const [editQuestionModalState, setEditQuestionModalState] = useState<EditQuestionModalState>({
+    type: 'closed',
+  });
+  let questionNumber = 0;
+  const getNextQuestionNumber = () => {
+    questionNumber++;
+    return questionNumber;
+  };
 
   const handleResetButtonClick = (assessmentQuestionId: string) => {
     setResetAssessmentQuestionId(assessmentQuestionId);
     setShowResetModal(true);
   };
 
+  const assessmentType = assessment.type!;
+
+  const handleEditQuestion = ({
+    question,
+    alternativeGroup,
+    zoneNumber,
+    alternativeGroupNumber,
+    alternativeNumber,
+  }: {
+    question: ZoneQuestionJson | QuestionAlternativeJson;
+    alternativeGroup?: ZoneQuestionJson;
+    zoneNumber: number;
+    alternativeGroupNumber: number;
+    alternativeNumber?: number;
+  }) => {
+    setEditQuestionModalState({
+      type: 'edit',
+      question,
+      alternativeGroup,
+    });
+    setSelectedQuestionPosition({
+      zoneNumber,
+      alternativeGroupNumber,
+      alternativeNumber: alternativeNumber ?? undefined,
+    });
+  };
+
+  const handleAddQuestion = (zoneNumber: number) => {
+    setEditQuestionModalState({
+      type: 'create',
+      question: { id: '' } as ZoneQuestionJson,
+      mappedQids: mappedQuestions.flatMap((zone) => zone.questions.map((q) => q.id ?? '')),
+    });
+    setSelectedQuestionPosition({
+      zoneNumber,
+      alternativeGroupNumber: mappedQuestions[zoneNumber - 1].questions.length + 1,
+    });
+  };
+
+  const handleUpdateQuestion = async (
+    updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson,
+    newQuestionData?: StaffAssessmentQuestionRow,
+  ) => {
+    if (!updatedQuestion.id) return;
+    if (!selectedQuestionPosition) return;
+    if (editQuestionModalState.type === 'closed') return;
+
+    // let questionData: StaffAssessmentQuestionRow | null = null;
+    if (newQuestionData) {
+      // Update the question data with the new assessment and position info
+      newQuestionData.assessment = assessment;
+      newQuestionData.assessment_question = {
+        ...newQuestionData.assessment_question,
+        number: selectedQuestionPosition.alternativeGroupNumber,
+        number_in_alternative_group: selectedQuestionPosition.alternativeNumber ?? null,
+      } as StaffAssessmentQuestionRow['assessment_question'];
+      newQuestionData.alternative_group = {
+        ...newQuestionData.alternative_group,
+        number: selectedQuestionPosition.alternativeGroupNumber,
+      };
+      newQuestionData.alternative_group_size = 1;
+      setQuestionMap((prev) => ({
+        ...prev,
+        [updatedQuestion.id!]: newQuestionData,
+      }));
+    }
+
+    if (updatedQuestion.manualPoints !== undefined) {
+      // If we have manualPoints, we must use autoPoints (not points)
+      if (updatedQuestion.points !== undefined) {
+        updatedQuestion.autoPoints = updatedQuestion.points;
+        updatedQuestion.points = undefined;
+      }
+      // Also convert maxPoints to maxAutoPoints
+      if (updatedQuestion.maxPoints !== undefined) {
+        updatedQuestion.maxAutoPoints = updatedQuestion.maxPoints;
+        updatedQuestion.maxPoints = undefined;
+      }
+    } else {
+      if (updatedQuestion.points !== undefined && updatedQuestion.autoPoints !== undefined) {
+        updatedQuestion.points = undefined;
+        if (updatedQuestion.maxPoints !== undefined) {
+          updatedQuestion.maxAutoPoints = updatedQuestion.maxPoints;
+          updatedQuestion.maxPoints = undefined;
+        }
+      }
+    }
+
+    const { zoneNumber, alternativeGroupNumber, alternativeNumber } = selectedQuestionPosition;
+
+    setMappedQuestions((prevZones) => {
+      const newZones = structuredClone(prevZones);
+      const zone = newZones[zoneNumber - 1];
+
+      if (editQuestionModalState.type === 'create') {
+        zone.questions.push({
+          ...updatedQuestion,
+          canSubmit: [],
+          canView: [],
+        });
+        return newZones;
+      }
+
+      const question = zone.questions[alternativeGroupNumber - 1];
+
+      if (alternativeNumber !== undefined) {
+        if (!question.alternatives) return prevZones;
+        question.alternatives[alternativeNumber] = {
+          ...question.alternatives[alternativeNumber],
+          ...updatedQuestion,
+          points: updatedQuestion.manualPoints ? undefined : updatedQuestion.points,
+          maxPoints: updatedQuestion.manualPoints ? undefined : updatedQuestion.maxPoints,
+        };
+      } else {
+        zone.questions[alternativeGroupNumber - 1] = {
+          ...question,
+          ...updatedQuestion,
+          points: updatedQuestion.manualPoints ? undefined : updatedQuestion.points,
+          maxPoints: updatedQuestion.manualPoints ? undefined : updatedQuestion.maxPoints,
+        };
+      }
+
+      return newZones;
+    });
+
+    setEditQuestionModalState({ type: 'closed' });
+  };
+
+  const handleDeleteQuestion = (
+    zoneNumber: number,
+    alternativeGroupNumber: number,
+    questionId: string,
+    numberInAlternativeGroup?: number,
+  ) => {
+    setQuestionMap((prev) => {
+      const newMap = { ...prev };
+      delete newMap[questionId];
+      return newMap;
+    });
+    setMappedQuestions((prevZones) => {
+      const newZones = structuredClone(prevZones);
+      const zone = newZones[zoneNumber - 1];
+      if (numberInAlternativeGroup !== undefined) {
+        const alternativeGroup = zone.questions[alternativeGroupNumber - 1];
+        alternativeGroup.alternatives?.splice(numberInAlternativeGroup, 1);
+
+        // If only one alternative remains, convert it back to a regular question
+        if (alternativeGroup.alternatives?.length === 1) {
+          const remainingAlternative = alternativeGroup.alternatives[0];
+          const { alternatives: _alternatives, ...alternativeGroupWithoutAlternatives } =
+            alternativeGroup;
+          // Merge the remaining alternative's properties into the question
+          zone.questions[alternativeGroupNumber - 1] = {
+            ...alternativeGroupWithoutAlternatives,
+            ...remainingAlternative,
+          };
+          setQuestionMap((prev) => ({
+            ...prev,
+            [remainingAlternative.id]: {
+              ...questionMap[remainingAlternative.id],
+              alternative_group_size: 1,
+            },
+          }));
+        }
+      } else {
+        zone.questions.splice(alternativeGroupNumber - 1, 1);
+
+        // If the zone now has no questions, remove the zone entirely
+        // (zones are required to have at least one question per schema)
+        if (zone.questions.length === 0) {
+          newZones.splice(zoneNumber - 1, 1);
+        }
+      }
+      return newZones;
+    });
+  };
+
   // If at least one question has a nonzero unlock score, display the Advance Score column
   const showAdvanceScorePercCol = questionRows.some(
     (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
-
-  const nTableCols = showAdvanceScorePercCol ? 12 : 11;
-
-  function maxPointsText({
-    max_auto_points,
-    max_manual_points,
-    points_list,
-    init_points,
-  }: {
-    max_auto_points: number | null;
-    max_manual_points: number | null;
-    points_list: number[] | null;
-    init_points: number | null;
-  }) {
-    if (max_auto_points || !max_manual_points) {
-      switch (assessmentType) {
-        case 'Exam':
-          return (points_list || [max_manual_points])
-            .map((p) => (p ?? 0) - (max_manual_points ?? 0))
-            .join(',');
-        case 'Homework':
-          return `${(init_points ?? 0) - (max_manual_points ?? 0)}/${max_auto_points}`;
-        default:
-          assertNever(assessmentType);
-      }
-    } else {
-      return '—';
-    }
-  }
+  const baseCols = showAdvanceScorePercCol ? 11 : 10;
+  const nTableCols = baseCols + (editMode ? 2 : 0);
 
   return (
     <>
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>
-            {assessmentSetName} {assessmentNumber}: Questions
+            {assessmentSetName} {assessment.number}: Questions
           </h1>
+          <div class="ms-auto">
+            {editorEnabled && canEdit && origHash ? (
+              <EditModeButtons
+                csrfToken={csrfToken}
+                origHash={origHash}
+                zones={mappedQuestions}
+                editMode={editMode}
+                setEditMode={setEditMode}
+                saveButtonDisabled={
+                  JSON.stringify(mappedQuestions) === initialMappedQuestionsRef.current
+                }
+              />
+            ) : (
+              ''
+            )}
+          </div>
         </div>
         <div className="table-responsive">
           <table className="table table-sm table-hover" aria-label="Assessment questions">
             <thead>
               <tr>
+                {editMode && (
+                  <>
+                    <th>
+                      <span class="visually-hidden">Edit</span>
+                    </th>
+                    <th>
+                      <span class="visually-hidden">Delete</span>
+                    </th>
+                  </>
+                )}
                 <th>
                   <span className="visually-hidden">Name</span>
                 </th>
@@ -130,18 +436,42 @@ export function InstructorAssessmentQuestionsTable({
                 <th>Tags</th>
                 <th>Auto Points</th>
                 <th>Manual Points</th>
-                {showAdvanceScorePercCol ? <th>Advance Score</th> : ''}
+                {showAdvanceScorePercCol && <th>Advance Score</th>}
                 <th>Mean score</th>
                 <th>Num. Submissions Histogram</th>
                 <th>Other Assessments</th>
+<<<<<<< HEAD
+                {!editMode && <th class="text-end">Actions</th>}
+=======
                 <th className="text-end">Actions</th>
+>>>>>>> master
               </tr>
             </thead>
             <tbody>
-              {questionRows.map((questionRow: StaffAssessmentQuestionRow) => {
-                const { question, assessment_question, other_assessments } = questionRow;
-
+              {mappedQuestions.map((zone, index) => {
                 return (
+<<<<<<< HEAD
+                  <Zone
+                    key={`zone-${index + 1}-${zone.title || 'untitled'}`}
+                    zone={zone}
+                    zoneNumber={index + 1}
+                    AssessmentState={{
+                      nTableCols,
+                      questionMap,
+                      editMode,
+                      urlPrefix,
+                      hasCoursePermissionPreview,
+                      canEdit,
+                      showAdvanceScorePercCol,
+                      assessmentType,
+                    }}
+                    handleAddQuestion={handleAddQuestion}
+                    handleEditQuestion={handleEditQuestion}
+                    handleDeleteQuestion={handleDeleteQuestion}
+                    handleResetButtonClick={handleResetButtonClick}
+                    getNextQuestionNumber={getNextQuestionNumber}
+                  />
+=======
                   <Fragment key={question.qid}>
                     <AssessmentQuestionHeaders question={questionRow} nTableCols={nTableCols} />
                     <tr>
@@ -254,6 +584,7 @@ export function InstructorAssessmentQuestionsTable({
                       </td>
                     </tr>
                   </Fragment>
+>>>>>>> master
                 );
               })}
             </tbody>
@@ -270,6 +601,14 @@ export function InstructorAssessmentQuestionsTable({
       ) : (
         <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
       )}
+      {editMode && editQuestionModalState.type !== 'closed' ? (
+        <EditQuestionModal
+          editQuestionModalState={editQuestionModalState}
+          assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
+          handleUpdateQuestion={handleUpdateQuestion}
+          onHide={() => setEditQuestionModalState({ type: 'closed' })}
+        />
+      ) : null}
     </>
   );
 }
