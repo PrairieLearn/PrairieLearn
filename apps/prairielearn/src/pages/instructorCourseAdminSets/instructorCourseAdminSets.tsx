@@ -73,22 +73,27 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'course'>(async (req, res) => {
-    if (!res.locals.authz_data.has_course_permission_edit) {
+    const pageContext = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    if (!pageContext.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
-    if (res.locals.course.example_course) {
+    if (pageContext.course.example_course) {
       throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
     if (req.body.__action === 'save_assessment_sets') {
-      if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
+      if (!(await fs.pathExists(path.join(pageContext.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
       const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
-        await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
+        await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
       );
 
       const body = z
@@ -141,7 +146,7 @@ router.post(
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
         },
-        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
+        filePath: path.join(pageContext.course.path, 'infoCourse.json'),
         editContents: b64EncodeUnicode(formattedJson),
         origHash,
       });
@@ -149,7 +154,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(pageContext.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Assessment sets updated successfully');
       return res.redirect(req.originalUrl);

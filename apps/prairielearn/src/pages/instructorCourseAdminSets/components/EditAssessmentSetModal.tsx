@@ -161,10 +161,10 @@ export function EditAssessmentSetsModal({
                   ))}
                 </select>
                 <ColorSwatch color={assessmentSet.color} />
-                {invalidColor && (
-                  <div className="invalid-feedback">Assessment set color is required</div>
-                )}
               </div>
+              {invalidColor && (
+                <div className="invalid-feedback d-block">Assessment set color is required</div>
+              )}
             </div>
           </>
         ) : null}
