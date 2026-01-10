@@ -48,7 +48,7 @@ columns
     sync_errors: text
     sync_job_sequence_id: bigint
     sync_warnings: text
-    team_work: boolean default false
+    team_work: boolean not null default false
     text: text
     tid: text
     title: text

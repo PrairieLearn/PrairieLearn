@@ -194,6 +194,7 @@ export function QuestionsTable({
                     data-class="align-middle text-nowrap"
                     data-filter-control="select"
                     data-filter-control-placeholder="(All Images)"
+                    data-filter-data="func:externalGradingImageList"
                     data-visible="false"
                     data-switchable="true"
                   >
@@ -205,6 +206,7 @@ export function QuestionsTable({
                     data-class="align-middle text-nowrap"
                     data-filter-control="select"
                     data-filter-control-placeholder="(All Images)"
+                    data-filter-data="func:workspaceImageList"
                     data-visible="false"
                     data-switchable="true"
                   >

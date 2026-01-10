@@ -1,35 +1,40 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
-import * as error from '@prairielearn/error';
-
-import { features } from '../../lib/features/index.js';
-import { selectCourseById } from '../../models/course.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
-
-import { QuestionsPage } from './publicQuestions.html.js';
 
 const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async function (req, res) {
-    res.locals.course = await selectCourseById(req.params.course_id);
-    const questionSharingEnabled = await features.enabled('question-sharing', {
-      course_id: res.locals.course.id,
-      institution_id: res.locals.course.institution_id,
-    });
-
-    if (!questionSharingEnabled) {
-      throw new error.HttpStatusError(404, 'Not Found');
-    }
-
+  typedAsyncHandler<'public-course'>(async function (req, res) {
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
+
+    // Example course questions can be publicly shared, but we don't allow them to
+    // be imported into courses, so we won't show the sharing name in the QID.
+    const qidPrefix = res.locals.course.example_course ? '' : `@${res.locals.course.sharing_name}/`;
     res.send(
-      QuestionsPage({
-        questions,
-        showAddQuestionButton: false,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Public Questions',
+        navContext: {
+          type: 'public',
+          page: 'public_questions',
+          subPage: 'questions',
+        },
+        options: {
+          fullWidth: true,
+        },
+        headContent: QuestionsTableHead(),
+        content: QuestionsTable({
+          questions,
+          showAddQuestionButton: false,
+          qidPrefix,
+          urlPrefix: res.locals.urlPrefix,
+          __csrf_token: res.locals.__csrf_token,
+        }),
       }),
     );
   }),

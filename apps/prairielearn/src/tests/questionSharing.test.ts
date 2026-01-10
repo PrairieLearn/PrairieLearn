@@ -719,21 +719,6 @@ describe('Question Sharing', function () {
       }
     });
 
-    test.sequential(
-      'Successfully access publicly shared assessment page for the shared assessment',
-      async () => {
-        const sharedAssessmentId = await sqldb.queryRow(
-          sql.select_assessment,
-          { tid: 'test', course_instance_id: sharingCourseInstanceId },
-          IdSchema,
-        );
-        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
-        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
-
-        assert(sharedAssessmentPage.ok);
-      },
-    );
-
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
@@ -754,6 +739,21 @@ describe('Question Sharing', function () {
         const sharedCourseInstancePage = await fetchCheerio(sharedCourseInstanceUrl);
 
         assert(sharedCourseInstancePage.ok);
+      },
+    );
+
+    test.sequential(
+      'Successfully access publicly shared assessment page for the shared assessment',
+      async () => {
+        const sharedAssessmentId = await sqldb.queryRow(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: sharingCourseInstanceId },
+          IdSchema,
+        );
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+
+        assert(sharedAssessmentPage.ok);
       },
     );
 

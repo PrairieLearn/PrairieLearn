@@ -45,7 +45,7 @@ export function InstructorAssessmentInstances({
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentTeamWork: resLocals.assessment.team_work ?? false,
+              assessmentTeamWork: resLocals.assessment.team_work,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({

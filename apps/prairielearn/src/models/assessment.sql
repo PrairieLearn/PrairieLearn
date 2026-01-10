@@ -16,14 +16,6 @@ WHERE
   AND course_instance_id = $course_instance_id
   AND deleted_at IS NULL;
 
--- BLOCK check_assessment_is_public
-SELECT
-  a.share_source_publicly
-FROM
-  assessments AS a
-WHERE
-  a.id = $assessment_id;
-
 -- BLOCK select_assessment_info_for_job
 SELECT
   aset.abbreviation || a.number AS assessment_label,
