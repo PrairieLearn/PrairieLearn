@@ -8,6 +8,10 @@ if [ -e $KEY ]; then
     exit 0
 fi
 
+# Create directories if they don't exist
+mkdir -p /etc/pki/tls/private
+mkdir -p /etc/pki/tls/certs
+
 openssl req -x509 -out $CERT -keyout $KEY \
     -newkey rsa:2048 -nodes -sha256 \
     -subj '/CN=localhost' -extensions EXT -config <(
