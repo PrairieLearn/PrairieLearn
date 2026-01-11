@@ -35,7 +35,9 @@ async function setupTestData() {
 }
 
 function getRowIndex(row: Locator) {
-  return row.evaluate((el: HTMLElement) => Array.from(el.parentElement?.children ?? []).indexOf(el));
+  return row.evaluate((el: HTMLElement) =>
+    Array.from(el.parentElement?.children ?? []).indexOf(el),
+  );
 }
 
 test.describe('Assessment sets editor', () => {
@@ -124,6 +126,8 @@ test.describe('Assessment sets editor', () => {
       has: page.locator('.badge', { hasText: abbrev2 }),
     });
 
-    expect(await getRowIndex(betaRowAfterReload)).toBeLessThan(await getRowIndex(alphaRowAfterReload));
+    expect(await getRowIndex(betaRowAfterReload)).toBeLessThan(
+      await getRowIndex(alphaRowAfterReload),
+    );
   });
 });
