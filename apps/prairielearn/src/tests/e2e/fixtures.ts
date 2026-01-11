@@ -1,4 +1,5 @@
 /* eslint-disable react-hooks/rules-of-hooks */
+import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -46,8 +47,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
       await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
-      // Initialize a git repo so file edits work (the editor requires git)
-      const { execSync } = await import('node:child_process');
+      // The file editor requires git
       execSync('git init', { cwd: tempTestCoursePath });
       execSync('git add -A', { cwd: tempTestCoursePath });
       execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
