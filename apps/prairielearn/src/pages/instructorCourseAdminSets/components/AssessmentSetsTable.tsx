@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DraggableAttributes,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
@@ -53,8 +54,6 @@ function AssessmentSetRow({
     id: assessmentSet.id,
   });
 
-  const { role: dragRoleAttribute, ...dragAttributes } = attributes;
-
   const style = {
     opacity: isDragging ? 0.6 : 1,
     transform: CSS.Transform.toString(transform),
@@ -72,8 +71,7 @@ function AssessmentSetRow({
               className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag row"
-              role={dragRoleAttribute as AriaRole}
-              {...dragAttributes}
+              {...(attributes as DraggableAttributes & { role: AriaRole })}
               {...listeners}
             >
               <i className="fa fa-grip-vertical" aria-hidden="true" />
