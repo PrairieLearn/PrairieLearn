@@ -21,13 +21,27 @@ onDocumentReady(() => {
   const showExternalGradingOptionsButton = document.querySelector<HTMLButtonElement>(
     '#show-external-grading-options-button',
   );
+  const removeExternalGradingButton = document.querySelector<HTMLButtonElement>(
+    '#remove-external-grading-options-button',
+  );
   const showWorkspaceOptionsButton = document.querySelector<HTMLButtonElement>(
     '#show-workspace-options-button',
+  );
+  const removeWorkspaceButton = document.querySelector<HTMLButtonElement>(
+    '#remove-workspace-options-button',
   );
   const workspaceOptions = document.querySelector<HTMLDivElement>('#workspace-options');
   const workspaceImageInput = document.querySelector<HTMLInputElement>('#workspace_image');
   const workspacePortInput = document.querySelector<HTMLInputElement>('#workspace_port');
   const workspaceHomeInput = document.querySelector<HTMLInputElement>('#workspace_home');
+  const workspaceGradedFilesInput =
+    document.querySelector<HTMLInputElement>('#workspace_graded_files');
+  const workspaceArgsInput = document.querySelector<HTMLInputElement>('#workspace_args');
+  const workspaceEnableNetworkingInput = document.querySelector<HTMLInputElement>(
+    '#workspace_enable_networking',
+  );
+  const workspaceRewriteUrlInput =
+    document.querySelector<HTMLInputElement>('#workspace_rewrite_url');
   const workspaceEnvironmentInput =
     document.querySelector<HTMLInputElement>('#workspace_environment');
   const externalGradingOptions = document.querySelector<HTMLDivElement>(
@@ -35,6 +49,20 @@ onDocumentReady(() => {
   );
   const externalGradingImageInput =
     document.querySelector<HTMLInputElement>('#external_grading_image');
+  const externalGradingEnabledInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_enabled',
+  );
+  const externalGradingEntrypointInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_entrypoint',
+  );
+  const externalGradingFilesInput =
+    document.querySelector<HTMLInputElement>('#external_grading_files');
+  const externalGradingTimeoutInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_timeout',
+  );
+  const externalGradingEnableNetworkingInput = document.querySelector<HTMLInputElement>(
+    '#external_grading_enable_networking',
+  );
   const externalGradingEnvironmentInput = document.querySelector<HTMLInputElement>(
     '#external_grading_environment',
   );
@@ -147,14 +175,72 @@ onDocumentReady(() => {
   showWorkspaceOptionsButton?.addEventListener('click', () => {
     workspaceOptions?.removeAttribute('hidden');
     showWorkspaceOptionsButton.setAttribute('hidden', 'true');
+    if (removeWorkspaceButton) {
+      removeWorkspaceButton.removeAttribute('hidden');
+    } else {
+      console.error('Remove workspace button not found');
+    }
     workspaceOptionsShown = true;
     updateWorkspaceOptionsValidation();
   });
+  removeWorkspaceButton?.addEventListener('click', () => {
+    workspaceOptions?.setAttribute('hidden', 'true');
+    showWorkspaceOptionsButton?.removeAttribute('hidden');
+    if (removeWorkspaceButton) {
+      removeWorkspaceButton.setAttribute('hidden', 'true');
+    }
+
+    if (workspaceImageInput) workspaceImageInput.value = '';
+    if (workspacePortInput) workspacePortInput.value = '';
+    if (workspaceHomeInput) workspaceHomeInput.value = '';
+    if (workspaceGradedFilesInput) workspaceGradedFilesInput.value = '';
+    if (workspaceArgsInput) workspaceArgsInput.value = '';
+    if (workspaceEnvironmentInput) workspaceEnvironmentInput.value = '{}';
+
+    if (workspaceEnableNetworkingInput) workspaceEnableNetworkingInput.checked = false;
+    if (workspaceRewriteUrlInput) workspaceRewriteUrlInput.checked = true;
+
+    workspaceOptionsShown = false;
+    updateWorkspaceOptionsValidation();
+
+    if (saveButton) {
+      saveButton.removeAttribute('disabled');
+    }
+  });
+
   showExternalGradingOptionsButton?.addEventListener('click', () => {
     externalGradingOptions?.removeAttribute('hidden');
     showExternalGradingOptionsButton.setAttribute('hidden', 'true');
+    if (removeExternalGradingButton) {
+      removeExternalGradingButton.removeAttribute('hidden');
+    } else {
+      console.error('Remove external grading button not found');
+    }
     externalGradingOptionsShown = true;
     updateExternalGradingOptionsValidation();
+  });
+
+  removeExternalGradingButton?.addEventListener('click', () => {
+    externalGradingOptions?.setAttribute('hidden', 'true');
+    showExternalGradingOptionsButton?.removeAttribute('hidden');
+    if (removeExternalGradingButton) {
+      removeExternalGradingButton.setAttribute('hidden', 'true');
+    }
+
+    if (externalGradingImageInput) externalGradingImageInput.value = '';
+    if (externalGradingEntrypointInput) externalGradingEntrypointInput.value = '';
+    if (externalGradingFilesInput) externalGradingFilesInput.value = '';
+    if (externalGradingTimeoutInput) externalGradingTimeoutInput.value = '';
+    if (externalGradingEnvironmentInput) externalGradingEnvironmentInput.value = '{}';
+    if (externalGradingEnabledInput) externalGradingEnabledInput.checked = false;
+    if (externalGradingEnableNetworkingInput) externalGradingEnableNetworkingInput.checked = false;
+
+    externalGradingOptionsShown = false;
+    updateExternalGradingOptionsValidation();
+
+    if (saveButton) {
+      saveButton.removeAttribute('disabled');
+    }
   });
 
   questionSettingsForm?.addEventListener('submit', (e) => {
