@@ -60,8 +60,8 @@ async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
   return cheerio.load(await res.text());
 }
 
-function getCsrfToken($: cheerio.CheerioAPI): string {
-  const elemList = $('form input[name="__csrf_token"]');
+function getCsrfToken($: cheerio.CheerioAPI, selector = 'form'): string {
+  const elemList = $(`${selector} input[name="__csrf_token"]`);
   assert.isAtLeast(elemList.length, 1);
   return elemList[0].attribs.value;
 }
@@ -418,7 +418,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'grade',
-            __csrf_token: getCsrfToken(ctx.$),
+            __csrf_token: getCsrfToken(ctx.$, '.question-form'),
             __variant_id: ctx.variant_id,
             wx: String(ctx.variant.true_answer.wx),
             wy: String(ctx.variant.true_answer.wy),
