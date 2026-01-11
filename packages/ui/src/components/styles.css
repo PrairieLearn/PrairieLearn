@@ -56,3 +56,47 @@ body.pl-ui-no-user-select {
 :is(.btn.btn-tanstack-table, .pl-ui-tanstack-table-focusable-shadow):not(:focus-visible) {
   box-shadow: var(--bs-box-shadow-sm);
 }
+
+.pl-ui-otp-box {
+  width: 2.5rem;
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--bs-font-monospace);
+  font-size: 1.25rem;
+  font-weight: 500;
+  border: 1px solid var(--bs-border-color);
+  border-radius: var(--bs-border-radius);
+  background-color: var(--bs-body-bg);
+  cursor: text;
+  transition:
+    border-color 0.15s ease-in-out,
+    box-shadow 0.15s ease-in-out;
+}
+
+.pl-ui-otp-box.focused {
+  border-color: var(--bs-primary);
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-primary-rgb), 0.25);
+}
+
+.pl-ui-otp-box.is-invalid {
+  border-color: var(--bs-danger);
+}
+
+.pl-ui-otp-box.is-invalid.focused {
+  box-shadow: 0 0 0 0.25rem rgba(var(--bs-danger-rgb), 0.25);
+}
+
+.pl-ui-otp-caret {
+  width: 2px;
+  height: 1.25rem;
+  background-color: var(--bs-body-color);
+  animation: pl-ui-otp-caret-blink 1s step-end infinite;
+}
+
+@keyframes pl-ui-otp-caret-blink {
+  50% {
+    opacity: 0;
+  }
+}
