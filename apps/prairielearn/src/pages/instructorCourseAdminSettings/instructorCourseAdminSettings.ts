@@ -1,7 +1,6 @@
 import * as crypto from 'node:crypto';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 
@@ -9,7 +8,7 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
+import { CourseInfoCreateEditor, FileModifyEditor, getOrigHash } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -34,11 +33,7 @@ router.get(
 
     let origHash = '';
     if (courseInfoExists) {
-      origHash = sha256(
-        b64EncodeUnicode(
-          await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
-        ),
-      ).toString();
+      origHash = (await getOrigHash(path.join(res.locals.course.path, 'infoCourse.json'))) ?? '';
     }
 
     const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
