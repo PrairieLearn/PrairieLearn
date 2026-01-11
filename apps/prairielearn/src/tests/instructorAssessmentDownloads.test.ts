@@ -6,7 +6,10 @@ import fetch from 'node-fetch';
 import * as unzipper from 'unzipper';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
+import { queryRow } from '@prairielearn/postgres';
+
 import { config } from '../lib/config.js';
+import { VariantSchema } from '../lib/db-types.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 import { selectAssessmentSetById } from '../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
@@ -405,8 +408,6 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
         assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
         ctx.variant_id = variantInput[0].attribs.value;
 
-        const { queryRow } = await import('@prairielearn/postgres');
-        const { VariantSchema } = await import('../lib/db-types.js');
         ctx.variant = await queryRow(
           'SELECT * FROM variants WHERE id = $1',
           [ctx.variant_id],
