@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DraggableAttributes,
   KeyboardSensor,
   PointerSensor,
   closestCenter,
@@ -15,6 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
+import type { AriaRole } from 'preact';
 import { useMemo, useState } from 'preact/compat';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
@@ -48,7 +50,7 @@ function AssessmentSetRow({
   onEdit: () => void;
   onDelete: () => void;
 }) {
-  const { listeners, setNodeRef, transform, transition, isDragging } = useSortable({
+  const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: assessmentSet.id,
   });
 
@@ -69,6 +71,7 @@ function AssessmentSetRow({
               className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag row"
+              {...(attributes as DraggableAttributes & { role: AriaRole })}
               {...listeners}
             >
               <i className="fa fa-grip-vertical" aria-hidden="true" />
