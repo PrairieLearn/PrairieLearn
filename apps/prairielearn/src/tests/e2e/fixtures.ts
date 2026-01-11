@@ -50,6 +50,8 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       // The file editor requires git
       execSync('git init', { cwd: tempTestCoursePath });
       execSync('git add -A', { cwd: tempTestCoursePath });
+      execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
+      execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
       execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
 
       await use(tempTestCoursePath);
