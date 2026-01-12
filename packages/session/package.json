@@ -35,7 +35,7 @@
     "express": "^4.22.1",
     "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^2.7.2",
+    "set-cookie-parser": "^3.0.1",
     "source-map-support": "^0.5.21",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
