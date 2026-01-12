@@ -109,6 +109,7 @@ coverage.xml
 test-results/
 apps/prairielearn/test-results/
 apps/prairielearn/playwright/.cache/
+.playwright-mcp/
 
 ## TypeScript cache
 *.tsbuildinfo
