@@ -23,7 +23,7 @@ Run `make build` from the root directory to build all TypeScript code and check 
 
 Run `make typecheck-python` from the root directory to type check all Python code.
 
-## Database and Schema changes
+## Database and schema changes
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
@@ -83,6 +83,8 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
 To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
+
+See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
 
 ## Rendering HTML
 
