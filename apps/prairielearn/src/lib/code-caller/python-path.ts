@@ -4,7 +4,7 @@ import fs from 'fs-extra';
 
 import { REPOSITORY_ROOT_PATH } from '../paths.js';
 
-const PYTHON_VERSION = 'python3.10';
+const PYTHON_VERSION = 'python3.13';
 const PYTHON_VENV_SEARCH_PATHS = ['.venv'];
 
 /**
