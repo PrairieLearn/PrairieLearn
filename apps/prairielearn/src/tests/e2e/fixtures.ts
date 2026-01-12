@@ -43,7 +43,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   testCoursePath: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
-      const tempDir = await tmp.dir();
+      const tempDir = await tmp.dir({ unsafeCleanup: true });
       const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
       await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
