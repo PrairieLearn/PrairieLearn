@@ -309,7 +309,7 @@
     "axe-core": "^4.11.0",
     "get-port": "^7.1.0",
     "jsdom": "^27.4.0",
-    "set-cookie-parser": "^2.7.2",
+    "set-cookie-parser": "^3.0.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",

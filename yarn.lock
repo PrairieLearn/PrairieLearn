@@ -4540,7 +4540,7 @@ __metadata:
     selector-observer: "npm:^2.1.6"
     selector-set: "npm:^1.1.5"
     serve-favicon: "npm:^2.5.1"
-    set-cookie-parser: "npm:^2.7.2"
+    set-cookie-parser: "npm:^3.0.1"
     shlex: "npm:^3.0.0"
     showdown: "npm:^2.1.0"
     socket.io: "npm:^4.8.3"
@@ -4677,7 +4677,7 @@ __metadata:
     fetch-cookie: "npm:^3.2.0"
     node-fetch: "npm:^3.3.2"
     on-headers: "npm:^1.1.0"
-    set-cookie-parser: "npm:^2.7.2"
+    set-cookie-parser: "npm:^3.0.1"
     source-map-support: "npm:^0.5.21"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -17147,10 +17147,17 @@ __metadata:
   languageName: node
   linkType: hard
 
-"set-cookie-parser@npm:^2.4.8, set-cookie-parser@npm:^2.7.2":
+"set-cookie-parser@npm:^2.4.8":
   version: 2.7.2
   resolution: "set-cookie-parser@npm:2.7.2"
   checksum: 10c0/4381a9eb7ee951dfe393fe7aacf76b9a3b4e93a684d2162ab35594fa4053cc82a4d7d7582bf397718012c9adcf839b8cd8f57c6c42901ea9effe33c752da4a45
+  languageName: node
+  linkType: hard
+
+"set-cookie-parser@npm:^3.0.1":
+  version: 3.0.1
+  resolution: "set-cookie-parser@npm:3.0.1"
+  checksum: 10c0/29bd085ab3167fd0b3ee25b20575c1be845bf1c051b816c83ea99aada02c6a1bf16458e3c2825abf702bd09725bbb4868730737596b7a2d48f712551cf733d1d
   languageName: node
   linkType: hard
 
