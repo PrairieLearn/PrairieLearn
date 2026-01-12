@@ -66,6 +66,8 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 ## Testing
 
+See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
+
 TypeScript tests are written with Vitest. Unit tests are located next to the code they test in files with a `.test.ts` suffix. Integration tests are located in dedicated `tests` directories, e.g. `apps/prairielearn/src/tests`.
 
 Python tests are written with Pytest.
@@ -83,8 +85,6 @@ Avoid running the entire test suite unless necessary, as it can be time-consumin
 Tests expect Postgres, Redis, and an S3-compatible store to be running, and usually they already are. If you suspect that they're not, run `make start-support` from the root directory.
 
 To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
-
-See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
 
 ## Rendering HTML
 
