@@ -43,7 +43,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   testCoursePath: [
     // eslint-disable-next-line no-empty-pattern
     async ({}, use) => {
-      const tempDir = await tmp.dir({ unsafeCleanup: true });
+      const tempDir = await tmp.dir();
       const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
       await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
@@ -55,7 +55,8 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
 
       await use(tempTestCoursePath);
-      // Cleanup happens automatically via unsafeCleanup
+
+      await tempDir.cleanup();
     },
     { scope: 'worker' },
   ],
