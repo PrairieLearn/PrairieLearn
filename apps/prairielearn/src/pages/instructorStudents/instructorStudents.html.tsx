@@ -45,6 +45,7 @@ import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
+import { SyncStudentsModal } from './components/SyncStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -242,12 +243,38 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
+  const [showSync, setShowSync] = useState(false);
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
   const handleCopyEnrollLink = async () => {
     await copyToClipboard(selfEnrollLink);
     setCopiedEnrollLink(true);
     setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const syncStudents = async (toInvite: string[], toBlock: string[]): Promise<void> => {
+    const body = {
+      __action: 'sync_students',
+      __csrf_token: csrfToken,
+      toInvite,
+      toBlock,
+    };
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error);
+    }
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
+
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
   };
 
   const inviteStudents = async (uids: string[]): Promise<void> => {
@@ -447,6 +474,15 @@ function StudentsCard({
                   <i className="bi bi-person-plus me-2" aria-hidden="true" />
                   Invite students
                 </Button>
+                <Button
+                  variant="light"
+                  size="sm"
+                  disabled={!authzData.has_course_instance_permission_edit}
+                  onClick={() => setShowSync(true)}
+                >
+                  <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
+                  Sync students
+                </Button>
                 <CopyEnrollmentLinkButton courseInstance={courseInstance} />
               </>
             )}
@@ -528,6 +564,13 @@ function StudentsCard({
         courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
         onSubmit={inviteStudents}
+      />
+      <SyncStudentsModal
+        show={showSync}
+        courseInstance={courseInstance}
+        students={students}
+        onHide={() => setShowSync(false)}
+        onSubmit={syncStudents}
       />
     </>
   );

@@ -17,7 +17,11 @@ import { getCourseOwners } from '../../lib/course.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import {
+  blockEnrollment,
+  inviteStudentByUid,
+  selectOptionalEnrollmentByUid,
+} from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -77,6 +81,19 @@ router.get(
   }),
 );
 
+const InviteUidsBodySchema = z.object({
+  __action: z.literal('invite_uids'),
+  uids: UniqueUidsFromStringSchema(1000),
+});
+
+const SyncStudentsBodySchema = z.object({
+  __action: z.literal('sync_students'),
+  toInvite: z.array(z.string()).max(1000),
+  toBlock: z.array(z.string()).max(1000),
+});
+
+const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -102,99 +119,233 @@ router.post(
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
     }
 
-    const BodySchema = z.object({
-      uids: UniqueUidsFromStringSchema(1000),
-      __action: z.literal('invite_uids'),
-    });
     const body = BodySchema.parse(req.body);
 
-    const serverJob = await createServerJob({
-      type: 'invite_students',
-      description: 'Invite students to course instance',
-      userId,
-      authnUserId,
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
-    });
+    if (body.__action === 'invite_uids') {
+      const serverJob = await createServerJob({
+        type: 'invite_students',
+        description: 'Invite students to course instance',
+        userId,
+        authnUserId,
+        courseId: course.id,
+        courseInstanceId: courseInstance.id,
+      });
 
-    serverJob.executeInBackground(async (job) => {
-      const counts = {
-        success: 0,
-        instructor: 0,
-        alreadyEnrolled: 0,
-        alreadyBlocked: 0,
-        alreadyInvited: 0,
-      };
+      serverJob.executeInBackground(async (job) => {
+        const counts = {
+          success: 0,
+          instructor: 0,
+          alreadyEnrolled: 0,
+          alreadyBlocked: 0,
+          alreadyInvited: 0,
+        };
 
-      for (const uid of body.uids) {
-        const user = await selectOptionalUserByUid(uid);
-        if (user) {
-          // Check if user is an instructor
-          const isInstructor = await callRow(
-            'users_is_instructor_in_course_instance',
-            [user.id, courseInstance.id],
-            z.boolean(),
-          );
-          if (isInstructor) {
-            job.info(`${uid}: Skipped (instructor)`);
-            counts.instructor++;
-            continue;
+        for (const uid of body.uids) {
+          const user = await selectOptionalUserByUid(uid);
+          if (user) {
+            // Check if user is an instructor
+            const isInstructor = await callRow(
+              'users_is_instructor_in_course_instance',
+              [user.id, courseInstance.id],
+              z.boolean(),
+            );
+            if (isInstructor) {
+              job.info(`${uid}: Skipped (instructor)`);
+              counts.instructor++;
+              continue;
+            }
+          }
+
+          const existingEnrollment = await selectOptionalEnrollmentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Viewer'],
+            authzData,
+          });
+
+          if (existingEnrollment) {
+            if (existingEnrollment.status === 'joined') {
+              job.info(`${uid}: Skipped (already enrolled)`);
+              counts.alreadyEnrolled++;
+              continue;
+            }
+            if (existingEnrollment.status === 'invited') {
+              job.info(`${uid}: Skipped (already invited)`);
+              counts.alreadyInvited++;
+              continue;
+            }
+            if (existingEnrollment.status === 'blocked') {
+              job.info(`${uid}: Skipped (blocked)`);
+              counts.alreadyBlocked++;
+              continue;
+            }
+          }
+
+          await inviteStudentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Editor'],
+            authzData,
+          });
+          job.info(`${uid}: Invited`);
+          counts.success++;
+        }
+
+        // Log summary at the end
+        job.info('\nSummary:');
+        job.info(`  Successfully invited: ${counts.success}`);
+        if (counts.alreadyEnrolled > 0) {
+          job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+        }
+        if (counts.alreadyInvited > 0) {
+          job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+        }
+        if (counts.alreadyBlocked > 0) {
+          job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
+        }
+        if (counts.instructor > 0) {
+          job.info(`  Skipped (instructor): ${counts.instructor}`);
+        }
+      });
+
+      res.json({ job_sequence_id: serverJob.jobSequenceId });
+    } else if (body.__action === 'sync_students') {
+      const { toInvite, toBlock } = body;
+
+      const serverJob = await createServerJob({
+        type: 'sync_students',
+        description: 'Sync students roster',
+        userId,
+        authnUserId,
+        courseId: course.id,
+        courseInstanceId: courseInstance.id,
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        const counts = {
+          invited: 0,
+          blocked: 0,
+          skippedInstructor: 0,
+          skippedAlreadyInvited: 0,
+          skippedAlreadyJoined: 0,
+          skippedAlreadyBlocked: 0,
+          errors: 0,
+        };
+
+        // Process invitations
+        if (toInvite.length > 0) {
+          job.info('Processing invitations...');
+          for (const uid of toInvite) {
+            try {
+              const user = await selectOptionalUserByUid(uid);
+              if (user) {
+                // Check if user is an instructor
+                const isInstructor = await callRow(
+                  'users_is_instructor_in_course_instance',
+                  [user.id, courseInstance.id],
+                  z.boolean(),
+                );
+                if (isInstructor) {
+                  job.info(`${uid}: Skipped (instructor)`);
+                  counts.skippedInstructor++;
+                  continue;
+                }
+              }
+
+              const existingEnrollment = await selectOptionalEnrollmentByUid({
+                courseInstance,
+                uid,
+                requiredRole: ['Student Data Viewer'],
+                authzData,
+              });
+
+              if (existingEnrollment?.status === 'joined') {
+                job.info(`${uid}: Skipped (already joined)`);
+                counts.skippedAlreadyJoined++;
+                continue;
+              }
+              if (existingEnrollment?.status === 'invited') {
+                job.info(`${uid}: Skipped (already invited)`);
+                counts.skippedAlreadyInvited++;
+                continue;
+              }
+
+              await inviteStudentByUid({
+                courseInstance,
+                uid,
+                requiredRole: ['Student Data Editor'],
+                authzData,
+              });
+              job.info(`${uid}: Invited`);
+              counts.invited++;
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              job.error(`${uid}: Error - ${message}`);
+              counts.errors++;
+            }
           }
         }
 
-        const existingEnrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Viewer'],
-          authzData,
-        });
+        // Process blocks
+        if (toBlock.length > 0) {
+          job.info('\nProcessing blocks...');
+          for (const uid of toBlock) {
+            try {
+              const enrollment = await selectOptionalEnrollmentByUid({
+                courseInstance,
+                uid,
+                requiredRole: ['Student Data Viewer'],
+                authzData,
+              });
 
-        if (existingEnrollment) {
-          if (existingEnrollment.status === 'joined') {
-            job.info(`${uid}: Skipped (already enrolled)`);
-            counts.alreadyEnrolled++;
-            continue;
-          }
-          if (existingEnrollment.status === 'invited') {
-            job.info(`${uid}: Skipped (already invited)`);
-            counts.alreadyInvited++;
-            continue;
-          }
-          if (existingEnrollment.status === 'blocked') {
-            job.info(`${uid}: Skipped (blocked)`);
-            counts.alreadyBlocked++;
-            continue;
+              if (!enrollment) {
+                job.info(`${uid}: Skipped (no enrollment found)`);
+                continue;
+              }
+              if (enrollment.status === 'blocked') {
+                job.info(`${uid}: Skipped (already blocked)`);
+                counts.skippedAlreadyBlocked++;
+                continue;
+              }
+
+              await blockEnrollment({
+                enrollment,
+                authzData,
+                requiredRole: ['Student Data Editor'],
+              });
+              job.info(`${uid}: Blocked`);
+              counts.blocked++;
+            } catch (error) {
+              const message = error instanceof Error ? error.message : 'Unknown error';
+              job.error(`${uid}: Error - ${message}`);
+              counts.errors++;
+            }
           }
         }
 
-        await inviteStudentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Editor'],
-          authzData,
-        });
-        job.info(`${uid}: Invited`);
-        counts.success++;
-      }
+        // Log summary at the end
+        job.info('\n--- Summary ---');
+        job.info(`Invited: ${counts.invited}`);
+        job.info(`Blocked: ${counts.blocked}`);
+        if (counts.skippedAlreadyJoined > 0) {
+          job.info(`Skipped (already joined): ${counts.skippedAlreadyJoined}`);
+        }
+        if (counts.skippedAlreadyInvited > 0) {
+          job.info(`Skipped (already invited): ${counts.skippedAlreadyInvited}`);
+        }
+        if (counts.skippedAlreadyBlocked > 0) {
+          job.info(`Skipped (already blocked): ${counts.skippedAlreadyBlocked}`);
+        }
+        if (counts.skippedInstructor > 0) {
+          job.info(`Skipped (instructor): ${counts.skippedInstructor}`);
+        }
+        if (counts.errors > 0) {
+          job.info(`Errors: ${counts.errors}`);
+        }
+      });
 
-      // Log summary at the end
-      job.info('\nSummary:');
-      job.info(`  Successfully invited: ${counts.success}`);
-      if (counts.alreadyEnrolled > 0) {
-        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
-      }
-      if (counts.alreadyInvited > 0) {
-        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
-      }
-      if (counts.alreadyBlocked > 0) {
-        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
-      }
-      if (counts.instructor > 0) {
-        job.info(`  Skipped (instructor): ${counts.instructor}`);
-      }
-    });
-
-    res.json({ job_sequence_id: serverJob.jobSequenceId });
+      res.json({ job_sequence_id: serverJob.jobSequenceId });
+    }
   }),
 );
 

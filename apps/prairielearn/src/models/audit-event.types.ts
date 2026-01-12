@@ -63,6 +63,7 @@ export type SupportedTableActionCombination =
         | 'invitation_accepted'
         | 'invitation_rejected'
         | 'blocked'
+        | 'blocked_from_sync'
         | 'unblocked'
         | 'invitation_deleted'
         | 'removed'

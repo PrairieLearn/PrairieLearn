@@ -732,3 +732,63 @@ export async function inviteEnrollment({
     });
   });
 }
+
+/**
+ * Blocks an enrollment regardless of its current status.
+ * Used for roster sync where students not on the roster should be blocked.
+ *
+ * Rationale: When syncing a roster, any student not on the provided roster
+ * should be blocked to ensure the roster is the source of truth while
+ * preserving enrollment history.
+ *
+ * Transitions from: 'joined', 'invited', 'rejected', 'removed' → 'blocked'
+ * Already blocked: no-op
+ * LTI-managed enrollments: throws error (cannot block lti13_pending)
+ */
+export async function blockEnrollment({
+  enrollment,
+  authzData,
+  requiredRole,
+}: {
+  enrollment: Enrollment;
+  authzData: AuthzDataWithEffectiveUser;
+  requiredRole: 'Student Data Editor'[];
+}): Promise<Enrollment> {
+  assertHasRole(authzData, requiredRole);
+
+  return await runInTransactionAsync(async () => {
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
+    if (lockedEnrollment.user_id) {
+      await selectAndLockUser(lockedEnrollment.user_id);
+    }
+
+    // Already blocked - no-op
+    if (lockedEnrollment.status === 'blocked') {
+      return lockedEnrollment;
+    }
+
+    // Cannot block LTI-managed enrollments
+    if (lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot block LTI-managed enrollment');
+    }
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id: lockedEnrollment.id, status: 'blocked' },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'blocked_from_sync',
+      rowId: newEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: newEnrollment,
+      agentUserId: authzData.user.id,
+      agentAuthnUserId: authzData.authn_user.id,
+    });
+
+    return newEnrollment;
+  });
+}

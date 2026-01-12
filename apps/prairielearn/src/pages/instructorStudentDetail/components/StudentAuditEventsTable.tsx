@@ -20,6 +20,7 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invitation_accepted: 'Accepted invitation',
     invitation_rejected: 'Rejected invitation',
     blocked: 'Blocked from course',
+    blocked_from_sync: 'Blocked from course (roster sync)',
     unblocked: 'Unblocked from course, now enrolled',
     // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
     invitation_deleted: 'Invitation cancelled',
