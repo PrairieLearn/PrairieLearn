@@ -102,7 +102,7 @@ By default, only students that belong to the course's institution can access the
 
 !!! warning "LTI 1.1 courses should not migrate"
 
-    Courses using LTI 1.1 should not migrate to the new publishing system. LTI 1.1 requires the `allowAccess` rules with `"institution": "LTI"` to function properly.
+    Courses using LTI 1.1 should not migrate to the new publishing system. LTI 1.1 requires an `allowAccess` rule with `"institution": "LTI"` to function properly.
 
 To migrate from `allowAccess` to publishing extensions:
 
