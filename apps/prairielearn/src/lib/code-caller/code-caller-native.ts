@@ -45,7 +45,6 @@ interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
-  pythonVenvSearchPaths: string[];
   errorLogger: (msg: string, data?: any) => void;
 }
 
@@ -115,7 +114,7 @@ export class CodeCallerNative implements CodeCaller {
    * cannot be async.
    */
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
-    const pythonExecutable = await getPythonPath(options.pythonVenvSearchPaths);
+    const pythonExecutable = await getPythonPath();
 
     const codeCaller = new CodeCallerNative({
       pythonExecutable,
