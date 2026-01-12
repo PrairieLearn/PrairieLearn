@@ -18,9 +18,9 @@ import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
-  blockEnrollment,
   inviteStudentByUid,
   selectOptionalEnrollmentByUid,
+  setEnrollmentStatus,
 } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
@@ -308,10 +308,12 @@ router.post(
                 continue;
               }
 
-              await blockEnrollment({
+              await setEnrollmentStatus({
                 enrollment,
+                status: 'blocked',
                 authzData,
                 requiredRole: ['Student Data Editor'],
+                actionDetail: 'blocked_from_sync',
               });
               job.info(`${uid}: Blocked`);
               counts.blocked++;

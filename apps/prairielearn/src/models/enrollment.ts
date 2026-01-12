@@ -573,20 +573,26 @@ async function _selectAndLockEnrollment(id: string) {
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
+ *
+ * For roster sync blocking, use `actionDetail: 'blocked_from_sync'` which allows blocking from
+ * any status (joined, invited, rejected, removed) rather than just 'joined'.
  */
 export async function setEnrollmentStatus({
   enrollment,
   status,
   authzData,
   requiredRole,
+  actionDetail: actionDetailOverride,
 }: {
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'removed' | 'joined';
   authzData: AuthzData;
   requiredRole: CourseInstanceRole[];
+  /** Override the action detail for audit logging. Use 'blocked_from_sync' for roster sync. */
+  actionDetail?: SupportedActionsForTable<'enrollments'>;
 }): Promise<Enrollment> {
   const transitionInformation: {
-    previousStatus: EnumEnrollmentStatus;
+    previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
     actionDetail: SupportedActionsForTable<'enrollments'>;
     permittedRoles: CourseInstanceRole[];
   } = run(() => {
@@ -610,6 +616,14 @@ export async function setEnrollmentStatus({
           permittedRoles: ['Student'],
         };
       case 'blocked':
+        // For roster sync (blocked_from_sync), allow blocking from any non-LTI status
+        if (actionDetailOverride === 'blocked_from_sync') {
+          return {
+            previousStatus: ['joined', 'invited', 'rejected', 'removed'],
+            actionDetail: 'blocked_from_sync',
+            permittedRoles: ['Student Data Editor'],
+          };
+        }
         return {
           previousStatus: 'joined',
           actionDetail: 'blocked',
@@ -630,6 +644,11 @@ export async function setEnrollmentStatus({
       return lockedEnrollment;
     }
 
+    // For roster sync blocking, reject LTI-managed enrollments
+    if (actionDetailOverride === 'blocked_from_sync' && lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot block LTI-managed enrollment');
+    }
+
     // Assert that the enrollment is in the previous status.
     assertEnrollmentStatus(lockedEnrollment, transitionInformation.previousStatus);
 
@@ -648,7 +667,7 @@ export async function setEnrollmentStatus({
     await insertAuditEvent({
       tableName: 'enrollments',
       action: 'update',
-      actionDetail: transitionInformation.actionDetail,
+      actionDetail: actionDetailOverride ?? transitionInformation.actionDetail,
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
@@ -733,62 +752,3 @@ export async function inviteEnrollment({
   });
 }
 
-/**
- * Blocks an enrollment regardless of its current status.
- * Used for roster sync where students not on the roster should be blocked.
- *
- * Rationale: When syncing a roster, any student not on the provided roster
- * should be blocked to ensure the roster is the source of truth while
- * preserving enrollment history.
- *
- * Transitions from: 'joined', 'invited', 'rejected', 'removed' → 'blocked'
- * Already blocked: no-op
- * LTI-managed enrollments: throws error (cannot block lti13_pending)
- */
-export async function blockEnrollment({
-  enrollment,
-  authzData,
-  requiredRole,
-}: {
-  enrollment: Enrollment;
-  authzData: AuthzDataWithEffectiveUser;
-  requiredRole: 'Student Data Editor'[];
-}): Promise<Enrollment> {
-  assertHasRole(authzData, requiredRole);
-
-  return await runInTransactionAsync(async () => {
-    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
-    if (lockedEnrollment.user_id) {
-      await selectAndLockUser(lockedEnrollment.user_id);
-    }
-
-    // Already blocked - no-op
-    if (lockedEnrollment.status === 'blocked') {
-      return lockedEnrollment;
-    }
-
-    // Cannot block LTI-managed enrollments
-    if (lockedEnrollment.status === 'lti13_pending') {
-      throw new error.HttpStatusError(400, 'Cannot block LTI-managed enrollment');
-    }
-
-    const newEnrollment = await queryRow(
-      sql.set_enrollment_status,
-      { enrollment_id: lockedEnrollment.id, status: 'blocked' },
-      EnrollmentSchema,
-    );
-
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
-      actionDetail: 'blocked_from_sync',
-      rowId: newEnrollment.id,
-      oldRow: lockedEnrollment,
-      newRow: newEnrollment,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: authzData.authn_user.id,
-    });
-
-    return newEnrollment;
-  });
-}
