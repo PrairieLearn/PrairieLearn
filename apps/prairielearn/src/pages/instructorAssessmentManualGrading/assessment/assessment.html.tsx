@@ -9,7 +9,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -38,7 +38,7 @@ export function ManualGradingAssessment({
   num_open_instances,
   adminFeaturesEnabled,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
@@ -170,7 +170,7 @@ function AssessmentQuestionRow({
   resLocals,
   question,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   question: ManualGradingQuestion;
 }) {
   const showGradingButton =

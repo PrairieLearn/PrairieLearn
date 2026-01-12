@@ -1807,6 +1807,7 @@ export async function initExpress(): Promise<Express> {
       res.locals.urlPrefix = '/pl/public/course/' + req.params.course_id;
       next();
     },
+    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
   ]);
   app.use('/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/file_view', [
     function (req: Request, res: Response, next: NextFunction) {
@@ -1858,17 +1859,6 @@ export async function initExpress(): Promise<Express> {
       coreElements: false,
     }),
   );
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
-    (await import('./pages/publicAssessments/publicAssessments.js')).default,
-  );
-  app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
-    res.redirect(`${req.params[0]}/questions`);
-  });
-  app.use(
-    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
-    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
-  );
 
   // Client files for questions
   app.use(
@@ -1890,6 +1880,26 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/public/course/:course_id(\\d+)/question/:question_id(\\d+)/submission/:unsafe_submission_id(\\d+)/file',
     [(await import('./pages/submissionFile/submissionFile.js')).default({ publicEndpoint: true })],
+  );
+
+  // Publicly shared course instances and assessments
+  app.use('/pl/public/course_instance/:course_instance_id(\\d+)', [
+    function (req: Request, res: Response, next: NextFunction) {
+      res.locals.navbarType = 'public';
+      next();
+    },
+    (await import('./middlewares/authzPublicCourseOrInstance.js')).default,
+  ]);
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessments',
+    (await import('./pages/publicAssessments/publicAssessments.js')).default,
+  );
+  app.use(/^(\/pl\/public\/course_instance\/[0-9]+\/assessment\/[0-9]+)\/?$/, (req, res, _next) => {
+    res.redirect(`${req.params[0]}/questions`);
+  });
+  app.use(
+    '/pl/public/course_instance/:course_instance_id(\\d+)/assessment/:assessment_id(\\d+)/questions',
+    (await import('./pages/publicAssessmentQuestions/publicAssessmentQuestions.js')).default,
   );
 
   //////////////////////////////////////////////////////////////////////
