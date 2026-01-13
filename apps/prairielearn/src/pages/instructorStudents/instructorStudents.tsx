@@ -265,7 +265,7 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        const inviteCounts: InviteCounts = {
+        const syncCounts: InviteCounts = {
           invited: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
@@ -284,7 +284,7 @@ router.post(
             courseInstance,
             authzData,
             job,
-            counts: inviteCounts,
+            counts: syncCounts,
             skipBlocked: false, // sync_students can re-invite blocked students
           });
         }
@@ -307,7 +307,7 @@ router.post(
               }
               if (enrollment.status === 'blocked') {
                 job.info(`${uid}: Skipped (already blocked)`);
-                inviteCounts.skippedAlreadyBlocked++;
+                syncCounts.skippedAlreadyBlocked++;
                 continue;
               }
 
@@ -329,24 +329,24 @@ router.post(
         }
 
         // Log summary at the end
-        job.info('\n--- Summary ---');
-        job.info(`Invited: ${inviteCounts.invited}`);
-        job.info(`Blocked: ${blocked}`);
-        if (inviteCounts.skippedAlreadyJoined > 0) {
-          job.info(`Skipped (already joined): ${inviteCounts.skippedAlreadyJoined}`);
+        job.info('\nSummary:');
+        job.info(`  Invited: ${syncCounts.invited}`);
+        job.info(`  Blocked: ${blocked}`);
+        if (syncCounts.skippedAlreadyJoined > 0) {
+          job.info(`  Skipped (already joined): ${syncCounts.skippedAlreadyJoined}`);
         }
-        if (inviteCounts.skippedAlreadyInvited > 0) {
-          job.info(`Skipped (already invited): ${inviteCounts.skippedAlreadyInvited}`);
+        if (syncCounts.skippedAlreadyInvited > 0) {
+          job.info(`  Skipped (already invited): ${syncCounts.skippedAlreadyInvited}`);
         }
-        if (inviteCounts.skippedAlreadyBlocked > 0) {
-          job.info(`Skipped (already blocked): ${inviteCounts.skippedAlreadyBlocked}`);
+        if (syncCounts.skippedAlreadyBlocked > 0) {
+          job.info(`  Skipped (already blocked): ${syncCounts.skippedAlreadyBlocked}`);
         }
-        if (inviteCounts.skippedInstructor > 0) {
-          job.info(`Skipped (instructor): ${inviteCounts.skippedInstructor}`);
+        if (syncCounts.skippedInstructor > 0) {
+          job.info(`  Skipped (instructor): ${syncCounts.skippedInstructor}`);
         }
-        const totalErrors = inviteCounts.errors + blockErrors;
+        const totalErrors = syncCounts.errors + blockErrors;
         if (totalErrors > 0) {
-          job.info(`Errors: ${totalErrors}`);
+          job.info(`  Errors: ${totalErrors}`);
         }
       });
 

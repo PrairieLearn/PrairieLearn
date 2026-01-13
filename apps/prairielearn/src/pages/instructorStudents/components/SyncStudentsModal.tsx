@@ -155,6 +155,8 @@ function StudentCheckboxList({
       <div
         className="border rounded"
         style={{ maxHeight: '200px', overflowY: 'auto' }}
+        role="group"
+        aria-label={`Students to ${variant}`}
       >
         {items.map((item, index) => (
           <div
