@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import type { StaffAuthnProvider, StaffInstitution } from '../../../../lib/client/safe-db-types.js';
 import type { AuthnProvider } from '../../../../lib/db-types.js';

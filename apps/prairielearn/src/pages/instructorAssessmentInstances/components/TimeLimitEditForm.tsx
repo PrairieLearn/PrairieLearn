@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
 

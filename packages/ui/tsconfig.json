@@ -4,6 +4,7 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["node"],
-    "jsx": "react-jsx"
+    "jsx": "react-jsx",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
 }
