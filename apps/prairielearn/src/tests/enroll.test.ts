@@ -381,7 +381,6 @@ describe('Self-enrollment settings transitions', () => {
       institutionId: '1',
     });
 
-    // Create a 'removed' enrollment (user was previously enrolled but left)
     await execute(
       `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
        VALUES ($user_id, $course_instance_id, 'removed', $first_joined_at)`,
@@ -402,11 +401,9 @@ describe('Self-enrollment settings transitions', () => {
       assert.isNotNull(initialEnrollment);
       assert.equal(initialEnrollment.status, 'removed');
 
-      // Try to access assessments endpoint
       const response = await fetch(assessmentsUrl);
       assert.equal(response.status, 403);
 
-      // Check that user is still in removed status
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: removedUser.id,
         courseInstance,
