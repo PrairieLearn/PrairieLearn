@@ -41,12 +41,12 @@ const MAX_UIDS = 1000;
  * - Students already `joined` or `invited` who are on the roster → no action
  */
 function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]): SyncPreview {
-  const inputUidSet = new Set(inputUids.map((uid) => uid.toLowerCase()));
+  const inputUidSet = new Set(inputUids);
   const currentUidMap = new Map<string, StudentRow>();
 
-  // Build map of current enrollments (all statuses) by lowercase UID
+  // Build map of current enrollments (all statuses) by UID
   for (const student of currentEnrollments) {
-    const uid = (student.user?.uid ?? student.enrollment.pending_uid)?.toLowerCase();
+    const uid = student.user?.uid ?? student.enrollment.pending_uid;
     if (uid) {
       currentUidMap.set(uid, student);
     }
@@ -57,8 +57,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
 
   // Students on roster who need to be invited
   for (const uid of inputUids) {
-    const normalizedUid = uid.toLowerCase();
-    const existing = currentUidMap.get(normalizedUid);
+    const existing = currentUidMap.get(uid);
 
     if (!existing) {
       // New student - needs invitation
@@ -81,7 +80,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
 
   // Students NOT on roster who should be blocked
   for (const [, student] of currentUidMap) {
-    const uid = (student.user?.uid ?? student.enrollment.pending_uid)?.toLowerCase();
+    const uid = student.user?.uid ?? student.enrollment.pending_uid;
     if (uid && !inputUidSet.has(uid)) {
       // Not on roster - block if has any enrollment status
       toBlock.push({
