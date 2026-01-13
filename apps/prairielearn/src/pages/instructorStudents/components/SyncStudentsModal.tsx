@@ -485,20 +485,26 @@ export function SyncStudentsModal({
             >
               Back
             </Button>
-            <Button variant="secondary" disabled={syncMutation.isPending} onClick={onHide}>
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              disabled={hasNoChanges || hasNoSelections || syncMutation.isPending}
-              onClick={() => syncMutation.mutate()}
-            >
-              {syncMutation.isPending
-                ? 'Syncing...'
-                : hasNoChanges
-                  ? 'No changes'
-                  : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
-            </Button>
+            {hasNoChanges ? (
+              <Button variant="primary" onClick={onHide}>
+                Done
+              </Button>
+            ) : (
+              <>
+                <Button variant="secondary" disabled={syncMutation.isPending} onClick={onHide}>
+                  Cancel
+                </Button>
+                <Button
+                  variant="primary"
+                  disabled={hasNoSelections || syncMutation.isPending}
+                  onClick={() => syncMutation.mutate()}
+                >
+                  {syncMutation.isPending
+                    ? 'Syncing...'
+                    : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
+                </Button>
+              </>
+            )}
           </>
         )}
       </Modal.Footer>
