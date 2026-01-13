@@ -365,6 +365,56 @@ describe('Self-enrollment settings transitions', () => {
     });
   });
 
+  it('does not allow removed user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
+    });
+
+    const removedUser = await getOrCreateUser({
+      uid: 'removed@example.com',
+      name: 'Removed Student',
+      uin: 'removed1',
+      email: 'removed@example.com',
+      institutionId: '1',
+    });
+
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'removed', $first_joined_at)`,
+      {
+        user_id: removedUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date(),
+      },
+    );
+
+    await withUser(removedUser, async () => {
+      const initialEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: removedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(initialEnrollment);
+      assert.equal(initialEnrollment.status, 'removed');
+
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
+
+      const finalEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: removedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(finalEnrollment);
+      assert.equal(finalEnrollment.status, 'removed');
+    });
+  });
+
   it('does not allow blocked user to self-enroll via the assessments endpoint', async () => {
     await deleteEnrollmentsInCourseInstance('1');
     await updateCourseInstanceSettings('1', {
