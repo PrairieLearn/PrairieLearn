@@ -102,7 +102,7 @@ test.describe('Sync students', () => {
     await createTestData();
   });
 
-  test('can sync students with invites and blocks', async ({ page }) => {
+  test('can sync students with invites, cancellations, and blocks', async ({ page }) => {
     // Create fresh users for this test to avoid conflicts
     await getOrCreateUser({ uid: 'fresh_sync_new@test.com', name: 'Fresh New', uin: null });
     const freshToBlock = await getOrCreateUser({
@@ -114,12 +114,21 @@ test.describe('Sync students', () => {
     const course = await selectCourseByShortName('QA 101');
     const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
 
+    // Enroll a student who will be blocked
     await ensureUncheckedEnrollment({
       userId: freshToBlock.id,
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
       requiredRole: ['System'],
       actionDetail: 'implicit_joined',
+    });
+
+    // Create a pending invitation that will be cancelled
+    await inviteStudentByUid({
+      uid: 'fresh_sync_cancel@test.com',
+      courseInstance,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
     });
 
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
@@ -135,17 +144,19 @@ test.describe('Sync students', () => {
     ).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
-    // Enter roster with fresh_sync_new but NOT fresh_sync_block
+    // Enter roster with fresh_sync_new but NOT fresh_sync_block or fresh_sync_cancel
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill('fresh_sync_new@test.com');
 
     await page.getByRole('button', { name: 'Compare' }).click();
 
-    // Should show preview with correct students
+    // Should show preview with correct students in each category
     await expect(page.getByText('Review the changes below')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
     await expect(dialog.getByText('Students to invite')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_new@test.com')).toBeVisible();
+    await expect(dialog.getByText('Invitations to cancel')).toBeVisible();
+    await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
     await expect(dialog.getByText('Students to block')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_block@test.com')).toBeVisible();
 
@@ -155,6 +166,7 @@ test.describe('Sync students', () => {
     // Check job output
     await waitForJobAndCheckOutput(page, [
       'fresh_sync_new@test.com: Invited',
+      'fresh_sync_cancel@test.com: Invitation cancelled',
       'fresh_sync_block@test.com: Blocked',
     ]);
   });

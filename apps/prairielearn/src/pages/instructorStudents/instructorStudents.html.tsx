@@ -252,11 +252,16 @@ function StudentsCard({
     setTimeout(() => setCopiedEnrollLink(false), 2000);
   };
 
-  const syncStudents = async (toInvite: string[], toBlock: string[]): Promise<void> => {
+  const syncStudents = async (
+    toInvite: string[],
+    toCancelInvitation: string[],
+    toBlock: string[],
+  ): Promise<void> => {
     const body = {
       __action: 'sync_students',
       __csrf_token: csrfToken,
       toInvite,
+      toCancelInvitation,
       toBlock,
     };
     const res = await fetch(window.location.href, {

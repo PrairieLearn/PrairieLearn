@@ -25,6 +25,7 @@ interface StudentSyncItem {
 
 interface SyncPreview {
   toInvite: StudentSyncItem[];
+  toCancelInvitation: StudentSyncItem[];
   toBlock: StudentSyncItem[];
 }
 
@@ -37,7 +38,8 @@ const MAX_UIDS = 1000;
  *
  * Sync logic (roster is the source of truth):
  * - Students on roster but not `joined`/`invited` → should be invited
- * - Students not on roster (any enrollment status) → should be blocked
+ * - Students not on roster who are `joined` → should be blocked
+ * - Students not on roster who are `invited`/`rejected` → should have invitation cancelled
  * - Students already `joined` or `invited` who are on the roster → no action
  */
 function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]): SyncPreview {
@@ -53,6 +55,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
   }
 
   const toInvite: StudentSyncItem[] = [];
+  const toCancelInvitation: StudentSyncItem[] = [];
   const toBlock: StudentSyncItem[] = [];
 
   // Students on roster who need to be invited
@@ -74,26 +77,33 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
         enrollmentId: existing.enrollment.id,
         userName: existing.user?.name,
       });
-    } else {
-      // The student is already joined or invited - no action needed.
     }
+    // else: already joined or invited - no action needed
   }
 
-  // Students NOT on roster who should be blocked
+  // Students NOT on roster who should be blocked or have invitation cancelled
   for (const student of currentUidMap.values()) {
     const uid = student.user?.uid ?? student.enrollment.pending_uid;
     if (uid && !inputUidSet.has(uid)) {
-      // Not on roster - block if has any enrollment status
-      toBlock.push({
+      const item: StudentSyncItem = {
         uid: student.user?.uid ?? student.enrollment.pending_uid!,
         currentStatus: student.enrollment.status,
         enrollmentId: student.enrollment.id,
         userName: student.user?.name,
-      });
+      };
+
+      // Invited/rejected students should have their invitation cancelled (deleted)
+      // Joined students should be blocked
+      if (['invited', 'rejected'].includes(student.enrollment.status)) {
+        toCancelInvitation.push(item);
+      } else if (student.enrollment.status === 'joined') {
+        toBlock.push(item);
+      }
+      // Other statuses (blocked, removed, lti13_pending) - no action needed
     }
   }
 
-  return { toInvite, toBlock };
+  return { toInvite, toCancelInvitation, toBlock };
 }
 
 interface StudentCheckboxListProps {
@@ -102,7 +112,8 @@ interface StudentCheckboxListProps {
   onToggle: (uid: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
-  variant: 'invite' | 'block';
+  variant: 'invite' | 'cancel' | 'block';
+  className?: string;
 }
 
 function StudentCheckboxList({
@@ -112,26 +123,41 @@ function StudentCheckboxList({
   onSelectAll,
   onDeselectAll,
   variant,
+  className,
 }: StudentCheckboxListProps) {
   if (items.length === 0) return null;
 
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
 
+  const variantConfig = {
+    invite: {
+      icon: 'bi-person-plus',
+      iconColor: 'text-success',
+      label: 'Students to invite',
+      ariaLabel: 'Students to invite',
+    },
+    cancel: {
+      icon: 'bi-x-circle',
+      iconColor: 'text-warning',
+      label: 'Invitations to cancel',
+      ariaLabel: 'Invitations to cancel',
+    },
+    block: {
+      icon: 'bi-slash-circle',
+      iconColor: 'text-danger',
+      label: 'Students to block',
+      ariaLabel: 'Students to block',
+    },
+  };
+
+  const config = variantConfig[variant];
+
   return (
-    <div className="mb-4">
+    <div className={className}>
       <div className="d-flex justify-content-between align-items-center mb-2">
         <h6 className="mb-0">
-          {variant === 'invite' ? (
-            <>
-              <i className="bi bi-person-plus text-success me-2" aria-hidden="true" />
-              Students to invite ({selectedCount} of {items.length} selected)
-            </>
-          ) : (
-            <>
-              <i className="bi bi-slash-circle text-danger me-2" aria-hidden="true" />
-              Students to block ({selectedCount} of {items.length} selected)
-            </>
-          )}
+          <i className={`bi ${config.icon} ${config.iconColor} me-2`} aria-hidden="true" />
+          {config.label} ({selectedCount} of {items.length} selected)
         </h6>
         <div className="btn-group btn-group-sm">
           <Button variant="outline-secondary" size="sm" onClick={onSelectAll}>
@@ -156,7 +182,7 @@ function StudentCheckboxList({
         className="border rounded"
         style={{ maxHeight: '200px', overflowY: 'auto' }}
         role="group"
-        aria-label={`Students to ${variant}`}
+        aria-label={config.ariaLabel}
       >
         {items.map((item, index) => (
           <div
@@ -199,11 +225,12 @@ export function SyncStudentsModal({
   courseInstance: StaffCourseInstance;
   students: StudentRow[];
   onHide: () => void;
-  onSubmit: (toInvite: string[], toBlock: string[]) => Promise<void>;
+  onSubmit: (toInvite: string[], toCancelInvitation: string[], toBlock: string[]) => Promise<void>;
 }) {
   const [step, setStep] = useState<SyncStep>('input');
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [selectedInvites, setSelectedInvites] = useState<Set<string>>(() => new Set());
+  const [selectedCancellations, setSelectedCancellations] = useState<Set<string>>(() => new Set());
   const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(() => new Set());
 
   const {
@@ -246,6 +273,7 @@ export function SyncStudentsModal({
     setPreview(diff);
     // Pre-select all items by default
     setSelectedInvites(new Set(diff.toInvite.map((item) => item.uid)));
+    setSelectedCancellations(new Set(diff.toCancelInvitation.map((item) => item.uid)));
     setSelectedBlocks(new Set(diff.toBlock.map((item) => item.uid)));
     setStep('preview');
   });
@@ -253,8 +281,9 @@ export function SyncStudentsModal({
   const syncMutation = useMutation({
     mutationFn: async () => {
       const toInvite = Array.from(selectedInvites);
+      const toCancelInvitation = Array.from(selectedCancellations);
       const toBlock = Array.from(selectedBlocks);
-      return onSubmit(toInvite, toBlock);
+      return onSubmit(toInvite, toCancelInvitation, toBlock);
     },
     onMutate: () => {
       setStep('submitting');
@@ -271,12 +300,25 @@ export function SyncStudentsModal({
     setStep('input');
     setPreview(null);
     setSelectedInvites(new Set());
+    setSelectedCancellations(new Set());
     setSelectedBlocks(new Set());
     syncMutation.reset();
   };
 
   const toggleInvite = (uid: string) => {
     setSelectedInvites((prev) => {
+      const next = new Set(prev);
+      if (next.has(uid)) {
+        next.delete(uid);
+      } else {
+        next.add(uid);
+      }
+      return next;
+    });
+  };
+
+  const toggleCancellation = (uid: string) => {
+    setSelectedCancellations((prev) => {
       const next = new Set(prev);
       if (next.has(uid)) {
         next.delete(uid);
@@ -301,10 +343,16 @@ export function SyncStudentsModal({
 
   const hasNoChanges = useMemo(() => {
     if (!preview) return false;
-    return preview.toInvite.length === 0 && preview.toBlock.length === 0;
+    return (
+      preview.toInvite.length === 0 &&
+      preview.toCancelInvitation.length === 0 &&
+      preview.toBlock.length === 0
+    );
   }, [preview]);
 
-  const hasNoSelections = selectedInvites.size === 0 && selectedBlocks.size === 0;
+  const totalSelectedCount =
+    selectedInvites.size + selectedCancellations.size + selectedBlocks.size;
+  const hasNoSelections = totalSelectedCount === 0;
 
   const isUnpublished =
     courseInstance.modern_publishing &&
@@ -373,31 +421,44 @@ export function SyncStudentsModal({
               </Alert>
             ) : (
               <>
-                <p className="text-muted mb-3">
-                  Review the changes below. Uncheck any students you don't want to modify.
-                </p>
+                <p>Review the changes below. Uncheck any students you don't want to modify.</p>
 
-                <StudentCheckboxList
-                  items={preview.toInvite}
-                  selectedUids={selectedInvites}
-                  variant="invite"
-                  onToggle={toggleInvite}
-                  onSelectAll={() =>
-                    setSelectedInvites(new Set(preview.toInvite.map((item) => item.uid)))
-                  }
-                  onDeselectAll={() => setSelectedInvites(new Set())}
-                />
+                <div className="d-flex flex-column gap-4">
+                  <StudentCheckboxList
+                    items={preview.toInvite}
+                    selectedUids={selectedInvites}
+                    variant="invite"
+                    onToggle={toggleInvite}
+                    onSelectAll={() =>
+                      setSelectedInvites(new Set(preview.toInvite.map((item) => item.uid)))
+                    }
+                    onDeselectAll={() => setSelectedInvites(new Set())}
+                  />
 
-                <StudentCheckboxList
-                  items={preview.toBlock}
-                  selectedUids={selectedBlocks}
-                  variant="block"
-                  onToggle={toggleBlock}
-                  onSelectAll={() =>
-                    setSelectedBlocks(new Set(preview.toBlock.map((item) => item.uid)))
-                  }
-                  onDeselectAll={() => setSelectedBlocks(new Set())}
-                />
+                  <StudentCheckboxList
+                    items={preview.toCancelInvitation}
+                    selectedUids={selectedCancellations}
+                    variant="cancel"
+                    onToggle={toggleCancellation}
+                    onSelectAll={() =>
+                      setSelectedCancellations(
+                        new Set(preview.toCancelInvitation.map((item) => item.uid)),
+                      )
+                    }
+                    onDeselectAll={() => setSelectedCancellations(new Set())}
+                  />
+
+                  <StudentCheckboxList
+                    items={preview.toBlock}
+                    selectedUids={selectedBlocks}
+                    variant="block"
+                    onToggle={toggleBlock}
+                    onSelectAll={() =>
+                      setSelectedBlocks(new Set(preview.toBlock.map((item) => item.uid)))
+                    }
+                    onDeselectAll={() => setSelectedBlocks(new Set())}
+                  />
+                </div>
               </>
             )}
           </>
@@ -440,9 +501,7 @@ export function SyncStudentsModal({
             >
               {hasNoChanges
                 ? 'No changes'
-                : `Sync ${selectedInvites.size + selectedBlocks.size} student${
-                    selectedInvites.size + selectedBlocks.size === 1 ? '' : 's'
-                  }`}
+                : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
             </Button>
           </>
         )}
