@@ -193,20 +193,24 @@ function StudentCheckboxList({
               type="checkbox"
               id={`sync-${variant}-${item.uid}`}
               checked={selectedUids.has(item.uid)}
-              className="mb-0"
-              label={
-                <span className="d-inline-flex align-items-center gap-2 flex-wrap">
-                  <code>{item.uid}</code>
-                  {item.userName && <span className="text-muted">({item.userName})</span>}
-                  {item.currentStatus ? (
-                    <EnrollmentStatusIcon status={item.currentStatus} type="badge" />
-                  ) : (
-                    <span className="badge bg-info">New</span>
-                  )}
-                </span>
-              }
+              className="d-flex gap-2 align-items-center mb-0"
               onChange={() => onToggle(item.uid)}
-            />
+            >
+              <Form.Check.Input
+                type="checkbox"
+                className="mt-0"
+                checked={selectedUids.has(item.uid)}
+              />
+              <span className="d-inline-flex align-items-center gap-2 flex-wrap">
+                <code>{item.uid}</code>
+                {item.userName && <span className="text-muted">({item.userName})</span>}
+                {item.currentStatus ? (
+                  <EnrollmentStatusIcon status={item.currentStatus} type="badge" />
+                ) : (
+                  <span className="badge bg-info">New</span>
+                )}
+              </span>
+            </Form.Check>
           </div>
         ))}
       </div>
