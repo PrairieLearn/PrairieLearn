@@ -26,7 +26,7 @@ export function AddInstitutionModal({
           <input type="hidden" name="__action" value="add_institution" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <div className="mb-3">
-            <label className="form-label" for="short_name">
+            <label className="form-label" htmlFor="short_name">
               Short name
             </label>
             <input
@@ -42,7 +42,7 @@ export function AddInstitutionModal({
             </small>
           </div>
           <div className="mb-3">
-            <label className="form-label" for="long_name">
+            <label className="form-label" htmlFor="long_name">
               Long name
             </label>
             <input type="text" className="form-control" id="long_name" name="long_name" required />
@@ -51,7 +51,7 @@ export function AddInstitutionModal({
             </small>
           </div>
           <div className="mb-3">
-            <label className="form-label" for="display_timezone">
+            <label className="form-label" htmlFor="display_timezone">
               Timezone
             </label>
             <select className="form-select" id="display_timezone" name="display_timezone" required>
@@ -78,7 +78,7 @@ export function AddInstitutionModal({
             </small>
           </div>
           <div className="mb-3">
-            <label className="form-label" for="uid_regexp">
+            <label className="form-label" htmlFor="uid_regexp">
               UID regexp
             </label>
             <input type="text" className="form-control" id="uid_regexp" name="uid_regexp" />
@@ -105,7 +105,7 @@ export function AddInstitutionModal({
                         name="enabled_authn_provider_ids"
                         defaultChecked={isDefaultChecked}
                       />
-                      <label className="form-check-label" for={`authn-provider-${provider.id}`}>
+                      <label className="form-check-label" htmlFor={`authn-provider-${provider.id}`}>
                         {provider.name}
                       </label>
                     </div>

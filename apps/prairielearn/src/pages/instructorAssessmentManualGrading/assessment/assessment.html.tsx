@@ -299,7 +299,7 @@ function GraderAssignmentModal({
                 value={staff.id}
                 className="form-check-input"
               />
-              <label className="form-check-label" for={`grader-assignment-${staff.id}`}>
+              <label className="form-check-label" htmlFor={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>

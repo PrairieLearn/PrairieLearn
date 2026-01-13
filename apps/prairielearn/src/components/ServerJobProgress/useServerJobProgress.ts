@@ -1,5 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
-import type { StateUpdater } from 'preact/hooks';
+import { type SetStateAction, useCallback, useEffect, useMemo, useState } from 'react';
 import { io } from 'socket.io-client';
 
 import type {
@@ -41,7 +40,7 @@ export function useServerJobProgress({
   > | null>(initialOngoingJobSequenceTokens);
 
   const setJobsProgressAndEmit = useCallback(
-    (stateUpdater: StateUpdater<Record<string, JobProgress>>) => {
+    (stateUpdater: SetStateAction<Record<string, JobProgress>>) => {
       setJobsProgress(stateUpdater);
       onProgressChange();
       // We do not include onProgressChange in the dependency array because it

@@ -106,11 +106,11 @@ export function CategoricalColumnFilter<TData, TValue>({
               className="btn-check"
               name={`filter-${columnId}-options`}
               id={`filter-${columnId}-include`}
-              autocomplete="off"
+              autoComplete="off"
               checked={mode === 'include'}
               onChange={() => apply('include', selected)}
             />
-            <label className="btn btn-outline-primary" for={`filter-${columnId}-include`}>
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-include`}>
               <span className="text-nowrap">
                 {mode === 'include' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
                 Include
@@ -122,11 +122,11 @@ export function CategoricalColumnFilter<TData, TValue>({
               className="btn-check"
               name={`filter-${columnId}-options`}
               id={`filter-${columnId}-exclude`}
-              autocomplete="off"
+              autoComplete="off"
               checked={mode === 'exclude'}
               onChange={() => apply('exclude', selected)}
             />
-            <label className="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-exclude`}>
               <span className="text-nowrap">
                 {mode === 'exclude' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
                 Exclude
@@ -137,16 +137,18 @@ export function CategoricalColumnFilter<TData, TValue>({
 
         <div
           className="list-group list-group-flush"
-          style={{
-            // This is needed to prevent the last item's background from covering
-            // the dropdown's border radius.
-            '--bs-list-group-bg': 'transparent',
-          }}
+          style={
+            {
+              // This is needed to prevent the last item's background from covering
+              // the dropdown's border radius.
+              '--bs-list-group-bg': 'transparent',
+            } as React.CSSProperties
+          }
         >
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={value} className="list-group-item d-flex align-items-center gap-3">
+              <div key={String(value)} className="list-group-item d-flex align-items-center gap-3">
                 <div className="form-check">
                   <input
                     className="form-check-input"
@@ -155,7 +157,7 @@ export function CategoricalColumnFilter<TData, TValue>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label className="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

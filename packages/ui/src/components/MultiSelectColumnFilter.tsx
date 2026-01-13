@@ -81,16 +81,18 @@ export function MultiSelectColumnFilter<TData, TValue>({
 
         <div
           className="list-group list-group-flush"
-          style={{
-            // This is needed to prevent the last item's background from covering
-            // the dropdown's border radius.
-            '--bs-list-group-bg': 'transparent',
-          }}
+          style={
+            {
+              // This is needed to prevent the last item's background from covering
+              // the dropdown's border radius.
+              '--bs-list-group-bg': 'transparent',
+            } as React.CSSProperties
+          }
         >
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={value} className="list-group-item d-flex align-items-center gap-3">
+              <div key={String(value)} className="list-group-item d-flex align-items-center gap-3">
                 <div className="form-check">
                   <input
                     className="form-check-input"
@@ -99,7 +101,7 @@ export function MultiSelectColumnFilter<TData, TValue>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label className="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

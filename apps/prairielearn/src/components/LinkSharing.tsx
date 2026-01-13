@@ -76,7 +76,7 @@ export function PublicLinkSharing({
         {sharingMessage}
       </p>
       <div className="mb-3">
-        <label for="publicLink">Public link</label>
+        <label htmlFor="publicLink">Public link</label>
         <InputGroup>
           <Form.Control type="text" id="publicLink" value={publicLink} disabled />
           <OverlayTrigger
@@ -131,7 +131,7 @@ export function StudentLinkSharing({
   const [copied, setCopied] = useState(false);
   return (
     <div className="mb-3">
-      <label className="form-label" for="student_link">
+      <label className="form-label" htmlFor="student_link">
         Student link
       </label>
       <InputGroup>

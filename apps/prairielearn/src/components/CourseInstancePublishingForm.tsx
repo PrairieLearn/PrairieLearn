@@ -233,7 +233,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-unpublished`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-unpublished`}>
               Unpublished
             </label>
           </div>
@@ -284,7 +284,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-publish-scheduled`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-publish-scheduled`}>
               Scheduled to be published
             </label>
           </div>
@@ -313,7 +313,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-start-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-start-date`}>
                       Start date
                     </label>
                     {canEdit && (
@@ -355,7 +355,7 @@ export function CourseInstancePublishingForm({
 
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-end-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -413,7 +413,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-published`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-published`}>
               Published
             </label>
           </div>
@@ -447,7 +447,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-end-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (

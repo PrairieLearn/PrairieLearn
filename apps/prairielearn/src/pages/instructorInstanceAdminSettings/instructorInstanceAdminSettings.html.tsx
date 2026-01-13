@@ -114,7 +114,7 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="orig_hash" value={origHash} />
             <div className="mb-3">
-              <label className="form-label" for="ciid">
+              <label className="form-label" htmlFor="ciid">
                 CIID
               </label>
               <input
@@ -151,7 +151,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="long_name">
+              <label className="form-label" htmlFor="long_name">
                 Long Name
               </label>
               <input
@@ -169,7 +169,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="display_timezone">
+              <label className="form-label" htmlFor="display_timezone">
                 Timezone
               </label>
               <Form.Select
@@ -201,7 +201,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="group_assessments_by">
+              <label className="form-label" htmlFor="group_assessments_by">
                 Group assessments by
               </label>
               <Form.Select

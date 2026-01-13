@@ -25,7 +25,7 @@ const PLCodeBlockComponent = (props: ReactNodeViewProps<HTMLDivElement>) => {
       <button type="button" onClick={() => updateAttributes({ language: 'python' })}>
         Python
       </button>
-      <div contenteditable="false">This is a code block</div>
+      <div contentEditable="false">This is a code block</div>
       <NodeViewContent className="content" />
     </NodeViewWrapper>
   );

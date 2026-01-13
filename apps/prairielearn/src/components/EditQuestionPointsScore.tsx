@@ -249,7 +249,7 @@ function EditQuestionPointsScoreForm({
     );
   }
 
-  const handleSubmit = (e: Event) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -344,7 +344,7 @@ export function EditQuestionPointsScoreButton({
   urlPrefix: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef?: React.RefObject<HTMLDivElement> | null;
+  scrollRef?: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);

@@ -1,3 +1,4 @@
+import { useCallback, useState } from 'react';
 import Accordion from 'react-bootstrap/Accordion';
 import AccordionBody from 'react-bootstrap/AccordionBody';
 import AccordionHeader from 'react-bootstrap/AccordionHeader';
@@ -9,10 +10,9 @@ import DropdownMenu from 'react-bootstrap/DropdownMenu';
 import DropdownToggle from 'react-bootstrap/DropdownToggle';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
+import { createRoot } from 'react-dom/client';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { render } from '@prairielearn/preact-cjs';
-import { useCallback, useState } from '@prairielearn/preact-cjs/hooks';
 
 import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
 import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
@@ -21,7 +21,7 @@ import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const sampleQuestions = document.querySelector('#sample-questions')!;
-  render(<SampleQuestion />, sampleQuestions);
+  createRoot(sampleQuestions).render(<SampleQuestion />);
 });
 
 function SampleQuestion() {

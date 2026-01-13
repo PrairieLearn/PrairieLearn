@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -553,8 +553,16 @@ export function AssessmentQuestionTable({
     return 'unchecked';
   }, [columnVisibility]);
 
+  // Ref for the student info checkbox to handle indeterminate state
+  const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (studentInfoCheckboxRef.current) {
+      studentInfoCheckboxRef.current.indeterminate = studentInfoCheckboxState === 'indeterminate';
+    }
+  }, [studentInfoCheckboxState]);
+
   // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
-  const handleStudentInfoCheckboxClick = () => {
+  const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
     const currentVisibility = table.getState().columnVisibility;
 
@@ -576,7 +584,7 @@ export function AssessmentQuestionTable({
     }
 
     void setColumnVisibility(newVisibility);
-  };
+  }, [studentInfoCheckboxState, table, setColumnVisibility]);
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
@@ -730,9 +738,9 @@ export function AssessmentQuestionTable({
             <div className="px-2 py-1 d-flex align-items-center">
               <label className="form-check text-nowrap d-flex align-items-stretch">
                 <input
+                  ref={studentInfoCheckboxRef}
                   type="checkbox"
                   checked={studentInfoCheckboxState === 'checked'}
-                  indeterminate={studentInfoCheckboxState === 'indeterminate'}
                   className="form-check-input"
                   onChange={handleStudentInfoCheckboxClick}
                 />

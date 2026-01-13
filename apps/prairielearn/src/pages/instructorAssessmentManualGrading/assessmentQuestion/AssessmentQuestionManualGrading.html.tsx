@@ -129,7 +129,7 @@ function AssessmentQuestionManualGradingInner({
                   })
                 }
               />
-              <label className="form-check-label" for="switchCheckDefault">
+              <label className="form-check-label" htmlFor="switchCheckDefault">
                 <i className="bi bi-stars" />
                 AI grading mode
               </label>

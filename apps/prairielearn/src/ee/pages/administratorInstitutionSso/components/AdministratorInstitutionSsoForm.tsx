@@ -89,7 +89,7 @@ export function AdministratorInstitutionSsoForm({
                   }
                 }}
               />
-              <label className="form-check-label" for={`provider-${provider.id}-enabled`}>
+              <label className="form-check-label" htmlFor={`provider-${provider.id}-enabled`}>
                 {provider.name}
                 {provider.name === 'SAML' && !hasSamlProvider ? (
                   <small className="d-block">

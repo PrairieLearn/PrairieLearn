@@ -126,7 +126,7 @@ export function TagsTopicsTable<Entity extends StaffTag | StaffTopic>({
             <thead>
               <tr>
                 {editMode && allowEdit && (
-                  <th style="width: 1%">
+                  <th style={{ width: '1%' }}>
                     <span className="visually-hidden">Edit and Delete</span>
                   </th>
                 )}

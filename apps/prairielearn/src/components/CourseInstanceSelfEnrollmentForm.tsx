@@ -40,7 +40,7 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           id={`${formId}-self-enrollment-enabled`}
           {...register('self_enrollment_enabled')}
         />
-        <label className="form-check-label" for={`${formId}-self-enrollment-enabled`}>
+        <label className="form-check-label" htmlFor={`${formId}-self-enrollment-enabled`}>
           Allow self-enrollment
         </label>
         <div className="small text-muted">
@@ -61,7 +61,10 @@ export function CourseInstanceSelfEnrollmentForm({ formId }: { formId: string })
           name="self-enrollment-use-enrollment-code"
           value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
         />
-        <label className="form-check-label" for={`${formId}-self-enrollment-use-enrollment-code`}>
+        <label
+          className="form-check-label"
+          htmlFor={`${formId}-self-enrollment-use-enrollment-code`}
+        >
           Use enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
