@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -13,6 +12,7 @@ import { CourseInfoCreateEditor, FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { updateCourseShowGettingStarted } from '../../models/course.js';
 
@@ -22,7 +22,7 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const coursePathExists = await fs.pathExists(res.locals.course.path);
     const courseInfoExists = await fs.pathExists(
       path.join(res.locals.course.path, 'infoCourse.json'),
@@ -70,7 +70,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
@@ -120,7 +120,7 @@ router.post(
       courseInfoEdit.timezone = req.body.display_timezone;
 
       const editor = new FileModifyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         container: {
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
@@ -147,7 +147,7 @@ router.post(
         topics: [],
       };
       const editor = new CourseInfoCreateEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         infoJson,
       });
       const serverJob = await editor.prepareServerJob();

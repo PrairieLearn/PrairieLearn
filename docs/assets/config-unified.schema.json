@@ -1321,13 +1321,6 @@
       "type": ["string", "null"],
       "default": null
     },
-    "pythonVenvSearchPaths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [".venv"]
-    },
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,

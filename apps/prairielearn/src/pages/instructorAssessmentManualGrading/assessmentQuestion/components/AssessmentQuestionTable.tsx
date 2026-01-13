@@ -27,6 +27,8 @@ import {
 } from '@prairielearn/ui';
 
 import { RubricSettings } from '../../../../components/RubricSettings.js';
+import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
+import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
   AI_GRADING_MODELS,
   type AiGradingModelId,
@@ -81,6 +83,7 @@ export interface AssessmentQuestionTableProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
   mutations: {
@@ -97,9 +100,9 @@ export interface AssessmentQuestionTableProps {
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
   return (
-    <div class="d-flex justify-content-between align-items-center w-100">
+    <div className="d-flex justify-content-between align-items-center w-100">
       <span>{text}</span>
-      <span class="badge bg-secondary ms-2">{numToGrade}</span>
+      <span className="badge bg-secondary ms-2">{numToGrade}</span>
     </div>
   );
 }
@@ -128,11 +131,11 @@ function AiGradingOption({
 
   return (
     <Dropdown drop="end">
-      <Dropdown.Toggle class={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
+      <Dropdown.Toggle className={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
         <AiGradingOptionContent text={text} numToGrade={numToGrade} />
       </Dropdown.Toggle>
       <Dropdown.Menu>
-        <p class="my-0 text-muted px-3">AI grader model</p>
+        <p className="my-0 text-muted px-3">AI grader model</p>
         <Dropdown.Divider />
         {AI_GRADING_MODELS.map((model) => (
           <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
@@ -160,6 +163,7 @@ export function AssessmentQuestionTable({
   course,
   courseInstance,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   onSetGroupInfoModalState,
   onSetConflictModalState,
   mutations,
@@ -354,8 +358,9 @@ export function AssessmentQuestionTable({
       points: setTotalPointsFilter,
       score_perc: setScoreFilter,
       rubric_grading_item_ids: setRubricItemsFilter,
+      ai_grading_status: undefined,
       uid: undefined,
-      user_or_group_name: undefined,
+      user_or_team_name: undefined,
       select: undefined,
       index: undefined,
     };
@@ -384,12 +389,26 @@ export function AssessmentQuestionTable({
     [columnFilters, columnFilterSetters],
   );
 
+  const serverJobProgress = useServerJobProgress({
+    enabled: aiGradingMode,
+    initialOngoingJobSequenceTokens,
+    onProgressChange: () => {
+      // Refresh the displayed table data when server job progress updates, since
+      // instance question grading data (e.g. AI agreements, grading status)
+      // may have changed.
+      void queryClientInstance.invalidateQueries({
+        queryKey: ['instance-questions'],
+      });
+    },
+  });
+
   // Create columns using the extracted function
   const columns = useMemo(
     () =>
       createColumns({
         aiGradingMode,
         instanceQuestionGroups,
+        displayedStatuses: serverJobProgress.displayedStatuses,
         assessment,
         assessmentQuestion,
         hasCourseInstancePermissionEdit,
@@ -410,6 +429,7 @@ export function AssessmentQuestionTable({
     [
       aiGradingMode,
       instanceQuestionGroups,
+      serverJobProgress.displayedStatuses,
       assessment,
       assessmentQuestion,
       hasCourseInstancePermissionEdit,
@@ -435,14 +455,15 @@ export function AssessmentQuestionTable({
           return [col.id, false];
         }
         // Some columns have a default visibility that depends on AI grading mode.
-        if (['requires_manual_grading', 'assigned_grader_name', 'score_perc'].includes(col.id!)) {
+
+        if (['assigned_grader_name', 'score_perc'].includes(col.id!)) {
           return [col.id, !aiGradingMode];
         }
         if (['instance_question_group_name', 'rubric_difference'].includes(col.id!)) {
           return [col.id, aiGradingMode];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
+        if (['user_or_team_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
           return [col.id, false];
         }
 
@@ -474,7 +495,6 @@ export function AssessmentQuestionTable({
     void setColumnVisibility((prev) => ({
       ...prev,
       // Hide these columns in AI grading mode
-      requires_manual_grading: !aiGradingMode,
       assigned_grader_name: !aiGradingMode,
       score_perc: !aiGradingMode,
       // Show these columns in AI grading mode
@@ -525,7 +545,7 @@ export function AssessmentQuestionTable({
   // Determine student info checkbox state based on column visibility
   const studentInfoCheckboxState = useMemo(() => {
     const visibility = columnVisibility;
-    const nameVisible = visibility.user_or_group_name;
+    const nameVisible = visibility.user_or_team_name;
     const uidVisible = visibility.uid;
 
     if (nameVisible && uidVisible) return 'checked';
@@ -543,14 +563,14 @@ export function AssessmentQuestionTable({
       // Checked -> Unchecked (hide both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: false,
+        user_or_team_name: false,
         uid: false,
       };
     } else {
       // Unchecked or Indeterminate -> Checked (show both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: true,
+        user_or_team_name: true,
         uid: true,
       };
     }
@@ -606,7 +626,7 @@ export function AssessmentQuestionTable({
 
   return (
     <>
-      <div class="mb-3">
+      <div className="mb-3">
         <RubricSettings
           hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
           assessmentQuestion={assessmentQuestion}
@@ -621,10 +641,26 @@ export function AssessmentQuestionTable({
           }}
         />
       </div>
+      {aiGradingMode && (
+        <ServerJobsProgressInfo
+          itemNames="submissions graded"
+          jobsProgress={Object.values(serverJobProgress.jobsProgress)}
+          courseInstanceId={courseInstance.id}
+          statusIcons={{
+            inProgress: 'bi-stars',
+          }}
+          statusText={{
+            inProgress: 'AI grading in progress',
+            complete: 'AI grading complete',
+            failed: 'AI grading failed',
+          }}
+          onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
+        />
+      )}
       {batchActionMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => batchActionMutation.reset()}
         >
@@ -634,7 +670,7 @@ export function AssessmentQuestionTable({
       {deleteAiGradingJobsMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGradingJobsMutation.reset()}
         >
@@ -644,7 +680,7 @@ export function AssessmentQuestionTable({
       {deleteAiGroupingsMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGroupingsMutation.reset()}
         >
@@ -654,7 +690,7 @@ export function AssessmentQuestionTable({
       {deleteAiGradingJobsMutation.isSuccess && (
         <Alert
           variant="success"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGradingJobsMutation.reset()}
         >
@@ -665,7 +701,7 @@ export function AssessmentQuestionTable({
       {deleteAiGroupingsMutation.isSuccess && (
         <Alert
           variant="success"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => deleteAiGroupingsMutation.reset()}
         >
@@ -676,7 +712,7 @@ export function AssessmentQuestionTable({
       {isInstanceQuestionsError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => {
             void queryClientInstance.refetchQueries({ queryKey: ['instance-questions'] });
@@ -691,16 +727,16 @@ export function AssessmentQuestionTable({
         style={{ height: '90vh' }}
         columnManager={{
           topContent: (
-            <div class="px-2 py-1 d-flex align-items-center">
-              <label class="form-check text-nowrap d-flex align-items-stretch">
+            <div className="px-2 py-1 d-flex align-items-center">
+              <label className="form-check text-nowrap d-flex align-items-stretch">
                 <input
                   type="checkbox"
                   checked={studentInfoCheckboxState === 'checked'}
                   indeterminate={studentInfoCheckboxState === 'indeterminate'}
-                  class="form-check-input"
+                  className="form-check-input"
                   onChange={handleStudentInfoCheckboxClick}
                 />
-                <span class="form-check-label ms-2">Show student info</span>
+                <span className="form-check-label ms-2">Show student info</span>
               </label>
             </div>
           ),
@@ -719,7 +755,7 @@ export function AssessmentQuestionTable({
               <>
                 <Dropdown>
                   <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" />
+                    <i className="bi bi-stars" aria-hidden="true" />
                     <span>AI grading</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
@@ -728,10 +764,22 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.humanGraded}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_graded',
-                          modelId,
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_graded',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <AiGradingOption
@@ -742,7 +790,16 @@ export function AssessmentQuestionTable({
                         handleBatchAction(
                           { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
                           selectedIds,
+                          (data) => {
+                            if (data && 'job_sequence_token' in data) {
+                              serverJobProgress.handleAddOngoingJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token,
+                              );
+                            }
+                          },
                         );
+                        table.resetRowSelection();
                       }}
                     />
                     <AiGradingOption
@@ -750,10 +807,22 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.all}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate({
-                          action: 'ai_grade_assessment_all',
-                          modelId,
-                        });
+                        batchActionMutation.mutate(
+                          {
+                            action: 'ai_grade_assessment_all',
+                            modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
+                              if (data && 'job_sequence_token' in data) {
+                                serverJobProgress.handleAddOngoingJobSequence(
+                                  data.job_sequence_id,
+                                  data.job_sequence_token,
+                                );
+                              }
+                            },
+                          },
+                        );
                       }}
                     />
                     <Dropdown.Divider />
@@ -764,8 +833,8 @@ export function AssessmentQuestionTable({
                 </Dropdown>
                 <Dropdown>
                   <Dropdown.Toggle variant="light" size="sm">
-                    <i class="bi bi-stars" aria-hidden="true" />
-                    <span class="d-none d-sm-inline">AI submission grouping</span>
+                    <i className="bi bi-stars" aria-hidden="true" />
+                    <span className="d-none d-sm-inline">AI submission grouping</span>
                   </Dropdown.Toggle>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
@@ -774,21 +843,23 @@ export function AssessmentQuestionTable({
                         onSetGroupInfoModalState({ type: 'selected', ids: selectedIds })
                       }
                     >
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group selected submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
+                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.selected}</span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'all' })}>
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group all submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
+                        <span className="badge bg-secondary ms-2">{aiGroupingCounts.all}</span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Item onClick={() => onSetGroupInfoModalState({ type: 'ungrouped' })}>
-                      <div class="d-flex justify-content-between align-items-center w-100">
+                      <div className="d-flex justify-content-between align-items-center w-100">
                         <span>Group ungrouped submissions</span>
-                        <span class="badge bg-secondary ms-2">{aiGroupingCounts.ungrouped}</span>
+                        <span className="badge bg-secondary ms-2">
+                          {aiGroupingCounts.ungrouped}
+                        </span>
                       </div>
                     </Dropdown.Item>
                     <Dropdown.Divider />
@@ -801,11 +872,11 @@ export function AssessmentQuestionTable({
             ) : (
               <Dropdown>
                 <Dropdown.Toggle variant="light" size="sm" disabled={selectedIds.length === 0}>
-                  <i class="fas fa-tags" aria-hidden="true" />{' '}
-                  <span class="d-none d-sm-inline">Tag for grading</span>
+                  <i className="fas fa-tags" aria-hidden="true" />{' '}
+                  <span className="d-none d-sm-inline">Tag for grading</span>
                 </Dropdown.Toggle>
                 <Dropdown.Menu align="end">
-                  <Dropdown.Header class="d-flex align-items-center gap-1">
+                  <Dropdown.Header className="d-flex align-items-center gap-1">
                     Assign for grading
                     <OverlayTrigger
                       tooltip={{
@@ -819,7 +890,7 @@ export function AssessmentQuestionTable({
                       }}
                     >
                       <span>
-                        <i class="fas fa-question-circle text-secondary" />
+                        <i className="fas fa-question-circle text-secondary" />
                       </span>
                     </OverlayTrigger>
                   </Dropdown.Header>
@@ -828,14 +899,15 @@ export function AssessmentQuestionTable({
                       key={grader.id}
                       onClick={() => handleBatchAction({ assigned_grader: grader.id }, selectedIds)}
                     >
-                      <i class="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid})
+                      <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid}
+                      )
                     </Dropdown.Item>
                   ))}
                   <Dropdown.Item
                     key="remove-grader-assignment"
                     onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
                   >
-                    <i class="fas fa-user-slash" /> Remove grader assignment
+                    <i className="fas fa-user-slash" /> Remove grader assignment
                   </Dropdown.Item>
                   <Dropdown.Divider />
                   <Dropdown.Item
@@ -844,7 +916,7 @@ export function AssessmentQuestionTable({
                       handleBatchAction({ requires_manual_grading: true }, selectedIds)
                     }
                   >
-                    <i class="fas fa-tag" /> Tag as required grading
+                    <i className="fas fa-tag" /> Tag as required grading
                   </Dropdown.Item>
                   <Dropdown.Item
                     key="tag-as-graded"
@@ -852,7 +924,7 @@ export function AssessmentQuestionTable({
                       handleBatchAction({ requires_manual_grading: false }, selectedIds)
                     }
                   >
-                    <i class="fas fa-check-square" /> Tag as graded
+                    <i className="fas fa-check-square" /> Tag as graded
                   </Dropdown.Item>
                 </Dropdown.Menu>
               </Dropdown>
@@ -880,7 +952,7 @@ export function AssessmentQuestionTable({
             },
             {
               name: assessment.team_work ? 'Group Name' : 'Name',
-              value: row.user_or_group_name || '',
+              value: row.user_or_team_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
             {
