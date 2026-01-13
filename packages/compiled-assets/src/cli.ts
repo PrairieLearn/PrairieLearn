@@ -113,7 +113,7 @@ program.command('build <source> <destination>').action(async (source, destinatio
       Size: prettyBytes(sizes.raw),
       'Size (gzip)': prettyBytes(sizes.gzip),
       'Size (brotli)': prettyBytes(sizes.brotli),
-      'Total': hasChunks ? prettyBytes(totalSizes.raw) : '-',
+      Total: hasChunks ? prettyBytes(totalSizes.raw) : '-',
       'Total (gzip)': hasChunks ? prettyBytes(totalSizes.gzip) : '-',
       'Total (brotli)': hasChunks ? prettyBytes(totalSizes.brotli) : '-',
     };
