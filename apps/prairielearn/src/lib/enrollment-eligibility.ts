@@ -1,4 +1,5 @@
-import type { CourseInstance, Enrollment } from './db-types.js';
+import type { Course, CourseInstance, Enrollment, User } from './db-types.js';
+import { assertNever } from './types.js';
 
 export type EnrollmentIneligibilityReason =
   | 'blocked'
@@ -10,8 +11,26 @@ export type EnrollmentEligibilityResult =
   | { eligible: true }
   | { eligible: false; reason: EnrollmentIneligibilityReason };
 
+export function getEligibilityErrorMessage(reason: EnrollmentIneligibilityReason) {
+  switch (reason) {
+    case 'blocked':
+      return 'You are blocked from accessing this course';
+    case 'institution-restriction':
+      return 'Self-enrollment for this course is restricted to users from the same institution';
+    case 'self-enrollment-expired':
+      return 'Self-enrollment for this course has expired';
+    case 'self-enrollment-disabled':
+      return 'Self-enrollment is not enabled for this course';
+    default:
+      assertNever(reason);
+  }
+}
 /**
  * Check if a user is eligible to self-enroll in a course instance.
+ *
+ * When `allowAccess` rules are present, self-enrollment is always enabled,
+ * and all additional restrictions are disabled / not allowed (they can only be changed after publishing is enabled).
+ * Thus, for course instances with `allowAccess`, this should always return `{ eligible: true }`.
  *
  * This function checks:
  * 1. If the user is blocked from the course
@@ -23,13 +42,13 @@ export type EnrollmentEligibilityResult =
  * should be done separately if needed.
  */
 export function checkEnrollmentEligibility({
-  userInstitutionId,
-  courseInstitutionId,
+  user,
+  course,
   courseInstance,
   existingEnrollment,
 }: {
-  userInstitutionId: string;
-  courseInstitutionId: string;
+  user: User;
+  course: Course;
   courseInstance: CourseInstance;
   existingEnrollment: Pick<Enrollment, 'status'> | null;
 }): EnrollmentEligibilityResult {
@@ -56,7 +75,7 @@ export function checkEnrollmentEligibility({
   // In the old system (before publishing was introduced), the default was false.
   // So if publishing is not set up, we should ignore the restriction.
   const institutionRestrictionSatisfied =
-    userInstitutionId === courseInstitutionId ||
+    user.institution_id === course.institution_id ||
     !courseInstance.modern_publishing ||
     !courseInstance.self_enrollment_restrict_to_institution;
 

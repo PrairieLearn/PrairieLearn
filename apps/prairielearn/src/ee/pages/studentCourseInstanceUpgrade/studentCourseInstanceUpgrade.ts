@@ -16,7 +16,10 @@ import {
   InstitutionSchema,
   UserSchema,
 } from '../../../lib/db-types.js';
-import { checkEnrollmentEligibility } from '../../../lib/enrollment-eligibility.js';
+import {
+  checkEnrollmentEligibility,
+  getEligibilityErrorMessage,
+} from '../../../lib/enrollment-eligibility.js';
 import { getCanonicalHost } from '../../../lib/url.js';
 import { selectOptionalEnrollmentByUid } from '../../../models/enrollment.js';
 import { checkPlanGrantsForLocals } from '../../lib/billing/plan-grants.js';
@@ -49,7 +52,7 @@ const router = Router({ mergeParams: true });
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+    const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const course = CourseSchema.parse(res.locals.course);
     const user = UserSchema.parse(res.locals.authn_user);
 
@@ -62,16 +65,16 @@ router.get(
       }
       return await selectOptionalEnrollmentByUid({
         uid: user.uid,
-        courseInstance: course_instance,
+        courseInstance,
         requiredRole: ['Student'],
         authzData: res.locals.authz_data,
       });
     });
 
     const enrollmentInfo = checkEnrollmentEligibility({
-      userInstitutionId: user.institution_id,
-      courseInstitutionId: course.institution_id,
-      courseInstance: course_instance,
+      user,
+      course,
+      courseInstance,
       existingEnrollment,
     });
 
@@ -93,7 +96,7 @@ router.get(
 
     const planGrants = await getPlanGrantsForPartialContexts({
       institution_id: institution.id,
-      course_instance_id: course_instance.id,
+      course_instance_id: courseInstance.id,
       user_id: user.id,
     });
     const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
@@ -105,7 +108,7 @@ router.get(
     res.send(
       StudentCourseInstanceUpgrade({
         course,
-        course_instance,
+        courseInstance,
         missingPlans,
         planPrices,
         resLocals: res.locals,
@@ -130,7 +133,7 @@ router.post(
     if (req.body.__action === 'upgrade') {
       const institution = InstitutionSchema.parse(res.locals.institution);
       const course = CourseSchema.parse(res.locals.course);
-      const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+      const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
       const user = UserSchema.parse(res.locals.authn_user);
 
       // Check enrollment eligibility before processing payment.
@@ -140,24 +143,21 @@ router.post(
         }
         return await selectOptionalEnrollmentByUid({
           uid: user.uid,
-          courseInstance: course_instance,
+          courseInstance,
           requiredRole: ['Student'],
           authzData: res.locals.authz_data,
         });
       });
 
       const enrollmentInfo = checkEnrollmentEligibility({
-        userInstitutionId: user.institution_id,
-        courseInstitutionId: course.institution_id,
-        courseInstance: course_instance,
+        user,
+        course,
+        courseInstance,
         existingEnrollment,
       });
 
       if (!enrollmentInfo.eligible) {
-        res
-          .status(403)
-          .send(EnrollmentPage({ resLocals: res.locals, type: enrollmentInfo.reason }));
-        return;
+        throw new error.HttpStatusError(403, getEligibilityErrorMessage(enrollmentInfo.reason));
       }
 
       const body = UpgradeBodySchema.parse(req.body);
@@ -192,17 +192,17 @@ router.post(
       // course instance and isn't already granted to the user.
       const planGrants = await getPlanGrantsForPartialContexts({
         institution_id: institution.id,
-        course_instance_id: course_instance.id,
+        course_instance_id: courseInstance.id,
         user_id: user.id,
       });
-      const requiredPlans = await getRequiredPlansForCourseInstance(res.locals.course_instance.id);
+      const requiredPlans = await getRequiredPlansForCourseInstance(courseInstance.id);
       const missingPlans = getMissingPlanGrants(planGrants, requiredPlans);
       if (!planNames.every((planName) => missingPlans.includes(planName))) {
         throw new error.HttpStatusError(400, 'Invalid plan selection.');
       }
 
       const host = getCanonicalHost(req);
-      const urlBase = `${host}/pl/course_instance/${course_instance.id}/upgrade`;
+      const urlBase = `${host}/pl/course_instance/${courseInstance.id}/upgrade`;
 
       const stripe = getStripeClient();
       const customerId = await getOrCreateStripeCustomerId(user.id, {
@@ -213,8 +213,8 @@ router.post(
         prairielearn_institution_name: `${institution.long_name} (${institution.short_name})`,
         prairielearn_course_id: course.id,
         prairielearn_course_name: `${course.short_name}: ${course.title}`,
-        prairielearn_course_instance_id: course_instance.id,
-        prairielearn_course_instance_name: `${course_instance.long_name} (${course_instance.short_name})`,
+        prairielearn_course_instance_id: courseInstance.id,
+        prairielearn_course_instance_name: `${courseInstance.long_name} (${courseInstance.short_name})`,
         prairielearn_user_id: user.id,
       };
       const session = await stripe.checkout.sessions.create({
@@ -237,7 +237,7 @@ router.post(
         agent_user_id: user.id,
         stripe_object_id: session.id,
         institution_id: institution.id,
-        course_instance_id: course_instance.id,
+        course_instance_id: courseInstance.id,
         subject_user_id: user.id,
         data: session,
         plan_names: planNames,
@@ -257,7 +257,7 @@ router.get(
   asyncHandler(async (req, res) => {
     const institution = InstitutionSchema.parse(res.locals.institution);
     const course = CourseSchema.parse(res.locals.course);
-    const course_instance = CourseInstanceSchema.parse(res.locals.course_instance);
+    const courseInstance = CourseInstanceSchema.parse(res.locals.course_instance);
     const authn_user = UserSchema.parse(res.locals.authn_user);
 
     if (!req.query.session_id) throw new error.HttpStatusError(400, 'Missing session_id');
@@ -273,7 +273,7 @@ router.get(
       res.send(
         CourseInstanceStudentUpdateSuccess({
           course,
-          course_instance,
+          courseInstance,
           paid: true,
           resLocals: res.locals,
         }),
@@ -288,7 +288,7 @@ router.get(
     // and user. We shouldn't hit this during normal operations, but an attacker
     // could try to replay a session ID from a different course instance or user.
     if (
-      localSession.course_instance_id !== course_instance.id ||
+      localSession.course_instance_id !== courseInstance.id ||
       localSession.agent_user_id !== res.locals.authn_user.id
     ) {
       throw new error.HttpStatusError(400, 'Invalid session');
@@ -309,7 +309,7 @@ router.get(
                 plan_name: planName,
                 type: 'stripe',
                 institution_id: institution.id,
-                course_instance_id: course_instance.id,
+                course_instance_id: courseInstance.id,
                 user_id: authn_user.id,
               },
               authn_user_id: authn_user.id,
@@ -327,7 +327,7 @@ router.get(
       res.send(
         CourseInstanceStudentUpdateSuccess({
           course,
-          course_instance,
+          courseInstance,
           paid: true,
           resLocals: res.locals,
         }),
@@ -344,7 +344,7 @@ router.get(
       res.send(
         CourseInstanceStudentUpdateSuccess({
           course,
-          course_instance,
+          courseInstance,
           paid: false,
           resLocals: res.locals,
         }),

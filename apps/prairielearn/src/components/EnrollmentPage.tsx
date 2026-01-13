@@ -22,7 +22,7 @@ function BlockedEnrollment() {
             </div>
             <div className="card-body">
               <p>
-                You were blocked from accessing this course. If you believe you were blocked by
+                You are blocked from accessing this course. If you believe you were blocked by
                 mistake, contact your instructor.
               </p>
               <a href="/pl" className="btn btn-primary">
