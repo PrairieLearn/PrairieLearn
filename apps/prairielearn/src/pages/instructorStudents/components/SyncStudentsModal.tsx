@@ -74,12 +74,13 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
         enrollmentId: existing.enrollment.id,
         userName: existing.user?.name,
       });
+    } else {
+      // The student is already joined or invited - no action needed.
     }
-    // else: already joined or invited - no action needed
   }
 
   // Students NOT on roster who should be blocked
-  for (const [, student] of currentUidMap) {
+  for (const student of currentUidMap.values()) {
     const uid = student.user?.uid ?? student.enrollment.pending_uid;
     if (uid && !inputUidSet.has(uid)) {
       // Not on roster - block if has any enrollment status
