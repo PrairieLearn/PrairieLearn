@@ -29,7 +29,7 @@ interface SyncPreview {
   toBlock: StudentSyncItem[];
 }
 
-type SyncStep = 'input' | 'preview' | 'submitting';
+type SyncStep = 'input' | 'preview';
 
 const MAX_UIDS = 1000;
 
@@ -285,13 +285,7 @@ export function SyncStudentsModal({
       const toBlock = Array.from(selectedBlocks);
       return onSubmit(toInvite, toCancelInvitation, toBlock);
     },
-    onMutate: () => {
-      setStep('submitting');
-    },
     onSuccess: onHide,
-    onError: () => {
-      setStep('preview');
-    },
   });
 
   const resetModalState = () => {
@@ -415,10 +409,15 @@ export function SyncStudentsModal({
         {step === 'preview' && preview && (
           <>
             {hasNoChanges ? (
-              <Alert variant="success">
-                <i className="bi bi-check-circle me-2" aria-hidden="true" />
-                Your roster is already in sync! No changes are needed.
-              </Alert>
+              <div className="text-center py-4">
+                <i
+                  className="bi bi-check-circle-fill text-success d-block mb-3"
+                  style={{ fontSize: '3rem' }}
+                  aria-hidden="true"
+                />
+                <p className="h4 mb-2">All synced!</p>
+                <p className="text-muted mb-0">Your roster is already up to date.</p>
+              </div>
             ) : (
               <>
                 <p>Review the changes below. Uncheck any students you don't want to modify.</p>
@@ -463,15 +462,6 @@ export function SyncStudentsModal({
             )}
           </>
         )}
-
-        {step === 'submitting' && (
-          <div className="text-center py-4">
-            <div className="spinner-border text-primary mb-3" role="status">
-              <span className="visually-hidden">Syncing...</span>
-            </div>
-            <p className="text-muted mb-0">Processing roster sync...</p>
-          </div>
-        )}
       </Modal.Body>
 
       <Modal.Footer>
@@ -488,28 +478,28 @@ export function SyncStudentsModal({
 
         {step === 'preview' && (
           <>
-            <Button variant="outline-secondary" onClick={() => setStep('input')}>
+            <Button
+              variant="outline-secondary"
+              disabled={syncMutation.isPending}
+              onClick={() => setStep('input')}
+            >
               Back
             </Button>
-            <Button variant="secondary" onClick={onHide}>
+            <Button variant="secondary" disabled={syncMutation.isPending} onClick={onHide}>
               Cancel
             </Button>
             <Button
               variant="primary"
-              disabled={hasNoChanges || hasNoSelections}
+              disabled={hasNoChanges || hasNoSelections || syncMutation.isPending}
               onClick={() => syncMutation.mutate()}
             >
-              {hasNoChanges
-                ? 'No changes'
-                : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
+              {syncMutation.isPending
+                ? 'Syncing...'
+                : hasNoChanges
+                  ? 'No changes'
+                  : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
             </Button>
           </>
-        )}
-
-        {step === 'submitting' && (
-          <Button variant="secondary" disabled>
-            Processing...
-          </Button>
         )}
       </Modal.Footer>
     </Modal>
