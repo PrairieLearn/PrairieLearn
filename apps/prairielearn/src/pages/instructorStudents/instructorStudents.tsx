@@ -9,12 +9,14 @@ import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import type { AuthzDataWithEffectiveUser } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { createServerJob } from '../../lib/server-jobs.js';
+import type { CourseInstance } from '../../lib/db-types.js';
+import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
@@ -92,7 +94,7 @@ const SyncStudentsBodySchema = z.object({
   toBlock: z.array(z.string()).max(1000),
 });
 
-const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
+const BodySchema = z.union([InviteUidsBodySchema, SyncStudentsBodySchema]);
 
 interface InviteCounts {
   invited: number;
@@ -105,8 +107,6 @@ interface InviteCounts {
 
 /**
  * Process invitations for a list of UIDs.
- * @param skipBlocked If true, skip students who are currently blocked (used by invite_uids).
- *                    If false, re-invite blocked students (used by sync_students).
  */
 async function processInvitations({
   uids,
@@ -117,10 +117,14 @@ async function processInvitations({
   skipBlocked,
 }: {
   uids: string[];
-  courseInstance: Parameters<typeof inviteStudentByUid>[0]['courseInstance'];
-  authzData: Parameters<typeof inviteStudentByUid>[0]['authzData'];
-  job: { info: (msg: string) => void; error: (msg: string) => void };
+  courseInstance: CourseInstance;
+  authzData: AuthzDataWithEffectiveUser;
+  job: ServerJobLogger;
   counts: InviteCounts;
+  /**
+   * If true, skips students who are currently blocked. This is useful for `invite_uids`.
+   * If false, re-invites blocked students. This is useful for `sync_students`.
+   */
   skipBlocked: boolean;
 }): Promise<void> {
   for (const uid of uids) {
@@ -252,6 +256,7 @@ router.post(
       });
 
       res.json({ job_sequence_id: serverJob.jobSequenceId });
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (body.__action === 'sync_students') {
       const { toInvite, toBlock } = body;
 

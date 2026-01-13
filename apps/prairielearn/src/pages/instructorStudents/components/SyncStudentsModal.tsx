@@ -5,11 +5,11 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
 import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
-import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
 
 interface SyncStudentsForm {
@@ -167,7 +167,6 @@ function StudentCheckboxList({
               type="checkbox"
               id={`sync-${variant}-${item.uid}`}
               checked={selectedUids.has(item.uid)}
-              onChange={() => onToggle(item.uid)}
               className="mb-0"
               label={
                 <span className="d-inline-flex align-items-center gap-2 flex-wrap">
@@ -180,6 +179,7 @@ function StudentCheckboxList({
                   )}
                 </span>
               }
+              onChange={() => onToggle(item.uid)}
             />
           </div>
         ))}
@@ -203,8 +203,8 @@ export function SyncStudentsModal({
 }) {
   const [step, setStep] = useState<SyncStep>('input');
   const [preview, setPreview] = useState<SyncPreview | null>(null);
-  const [selectedInvites, setSelectedInvites] = useState<Set<string>>(new Set());
-  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(new Set());
+  const [selectedInvites, setSelectedInvites] = useState<Set<string>>(() => new Set());
+  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(() => new Set());
 
   const {
     register,
@@ -312,7 +312,7 @@ export function SyncStudentsModal({
       'published';
 
   return (
-    <Modal show={show} backdrop="static" onHide={onHide} onExited={resetModalState} size="lg">
+    <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
         <Modal.Title>Sync students</Modal.Title>
       </Modal.Header>
@@ -326,9 +326,7 @@ export function SyncStudentsModal({
 
         {syncMutation.isError && (
           <Alert variant="danger" dismissible onClose={() => syncMutation.reset()}>
-            {syncMutation.error instanceof Error
-              ? syncMutation.error.message
-              : 'An error occurred'}
+            {syncMutation.error instanceof Error ? syncMutation.error.message : 'An error occurred'}
           </Alert>
         )}
 
@@ -339,7 +337,7 @@ export function SyncStudentsModal({
               enrolled. Students not on this list will be blocked.
             </p>
             <div className="mb-3">
-              <label htmlFor="sync-uids" className="form-label">
+              <label for="sync-uids" className="form-label">
                 Student UIDs
               </label>
               <textarea
@@ -382,23 +380,23 @@ export function SyncStudentsModal({
                 <StudentCheckboxList
                   items={preview.toInvite}
                   selectedUids={selectedInvites}
+                  variant="invite"
                   onToggle={toggleInvite}
                   onSelectAll={() =>
                     setSelectedInvites(new Set(preview.toInvite.map((item) => item.uid)))
                   }
                   onDeselectAll={() => setSelectedInvites(new Set())}
-                  variant="invite"
                 />
 
                 <StudentCheckboxList
                   items={preview.toBlock}
                   selectedUids={selectedBlocks}
+                  variant="block"
                   onToggle={toggleBlock}
                   onSelectAll={() =>
                     setSelectedBlocks(new Set(preview.toBlock.map((item) => item.uid)))
                   }
                   onDeselectAll={() => setSelectedBlocks(new Set())}
-                  variant="block"
                 />
               </>
             )}
@@ -437,8 +435,8 @@ export function SyncStudentsModal({
             </Button>
             <Button
               variant="primary"
-              onClick={() => syncMutation.mutate()}
               disabled={hasNoChanges || hasNoSelections}
+              onClick={() => syncMutation.mutate()}
             >
               {hasNoChanges
                 ? 'No changes'
