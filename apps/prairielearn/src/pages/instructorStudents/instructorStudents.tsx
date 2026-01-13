@@ -94,6 +94,90 @@ const SyncStudentsBodySchema = z.object({
 
 const BodySchema = z.discriminatedUnion('__action', [InviteUidsBodySchema, SyncStudentsBodySchema]);
 
+interface InviteCounts {
+  invited: number;
+  skippedInstructor: number;
+  skippedAlreadyInvited: number;
+  skippedAlreadyJoined: number;
+  skippedAlreadyBlocked: number;
+  errors: number;
+}
+
+/**
+ * Process invitations for a list of UIDs.
+ * @param skipBlocked If true, skip students who are currently blocked (used by invite_uids).
+ *                    If false, re-invite blocked students (used by sync_students).
+ */
+async function processInvitations({
+  uids,
+  courseInstance,
+  authzData,
+  job,
+  counts,
+  skipBlocked,
+}: {
+  uids: string[];
+  courseInstance: Parameters<typeof inviteStudentByUid>[0]['courseInstance'];
+  authzData: Parameters<typeof inviteStudentByUid>[0]['authzData'];
+  job: { info: (msg: string) => void; error: (msg: string) => void };
+  counts: InviteCounts;
+  skipBlocked: boolean;
+}): Promise<void> {
+  for (const uid of uids) {
+    try {
+      const user = await selectOptionalUserByUid(uid);
+      if (user) {
+        const isInstructor = await callRow(
+          'users_is_instructor_in_course_instance',
+          [user.id, courseInstance.id],
+          z.boolean(),
+        );
+        if (isInstructor) {
+          job.info(`${uid}: Skipped (instructor)`);
+          counts.skippedInstructor++;
+          continue;
+        }
+      }
+
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData,
+      });
+
+      if (existingEnrollment?.status === 'joined') {
+        job.info(`${uid}: Skipped (already enrolled)`);
+        counts.skippedAlreadyJoined++;
+        continue;
+      }
+      if (existingEnrollment?.status === 'invited') {
+        job.info(`${uid}: Skipped (already invited)`);
+        counts.skippedAlreadyInvited++;
+        continue;
+      }
+      if (skipBlocked && existingEnrollment?.status === 'blocked') {
+        job.info(`${uid}: Skipped (blocked)`);
+        counts.skippedAlreadyBlocked++;
+        continue;
+      }
+
+      await inviteStudentByUid({
+        courseInstance,
+        uid,
+        requiredRole: ['Student Data Editor'],
+        authzData,
+      });
+      job.info(`${uid}: Invited`);
+      counts.invited++;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : 'Unknown error';
+      job.error(`${uid}: Error - ${message}`);
+      counts.errors++;
+    }
+  }
+}
+
 router.post(
   '/',
   asyncHandler(async (req, res) => {
@@ -132,79 +216,38 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        const counts = {
-          success: 0,
-          instructor: 0,
-          alreadyEnrolled: 0,
-          alreadyBlocked: 0,
-          alreadyInvited: 0,
+        const counts: InviteCounts = {
+          invited: 0,
+          skippedInstructor: 0,
+          skippedAlreadyInvited: 0,
+          skippedAlreadyJoined: 0,
+          skippedAlreadyBlocked: 0,
+          errors: 0,
         };
 
-        for (const uid of body.uids) {
-          const user = await selectOptionalUserByUid(uid);
-          if (user) {
-            // Check if user is an instructor
-            const isInstructor = await callRow(
-              'users_is_instructor_in_course_instance',
-              [user.id, courseInstance.id],
-              z.boolean(),
-            );
-            if (isInstructor) {
-              job.info(`${uid}: Skipped (instructor)`);
-              counts.instructor++;
-              continue;
-            }
-          }
-
-          const existingEnrollment = await selectOptionalEnrollmentByUid({
-            courseInstance,
-            uid,
-            requiredRole: ['Student Data Viewer'],
-            authzData,
-          });
-
-          if (existingEnrollment) {
-            if (existingEnrollment.status === 'joined') {
-              job.info(`${uid}: Skipped (already enrolled)`);
-              counts.alreadyEnrolled++;
-              continue;
-            }
-            if (existingEnrollment.status === 'invited') {
-              job.info(`${uid}: Skipped (already invited)`);
-              counts.alreadyInvited++;
-              continue;
-            }
-            if (existingEnrollment.status === 'blocked') {
-              job.info(`${uid}: Skipped (blocked)`);
-              counts.alreadyBlocked++;
-              continue;
-            }
-          }
-
-          await inviteStudentByUid({
-            courseInstance,
-            uid,
-            requiredRole: ['Student Data Editor'],
-            authzData,
-          });
-          job.info(`${uid}: Invited`);
-          counts.success++;
-        }
+        await processInvitations({
+          uids: body.uids,
+          courseInstance,
+          authzData,
+          job,
+          counts,
+          skipBlocked: true, // invite_uids respects existing blocks
+        });
 
         // Log summary at the end
         job.info('\nSummary:');
-        job.info(`  Successfully invited: ${counts.success}`);
-        if (counts.alreadyEnrolled > 0) {
-          job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+        job.info(`  Successfully invited: ${counts.invited}`);
+        if (counts.skippedAlreadyJoined > 0) {
+          job.info(`  Skipped (already enrolled): ${counts.skippedAlreadyJoined}`);
         }
-        if (counts.alreadyInvited > 0) {
-          job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+        if (counts.skippedAlreadyInvited > 0) {
+          job.info(`  Skipped (already invited): ${counts.skippedAlreadyInvited}`);
         }
-        if (counts.alreadyBlocked > 0) {
-          job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
+        if (counts.skippedAlreadyBlocked > 0) {
+          job.info(`  Skipped (blocked): ${counts.skippedAlreadyBlocked}`);
         }
-        if (counts.instructor > 0) {
-          job.info(`  Skipped (instructor): ${counts.instructor}`);
+        if (counts.skippedInstructor > 0) {
+          job.info(`  Skipped (instructor): ${counts.skippedInstructor}`);
         }
       });
 
@@ -222,68 +265,28 @@ router.post(
       });
 
       serverJob.executeInBackground(async (job) => {
-        const counts = {
+        const inviteCounts: InviteCounts = {
           invited: 0,
-          blocked: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
           skippedAlreadyJoined: 0,
           skippedAlreadyBlocked: 0,
           errors: 0,
         };
+        let blocked = 0;
+        let blockErrors = 0;
 
         // Process invitations
         if (toInvite.length > 0) {
           job.info('Processing invitations...');
-          for (const uid of toInvite) {
-            try {
-              const user = await selectOptionalUserByUid(uid);
-              if (user) {
-                // Check if user is an instructor
-                const isInstructor = await callRow(
-                  'users_is_instructor_in_course_instance',
-                  [user.id, courseInstance.id],
-                  z.boolean(),
-                );
-                if (isInstructor) {
-                  job.info(`${uid}: Skipped (instructor)`);
-                  counts.skippedInstructor++;
-                  continue;
-                }
-              }
-
-              const existingEnrollment = await selectOptionalEnrollmentByUid({
-                courseInstance,
-                uid,
-                requiredRole: ['Student Data Viewer'],
-                authzData,
-              });
-
-              if (existingEnrollment?.status === 'joined') {
-                job.info(`${uid}: Skipped (already joined)`);
-                counts.skippedAlreadyJoined++;
-                continue;
-              }
-              if (existingEnrollment?.status === 'invited') {
-                job.info(`${uid}: Skipped (already invited)`);
-                counts.skippedAlreadyInvited++;
-                continue;
-              }
-
-              await inviteStudentByUid({
-                courseInstance,
-                uid,
-                requiredRole: ['Student Data Editor'],
-                authzData,
-              });
-              job.info(`${uid}: Invited`);
-              counts.invited++;
-            } catch (error) {
-              const message = error instanceof Error ? error.message : 'Unknown error';
-              job.error(`${uid}: Error - ${message}`);
-              counts.errors++;
-            }
-          }
+          await processInvitations({
+            uids: toInvite,
+            courseInstance,
+            authzData,
+            job,
+            counts: inviteCounts,
+            skipBlocked: false, // sync_students can re-invite blocked students
+          });
         }
 
         // Process blocks
@@ -304,7 +307,7 @@ router.post(
               }
               if (enrollment.status === 'blocked') {
                 job.info(`${uid}: Skipped (already blocked)`);
-                counts.skippedAlreadyBlocked++;
+                inviteCounts.skippedAlreadyBlocked++;
                 continue;
               }
 
@@ -316,33 +319,34 @@ router.post(
                 actionDetail: 'blocked_from_sync',
               });
               job.info(`${uid}: Blocked`);
-              counts.blocked++;
+              blocked++;
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Unknown error';
               job.error(`${uid}: Error - ${message}`);
-              counts.errors++;
+              blockErrors++;
             }
           }
         }
 
         // Log summary at the end
         job.info('\n--- Summary ---');
-        job.info(`Invited: ${counts.invited}`);
-        job.info(`Blocked: ${counts.blocked}`);
-        if (counts.skippedAlreadyJoined > 0) {
-          job.info(`Skipped (already joined): ${counts.skippedAlreadyJoined}`);
+        job.info(`Invited: ${inviteCounts.invited}`);
+        job.info(`Blocked: ${blocked}`);
+        if (inviteCounts.skippedAlreadyJoined > 0) {
+          job.info(`Skipped (already joined): ${inviteCounts.skippedAlreadyJoined}`);
         }
-        if (counts.skippedAlreadyInvited > 0) {
-          job.info(`Skipped (already invited): ${counts.skippedAlreadyInvited}`);
+        if (inviteCounts.skippedAlreadyInvited > 0) {
+          job.info(`Skipped (already invited): ${inviteCounts.skippedAlreadyInvited}`);
         }
-        if (counts.skippedAlreadyBlocked > 0) {
-          job.info(`Skipped (already blocked): ${counts.skippedAlreadyBlocked}`);
+        if (inviteCounts.skippedAlreadyBlocked > 0) {
+          job.info(`Skipped (already blocked): ${inviteCounts.skippedAlreadyBlocked}`);
         }
-        if (counts.skippedInstructor > 0) {
-          job.info(`Skipped (instructor): ${counts.skippedInstructor}`);
+        if (inviteCounts.skippedInstructor > 0) {
+          job.info(`Skipped (instructor): ${inviteCounts.skippedInstructor}`);
         }
-        if (counts.errors > 0) {
-          job.info(`Errors: ${counts.errors}`);
+        const totalErrors = inviteCounts.errors + blockErrors;
+        if (totalErrors > 0) {
+          job.info(`Errors: ${totalErrors}`);
         }
       });
 

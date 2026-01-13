@@ -64,11 +64,7 @@ async function createTestData() {
   await getOrCreateUser(NEW_STUDENT);
 
   // Create an already enrolled student
-  const enrolledUser = await getOrCreateUser({
-    uid: ENROLLED_STUDENT.uid,
-    name: ENROLLED_STUDENT.name,
-    uin: null,
-  });
+  const enrolledUser = await getOrCreateUser(ENROLLED_STUDENT);
 
   await ensureUncheckedEnrollment({
     userId: enrolledUser.id,
@@ -87,11 +83,7 @@ async function createTestData() {
   });
 
   // Create a student who will be blocked (currently enrolled)
-  const studentToBlockUser = await getOrCreateUser({
-    uid: STUDENT_TO_BLOCK.uid,
-    name: STUDENT_TO_BLOCK.name,
-    uin: null,
-  });
+  const studentToBlockUser = await getOrCreateUser(STUDENT_TO_BLOCK);
 
   await ensureUncheckedEnrollment({
     userId: studentToBlockUser.id,
@@ -167,7 +159,6 @@ test.describe('Sync students', () => {
   test('can execute sync with invites and blocks', async ({ page }) => {
     // Create fresh users for this test to avoid conflicts
     await getOrCreateUser({ uid: 'fresh_sync_new@test.com', name: 'Fresh New', uin: null });
-
     const freshToBlock = await getOrCreateUser({
       uid: 'fresh_sync_block@test.com',
       name: 'Fresh Block',
@@ -211,7 +202,6 @@ test.describe('Sync students', () => {
   test('can deselect students before syncing', async ({ page }) => {
     // Create fresh users for this test
     await getOrCreateUser({ uid: 'deselect_new@test.com', name: 'Deselect New', uin: null });
-
     const deselectBlock = await getOrCreateUser({
       uid: 'deselect_block@test.com',
       name: 'Deselect Block',
