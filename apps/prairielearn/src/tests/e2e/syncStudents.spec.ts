@@ -134,13 +134,14 @@ test.describe('Sync students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
-    // Click the sync button
-    await page.getByRole('button', { name: 'Sync students' }).click();
+    // Open the manage enrollments dropdown and click sync roster
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
+    await page.getByRole('button', { name: 'Sync roster' }).click();
 
     // Modal should open with expected content
     await expect(page.getByRole('dialog')).toBeVisible();
     await expect(
-      page.getByRole('dialog').getByText('Sync students', { exact: true }),
+      page.getByRole('dialog').getByText('Sync roster', { exact: true }),
     ).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
@@ -174,7 +175,8 @@ test.describe('Sync students', () => {
   test('shows validation error for invalid email format', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Sync students' }).click();
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
+    await page.getByRole('button', { name: 'Sync roster' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill('not-an-email');

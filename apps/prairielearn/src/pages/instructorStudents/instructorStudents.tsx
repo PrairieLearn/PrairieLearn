@@ -264,7 +264,7 @@ router.post(
 
       const serverJob = await createServerJob({
         type: 'sync_students',
-        description: 'Sync students roster',
+        description: 'Sync roster',
         userId,
         authnUserId,
         courseId: course.id,

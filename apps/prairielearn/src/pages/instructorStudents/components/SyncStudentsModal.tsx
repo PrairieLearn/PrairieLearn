@@ -360,7 +360,7 @@ export function SyncStudentsModal({
   return (
     <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
-        <Modal.Title>Sync students</Modal.Title>
+        <Modal.Title>Sync roster</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
