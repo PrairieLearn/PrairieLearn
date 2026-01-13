@@ -645,7 +645,10 @@ export async function setEnrollmentStatus({
     }
 
     // For roster sync blocking, reject LTI-managed enrollments
-    if (actionDetailOverride === 'blocked_from_sync' && lockedEnrollment.status === 'lti13_pending') {
+    if (
+      actionDetailOverride === 'blocked_from_sync' &&
+      lockedEnrollment.status === 'lti13_pending'
+    ) {
       throw new error.HttpStatusError(400, 'Cannot block LTI-managed enrollment');
     }
 
@@ -751,4 +754,3 @@ export async function inviteEnrollment({
     });
   });
 }
-
