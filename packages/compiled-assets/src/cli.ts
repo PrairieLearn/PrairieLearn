@@ -104,18 +104,13 @@ program.command('build <source> <destination>').action(async (source, destinatio
   // Format the output into an object that we can pass to `console.table`.
   const results: Record<string, any> = {};
   Object.entries(manifest).forEach(([entryPoint, asset]) => {
-    const sizes = compressedSizes[asset.assetPath];
     const totalSizes = calculateTotalSizes(asset, compressedSizes);
-    const hasChunks = asset.preloads.length > 0;
 
     results[entryPoint] = {
       'Output file': asset.assetPath,
-      Size: prettyBytes(sizes.raw),
-      'Size (gzip)': prettyBytes(sizes.gzip),
-      'Size (brotli)': prettyBytes(sizes.brotli),
-      Total: hasChunks ? prettyBytes(totalSizes.raw) : '-',
-      'Total (gzip)': hasChunks ? prettyBytes(totalSizes.gzip) : '-',
-      'Total (brotli)': hasChunks ? prettyBytes(totalSizes.brotli) : '-',
+      Size: prettyBytes(totalSizes.raw),
+      'Size (gzip)': prettyBytes(totalSizes.gzip),
+      'Size (brotli)': prettyBytes(totalSizes.brotli),
     };
   });
   console.table(results);
