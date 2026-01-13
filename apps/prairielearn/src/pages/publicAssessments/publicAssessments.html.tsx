@@ -1,7 +1,7 @@
 import { Fragment } from 'react';
 import z from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';

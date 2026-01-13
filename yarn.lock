@@ -4607,9 +4607,9 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/preact@workspace:packages/preact":
+"@prairielearn/react@workspace:packages/react":
   version: 0.0.0-use.local
-  resolution: "@prairielearn/preact@workspace:packages/preact"
+  resolution: "@prairielearn/react@workspace:packages/react"
   dependencies:
     "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/compiled-assets": "workspace:^"

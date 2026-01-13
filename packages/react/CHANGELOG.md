@@ -1,4 +1,4 @@
-# @prairielearn/preact
+# @prairielearn/react
 
 ## 1.1.0
 
@@ -9,7 +9,7 @@
 ### Patch Changes
 
 - Updated dependencies [e2bffd9]
-  - @prairielearn/preact-cjs@2.0.0
+  - @prairielearn/react-cjs@2.0.0
 
 ## 1.0.7
 
@@ -25,7 +25,7 @@
 - Updated dependencies [926403c]
 - Updated dependencies [70a8029]
   - @prairielearn/compiled-assets@3.3.1
-  - @prairielearn/preact-cjs@1.1.7
+  - @prairielearn/react-cjs@1.1.7
   - @prairielearn/error@2.0.23
   - @prairielearn/utils@2.0.4
   - @prairielearn/html@4.0.23
@@ -45,7 +45,7 @@
 - 0425922: Upgrade all JavaScript dependencies
 - Updated dependencies [0425922]
   - @prairielearn/compiled-assets@3.2.9
-  - @prairielearn/preact-cjs@1.1.6
+  - @prairielearn/react-cjs@1.1.6
   - @prairielearn/error@2.0.22
   - @prairielearn/utils@2.0.3
   - @prairielearn/html@4.0.22
@@ -60,7 +60,7 @@
   - @prairielearn/compiled-assets@3.2.8
   - @prairielearn/error@2.0.21
   - @prairielearn/html@4.0.21
-  - @prairielearn/preact-cjs@1.1.5
+  - @prairielearn/react-cjs@1.1.5
   - @prairielearn/utils@2.0.2
 
 ## 1.0.2
@@ -73,7 +73,7 @@
   - @prairielearn/compiled-assets@3.2.7
   - @prairielearn/error@2.0.20
   - @prairielearn/html@4.0.20
-  - @prairielearn/preact-cjs@1.1.4
+  - @prairielearn/react-cjs@1.1.4
   - @prairielearn/utils@2.0.1
 
 ## 1.0.1

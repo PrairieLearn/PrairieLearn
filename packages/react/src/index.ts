@@ -8,7 +8,7 @@ import { HtmlSafeString, escapeHtml, unsafeHtml } from '@prairielearn/html';
 // which cannot be bundled for the browser.
 
 /**
- * Render a non-interactive Preact component that is embedded within a tagged template literal.
+ * Render a non-interactive React component that is embedded within a tagged template literal.
  * This function is intended to be used within a tagged template literal, e.g. html`...`.
  *
  * @param node - Contents to render to HTML.

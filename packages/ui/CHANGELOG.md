@@ -9,7 +9,7 @@
 ### Patch Changes
 
 - Updated dependencies [e2bffd9]
-  - @prairielearn/preact-cjs@2.0.0
+  - @prairielearn/react-cjs@2.0.0
 
 ## 1.9.1
 
@@ -28,7 +28,7 @@
 - 926403c: Refactor `useAutoSizeColumns` hook
 - 70a8029: Upgrade all JavaScript dependencies
 - Updated dependencies [70a8029]
-  - @prairielearn/preact-cjs@1.1.7
+  - @prairielearn/react-cjs@1.1.7
 
 ## 1.8.0
 
@@ -122,7 +122,7 @@
 
 - 0425922: Upgrade all JavaScript dependencies
 - Updated dependencies [0425922]
-  - @prairielearn/preact-cjs@1.1.6
+  - @prairielearn/react-cjs@1.1.6
 
 ## 1.1.1
 
@@ -131,7 +131,7 @@
 - c0b1c74: Enable `declarationMap`
 - Updated dependencies [c0b1c74]
   - @prairielearn/browser-utils@2.5.1
-  - @prairielearn/preact-cjs@1.1.5
+  - @prairielearn/react-cjs@1.1.5
 
 ## 1.1.0
 

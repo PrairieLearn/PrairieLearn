@@ -13,7 +13,7 @@ import { HydratedComponentsRegistry } from './registry.js';
 const registry = new HydratedComponentsRegistry();
 
 /**
- * Registers a Preact component for client-side hydration. The component should have a
+ * Registers a React component for client-side hydration. The component should have a
  * `displayName` property. If it's missing, or the name of the component bundle differs,
  * you can provide a `nameOverride`.
  */

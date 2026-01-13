@@ -146,7 +146,7 @@ function EditQuestionPointsScoreFormHtml({
   `;
 }
 
-// Preact version with mutation support
+// React version with mutation support
 interface EditQuestionPointsMutationParams {
   instance_question_id: string;
   modified_at: string;
