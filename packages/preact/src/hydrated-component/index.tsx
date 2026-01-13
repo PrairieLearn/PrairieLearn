@@ -1,5 +1,3 @@
-import '../debug.js';
-
 import type { ComponentType } from 'react';
 import { hydrateRoot } from 'react-dom/client';
 import { observe } from 'selector-observer';

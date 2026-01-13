@@ -4557,7 +4557,6 @@ __metadata:
     pem: "npm:^1.14.8"
     pg: "npm:^8.16.3"
     popper.js: "npm:^1.16.1"
-    preact: "npm:^10.28.1"
     prettier: "npm:3.7.4"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.1"
@@ -15839,13 +15838,6 @@ __metadata:
     vitest: "npm:^4.0.17"
   languageName: unknown
   linkType: soft
-
-"preact@npm:^10.28.1":
-  version: 10.28.2
-  resolution: "preact@npm:10.28.2"
-  checksum: 10c0/eb60bf526eb6971701e6ac9c25236aca451f17f99e9c24704419196989b15bb576ed3101e084b151cd0fb30546b3e5e1ba73b774e8be2f2ed8187db42ec65faf
-  languageName: node
-  linkType: hard
 
 "prelude-ls@npm:^1.2.1":
   version: 1.2.1
