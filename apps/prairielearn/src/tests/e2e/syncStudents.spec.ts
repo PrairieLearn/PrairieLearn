@@ -140,9 +140,7 @@ test.describe('Sync students', () => {
 
     // Modal should open with expected content
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(
-      page.getByRole('dialog').getByText('Sync roster', { exact: true }),
-    ).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Sync roster', { exact: true })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
     // Enter roster with fresh_sync_new but NOT fresh_sync_block or fresh_sync_cancel

@@ -1,6 +1,6 @@
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useMemo, useState } from 'preact/compat';
+import { useMemo, useState } from 'react';
 import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
@@ -383,7 +383,7 @@ export function SyncStudentsModal({
               enrolled. Students not on this list will be blocked.
             </p>
             <div className="mb-3">
-              <label for="sync-uids" className="form-label">
+              <label htmlFor="sync-uids" className="form-label">
                 Student UIDs
               </label>
               <textarea
