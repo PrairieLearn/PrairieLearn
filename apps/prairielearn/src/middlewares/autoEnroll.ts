@@ -35,8 +35,8 @@ export default asyncHandler(async (req, res, next) => {
   });
 
   const enrollmentEligibility = checkEnrollmentEligibility({
-    userInstitutionId: res.locals.authn_user.institution_id,
-    courseInstitutionId: res.locals.course.institution_id,
+    user: res.locals.authn_user,
+    course: res.locals.course,
     courseInstance,
     existingEnrollment,
   });
