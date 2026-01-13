@@ -3,7 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { generateObject } from 'ai';
+import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -26,6 +26,8 @@ import * as manualGrading from '../../../lib/manualGrading.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
+import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
+import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
 import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
@@ -35,6 +37,7 @@ import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
   containsImageCapture,
+  correctGeminiMalformedRubricGradingJson,
   generatePrompt,
   insertAiGradingJob,
   parseAiRubricItems,
@@ -128,35 +131,53 @@ export async function aiGrade({
     courseId: course.id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
+    assessmentQuestionId: assessment_question.id,
+  });
+
+  const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
+    assessment_question_id: assessment_question.id,
+  });
+
+  const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
+
+  const instance_questions = all_instance_questions.filter((instance_question) => {
+    switch (mode) {
+      case 'human_graded':
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        return instanceQuestionGradingJobs[instance_question.id]?.some(
+          (job) => job.grading_method === 'Manual',
+        );
+      case 'all':
+        return true;
+      case 'selected':
+        return instance_question_ids?.includes(instance_question.id);
+      default:
+        assertNever(mode);
+    }
+  });
+
+  const item_statuses = instance_questions.reduce(
+    (acc, instance_question) => {
+      acc[instance_question.id] = JobItemStatus.queued;
+      return acc;
+    },
+    {} as Record<string, JobItemStatus>,
+  );
+
+  await emitServerJobProgressUpdate({
+    job_sequence_id: serverJob.jobSequenceId,
+    num_complete: 0,
+    num_failed: 0,
+    num_total: instance_questions.length,
+    item_statuses,
   });
 
   serverJob.executeInBackground(async (job) => {
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
-    const all_instance_questions = await selectInstanceQuestionsForAssessmentQuestion({
-      assessment_question_id: assessment_question.id,
-    });
 
     job.info(`Using model ${model_id} for AI grading.`);
-
-    const instanceQuestionGradingJobs = await selectGradingJobsInfo(all_instance_questions);
-
-    const instance_questions = all_instance_questions.filter((instance_question) => {
-      switch (mode) {
-        case 'human_graded':
-          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-          return instanceQuestionGradingJobs[instance_question.id]?.some(
-            (job) => job.grading_method === 'Manual',
-          );
-        case 'all':
-          return true;
-        case 'selected':
-          return instance_question_ids?.includes(instance_question.id);
-        default:
-          assertNever(mode);
-      }
-    });
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
     /**
@@ -271,6 +292,10 @@ export async function aiGrade({
         // examples here: https://platform.openai.com/docs/guides/structured-outputs
         const RubricGradingResultSchema = z.object({
           explanation: z.string().describe(explanationDescription),
+          // rubric_items must be the last property in the schema.
+          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
+          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
+          // generated response.
           rubric_items: RubricGradingItemsSchema,
         });
 
@@ -280,6 +305,20 @@ export async function aiGrade({
           messages: input,
           providerOptions: {
             openai: openaiProviderOptions,
+          },
+          experimental_repairText: async (options: {
+            text: string;
+            error: JSONParseError | TypeValidationError;
+          }) => {
+            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
+              return null;
+            }
+            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
+            // unescaped backslashes in the rubric item keys of the response.
+
+            // TODO: Remove this temporary fix once Google fixes the underlying issue.
+            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
+            return correctGeminiMalformedRubricGradingJson(options.text);
           },
         });
 
@@ -482,6 +521,9 @@ export async function aiGrade({
       return true;
     };
 
+    let num_complete = 0;
+    let num_failed = 0;
+
     // Grade each instance question and return an array indicating the success/failure of each grading operation.
     const instance_question_grading_successes = await async.mapLimit(
       instance_questions,
@@ -505,11 +547,40 @@ export async function aiGrade({
         };
 
         try {
-          return await gradeInstanceQuestion(instance_question, logger);
+          item_statuses[instance_question.id] = JobItemStatus.in_progress;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            num_complete,
+            num_failed,
+            num_total: instance_questions.length,
+            item_statuses,
+          });
+
+          const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
+
+          item_statuses[instance_question.id] = gradingSuccessful
+            ? JobItemStatus.complete
+            : JobItemStatus.failed;
+
+          if (!gradingSuccessful) {
+            num_failed += 1;
+          }
+
+          return gradingSuccessful;
         } catch (err: any) {
           logger.error(err);
+          item_statuses[instance_question.id] = JobItemStatus.failed;
+          num_failed += 1;
           return false;
         } finally {
+          num_complete += 1;
+          await emitServerJobProgressUpdate({
+            job_sequence_id: serverJob.jobSequenceId,
+            num_complete,
+            num_failed,
+            num_total: instance_questions.length,
+            item_statuses,
+          });
           for (const log of logs) {
             switch (log.messageType) {
               case 'info':

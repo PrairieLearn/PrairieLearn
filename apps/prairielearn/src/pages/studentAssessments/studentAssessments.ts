@@ -1,8 +1,8 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import logPageView from '../../middlewares/logPageView.js';
 
 import { StudentAssessments, StudentAssessmentsRowSchema } from './studentAssessments.html.js';
@@ -13,7 +13,7 @@ const router = Router();
 router.get(
   '/',
   logPageView('studentAssessments'),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const rows = await queryRows(
       sql.select_assessments,
       {
