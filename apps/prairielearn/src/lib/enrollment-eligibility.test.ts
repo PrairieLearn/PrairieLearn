@@ -1,12 +1,16 @@
 import { describe, expect, it } from 'vitest';
 
-import type { CourseInstance } from './db-types.js';
+import type { Course, CourseInstance, User } from './db-types.js';
 import { checkEnrollmentEligibility } from './enrollment-eligibility.js';
 
 describe('checkEnrollmentEligibility', () => {
   const baseParams = {
-    userInstitutionId: 'inst-1',
-    courseInstitutionId: 'inst-1',
+    user: {
+      institution_id: 'inst-1',
+    } as User,
+    course: {
+      institution_id: 'inst-1',
+    } as Course,
     courseInstance: {
       modern_publishing: true,
       self_enrollment_enabled: true,
@@ -67,8 +71,8 @@ describe('checkEnrollmentEligibility', () => {
   it('returns institution-restriction when institutions do not match and restriction is enabled', () => {
     const result = checkEnrollmentEligibility({
       ...baseParams,
-      userInstitutionId: 'inst-2',
-      courseInstitutionId: 'inst-1',
+      user: { institution_id: 'inst-2' } as User,
+      course: { institution_id: 'inst-1' } as Course,
     });
     expect(result).toEqual({ eligible: false, reason: 'institution-restriction' });
   });
@@ -76,8 +80,8 @@ describe('checkEnrollmentEligibility', () => {
   it('returns eligible when institutions do not match but modern_publishing is false', () => {
     const result = checkEnrollmentEligibility({
       ...baseParams,
-      userInstitutionId: 'inst-2',
-      courseInstitutionId: 'inst-1',
+      user: { institution_id: 'inst-2' } as User,
+      course: { institution_id: 'inst-1' } as Course,
       courseInstance: {
         ...baseParams.courseInstance,
         modern_publishing: false,
@@ -89,8 +93,8 @@ describe('checkEnrollmentEligibility', () => {
   it('returns eligible when institutions do not match but restrict_to_institution is false', () => {
     const result = checkEnrollmentEligibility({
       ...baseParams,
-      userInstitutionId: 'inst-2',
-      courseInstitutionId: 'inst-1',
+      user: { institution_id: 'inst-2' } as User,
+      course: { institution_id: 'inst-1' } as Course,
       courseInstance: {
         ...baseParams.courseInstance,
         self_enrollment_restrict_to_institution: false,
