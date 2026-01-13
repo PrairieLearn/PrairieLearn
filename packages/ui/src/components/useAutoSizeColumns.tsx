@@ -1,8 +1,8 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
 import type { RefObject } from 'preact';
-import { render } from 'preact/compat';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
+import { render } from 'react';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 

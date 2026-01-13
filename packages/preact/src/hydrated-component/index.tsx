@@ -1,10 +1,11 @@
 import '../debug.js';
 
+import type { ComponentType } from 'react';
+import { hydrateRoot } from 'react-dom/client';
 import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { type ComponentType, hydrate } from '@prairielearn/preact-cjs';
 
 import { HydratedComponentsRegistry } from './registry.js';
 
@@ -47,7 +48,7 @@ onDocumentReady(() => {
       if (!dataElement.textContent) throw new Error('Data element has no content');
       const data: object = superjson.parse(dataElement.textContent);
 
-      hydrate(<Component {...data} />, el);
+      hydrateRoot(el, <Component {...data} />);
     },
   });
 });

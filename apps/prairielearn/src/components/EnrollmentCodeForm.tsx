@@ -1,4 +1,4 @@
-import { useRef } from 'preact/compat';
+import { useRef } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 

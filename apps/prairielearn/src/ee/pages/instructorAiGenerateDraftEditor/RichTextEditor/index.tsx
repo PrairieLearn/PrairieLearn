@@ -19,7 +19,7 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
 import { Card, Form } from 'react-bootstrap';

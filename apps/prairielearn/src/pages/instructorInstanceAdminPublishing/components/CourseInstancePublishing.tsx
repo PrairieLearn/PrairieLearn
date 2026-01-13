@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {

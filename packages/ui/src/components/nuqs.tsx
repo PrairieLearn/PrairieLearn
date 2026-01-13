@@ -5,7 +5,7 @@ import {
   unstable_createAdapterProvider,
 } from 'nuqs/adapters/custom';
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
-import React from 'preact/compat';
+import React from 'react';
 
 import type { NumericColumnFilterValue } from './NumericInputColumnFilter.js';
 

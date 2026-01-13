@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'preact/compat';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import type { StateUpdater } from 'preact/hooks';
 import { io } from 'socket.io-client';
 

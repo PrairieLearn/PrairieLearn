@@ -1,4 +1,4 @@
-import { useEffect } from 'preact/compat';
+import { useEffect } from 'react';
 import { useFormContext, useWatch } from 'react-hook-form';
 
 export interface SelfEnrollmentFormValues {

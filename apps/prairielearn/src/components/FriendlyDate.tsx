@@ -1,5 +1,5 @@
 import { type Temporal } from '@js-temporal/polyfill';
-import { type FC, createContext, useContext } from 'preact/compat';
+import { type FC, createContext, useContext } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 

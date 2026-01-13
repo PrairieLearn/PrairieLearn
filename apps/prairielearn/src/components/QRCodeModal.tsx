@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import QR from 'qrcode-svg';
 import { Modal } from 'react-bootstrap';
 

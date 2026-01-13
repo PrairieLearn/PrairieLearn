@@ -1,6 +1,6 @@
 import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useMemo, useState } from 'preact/compat';
+import { type JSX, useMemo, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 function computeSelected<T extends readonly any[]>(

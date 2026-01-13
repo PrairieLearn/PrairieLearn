@@ -1,4 +1,4 @@
-import { Fragment } from 'preact';
+import { Fragment } from 'react';
 import z from 'zod';
 
 import { Hydrate } from '@prairielearn/preact/server';

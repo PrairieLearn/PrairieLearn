@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 

@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import z from 'zod';

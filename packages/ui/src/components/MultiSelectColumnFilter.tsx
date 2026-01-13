@@ -1,6 +1,6 @@
 import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useMemo } from 'preact/compat';
+import { type JSX, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
 function defaultRenderValueLabel<T>({ value }: { value: T }) {

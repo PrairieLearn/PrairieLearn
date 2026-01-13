@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'preact/compat';
+import { useCallback, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
 import { assertNever } from '../../../../lib/types.js';

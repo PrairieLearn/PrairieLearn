@@ -1,4 +1,4 @@
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
 import { ColorJsonSchema } from '../schemas/infoCourse.js';

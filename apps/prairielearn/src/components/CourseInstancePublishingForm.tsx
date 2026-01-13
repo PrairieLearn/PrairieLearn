@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { type PublishingStatus, computeStatus } from '../lib/publishing.js';

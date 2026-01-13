@@ -2,9 +2,9 @@ import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import type { ComponentChildren } from 'preact';
 import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
 import type { JSX } from 'preact/jsx-runtime';
+import type { ReactNode } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import { useDebouncedCallback } from 'use-debounce';
@@ -630,7 +630,7 @@ export function TanstackTableEmptyState({
   children,
 }: {
   iconName: `bi-${string}`;
-  children: ComponentChildren;
+  children: ReactNode;
 }) {
   return (
     <div className="d-flex flex-column justify-content-center align-items-center text-muted">

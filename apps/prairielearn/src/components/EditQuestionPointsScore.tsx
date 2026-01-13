@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'preact/compat';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
 import { escapeHtml, html } from '@prairielearn/html';

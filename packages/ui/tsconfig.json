@@ -4,7 +4,6 @@
     "outDir": "./dist",
     "rootDir": "./src",
     "types": ["node"],
-    "jsx": "react-jsx",
-    "jsxImportSource": "@prairielearn/preact-cjs"
+    "jsx": "react-jsx"
   }
 }

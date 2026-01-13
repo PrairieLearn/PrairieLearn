@@ -1,4 +1,4 @@
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 
 import { html } from '@prairielearn/html';
