@@ -185,7 +185,7 @@ export function InstructorCourseAdminSettings({
                 class="form-control"
                 id="branch"
                 name="branch"
-                value="${resLocals.course.branch}"
+                value="${resLocals.course.branch ?? '—'}"
                 disabled
               />
               <small class="form-text text-muted">

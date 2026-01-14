@@ -31,13 +31,6 @@ SET
 WHERE
   id = $course_id;
 
--- BLOCK update_course_branch
-UPDATE courses
-SET
-  branch = $branch
-WHERE
-  id = $course_id;
-
 -- BLOCK select_courses_with_staff_access
 SELECT
   c.*,
@@ -76,9 +69,11 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      courses AS c (path, display_timezone, institution_id)
+      courses AS c (path, branch, repository, display_timezone, institution_id)
     SELECT
       $path,
+      $branch,
+      $repository,
       i.display_timezone,
       i.id
     FROM

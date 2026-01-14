@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -7,10 +9,10 @@ import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
 import {
-  getLockNameForCoursePath,
   getGitDefaultBranch,
+  getGitRemoteUrl,
+  getLockNameForCoursePath,
   selectOrInsertCourseByPath,
-  updateCourseBranch,
 } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
@@ -253,16 +255,12 @@ export async function syncOrCreateDiskToSql(
   courseDir: string,
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
-  const course = await selectOrInsertCourseByPath(courseDir);
+  // This should only ever be used in dev mode.
+  assert(config.devMode);
 
-  // In dev mode, for courses without a repository (loaded from disk),
-  // detect and store the git default branch
-  if (config.devMode && !course.repository) {
-    const detectedBranch = await getGitDefaultBranch(courseDir);
-    if (detectedBranch !== course.branch) {
-      await updateCourseBranch(course.id, detectedBranch);
-    }
-  }
-
+  const course = await selectOrInsertCourseByPath(courseDir, {
+    branch: await getGitDefaultBranch(courseDir),
+    repository: await getGitRemoteUrl(courseDir),
+  });
   return await syncDiskToSql(course.id, courseDir, logger);
 }
