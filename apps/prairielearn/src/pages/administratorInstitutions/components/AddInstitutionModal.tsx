@@ -58,8 +58,8 @@ export function AddInstitutionModal({
               className="form-select"
               id="display_timezone"
               name="display_timezone"
-              required
               defaultValue=""
+              required
             >
               <option value="" disabled hidden>
                 Timezone
