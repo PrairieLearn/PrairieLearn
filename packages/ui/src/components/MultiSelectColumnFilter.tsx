@@ -3,8 +3,8 @@ import clsx from 'clsx';
 import { type JSX, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+function defaultRenderValueLabel<TValue extends string>({ value }: { value: TValue }) {
+  return <span>{value}</span>;
 }
 
 /**
@@ -16,13 +16,12 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
  * @param params.allColumnValues - All possible values that can appear in the column filter
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function MultiSelectColumnFilter<TData, TValue>({
+export function MultiSelectColumnFilter<TData, TValue extends string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
   column: Column<TData, TValue>;
-  /** In some cases, the filter values are not the same as the column values, but `TValue` is a good estimation. */
   allColumnValues: TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
@@ -92,7 +91,7 @@ export function MultiSelectColumnFilter<TData, TValue>({
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={String(value)} className="list-group-item d-flex align-items-center gap-3">
+              <div key={value} className="list-group-item d-flex align-items-center gap-3">
                 <div className="form-check">
                   <input
                     className="form-check-input"

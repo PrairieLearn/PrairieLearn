@@ -3,19 +3,19 @@ import clsx from 'clsx';
 import { type JSX, useMemo, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function computeSelected<T extends readonly any[]>(
-  allStatusValues: T,
+function computeSelected<TValue extends string>(
+  allStatusValues: TValue[] | readonly TValue[],
   mode: 'include' | 'exclude',
-  selected: Set<T[number]>,
-) {
+  selected: Set<TValue>,
+): Set<TValue> {
   if (mode === 'include') {
     return selected;
   }
   return new Set(allStatusValues.filter((s) => !selected.has(s)));
 }
 
-function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span className="text-nowrap">{String(value)}</span>;
+function defaultRenderValueLabel<TValue extends string>({ value }: { value: TValue }) {
+  return <span className="text-nowrap">{value}</span>;
 }
 /**
  * A component that allows the user to filter a categorical column.
@@ -26,7 +26,7 @@ function defaultRenderValueLabel<T>({ value }: { value: T }) {
  * @param params.allColumnValues - The values to filter by
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function CategoricalColumnFilter<TData, TValue>({
+export function CategoricalColumnFilter<TData, TValue extends string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
@@ -94,7 +94,7 @@ export function CategoricalColumnFilter<TData, TValue>({
                 // Use `visibility` instead of conditional rendering to avoid layout shift.
                 invisible: selected.size === 0 && mode === 'include',
               })}
-              onClick={() => apply('include', new Set())}
+              onClick={() => apply('include', new Set<TValue>())}
             >
               Clear
             </button>
@@ -148,7 +148,7 @@ export function CategoricalColumnFilter<TData, TValue>({
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={String(value)} className="list-group-item d-flex align-items-center gap-3">
+              <div key={value} className="list-group-item d-flex align-items-center gap-3">
                 <div className="form-check">
                   <input
                     className="form-check-input"
