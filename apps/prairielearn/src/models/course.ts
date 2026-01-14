@@ -79,11 +79,10 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
  */
 export async function getGitDefaultBranch(coursePath: string): Promise<string> {
   try {
-    const { stdout } = await execa(
-      'git',
-      ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'],
-      { cwd: coursePath, env: process.env },
-    );
+    const { stdout } = await execa('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], {
+      cwd: coursePath,
+      env: process.env,
+    });
     // Strip 'origin/' prefix if present
     const branch = stdout.trim().replace(/^origin\//, '');
     return branch || 'master';

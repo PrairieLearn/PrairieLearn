@@ -188,9 +188,7 @@ export function InstructorCourseAdminSettings({
                 value="${resLocals.course.branch ?? '—'}"
                 disabled
               />
-              <small class="form-text text-muted">
-                The git branch used for this course.
-              </small>
+              <small class="form-text text-muted">The git branch used for this course.</small>
             </div>
             <div class="form-check mb-3">
               <input

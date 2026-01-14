@@ -69,7 +69,13 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      courses AS c (path, branch, repository, display_timezone, institution_id)
+      courses AS c (
+        path,
+        branch,
+        repository,
+        display_timezone,
+        institution_id
+      )
     SELECT
       $path,
       $branch,
