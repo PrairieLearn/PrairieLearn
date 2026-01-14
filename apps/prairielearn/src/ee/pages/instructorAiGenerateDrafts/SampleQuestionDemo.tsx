@@ -18,13 +18,12 @@ import {
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({
-  prompt,
-  onMathjaxTypeset,
-}: {
-  prompt: ExamplePromptWithId;
-  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
-}) {
+interface MathJaxInstance {
+  startup?: { promise: Promise<void> };
+  typesetPromise?: (elements?: (Element | null)[]) => Promise<void>;
+}
+
+export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
   const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
@@ -71,10 +70,15 @@ export function SampleQuestionDemo({
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    if (cardRef.current) {
-      void onMathjaxTypeset([cardRef.current]);
-    }
-  }, [variant.question, onMathjaxTypeset]);
+    const typesetMathJax = async () => {
+      if (typeof window !== 'undefined' && cardRef.current) {
+        const mathjax = (window as { MathJax?: MathJaxInstance }).MathJax;
+        await mathjax?.startup?.promise;
+        await mathjax?.typesetPromise?.([cardRef.current]);
+      }
+    };
+    void typesetMathJax();
+  }, [variant.question]);
 
   const handleGrade = () => {
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
