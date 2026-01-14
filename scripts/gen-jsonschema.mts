@@ -3,6 +3,14 @@
 // usage:
 // $ tsx gen-jsonschema.mts [check]
 
+// Wipe any `PRAIRIELEARN_*` or `CONDUCTOR_*` environment variables to avoid
+// affecting the generated schemas.
+for (const key of Object.keys(process.env)) {
+  if (key.startsWith('PRAIRIELEARN_') || key.startsWith('CONDUCTOR_')) {
+    delete process.env[key];
+  }
+}
+
 import fs from 'fs';
 import path from 'path';
 

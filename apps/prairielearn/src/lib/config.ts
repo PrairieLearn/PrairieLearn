@@ -128,7 +128,10 @@ export const ConfigSchema = z.object({
     .default(DEV_MODE ? 'lax' : 'none'),
   cookieDomain: z.string().nullable().default(null),
   serverType: z.enum(['http', 'https']).default('http'),
-  serverPort: z.string().default('3000'),
+  serverPort: z.string().default(() => {
+    // Support conductor (https://docs.conductor.build/tips/conductor-env).
+    return process.env.CONDUCTOR_PORT ?? '3000';
+  }),
   serverTimeout: z.number().default(10 * 60 * 1000), // 10 minutes
   /**
    * How many milliseconds to wait before destroying a socket that is being
