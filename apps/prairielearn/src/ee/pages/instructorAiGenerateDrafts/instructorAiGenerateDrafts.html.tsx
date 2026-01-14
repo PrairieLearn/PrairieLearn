@@ -38,8 +38,8 @@ export function InstructorAIGenerateDrafts({
     resLocals,
     pageTitle: resLocals.pageTitle,
     headContent: html`
-      ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
+      ${compiledScriptTag('mathjaxSetup.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
