@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { hydrateHtml } from '@prairielearn/preact/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../../components/Modal.js';
@@ -10,6 +11,8 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
 import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+
+import { SampleQuestions } from './SampleQuestions.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -35,9 +38,8 @@ export function InstructorAIGenerateDrafts({
     resLocals,
     pageTitle: resLocals.pageTitle,
     headContent: html`
-      ${compiledScriptTag('instructorAiGenerateDraftsClient.ts')}
-      ${compiledScriptTag('instructorAiGenerateDraftsSampleQuestions.tsx')}
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
+      ${compiledScriptTag('mathjaxSetup.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
       <style>
         .reveal-fade {
@@ -107,7 +109,7 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div id="sample-questions" class="mt-2"></div>
+            <div class="mt-2">${hydrateHtml(<SampleQuestions />)}</div>
           </form>
         </div>
       </div>
