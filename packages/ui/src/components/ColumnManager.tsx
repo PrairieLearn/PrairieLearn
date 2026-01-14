@@ -307,7 +307,8 @@ export function ColumnManager<RowDataModel>({
       onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
       onBlur={(e: React.FocusEvent) => {
         // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
-        if (menuRef.current && !menuRef.current.contains(e.relatedTarget as Node)) {
+        // `relatedTarget` is the element gaining focus.
+        if (menuRef.current && !menuRef.current.contains(e.relatedTarget)) {
           setDropdownOpen(false);
         }
       }}
