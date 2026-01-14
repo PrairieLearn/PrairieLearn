@@ -57,6 +57,11 @@ export function checkEnrollmentEligibility({
     return { eligible: false, reason: 'blocked' };
   }
 
+  // If user has an existing enrollment (joined or invited), they are eligible.
+  if (existingEnrollment?.status === 'joined' || existingEnrollment?.status === 'invited') {
+    return { eligible: true };
+  }
+
   // Check if self-enrollment is enabled
   if (!courseInstance.self_enrollment_enabled) {
     return { eligible: false, reason: 'self-enrollment-disabled' };

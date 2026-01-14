@@ -127,4 +127,44 @@ describe('checkEnrollmentEligibility', () => {
       expect(result).toEqual({ eligible: true });
     }
   });
+
+  describe('joined and invited users bypass self-enrollment checks', () => {
+    const bypassStatuses = ['joined', 'invited'] as const;
+
+    for (const status of bypassStatuses) {
+      it(`returns eligible for ${status} user even when self-enrollment is disabled`, () => {
+        const result = checkEnrollmentEligibility({
+          ...baseParams,
+          existingEnrollment: { status },
+          courseInstance: {
+            ...baseParams.courseInstance,
+            self_enrollment_enabled: false,
+          },
+        });
+        expect(result).toEqual({ eligible: true });
+      });
+
+      it(`returns eligible for ${status} user even when self-enrollment has expired`, () => {
+        const result = checkEnrollmentEligibility({
+          ...baseParams,
+          existingEnrollment: { status },
+          courseInstance: {
+            ...baseParams.courseInstance,
+            self_enrollment_enabled_before_date: new Date('2020-01-01'),
+          },
+        });
+        expect(result).toEqual({ eligible: true });
+      });
+
+      it(`returns eligible for ${status} user even with institution restriction`, () => {
+        const result = checkEnrollmentEligibility({
+          ...baseParams,
+          user: { institution_id: 'inst-2' } as User,
+          course: { institution_id: 'inst-1' } as Course,
+          existingEnrollment: { status },
+        });
+        expect(result).toEqual({ eligible: true });
+      });
+    }
+  });
 });
