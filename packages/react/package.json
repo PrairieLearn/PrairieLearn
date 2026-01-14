@@ -22,7 +22,11 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/utils": "workspace:^",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.6"
   },
