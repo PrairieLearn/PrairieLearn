@@ -164,7 +164,7 @@ export async function uploadAssessmentInstanceScores(
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.verbose('Uploading total scores for ' + assessment_label);
+    job.info('Uploading total scores for ' + assessment_label);
 
     // accumulate output lines in the "output" variable and actually
     // output put them in blocks, to avoid spamming the updates
