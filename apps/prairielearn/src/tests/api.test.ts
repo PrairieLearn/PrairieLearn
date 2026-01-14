@@ -1,11 +1,20 @@
+import * as path from 'node:path';
+
 import * as cheerio from 'cheerio';
+import { execa } from 'execa';
 import fetch from 'node-fetch';
+import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
+
+import * as sqldb from '@prairielearn/postgres';
+
+import { config } from '../lib/config.js';
 
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
+import * as syncUtil from './sync/util.js';
 
 const locals = {} as {
   shouldHaveButtons: string[];
@@ -423,53 +432,129 @@ describe('API', { timeout: 60_000 }, function () {
       });
       assert.equal(res.status, 403);
     });
-
-    test.sequential('POST to API to start a course sync', async function () {
-      locals.apiCourseUrl = locals.apiUrl + '/course/1';
-      locals.apiCourseSyncUrl = locals.apiCourseUrl + '/sync';
-      const res = await fetch(locals.apiCourseSyncUrl, {
-        method: 'POST',
-        headers: {
-          'Private-Token': locals.api_token,
-        },
-      });
-      assert.equal(res.status, 200);
-
-      const json = (await res.json()) as any;
-      assert.exists(json.job_sequence_id);
-      locals.course_sync_job_sequence_id = json.job_sequence_id;
-    });
-
-    test.sequential('GET to API for course sync status info succeeds', async function () {
-      locals.apiCourseSyncJobUrl =
-        locals.apiCourseSyncUrl + '/' + locals.course_sync_job_sequence_id;
-      const res = await fetch(locals.apiCourseSyncJobUrl, {
-        headers: {
-          'Private-Token': locals.api_token,
-        },
-      });
-      assert.equal(res.status, 200);
-
-      const json = (await res.json()) as any;
-      assert.exists(json.job_sequence_id);
-      assert.equal(json.job_sequence_id, locals.course_sync_job_sequence_id);
-      assert.exists(json.status);
-      assert.exists(json.start_date);
-      assert.exists(json.finish_date);
-      assert.exists(json.output);
-    });
-
-    test.sequential(
-      'GET to API for course sync status info fails with invalid job_sequence_id',
-      async function () {
-        locals.apiCourseSyncJobUrl = locals.apiCourseSyncUrl + '/NA';
-        const res = await fetch(locals.apiCourseSyncJobUrl, {
-          headers: {
-            'Private-Token': locals.api_token,
-          },
-        });
-        assert.equal(res.status, 404);
-      },
-    );
   });
+});
+
+// Isolated describe block for API sync tests with dedicated git repository
+describe('API course sync', { timeout: 60_000 }, function () {
+  const baseUrl = 'http://localhost:' + config.serverPort;
+  const apiUrl = baseUrl + '/pl/api/v1';
+  let syncTestCourseId: string;
+  let syncTestOriginDir: string;
+  let syncTestLiveDir: string;
+  let apiCourseSyncUrl: string;
+  let courseSyncJobSequenceId: string;
+  let apiToken: string;
+
+  beforeAll(helperServer.before());
+
+  afterAll(helperServer.after);
+
+  beforeAll(async () => {
+    // Generate an API token
+    const settingsUrl = baseUrl + '/pl/settings';
+    let res = await fetch(settingsUrl);
+    assert.isTrue(res.ok);
+    let page$ = cheerio.load(await res.text());
+
+    const button = page$('[data-testid="generate-token-button"]').get(0);
+    assert(button);
+    const data$ = cheerio.load(button.attribs['data-bs-content']);
+    const csrfInput = data$('form input[name="__csrf_token"]').get(0);
+    const csrfToken = csrfInput?.attribs.value;
+
+    res = await fetch(settingsUrl, {
+      method: 'POST',
+      body: new URLSearchParams({
+        __action: 'token_generate',
+        __csrf_token: csrfToken!,
+        token_name: 'sync-test',
+      }),
+      redirect: 'follow',
+    });
+    assert.isTrue(res.ok);
+
+    page$ = cheerio.load(await res.text());
+    const tokenContainer = page$('.new-access-token');
+    apiToken = tokenContainer.text().trim();
+
+    // Create temp directories
+    const baseDir = tmp.dirSync().name;
+    syncTestOriginDir = path.join(baseDir, 'courseOrigin');
+    syncTestLiveDir = path.join(baseDir, 'courseLive');
+
+    // Create course data
+    const courseData = syncUtil.getCourseData();
+    courseData.course.name = 'API Sync Test Course';
+
+    // Write to origin directory
+    await syncUtil.writeCourseToDirectory(courseData, syncTestOriginDir);
+
+    // Initialize git in origin
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], { cwd: syncTestOriginDir });
+    await execa('git', ['add', '-A'], { cwd: syncTestOriginDir });
+    await execa('git', ['commit', '-m', 'initial commit'], { cwd: syncTestOriginDir });
+
+    // Clone to live directory
+    await execa('git', ['clone', syncTestOriginDir, syncTestLiveDir], { cwd: '/' });
+
+    // Sync to database
+    const syncResults = await syncUtil.syncCourseData(syncTestLiveDir);
+    syncTestCourseId = syncResults.courseId;
+
+    // Update repository field to point to origin
+    await sqldb.queryAsync('UPDATE courses SET repository = $1 WHERE id = $2', [
+      syncTestOriginDir,
+      syncTestCourseId,
+    ]);
+  });
+
+  test.sequential('POST to API to start a course sync', async function () {
+    apiCourseSyncUrl = apiUrl + '/course/' + syncTestCourseId + '/sync';
+    const res = await fetch(apiCourseSyncUrl, {
+      method: 'POST',
+      headers: {
+        'Private-Token': apiToken,
+      },
+    });
+    assert.equal(res.status, 200);
+
+    const json = (await res.json()) as any;
+    assert.exists(json.job_sequence_id);
+    courseSyncJobSequenceId = json.job_sequence_id;
+  });
+
+  test.sequential('GET to API for course sync status info succeeds', async function () {
+    // Wait for job to complete before checking status
+    await helperServer.waitForJobSequence(courseSyncJobSequenceId);
+
+    const apiCourseSyncJobUrl = apiCourseSyncUrl + '/' + courseSyncJobSequenceId;
+    const res = await fetch(apiCourseSyncJobUrl, {
+      headers: {
+        'Private-Token': apiToken,
+      },
+    });
+    assert.equal(res.status, 200);
+
+    const json = (await res.json()) as any;
+    assert.exists(json.job_sequence_id);
+    assert.equal(json.job_sequence_id, courseSyncJobSequenceId);
+    assert.exists(json.status);
+    assert.exists(json.start_date);
+    assert.exists(json.finish_date);
+    assert.exists(json.output);
+  });
+
+  test.sequential(
+    'GET to API for course sync status info fails with invalid job_sequence_id',
+    async function () {
+      const apiCourseSyncJobUrl = apiCourseSyncUrl + '/NA';
+      const res = await fetch(apiCourseSyncJobUrl, {
+        headers: {
+          'Private-Token': apiToken,
+        },
+      });
+      assert.equal(res.status, 404);
+    },
+  );
 });
