@@ -204,7 +204,7 @@ describe('LTI 1.3 course instance linking', () => {
       courseRole: 'Editor',
       courseInstanceId: '1',
       courseInstanceRole: 'Student Data Editor',
-      authnUserId: user.user_id,
+      authnUserId: user.id,
     });
 
     const linkingPageRes = await fetchWithCookies(targetLinkUri);

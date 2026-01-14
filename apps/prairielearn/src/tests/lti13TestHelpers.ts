@@ -327,7 +327,7 @@ export async function grantCoursePermissions({
     await insertCourseInstancePermissions({
       course_id: courseId,
       course_instance_id: courseInstanceId,
-      user_id: user.user_id,
+      user_id: user.id,
       course_instance_role: courseInstanceRole,
       authn_user_id: authnUserId,
     });
