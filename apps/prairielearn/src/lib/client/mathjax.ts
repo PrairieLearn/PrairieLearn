@@ -18,6 +18,9 @@ const {
 } = withResolvers<void>();
 
 (() => {
+  // Skip initialization on the server (no window object).
+  if (typeof window === 'undefined') return;
+
   if (window.MathJax) {
     // Something else already loaded MathJax on this page. Just resolve the promise
     // once MathJax reports that it is ready.
@@ -102,11 +105,17 @@ const {
 })();
 
 export async function mathjaxTypeset(elements?: Element[]) {
+  // No-op on the server.
+  if (typeof window === 'undefined') return;
+
   await mathjaxPromise;
   return window.MathJax.typesetPromise(elements);
 }
 
 export async function mathjaxConvert(value: string) {
+  // No-op on the server.
+  if (typeof window === 'undefined') return;
+
   await mathjaxPromise;
   return (window.MathJax.tex2chtmlPromise || window.MathJax.tex2svgPromise)(value);
 }
