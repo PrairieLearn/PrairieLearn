@@ -189,16 +189,20 @@ export async function uploadAssessmentInstanceScores(
         } else {
           output += '\n' + msg;
         }
+        outputCount++;
         try {
           await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
           successCount++;
         } catch (err) {
           errorCount++;
           const msg = String(err);
-          output += '\n' + msg;
+          // Before logging the error, flush any accumulated output
+          job.verbose(output);
+          output = null;
+          outputCount = 0;
+          job.error(msg);
         }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
+        if (output != null && outputCount >= outputThreshold) {
           job.verbose(output);
           output = null;
           outputCount = 0;
