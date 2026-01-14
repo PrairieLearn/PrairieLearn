@@ -9,15 +9,21 @@ import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
-  selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
-import { type User, UserSchema } from './db-types.js';
+import { type Course, type User, UserSchema } from './db-types.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
+
+/**
+ * The course fields needed for syncing. Either pass a full course object
+ * with all these fields, or just `{ id: string }` to have the function
+ * fetch the course data from the database.
+ */
+export type CourseForSync = Pick<Course, 'id' | 'path' | 'branch' | 'repository' | 'commit_hash'>;
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -52,22 +58,16 @@ export async function getCourseOwners(course_id: string): Promise<User[]> {
 }
 
 export async function pullAndUpdateCourse({
-  courseId,
+  course,
   userId,
   authnUserId,
-  path,
-  branch,
-  repository,
-  commit_hash,
 }: {
-  courseId: string;
+  course: Course;
   userId: string | null;
   authnUserId: string | null;
-  path?: string | null;
-  branch?: string | null;
-  repository?: string | null;
-  commit_hash?: string | null;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
+  const courseId = course.id;
+
   const serverJob = await createServerJob({
     type: 'sync',
     description: 'Pull from remote git repository',
@@ -82,13 +82,8 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
-    if (path === undefined || branch === undefined || repository === undefined) {
-      const course_data = await selectCourseById(courseId);
-      path = course_data.path;
-      branch = course_data.branch;
-      repository = course_data.repository;
-      commit_hash = course_data.commit_hash;
-    }
+    const { path, branch, repository, commit_hash } = course;
+
     if (!path) {
       job.fail('Path is not set for this course. Exiting...');
       return;

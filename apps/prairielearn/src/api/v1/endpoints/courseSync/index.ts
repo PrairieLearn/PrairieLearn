@@ -13,7 +13,11 @@ const router = Router({ mergeParams: true });
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
+    const jobSequenceId = await syncHelpers.pullAndUpdate({
+      course: res.locals.course,
+      userId: res.locals.user.id,
+      authnUserId: res.locals.authz_data.authn_user.id,
+    });
     res.status(200).json({ job_sequence_id: jobSequenceId });
   }),
 );

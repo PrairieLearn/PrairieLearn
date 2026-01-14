@@ -110,7 +110,11 @@ router.post(
     }
 
     if (req.body.__action === 'pull') {
-      const jobSequenceId = await syncHelpers.pullAndUpdate(res.locals);
+      const jobSequenceId = await syncHelpers.pullAndUpdate({
+        course: res.locals.course,
+        userId: res.locals.user.id,
+        authnUserId: res.locals.authz_data.authn_user.id,
+      });
       res.redirect(`${res.locals.urlPrefix}/jobSequence/${jobSequenceId}`);
     } else if (req.body.__action === 'status') {
       const jobSequenceId = await syncHelpers.gitStatus(res.locals);

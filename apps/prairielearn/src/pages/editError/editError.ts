@@ -58,7 +58,11 @@ router.post(
     }
 
     if (req.body.__action === 'pull') {
-      const job_sequence_id = await syncHelpers.pullAndUpdate(res.locals);
+      const job_sequence_id = await syncHelpers.pullAndUpdate({
+        course: res.locals.course,
+        userId: res.locals.user.id,
+        authnUserId: res.locals.authz_data.authn_user.id,
+      });
       res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
