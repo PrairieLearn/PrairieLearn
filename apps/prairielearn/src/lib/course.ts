@@ -59,14 +59,12 @@ export async function pullAndUpdateCourse({
   userId: string | null;
   authnUserId: string | null;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
-  const courseId = course.id;
-
   const serverJob = await createServerJob({
     type: 'sync',
     description: 'Pull from remote git repository',
     userId,
     authnUserId,
-    courseId,
+    courseId: course.id,
   });
 
   const gitEnv = process.env;
@@ -118,7 +116,7 @@ export async function pullAndUpdateCourse({
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
           startGitHash = await getOrUpdateCourseCommitHash({
-            id: courseId,
+            id: course.id,
             path,
             commit_hash,
           });
@@ -163,7 +161,7 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
+        const syncResult = await syncDiskToSqlWithLock(course.id, path, job);
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
@@ -175,7 +173,7 @@ export async function pullAndUpdateCourse({
         if (config.chunksGenerator) {
           const chunkChanges = await chunks.updateChunksForCourse({
             coursePath: path,
-            courseId,
+            courseId: course.id,
             courseData: syncResult.courseData,
             oldHash: startGitHash,
             newHash: endGitHash,
@@ -183,7 +181,7 @@ export async function pullAndUpdateCourse({
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
 
-        await updateCourseCommitHash({ id: courseId, path });
+        await updateCourseCommitHash({ id: course.id, path });
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');
