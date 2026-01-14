@@ -67,7 +67,7 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) 
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    if (typeof window !== 'undefined' && cardRef.current) {
+    if (cardRef.current) {
       void mathjaxTypeset([cardRef.current]);
     }
   }, [variant.question]);
