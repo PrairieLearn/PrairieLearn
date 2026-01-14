@@ -93,7 +93,7 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
 - Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
-## React quirks
+## React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
