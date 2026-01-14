@@ -3,7 +3,7 @@ import clsx from 'clsx';
 import { type JSX, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function defaultRenderValueLabel<TValue extends string>({ value }: { value: TValue }) {
+function defaultRenderValueLabel({ value }: { value: string }) {
   return <span>{value}</span>;
 }
 
@@ -11,17 +11,21 @@ function defaultRenderValueLabel<TValue extends string>({ value }: { value: TVal
  * A component that allows the user to filter a column containing arrays of values.
  * Uses AND logic: rows must contain ALL selected values to match.
  *
+ * The filter options (`allColumnValues`) are strings (or string subtypes like
+ * enums). The column's `filterFn` is responsible for mapping these string
+ * values to the actual column data.
+ *
  * @param params
  * @param params.column - The TanStack Table column object
- * @param params.allColumnValues - All possible values that can appear in the column filter
+ * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function MultiSelectColumnFilter<TData, TValue extends string>({
+export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
-  column: Column<TData, TValue>;
+  column: Column<TData, unknown>;
   allColumnValues: TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {

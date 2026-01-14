@@ -14,24 +14,29 @@ function computeSelected<TValue extends string>(
   return new Set(allStatusValues.filter((s) => !selected.has(s)));
 }
 
-function defaultRenderValueLabel<TValue extends string>({ value }: { value: TValue }) {
+function defaultRenderValueLabel({ value }: { value: string }) {
   return <span className="text-nowrap">{value}</span>;
 }
+
 /**
  * A component that allows the user to filter a categorical column.
  * The filter mode always defaults to "include".
  *
+ * The filter options (`allColumnValues`) are strings (or string subtypes like
+ * enums). The column's `filterFn` is responsible for mapping these string
+ * values to the actual column data (e.g., mapping "Unassigned" to `null`).
+ *
  * @param params
  * @param params.column - The TanStack Table column object
- * @param params.allColumnValues - The values to filter by
+ * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function CategoricalColumnFilter<TData, TValue extends string>({
+export function CategoricalColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
-  column: Column<TData, TValue>;
+  column: Column<TData, unknown>;
   allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
