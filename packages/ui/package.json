@@ -12,8 +12,8 @@
     "./*.css": "./dist/*.css"
   },
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -30,6 +30,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^22.19.5",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
     "vitest": "^4.0.17"
