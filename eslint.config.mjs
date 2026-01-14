@@ -288,12 +288,8 @@ export default tseslint.config([
       // We want to be able to use `useState` without the setter function for
       // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
       '@eslint-react/naming-convention/use-state': 'off',
-      '@eslint-react/no-forbidden-props': [
-        'error',
-        {
-          forbid: ['class', 'for', '/_/'],
-        },
-      ],
+      // Forbid `snake_case` props.
+      '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
 
       ...eslintPluginUnicorn.configs.recommended.rules,
 
