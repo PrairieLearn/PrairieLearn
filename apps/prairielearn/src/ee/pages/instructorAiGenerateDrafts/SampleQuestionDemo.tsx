@@ -11,17 +11,14 @@ import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { run } from '@prairielearn/run';
 
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
+
 import {
   type ExamplePromptWithId,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
-
-interface MathJaxInstance {
-  startup?: { promise: Promise<void> };
-  typesetPromise?: (elements?: (Element | null)[]) => Promise<void>;
-}
 
 export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
   const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
@@ -70,14 +67,9 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) 
 
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
-    const typesetMathJax = async () => {
-      if (typeof window !== 'undefined' && cardRef.current) {
-        const mathjax = (window as { MathJax?: MathJaxInstance }).MathJax;
-        await mathjax?.startup?.promise;
-        await mathjax?.typesetPromise?.([cardRef.current]);
-      }
-    };
-    void typesetMathJax();
+    if (typeof window !== 'undefined' && cardRef.current) {
+      void mathjaxTypeset([cardRef.current]);
+    }
   }, [variant.question]);
 
   const handleGrade = () => {

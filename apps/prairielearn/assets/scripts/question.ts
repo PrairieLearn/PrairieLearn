@@ -12,7 +12,7 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
-import { mathjaxTypeset } from './lib/mathjax.js';
+import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 
 onDocumentReady(() => {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');
