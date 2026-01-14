@@ -54,8 +54,14 @@ export function AddInstitutionModal({
             <label className="form-label" htmlFor="display_timezone">
               Timezone
             </label>
-            <select className="form-select" id="display_timezone" name="display_timezone" required>
-              <option value="" selected disabled hidden>
+            <select
+              className="form-select"
+              id="display_timezone"
+              name="display_timezone"
+              required
+              defaultValue=""
+            >
+              <option value="" disabled hidden>
                 Timezone
               </option>
               {availableTimezones.map((tz, i) => (

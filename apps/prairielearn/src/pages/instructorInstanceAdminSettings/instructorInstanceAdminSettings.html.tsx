@@ -179,11 +179,7 @@ export function InstructorInstanceAdminSettings({
                 name="display_timezone"
               >
                 {availableTimezones.map((tz) => (
-                  <option
-                    key={tz.name}
-                    value={tz.name}
-                    selected={tz.name === defaultValues.display_timezone}
-                  >
+                  <option key={tz.name} value={tz.name}>
                     {formatTimezone(tz)}
                   </option>
                 ))}
@@ -210,12 +206,8 @@ export function InstructorInstanceAdminSettings({
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >
-                <option value="Set" selected={defaultValues.group_assessments_by === 'Set'}>
-                  Set
-                </option>
-                <option value="Module" selected={defaultValues.group_assessments_by === 'Module'}>
-                  Module
-                </option>
+                <option value="Set">Set</option>
+                <option value="Module">Module</option>
               </Form.Select>
               <small className="form-text text-muted">
                 Determines how assessments will be grouped on the student assessments page.
