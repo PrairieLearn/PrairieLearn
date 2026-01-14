@@ -4,8 +4,8 @@ import asyncHandler from 'express-async-handler';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
+import { pullAndUpdateCourse } from '../../lib/course.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
-import * as syncHelpers from '../shared/syncHelpers.js';
 
 import { EditError } from './editError.html.js';
 
@@ -58,12 +58,12 @@ router.post(
     }
 
     if (req.body.__action === 'pull') {
-      const job_sequence_id = await syncHelpers.pullAndUpdate({
+      const { jobSequenceId } = await pullAndUpdateCourse({
         course: res.locals.course,
         userId: res.locals.user.id,
         authnUserId: res.locals.authz_data.authn_user.id,
       });
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

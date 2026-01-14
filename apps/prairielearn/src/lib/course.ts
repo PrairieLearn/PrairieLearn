@@ -18,13 +18,6 @@ import { config } from './config.js';
 import { type Course, type User, UserSchema } from './db-types.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
-/**
- * The course fields needed for syncing. Either pass a full course object
- * with all these fields, or just `{ id: string }` to have the function
- * fetch the course data from the database.
- */
-export type CourseForSync = Pick<Course, 'id' | 'path' | 'branch' | 'repository' | 'commit_hash'>;
-
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 /**

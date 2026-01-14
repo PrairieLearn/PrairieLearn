@@ -10,6 +10,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
+import { pullAndUpdateCourse } from '../../lib/course.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import * as syncHelpers from '../shared/syncHelpers.js';
@@ -110,7 +111,7 @@ router.post(
     }
 
     if (req.body.__action === 'pull') {
-      const jobSequenceId = await syncHelpers.pullAndUpdate({
+      const { jobSequenceId } = await pullAndUpdateCourse({
         course: res.locals.course,
         userId: res.locals.user.id,
         authnUserId: res.locals.authz_data.authn_user.id,
