@@ -97,6 +97,8 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+check-npm-packages:
+	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
