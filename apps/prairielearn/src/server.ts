@@ -10,7 +10,7 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
-import os from 'node:os';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import * as util from 'node:util';
@@ -2203,7 +2203,7 @@ if (shouldStartServer) {
     let configPaths = [
       // To support Git worktrees (useful for agentic development), we'll look
       // for config files in `~/.config/prairielearn/config.json`. We check here
-      // first so local config can still take precedence.
+      // first so the following repo/app configs can still take precedence.
       path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
       // For backwards compatibility, we'll check the repository root first.
       path.join(REPOSITORY_ROOT_PATH, 'config.json'),
