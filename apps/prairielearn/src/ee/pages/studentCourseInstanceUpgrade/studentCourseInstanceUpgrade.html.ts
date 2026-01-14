@@ -9,13 +9,13 @@ import { formatStripePrice } from '../../lib/billing/stripe.js';
 
 export function StudentCourseInstanceUpgrade({
   course,
-  course_instance,
+  courseInstance,
   missingPlans,
   planPrices,
   resLocals,
 }: {
   course: Course;
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
   missingPlans: PlanName[];
   /**
    * `null` here will indicate that we aren't configured with Stripe credentials
@@ -38,7 +38,7 @@ export function StudentCourseInstanceUpgrade({
         Upgrade required
       </h1>
       <p>
-        <strong>${course.short_name}: ${course.title}, ${course_instance.long_name}</strong>
+        <strong>${course.short_name}: ${course.title}, ${courseInstance.long_name}</strong>
         requires an upgrade to support certain features selected by your instructor.
       </p>
 
@@ -85,12 +85,12 @@ export function StudentCourseInstanceUpgrade({
 
 export function CourseInstanceStudentUpdateSuccess({
   course,
-  course_instance,
+  courseInstance,
   paid,
   resLocals,
 }: {
   course: Course;
-  course_instance: CourseInstance;
+  courseInstance: CourseInstance;
   paid: boolean;
   resLocals: UntypedResLocals;
 }) {
@@ -108,7 +108,7 @@ export function CourseInstanceStudentUpdateSuccess({
         ? html`
             <p>Your payment was successfully processed. You may now access the course.</p>
 
-            <a href="/pl/course_instance/${course_instance.id}" class="btn btn-primary">
+            <a href="/pl/course_instance/${courseInstance.id}" class="btn btn-primary">
               Continue to ${course.short_name}
             </a>
           `

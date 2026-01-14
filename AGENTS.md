@@ -23,7 +23,7 @@ Run `make build` from the root directory to build all TypeScript code and check 
 
 Run `make typecheck-python` from the root directory to type check all Python code.
 
-## Database and Schema changes
+## Database and schema changes
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
@@ -65,6 +65,8 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
 
 ## Testing
+
+See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
 
 TypeScript tests are written with Vitest. Unit tests are located next to the code they test in files with a `.test.ts` suffix. Integration tests are located in dedicated `tests` directories, e.g. `apps/prairielearn/src/tests`.
 

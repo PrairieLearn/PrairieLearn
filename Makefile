@@ -97,6 +97,8 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+check-npm-packages:
+	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
@@ -114,6 +116,8 @@ lint-js-cached:
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
+lint-docs-links: build-docs
+	@yarn linkinator ./site | python3 scripts/process_linkinator_output.py
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -169,7 +173,7 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-lint-docs: lint-d2 lint-links lint-markdown
+lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
 	@uv run mkdocs build --strict

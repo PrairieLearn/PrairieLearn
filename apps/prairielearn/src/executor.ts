@@ -118,9 +118,6 @@ async function prepareCodeCaller() {
     questionTimeoutMilliseconds,
     pingTimeoutMilliseconds,
     errorLogger: console.error,
-    // Currently, we'll always use the system Python.
-    // TODO: Point this to a venv that will be installed in the Docker image.
-    pythonVenvSearchPaths: [],
   });
 }
 
