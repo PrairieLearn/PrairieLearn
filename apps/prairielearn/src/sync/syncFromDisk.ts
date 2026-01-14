@@ -255,8 +255,8 @@ export async function syncOrCreateDiskToSql(
   courseDir: string,
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
-  // This should only ever be used in dev mode.
-  assert(config.devMode);
+  // This should only ever be used in dev mode or tests.
+  assert(config.devMode || process.env.NODE_ENV === 'test');
 
   const course = await selectOrInsertCourseByPath(courseDir, {
     branch: await getGitDefaultBranch(courseDir),
