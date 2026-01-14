@@ -67,6 +67,10 @@ export function CourseSyncs({
                 <th class="align-middle">Current commit hash</th>
                 <td colspan="2">${course.commit_hash}</td>
               </tr>
+              <tr>
+                <th class="align-middle">Branch</th>
+                <td colspan="2">${course.branch}</td>
+              </tr>
 
               <tr>
                 <th class="align-middle">Path on disk</th>

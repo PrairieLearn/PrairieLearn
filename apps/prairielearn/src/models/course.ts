@@ -75,6 +75,31 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
 }
 
 /**
+ * Gets the default branch from a git repository by querying origin/HEAD.
+ * Returns 'master' as fallback if the query fails.
+ */
+export async function getGitDefaultBranch(coursePath: string): Promise<string> {
+  try {
+    const { stdout } = await promisify(exec)('git symbolic-ref --short refs/remotes/origin/HEAD', {
+      cwd: coursePath,
+      env: process.env,
+    });
+    // Strip 'origin/' prefix if present
+    const branch = stdout.trim().replace(/^origin\//, '');
+    return branch || 'master';
+  } catch {
+    return 'master';
+  }
+}
+
+/**
+ * Updates the branch for a course in the database.
+ */
+export async function updateCourseBranch(courseId: string, branch: string): Promise<void> {
+  await execute(sql.update_course_branch, { course_id: courseId, branch });
+}
+
+/**
  * Loads the current commit hash from disk and stores it in the database. This
  * will also add the `commit_hash` property to the given course object.
  */

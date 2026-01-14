@@ -31,6 +31,13 @@ SET
 WHERE
   id = $course_id;
 
+-- BLOCK update_course_branch
+UPDATE courses
+SET
+  branch = $branch
+WHERE
+  id = $course_id;
+
 -- BLOCK select_courses_with_staff_access
 SELECT
   c.*,

@@ -6,7 +6,12 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
-import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import {
+  getLockNameForCoursePath,
+  getGitDefaultBranch,
+  selectOrInsertCourseByPath,
+  updateCourseBranch,
+} from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -249,5 +254,15 @@ export async function syncOrCreateDiskToSql(
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
   const course = await selectOrInsertCourseByPath(courseDir);
+
+  // In dev mode, for courses without a repository (loaded from disk),
+  // detect and store the git default branch
+  if (config.devMode && !course.repository) {
+    const detectedBranch = await getGitDefaultBranch(courseDir);
+    if (detectedBranch !== course.branch) {
+      await updateCourseBranch(course.id, detectedBranch);
+    }
+  }
+
   return await syncDiskToSql(course.id, courseDir, logger);
 }
