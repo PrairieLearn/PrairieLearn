@@ -2,7 +2,7 @@
 
 Various properties of the PrairieLearn server can be configured with a `config.json` file. Configuration is loaded from multiple locations and merged together, with values from later files taking precedence over earlier ones:
 
-1. `~/.config/prairielearn/config.json` (the user's home directory)
+1. `~/.config/prairielearn/config.json` (the user's home directory - not applicable when running in Docker)
 2. `./config.json` (the repository root directory)
 3. `./apps/*/config.json` (the application root directories)
 
