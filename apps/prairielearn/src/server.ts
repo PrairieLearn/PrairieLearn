@@ -2202,9 +2202,9 @@ if (shouldStartServer) {
 
     let configPaths = [
       // To support Git worktrees (useful for agentic development), we'll look
-      // for config files in `~/.prairielearn/config.json`. We check here first
-      // so local config can still take precedence.
-      path.join(os.homedir(), '.prairielearn', 'config.json'),
+      // for config files in `~/.config/prairielearn/config.json`. We check here
+      // first so local config can still take precedence.
+      path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
       // For backwards compatibility, we'll check the repository root first.
       path.join(REPOSITORY_ROOT_PATH, 'config.json'),
       // The app config file is checked last so that it will always take precedence.
