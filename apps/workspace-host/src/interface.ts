@@ -144,7 +144,8 @@ async
         // for config files in `~/.config/prairielearn/config.json`. We check here
         // first so the following repo/app configs can still take precedence.
         path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
-        // For backwards compatibility, we'll check the repository root first.
+        // For backwards compatibility, we'll check the repository root before loading
+        // app-specific config.
         path.join(REPOSITORY_ROOT_PATH, 'config.json'),
         // The app config file is checked last so that it will always take precedence.
         path.join(APP_ROOT_PATH, 'config.json'),
