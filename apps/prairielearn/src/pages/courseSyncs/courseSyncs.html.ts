@@ -68,11 +68,6 @@ export function CourseSyncs({
                 <td colspan="2">${course.commit_hash ?? html`&mdash;`}</td>
               </tr>
               <tr>
-                <th class="align-middle">Branch</th>
-                <td colspan="2">${course.branch ?? html`&mdash;`}</td>
-              </tr>
-
-              <tr>
                 <th class="align-middle">Path on disk</th>
                 <td class="align-middle">${course.path}</td>
                 <td>
@@ -115,6 +110,10 @@ export function CourseSyncs({
                         </form>
                       `}
                 </td>
+              </tr>
+              <tr>
+                <th class="align-middle">Branch</th>
+                <td colspan="2">${course.branch ?? html`&mdash;`}</td>
               </tr>
             </tbody>
           </table>
