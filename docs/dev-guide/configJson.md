@@ -1,6 +1,10 @@
 # Server Configuration
 
-Various properties of the PrairieLearn server can be modified by creating a `config.json` file in the root of the PrairieLearn source directory and updating values in the JSON file.
+Various properties of the PrairieLearn server can be configured with a `config.json` file. This file is loaded from the following locations, in order of precedence (last one wins):
+
+- `~/.prairielearn/config.json` (the user's home directory)
+- `./config.json` (the repository root directory)
+- `./apps/*/config.json` (the application root directory)
 
 The file is structured as a JSON dictionary with the following syntax:
 
