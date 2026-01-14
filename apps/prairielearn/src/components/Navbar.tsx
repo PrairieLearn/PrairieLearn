@@ -204,9 +204,7 @@ function UserDropdownMenu({
     authn_user,
     viewType,
     course_instance,
-    urlPrefix,
     access_as_administrator,
-    news_item_notification_count: newsCount,
     authn_is_administrator,
   } = resLocals;
 
@@ -260,11 +258,6 @@ function UserDropdownMenu({
           aria-expanded="false"
         >
           ${displayedName}
-          ${newsCount
-            ? html`<span class="badge rounded-pill text-bg-primary news-item-count"
-                >${newsCount}</span
-              >`
-            : ''}
         </a>
         <div class="dropdown-menu dropdown-menu-end">
           ${authn_is_administrator
@@ -290,24 +283,9 @@ function UserDropdownMenu({
               `
             : ''}
           ${!authz_data || authz_data?.mode === 'Public'
-            ? html` <a class="dropdown-item" href="/pl/request_course"> Course Requests </a> `
+            ? html`<a class="dropdown-item" href="/pl/request_course">Course Requests</a>`
             : ''}
           <a class="dropdown-item" href="/pl/settings">Settings</a>
-          <a
-            class="dropdown-item news-item-link"
-            href="${urlPrefix}/news_items"
-            aria-label="News${newsCount ? ` (${newsCount} unread)` : ''}"
-          >
-            News
-            ${newsCount
-              ? html`
-                  <span class="badge rounded-pill text-bg-primary news-item-link-count">
-                    ${newsCount}
-                  </span>
-                `
-              : ''}
-          </a>
-
           <a class="dropdown-item" href="/pl/logout">Log out</a>
         </div>
       </li>
