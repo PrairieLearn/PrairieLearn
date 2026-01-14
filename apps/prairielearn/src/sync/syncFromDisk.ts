@@ -258,6 +258,9 @@ export async function syncOrCreateDiskToSql(
   // This should only ever be used in dev mode or tests.
   assert(config.devMode || process.env.NODE_ENV === 'test');
 
+  // This intentionally only updates the branch/repository when a course is
+  // created, not when it already exists. There's no particularly good reason
+  // for this, so it could be changed in the future if desired.
   const course = await selectOrInsertCourseByPath(courseDir, {
     branch: await getGitDefaultBranch(courseDir),
     repository: await getGitRemoteUrl(courseDir),

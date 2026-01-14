@@ -210,6 +210,10 @@ export async function selectCoursesWithEditAccess({
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
 
+/**
+ * Selects a course by its path. If it doesn't already exist, it is created
+ * using the provided options, if specified.
+ */
 export async function selectOrInsertCourseByPath(
   coursePath: string,
   options?: { branch?: string; repository?: string | null },
