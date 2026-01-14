@@ -4,7 +4,7 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "build": "tsc && tscp",
+    "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:no-watch": "tsx src/index.ts",
     "start": "node dist/index.js",
@@ -44,6 +44,7 @@
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.19.5",
     "@types/tmp": "^0.2.6",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",
