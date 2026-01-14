@@ -10,6 +10,8 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
+const sql = sqldb.loadSqlEquiv(import.meta.url);
+
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -503,10 +505,10 @@ describe('API course sync', { timeout: 60_000 }, function () {
     syncTestCourseId = syncResults.courseId;
 
     // Update repository field to point to origin
-    await sqldb.queryAsync('UPDATE courses SET repository = $1 WHERE id = $2', [
-      syncTestOriginDir,
-      syncTestCourseId,
-    ]);
+    await sqldb.execute(sql.update_course_repository, {
+      repository: syncTestOriginDir,
+      course_id: syncTestCourseId,
+    });
   });
 
   test.sequential('POST to API to start a course sync', async function () {
