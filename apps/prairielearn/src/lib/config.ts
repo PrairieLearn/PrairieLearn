@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
@@ -578,11 +579,6 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
-  /**
-   * A list of Python venvs in which to search for Python executables.
-   * Will be resolved relative to the repository root.
-   */
-  pythonVenvSearchPaths: z.string().array().default(['.venv']),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
@@ -631,6 +627,9 @@ export const config = loader.config;
  */
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
+    makeEnvConfigSource<typeof ConfigSchema>({
+      serverPort: 'CONDUCTOR_PORT',
+    }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

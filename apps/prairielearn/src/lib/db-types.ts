@@ -320,7 +320,7 @@ export const AssessmentSchema = z.object({
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
-  team_work: z.boolean().nullable(),
+  team_work: z.boolean(),
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
