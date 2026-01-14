@@ -213,11 +213,11 @@ export async function uploadAssessmentInstanceScores(
     }
 
     if (errorCount === 0) {
-      job.verbose(
+      job.info(
         `Successfully updated scores for ${successCount} assessment instances, with no errors`,
       );
     } else {
-      job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+      job.info(`Successfully updated scores for ${successCount} assessment instances`);
       job.error(`Error updating ${errorCount} assessment instances`);
     }
   });
