@@ -1,4 +1,4 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 import Accordion from 'react-bootstrap/Accordion';
 import AccordionBody from 'react-bootstrap/AccordionBody';
 import AccordionHeader from 'react-bootstrap/AccordionHeader';
@@ -10,23 +10,12 @@ import DropdownMenu from 'react-bootstrap/DropdownMenu';
 import DropdownToggle from 'react-bootstrap/DropdownToggle';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
-import { createRoot } from 'react-dom/client';
 
-import { onDocumentReady } from '@prairielearn/browser-utils';
+import { SampleQuestionDemo } from './SampleQuestionDemo.js';
+import { examplePromptsArray } from './aiGeneratedQuestionSamples.js';
 
-import { SampleQuestionDemo } from '../../src/ee/pages/instructorAiGenerateDrafts/SampleQuestionDemo.js';
-import { examplePromptsArray } from '../../src/ee/pages/instructorAiGenerateDrafts/aiGeneratedQuestionSamples.js';
-
-import { mathjaxTypeset } from './lib/mathjax.js';
-
-onDocumentReady(() => {
-  const sampleQuestions = document.querySelector('#sample-questions')!;
-  createRoot(sampleQuestions).render(<SampleQuestion />);
-});
-
-function SampleQuestion() {
+export function SampleQuestions() {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
-  const onMathjaxTypeset = useCallback(mathjaxTypeset, []);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
@@ -52,17 +41,15 @@ function SampleQuestion() {
             onClickPrevious={handleClickPrevious}
             onClickNext={handleClickNext}
           />
-          <SampleQuestionDemo
-            key={selectedQuestion.id}
-            prompt={selectedQuestion}
-            onMathjaxTypeset={onMathjaxTypeset}
-          />
+          <SampleQuestionDemo key={selectedQuestion.id} prompt={selectedQuestion} />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
       </AccordionItem>
     </Accordion>
   );
 }
+
+SampleQuestions.displayName = 'SampleQuestions';
 
 function SampleQuestionSelector({
   selectedQuestionName,
@@ -120,8 +107,10 @@ function SampleQuestionSelector({
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
-    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm')!;
-    promptTextarea.value = prompt;
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm');
+    if (promptTextarea) {
+      promptTextarea.value = prompt;
+    }
   };
 
   return (

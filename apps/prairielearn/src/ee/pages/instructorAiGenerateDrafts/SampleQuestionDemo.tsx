@@ -11,6 +11,8 @@ import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { run } from '@prairielearn/run';
 
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
+
 import {
   type ExamplePromptWithId,
   type VariantOption,
@@ -18,13 +20,7 @@ import {
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({
-  prompt,
-  onMathjaxTypeset,
-}: {
-  prompt: ExamplePromptWithId;
-  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
-}) {
+export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
   const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
@@ -72,9 +68,9 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     if (cardRef.current) {
-      void onMathjaxTypeset([cardRef.current]);
+      void mathjaxTypeset([cardRef.current]);
     }
-  }, [variant.question, onMathjaxTypeset]);
+  }, [variant.question]);
 
   const handleGrade = () => {
     if (variant.answerType === 'number' && prompt.answerType === 'number') {

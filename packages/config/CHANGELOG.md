@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 3.2.0
+
+### Minor Changes
+
+- af40dd0: Add `makeEnvConfigSource(...)`
+
 ## 3.1.13
 
 ### Patch Changes

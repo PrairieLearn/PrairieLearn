@@ -1,5 +1,11 @@
 # @prairielearn/compiled-assets
 
+## 3.3.2
+
+### Patch Changes
+
+- efe7435: Add Total size columns to build stats that sum entry point sizes with their code-split chunks
+
 ## 3.3.1
 
 ### Patch Changes

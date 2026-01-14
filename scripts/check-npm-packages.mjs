@@ -78,7 +78,7 @@ New packages must be created manually before they can be published via trusted p
 To create these packages:
 
 1. Use the setup-npm-trusted-publish tool to create a placeholder package:
-   npx setup-npm-trusted-publish create <package-name>
+   npx setup-npm-trusted-publish <package-name>
 
    See https://www.npmjs.com/package/setup-npm-trusted-publish for more details.
 
