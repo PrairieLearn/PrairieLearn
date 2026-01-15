@@ -13,11 +13,7 @@ import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  updateCourseRepository,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -293,7 +289,10 @@ describe('Editing assessment settings', () => {
         cwd: courseRepo.courseDevDir,
         env: process.env,
       });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseRepo.courseDevDir, env: process.env });
+      await execa('git', ['push', 'origin', 'master'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
 
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,

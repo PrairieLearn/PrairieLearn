@@ -31,9 +31,11 @@ let courseRepo: CourseRepoSetup;
 function courseLiveDir() {
   return courseRepo.courseLiveDir;
 }
+
 function courseDevDir() {
   return courseRepo.courseDevDir;
 }
+
 function courseOriginDir() {
   return courseRepo.courseOriginDir;
 }
@@ -692,4 +694,3 @@ async function createSharedCourse() {
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
 }
-

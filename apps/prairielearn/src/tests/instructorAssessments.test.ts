@@ -6,11 +6,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  updateCourseRepository,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;

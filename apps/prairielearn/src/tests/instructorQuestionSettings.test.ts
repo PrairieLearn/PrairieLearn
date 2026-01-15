@@ -10,11 +10,7 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectQuestionById } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  updateCourseRepository,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -33,7 +29,13 @@ describe('Editing question settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepo(courseTemplateDir);
     questionLiveInfoPath = path.join(questionLiveDir(), 'test', 'question', 'info.json');
-    questionDevInfoPath = path.join(courseRepo.courseDevDir, 'questions', 'test', 'question', 'info.json');
+    questionDevInfoPath = path.join(
+      courseRepo.courseDevDir,
+      'questions',
+      'test',
+      'question',
+      'info.json',
+    );
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
@@ -109,7 +111,13 @@ describe('Editing question settings', () => {
 
   test.sequential('pull and verify changes', async () => {
     await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
-    questionDevInfoPath = path.join(courseRepo.courseDevDir, 'questions', 'test', 'question1', 'info.json');
+    questionDevInfoPath = path.join(
+      courseRepo.courseDevDir,
+      'questions',
+      'test',
+      'question1',
+      'info.json',
+    );
     const questionDevInfo = JSON.parse(await fs.readFile(questionDevInfoPath, 'utf8'));
     assert.equal(questionDevInfo.title, 'New title');
   });
@@ -201,7 +209,10 @@ describe('Editing question settings', () => {
         cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseRepo.courseLiveDir, env: process.env });
+      await execa('git', ['push', 'origin', 'master'], {
+        cwd: courseRepo.courseLiveDir,
+        env: process.env,
+      });
 
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,

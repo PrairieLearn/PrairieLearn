@@ -16,7 +16,7 @@ import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, createCourseRepo, type GitOptions } from './helperCourse.js';
+import { type CourseRepoSetup, type GitOptions, createCourseRepo } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
@@ -73,6 +73,7 @@ let gitOptionsLive: GitOptions;
 function sharingCourseOriginDir() {
   return courseRepo.courseOriginDir;
 }
+
 function sharingCourseLiveDir() {
   return courseRepo.courseLiveDir;
 }

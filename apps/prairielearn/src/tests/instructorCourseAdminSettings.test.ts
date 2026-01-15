@@ -10,11 +10,7 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectCourseById } from '../models/course.js';
 
 import { fetchCheerio } from './helperClient.js';
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  updateCourseRepository,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -123,7 +119,7 @@ describe('Editing course settings', () => {
   });
 
   test.sequential('should not be able to submit without course info file', async () => {
-    await fs.move(courseLiveInfoPath(), `${courseLiveInfoPath}.bak`);
+    await fs.move(courseLiveInfoPath(), `${courseLiveInfoPath()}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course/1/course_admin/settings`,
@@ -143,7 +139,7 @@ describe('Editing course settings', () => {
       });
       assert.equal(response.status, 400);
     } finally {
-      await fs.move(`${courseLiveInfoPath}.bak`, courseLiveInfoPath());
+      await fs.move(`${courseLiveInfoPath()}.bak`, courseLiveInfoPath());
     }
   });
 
@@ -180,7 +176,10 @@ describe('Editing course settings', () => {
         cwd: courseRepo.courseDevDir,
         env: process.env,
       });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseRepo.courseDevDir, env: process.env });
+      await execa('git', ['push', 'origin', 'master'], {
+        cwd: courseRepo.courseDevDir,
+        env: process.env,
+      });
 
       const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
         method: 'POST',

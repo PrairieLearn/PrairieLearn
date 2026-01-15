@@ -35,9 +35,11 @@ let courseRepo: CourseRepoSetup;
 function courseLiveDir() {
   return courseRepo.courseLiveDir;
 }
+
 function courseDevDir() {
   return courseRepo.courseDevDir;
 }
+
 function courseOriginDir() {
   return courseRepo.courseOriginDir;
 }
@@ -377,7 +379,6 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
     }
   });
 }
-
 
 function editPost(
   action: string,

@@ -7,11 +7,7 @@ import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import { fetchCheerio } from './helperClient.js';
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  updateCourseRepository,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
