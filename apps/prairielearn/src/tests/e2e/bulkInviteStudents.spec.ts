@@ -106,7 +106,8 @@ test.describe('Bulk invite students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
-    // Click the invite button
+    // Open the manage enrollments dropdown and click invite students
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Invite students' }).click();
 
     // Modal should open
@@ -131,6 +132,7 @@ test.describe('Bulk invite students', () => {
   test('can invite multiple valid students', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -155,6 +157,7 @@ test.describe('Bulk invite students', () => {
 
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -177,6 +180,7 @@ test.describe('Bulk invite students', () => {
   test('shows error for invalid email format', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
     await page.getByRole('button', { name: 'Invite students' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
