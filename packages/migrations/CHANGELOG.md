@@ -1,5 +1,16 @@
 # @prairielearn/migrations
 
+## 4.0.5
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/named-locks@3.0.28
+  - @prairielearn/postgres@4.5.2
+  - @prairielearn/logger@2.0.25
+  - @prairielearn/error@2.0.24
+
 ## 4.0.4
 
 ### Patch Changes
