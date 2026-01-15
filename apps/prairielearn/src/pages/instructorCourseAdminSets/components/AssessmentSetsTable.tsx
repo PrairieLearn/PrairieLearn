@@ -16,8 +16,7 @@ import {
   verticalListSortingStrategy,
 } from '@dnd-kit/sortable';
 import { CSS } from '@dnd-kit/utilities';
-import type { AriaRole } from 'preact';
-import { useMemo, useState } from 'preact/compat';
+import { type AriaRole, useMemo, useState } from 'react';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
@@ -152,7 +151,7 @@ function AssessmentSetsTable({
           <thead>
             <tr>
               {editMode && allowEdit && (
-                <th style="width: 1%">
+                <th style={{ width: '1%' }}>
                   <span className="visually-hidden">Drag, Edit and Delete</span>
                 </th>
               )}
@@ -220,7 +219,9 @@ export function AssessmentSetsPage({
   const existingNames = useMemo(() => {
     const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.id : null;
     return new Set(
-      assessmentSetsState.filter((set) => set.id !== editingId).map((set) => set.name),
+      assessmentSetsState
+        .filter((set: StaffAssessmentSet) => set.id !== editingId)
+        .map((set: StaffAssessmentSet) => set.name),
     );
   }, [assessmentSetsState, modalState]);
 
@@ -247,18 +248,23 @@ export function AssessmentSetsPage({
 
   const handleSave = (assessmentSet: StaffAssessmentSet) => {
     if (modalState.type === 'create') {
-      setAssessmentSetsState((prevAssessmentSets) => [...prevAssessmentSets, assessmentSet]);
+      setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) => [
+        ...prevAssessmentSets,
+        assessmentSet,
+      ]);
     } else if (modalState.type === 'edit') {
-      setAssessmentSetsState((prevAssessmentSets) =>
-        prevAssessmentSets.map((d) => (d.id === assessmentSet.id ? assessmentSet : d)),
+      setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) =>
+        prevAssessmentSets.map((d: StaffAssessmentSet) =>
+          d.id === assessmentSet.id ? assessmentSet : d,
+        ),
       );
     }
     setModalState({ type: 'closed' });
   };
 
   const handleDelete = (deleteId: string) => {
-    setAssessmentSetsState((prevAssessmentSets) =>
-      prevAssessmentSets.filter((d) => d.id !== deleteId),
+    setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) =>
+      prevAssessmentSets.filter((d: StaffAssessmentSet) => d.id !== deleteId),
     );
   };
 

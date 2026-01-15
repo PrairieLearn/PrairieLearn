@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { ColorSwatch } from '../../../components/ColorSwatch.js';
@@ -87,7 +87,7 @@ export function EditAssessmentSetsModal({
               </span>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="abbreviation">
+              <label className="form-label" htmlFor="abbreviation">
                 Abbreviation
               </label>
               <input
@@ -107,7 +107,7 @@ export function EditAssessmentSetsModal({
               )}
             </div>
             <div className="mb-3">
-              <label className="form-label" for="name">
+              <label className="form-label" htmlFor="name">
                 Name
               </label>
               <input
@@ -130,7 +130,7 @@ export function EditAssessmentSetsModal({
               )}
             </div>
             <div className="mb-3">
-              <label className="form-label" for="heading">
+              <label className="form-label" htmlFor="heading">
                 Heading
               </label>
               <input
@@ -147,7 +147,7 @@ export function EditAssessmentSetsModal({
               />
             </div>
             <div className="mb-3">
-              <label className="form-label" for="color">
+              <label className="form-label" htmlFor="color">
                 Color
               </label>
               <div className="d-flex gap-2 align-items-center">
