@@ -526,8 +526,8 @@ describe('Question Sharing', function () {
 
     test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
       // Ensure that we can sync before renaming.
-      const initialSyncResult = await pullAndSyncSharingCourse(sharingCourse);
-      assert.equal(initialSyncResult, 'Success');
+      const initialSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(initialSyncStatus, 'Success');
 
       const questionPath = path.join(courseRepo.courseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
@@ -539,8 +539,8 @@ describe('Question Sharing', function () {
 
       const commitHash = await getCourseCommitHash(courseRepo.courseLiveDir);
 
-      const syncResult = await pullAndSyncSharingCourse(sharingCourse);
-      assert.equal(syncResult, 'Error');
+      const renameSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(renameSyncStatus, 'Error');
 
       assert.equal(
         commitHash,
@@ -559,8 +559,8 @@ describe('Question Sharing', function () {
       // remove breaking change in origin repo
       await execa('git', ['reset', '--hard', 'HEAD~1'], { cwd: courseRepo.courseOriginDir });
 
-      const syncResultSuccess = await pullAndSyncSharingCourse(sharingCourse);
-      assert.equal(syncResultSuccess, 'Success');
+      const finalSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(finalSyncStatus, 'Success');
     });
 
     test.sequential('Remove question from sharing set, ensure live does not sync it', async () => {
