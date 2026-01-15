@@ -1166,7 +1166,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone question's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone question's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1201,7 +1201,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1236,7 +1236,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The assessment's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The assessment's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1254,7 +1254,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /Could not find a role with minimum >= 1 and "canAssignRoles" set to "true"./,
+      /Could not find a role with minMembers >= 1 that can assign roles./,
     );
   });
 
@@ -1276,11 +1276,11 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Manager" contains an invalid minimum. \(Expected at most 4, found 10\)./,
+      /Role "Manager" contains an invalid minMembers. \(Expected at most 4, found 10\)./,
     );
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Reflector" contains an invalid maximum. \(Expected at most 4, found 10\)./,
+      /Role "Reflector" contains an invalid maxMembers. \(Expected at most 4, found 10\)./,
     );
   });
 
@@ -1299,7 +1299,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /Group role "Manager" has a minimum greater than the group's minimum size\./,
+      /Role "Manager" has a minMembers greater than the team's minMembers\./,
     );
   });
 
@@ -1319,7 +1319,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Manager" contains an invalid minimum\. \(Expected at most 0, found 1\)\./,
+      /Role "Manager" contains an invalid minMembers\. \(Expected at most 0, found 1\)\./,
     );
   });
 

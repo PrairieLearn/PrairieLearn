@@ -26,6 +26,7 @@ import {
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
+  type TeamsJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -1108,6 +1109,44 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
+/**
+ * Converts legacy group properties to the new teams format for unified validation.
+ * Returns null if no legacy group roles are defined.
+ */
+function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson | null {
+  // Only convert if we have legacy group roles
+  if (assessment.groupRoles.length === 0) {
+    return null;
+  }
+
+  // Collect roles that can assign roles from the legacy format
+  const canAssignRoles = assessment.groupRoles
+    .filter((role) => role.canAssignRoles)
+    .map((role) => role.name);
+
+  return {
+    enabled: assessment.groupWork,
+    minMembers: assessment.groupMinSize,
+    maxMembers: assessment.groupMaxSize,
+    roles: assessment.groupRoles.map((role) => ({
+      name: role.name,
+      minMembers: role.minimum,
+      maxMembers: role.maximum,
+    })),
+    studentPermissions: {
+      canCreateTeam: assessment.studentGroupCreate,
+      canJoinTeam: assessment.studentGroupJoin,
+      canLeaveTeam: assessment.studentGroupLeave,
+      canNameTeam: assessment.studentGroupChooseName,
+    },
+    rolePermissions: {
+      canAssignRoles,
+      canView: assessment.canView,
+      canSubmit: assessment.canSubmit,
+    },
+  };
+}
+
 function validateAssessment({
   assessment,
   rawAssessment,
@@ -1155,7 +1194,7 @@ function validateAssessment({
     if (usedLegacyProps.length > 0) {
       const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
       errors.push(
-        'Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+        `Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
       );
     }
   }
@@ -1386,49 +1425,76 @@ function validateAssessment({
     );
   }
 
-  if (assessment.groupRoles.length > 0) {
-    // Ensure at least one mandatory role can assign roles
-    const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
-    );
+  const teams: TeamsJson | null = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
 
-    if (!foundCanAssignRoles) {
-      errors.push('Could not find a role with minimum >= 1 and "canAssignRoles" set to "true".');
+  // Validate teams/groups if we have roles defined
+  if (teams != null && teams.roles.length > 0) {
+    const rolePerms = teams.rolePermissions;
+
+    // Validate at least one role in canAssignRoles has minMembers >= 1
+    const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
+    const hasAssigner = teams.roles.some(
+      (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
+    );
+    if (!hasAssigner) {
+      errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    // Ensure values for role minimum and maximum are within bounds
-    assessment.groupRoles.forEach((role) => {
-      if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
-        warnings.push(
-          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
+    // Build set of valid role names
+    const validRoleNames = new Set(teams.roles.map((r) => r.name));
+
+    // Validate canAssignRoles references valid roles
+    rolePerms.canAssignRoles.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(`"canAssignRoles" contains non-existent role "${roleName}".`);
+      }
+    });
+
+    // Validate canView references valid roles at assessment level
+    rolePerms.canView.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(
+          `The assessment's "canView" permission contains non-existent role "${roleName}".`,
         );
       }
-      if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
+    });
+
+    // Validate canSubmit references valid roles at assessment level
+    rolePerms.canSubmit.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
         errors.push(
-          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
+          `The assessment's "canSubmit" permission contains non-existent role "${roleName}".`,
+        );
+      }
+    });
+
+    // Validate role min/max constraints
+    teams.roles.forEach((role) => {
+      if (teams.minMembers != null && role.minMembers > teams.minMembers) {
+        warnings.push(`Role "${role.name}" has a minMembers greater than the team's minMembers.`);
+      }
+      if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
+        errors.push(
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${teams.maxMembers}, found ${role.minMembers}).`,
         );
       }
       if (
-        role.maximum != null &&
-        assessment.groupMaxSize != null &&
-        role.maximum > assessment.groupMaxSize
+        role.maxMembers != null &&
+        teams.maxMembers != null &&
+        role.maxMembers > teams.maxMembers
       ) {
         errors.push(
-          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${teams.maxMembers}, found ${role.maxMembers}).`,
         );
       }
-      if (role.maximum != null && role.minimum > role.maximum) {
+      if (role.maxMembers != null && role.minMembers > role.maxMembers) {
         errors.push(
-          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
+          `Role "${role.name}" must have minMembers <= maxMembers. (Expected minMembers <= ${role.maxMembers}, found minMembers = ${role.minMembers}).`,
         );
       }
     });
 
-    const validRoleNames = new Set();
-    assessment.groupRoles.forEach((role) => {
-      validRoleNames.add(role.name);
-    });
-
+    // Helper to validate canView/canSubmit at zone and question levels
     const validateViewAndSubmitRolePermissions = (
       canView: string[],
       canSubmit: string[],
@@ -1437,7 +1503,7 @@ function validateAssessment({
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canView" permission contains non-existent role "${roleName}".`,
           );
         }
       });
@@ -1445,19 +1511,15 @@ function validateAssessment({
       canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canSubmit" permission contains non-existent role "${roleName}".`,
           );
         }
       });
     };
 
-    // Validate role names at the assessment level
-    validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
-
-    // Validate role names for each zone
+    // Validate role names for each zone and question
     assessment.zones.forEach((zone) => {
       validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
-      // Validate role names for each question
       zone.questions.forEach((zoneQuestion) => {
         validateViewAndSubmitRolePermissions(
           zoneQuestion.canView,
@@ -1465,76 +1527,6 @@ function validateAssessment({
           'zone question',
         );
       });
-    });
-  }
-
-  // Validate new teams schema
-  if (assessment.teams != null && assessment.teams.roles.length > 0) {
-    const rolePerms = assessment.teams.rolePermissions;
-
-    // Validate at least one role in canAssignRoles has minMembers >= 1
-    if (rolePerms.canAssignRoles.length > 0) {
-      const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
-      const hasAssigner = assessment.teams.roles.some(
-        (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
-      );
-      if (!hasAssigner) {
-        errors.push(
-          'No role in "rolePermissions.canAssignRoles" has minMembers >= 1. At least one role must be able to assign roles.',
-        );
-      }
-    }
-
-    // Validate role constraints
-    const validRoleNames = new Set(assessment.teams.roles.map((r) => r.name));
-
-    // Validate canAssignRoles references valid roles
-    rolePerms.canAssignRoles.forEach((roleName) => {
-      if (!validRoleNames.has(roleName)) {
-        errors.push(`"rolePermissions.canAssignRoles" contains non-existent role "${roleName}".`);
-      }
-    });
-
-    // Validate canView references valid roles
-    rolePerms.canView.forEach((roleName) => {
-      if (!validRoleNames.has(roleName)) {
-        errors.push(`"rolePermissions.canView" contains non-existent role "${roleName}".`);
-      }
-    });
-
-    // Validate canSubmit references valid roles
-    rolePerms.canSubmit.forEach((roleName) => {
-      if (!validRoleNames.has(roleName)) {
-        errors.push(`"rolePermissions.canSubmit" contains non-existent role "${roleName}".`);
-      }
-    });
-
-    // Validate role min/max constraints
-    assessment.teams.roles.forEach((role) => {
-      if (assessment.teams!.minMembers != null && role.minMembers > assessment.teams!.minMembers) {
-        warnings.push(
-          `Team role "${role.name}" has a minMembers greater than the team's minMembers.`,
-        );
-      }
-      if (assessment.teams!.maxMembers != null && role.minMembers > assessment.teams!.maxMembers) {
-        errors.push(
-          `Team role "${role.name}" contains an invalid minMembers. (Expected at most ${assessment.teams!.maxMembers}, found ${role.minMembers}).`,
-        );
-      }
-      if (
-        role.maxMembers != null &&
-        assessment.teams!.maxMembers != null &&
-        role.maxMembers > assessment.teams!.maxMembers
-      ) {
-        errors.push(
-          `Team role "${role.name}" contains an invalid maxMembers. (Expected at most ${assessment.teams!.maxMembers}, found ${role.maxMembers}).`,
-        );
-      }
-      if (role.maxMembers != null && role.minMembers > role.maxMembers) {
-        errors.push(
-          `Team role "${role.name}" must have minMembers <= maxMembers. (Expected minMembers <= ${role.maxMembers}, found minMembers = ${role.minMembers}).`,
-        );
-      }
     });
   }
 
