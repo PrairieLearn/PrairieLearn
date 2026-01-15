@@ -1,5 +1,13 @@
 # @prairielearn/config
 
+## 3.2.1
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/aws-imds@2.0.24
+
 ## 3.2.0
 
 ### Minor Changes

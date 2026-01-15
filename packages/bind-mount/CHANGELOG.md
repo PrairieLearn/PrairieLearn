@@ -1,5 +1,11 @@
 # @prairielearn/bind-mount
 
+## 1.1.16
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 1.1.15
 
 ### Patch Changes

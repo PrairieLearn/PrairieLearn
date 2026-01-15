@@ -1,5 +1,14 @@
 # @prairielearn/cache
 
+## 2.1.4
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/logger@2.0.25
+  - @prairielearn/sentry@4.0.9
+
 ## 2.1.3
 
 ### Patch Changes
