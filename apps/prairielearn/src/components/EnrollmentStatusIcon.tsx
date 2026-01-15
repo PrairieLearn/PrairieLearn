@@ -39,7 +39,8 @@ function getFriendlyStatus(status: EnumEnrollmentStatus): string {
     case 'left':
       return 'Left';
     case 'removed':
-      return 'Removed';
+      // TODO: Change to 'Removed' after batched migration of existing enrollments
+      return 'Left';
     case 'rejected':
       return 'Rejected';
     case 'blocked':
