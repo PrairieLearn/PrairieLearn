@@ -274,14 +274,14 @@ function StudentsCard({
   const syncStudents = async (
     toInvite: string[],
     toCancelInvitation: string[],
-    toBlock: string[],
+    toRemove: string[],
   ): Promise<void> => {
     const body = {
       __action: 'sync_students',
       __csrf_token: csrfToken,
       toInvite,
       toCancelInvitation,
-      toBlock,
+      toRemove,
     };
     const res = await fetch(window.location.href, {
       method: 'POST',

@@ -26,7 +26,7 @@ interface StudentSyncItem {
 interface SyncPreview {
   toInvite: StudentSyncItem[];
   toCancelInvitation: StudentSyncItem[];
-  toBlock: StudentSyncItem[];
+  toRemove: StudentSyncItem[];
 }
 
 type SyncStep = 'input' | 'preview';
@@ -37,10 +37,10 @@ const MAX_UIDS = 1000;
  * Computes the diff between the input roster and the current enrollments.
  *
  * Sync logic (roster is the source of truth):
- * - Students on roster but not `joined`/`invited` → should be invited
- * - Students not on roster who are `joined` → should be blocked
- * - Students not on roster who are `invited`/`rejected` → should have invitation cancelled
- * - Students already `joined` or `invited` who are on the roster → no action
+ * - Students on roster but not `joined`/`invited`: should be invited
+ * - Students not on roster who are `joined`: should be removed
+ * - Students not on roster who are `invited`/`rejected`: should have invitation cancelled
+ * - Students already `joined` or `invited` who are on the roster: no action
  */
 function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]): SyncPreview {
   const inputUidSet = new Set(inputUids);
@@ -56,7 +56,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
 
   const toInvite: StudentSyncItem[] = [];
   const toCancelInvitation: StudentSyncItem[] = [];
-  const toBlock: StudentSyncItem[] = [];
+  const toRemove: StudentSyncItem[] = [];
 
   // Students on roster who need to be invited
   for (const uid of inputUids) {
@@ -81,7 +81,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
     // else: already joined or invited - no action needed
   }
 
-  // Students NOT on roster who should be blocked or have invitation cancelled
+  // Students NOT on roster who should be removed or have invitation cancelled
   for (const student of currentUidMap.values()) {
     const uid = student.user?.uid ?? student.enrollment.pending_uid;
     if (uid && !inputUidSet.has(uid)) {
@@ -93,17 +93,17 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
       };
 
       // Invited/rejected students should have their invitation cancelled (deleted)
-      // Joined students should be blocked
+      // Joined students should be removed
       if (['invited', 'rejected'].includes(student.enrollment.status)) {
         toCancelInvitation.push(item);
       } else if (student.enrollment.status === 'joined') {
-        toBlock.push(item);
+        toRemove.push(item);
       }
       // Other statuses (blocked, removed, lti13_pending) - no action needed
     }
   }
 
-  return { toInvite, toCancelInvitation, toBlock };
+  return { toInvite, toCancelInvitation, toRemove };
 }
 
 interface StudentCheckboxListProps {
@@ -112,7 +112,7 @@ interface StudentCheckboxListProps {
   onToggle: (uid: string) => void;
   onSelectAll: () => void;
   onDeselectAll: () => void;
-  variant: 'invite' | 'cancel' | 'block';
+  variant: 'invite' | 'cancel' | 'remove';
   className?: string;
 }
 
@@ -142,11 +142,11 @@ function StudentCheckboxList({
       label: 'Invitations to cancel',
       ariaLabel: 'Invitations to cancel',
     },
-    block: {
-      icon: 'bi-slash-circle',
+    remove: {
+      icon: 'bi-person-dash',
       iconColor: 'text-danger',
-      label: 'Students to block',
-      ariaLabel: 'Students to block',
+      label: 'Students to remove',
+      ariaLabel: 'Students to remove',
     },
   };
 
@@ -169,11 +169,11 @@ function StudentCheckboxList({
         </div>
       </div>
 
-      {variant === 'block' && (
+      {variant === 'remove' && (
         <Alert variant="warning" className="py-2 mb-2">
           <small>
             <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
-            Selected students will be blocked from accessing the course.
+            Selected students will be removed from the course. They can re-enroll later if allowed.
           </small>
         </Alert>
       )}
@@ -229,13 +229,13 @@ export function SyncStudentsModal({
   courseInstance: StaffCourseInstance;
   students: StudentRow[];
   onHide: () => void;
-  onSubmit: (toInvite: string[], toCancelInvitation: string[], toBlock: string[]) => Promise<void>;
+  onSubmit: (toInvite: string[], toCancelInvitation: string[], toRemove: string[]) => Promise<void>;
 }) {
   const [step, setStep] = useState<SyncStep>('input');
   const [preview, setPreview] = useState<SyncPreview | null>(null);
   const [selectedInvites, setSelectedInvites] = useState<Set<string>>(() => new Set());
   const [selectedCancellations, setSelectedCancellations] = useState<Set<string>>(() => new Set());
-  const [selectedBlocks, setSelectedBlocks] = useState<Set<string>>(() => new Set());
+  const [selectedRemovals, setSelectedRemovals] = useState<Set<string>>(() => new Set());
 
   const {
     register,
@@ -278,7 +278,7 @@ export function SyncStudentsModal({
     // Pre-select all items by default
     setSelectedInvites(new Set(diff.toInvite.map((item) => item.uid)));
     setSelectedCancellations(new Set(diff.toCancelInvitation.map((item) => item.uid)));
-    setSelectedBlocks(new Set(diff.toBlock.map((item) => item.uid)));
+    setSelectedRemovals(new Set(diff.toRemove.map((item) => item.uid)));
     setStep('preview');
   });
 
@@ -286,8 +286,8 @@ export function SyncStudentsModal({
     mutationFn: async () => {
       const toInvite = Array.from(selectedInvites);
       const toCancelInvitation = Array.from(selectedCancellations);
-      const toBlock = Array.from(selectedBlocks);
-      return onSubmit(toInvite, toCancelInvitation, toBlock);
+      const toRemove = Array.from(selectedRemovals);
+      return onSubmit(toInvite, toCancelInvitation, toRemove);
     },
     onSuccess: onHide,
   });
@@ -299,7 +299,7 @@ export function SyncStudentsModal({
     setPreview(null);
     setSelectedInvites(new Set());
     setSelectedCancellations(new Set());
-    setSelectedBlocks(new Set());
+    setSelectedRemovals(new Set());
     syncMutation.reset();
   };
 
@@ -327,8 +327,8 @@ export function SyncStudentsModal({
     });
   };
 
-  const toggleBlock = (uid: string) => {
-    setSelectedBlocks((prev) => {
+  const toggleRemoval = (uid: string) => {
+    setSelectedRemovals((prev) => {
       const next = new Set(prev);
       if (next.has(uid)) {
         next.delete(uid);
@@ -344,12 +344,12 @@ export function SyncStudentsModal({
     return (
       preview.toInvite.length === 0 &&
       preview.toCancelInvitation.length === 0 &&
-      preview.toBlock.length === 0
+      preview.toRemove.length === 0
     );
   }, [preview]);
 
   const totalSelectedCount =
-    selectedInvites.size + selectedCancellations.size + selectedBlocks.size;
+    selectedInvites.size + selectedCancellations.size + selectedRemovals.size;
   const hasNoSelections = totalSelectedCount === 0;
 
   const isUnpublished =
@@ -380,7 +380,7 @@ export function SyncStudentsModal({
           <form onSubmit={onCompare}>
             <p className="text-muted">
               Paste your student roster below. Students on this list will be invited if not already
-              enrolled. Students not on this list will be blocked.
+              enrolled. Students not on this list will be removed.
             </p>
             <div className="mb-3">
               <label htmlFor="sync-uids" className="form-label">
@@ -452,14 +452,14 @@ export function SyncStudentsModal({
                   />
 
                   <StudentCheckboxList
-                    items={preview.toBlock}
-                    selectedUids={selectedBlocks}
-                    variant="block"
-                    onToggle={toggleBlock}
+                    items={preview.toRemove}
+                    selectedUids={selectedRemovals}
+                    variant="remove"
+                    onToggle={toggleRemoval}
                     onSelectAll={() =>
-                      setSelectedBlocks(new Set(preview.toBlock.map((item) => item.uid)))
+                      setSelectedRemovals(new Set(preview.toRemove.map((item) => item.uid)))
                     }
-                    onDeselectAll={() => setSelectedBlocks(new Set())}
+                    onDeselectAll={() => setSelectedRemovals(new Set())}
                   />
                 </div>
               </>

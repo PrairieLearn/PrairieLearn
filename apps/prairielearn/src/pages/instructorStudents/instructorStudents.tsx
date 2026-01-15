@@ -20,9 +20,9 @@ import { type ServerJobLogger, createServerJob } from '../../lib/server-jobs.js'
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
-  blockEnrollmentFromSync,
   deleteEnrollment,
   inviteStudentByUid,
+  removeEnrollmentFromSync,
   selectOptionalEnrollmentByUid,
 } from '../../models/enrollment.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -93,7 +93,7 @@ const SyncStudentsBodySchema = z.object({
   __action: z.literal('sync_students'),
   toInvite: z.array(z.string()).max(1000),
   toCancelInvitation: z.array(z.string()).max(1000),
-  toBlock: z.array(z.string()).max(1000),
+  toRemove: z.array(z.string()).max(1000),
 });
 
 const BodySchema = z.union([InviteUidsBodySchema, SyncStudentsBodySchema]);
@@ -117,6 +117,7 @@ async function processInvitations({
   job,
   counts,
   skipBlocked,
+  actionDetail = 'invited',
 }: {
   uids: string[];
   courseInstance: CourseInstance;
@@ -128,6 +129,7 @@ async function processInvitations({
    * If false, re-invites blocked students. This is useful for `sync_students`.
    */
   skipBlocked: boolean;
+  actionDetail?: 'invited' | 'invited_from_sync';
 }): Promise<void> {
   for (const uid of uids) {
     try {
@@ -173,6 +175,7 @@ async function processInvitations({
         uid,
         requiredRole: ['Student Data Editor'],
         authzData,
+        actionDetail,
       });
       job.info(`${uid}: Invited`);
       counts.invited++;
@@ -260,7 +263,7 @@ router.post(
       res.json({ job_sequence_id: serverJob.jobSequenceId });
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     } else if (body.__action === 'sync_students') {
-      const { toInvite, toCancelInvitation, toBlock } = body;
+      const { toInvite, toCancelInvitation, toRemove } = body;
 
       const serverJob = await createServerJob({
         type: 'sync_students',
@@ -282,8 +285,8 @@ router.post(
         };
         let cancelled = 0;
         let cancelErrors = 0;
-        let blocked = 0;
-        let blockErrors = 0;
+        let removed = 0;
+        let removeErrors = 0;
 
         // Process invitations
         if (toInvite.length > 0) {
@@ -295,6 +298,7 @@ router.post(
             job,
             counts: syncCounts,
             skipBlocked: false, // sync_students can re-invite blocked students
+            actionDetail: 'invited_from_sync',
           });
         }
 
@@ -321,7 +325,7 @@ router.post(
 
               await deleteEnrollment({
                 enrollment,
-                actionDetail: 'invitation_deleted',
+                actionDetail: 'invitation_deleted_from_sync',
                 authzData,
                 requiredRole: ['Student Data Editor'],
               });
@@ -335,10 +339,10 @@ router.post(
           }
         }
 
-        // Process blocks
-        if (toBlock.length > 0) {
-          job.info('\nProcessing blocks...');
-          for (const uid of toBlock) {
+        // Process removals
+        if (toRemove.length > 0) {
+          job.info('\nProcessing removals...');
+          for (const uid of toRemove) {
             try {
               const enrollment = await selectOptionalEnrollmentByUid({
                 courseInstance,
@@ -351,22 +355,21 @@ router.post(
                 job.info(`${uid}: Skipped (no enrollment found)`);
                 continue;
               }
-              if (enrollment.status === 'blocked') {
-                job.info(`${uid}: Skipped (already blocked)`);
-                syncCounts.skippedAlreadyBlocked++;
+              if (enrollment.status === 'removed') {
+                job.info(`${uid}: Skipped (already removed)`);
                 continue;
               }
 
-              await blockEnrollmentFromSync({
+              await removeEnrollmentFromSync({
                 enrollment,
                 authzData,
               });
-              job.info(`${uid}: Blocked`);
-              blocked++;
+              job.info(`${uid}: Removed`);
+              removed++;
             } catch (error) {
               const message = error instanceof Error ? error.message : 'Unknown error';
               job.error(`${uid}: Error - ${message}`);
-              blockErrors++;
+              removeErrors++;
             }
           }
         }
@@ -375,20 +378,17 @@ router.post(
         job.info('\nSummary:');
         job.info(`  Invited: ${syncCounts.invited}`);
         job.info(`  Invitations cancelled: ${cancelled}`);
-        job.info(`  Blocked: ${blocked}`);
+        job.info(`  Removed: ${removed}`);
         if (syncCounts.skippedAlreadyJoined > 0) {
           job.info(`  Skipped (already joined): ${syncCounts.skippedAlreadyJoined}`);
         }
         if (syncCounts.skippedAlreadyInvited > 0) {
           job.info(`  Skipped (already invited): ${syncCounts.skippedAlreadyInvited}`);
         }
-        if (syncCounts.skippedAlreadyBlocked > 0) {
-          job.info(`  Skipped (already blocked): ${syncCounts.skippedAlreadyBlocked}`);
-        }
         if (syncCounts.skippedInstructor > 0) {
           job.info(`  Skipped (instructor): ${syncCounts.skippedInstructor}`);
         }
-        const totalErrors = syncCounts.errors + cancelErrors + blockErrors;
+        const totalErrors = syncCounts.errors + cancelErrors + removeErrors;
         if (totalErrors > 0) {
           job.info(`  Errors: ${totalErrors}`);
         }

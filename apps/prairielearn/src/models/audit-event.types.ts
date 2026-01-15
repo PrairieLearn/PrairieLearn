@@ -60,13 +60,15 @@ export type SupportedTableActionCombination =
         | 'implicit_joined'
         | 'explicit_joined'
         | 'invited'
+        | 'invited_from_sync'
         | 'invitation_accepted'
         | 'invitation_rejected'
         | 'blocked'
-        | 'blocked_from_sync'
         | 'unblocked'
         | 'invitation_deleted'
+        | 'invitation_deleted_from_sync'
         | 'removed'
+        | 'removed_from_sync'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<

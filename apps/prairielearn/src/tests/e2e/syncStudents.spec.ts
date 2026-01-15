@@ -44,10 +44,10 @@ const INVITED_STUDENT: AuthUser = {
   uin: null,
   name: 'Invited Student',
 };
-const STUDENT_TO_BLOCK: AuthUser = {
-  uid: 'sync_to_block@test.com',
+const STUDENT_TO_REMOVE: AuthUser = {
+  uid: 'sync_to_remove@test.com',
   uin: null,
-  name: 'Student To Block',
+  name: 'Student To Remove',
 };
 
 let courseInstanceId: string;
@@ -82,11 +82,11 @@ async function createTestData() {
     requiredRole: ['System'],
   });
 
-  // Create a student who will be blocked (currently enrolled)
-  const studentToBlockUser = await getOrCreateUser(STUDENT_TO_BLOCK);
+  // Create a student who will be removed (currently enrolled)
+  const studentToRemoveUser = await getOrCreateUser(STUDENT_TO_REMOVE);
 
   await ensureUncheckedEnrollment({
-    userId: studentToBlockUser.id,
+    userId: studentToRemoveUser.id,
     courseInstance,
     authzData: dangerousFullSystemAuthz(),
     requiredRole: ['System'],
@@ -102,21 +102,21 @@ test.describe('Sync students', () => {
     await createTestData();
   });
 
-  test('can sync students with invites, cancellations, and blocks', async ({ page }) => {
+  test('can sync students with invites, cancellations, and removals', async ({ page }) => {
     // Create fresh users for this test to avoid conflicts
     await getOrCreateUser({ uid: 'fresh_sync_new@test.com', name: 'Fresh New', uin: null });
-    const freshToBlock = await getOrCreateUser({
-      uid: 'fresh_sync_block@test.com',
-      name: 'Fresh Block',
+    const freshToRemove = await getOrCreateUser({
+      uid: 'fresh_sync_remove@test.com',
+      name: 'Fresh Remove',
       uin: null,
     });
 
     const course = await selectCourseByShortName('QA 101');
     const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
 
-    // Enroll a student who will be blocked
+    // Enroll a student who will be removed
     await ensureUncheckedEnrollment({
-      userId: freshToBlock.id,
+      userId: freshToRemove.id,
       courseInstance,
       authzData: dangerousFullSystemAuthz(),
       requiredRole: ['System'],
@@ -143,7 +143,7 @@ test.describe('Sync students', () => {
     await expect(page.getByRole('dialog').getByText('Sync roster', { exact: true })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
-    // Enter roster with fresh_sync_new but NOT fresh_sync_block or fresh_sync_cancel
+    // Enter roster with fresh_sync_new but NOT fresh_sync_remove or fresh_sync_cancel
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill('fresh_sync_new@test.com');
 
     await page.getByRole('button', { name: 'Compare' }).click();
@@ -156,8 +156,8 @@ test.describe('Sync students', () => {
     await expect(dialog.getByText('fresh_sync_new@test.com')).toBeVisible();
     await expect(dialog.getByText('Invitations to cancel')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
-    await expect(dialog.getByText('Students to block')).toBeVisible();
-    await expect(dialog.getByText('fresh_sync_block@test.com')).toBeVisible();
+    await expect(dialog.getByText('Students to remove')).toBeVisible();
+    await expect(dialog.getByText('fresh_sync_remove@test.com')).toBeVisible();
 
     // Click sync button
     await page.getByRole('button', { name: /Sync \d+ student/ }).click();
@@ -166,7 +166,7 @@ test.describe('Sync students', () => {
     await waitForJobAndCheckOutput(page, [
       'fresh_sync_new@test.com: Invited',
       'fresh_sync_cancel@test.com: Invitation cancelled',
-      'fresh_sync_block@test.com: Blocked',
+      'fresh_sync_remove@test.com: Removed',
     ]);
   });
 
