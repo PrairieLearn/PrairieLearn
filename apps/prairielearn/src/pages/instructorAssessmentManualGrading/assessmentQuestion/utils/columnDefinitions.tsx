@@ -169,7 +169,7 @@ export function createColumns({
                   // for keyboard users, but we don't want it to be announced as a button by screen
                   // readers. So we give it role="status" to indicate that it's just a status indicator.
                   // It's possible there are better ways to handle this?
-                  // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
+                  // oxlint-disable-next-line jsx-a11y/no-interactive-element-to-noninteractive-role
                   role="status"
                   className="btn btn-xs btn-ghost"
                   aria-label="Assessment instance is still open"

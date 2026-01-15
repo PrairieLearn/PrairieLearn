@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/dot-notation */
+/* oxlint-disable @typescript-eslint/dot-notation */
 import * as path from 'node:path';
 
 import { execa } from 'execa';

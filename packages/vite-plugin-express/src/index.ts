@@ -43,7 +43,7 @@ async function getPluginConfig(server: ViteDevServer): Promise<VitePluginExpress
   const plugin = server.config.plugins.find((p) => p.name === PLUGIN_NAME) as unknown as {
     config: (...args: any[]) => UserConfig & { VitePluginExpressConfig: VitePluginExpressConfig };
   };
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+  // oxlint-disable-next-line @typescript-eslint/no-invalid-void-type
   let userConfig: UserConfig | null | void = null;
 
   if (typeof plugin.config === 'function') {
@@ -100,7 +100,7 @@ async function createMiddleware(server: ViteDevServer): Promise<Connect.HandleFu
       logger.error(`Failed to find a named ${config.exportName} from ${config.appPath}`, {
         timestamp: true,
       });
-      // eslint-disable-next-line unicorn/no-process-exit
+      // oxlint-disable-next-line unicorn/no-process-exit
       process.exit(1);
     }
     return app;

@@ -142,7 +142,7 @@ export function DeleteCourseInstanceModal({
                     className="form-control"
                     value={confirmationText}
                     autoComplete="off"
-                    // eslint-disable-next-line jsx-a11y-x/no-autofocus
+                    // oxlint-disable-next-line jsx-a11y/no-autofocus
                     autoFocus
                     onInput={(e) => setConfirmationText(e.currentTarget.value)}
                   />

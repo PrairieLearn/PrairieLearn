@@ -26,7 +26,7 @@ router.get(
     res.send(
       NavbarCourseInstanceSwitcher({
         course_instances,
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
         current_course_instance_id: req.params.course_instance_id ?? null,
       }),
     );

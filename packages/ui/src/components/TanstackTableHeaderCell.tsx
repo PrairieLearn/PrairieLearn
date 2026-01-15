@@ -63,7 +63,7 @@ function ResizeHandle<RowDataModel>({
         aria-valuemin={minSize}
         aria-valuemax={maxSize}
         aria-valuenow={header.getSize()}
-        // eslint-disable-next-line jsx-a11y-x/no-noninteractive-tabindex
+        // oxlint-disable-next-line jsx-a11y/no-noninteractive-tabindex
         tabIndex={0}
         className="h-100"
         style={{

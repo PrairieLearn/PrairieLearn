@@ -143,7 +143,7 @@ export async function aiGrade({
   const instance_questions = all_instance_questions.filter((instance_question) => {
     switch (mode) {
       case 'human_graded':
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
         return instanceQuestionGradingJobs[instance_question.id]?.some(
           (job) => job.grading_method === 'Manual',
         );
@@ -193,7 +193,7 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ): Promise<boolean> => {
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
       );

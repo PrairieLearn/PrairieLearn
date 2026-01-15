@@ -45,7 +45,7 @@ export function useServerJobProgress({
       onProgressChange();
       // We do not include onProgressChange in the dependency array because it
       // would cause an infinite loop if the callback is not memoized.
-    }, // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, // oxlint-disable-next-line react-hooks/exhaustive-deps
     [],
   );
 

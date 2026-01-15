@@ -102,7 +102,7 @@ if ('h' in argv || 'help' in argv) {
     --sync-course <course_id>           Synchronize a course and exit
 `;
 
-  // eslint-disable-next-line no-console
+  // oxlint-disable-next-line no-console
   console.log(msg);
   process.exit(0);
 }
@@ -2084,7 +2084,7 @@ export async function startServer(app: express.Express) {
 
   // @ts-expect-error: Hack to get us running in Bun, which doesn't currently support `getConnections`:
   // https://github.com/oven-sh/bun/issues/4459
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
   if (server.getConnections) {
     opentelemetry.createObservableValueGauges(
       meter,

@@ -393,7 +393,7 @@ export function EditQuestionPointsScoreButton({
     return () => {
       scrollContainer.removeEventListener('scroll', handleScroll);
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // oxlint-disable-next-line react-hooks/exhaustive-deps
   }, [show]);
 
   return (

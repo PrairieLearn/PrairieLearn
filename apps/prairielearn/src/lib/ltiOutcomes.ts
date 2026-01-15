@@ -125,7 +125,7 @@ export async function updateScore(assessment_instance_id: string) {
 
   // Inspect the XML result, log the action
   const result = await parser.parseStringPromise(await res.text());
-  // eslint-disable-next-line you-dont-need-lodash-underscore/get
+  // oxlint-disable-next-line you-dont-need-lodash-underscore/get
   const imsx_codeMajor = _.get(
     result,
     [

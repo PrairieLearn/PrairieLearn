@@ -255,7 +255,7 @@ export function TanstackTable<RowDataModel>({
   useEffect(() => {
     if (hasAutoSized) {
       // https://github.com/NickvanDyke/eslint-plugin-react-you-might-not-need-an-effect/issues/58
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
+      // oxlint-disable-next-line react-you-might-not-need-an-effect/no-pass-ref-to-parent
       columnVirtualizer.measure();
     }
   }, [columnVirtualizer, hasAutoSized]);

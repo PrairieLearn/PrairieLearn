@@ -1,4 +1,4 @@
-/* eslint-disable react-hooks/rules-of-hooks */
+/* oxlint-disable react-hooks/rules-of-hooks */
 import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -41,7 +41,7 @@ interface WorkerFixtures {
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
   testCoursePath: [
-    // eslint-disable-next-line no-empty-pattern
+    // oxlint-disable-next-line no-empty-pattern
     async ({}, use) => {
       const tempDir = await tmp.dir({ unsafeCleanup: true });
       const tempTestCoursePath = path.join(tempDir.path, 'testCourse');

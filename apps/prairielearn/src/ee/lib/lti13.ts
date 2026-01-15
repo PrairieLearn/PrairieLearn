@@ -361,7 +361,7 @@ export class Lti13Claim {
   get(property: _.PropertyPath): any {
     this.assertValid();
     // Uses lodash.get to expand path representation in text to the object, like 'a[0].b.c'
-    // eslint-disable-next-line you-dont-need-lodash-underscore/get
+    // oxlint-disable-next-line you-dont-need-lodash-underscore/get
     return _.get(this.claims, property);
   }
 
@@ -840,7 +840,7 @@ class Lti13ContextMembership {
 
       const memberResults = this.#membershipsByEmail[key];
 
-      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
       if (!memberResults) continue;
 
       // member.email cannot be duplicated in memberships

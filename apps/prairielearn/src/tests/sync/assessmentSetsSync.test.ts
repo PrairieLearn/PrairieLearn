@@ -1,4 +1,4 @@
-/* eslint-disable @typescript-eslint/dot-notation */
+/* oxlint-disable @typescript-eslint/dot-notation */
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import { type AssessmentSet, AssessmentSetSchema, CourseSchema } from '../../lib/db-types.js';

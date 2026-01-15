@@ -305,7 +305,7 @@ function GradebookTable({
             columnHelper.accessor(
               (row) => {
                 const data = row.scores[assessment.assessment_id];
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 return data ? data.score_perc : null;
               },
               {
@@ -331,7 +331,7 @@ function GradebookTable({
                   const row = info.row.original;
                   const assessmentData = row.scores[assessment.assessment_id];
 
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                  // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
                   if (score == null || !assessmentData?.assessment_instance_id) {
                     return '—';
                   }
@@ -482,7 +482,7 @@ function GradebookTable({
             for (const assessment of courseAssessments) {
               data.push({
                 name: assessment.label,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 value: row.scores[assessment.assessment_id]?.score_perc ?? null,
               });
             }

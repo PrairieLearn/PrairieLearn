@@ -688,7 +688,7 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   // The session middleware does not run for API requests.
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+  // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
   res.locals.side_nav_expanded = req.session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({

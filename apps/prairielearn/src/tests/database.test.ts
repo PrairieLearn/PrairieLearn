@@ -78,7 +78,7 @@ describe('database', { timeout: 20_000 }, function () {
         const [, keyName, otherTable, deleteAction] = match;
 
         // Skip table/column pairs that are exceptions to the rule.
-        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+        // oxlint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (SOFT_DELETE_CASCADE_EXCEPTIONS[table]?.includes(keyName)) continue;
 
         if (deleteAction === 'CASCADE' && hardDeleteTables.includes(otherTable)) {

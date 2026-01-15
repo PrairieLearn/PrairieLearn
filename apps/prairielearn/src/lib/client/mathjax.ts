@@ -14,7 +14,7 @@ const {
   promise: mathjaxPromise,
   resolve: mathjaxResolve,
   reject: mathjaxReject,
-  // eslint-disable-next-line @typescript-eslint/no-invalid-void-type
+  // oxlint-disable-next-line @typescript-eslint/no-invalid-void-type
 } = withResolvers<void>();
 
 (() => {
