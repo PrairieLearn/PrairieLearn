@@ -101,7 +101,6 @@ export function OtpInput({
       style={{ cursor: 'text' }}
       isDisabled={disabled}
       isInvalid={isInvalid}
-      maxLength={length}
       name={name}
       value={value}
       onChange={handleChange}

@@ -24,7 +24,9 @@ test.describe('Enrollment code OTP input', () => {
 
     // Modal should open
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog').getByText('Join a course')).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByRole('heading', { name: 'Join a course' }),
+    ).toBeVisible();
 
     // OTP input should be present with correct aria-label
     const otpInput = page.locator('[aria-label="Enrollment code"]');
