@@ -660,11 +660,11 @@ Access control options can also be used to control the open/close dates of asses
 
 ## Adding text and links to assessments
 
-You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. Template variables are available for `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`. You can use either Mustache syntax (`{{ }}`) or legacy EJS syntax (`<%= %>`).
 
 ```json title="infoAssessment.json"
 {
-  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+  "text": "<a href=\"{{ clientFilesAssessment }}/formulas.pdf\">Formula sheet</a>"
 }
 ```
 
