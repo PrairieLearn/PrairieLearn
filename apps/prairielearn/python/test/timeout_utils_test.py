@@ -21,8 +21,6 @@ def test_short_execution():
 
 
 def test_long_execution():
-    # Use longer timeouts to avoid race conditions on loaded CI systems
-    # where PyThreadState_SetAsyncExc can fire at inopportune moments
     ctx = busy_loop(0.1, 10.0)
     assert ctx.state == TimeoutState.TIMED_OUT
 

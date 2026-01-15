@@ -7,7 +7,7 @@ import time
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import lxml.html
 import networkx as nx
@@ -436,99 +436,96 @@ def _sympy_timeout_grading_function(_: str) -> tuple[bool, str | None]:
     return (result == 0, None)
 
 
+class TimeoutTestCase(NamedTuple):
+    test_name: str
+    grading_function: Callable[[str], tuple[bool, str | None]]
+    timeout: float
+    timeout_format_error: str | None
+    should_timeout: bool
+    expected_score: float
+    expected_feedback: str | None
+    expected_error_substring: str | None
+
+
 @pytest.mark.parametrize(
-    (
-        "test_name",
-        "grading_function",
-        "timeout",
-        "timeout_format_error",
-        "should_timeout",
-        "expected_score",
-        "expected_feedback",
-        "expected_error_substring",
-    ),
+    "case",
     [
-        (
-            "default_message",
-            _slow_grading_function,
-            0.1,
-            None,
-            True,
-            0.0,
-            None,
-            "Grading timed out",
+        TimeoutTestCase(
+            test_name="default_message",
+            grading_function=_slow_grading_function,
+            timeout=0.1,
+            timeout_format_error=None,
+            should_timeout=True,
+            expected_score=0.0,
+            expected_feedback=None,
+            expected_error_substring="Grading timed out",
         ),
-        (
-            "custom_message",
-            _slow_grading_function,
-            0.1,
-            "Your answer did not converge, try a simpler expression.",
-            True,
-            0.0,
-            None,
-            "Your answer did not converge, try a simpler expression.",
+        TimeoutTestCase(
+            test_name="custom_message",
+            grading_function=_slow_grading_function,
+            timeout=0.1,
+            timeout_format_error="Your answer did not converge, try a simpler expression.",
+            should_timeout=True,
+            expected_score=0.0,
+            expected_feedback=None,
+            expected_error_substring="Your answer did not converge, try a simpler expression.",
         ),
-        (
-            "no_timeout_when_fast",
-            _fast_grading_function,
-            5.0,
-            "Should not see this",
-            False,
-            1.0,
-            "Well done!",
-            None,
+        TimeoutTestCase(
+            test_name="no_timeout_when_fast",
+            grading_function=_fast_grading_function,
+            timeout=5.0,
+            timeout_format_error="Should not see this",
+            should_timeout=False,
+            expected_score=1.0,
+            expected_feedback="Well done!",
+            expected_error_substring=None,
         ),
-        (
-            "sympy_timeout",
-            _sympy_timeout_grading_function,
-            0.5,
-            "Your answer did not converge.",
-            True,
-            0.0,
-            None,
-            "Your answer did not converge.",
+        TimeoutTestCase(
+            test_name="sympy_timeout",
+            grading_function=_sympy_timeout_grading_function,
+            timeout=0.1,
+            timeout_format_error="Your answer did not converge.",
+            should_timeout=True,
+            expected_score=0.0,
+            expected_feedback=None,
+            expected_error_substring="Your answer did not converge.",
         ),
     ],
 )
 def test_grade_answer_parametrized_timeout(
     question_data: pl.QuestionData,
-    test_name: str,
-    grading_function: Callable[[str], tuple[bool, str | None]],
-    timeout: float,
-    timeout_format_error: str | None,
-    should_timeout: bool,  # noqa: FBT001
-    expected_score: float,
-    expected_feedback: str | None,
-    expected_error_substring: str | None,
+    case: TimeoutTestCase,
 ) -> None:
     """Test timeout behavior with various grading functions."""
-    question_name = f"timeout_test_{test_name}"
+    question_name = f"timeout_test_{case.test_name}"
     question_data["submitted_answers"] = {question_name: "correct"}
 
     pl.grade_answer_parameterized(
         question_data,
         question_name,
-        grading_function,
-        timeout=timeout,
-        timeout_format_error=timeout_format_error,
+        case.grading_function,
+        timeout=case.timeout,
+        timeout_format_error=case.timeout_format_error,
     )
 
-    if should_timeout:
+    if case.should_timeout:
         assert question_name in question_data["format_errors"]
-        if expected_error_substring:
+        if case.expected_error_substring:
             assert (
-                expected_error_substring
+                case.expected_error_substring
                 in question_data["format_errors"][question_name]
             )
     else:
         assert question_name not in question_data["format_errors"]
 
-    assert question_data["partial_scores"][question_name]["score"] == expected_score
+    assert (
+        question_data["partial_scores"][question_name]["score"] == case.expected_score
+    )
 
-    if expected_feedback:
+    if case.expected_feedback:
         assert (
             question_data["partial_scores"][question_name].get("feedback")
-            == expected_feedback
+            == case.expected_feedback
         )
 
 
