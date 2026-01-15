@@ -418,9 +418,9 @@ class TimeoutTestCase(NamedTuple):
     test_name: str
     sleep_duration: float
     return_value: bool
-    return_feedback: str | None
+    has_feedback: bool
     timeout: float
-    timeout_format_error: str | None
+    use_custom_timeout_message: bool
 
 
 @pytest.mark.parametrize(
@@ -430,33 +430,33 @@ class TimeoutTestCase(NamedTuple):
             test_name="default_message",
             sleep_duration=2.0,
             return_value=True,
-            return_feedback=None,
+            has_feedback=False,
             timeout=0.1,
-            timeout_format_error=None,
+            use_custom_timeout_message=False,
         ),
         TimeoutTestCase(
             test_name="custom_message",
             sleep_duration=2.0,
             return_value=True,
-            return_feedback=None,
+            has_feedback=False,
             timeout=0.1,
-            timeout_format_error="Your answer did not converge, try a simpler expression.",
+            use_custom_timeout_message=True,
         ),
         TimeoutTestCase(
             test_name="no_timeout_when_fast",
             sleep_duration=0.0,
             return_value=True,
-            return_feedback="Well done!",
+            has_feedback=True,
             timeout=5.0,
-            timeout_format_error="Should not see this",
+            use_custom_timeout_message=False,
         ),
         TimeoutTestCase(
             test_name="timeout",
             sleep_duration=2.0,
             return_value=True,
-            return_feedback=None,
+            has_feedback=False,
             timeout=0.1,
-            timeout_format_error="Your answer did not converge.",
+            use_custom_timeout_message=True,
         ),
     ],
 )
@@ -468,17 +468,25 @@ def test_grade_answer_parametrized_timeout(
     question_name = f"timeout_test_{case.test_name}"
     question_data["submitted_answers"] = {question_name: "correct"}
 
+    # Generate actual values from boolean flags
+    return_feedback = "Well done!" if case.has_feedback else None
+    timeout_format_error = (
+        "Your answer did not converge, try a simpler expression."
+        if case.use_custom_timeout_message
+        else None
+    )
+
     def grading_function(_: str) -> tuple[bool, str | None]:
         if case.sleep_duration > 0.0:
             time.sleep(case.sleep_duration)
-        return (case.return_value, case.return_feedback)
+        return (case.return_value, return_feedback)
 
     pl.grade_answer_parameterized(
         question_data,
         question_name,
         grading_function,
         timeout=case.timeout,
-        timeout_format_error=case.timeout_format_error,
+        timeout_format_error=timeout_format_error,
     )
 
     # Determine expected values based on whether timeout should occur
@@ -486,7 +494,7 @@ def test_grade_answer_parametrized_timeout(
 
     if should_timeout:
         assert question_name in question_data["format_errors"]
-        expected_error_substring = case.timeout_format_error or "Grading timed out"
+        expected_error_substring = timeout_format_error or "Grading timed out"
         assert expected_error_substring in question_data["format_errors"][question_name]
         assert question_data["partial_scores"][question_name]["score"] == 0.0
     else:
@@ -494,10 +502,10 @@ def test_grade_answer_parametrized_timeout(
         expected_score = 1.0 if case.return_value else 0.0
         assert question_data["partial_scores"][question_name]["score"] == expected_score
 
-        if case.return_feedback:
+        if case.has_feedback:
             assert (
                 question_data["partial_scores"][question_name].get("feedback")
-                == case.return_feedback
+                == return_feedback
             )
 
 
