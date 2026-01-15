@@ -23,9 +23,6 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 
 let courseRepo: CourseRepoFixture;
 
-const courseLiveInfoPath = () => path.join(courseRepo.courseLiveDir, 'infoCourse.json');
-const courseDevInfoPath = () => path.join(courseRepo.courseDevDir, 'infoCourse.json');
-
 describe('Editing course settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepoFixture(courseTemplateDir);
@@ -35,7 +32,9 @@ describe('Editing course settings', () => {
   afterAll(helperServer.after);
 
   test.sequential('access the test course info file', async () => {
-    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath(), 'utf8'));
+    const courseInfo = JSON.parse(
+      await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
+    );
     assert.equal(courseInfo.name, 'TEST 101');
   });
 
@@ -59,7 +58,9 @@ describe('Editing course settings', () => {
   });
 
   test.sequential('verify course info change', async () => {
-    const courseLiveInfo = JSON.parse(await fs.readFile(courseLiveInfoPath(), 'utf8'));
+    const courseLiveInfo = JSON.parse(
+      await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
+    );
     assert.equal(courseLiveInfo.name, 'TEST 102');
     assert.equal(courseLiveInfo.title, 'Test Course 102');
     assert.equal(courseLiveInfo.timezone, 'America/Los_Angeles');
@@ -118,7 +119,8 @@ describe('Editing course settings', () => {
   });
 
   test.sequential('should not be able to submit without course info file', async () => {
-    await fs.move(courseLiveInfoPath(), `${courseLiveInfoPath()}.bak`);
+    const courseLiveInfoPath = path.join(courseRepo.courseLiveDir, 'infoCourse.json');
+    await fs.move(courseLiveInfoPath, `${courseLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
         `${siteUrl}/pl/course/1/course_admin/settings`,
@@ -138,12 +140,14 @@ describe('Editing course settings', () => {
       });
       assert.equal(response.status, 400);
     } finally {
-      await fs.move(`${courseLiveInfoPath()}.bak`, courseLiveInfoPath());
+      await fs.move(`${courseLiveInfoPath}.bak`, courseLiveInfoPath);
     }
   });
 
   test.sequential('should be able to submit without any changes', async () => {
-    const courseInfo = JSON.parse(await fs.readFile(courseLiveInfoPath(), 'utf8'));
+    const courseInfo = JSON.parse(
+      await fs.readFile(path.join(courseRepo.courseLiveDir, 'infoCourse.json'), 'utf8'),
+    );
     const settingsPageResponse = await fetchCheerio(`${siteUrl}/pl/course/1/course_admin/settings`);
     const response = await fetch(`${siteUrl}/pl/course/1/course_admin/settings`, {
       method: 'POST',
@@ -167,9 +171,10 @@ describe('Editing course settings', () => {
         `${siteUrl}/pl/course/1/course_admin/settings`,
       );
 
-      const courseInfo = JSON.parse(await fs.readFile(courseDevInfoPath(), 'utf8'));
+      const courseInfoPath = path.join(courseRepo.courseDevDir, 'infoCourse.json');
+      const courseInfo = JSON.parse(await fs.readFile(courseInfoPath, 'utf8'));
       const newCourseInfo = { ...courseInfo, name: 'TEST 107' };
-      await fs.writeFile(courseDevInfoPath(), JSON.stringify(newCourseInfo, null, 2));
+      await fs.writeFile(courseInfoPath, JSON.stringify(newCourseInfo, null, 2));
       await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
       await execa('git', ['commit', '-m', 'Change course info'], {
         cwd: courseRepo.courseDevDir,
