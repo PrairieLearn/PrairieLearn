@@ -21,14 +21,16 @@ let courseRepo: CourseRepoSetup;
 let questionLiveInfoPath: string;
 let questionDevInfoPath: string;
 
-function questionLiveDir() {
-  return path.join(courseRepo.courseLiveDir, 'questions');
-}
-
 describe('Editing question settings', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepo(courseTemplateDir);
-    questionLiveInfoPath = path.join(questionLiveDir(), 'test', 'question', 'info.json');
+    questionLiveInfoPath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'test',
+      'question',
+      'info.json',
+    );
     questionDevInfoPath = path.join(
       courseRepo.courseDevDir,
       'questions',
@@ -72,7 +74,12 @@ describe('Editing question settings', () => {
   });
 
   test.sequential('verify question info change', async () => {
-    questionLiveInfoPath = path.join(questionLiveDir(), 'question', 'info.json');
+    questionLiveInfoPath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'question',
+      'info.json',
+    );
     const questionLiveInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionLiveInfo.title, 'New title');
   });
@@ -165,7 +172,13 @@ describe('Editing question settings', () => {
   });
 
   test.sequential('should not be able to submit without question info file', async () => {
-    questionLiveInfoPath = path.join(questionLiveDir(), 'test', 'question1', 'info.json');
+    questionLiveInfoPath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'test',
+      'question1',
+      'info.json',
+    );
     await fs.move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
@@ -259,7 +272,8 @@ describe('Editing question settings', () => {
 
   test.sequential('verify question id changed', async () => {
     questionLiveInfoPath = path.join(
-      questionLiveDir(),
+      courseRepo.courseLiveDir,
+      'questions',
       'question2', // The new question id
       'info.json',
     );

@@ -649,7 +649,10 @@ function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
       });
     });
     it('should match contents', function () {
-      assert.strictEqual(readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'), fileContents);
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'),
+        fileContents,
+      );
     });
   });
 }

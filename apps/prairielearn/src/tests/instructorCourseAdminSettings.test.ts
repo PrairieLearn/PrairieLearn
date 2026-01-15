@@ -19,13 +19,8 @@ const siteUrl = `http://localhost:${config.serverPort}`;
 
 let courseRepo: CourseRepoSetup;
 
-function courseLiveInfoPath() {
-  return path.join(courseRepo.courseLiveDir, 'infoCourse.json');
-}
-
-function courseDevInfoPath() {
-  return path.join(courseRepo.courseDevDir, 'infoCourse.json');
-}
+const courseLiveInfoPath = () => path.join(courseRepo.courseLiveDir, 'infoCourse.json');
+const courseDevInfoPath = () => path.join(courseRepo.courseDevDir, 'infoCourse.json');
 
 describe('Editing course settings', () => {
   beforeAll(async () => {

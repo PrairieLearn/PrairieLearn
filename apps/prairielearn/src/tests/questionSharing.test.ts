@@ -447,7 +447,12 @@ describe('Question Sharing', function () {
     test.sequential('Publicly share a question', async () => {
       sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
       await fs.writeJSON(
-        path.join(courseRepo.courseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        path.join(
+          courseRepo.courseOriginDir,
+          'questions',
+          PUBLICLY_SHARED_QUESTION_QID,
+          'info.json',
+        ),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
       );
 
@@ -583,7 +588,12 @@ describe('Question Sharing', function () {
       async () => {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
         await fs.writeJSON(
-          path.join(courseRepo.courseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+          path.join(
+            courseRepo.courseLiveDir,
+            'questions',
+            PUBLICLY_SHARED_QUESTION_QID,
+            'info.json',
+          ),
           sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
         );
 

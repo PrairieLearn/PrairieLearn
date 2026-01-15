@@ -15,10 +15,6 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoSetup;
 
-function questionsLiveDir() {
-  return path.join(courseRepo.courseLiveDir, 'questions');
-}
-
 describe('Creating a question', () => {
   beforeAll(async () => {
     courseRepo = await createCourseRepo(courseTemplateDir);
@@ -62,7 +58,8 @@ describe('Creating a question', () => {
 
   test.sequential('verify that the new empty question has the correct info', async () => {
     const questionLiveInfoPath = path.join(
-      questionsLiveDir(),
+      courseRepo.courseLiveDir,
+      'questions',
       'test-question', // Verify that the qid was used as the question folder's name
       'info.json',
     );
@@ -107,7 +104,7 @@ describe('Creating a question', () => {
   });
 
   test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(questionsLiveDir(), 'test-random-graph');
+    const questionLivePath = path.join(courseRepo.courseLiveDir, 'questions', 'test-random-graph');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
@@ -182,7 +179,11 @@ describe('Creating a question', () => {
       `${siteUrl}/pl/course_instance/1/instructor/question/4/file_edit/questions/template/courseTemplate/question.html`,
     );
 
-    const questionLivePath = path.join(questionsLiveDir(), 'template/courseTemplate');
+    const questionLivePath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'template/courseTemplate',
+    );
     const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
     await fs.writeFile(
       newQuestionHtmlFilePath,
@@ -226,7 +227,11 @@ describe('Creating a question', () => {
   });
 
   test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(questionsLiveDir(), 'test-course-template');
+    const questionLivePath = path.join(
+      courseRepo.courseLiveDir,
+      'questions',
+      'test-course-template',
+    );
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
@@ -237,7 +242,8 @@ describe('Creating a question', () => {
     // Check that the server.py file has the correct contents
     const newQuestionServerFilePath = path.join(questionLivePath, 'server.py');
     const originalQuestionServerFilePath = path.join(
-      questionsLiveDir(),
+      courseRepo.courseLiveDir,
+      'questions',
       'template',
       'courseTemplate',
       'server.py',
@@ -254,7 +260,8 @@ describe('Creating a question', () => {
     // Check that the question.html file has the correct contents
     const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
     const originalQuestionHtmlFilePath = path.join(
-      questionsLiveDir(),
+      courseRepo.courseLiveDir,
+      'questions',
       'template',
       'courseTemplate',
       'question.html',
@@ -297,7 +304,8 @@ describe('Creating a question', () => {
 
   test.sequential('verify that the title and qid had 2 appended to them', async () => {
     const questionLiveInfoPath = path.join(
-      questionsLiveDir(),
+      courseRepo.courseLiveDir,
+      'questions',
       'test-question_2', // Verify that the qid with 2 appended to it was used as the name of the question folder
       'info.json',
     );

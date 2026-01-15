@@ -20,13 +20,10 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoSetup;
 
-function courseInstancesCourseLiveDir() {
-  return path.join(courseRepo.courseLiveDir, 'courseInstances');
-}
-
 const getCourseInstanceFileContents = async (shortName: string) => {
   const courseInstanceInfoPath = path.join(
-    courseInstancesCourseLiveDir(),
+    courseRepo.courseLiveDir,
+    'courseInstances',
     shortName,
     'infoCourseInstance.json',
   );
@@ -152,7 +149,8 @@ describe('Creating a course instance', () => {
 
   test.sequential('verify course instance is created without publishing config', async () => {
     const courseInstanceInfoPath = path.join(
-      courseInstancesCourseLiveDir(),
+      courseRepo.courseLiveDir,
+      'courseInstances',
       'Fa20',
       'infoCourseInstance.json',
     );
