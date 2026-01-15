@@ -1,50 +1,23 @@
 import * as path from 'path';
 
-import { execa } from 'execa';
-import fs from 'fs-extra';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepository } from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-
-const baseDir = tmp.dirSync().name;
-
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-
-const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
+
+let courseRepo: CourseRepoSetup;
 
 describe('Updating a course instance ID', () => {
   beforeAll(async () => {
-    // Clone the course template for testing
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await fs.copy(courseTemplateDir, courseLiveDir);
-
-    const execOptions = { cwd: courseLiveDir, env: process.env };
-    await execa('git', ['add', '-A'], execOptions);
-    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
-    await execa('git', ['push', 'origin', 'master'], execOptions);
-    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
-
-    await helperServer.before(courseLiveDir)();
-
-    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
+    courseRepo = await createCourseRepo(courseTemplateDir);
+    await helperServer.before(courseRepo.courseLiveDir)();
+    await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
 
   afterAll(helperServer.after);

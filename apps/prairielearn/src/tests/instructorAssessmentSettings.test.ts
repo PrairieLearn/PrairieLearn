@@ -3,7 +3,6 @@ import * as path from 'path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { z } from 'zod';
 
@@ -14,47 +13,38 @@ import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoSetup,
+  createCourseRepo,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
-const baseDir = tmp.dirSync().name;
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseDevDir = path.join(baseDir, 'courseDev');
-const assessmentLiveDir = path.join(courseLiveDir, 'courseInstances', 'Fa18', 'assessments');
-let assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW1', 'infoAssessment.json');
-const assessmentDevDir = path.join(courseDevDir, 'courseInstances', 'Fa18', 'assessments');
-let assessmentDevInfoPath = path.join(assessmentDevDir, 'HW1', 'infoAssessment.json');
-
 const siteUrl = `http://localhost:${config.serverPort}`;
+
+let courseRepo: CourseRepoSetup;
+let assessmentLiveInfoPath: string;
+let assessmentDevInfoPath: string;
+
+function assessmentLiveDir() {
+  return path.join(courseRepo.courseLiveDir, 'courseInstances', 'Fa18', 'assessments');
+}
+
+function assessmentDevDir() {
+  return path.join(courseRepo.courseDevDir, 'courseInstances', 'Fa18', 'assessments');
+}
 
 describe('Editing assessment settings', () => {
   beforeAll(async () => {
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await fs.copy(courseTemplateDir, courseLiveDir);
-
-    const execOptions = { cwd: courseLiveDir, env: process.env };
-    await execa('git', ['add', '-A'], execOptions);
-    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
-    await execa('git', ['push', 'origin', 'master'], execOptions);
-    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
-
-    await helperServer.before(courseLiveDir)();
-
-    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
+    courseRepo = await createCourseRepo(courseTemplateDir);
+    assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW1', 'infoAssessment.json');
+    assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW1', 'infoAssessment.json');
+    await helperServer.before(courseRepo.courseLiveDir)();
+    await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
 
   afterAll(helperServer.after);
@@ -93,7 +83,7 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('verify assessment info change', async () => {
-    assessmentLiveInfoPath = path.join(assessmentLiveDir, 'HW2', 'infoAssessment.json');
+    assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW2', 'infoAssessment.json');
     const assessmentLiveInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentLiveInfo.title, 'Test Title');
     assert.equal(assessmentLiveInfo.type, 'Homework');
@@ -131,7 +121,7 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('verify changing aid did not leave empty directories', async () => {
-    const assessmentDir = path.join(assessmentLiveDir, 'HW2');
+    const assessmentDir = path.join(assessmentLiveDir(), 'HW2');
     assert.notOk(await fs.pathExists(assessmentDir));
   });
 
@@ -164,8 +154,8 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('pull and verify changes', async () => {
-    await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
-    assessmentDevInfoPath = path.join(assessmentDevDir, 'HW2', 'infoAssessment.json');
+    await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
+    assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW2', 'infoAssessment.json');
     const assessmentDevInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
     assert.equal(assessmentDevInfo.title, 'Test Title');
     assert.equal(assessmentDevInfo.type, 'Homework');
@@ -298,12 +288,12 @@ describe('Editing assessment settings', () => {
       const assessmentInfo = JSON.parse(await fs.readFile(assessmentDevInfoPath, 'utf8'));
       const newAssessmentInfo = { ...assessmentInfo, title: 'Test Title - Changed' };
       await fs.writeFile(assessmentDevInfoPath, JSON.stringify(newAssessmentInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseDevDir, env: process.env });
+      await execa('git', ['add', '-A'], { cwd: courseRepo.courseDevDir, env: process.env });
       await execa('git', ['commit', '-m', 'Change assessment info'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseDevDir, env: process.env });
+      await execa('git', ['push', 'origin', 'master'], { cwd: courseRepo.courseDevDir, env: process.env });
 
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`,
@@ -356,7 +346,7 @@ describe('Editing assessment settings', () => {
   });
 
   test.sequential('verify change assessment id', async () => {
-    const assessmentDir = path.join(assessmentLiveDir, 'A1');
+    const assessmentDir = path.join(assessmentLiveDir(), 'A1');
     assert.ok(await fs.pathExists(assessmentDir));
   });
 

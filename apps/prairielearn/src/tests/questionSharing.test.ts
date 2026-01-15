@@ -17,6 +17,11 @@ import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { fetchCheerio } from './helperClient.js';
+import {
+  commitAndCloneSharingCourse,
+  createSharingCourseRepo,
+  type GitOptions,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
@@ -70,14 +75,8 @@ async function accessSharedQuestionAssessment(course_instance_id: string) {
 const baseDir = tmp.dirSync().name;
 const sharingCourseOriginDir = path.join(baseDir, 'courseOrigin');
 const sharingCourseLiveDir = path.join(baseDir, 'courseLive');
-const gitOptionsOrigin = {
-  cwd: sharingCourseOriginDir,
-  env: process.env,
-};
-const gitOptionsLive = {
-  cwd: sharingCourseLiveDir,
-  env: process.env,
-};
+let gitOptionsOrigin: GitOptions;
+let gitOptionsLive: GitOptions;
 
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
@@ -170,14 +169,12 @@ describe('Question Sharing', function () {
       path.join(sharingCourseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'question.html'),
       '',
     );
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
-    await execa('git', ['add', '-A'], gitOptionsOrigin);
-    await execa('git', ['commit', '-m', 'initial commit'], gitOptionsOrigin);
-    await execa('mkdir', [sharingCourseLiveDir]);
-    await execa('git', ['clone', sharingCourseOriginDir, sharingCourseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
+
+    // Initialize git repo and clone to live directory
+    const repoResult = await createSharingCourseRepo(sharingCourseOriginDir, sharingCourseLiveDir);
+    gitOptionsOrigin = repoResult.gitOptionsOrigin;
+    gitOptionsLive = repoResult.gitOptionsLive;
+    await commitAndCloneSharingCourse(sharingCourseOriginDir, sharingCourseLiveDir, gitOptionsOrigin);
     const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir);
     sharingCourse = await selectCourseById(syncResults.courseId);
     sharingCourseInstanceId = await sqldb.queryRow(

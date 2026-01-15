@@ -3,7 +3,6 @@ import * as path from 'path';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -11,45 +10,32 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectQuestionById } from '../models/question.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoSetup,
+  createCourseRepo,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
-const baseDir = tmp.dirSync().name;
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseDevDir = path.join(baseDir, 'courseDev');
-const questionLiveDir = path.join(courseLiveDir, 'questions');
-let questionLiveInfoPath = path.join(questionLiveDir, 'test', 'question', 'info.json');
-const questionDevDir = path.join(courseDevDir, 'questions', 'test', 'question');
-let questionDevInfoPath = path.join(questionDevDir, 'info.json');
-
 const siteUrl = `http://localhost:${config.serverPort}`;
+
+let courseRepo: CourseRepoSetup;
+let questionLiveInfoPath: string;
+let questionDevInfoPath: string;
+
+function questionLiveDir() {
+  return path.join(courseRepo.courseLiveDir, 'questions');
+}
 
 describe('Editing question settings', () => {
   beforeAll(async () => {
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await fs.copy(courseTemplateDir, courseLiveDir);
-
-    const execOptions = { cwd: courseLiveDir, env: process.env };
-    await execa('git', ['add', '-A'], execOptions);
-    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
-    await execa('git', ['push', 'origin', 'master'], execOptions);
-    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
-
-    await helperServer.before(courseLiveDir)();
-
-    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
+    courseRepo = await createCourseRepo(courseTemplateDir);
+    questionLiveInfoPath = path.join(questionLiveDir(), 'test', 'question', 'info.json');
+    questionDevInfoPath = path.join(courseRepo.courseDevDir, 'questions', 'test', 'question', 'info.json');
+    await helperServer.before(courseRepo.courseLiveDir)();
+    await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
 
   afterAll(helperServer.after);
@@ -84,7 +70,7 @@ describe('Editing question settings', () => {
   });
 
   test.sequential('verify question info change', async () => {
-    questionLiveInfoPath = path.join(questionLiveDir, 'question', 'info.json');
+    questionLiveInfoPath = path.join(questionLiveDir(), 'question', 'info.json');
     const questionLiveInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
     assert.equal(questionLiveInfo.title, 'New title');
   });
@@ -117,13 +103,13 @@ describe('Editing question settings', () => {
   });
 
   test.sequential('verify changing qid did not leave any empty directories', async () => {
-    const questionDir = path.join(courseLiveDir, 'question');
+    const questionDir = path.join(courseRepo.courseLiveDir, 'question');
     assert.notOk(await fs.pathExists(questionDir));
   });
 
   test.sequential('pull and verify changes', async () => {
-    await execa('git', ['pull'], { cwd: courseDevDir, env: process.env });
-    questionDevInfoPath = path.join(courseDevDir, 'questions', 'test', 'question1', 'info.json');
+    await execa('git', ['pull'], { cwd: courseRepo.courseDevDir, env: process.env });
+    questionDevInfoPath = path.join(courseRepo.courseDevDir, 'questions', 'test', 'question1', 'info.json');
     const questionDevInfo = JSON.parse(await fs.readFile(questionDevInfoPath, 'utf8'));
     assert.equal(questionDevInfo.title, 'New title');
   });
@@ -171,7 +157,7 @@ describe('Editing question settings', () => {
   });
 
   test.sequential('should not be able to submit without question info file', async () => {
-    questionLiveInfoPath = path.join(questionLiveDir, 'test', 'question1', 'info.json');
+    questionLiveInfoPath = path.join(questionLiveDir(), 'test', 'question1', 'info.json');
     await fs.move(questionLiveInfoPath, `${questionLiveInfoPath}.bak`);
     try {
       const settingsPageResponse = await fetchCheerio(
@@ -210,12 +196,12 @@ describe('Editing question settings', () => {
       const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
       const newQuestionInfo = { ...questionInfo, title: 'New title - changed' };
       await fs.writeFile(questionLiveInfoPath, JSON.stringify(newQuestionInfo, null, 2));
-      await execa('git', ['add', '-A'], { cwd: courseLiveDir, env: process.env });
+      await execa('git', ['add', '-A'], { cwd: courseRepo.courseLiveDir, env: process.env });
       await execa('git', ['commit', '-m', 'Change question info'], {
-        cwd: courseLiveDir,
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
-      await execa('git', ['push', 'origin', 'master'], { cwd: courseLiveDir, env: process.env });
+      await execa('git', ['push', 'origin', 'master'], { cwd: courseRepo.courseLiveDir, env: process.env });
 
       const response = await fetch(
         `${siteUrl}/pl/course_instance/1/instructor/question/1/settings`,
@@ -262,7 +248,7 @@ describe('Editing question settings', () => {
 
   test.sequential('verify question id changed', async () => {
     questionLiveInfoPath = path.join(
-      questionLiveDir,
+      questionLiveDir(),
       'question2', // The new question id
       'info.json',
     );

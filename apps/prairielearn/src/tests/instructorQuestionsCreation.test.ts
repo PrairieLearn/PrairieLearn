@@ -1,52 +1,33 @@
 import * as path from 'path';
 
-import { execa } from 'execa';
 import fs from 'fs-extra';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoSetup,
+  createCourseRepo,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
-
-const baseDir = tmp.dirSync().name;
-
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const questionsLiveDir = path.join(courseLiveDir, 'questions');
-
-const courseDevDir = path.join(baseDir, 'courseDev');
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
+
+let courseRepo: CourseRepoSetup;
+
+function questionsLiveDir() {
+  return path.join(courseRepo.courseLiveDir, 'questions');
+}
 
 describe('Creating a question', () => {
   beforeAll(async () => {
-    // Clone the course template for testing
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-      cwd: '.',
-      env: process.env,
-    });
-
-    await fs.copy(courseTemplateDir, courseLiveDir);
-
-    const execOptions = { cwd: courseLiveDir, env: process.env };
-    await execa('git', ['add', '-A'], execOptions);
-    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
-    await execa('git', ['push', 'origin', 'master'], execOptions);
-    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
-
-    await helperServer.before(courseLiveDir)();
-
-    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
+    courseRepo = await createCourseRepo(courseTemplateDir);
+    await helperServer.before(courseRepo.courseLiveDir)();
+    await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
 
   afterAll(helperServer.after);
@@ -85,7 +66,7 @@ describe('Creating a question', () => {
 
   test.sequential('verify that the new empty question has the correct info', async () => {
     const questionLiveInfoPath = path.join(
-      questionsLiveDir,
+      questionsLiveDir(),
       'test-question', // Verify that the qid was used as the question folder's name
       'info.json',
     );
@@ -130,7 +111,7 @@ describe('Creating a question', () => {
   });
 
   test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(questionsLiveDir, 'test-random-graph');
+    const questionLivePath = path.join(questionsLiveDir(), 'test-random-graph');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
@@ -205,7 +186,7 @@ describe('Creating a question', () => {
       `${siteUrl}/pl/course_instance/1/instructor/question/4/file_edit/questions/template/courseTemplate/question.html`,
     );
 
-    const questionLivePath = path.join(questionsLiveDir, 'template/courseTemplate');
+    const questionLivePath = path.join(questionsLiveDir(), 'template/courseTemplate');
     const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
     await fs.writeFile(
       newQuestionHtmlFilePath,
@@ -249,7 +230,7 @@ describe('Creating a question', () => {
   });
 
   test.sequential('verify that the new question has the correct info', async () => {
-    const questionLivePath = path.join(questionsLiveDir, 'test-course-template');
+    const questionLivePath = path.join(questionsLiveDir(), 'test-course-template');
     const questionLiveInfoPath = path.join(questionLivePath, 'info.json');
     const questionInfo = JSON.parse(await fs.readFile(questionLiveInfoPath, 'utf8'));
 
@@ -260,7 +241,7 @@ describe('Creating a question', () => {
     // Check that the server.py file has the correct contents
     const newQuestionServerFilePath = path.join(questionLivePath, 'server.py');
     const originalQuestionServerFilePath = path.join(
-      questionsLiveDir,
+      questionsLiveDir(),
       'template',
       'courseTemplate',
       'server.py',
@@ -277,7 +258,7 @@ describe('Creating a question', () => {
     // Check that the question.html file has the correct contents
     const newQuestionHtmlFilePath = path.join(questionLivePath, 'question.html');
     const originalQuestionHtmlFilePath = path.join(
-      questionsLiveDir,
+      questionsLiveDir(),
       'template',
       'courseTemplate',
       'question.html',
@@ -320,7 +301,7 @@ describe('Creating a question', () => {
 
   test.sequential('verify that the title and qid had 2 appended to them', async () => {
     const questionLiveInfoPath = path.join(
-      questionsLiveDir,
+      questionsLiveDir(),
       'test-question_2', // Verify that the qid with 2 appended to it was used as the name of the question folder
       'info.json',
     );
