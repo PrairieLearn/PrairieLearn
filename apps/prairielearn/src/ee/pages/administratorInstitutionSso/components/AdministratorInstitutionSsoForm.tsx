@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import type { StaffAuthnProvider, StaffInstitution } from '../../../../lib/client/safe-db-types.js';
 import type { AuthnProvider } from '../../../../lib/db-types.js';
@@ -89,7 +89,7 @@ export function AdministratorInstitutionSsoForm({
                   }
                 }}
               />
-              <label className="form-check-label" for={`provider-${provider.id}-enabled`}>
+              <label className="form-check-label" htmlFor={`provider-${provider.id}-enabled`}>
                 {provider.name}
                 {provider.name === 'SAML' && !hasSamlProvider ? (
                   <small className="d-block">

@@ -3,14 +3,13 @@ import * as path from 'path';
 import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -18,6 +17,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { getSelfEnrollmentLinkUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
+import { EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import {
   CourseInstanceCopyEditor,
   CourseInstanceDeleteEditor,
@@ -26,13 +26,14 @@ import {
   MultiEditor,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
+import { insertCourseInstancePermissions } from '../../models/course-permissions.js';
 import type { CourseInstanceJsonInput } from '../../schemas/index.js';
 import { uniqueEnrollmentCode } from '../../sync/fromDisk/courseInstances.js';
 
@@ -44,7 +45,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       course_instance: courseInstance,
       course,
@@ -53,6 +54,7 @@ router.get(
       urlPrefix,
       navPage,
       __csrf_token,
+      is_administrator: isAdministrator,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
@@ -103,12 +105,6 @@ router.get(
 
     const canEdit = authz_data.has_course_permission_edit && !course.example_course;
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-    });
-
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -136,9 +132,9 @@ router.get(
                 studentLink={studentLink}
                 publicLink={publicLink}
                 selfEnrollLink={selfEnrollLink}
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
                 infoCourseInstancePath={infoCourseInstancePath}
                 isDevMode={config.devMode}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
             <Hydrate>
@@ -157,21 +153,15 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       course_instance: courseInstance,
       course,
-      institution,
       urlPrefix,
+      authz_data: authzData,
     } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
-    });
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
     });
 
     if (req.body.__action === 'copy_course_instance') {
@@ -182,6 +172,7 @@ router.post(
         end_date,
         self_enrollment_enabled,
         self_enrollment_use_enrollment_code,
+        course_instance_permission,
       } = z
         .object({
           short_name: z.string().trim(),
@@ -190,6 +181,7 @@ router.post(
           end_date: z.string(),
           self_enrollment_enabled: z.boolean(),
           self_enrollment_use_enrollment_code: z.boolean(),
+          course_instance_permission: EnumCourseInstanceRoleSchema.optional().default('None'),
         })
         .parse(req.body);
 
@@ -260,8 +252,7 @@ router.post(
       );
 
       const resolvedSelfEnrollment =
-        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
-        enrollmentManagementEnabled
+        (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
           ? {
               enabled: selfEnrollmentEnabled,
               useEnrollmentCode: selfEnrollmentUseEnrollmentCode,
@@ -271,7 +262,7 @@ router.post(
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         from_course: course,
         from_path: path.join(courseInstancesPath, courseInstance.short_name),
         course_instance: updatedCourseInstance,
@@ -294,11 +285,22 @@ router.post(
         course,
       });
 
+      // Assign course instance permissions if a non-None permission was selected.
+      if (course_instance_permission !== 'None') {
+        await insertCourseInstancePermissions({
+          course_id: course.id,
+          course_instance_id: copiedInstance.id,
+          user_id: authzData.authn_user.id,
+          course_instance_role: course_instance_permission,
+          authn_user_id: authzData.authn_user.id,
+        });
+      }
+
       res.status(200).json({ course_instance_id: copiedInstance.id });
       return;
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -390,12 +392,6 @@ router.post(
       // Only write self enrollment settings if they are not the default values.
       // When JSON.stringify is used, undefined values are not included in the JSON object.
       if (hasSelfEnrollmentSettings) {
-        if (!enrollmentManagementEnabled) {
-          throw new error.HttpStatusError(
-            400,
-            'Self enrollment settings cannot be changed when enrollment management is not enabled.',
-          );
-        }
         if (!courseInstance.modern_publishing) {
           throw new error.HttpStatusError(
             400,
@@ -425,12 +421,12 @@ router.post(
       }
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           description: `Update course instance: ${courseInstance.short_name}`,
         },
         [
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -440,7 +436,7 @@ router.post(
             origHash: req.body.orig_hash,
           }),
           new CourseInstanceRenameEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             ciid_new,
           }),
         ],

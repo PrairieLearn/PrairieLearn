@@ -1,10 +1,10 @@
 import clsx from 'clsx';
+import type { ReactNode } from 'react';
 
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import type { VNode } from '@prairielearn/preact-cjs';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
@@ -22,7 +22,7 @@ import { SideNav } from './SideNav.js';
 import { SyncErrorsAndWarnings } from './SyncErrorsAndWarnings.js';
 
 function asHtmlSafe(
-  content: HtmlSafeString | HtmlSafeString[] | VNode<any> | undefined,
+  content: HtmlSafeString | HtmlSafeString[] | ReactNode | undefined,
 ): HtmlSafeString | HtmlSafeString[] | undefined {
   if (Array.isArray(content) || content instanceof HtmlSafeString || content === undefined) {
     return content;
@@ -204,13 +204,13 @@ export function PageLayout({
     showFooter?: boolean;
   };
   /** Include scripts and other additional head content here. */
-  headContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  headContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The content of the page in the body before the main container. */
-  preContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  preContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The main content of the page within the main container. */
-  content: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  content: HtmlSafeString | HtmlSafeString[] | ReactNode;
   /** The content of the page in the body after the main container. */
-  postContent?: HtmlSafeString | HtmlSafeString[] | VNode<any>;
+  postContent?: HtmlSafeString | HtmlSafeString[] | ReactNode;
 }) {
   const resolvedOptions = {
     fullWidth: false,

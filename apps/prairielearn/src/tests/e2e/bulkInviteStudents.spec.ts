@@ -2,7 +2,6 @@ import type { Page } from '@playwright/test';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
-import { features } from '../../lib/features/index.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
@@ -65,9 +64,6 @@ async function createTestData() {
   const course = await selectCourseByShortName('QA 101');
   const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
   courseInstanceId = courseInstance.id;
-
-  // Enable the enrollment-management feature flag
-  await features.enable('enrollment-management', { institution_id: '1' });
 
   // Create valid students (not enrolled)
   for (const student of [VALID_STUDENT, VALID_STUDENT_2, VALID_STUDENT_3]) {

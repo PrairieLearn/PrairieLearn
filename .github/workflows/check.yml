@@ -66,6 +66,8 @@ jobs:
         run: make check-dependencies
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
+      - name: Check that all packages exist on npm
+        run: make check-npm-packages
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for contrib
@@ -134,7 +136,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -194,7 +196,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:

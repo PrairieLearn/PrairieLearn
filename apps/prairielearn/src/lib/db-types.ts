@@ -320,7 +320,7 @@ export const AssessmentSchema = z.object({
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
-  team_work: z.boolean().nullable(),
+  team_work: z.boolean(),
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
@@ -593,7 +593,6 @@ export const CourseInstanceSchema = z.object({
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
-  hide_in_enroll_page: z.unknown(), // TODO: Drop column
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),

@@ -3,13 +3,12 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
-import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -38,15 +37,8 @@ router.get(
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
-    const { urlPrefix } = pageContext;
-    const { course_instance: courseInstance, course, institution } = pageContext;
+    const { urlPrefix, course_instance: courseInstance } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-    });
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -110,7 +102,6 @@ router.get(
                 pageContext.authz_data.has_course_instance_permission_edit
               }
               hasModernPublishing={courseInstance.modern_publishing}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
             />
           </Hydrate>
         ),

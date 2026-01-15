@@ -5,6 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
+import { updateCourseSharingName } from '../models/course.js';
 
 import {
   testElementClientFiles,
@@ -69,6 +70,11 @@ describe('Shared Question Preview', { timeout: 60_000 }, function () {
     const consumingCourseData = syncUtil.getCourseData();
     consumingCourseData.course.name = 'CONSUMING 101';
     await syncUtil.writeAndSyncCourseData(consumingCourseData);
+  });
+
+  beforeAll(async () => {
+    // Set up a sharing_name on the test course for public question previews
+    await updateCourseSharingName({ course_id: '1', sharing_name: 'test-course' });
   });
 
   describe('Public Question Previews', () => {

@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import mustache from 'mustache';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
@@ -7,6 +6,7 @@ import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   TeamOperationError,
   canUserAssignTeamRoles,
@@ -38,7 +38,9 @@ router.use(studentAssessmentAccess);
 router.get(
   '/',
   logPageView('studentAssessmentInstance'),
-  asyncHandler(async function (req, res) {
+  typedAsyncHandler<'assessment'>(async function (req, res) {
+    // TODO: Investigate if `authz_result` can be null/undefined
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!(res.locals.authz_result?.active ?? true)) {
       // If the student had started the assessment already, they would have been
       // redirected to the assessment instance by the `studentAssessmentRedirect`
@@ -74,7 +76,7 @@ router.get(
         authn_user_id: res.locals.authn_user.id,
         mode: res.locals.authz_data.mode,
         time_limit_min,
-        date: res.locals.authz_data.date,
+        date: res.locals.req_date,
         client_fingerprint_id,
       });
       res.redirect(`${res.locals.urlPrefix}/assessment_instance/${assessment_instance_id}`);
@@ -126,7 +128,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async function (req, res) {
+  typedAsyncHandler<'assessment'>(async function (req, res) {
     // No, you do not need to verify authz_result.authorized_edit (indeed, this flag exists
     // only for an assessment instance, not an assessment).
     //

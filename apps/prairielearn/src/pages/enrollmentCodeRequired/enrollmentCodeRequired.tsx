@@ -1,14 +1,13 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { EnrollmentPage } from '../../components/EnrollmentPage.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { hasRole } from '../../lib/authz-data-lib.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { features } from '../../lib/features/index.js';
 import { authzCourseOrInstance } from '../../middlewares/authzCourseOrInstance.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 
@@ -47,14 +46,8 @@ router.get(
       existingEnrollment == null ||
       !['joined', 'invited', 'removed'].includes(existingEnrollment.status);
 
-    const enrollmentManagementEnabled = await features.enabledFromLocals(
-      'enrollment-management',
-      res.locals,
-    );
-
     const institutionRestrictionSatisfied =
       res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-      !enrollmentManagementEnabled ||
       // The default value for self-enrollment restriction is true.
       // In the old system (before publishing was introduced), the default was false.
       // So if publishing is not set up, we should ignore the restriction.

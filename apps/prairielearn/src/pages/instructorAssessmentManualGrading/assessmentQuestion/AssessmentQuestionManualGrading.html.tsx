@@ -1,5 +1,5 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -129,7 +129,7 @@ function AssessmentQuestionManualGradingInner({
                   })
                 }
               />
-              <label className="form-check-label" for="switchCheckDefault">
+              <label className="form-check-label" htmlFor="switchCheckDefault">
                 <i className="bi bi-stars" />
                 AI grading mode
               </label>

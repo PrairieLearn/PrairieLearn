@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/bind-mount",
-  "version": "1.1.15",
+  "version": "1.1.16",
   "type": "module",
   "repository": {
     "type": "git",
@@ -10,7 +10,7 @@
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
   "scripts": {
-    "build": "tsc && node-gyp rebuild",
+    "build": "tsgo && node-gyp rebuild",
     "install": "node-gyp rebuild"
   },
   "dependencies": {
@@ -21,7 +21,8 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/bindings": "^1.5.5",
-    "@types/node": "^22.19.3",
+    "@types/node": "^22.19.6",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3"
   }
 }

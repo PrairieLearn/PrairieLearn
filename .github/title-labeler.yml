@@ -18,10 +18,6 @@ labels:
     sync: false
     matcher:
       title: '.*(LTI 1.3|lti 1.3).*'
-  - label: 'preact'
-    sync: false
-    matcher:
-      title: '.*(Preact|preact).*'
   - label: 'documentation'
     sync: false
     matcher:

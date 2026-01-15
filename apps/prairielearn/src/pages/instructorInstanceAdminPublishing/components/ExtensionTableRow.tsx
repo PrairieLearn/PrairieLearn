@@ -1,4 +1,4 @@
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 
 import { formatDateFriendly } from '@prairielearn/formatter';
 import { OverlayTrigger } from '@prairielearn/ui';

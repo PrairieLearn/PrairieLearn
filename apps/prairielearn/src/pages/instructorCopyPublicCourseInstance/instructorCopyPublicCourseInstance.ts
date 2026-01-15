@@ -8,7 +8,6 @@ import { BooleanFromCheckboxSchema, DatetimeLocalStringSchema } from '@prairiele
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
 import { propertyValueWithDefault } from '../../lib/editors.js';
-import { features } from '../../lib/features/index.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 
@@ -18,14 +17,9 @@ router.post(
   '/',
   asyncHandler(async (req, res) => {
     // Note that this context is for the course we are copying INTO (this route is just a POST handler).
-    const { institution, course } = extractPageContext(res.locals, {
+    const { course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
-    });
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
     });
 
     const {
@@ -77,8 +71,7 @@ router.post(
     );
 
     const resolvedSelfEnrollment =
-      (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined &&
-      enrollmentManagementEnabled
+      (selfEnrollmentEnabled ?? selfEnrollmentUseEnrollmentCode) !== undefined
         ? {
             enabled: selfEnrollmentEnabled,
             useEnrollmentCode: selfEnrollmentUseEnrollmentCode,

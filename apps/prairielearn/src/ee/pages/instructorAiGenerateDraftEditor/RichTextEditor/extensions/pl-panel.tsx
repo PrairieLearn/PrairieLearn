@@ -8,7 +8,7 @@ import {
   type ReactNodeViewProps,
   ReactNodeViewRenderer,
 } from '@tiptap/react';
-import { type ComponentType } from 'preact/compat';
+import { type ComponentType } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 

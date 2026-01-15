@@ -101,7 +101,7 @@ export function InviteStudentsModal({
             </Alert>
           )}
           <div className="mb-0">
-            <label for="invite-uids" className="form-label">
+            <label htmlFor="invite-uids" className="form-label">
               UIDs
             </label>
             <textarea

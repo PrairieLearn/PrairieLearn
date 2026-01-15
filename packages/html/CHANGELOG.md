@@ -1,5 +1,11 @@
 # @prairielearn/html
 
+## 4.0.24
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 4.0.23
 
 ### Patch Changes

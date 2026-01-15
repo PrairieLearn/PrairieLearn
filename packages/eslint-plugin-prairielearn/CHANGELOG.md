@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 2.3.2
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.3.1
 
 ### Patch Changes

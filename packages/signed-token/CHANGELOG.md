@@ -1,5 +1,11 @@
 # @prairielearn/signed-token
 
+## 2.0.23
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.22
 
 ### Patch Changes

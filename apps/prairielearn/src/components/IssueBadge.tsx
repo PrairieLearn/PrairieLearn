@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { encodeSearchString } from '../lib/uri-util.shared.js';
 

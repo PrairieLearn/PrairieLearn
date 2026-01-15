@@ -1,5 +1,19 @@
 # @prairielearn/compiled-assets
 
+## 3.3.3
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
+## 3.3.2
+
+### Patch Changes
+
+- efe7435: Add Total size columns to build stats that sum entry point sizes with their code-split chunks
+
 ## 3.3.1
 
 ### Patch Changes

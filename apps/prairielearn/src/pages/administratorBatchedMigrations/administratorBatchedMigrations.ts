@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import {
@@ -8,6 +7,8 @@ import {
   selectBatchedMigration,
   selectRecentJobsWithStatus,
 } from '@prairielearn/migrations';
+
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import {
   AdministratorBatchedMigration,
@@ -20,7 +21,7 @@ const PROJECT = 'prairielearn';
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const batchedMigrations = await selectAllBatchedMigrations(PROJECT);
     res.send(AdministratorBatchedMigrations({ batchedMigrations, resLocals: res.locals }));
   }),
@@ -28,7 +29,7 @@ router.get(
 
 router.get(
   '/:batched_migration_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const batchedMigration = await selectBatchedMigration(PROJECT, req.params.batched_migration_id);
     const recentSucceededJobs = await selectRecentJobsWithStatus(
       batchedMigration.id,
@@ -49,7 +50,7 @@ router.get(
 
 router.post(
   '/:batched_migration_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'retry_failed_jobs') {
       await retryFailedBatchedMigrationJobs(PROJECT, req.params.batched_migration_id);
       res.redirect(req.originalUrl);
