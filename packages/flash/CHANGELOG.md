@@ -1,5 +1,13 @@
 # @prairielearn/flash
 
+## 2.0.27
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
 ## 2.0.26
 
 ### Patch Changes

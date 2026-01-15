@@ -1,5 +1,11 @@
 # @prairielearn/sentry
 
+## 4.0.9
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 4.0.8
 
 ### Patch Changes
