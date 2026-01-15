@@ -18,7 +18,6 @@ import * as syncFromDisk from '../sync/syncFromDisk.js';
 import { fetchCheerio } from './helperClient.js';
 import {
   type CourseRepoFixture,
-  type GitOptions,
   createCourseRepoFixture,
   updateCourseRepository,
 } from './helperCourse.js';
@@ -72,13 +71,11 @@ async function accessSharedQuestionAssessment(course_instance_id: string) {
 }
 
 let courseRepo: CourseRepoFixture;
-let gitOptionsOrigin: GitOptions;
-let gitOptionsLive: GitOptions;
 
 async function commitAndPullSharingCourse() {
-  await execa('git', ['add', '-A'], gitOptionsOrigin);
-  await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
-  await execa('git', ['pull'], gitOptionsLive);
+  await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
+  await execa('git', ['commit', '-m', 'Add sharing set'], { cwd: courseRepo.courseOriginDir });
+  await execa('git', ['pull'], { cwd: courseRepo.courseLiveDir });
   const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
   assert.equal(syncResult.status, 'complete');
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
@@ -87,8 +84,8 @@ async function commitAndPullSharingCourse() {
 async function ensureInvalidSharingOperationFailsToSync() {
   let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
   assert.equal(syncResult.status, 'sharing_error');
-  await execa('git', ['clean', '-fdx'], gitOptionsLive);
-  await execa('git', ['reset', '--hard', 'HEAD'], gitOptionsLive);
+  await execa('git', ['clean', '-fdx'], { cwd: courseRepo.courseLiveDir });
+  await execa('git', ['reset', '--hard', 'HEAD'], { cwd: courseRepo.courseLiveDir });
 
   syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseRepo.courseLiveDir, logger);
   assert.equal(syncResult.status, 'complete');
@@ -170,8 +167,6 @@ describe('Question Sharing', function () {
         );
       },
     });
-    gitOptionsOrigin = courseRepo.gitOptionsOrigin!;
-    gitOptionsLive = courseRepo.gitOptionsLive;
     const syncResults = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
     sharingCourse = await selectCourseById(syncResults.courseId);
     sharingCourseInstanceId = await sqldb.queryRow(
@@ -546,8 +541,10 @@ describe('Question Sharing', function () {
       const questionPath = path.join(courseRepo.courseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
-      await execa('git', ['add', '-A'], gitOptionsOrigin);
-      await execa('git', ['commit', '-m', 'invalid sharing config edit'], gitOptionsOrigin);
+      await execa('git', ['add', '-A'], { cwd: courseRepo.courseOriginDir });
+      await execa('git', ['commit', '-m', 'invalid sharing config edit'], {
+        cwd: courseRepo.courseOriginDir,
+      });
 
       const commitHash = await getCourseCommitHash(courseRepo.courseLiveDir);
 
@@ -569,7 +566,7 @@ describe('Question Sharing', function () {
       );
 
       // remove breaking change in origin repo
-      await execa('git', ['reset', '--hard', 'HEAD~1'], gitOptionsOrigin);
+      await execa('git', ['reset', '--hard', 'HEAD~1'], { cwd: courseRepo.courseOriginDir });
 
       const job_sequence_id_success = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id_success, 'Success');

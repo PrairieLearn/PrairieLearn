@@ -33,14 +33,6 @@ export async function updateCourseRepository({
 }
 
 /**
- * Git options for executing commands in a specific directory.
- */
-export interface GitOptions {
-  cwd: string;
-  env: typeof process.env;
-}
-
-/**
  * Represents a test course repository fixture with origin, live, and dev directories.
  */
 export interface CourseRepoFixture {
@@ -48,10 +40,6 @@ export interface CourseRepoFixture {
   courseOriginDir: string;
   courseLiveDir: string;
   courseDevDir: string;
-  /** Git options for the origin directory. Only present for non-bare origins (populateOrigin). */
-  gitOptionsOrigin: GitOptions | null;
-  /** Git options for the live directory. */
-  gitOptionsLive: GitOptions;
 }
 
 interface PopulateOriginOptions {
@@ -83,23 +71,23 @@ export async function createCourseRepoFixture(
   }
 
   // Initialize git in origin
-  const gitOptionsOrigin = { cwd: courseOriginDir, env: process.env };
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
-  await execa('git', ['add', '-A'], gitOptionsOrigin);
-  await execa('git', ['commit', '-m', 'Initial commit'], gitOptionsOrigin);
+  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], { cwd: courseOriginDir });
+  await execa('git', ['add', '-A'], { cwd: courseOriginDir });
+  await execa('git', ['commit', '-m', 'Initial commit'], { cwd: courseOriginDir });
+
   // Allow pushes to this non-bare repo's checked-out branch
-  await execa('git', ['config', 'receive.denyCurrentBranch', 'updateInstead'], gitOptionsOrigin);
+  await execa('git', ['config', 'receive.denyCurrentBranch', 'updateInstead'], {
+    cwd: courseOriginDir,
+  });
 
   // Clone to live and dev
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
+  await execa('git', ['clone', courseOriginDir, courseLiveDir]);
+  await execa('git', ['clone', courseOriginDir, courseDevDir]);
 
   return {
     baseDir,
     courseOriginDir,
     courseLiveDir,
     courseDevDir,
-    gitOptionsOrigin,
-    gitOptionsLive: { cwd: courseLiveDir, env: process.env },
   };
 }
