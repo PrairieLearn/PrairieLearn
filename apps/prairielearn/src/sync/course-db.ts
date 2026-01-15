@@ -19,6 +19,7 @@ import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
+  type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
@@ -696,7 +697,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -729,11 +730,11 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  loadedJson.data = result.data;
-
-  const validationResult = validate(loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
+
+  loadedJson.data = result.data;
 
   return loadedJson;
 }
@@ -758,7 +759,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -1109,11 +1110,13 @@ function formatValues(qids: Set<string> | string[]) {
 
 function validateAssessment({
   assessment,
+  rawAssessment,
   questions,
   sharingEnabled,
   courseInstanceExpired,
 }: {
   assessment: AssessmentJson;
+  rawAssessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
@@ -1131,19 +1134,23 @@ function validateAssessment({
   if (assessment.teams != null) {
     const usedLegacyProps: string[] = [];
 
-    // If they are using the default values for these properties, we won't
-    // consider them "used" for the purposes of this check.
-    // validateAssessment is called after Zod parsing, so these properties
-    // will have default values filled in.
-
-    if (assessment.groupWork === true) usedLegacyProps.push('groupWork');
-    if (assessment.groupMaxSize != null) usedLegacyProps.push('groupMaxSize');
-    if (assessment.groupMinSize != null) usedLegacyProps.push('groupMinSize');
-    if (assessment.groupRoles.length > 0) usedLegacyProps.push('groupRoles');
-    if (assessment.studentGroupCreate === true) usedLegacyProps.push('studentGroupCreate');
-    if (assessment.studentGroupJoin === true) usedLegacyProps.push('studentGroupJoin');
-    if (assessment.studentGroupLeave === true) usedLegacyProps.push('studentGroupLeave');
-    if (assessment.studentGroupChooseName === false) usedLegacyProps.push('studentGroupChooseName');
+    // We need to use `rawAssessment` here to check if the user specified any
+    // legacy properties in their JSON. `assessment` has already had default values
+    // filled in by Zod.
+    for (const prop of [
+      'groupWork',
+      'groupMaxSize',
+      'groupMinSize',
+      'groupRoles',
+      'studentGroupCreate',
+      'studentGroupJoin',
+      'studentGroupLeave',
+      'studentGroupChooseName',
+    ]) {
+      if (prop in rawAssessment) {
+        usedLegacyProps.push(prop);
+      }
+    }
 
     if (usedLegacyProps.length > 0) {
       errors.push(
@@ -1753,8 +1760,14 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     schema: schemas.infoAssessment,
     zodSchema: schemas.AssessmentJsonSchema,
-    validate: (assessment: AssessmentJson) =>
-      validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
+    validate: (assessment: AssessmentJson, rawAssessment: AssessmentJsonInput) =>
+      validateAssessment({
+        assessment,
+        rawAssessment,
+        questions,
+        sharingEnabled,
+        courseInstanceExpired,
+      }),
     recursive: true,
   });
   checkDuplicateUUIDs(
