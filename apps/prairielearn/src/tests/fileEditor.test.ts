@@ -18,11 +18,7 @@ import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  deleteCourseRepo,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -277,10 +273,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
         course_repository: courseOriginDir(),
       });
     });
-    afterAll(async () => {
-      await helperServer.after();
-      await deleteCourseRepo(courseRepo);
-    });
+    afterAll(helperServer.after);
 
     describe('the locals object', function () {
       it('should be cleared', function () {

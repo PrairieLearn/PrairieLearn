@@ -18,11 +18,7 @@ import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
-import {
-  type CourseRepoSetup,
-  createCourseRepo,
-  deleteCourseRepo,
-} from './helperCourse.js';
+import { type CourseRepoSetup, createCourseRepo } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
 
@@ -462,10 +458,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
         course_repository: courseOriginDir(),
       });
     });
-    afterAll(async () => {
-      await helperServer.after();
-      await deleteCourseRepo(courseRepo);
-    });
+    afterAll(helperServer.after);
 
     describe('verify edits', function () {
       testEditData.forEach((element) => {
@@ -491,7 +484,6 @@ describe('test course editor', { timeout: 20_000 }, function () {
     afterAll(async () => {
       config.checkSharingOnSync = false;
       await helperServer.after();
-      await deleteCourseRepo(courseRepo);
     });
 
     describe('verify edits', function () {

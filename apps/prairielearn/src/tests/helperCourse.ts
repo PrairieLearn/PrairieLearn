@@ -33,78 +33,6 @@ export async function updateCourseRepository({
 }
 
 /**
- * Represents a test course repository setup with origin, live, and dev directories.
- *
- * - `courseOriginDir`: A bare git repository that acts as the remote origin
- * - `courseLiveDir`: A clone of origin that the server uses (simulates production)
- * - `courseDevDir`: A clone of origin that simulates a developer's local checkout
- */
-export interface CourseRepoSetup {
-  baseDir: string;
-  courseOriginDir: string;
-  courseLiveDir: string;
-  courseDevDir: string;
-}
-
-/**
- * Creates a test course repository setup with git capabilities.
- *
- * This function:
- * 1. Creates a bare git repository (origin)
- * 2. Clones it to a "live" directory
- * 3. Copies course template files to the live directory
- * 4. Commits and pushes the initial content
- * 5. Clones to a "dev" directory for simulating developer changes
- *
- * @param courseTemplateDir - Path to the course template directory to copy into the repo
- * @returns Setup object with paths to all directories
- */
-export async function createCourseRepo(courseTemplateDir: string): Promise<CourseRepoSetup> {
-  const baseDir = tmp.dirSync().name;
-  const courseOriginDir = path.join(baseDir, 'courseOrigin');
-  const courseLiveDir = path.join(baseDir, 'courseLive');
-  const courseDevDir = path.join(baseDir, 'courseDev');
-
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-    cwd: '.',
-    env: process.env,
-  });
-
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
-
-  await fs.copy(courseTemplateDir, courseLiveDir);
-
-  const execOptions = { cwd: courseLiveDir, env: process.env };
-  await execa('git', ['add', '-A'], execOptions);
-  await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
-  await execa('git', ['push', 'origin', 'master'], execOptions);
-
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
-  });
-
-  return {
-    baseDir,
-    courseOriginDir,
-    courseLiveDir,
-    courseDevDir,
-  };
-}
-
-/**
- * Cleans up a course repository setup by removing all directories.
- */
-export async function deleteCourseRepo(setup: CourseRepoSetup): Promise<void> {
-  await fs.remove(setup.courseOriginDir);
-  await fs.remove(setup.courseLiveDir);
-  await fs.remove(setup.courseDevDir);
-}
-
-/**
  * Git options for executing commands in a specific directory.
  */
 export interface GitOptions {
@@ -113,42 +41,99 @@ export interface GitOptions {
 }
 
 /**
- * Creates a separate git repository setup for testing course sharing scenarios.
- *
- * Unlike `createCourseRepo`, this creates a non-bare origin repository that can
- * be used with `syncUtil.writeCourseToDirectory` for programmatic course creation.
- *
- * @param originDir - Path where the origin repository should be created
- * @param liveDir - Path where the live clone should be created
- * @returns Git options objects for both origin and live directories
+ * Represents a test course repository setup with origin, live, and optionally dev directories.
  */
-export async function createSharingCourseRepo(
-  originDir: string,
-  liveDir: string,
-): Promise<{ gitOptionsOrigin: GitOptions; gitOptionsLive: GitOptions }> {
-  const gitOptionsOrigin: GitOptions = { cwd: originDir, env: process.env };
-  const gitOptionsLive: GitOptions = { cwd: liveDir, env: process.env };
+export interface CourseRepoSetup {
+  baseDir: string;
+  courseOriginDir: string;
+  courseLiveDir: string;
+  courseDevDir: string;
+  /** Git options for the origin directory. Only present for non-bare origins (populateOrigin). */
+  gitOptionsOrigin: GitOptions | null;
+  /** Git options for the live directory. */
+  gitOptionsLive: GitOptions;
+}
 
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
+interface CreateCourseRepoOptions {
+  /** Path to course template to copy. Mutually exclusive with populateOrigin. */
+  courseTemplateDir?: string;
 
-  return { gitOptionsOrigin, gitOptionsLive };
+  /**
+   * Function to populate the origin directory with course content.
+   * Called before git init. Must create the directory and write files.
+   * Results in a non-bare origin that can receive direct commits.
+   * Mutually exclusive with courseTemplateDir.
+   */
+  populateOrigin?: (originDir: string) => Promise<void>;
+
+  /** Whether to create a dev directory clone. Default: true if courseTemplateDir, false if populateOrigin. */
+  createDevDir?: boolean;
 }
 
 /**
- * Commits content and clones to a live directory for sharing course tests.
+ * Creates a test course repository setup with git capabilities.
  *
- * Call this after writing course content to the origin directory.
+ * Two patterns are supported:
+ * 1. Template-based: Pass a courseTemplateDir path (or just a string). Creates a bare origin,
+ *    clones to live, copies template, commits, pushes, and clones to dev.
+ * 2. Programmatic: Pass a populateOrigin callback. Calls the callback to write files,
+ *    then initializes a non-bare git repo, commits, and clones to live.
  */
-export async function commitAndCloneSharingCourse(
-  originDir: string,
-  liveDir: string,
-  gitOptionsOrigin: GitOptions,
-): Promise<void> {
-  await execa('git', ['add', '-A'], gitOptionsOrigin);
-  await execa('git', ['commit', '-m', 'initial commit'], gitOptionsOrigin);
-  await fs.mkdir(liveDir, { recursive: true });
-  await execa('git', ['clone', originDir, liveDir], {
-    cwd: '.',
-    env: process.env,
-  });
+export async function createCourseRepo(
+  optionsOrTemplateDir: CreateCourseRepoOptions | string,
+): Promise<CourseRepoSetup> {
+  const options: CreateCourseRepoOptions =
+    typeof optionsOrTemplateDir === 'string'
+      ? { courseTemplateDir: optionsOrTemplateDir }
+      : optionsOrTemplateDir;
+
+  if (options.courseTemplateDir && options.populateOrigin) {
+    throw new Error('Cannot specify both courseTemplateDir and populateOrigin');
+  }
+  if (!options.courseTemplateDir && !options.populateOrigin) {
+    throw new Error('Must specify either courseTemplateDir or populateOrigin');
+  }
+
+  const baseDir = tmp.dirSync().name;
+  const courseOriginDir = path.join(baseDir, 'courseOrigin');
+  const courseLiveDir = path.join(baseDir, 'courseLive');
+  const courseDevDir = path.join(baseDir, 'courseDev');
+
+  let gitOptionsOrigin: GitOptions | null = null;
+
+  if (options.courseTemplateDir) {
+    // Template pattern: bare origin, clone to live, copy template, commit, push
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
+      cwd: '.',
+      env: process.env,
+    });
+    await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
+    await fs.copy(options.courseTemplateDir, courseLiveDir);
+    const execOptions = { cwd: courseLiveDir, env: process.env };
+    await execa('git', ['add', '-A'], execOptions);
+    await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
+    await execa('git', ['push', 'origin', 'master'], execOptions);
+  } else {
+    // Programmatic pattern: populate origin, git init, commit, clone to live
+    await options.populateOrigin!(courseOriginDir);
+    gitOptionsOrigin = { cwd: courseOriginDir, env: process.env };
+    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
+    await execa('git', ['add', '-A'], gitOptionsOrigin);
+    await execa('git', ['commit', '-m', 'Initial commit'], gitOptionsOrigin);
+    await execa('git', ['clone', courseOriginDir, courseLiveDir], { cwd: '.', env: process.env });
+  }
+
+  const createDevDir = options.createDevDir ?? !!options.courseTemplateDir;
+  if (createDevDir) {
+    await execa('git', ['clone', courseOriginDir, courseDevDir], { cwd: '.', env: process.env });
+  }
+
+  return {
+    baseDir,
+    courseOriginDir,
+    courseLiveDir,
+    courseDevDir,
+    gitOptionsOrigin,
+    gitOptionsLive: { cwd: courseLiveDir, env: process.env },
+  };
 }
