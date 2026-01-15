@@ -28,18 +28,6 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoSetup;
 
-function courseLiveDir() {
-  return courseRepo.courseLiveDir;
-}
-
-function courseDevDir() {
-  return courseRepo.courseDevDir;
-}
-
-function courseOriginDir() {
-  return courseRepo.courseOriginDir;
-}
-
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
 
@@ -454,10 +442,10 @@ describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepo(courseTemplateDir);
-      await helperServer.before(courseLiveDir())();
+      await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir(),
-        course_repository: courseOriginDir(),
+        course_path: courseRepo.courseLiveDir,
+        course_repository: courseRepo.courseOriginDir,
       });
     });
     afterAll(helperServer.after);
@@ -472,10 +460,10 @@ describe('test course editor', { timeout: 20_000 }, function () {
   describe('Copy from another course', function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepo(courseTemplateDir);
-      await helperServer.before(courseLiveDir())();
+      await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir(),
-        course_repository: courseOriginDir(),
+        course_path: courseRepo.courseLiveDir,
+        course_repository: courseRepo.courseOriginDir,
       });
       await features.enable('question-sharing');
       config.checkSharingOnSync = true;
@@ -618,27 +606,27 @@ function testEdit(params: EditData) {
   describe('validate', () => {
     it('should not have any sync warnings or errors', async () => {
       const rowCount = await sqldb.execute(sql.select_sync_warnings_and_errors, {
-        course_path: courseLiveDir,
+        course_path: courseRepo.courseLiveDir,
       });
       assert.equal(rowCount, 0);
     });
 
     it('should pull into dev directory', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
 
     it('should have correct contents', async () => {
-      const files = await getFiles({ baseDir: courseDevDir() });
+      const files = await getFiles({ baseDir: courseRepo.courseDevDir });
       assert.sameMembers([...files], [...params.files]);
     });
 
     if (params.info) {
       const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir(), info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });

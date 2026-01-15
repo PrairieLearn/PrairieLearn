@@ -70,30 +70,22 @@ let courseRepo: CourseRepoSetup;
 let gitOptionsOrigin: GitOptions;
 let gitOptionsLive: GitOptions;
 
-function sharingCourseOriginDir() {
-  return courseRepo.courseOriginDir;
-}
-
-function sharingCourseLiveDir() {
-  return courseRepo.courseLiveDir;
-}
-
 async function commitAndPullSharingCourse() {
   await execa('git', ['add', '-A'], gitOptionsOrigin);
   await execa('git', ['commit', '-m', 'Add sharing set'], gitOptionsOrigin);
   await execa('git', ['pull'], gitOptionsLive);
-  const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir());
+  const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
   assert.equal(syncResult.status, 'complete');
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
 async function ensureInvalidSharingOperationFailsToSync() {
-  let syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir());
+  let syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
   assert.equal(syncResult.status, 'sharing_error');
   await execa('git', ['clean', '-fdx'], gitOptionsLive);
   await execa('git', ['reset', '--hard', 'HEAD'], gitOptionsLive);
 
-  syncResult = await syncFromDisk.syncOrCreateDiskToSql(sharingCourseLiveDir(), logger);
+  syncResult = await syncFromDisk.syncOrCreateDiskToSql(courseRepo.courseLiveDir, logger);
   assert.equal(syncResult.status, 'complete');
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
@@ -175,7 +167,7 @@ describe('Question Sharing', function () {
     });
     gitOptionsOrigin = courseRepo.gitOptionsOrigin!;
     gitOptionsLive = courseRepo.gitOptionsLive;
-    const syncResults = await syncUtil.syncCourseData(sharingCourseLiveDir());
+    const syncResults = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
     sharingCourse = await selectCourseById(syncResults.courseId);
     sharingCourseInstanceId = await sqldb.queryRow(
       sql.select_course_instance,
@@ -341,12 +333,12 @@ describe('Question Sharing', function () {
       sharingCourseData.course.sharingSets = [
         { name: SHARING_SET_NAME, description: 'Sharing set for testing' },
       ];
-      const courseInfoPath = path.join(sharingCourseOriginDir(), 'infoCourse.json');
+      const courseInfoPath = path.join(courseRepo.courseOriginDir, 'infoCourse.json');
       await fs.writeJSON(courseInfoPath, sharingCourseData.course);
 
       sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
       await fs.writeJSON(
-        path.join(sharingCourseOriginDir(), 'questions', SHARING_QUESTION_QID, 'info.json'),
+        path.join(courseRepo.courseOriginDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[SHARING_QUESTION_QID],
       );
 
@@ -455,7 +447,7 @@ describe('Question Sharing', function () {
     test.sequential('Publicly share a question', async () => {
       sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = true;
       await fs.writeJSON(
-        path.join(sharingCourseOriginDir(), 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+        path.join(courseRepo.courseOriginDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
       );
 
@@ -531,8 +523,8 @@ describe('Question Sharing', function () {
       'Ensure sync through sync page succeeds before renaming shared question',
       async () => {
         await sqldb.execute(sql.update_course_repository, {
-          course_path: sharingCourseLiveDir(),
-          course_repository: sharingCourseOriginDir(),
+          course_path: courseRepo.courseLiveDir,
+          course_repository: courseRepo.courseOriginDir,
         });
 
         const job_sequence_id = await syncSharingCourse(sharingCourse.id);
@@ -541,25 +533,25 @@ describe('Question Sharing', function () {
     );
 
     test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
-      const questionPath = path.join(sharingCourseOriginDir(), 'questions', SHARING_QUESTION_QID);
+      const questionPath = path.join(courseRepo.courseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
       await execa('git', ['add', '-A'], gitOptionsOrigin);
       await execa('git', ['commit', '-m', 'invalid sharing config edit'], gitOptionsOrigin);
 
-      const commitHash = await getCourseCommitHash(sharingCourseLiveDir());
+      const commitHash = await getCourseCommitHash(courseRepo.courseLiveDir);
 
       const job_sequence_id = await syncSharingCourse(sharingCourse.id);
       await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
 
       assert.equal(
         commitHash,
-        await getCourseCommitHash(sharingCourseLiveDir()),
+        await getCourseCommitHash(courseRepo.courseLiveDir),
         'Commit hash of sharing course should not change when attempting to sync breaking change.',
       );
 
       const sharedQuestionExists = await fs.pathExists(
-        path.join(sharingCourseLiveDir(), 'questions', SHARING_QUESTION_QID),
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID),
       );
       assert(
         sharedQuestionExists,
@@ -577,7 +569,7 @@ describe('Question Sharing', function () {
       const saveSharingSets = sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets || [];
       sharingCourseData.questions[SHARING_QUESTION_QID].sharingSets = [];
       await fs.writeJSON(
-        path.join(sharingCourseLiveDir(), 'questions', SHARING_QUESTION_QID, 'info.json'),
+        path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
         sharingCourseData.questions[SHARING_QUESTION_QID],
       );
 
@@ -591,7 +583,7 @@ describe('Question Sharing', function () {
       async () => {
         sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID].sharePublicly = false;
         await fs.writeJSON(
-          path.join(sharingCourseLiveDir(), 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
+          path.join(courseRepo.courseLiveDir, 'questions', PUBLICLY_SHARED_QUESTION_QID, 'info.json'),
           sharingCourseData.questions[PUBLICLY_SHARED_QUESTION_QID],
         );
 
@@ -603,7 +595,7 @@ describe('Question Sharing', function () {
       const saveSharingSets = sharingCourseData.course.sharingSets || [];
       sharingCourseData.course.sharingSets = [];
       await fs.writeJSON(
-        path.join(sharingCourseLiveDir(), 'infoCourse.json'),
+        path.join(courseRepo.courseLiveDir, 'infoCourse.json'),
         sharingCourseData.course,
       );
 
@@ -620,7 +612,7 @@ describe('Question Sharing', function () {
           'Fake Sharing Set Name',
         );
         await fs.writeJSON(
-          path.join(sharingCourseLiveDir(), 'questions', SHARING_QUESTION_QID, 'info.json'),
+          path.join(courseRepo.courseLiveDir, 'questions', SHARING_QUESTION_QID, 'info.json'),
           sharingCourseData.questions[SHARING_QUESTION_QID],
         );
 
@@ -644,7 +636,7 @@ describe('Question Sharing', function () {
       async () => {
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
         await fs.writeJSON(
-          path.join(sharingCourseLiveDir(), 'courseInstances/Fa19/infoCourseInstance.json'),
+          path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
           sharingCourseData.courseInstances['Fa19'].courseInstance,
         );
 
@@ -653,7 +645,7 @@ describe('Question Sharing', function () {
         // Restore for now
         sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = false;
         await fs.writeJSON(
-          path.join(sharingCourseLiveDir(), 'courseInstances/Fa19/infoCourseInstance.json'),
+          path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
           sharingCourseData.courseInstances['Fa19'].courseInstance,
         );
       },
@@ -680,7 +672,7 @@ describe('Question Sharing', function () {
 
         await fs.writeJSON(
           path.join(
-            sharingCourseLiveDir(),
+            courseRepo.courseLiveDir,
             'courseInstances/Fa19/assessments/test/infoAssessment.json',
           ),
           sharingCourseData.courseInstances['Fa19'].assessments['test'],
@@ -704,7 +696,7 @@ describe('Question Sharing', function () {
 
       await fs.writeJSON(
         path.join(
-          sharingCourseLiveDir(),
+          courseRepo.courseLiveDir,
           'courseInstances/Fa19/assessments/test/infoAssessment.json',
         ),
         sharingCourseData.courseInstances['Fa19'].assessments['test'],
@@ -719,7 +711,7 @@ describe('Question Sharing', function () {
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
-        path.join(sharingCourseLiveDir(), 'courseInstances/Fa19/infoCourseInstance.json'),
+        path.join(courseRepo.courseLiveDir, 'courseInstances/Fa19/infoCourseInstance.json'),
         sharingCourseData.courseInstances['Fa19'].courseInstance,
       );
 
@@ -760,7 +752,7 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].sharingSets = [SHARING_SET_NAME];
 
         const questionDirectory = path.join(
-          sharingCourseLiveDir(),
+          courseRepo.courseLiveDir,
           'questions',
           DRAFT_QUESTION_QID,
         );
@@ -781,7 +773,7 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].sharePublicly = true;
 
         const questionDirectory = path.join(
-          sharingCourseLiveDir(),
+          courseRepo.courseLiveDir,
           'questions',
           DRAFT_QUESTION_QID,
         );
@@ -801,7 +793,7 @@ describe('Question Sharing', function () {
         sharingCourseData.questions[DRAFT_QUESTION_QID].shareSourcePublicly = true;
 
         const questionDirectory = path.join(
-          sharingCourseLiveDir(),
+          courseRepo.courseLiveDir,
           'questions',
           DRAFT_QUESTION_QID,
         );

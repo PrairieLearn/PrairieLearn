@@ -32,18 +32,6 @@ const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'cour
 
 let courseRepo: CourseRepoSetup;
 
-function courseLiveDir() {
-  return courseRepo.courseLiveDir;
-}
-
-function courseDevDir() {
-  return courseRepo.courseDevDir;
-}
-
-function courseOriginDir() {
-  return courseRepo.courseOriginDir;
-}
-
 const courseInstancePath = path.join('courseInstances', 'Fa18');
 const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
 const infoCoursePath = 'infoCourse.json';
@@ -269,10 +257,10 @@ describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepo(courseTemplateDir);
-      await helperServer.before(courseLiveDir())();
+      await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir(),
-        course_repository: courseOriginDir(),
+        course_path: courseRepo.courseLiveDir,
+        course_repository: courseRepo.courseOriginDir,
       });
     });
     afterAll(helperServer.after);
@@ -635,17 +623,17 @@ function doEdits(data: {
 function writeAndCommitFileInLive(fileName: string, fileContents: string) {
   describe(`commit a change to ${fileName} by exec`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseLiveDir(), fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir(),
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseLiveDir(),
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
@@ -656,12 +644,12 @@ function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should match contents', function () {
-      assert.strictEqual(readFileSync(path.join(courseDevDir(), fileName), 'utf-8'), fileContents);
+      assert.strictEqual(readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'), fileContents);
     });
   });
 }
@@ -670,12 +658,12 @@ function pullAndVerifyFileNotInDev(fileName: string) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should not exist', async () => {
-      assert.isFalse(await fs.pathExists(path.join(courseDevDir(), fileName)));
+      assert.isFalse(await fs.pathExists(path.join(courseRepo.courseDevDir, fileName)));
     });
   });
 }
@@ -683,23 +671,23 @@ function pullAndVerifyFileNotInDev(fileName: string) {
 function writeAndPushFileInDev(fileName: string, fileContents: string) {
   describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseDevDir(), fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseDevDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should push', async () => {
       await execa('git', ['push'], {
-        cwd: courseDevDir(),
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
