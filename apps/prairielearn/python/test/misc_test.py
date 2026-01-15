@@ -427,7 +427,7 @@ class TimeoutTestCase(NamedTuple):
     "case",
     [
         TimeoutTestCase(
-            test_name="default_message",
+            test_name="timeout_with_default_error_message",
             sleep_duration=2.0,
             return_value=True,
             has_feedback=False,
@@ -435,7 +435,7 @@ class TimeoutTestCase(NamedTuple):
             use_custom_timeout_message=False,
         ),
         TimeoutTestCase(
-            test_name="custom_message",
+            test_name="timeout_with_custom_error_message",
             sleep_duration=2.0,
             return_value=True,
             has_feedback=False,
@@ -443,7 +443,7 @@ class TimeoutTestCase(NamedTuple):
             use_custom_timeout_message=True,
         ),
         TimeoutTestCase(
-            test_name="no_timeout_when_fast",
+            test_name="no_timeout_correct_with_feedback",
             sleep_duration=0.0,
             return_value=True,
             has_feedback=True,
@@ -451,12 +451,20 @@ class TimeoutTestCase(NamedTuple):
             use_custom_timeout_message=False,
         ),
         TimeoutTestCase(
-            test_name="timeout",
-            sleep_duration=2.0,
+            test_name="no_timeout_correct_without_feedback",
+            sleep_duration=0.0,
             return_value=True,
             has_feedback=False,
-            timeout=0.1,
-            use_custom_timeout_message=True,
+            timeout=5.0,
+            use_custom_timeout_message=False,
+        ),
+        TimeoutTestCase(
+            test_name="no_timeout_incorrect_without_feedback",
+            sleep_duration=0.0,
+            return_value=False,
+            has_feedback=False,
+            timeout=5.0,
+            use_custom_timeout_message=False,
         ),
     ],
 )
