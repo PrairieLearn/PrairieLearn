@@ -662,19 +662,21 @@ Access control options can also be used to control the open/close dates of asses
 
 You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The following Mustache template variables are available:
 
-| Variable                       | Description                                       |
-| ------------------------------ | ------------------------------------------------- |
-| `client_files_course`          | URL path to course-level client files             |
-| `client_files_course_instance` | URL path to course instance-level client files    |
-| `client_files_assessment`      | URL path to assessment-level client files         |
+| Variable                       | Description                                    |
+| ------------------------------ | ---------------------------------------------- |
+| `client_files_course`          | URL path to course-level client files          |
+| `client_files_course_instance` | URL path to course instance-level client files |
+| `client_files_assessment`      | URL path to assessment-level client files      |
 
-For backward compatibility, camelCase names (`clientFilesCourse`, `clientFilesCourseInstance`, `clientFilesAssessment`) and legacy EJS syntax (`<%= %>`) are also supported.
+!!! note "Legacy syntax"
 
-```json title="infoAssessment.json"
-{
-  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\">Formula sheet</a>"
-}
-```
+    For backward compatibility, camelCase names with EJS syntax (`<%= clientFilesCourse %>`, `<%= clientFilesCourseInstance %>`, `<%= clientFilesAssessment %>`) are supported. Prefer the use of the camelCase mustache template variables (`{{ client_files_course }}`, `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`) instead.
+
+    ```json title="infoAssessment.json"
+    {
+      "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+    }
+    ```
 
 See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for details about making files available to users.
 
