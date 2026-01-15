@@ -41,7 +41,7 @@ export default asyncHandler(async (req, res, next) => {
     existingEnrollment,
   });
 
-  // If the user is not enrolled, or is rejected/removed then they can enroll if self-enrollment is allowed.
+  // If the user is not enrolled, or is rejected/left/removed then they can enroll if self-enrollment is allowed.
   const canSelfEnroll =
     enrollmentEligibility.eligible &&
     (existingEnrollment == null ||
