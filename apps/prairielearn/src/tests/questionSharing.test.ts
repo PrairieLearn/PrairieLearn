@@ -20,6 +20,7 @@ import {
   type CourseRepoFixture,
   type GitOptions,
   createCourseRepoFixture,
+  updateCourseRepository,
 } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
@@ -531,9 +532,9 @@ describe('Question Sharing', function () {
     test.sequential(
       'Ensure sync through sync page succeeds before renaming shared question',
       async () => {
-        await sqldb.execute(sql.update_course_repository, {
-          course_path: courseRepo.courseLiveDir,
-          course_repository: courseRepo.courseOriginDir,
+        await updateCourseRepository({
+          courseId: sharingCourse.id,
+          repository: courseRepo.courseOriginDir,
         });
 
         const job_sequence_id = await syncSharingCourse(sharingCourse.id);

@@ -18,7 +18,11 @@ import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { type CourseRepoFixture, createCourseRepoFixture } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -258,10 +262,7 @@ describe('test file editor', { timeout: 20_000 }, function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseRepo.courseLiveDir,
-        course_repository: courseRepo.courseOriginDir,
-      });
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
     afterAll(helperServer.after);
 

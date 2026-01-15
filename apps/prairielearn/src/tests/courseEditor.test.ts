@@ -18,7 +18,11 @@ import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
-import { type CourseRepoFixture, createCourseRepoFixture } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
 
@@ -443,10 +447,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseRepo.courseLiveDir,
-        course_repository: courseRepo.courseOriginDir,
-      });
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
     afterAll(helperServer.after);
 
@@ -461,10 +462,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
     beforeAll(async () => {
       courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseRepo.courseLiveDir,
-        course_repository: courseRepo.courseOriginDir,
-      });
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
       await features.enable('question-sharing');
       config.checkSharingOnSync = true;
       await createSharedCourse();
