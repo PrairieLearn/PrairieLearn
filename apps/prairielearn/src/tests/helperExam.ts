@@ -47,7 +47,7 @@ const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
 const exam14GroupWorkQuestions: TestExamQuestion[] = [
   {
     qid: 'addVectors',
-    type: 'Freeform',
+    type: 'Calculation',
     maxPoints: 10,
   },
   {
