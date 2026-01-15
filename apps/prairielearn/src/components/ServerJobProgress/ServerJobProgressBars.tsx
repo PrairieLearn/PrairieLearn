@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';

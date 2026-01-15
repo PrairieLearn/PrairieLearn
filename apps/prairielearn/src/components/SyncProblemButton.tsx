@@ -1,6 +1,6 @@
 import clsx from 'clsx';
 
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { ansiToHtml } from '../lib/chalk.js';
 
@@ -10,7 +10,7 @@ export function SyncProblemButton({ output, type }: { output: string; type: 'err
   const popoverContent = (
     <pre
       className="text-white rounded p-3 mb-0"
-      style="background-color: black;"
+      style={{ backgroundColor: 'black' }}
       // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
       dangerouslySetInnerHTML={{ __html: ansiToHtml(output) }}
     />

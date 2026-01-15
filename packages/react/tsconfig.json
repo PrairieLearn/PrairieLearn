@@ -5,6 +5,6 @@
     "rootDir": "./src",
     "types": ["node"],
     "jsx": "react-jsx",
-    "jsxImportSource": "@prairielearn/preact-cjs"
+    "lib": ["ES2022", "DOM", "DOM.Iterable"]
   }
 }

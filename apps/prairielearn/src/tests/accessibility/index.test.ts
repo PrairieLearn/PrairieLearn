@@ -90,6 +90,9 @@ async function checkPage(url: string) {
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
+      // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
+      // instead of colspan). HTML is case-insensitive, so we accept both.
+      'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
@@ -102,6 +105,9 @@ async function checkPage(url: string) {
       'no-trailing-whitespace': 'off',
       'script-type': 'off',
       'unique-landmark': 'off',
+      // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
+      // letter. We use relaxed mode to allow any non-empty ID without whitespace.
+      'valid-id': ['error', { relaxed: true }],
       'void-style': 'off',
       'wcag/h63': 'off',
       // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.

@@ -30,7 +30,6 @@
     "@types/tar-stream": "^3.1.4",
     "get-stream": "^9.0.1",
     "node-gyp": "^12.1.0",
-    "preact-compat": "^3.19.0",
     "react": "^19.2.3",
     "react-dom": "^19.2.3",
     "tar-stream": "^3.1.7"
@@ -43,6 +42,7 @@
     "@postgres-language-server/cli": "^0.18.0",
     "@stylistic/eslint-plugin": "^5.7.0",
     "@tanstack/eslint-plugin-query": "^5.91.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260107.1",
     "@vitest/coverage-v8": "^4.0.17",
     "@vitest/eslint-plugin": "^1.6.6",
     "dependency-cruiser": "^17.3.6",
@@ -74,9 +74,6 @@
     "vitest": "^4.0.17"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^25.0.0",
-    "preact": "link:./packages/preact-cjs",
-    "react": "link:./packages/preact-cjs-compat",
-    "react-dom": "link:./packages/preact-cjs-compat"
+    "notebookjs/jsdom": "^25.0.0"
   }
 }

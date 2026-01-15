@@ -1,8 +1,6 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
-import type { RefObject } from 'preact';
-import { render } from 'preact/compat';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { JSX } from 'preact/jsx-runtime';
+import { type JSX, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { type Root, createRoot } from 'react-dom/client';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
@@ -64,10 +62,11 @@ function HiddenMeasurementHeader<TData>({
  */
 export function useAutoSizeColumns<TData>(
   table: Table<TData>,
-  tableRef: RefObject<HTMLDivElement>,
+  tableRef: RefObject<HTMLDivElement | null>,
   filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>,
 ): boolean {
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
+  const measurementRootRef = useRef<Root | null>(null);
 
   // Compute columns that need measuring
   const columnsToMeasure = useMemo(() => {
@@ -96,16 +95,16 @@ export function useAutoSizeColumns<TData>(
         container = document.createElement('div');
         document.body.append(container);
         measurementContainerRef.current = container;
+        measurementRootRef.current = createRoot(container);
       }
 
       // Render headers into hidden container
-      render(
+      measurementRootRef.current?.render(
         <HiddenMeasurementHeader
           table={table}
           columnsToMeasure={columnsToMeasure}
           filters={filters ?? {}}
         />,
-        container,
       );
 
       // Force layout calculation
@@ -134,8 +133,9 @@ export function useAutoSizeColumns<TData>(
         }
       }
 
-      // Clear container content by unmounting Preact components
-      render(null, container);
+      // Clear container content by unmounting React components
+      measurementRootRef.current?.unmount();
+      measurementRootRef.current = null;
 
       // Apply measurements
       if (Object.keys(newSizing).length > 0) {
@@ -153,9 +153,10 @@ export function useAutoSizeColumns<TData>(
   // Clean up measurement container on unmount
   useEffect(() => {
     return () => {
+      measurementRootRef.current?.unmount();
+      measurementRootRef.current = null;
       const container = measurementContainerRef.current;
       if (container) {
-        render(null, container);
         container.remove();
         measurementContainerRef.current = null;
       }

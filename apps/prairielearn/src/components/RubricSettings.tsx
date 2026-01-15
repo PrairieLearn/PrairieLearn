@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -358,7 +358,7 @@ export function RubricSettings({
     }
   };
 
-  const copyMustachePattern = async (e: Event, param: string) => {
+  const copyMustachePattern = async (e: React.MouseEvent, param: string) => {
     const button = e.currentTarget as HTMLElement;
     await navigator.clipboard.writeText(param);
     button.animate(
@@ -697,7 +697,7 @@ export function RubricSettings({
               </div>
             </div>
             <div className="mb-3 col-12 col-md-6 col-xl-5">
-              <label className="form-label" for="grader_guidelines">
+              <label className="form-label" htmlFor="grader_guidelines">
                 Grader guidelines (not shown to students)
               </label>
               <textarea
@@ -718,7 +718,7 @@ export function RubricSettings({
           <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
             <thead>
               <tr className="table-light fw-bold">
-                <td style="width:1px" />
+                <td style={{ width: '1px' }} />
                 <td>Points</td>
                 <td>Description</td>
                 <td>Detailed explanation</td>
@@ -810,7 +810,7 @@ export function RubricSettings({
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <label className="form-label" for="rubric-settings-file-input">
+              <label className="form-label" htmlFor="rubric-settings-file-input">
                 Choose file
               </label>
               <input
@@ -869,7 +869,7 @@ export function RubricSettings({
           <div className="small form-text text-muted">
             Rubric items may use these entries, which are replaced with the corresponding values for
             the student variant (click to copy):
-            <ul style="max-height: 7rem; overflow-y: auto;">
+            <ul style={{ maxHeight: '7rem', overflowY: 'auto' }}>
               {params.map((param) => (
                 <li key={`${param}`}>
                   <button
@@ -1061,7 +1061,7 @@ function RubricRow({
         <input
           type="number"
           className="form-control"
-          style="width:5rem"
+          style={{ width: '5rem' }}
           step="any"
           value={item.rubric_item.points}
           aria-label="Points"
@@ -1076,7 +1076,7 @@ function RubricRow({
           type="text"
           className="form-control"
           maxLength={100}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           value={item.rubric_item.description}
           aria-label="Description"
           disabled={!hasCourseInstancePermissionEdit}
@@ -1097,7 +1097,7 @@ function RubricRow({
            */
           value={item.rubric_item.explanation ?? ''}
           maxLength={10000}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           aria-label="Explanation"
           disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
@@ -1109,7 +1109,7 @@ function RubricRow({
           className="form-control"
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           aria-label="Grader note"
           disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}

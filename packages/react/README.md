@@ -1,15 +1,15 @@
-# `@prairielearn/preact`
+# `@prairielearn/react`
 
-Utilities for rendering Preact components within PrairieLearn's HTML templating system, including static rendering and client-side hydration.
+Utilities for rendering React components within PrairieLearn's HTML templating system, including static rendering and client-side hydration.
 
 ## Usage
 
 ### Rendering static HTML
 
-To render a non-interactive Preact component to an HTML-safe string, use `renderHtml`:
+To render a non-interactive React component to an HTML-safe string, use `renderHtml`:
 
 ```tsx
-import { renderHtml } from '@prairielearn/preact/server';
+import { renderHtml } from '@prairielearn/react/server';
 import { html } from '@prairielearn/html';
 
 function MyComponent() {
@@ -22,7 +22,7 @@ const template = html`<div class="container">${renderHtml(<MyComponent />)}</div
 To render a complete document with a DOCTYPE declaration, use `renderHtmlDocument`:
 
 ```tsx
-import { renderHtmlDocument } from '@prairielearn/preact/server';
+import { renderHtmlDocument } from '@prairielearn/react/server';
 
 const htmlDoc = renderHtmlDocument(
   <html>
@@ -41,7 +41,7 @@ Interactive components that require client-side JavaScript must be wrapped in a 
 The root component must live in a module that can be imported on the client, and it must have a `displayName` property set. This is used to identify the component during hydration.
 
 ```tsx
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 function InteractiveComponent({ name }: { name: string }) {
   return <button onClick={() => alert(`Hello, ${name}!`)}>Click me</button>;
@@ -61,7 +61,7 @@ When rendering the page, wrap the component in `<Hydrate>`:
 Alternatively, you can use the `hydrateHtml` convenience function to produce an HTML-safe string directly:
 
 ```tsx
-import { hydrateHtml } from '@prairielearn/preact/server';
+import { hydrateHtml } from '@prairielearn/react/server';
 import { html } from '@prairielearn/html';
 
 const template = html`
@@ -76,7 +76,7 @@ This will render the component to HTML, serialize the component's props using `s
 Hydration relies on `@prairielearn/compiled-assets` to produce the necessary client-side bundles, and there are conventions that must be followed. Specifically, you must create a file in `assets/scripts/esm-bundles/hydrated-components`, and the file's name must match the `displayName` of the component to be hydrated. For the above example, the file would be `assets/scripts/esm-bundles/hydrated-components/InteractiveComponent.ts`. It must contain a call to `registerHydratedComponent` with the component that will be hydrated:
 
 ```ts
-import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
+import { registerHydratedComponent } from '@prairielearn/react/hydrated-component';
 
 import { InteractiveComponent } from '../../../../src/components/InteractiveComponent.js';
 
