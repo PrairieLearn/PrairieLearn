@@ -2575,7 +2575,7 @@ if (shouldStartServer) {
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    socketServer.init(httpServer);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2686,7 +2686,7 @@ if (shouldStartServer) {
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  socketServer.init(httpServer);
+  await socketServer.init(httpServer);
 }
 
 /**
