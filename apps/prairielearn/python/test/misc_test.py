@@ -505,13 +505,15 @@ def test_grade_answer_parametrized_timeout(
         expected_error_substring = timeout_format_error or "Grading timed out"
         assert expected_error_substring in question_data["format_errors"][question_name]
         assert math.isclose(
-            question_data["partial_scores"][question_name]["score"], 0.0  # type: ignore[arg-type]
+            question_data["partial_scores"][question_name]["score"],
+            0.0,  # type: ignore[arg-type]
         )
     else:
         assert question_name not in question_data["format_errors"]
         expected_score = 1.0 if case.return_value else 0.0
         assert math.isclose(
-            question_data["partial_scores"][question_name]["score"], expected_score  # type: ignore[arg-type]
+            question_data["partial_scores"][question_name]["score"],
+            expected_score,  # type: ignore[arg-type]
         )
 
         if case.has_feedback:
