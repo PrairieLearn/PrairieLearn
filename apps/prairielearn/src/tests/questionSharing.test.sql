@@ -15,13 +15,6 @@ FROM
 WHERE
   name = $sharing_set_name;
 
--- BLOCK update_course_repository
-UPDATE courses AS c
-SET
-  repository = $course_repository
-WHERE
-  c.path = $course_path;
-
 -- BLOCK select_course_instance
 SELECT
   id

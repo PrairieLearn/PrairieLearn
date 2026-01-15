@@ -214,3 +214,57 @@ export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength 
   }
   assert.lengthOf(alerts, expectedLength);
 }
+
+/**
+ * Generates an API access token for testing by navigating through the settings UI.
+ *
+ * @param baseUrl The base URL of the server (e.g., 'http://localhost:3000')
+ * @param tokenName Optional name for the token (defaults to 'test')
+ * @returns The generated API token
+ */
+export async function generateApiToken(baseUrl: string, tokenName = 'test'): Promise<string> {
+  const settingsUrl = baseUrl + '/pl/settings';
+
+  // Load the settings page
+  let res = await fetch(settingsUrl);
+  if (!res.ok) {
+    throw new Error(`Failed to load settings page: ${res.status}`);
+  }
+  let page$ = cheerio.load(await res.text());
+
+  // Find the generate token button and extract the CSRF token from its popover
+  const button = page$('[data-testid="generate-token-button"]').get(0);
+  if (!button) {
+    throw new Error('Could not find generate-token-button');
+  }
+
+  const data$ = cheerio.load(button.attribs['data-bs-content']);
+  const csrfInput = data$('form input[name="__csrf_token"]').get(0);
+  const csrfToken = csrfInput?.attribs.value;
+  if (!csrfToken) {
+    throw new Error('Could not find CSRF token in generate token form');
+  }
+
+  // Submit the form to generate a token
+  res = await fetch(settingsUrl, {
+    method: 'POST',
+    body: new URLSearchParams({
+      __action: 'token_generate',
+      __csrf_token: csrfToken,
+      token_name: tokenName,
+    }),
+    redirect: 'follow',
+  });
+  if (!res.ok) {
+    throw new Error(`Failed to generate token: ${res.status}`);
+  }
+
+  // Extract the token from the response
+  page$ = cheerio.load(await res.text());
+  const tokenContainer = page$('.new-access-token');
+  if (tokenContainer.length === 0) {
+    throw new Error('Could not find new-access-token container in response');
+  }
+
+  return tokenContainer.text().trim();
+}

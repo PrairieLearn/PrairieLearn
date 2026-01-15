@@ -4,6 +4,7 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 
+import { generateApiToken } from './helperClient.js';
 import { createCourseRepoFixture, updateCourseRepository } from './helperCourse.js';
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
@@ -26,11 +27,10 @@ const locals = {} as {
   getSubmittedAnswer: (variant: any) => object;
   settingsUrl: string;
   baseUrl: string;
-  api_token: string;
-  assessment_id: string;
+  apiToken: string;
+  assessmentId: string;
   __csrf_token: string;
   __action: string;
-  course_sync_job_sequence_id: string;
   apiUrl: string;
   apiCourseInstanceUrl: string;
   apiPublicCourseInstanceUrl: string;
@@ -46,11 +46,8 @@ const locals = {} as {
   apiAssessmentAccessRulesUrl: string;
   apiCourseInstanceAccessRulesUrl: string;
   apiCourseInstanceInfoUrl: string;
-  apiCourseSyncUrl: string;
-  apiCourseSyncJobUrl: string;
-  apiCourseUrl: string;
-  assessment_instance_id: string;
-  submission_id: string;
+  assessmentInstanceId: string;
+  submissionId: string;
 };
 
 const assessmentPoints = 5;
@@ -145,11 +142,11 @@ describe('API', { timeout: 60_000 }, function () {
       const page$ = cheerio.load(await res.text());
       const tokenContainer = page$('.new-access-token');
       assert.lengthOf(tokenContainer, 1);
-      locals.api_token = tokenContainer.text().trim();
+      locals.apiToken = tokenContainer.text().trim();
 
       // Check that the token has the correct format
       assert.ok(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.api_token),
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.apiToken),
       );
     });
 
@@ -157,7 +154,7 @@ describe('API', { timeout: 60_000 }, function () {
       const res = await fetch(locals.settingsUrl);
       assert.isTrue(res.ok);
       const pageContent = await res.text();
-      assert.isFalse(pageContent.includes(locals.api_token));
+      assert.isFalse(pageContent.includes(locals.apiToken));
     });
   });
 
@@ -185,7 +182,7 @@ describe('API', { timeout: 60_000 }, function () {
       async function () {
         const res = await fetch(locals.apiAssessmentsUrl, {
           headers: {
-            'Private-Token': locals.api_token,
+            'Private-Token': locals.apiToken,
           },
         });
         assert.equal(res.status, 200);
@@ -197,34 +194,34 @@ describe('API', { timeout: 60_000 }, function () {
         assert.equal(assessment.assessment_label, 'E1');
 
         // Persist the assessment ID for later requests
-        locals.assessment_id = assessment.assessment_id;
+        locals.assessmentId = assessment.assessment_id;
       },
     );
 
     test.sequential('GET to API for single assessment succeeds', async function () {
       locals.apiAssessmentUrl =
-        locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}`;
+        locals.apiCourseInstanceUrl + `/assessments/${locals.assessmentId}`;
 
       const res = await fetch(locals.apiAssessmentUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
 
-      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.assessment_id, locals.assessmentId);
       assert.equal(json.assessment_label, 'E1');
     });
 
     test.sequential('GET to API for assessment instances succeeds', async function () {
       locals.apiAssessmentInstancesUrl =
-        locals.apiCourseInstanceUrl + `/assessments/${locals.assessment_id}/assessment_instances`;
+        locals.apiCourseInstanceUrl + `/assessments/${locals.assessmentId}/assessment_instances`;
 
       const res = await fetch(locals.apiAssessmentInstancesUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -236,24 +233,24 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(assessmentInstance.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
 
       // Persist the assessment instance ID for later requests
-      locals.assessment_instance_id = assessmentInstance.assessment_instance_id;
+      locals.assessmentInstanceId = assessmentInstance.assessment_instance_id;
     });
 
     test.sequential('GET to API for a single assessment instance succeeds', async function () {
       locals.apiAssessmentInstanceUrl =
-        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}`;
+        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessmentInstanceId}`;
 
       const res = await fetch(locals.apiAssessmentInstanceUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
 
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
-      assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
-      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.assessment_instance_id, locals.assessmentInstanceId);
+      assert.equal(json.assessment_id, locals.assessmentId);
       assert.equal(json.user_uid, 'dev@example.com');
       assert.equal(json.points, assessmentPoints);
       assert.equal(json.max_points, helperExam.exam1AutomaticTestSuite.maxPoints);
@@ -262,11 +259,11 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for assessment submissions succeeds', async function () {
       locals.apiSubmissionsUrl =
         locals.apiCourseInstanceUrl +
-        `/assessment_instances/${locals.assessment_instance_id}/submissions`;
+        `/assessment_instances/${locals.assessmentInstanceId}/submissions`;
 
       const res = await fetch(locals.apiSubmissionsUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -276,24 +273,24 @@ describe('API', { timeout: 60_000 }, function () {
       assert.equal(json[0].instance_question_points, assessmentPoints);
 
       // Persist the submission ID for later requests
-      locals.submission_id = json[0].submission_id;
+      locals.submissionId = json[0].submission_id;
     });
 
     test.sequential('GET to API for single submission succeeds', async function () {
       locals.apiSubmissionUrl =
-        locals.apiCourseInstanceUrl + `/submissions/${locals.submission_id}`;
+        locals.apiCourseInstanceUrl + `/submissions/${locals.submissionId}`;
 
       const res = await fetch(locals.apiSubmissionUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
 
       const json = (await res.json()) as any;
-      assert.equal(json.submission_id, locals.submission_id);
-      assert.equal(json.assessment_instance_id, locals.assessment_instance_id);
-      assert.equal(json.assessment_id, locals.assessment_id);
+      assert.equal(json.submission_id, locals.submissionId);
+      assert.equal(json.assessment_instance_id, locals.assessmentInstanceId);
+      assert.equal(json.assessment_id, locals.assessmentId);
       assert.equal(json.instance_question_points, assessmentPoints);
     });
 
@@ -301,7 +298,7 @@ describe('API', { timeout: 60_000 }, function () {
       locals.apiGradebookUrl = locals.apiCourseInstanceUrl + '/gradebook';
       const res = await fetch(locals.apiGradebookUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -318,11 +315,11 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for assessment instance questions succeeds', async function () {
       locals.apiInstanceQuestionUrl =
         locals.apiCourseInstanceUrl +
-        `/assessment_instances/${locals.assessment_instance_id}/instance_questions`;
+        `/assessment_instances/${locals.assessmentInstanceId}/instance_questions`;
 
       const res = await fetch(locals.apiInstanceQuestionUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
 
@@ -332,11 +329,11 @@ describe('API', { timeout: 60_000 }, function () {
 
     test.sequential('GET to API for assessment instance log succeeds', async function () {
       locals.apiAssessmentInstanceLogUrl =
-        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessment_instance_id}/log`;
+        locals.apiCourseInstanceUrl + `/assessment_instances/${locals.assessmentInstanceId}/log`;
 
       const res = await fetch(locals.apiAssessmentInstanceLogUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -350,7 +347,7 @@ describe('API', { timeout: 60_000 }, function () {
       async function () {
         const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999', {
           headers: {
-            'Private-Token': locals.api_token,
+            'Private-Token': locals.apiToken,
           },
         });
         assert.equal(res.status, 404);
@@ -365,7 +362,7 @@ describe('API', { timeout: 60_000 }, function () {
       async function () {
         const res = await fetch(locals.apiCourseInstanceUrl + '/assessment_instances/999999/log', {
           headers: {
-            'Private-Token': locals.api_token,
+            'Private-Token': locals.apiToken,
           },
         });
         assert.equal(res.status, 404);
@@ -378,11 +375,11 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for assessment access rules succeeds', async function () {
       locals.apiAssessmentAccessRulesUrl =
         locals.apiCourseInstanceUrl +
-        `/assessments/${locals.assessment_id}/assessment_access_rules`;
+        `/assessments/${locals.assessmentId}/assessment_access_rules`;
 
       const res = await fetch(locals.apiAssessmentAccessRulesUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -396,7 +393,7 @@ describe('API', { timeout: 60_000 }, function () {
         locals.apiPublicCourseInstanceUrl + '/course_instance_access_rules';
       const res = await fetch(locals.apiCourseInstanceAccessRulesUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -408,7 +405,7 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for course instance info succeeds', async function () {
       const res = await fetch(locals.apiCourseInstanceUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
         },
       });
       assert.equal(res.status, 200);
@@ -421,7 +418,7 @@ describe('API', { timeout: 60_000 }, function () {
     test.sequential('GET to API for course instance info fails in exam mode', async () => {
       const res = await fetch(locals.apiCourseInstanceUrl, {
         headers: {
-          'Private-Token': locals.api_token,
+          'Private-Token': locals.apiToken,
           Cookie: 'pl_test_mode=Exam',
         },
       });
@@ -445,32 +442,8 @@ describe('API course sync', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    // Generate an API token
-    const settingsUrl = baseUrl + '/pl/settings';
-    let res = await fetch(settingsUrl);
-    assert.isTrue(res.ok);
-    let page$ = cheerio.load(await res.text());
-
-    const button = page$('[data-testid="generate-token-button"]').get(0);
-    assert(button);
-    const data$ = cheerio.load(button.attribs['data-bs-content']);
-    const csrfInput = data$('form input[name="__csrf_token"]').get(0);
-    const csrfToken = csrfInput?.attribs.value;
-
-    res = await fetch(settingsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'token_generate',
-        __csrf_token: csrfToken!,
-        token_name: 'sync-test',
-      }),
-      redirect: 'follow',
-    });
-    assert.isTrue(res.ok);
-
-    page$ = cheerio.load(await res.text());
-    const tokenContainer = page$('.new-access-token');
-    apiToken = tokenContainer.text().trim();
+    // Generate an API token using the shared helper
+    apiToken = await generateApiToken(baseUrl, 'sync-test');
 
     // Create course with git repository using the shared fixture helper
     const courseData = syncUtil.getCourseData();
