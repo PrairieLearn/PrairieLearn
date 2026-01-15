@@ -1,5 +1,11 @@
 # @prairielearn/node-metrics
 
+## 2.0.13
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.12
 
 ### Patch Changes
