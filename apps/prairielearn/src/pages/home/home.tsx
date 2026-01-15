@@ -271,6 +271,10 @@ router.post(
         await setEnrollmentStatus({
           enrollment,
           status: 'left',
+          // If the user transitioned to the `removed` status since the user loaded
+          // the page that allowed them to submit the unenroll request, we'll treat
+          // this as a no-op instead of erroring because of a mismatched status.
+          equivalentStatuses: ['removed'],
           authzData,
           requiredRole: ['Student'],
         });

@@ -577,11 +577,18 @@ async function _selectAndLockEnrollment(id: string) {
 export async function setEnrollmentStatus({
   enrollment,
   status,
+  equivalentStatuses,
   authzData,
   requiredRole,
 }: {
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'left' | 'removed' | 'joined';
+  /**
+   * A set of enrollment statuses which are considered equivalent to the desired status.
+   * If an enrollment is already in one of these statuses, the function will return
+   * early without making any changes.
+   */
+  equivalentStatuses?: EnumEnrollmentStatus[];
   authzData: AuthzData;
   requiredRole: CourseInstanceRole[];
 }): Promise<Enrollment> {
@@ -631,8 +638,12 @@ export async function setEnrollmentStatus({
     if (lockedEnrollment.user_id) {
       await selectAndLockUser(lockedEnrollment.user_id);
     }
-    // The enrollment is already in the desired status, so we can return early.
-    if (lockedEnrollment.status === status) {
+
+    if (
+      lockedEnrollment.status === status ||
+      equivalentStatuses?.includes(lockedEnrollment.status)
+    ) {
+      // The enrollment is already in the desired status, so we can return early.
       return lockedEnrollment;
     }
 
