@@ -248,6 +248,8 @@ def grade_answer_parameterized(
 
     # Execute the grading function, with optional timeout
     timed_out = False
+    result: bool | float = False
+    feedback_content: str | None = None
 
     if timeout is not None:
         with ThreadingTimeout(timeout) as ctx:
@@ -268,20 +270,18 @@ def grade_answer_parameterized(
         return
 
     # Try converting partial score
-    # Note: result and feedback_content are always assigned in both branches above,
-    # but the type checker doesn't understand this flow
-    if isinstance(result, bool):  # type: ignore[possibly-unbound]
+    if isinstance(result, bool):
         partial_score = 1.0 if result else 0.0
-    elif isinstance(result, float | int):  # type: ignore[possibly-unbound]
+    elif isinstance(result, float | int):
         assert 0.0 <= result <= 1.0
         partial_score = result
     else:
-        assert_never(result)  # type: ignore[possibly-unbound]
+        assert_never(result)
 
     # Set corresponding partial score and feedback
     data["partial_scores"][name]["score"] = partial_score
 
-    if feedback_content:  # type: ignore[possibly-unbound]
+    if feedback_content:
         data["partial_scores"][name]["feedback"] = feedback_content
 
 
