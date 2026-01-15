@@ -107,11 +107,13 @@ lint-all: lint-js lint-python lint-html lint-docs lint-docker lint-actions lint-
 
 lint: lint-js lint-python lint-html lint-links lint-changeset
 lint-js:
-	@yarn eslint "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn oxlint -c .oxlintrc.json
+	@yarn eslint -c eslint.config.residual.mjs "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check
 # This is a separate target since the caches don't respect updates to plugins.
 lint-js-cached:
-	@yarn eslint --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn oxlint -c .oxlintrc.json
+	@yarn eslint -c eslint.config.residual.mjs --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}" --check --cache --cache-strategy content
 lint-python:
 	@uv run ruff check ./
@@ -146,11 +148,13 @@ format-sql:
 	@uv run sqlfluff fix
 
 format-js:
-	@yarn eslint --ext js --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn oxlint -c .oxlintrc.json --fix
+	@yarn eslint -c eslint.config.residual.mjs --fix "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 # This is a separate target since the caches don't respect updates to plugins.
 format-js-cached:
-	@yarn eslint --ext js --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
+	@yarn oxlint -c .oxlintrc.json --fix
+	@yarn eslint -c eslint.config.residual.mjs --fix --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,html,mustache}"
 	@yarn prettier --write --cache --cache-strategy content "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts,md,sql,json,yml,toml,html,css,scss,sh}"
 
 format-python:

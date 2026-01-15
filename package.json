@@ -61,6 +61,7 @@
     "htmlhint": "^1.8.0",
     "linkinator": "^7.5.3",
     "markdownlint-cli": "^0.47.0",
+    "oxlint": "^1.39.0",
     "prettier": "3.8.0",
     "prettier-plugin-pkg": "^0.21.2",
     "prettier-plugin-sh": "^0.18.0",
