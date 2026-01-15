@@ -93,14 +93,15 @@ async function ensureInvalidSharingOperationFailsToSync() {
 }
 
 async function pullAndSyncSharingCourse() {
-  const beforeHash = await getCourseCommitHash(sharingCourseLiveDir);
-  await execa('git', ['fetch', 'origin'], gitOptionsLive);
-  await execa('git', ['reset', '--hard', 'origin/master'], gitOptionsLive);
-  const syncResult = await syncUtil.syncCourseData(sharingCourseLiveDir);
+  const beforeHash = await getCourseCommitHash(courseRepo.courseLiveDir);
+  const gitOptions = { cwd: courseRepo.courseLiveDir };
+  await execa('git', ['fetch', 'origin'], gitOptions);
+  await execa('git', ['reset', '--hard', 'origin/master'], gitOptions);
+  const syncResult = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
 
   // If sync failed with sharing error, reset back to before state
   if (syncResult.status === 'sharing_error') {
-    await execa('git', ['reset', '--hard', beforeHash], gitOptionsLive);
+    await execa('git', ['reset', '--hard', beforeHash], gitOptions);
   }
 
   return syncResult;

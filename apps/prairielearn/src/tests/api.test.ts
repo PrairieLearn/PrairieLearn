@@ -1,17 +1,10 @@
-import * as path from 'node:path';
-
 import * as cheerio from 'cheerio';
-import { execa } from 'execa';
 import fetch from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
-
-import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 
-const sql = sqldb.loadSqlEquiv(import.meta.url);
-
+import { createCourseRepoFixture, updateCourseRepository } from './helperCourse.js';
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -443,7 +436,6 @@ describe('API course sync', { timeout: 60_000 }, function () {
   const apiUrl = baseUrl + '/pl/api/v1';
   let syncTestCourseId: string;
   let syncTestOriginDir: string;
-  let syncTestLiveDir: string;
   let apiCourseSyncUrl: string;
   let courseSyncJobSequenceId: string;
   let apiToken: string;
@@ -480,34 +472,25 @@ describe('API course sync', { timeout: 60_000 }, function () {
     const tokenContainer = page$('.new-access-token');
     apiToken = tokenContainer.text().trim();
 
-    // Create temp directories
-    const baseDir = tmp.dirSync().name;
-    syncTestOriginDir = path.join(baseDir, 'courseOrigin');
-    syncTestLiveDir = path.join(baseDir, 'courseLive');
-
-    // Create course data
+    // Create course with git repository using the shared fixture helper
     const courseData = syncUtil.getCourseData();
     courseData.course.name = 'API Sync Test Course';
 
-    // Write to origin directory
-    await syncUtil.writeCourseToDirectory(courseData, syncTestOriginDir);
+    const fixture = await createCourseRepoFixture({
+      populateOrigin: async (originDir) => {
+        await syncUtil.writeCourseToDirectory(courseData, originDir);
+      },
+    });
+    syncTestOriginDir = fixture.courseOriginDir;
 
-    // Initialize git in origin
-    await execa('git', ['-c', 'init.defaultBranch=master', 'init'], { cwd: syncTestOriginDir });
-    await execa('git', ['add', '-A'], { cwd: syncTestOriginDir });
-    await execa('git', ['commit', '-m', 'initial commit'], { cwd: syncTestOriginDir });
-
-    // Clone to live directory
-    await execa('git', ['clone', syncTestOriginDir, syncTestLiveDir], { cwd: '/' });
-
-    // Sync to database
-    const syncResults = await syncUtil.syncCourseData(syncTestLiveDir);
+    // Sync the live directory to the database
+    const syncResults = await syncUtil.syncCourseData(fixture.courseLiveDir);
     syncTestCourseId = syncResults.courseId;
 
     // Update repository field to point to origin
-    await sqldb.execute(sql.update_course_repository, {
+    await updateCourseRepository({
+      courseId: syncTestCourseId,
       repository: syncTestOriginDir,
-      course_id: syncTestCourseId,
     });
   });
 
