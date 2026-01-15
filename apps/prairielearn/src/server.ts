@@ -84,6 +84,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import { selectCourseById } from './models/course.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -2524,8 +2525,9 @@ if (shouldStartServer) {
 
     if ('sync-course' in argv) {
       logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+      const course = await selectCourseById(argv['sync-course']);
       const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-        courseId: argv['sync-course'],
+        course,
         authnUserId: null,
         userId: null,
       });
