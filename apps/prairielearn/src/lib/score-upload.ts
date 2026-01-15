@@ -89,20 +89,21 @@ export async function uploadInstanceQuestionScores(
             } else {
               output += '\n' + msg;
             }
+            outputCount++;
           } else {
             skippedCount++;
             // NO OUTPUT
           }
         } catch (err: any) {
           errorCount++;
-          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
+          if (output != null) {
+            // Before logging the error, flush any accumulated verbose output
+            job.verbose(output);
+            output = null;
+            outputCount = 0;
           }
+          job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`);
         }
-        outputCount++;
         if (outputCount >= outputThreshold) {
           job.verbose(output ?? '');
           output = null;
