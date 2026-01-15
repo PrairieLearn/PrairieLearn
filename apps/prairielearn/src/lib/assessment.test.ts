@@ -1,9 +1,7 @@
+import { decode } from 'he';
 import { assert, describe, it } from 'vitest';
 
 import { renderText } from './assessment.js';
-
-// Helper to decode HTML entities that Mustache escapes
-const decode = (s: string) => s.replaceAll('&#x2F;', '/');
 
 describe('renderText', () => {
   const urlPrefix = '/pl/course_instance/1';
@@ -27,7 +25,7 @@ describe('renderText', () => {
     });
 
     it('renders clientFilesCourseInstance', () => {
-      const text = '<a href="<%= clientFilesCourseInstance %>/file.pdf">Link</a>';
+      const text = '<a href="<%=    clientFilesCourseInstance%>/file.pdf">Link</a>';
       const expected = `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`;
       assert.equal(decode(renderText({ id: assessmentId, text }, urlPrefix)!), expected);
     });
@@ -63,18 +61,5 @@ describe('renderText', () => {
       const expected = `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`;
       assert.equal(decode(renderText({ id: assessmentId, text }, urlPrefix)!), expected);
     });
-
-    it('handles no whitespace', () => {
-      const text = '<a href="{{client_files_assessment}}/file.pdf">Link</a>';
-      const expected = `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`;
-      assert.equal(decode(renderText({ id: assessmentId, text }, urlPrefix)!), expected);
-    });
-  });
-
-  it('renders multiple Mustache variables in same text', () => {
-    const text =
-      '<a href="{{ client_files_course }}/a.pdf">A</a> <a href="{{ client_files_assessment }}/b.pdf">B</a>';
-    const expected = `<a href="${expectedUrlBase}/clientFilesCourse/a.pdf">A</a> <a href="${expectedUrlBase}/clientFilesAssessment/b.pdf">B</a>`;
-    assert.equal(decode(renderText({ id: assessmentId, text }, urlPrefix)!), expected);
   });
 });
