@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -145,8 +145,7 @@ export function ExtensionModifyModal({
     onSuccess,
   });
 
-  const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: ExtensionFormValues) => {
     void saveMutation.mutate(data);
   };
 
@@ -210,14 +209,14 @@ export function ExtensionModifyModal({
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
           <div className="mb-3">
-            <label className="form-label" for="ext-name">
+            <label className="form-label" htmlFor="ext-name">
               Extension name (optional)
             </label>
             <input id="ext-name" type="text" className="form-control" {...register('name')} />
           </div>
           <div className="mb-3">
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <label className="form-label" for="ext-date">
+              <label className="form-label" htmlFor="ext-date">
                 End date
               </label>
               <button
@@ -258,7 +257,7 @@ export function ExtensionModifyModal({
             </Alert>
           )}
           <div className="mb-0">
-            <label className="form-label" for="ext-uids">
+            <label className="form-label" htmlFor="ext-uids">
               UIDs
             </label>
             <textarea

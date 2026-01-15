@@ -1,5 +1,11 @@
 # @prairielearn/utils
 
+## 2.0.5
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.4
 
 ### Patch Changes

@@ -288,12 +288,8 @@ export default tseslint.config([
       // We want to be able to use `useState` without the setter function for
       // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
       '@eslint-react/naming-convention/use-state': 'off',
-      '@eslint-react/no-forbidden-props': [
-        'error',
-        {
-          forbid: ['class', 'htmlFor', '/_/'],
-        },
-      ],
+      // Forbid `snake_case` props.
+      '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
 
       ...eslintPluginUnicorn.configs.recommended.rules,
 
@@ -522,16 +518,11 @@ export default tseslint.config([
 
       'jsx-a11y-x': {
         attributes: {
-          for: ['for'],
+          for: ['htmlFor'],
         },
       },
 
       ...eslintReact.configs['recommended-typescript'].settings,
-      'react-x': {
-        ...eslintReact.configs['recommended-typescript'].settings['react-x'],
-        // This is roughly the version that Preact's compat layer supports.
-        version: '18.0.0',
-      },
     },
   },
   {
@@ -547,14 +538,7 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
-      'jsdoc/check-tag-names': [
-        'error',
-        {
-          // We turn this on to allow the Playwright + Preact fix enforced by the `header/header` rule.
-          // https://babeljs.io/docs/en/babel-plugin-transform-react-jsx/
-          jsxTags: true,
-        },
-      ],
+      'jsdoc/check-tag-names': 'error',
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
@@ -678,12 +662,6 @@ export default tseslint.config([
         ...globals.browser,
         ...globals.jquery,
       },
-    },
-  },
-  {
-    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
     },
   },
   {

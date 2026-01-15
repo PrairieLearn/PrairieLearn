@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import {
   RawStudentCourseInstanceSchema,

@@ -11,7 +11,7 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-person-badge text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-person-badge text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Students</h3>
             <p className="card-text mb-4">Add a course and start learning.</p>
@@ -32,7 +32,7 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-mortarboard text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Instructors</h3>
             <p className="card-text mb-4">Create and manage courses for your students.</p>

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/run",
-  "version": "1.0.18",
+  "version": "1.0.19",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,7 +15,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.5",
+    "@types/node": "^22.19.6",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tsx": "^4.21.0",
