@@ -191,16 +191,6 @@ def grade_answer_parameterized(
     - a string containing feedback
     - `None`, if there is no feedback (usually this should only occur if the answer is correct)
 
-    Args:
-        data: The question data dictionary.
-        name: The name of the answer input field.
-        grade_function: A function that takes the submitted answer and returns a 2-tuple of (score, feedback).
-        weight: The weight of this answer in the overall question score.
-        timeout: Optional timeout in seconds for executing the grade_function. If the function times out,
-            a format error will be set instead of grading the answer.
-        timeout_format_error: Optional custom error message to display when a timeout occurs. If not provided
-            and timeout is set, a default message will be used.
-
     Examples:
         >>> def grading_function(submitted_answer):
         ...     if submitted_answer == "foo":
