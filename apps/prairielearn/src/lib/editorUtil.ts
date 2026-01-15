@@ -4,7 +4,7 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { type FileDetails, type FileMetadata, FileType } from './editorUtil.types.js';
+import { type FileDetails, type FileMetadata, FileType } from './editorUtil.shared.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

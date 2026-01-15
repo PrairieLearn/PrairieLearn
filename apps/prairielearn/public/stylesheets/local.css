@@ -337,10 +337,14 @@ a.badge {
 
 /** override bootstrap's code styles with a github-like style */
 code {
+  border-radius: 6px;
+}
+code,
+.user-output,
+.user-output-invalid {
   color: var(--bs-body-color);
   background: var(--bs-secondary-bg);
   padding: 0.2em 0.4em;
-  border-radius: 6px;
 }
 
 /** However, don't use those styles for code tags in pre tags. */
@@ -351,25 +355,14 @@ pre code {
   border-radius: 0;
 }
 
+/** These additional styles are kept for compatibility reasons. */
 .user-output,
 .user-output-invalid {
   display: inline;
   font-size: 14px;
   white-space: pre;
-  color: #444;
-  background: #f0f0f0;
-
-  padding-top: 4px;
-  padding-bottom: 4px;
-  padding-left: 2px;
-  padding-right: 2px;
-
-  border-radius: 2px;
-  border-color: #ccc;
-  border-width: 1px;
-  border-style: solid;
-
   line-height: 28px;
+  border-radius: 2px;
 }
 
 .user-output-invalid {

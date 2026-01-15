@@ -715,6 +715,7 @@ describe('Course instance syncing', () => {
       db: {
         self_enrollment_enabled: boolean;
         self_enrollment_enabled_before_date: Date | null;
+        self_enrollment_restrict_to_institution: boolean;
         self_enrollment_use_enrollment_code: boolean;
       } | null;
       errors: string[];
@@ -727,6 +728,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -740,6 +742,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -752,6 +755,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: date,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: true,
         },
         errors: [],
@@ -761,6 +765,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -772,6 +777,7 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: false,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -783,6 +789,20 @@ describe('Course instance syncing', () => {
         db: {
           self_enrollment_enabled: true,
           self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: true,
+          self_enrollment_use_enrollment_code: false,
+        },
+        errors: [],
+      },
+      {
+        json: {
+          enabled: true,
+          restrictToInstitution: false,
+        },
+        db: {
+          self_enrollment_enabled: true,
+          self_enrollment_enabled_before_date: null,
+          self_enrollment_restrict_to_institution: false,
           self_enrollment_use_enrollment_code: false,
         },
         errors: [],
@@ -802,6 +822,8 @@ describe('Course instance syncing', () => {
       it(`self-enrollment configuration #${i++}`, async () => {
         const courseData = util.getCourseData();
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.selfEnrollment = json;
+        // You can't configure selfEnrollment and allowAccess at the same time.
+        courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.allowAccess = undefined;
         courseData.courseInstances[util.COURSE_INSTANCE_ID].courseInstance.timezone = timezone;
 
         const courseDir = await util.writeCourseToTempDirectory(courseData);
@@ -827,6 +849,8 @@ describe('Course instance syncing', () => {
           self_enrollment_enabled: syncedCourseInstance.self_enrollment_enabled,
           self_enrollment_enabled_before_date:
             syncedCourseInstance.self_enrollment_enabled_before_date,
+          self_enrollment_restrict_to_institution:
+            syncedCourseInstance.self_enrollment_restrict_to_institution,
           self_enrollment_use_enrollment_code:
             syncedCourseInstance.self_enrollment_use_enrollment_code,
         };

@@ -13,7 +13,7 @@ SELECT
   u.*
 FROM
   users AS u
-  JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+  JOIN course_permissions AS cp ON (cp.user_id = u.id)
 WHERE
   cp.course_role = 'Owner'
   AND cp.course_id = $course_id;

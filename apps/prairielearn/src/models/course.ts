@@ -41,6 +41,14 @@ export async function selectCourseById(course_id: string): Promise<Course> {
   return await queryRow(sql.select_course_by_id, { course_id }, CourseSchema);
 }
 
+export async function selectOptionalCourseById(course_id: string): Promise<Course | null> {
+  return await queryOptionalRow(sql.select_course_by_id, { course_id }, CourseSchema);
+}
+
+export async function selectCourseByShortName(shortName: string): Promise<Course> {
+  return await queryRow(sql.select_course_by_short_name, { short_name: shortName }, CourseSchema);
+}
+
 export async function selectCourseByCourseInstanceId(course_instance_id: string): Promise<Course> {
   return await queryRow(sql.select_course_by_instance_id, { course_instance_id }, CourseSchema);
 }
@@ -56,7 +64,7 @@ export async function getCourseCommitHash(coursePath: string): Promise<string> {
       env: process.env,
     });
     return stdout.trim();
-  } catch (err) {
+  } catch (err: any) {
     throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
       data: {
         stdout: err.stdout,
@@ -188,7 +196,7 @@ export async function deleteCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'soft_delete',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course_id,
       new_state: deletedCourse,
       course_id,
@@ -229,7 +237,7 @@ export async function insertCourse({
     await insertAuditLog({
       authn_user_id,
       action: 'insert',
-      table_name: 'pl_courses',
+      table_name: 'courses',
       row_id: course.id,
       new_state: course,
       institution_id,

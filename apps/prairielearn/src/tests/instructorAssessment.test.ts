@@ -1,11 +1,45 @@
 import * as cheerio from 'cheerio';
+import type { DataNode, Element } from 'domhandler';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as helperExam from './helperExam.js';
+import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
 
-const locals: Record<string, any> = {};
+const locals = {} as {
+  $: cheerio.CheerioAPI;
+  shouldHaveButtons: string[];
+  postAction: string;
+  question: TestExamQuestion;
+  expectedResult: {
+    submission_score: number;
+    submission_correct: boolean;
+    instance_question_points: number;
+    instance_question_score_perc: number;
+    instance_question_auto_points: number;
+    instance_question_manual_points: number;
+    assessment_instance_points: number;
+    assessment_instance_score_perc: number;
+  };
+  getSubmittedAnswer: (variant: any) => object;
+  instructorAssessmentsUrl: string;
+  instructorAssessmentUrl: string;
+  instructorAssessmentInstancesUrl: string;
+  instructorBaseUrl: string;
+  instructorAssessmentInstanceUrl: string;
+  siteUrl: string;
+  assessment_id: string;
+  __csrf_token: string;
+  __action: string;
+  instance_question_id: number;
+  postEndTime: number;
+  pageData: any[];
+  data$: cheerio.CheerioAPI;
+  instructorGradebookUrl: string;
+  gradebookData: any[];
+  gradebookDataRow: any;
+};
 
 const assessmentSetScorePerc = 37;
 const assessmentSetScorePerc2 = 83;
@@ -15,7 +49,8 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
 
   afterAll(helperServer.after);
 
-  let page, elemList;
+  let page: string;
+  let elemList: cheerio.Cheerio<Element>;
 
   helperExam.startExam(locals, 'exam1-automaticTestSuite');
 
@@ -35,7 +70,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
           assessment_instance_points: 0,
           assessment_instance_score_perc: (0 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
-        locals.getSubmittedAnswer = function (variant) {
+        locals.getSubmittedAnswer = function (variant: any) {
           return {
             c: variant.true_answer.c + 1,
           };
@@ -64,7 +99,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
           assessment_instance_points: 3,
           assessment_instance_score_perc: (3 / helperExam.exam1AutomaticTestSuite.maxPoints) * 100,
         };
-        locals.getSubmittedAnswer = function (variant) {
+        locals.getSubmittedAnswer = function (variant: any) {
           return {
             c: variant.true_answer.c,
           };
@@ -152,10 +187,10 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
       locals.pageData.forEach((obj) => assert.isObject(obj));
     });
     it('should contain the assessment instance', function () {
-      elemList = locals.pageData.filter((row) => row.uid === 'dev@example.com');
-      assert.lengthOf(elemList, 1);
+      const pageItems = locals.pageData.filter((row) => row.uid === 'dev@example.com');
+      assert.lengthOf(pageItems, 1);
       locals.instructorAssessmentInstanceUrl =
-        locals.instructorBaseUrl + '/assessment_instance/' + elemList[0].assessment_instance_id;
+        locals.instructorBaseUrl + '/assessment_instance/' + pageItems[0].assessment_instance_id;
     });
   });
 
@@ -217,7 +252,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
         body: new URLSearchParams({
           __action: locals.__action,
           __csrf_token: locals.__csrf_token,
-          instance_question_id: locals.instance_question_id,
+          instance_question_id: `${locals.instance_question_id}`,
           points: '4',
         }),
       });
@@ -231,7 +266,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
     it('should update the total points correctly', function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
-      const totalPoints = Number.parseFloat(elemList[0].children[0].data);
+      const totalPoints = Number.parseFloat((elemList[0].children[0] as DataNode).data);
       assert.equal(totalPoints, 15);
     });
   });
@@ -283,7 +318,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
         body: new URLSearchParams({
           __action: locals.__action,
           __csrf_token: locals.__csrf_token,
-          instance_question_id: locals.instance_question_id,
+          instance_question_id: `${locals.instance_question_id}`,
           score_perc: '50',
         }),
       });
@@ -297,7 +332,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
     it('should update the total points correctly', function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
-      const totalPoints = Number.parseFloat(elemList[0].children[0].data);
+      const totalPoints = Number.parseFloat((elemList[0].children[0] as DataNode).data);
       assert.equal(totalPoints, 13.5);
     });
   });
@@ -362,7 +397,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
     it('should update the total points correctly', function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
-      const totalPoints = Number.parseFloat(elemList[0].children[0].data);
+      const totalPoints = Number.parseFloat((elemList[0].children[0] as DataNode).data);
       assert.equal(totalPoints, 7);
     });
   });
@@ -427,7 +462,7 @@ describe('Instructor assessment editing', { timeout: 20_000 }, function () {
     it('should update the total points correctly', function () {
       elemList = locals.$('#total-points');
       assert.lengthOf(elemList, 1);
-      const totalPoints = Number.parseFloat(elemList[0].children[0].data);
+      const totalPoints = Number.parseFloat((elemList[0].children[0] as DataNode).data);
       assert.equal(
         totalPoints,
         (assessmentSetScorePerc / 100) * helperExam.exam1AutomaticTestSuite.maxPoints,

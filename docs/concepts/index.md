@@ -4,7 +4,7 @@ PrairieLearn is extremely flexible and powerful, but this flexibility can appear
 
 ## High-level overview
 
-A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "Spring 2022" and "Fall 2022".
+A [**course**](../course/index.md) in PrairieLearn is composed of **course instances** and **questions**. Each [course instance](../courseInstance/index.md) is an offering of a course in a particular semester/term. For example, a course "CS 225" might have instances "Spring 2022" and "Fall 2022".
 
 The course itself contains:
 
@@ -25,7 +25,7 @@ Each assessment contains:
 
 ### Questions
 
-[**Questions**](../question/index.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
+[**Questions**](../question/overview.md) are all independent, and a given question can be used on many different assessments across many different course instances. They are written in HTML (as a [Mustache template](https://mustache.github.io/mustache.5.html)) and use [elements](../elements/index.md) to accept student input. Python code can be used to generate random parameters and grade questions. Every time a question is shown to a student with randomly generated parameters, that is called a **variant** of the question.
 
 ![An example homework question](./hw-question.png)
 
@@ -103,7 +103,7 @@ Both of these features can be setup by modifying the `info.json` file for the qu
 
 ### Elements
 
-Questions can use [**elements**](../elements.md) to accept student input, display diagrams, control how questions are displayed, and more. You can use built-in elements for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, you can create reusable [**custom elements**](../devElements.md) that can be tailored to your course to create more complex questions.
+Questions can use [**elements**](../elements/index.md) to accept student input, display diagrams, control how questions are displayed, and more. You can use built-in elements for common questions types, including numerical inputs, multiple choice, and more. If you require more flexibility, you can create reusable [**custom elements**](../devElements.md) that can be tailored to your course to create more complex questions.
 
 === "Integer input element"
 
@@ -115,11 +115,11 @@ Questions can use [**elements**](../elements.md) to accept student input, displa
     <pl-integer-input answers-name="int_value" label="$y =$"></pl-integer-input>
     ```
 
-You can view a list of all the available elements in the [elements documentation](../elements.md).
+You can view a list of all the available elements in the [elements documentation](../elements/index.md).
 
 ### Assessments
 
-A course's questions are composed together to create homework and exam [**assessments**](../assessment/index.md) in a course instance. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
+A course's questions are composed together to create homework and exam [**assessments**](../assessment/overview.md) in a course instance. Homeworks are formative assessments designed for mastery learning: they give unlimited retries with different variants, and incentivize repeated correct answers. Exams are summative assessments designed to measure learning: they give limited attempts with the same variant, and incentivize getting the correct answer on the first try.
 
 ![Homework Assessment](./hw-assessment.png)
 
@@ -150,9 +150,9 @@ Now that you have an understanding of the key concepts in PrairieLearn, you can 
 
 You can also:
 
-- learn more about [courses](../course/index.md) or [course instances](../courseInstance.md)
-- learn more about [questions](../question/index.md), [elements](../elements.md), or [custom elements](../devElements.md)
-- learn more about [assessments](../assessment/index.md)
+- learn more about [courses](../course/index.md) or [course instances](../courseInstance/index.md)
+- learn more about [questions](../question/overview.md), [elements](../elements/index.md), or [custom elements](../devElements.md)
+- learn more about [assessments](../assessment/overview.md)
 - learn more about [external grading](../externalGrading.md) or [workspaces](../workspaces/index.md)
 - learn how to [develop locally](../installing.md)
 - learn more about the workflow for [syncing content](../sync.md) to PrairieLearn

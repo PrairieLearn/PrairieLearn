@@ -1,7 +1,7 @@
 import { assert, describe, it } from 'vitest';
 
 import { encodePath as encodePathNormalized } from './uri-util.js';
-import { encodePathNoNormalize } from './uri-util.shared.js';
+import { encodePathNoNormalize, encodeSearchString } from './uri-util.shared.js';
 
 function encodePath(originalPath: string): string {
   const client = encodePathNoNormalize(originalPath);
@@ -49,6 +49,32 @@ describe('uri-util', () => {
 
     it('encodes non-ASCII Unicode characters', () => {
       assert.equal(encodePath('dir/áéíóú.txt'), 'dir/%C3%A1%C3%A9%C3%AD%C3%B3%C3%BA.txt');
+    });
+  });
+
+  describe('encodeSearchString', () => {
+    it('encodes alphanumeric and slashes in qid/aid', () => {
+      const params = { qid: 'abc123/def456', aid: 'A1/B2/C3' };
+      const result = encodeSearchString(params);
+      assert.equal(decodeURIComponent(result), 'qid:abc123/def456 aid:A1/B2/C3');
+    });
+
+    it('encodes qid/aid with quotes', () => {
+      const params = { qid: 'abc"def', aid: 'A1"B2' };
+      const result = encodeSearchString(params);
+      assert.equal(decodeURIComponent(result), 'qid:abc\\"def aid:A1\\"B2');
+    });
+
+    it('encodes qid/aid with spaces', () => {
+      const params = { qid: 'abc def', aid: 'A1 B2' };
+      const result = encodeSearchString(params);
+      assert.equal(decodeURIComponent(result), 'qid:"abc def" aid:"A1 B2"');
+    });
+
+    it('encodes qid/aid with commas', () => {
+      const params = { qid: 'abc,def', aid: 'A1,B2' };
+      const result = encodeSearchString(params);
+      assert.equal(decodeURIComponent(result), 'qid:"abc,def" aid:"A1,B2"');
     });
   });
 });

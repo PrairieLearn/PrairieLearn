@@ -279,9 +279,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             option["indent"] = submission_indent
 
         help_text = (
-            "Drag answer tiles into the answer area to the "
-            + dropzone_layout.value
-            + ". "
+            f"Move answer blocks from the options area to the {dropzone_layout.value}."
         )
 
         if grading_method is GradingMethodType.UNORDERED:
@@ -291,11 +289,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         else:
             help_text += "<p>Your answer will be autograded; be sure to indent and order your answer properly.</p>"
 
+        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks. With a block selected, up/down arrows to reorder; left/right arrows to move between the options area and answer area.</p>"
         check_indentation = order_blocks_options.indentation
         if check_indentation:
-            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area.</p>"
-
-        help_text += "<p>Keyboard Controls: Arrows to navigate; Enter to select; Escape to deselect blocks.</p>"
+            help_text += "<p><strong>Your answer should be indented.</strong> Indent your tiles by dragging them horizontally in the answer area, or by using left/right arrows with the block selected.</p>"
 
         uuid = pl.get_uuid()
         html_params = {
@@ -462,6 +459,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     answer_name = order_block_options.answers_name
     answer_raw_name = answer_name + "-input"
     student_answer = data["raw_submitted_answers"].get(answer_raw_name, "[]")
+
     student_answer = json.loads(student_answer)
 
     if (not order_block_options.allow_blank) and (
@@ -593,7 +591,10 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
         depends_graph = {}
         group_belonging = {}
 
-        if grading_method in [GradingMethodType.RANKING, GradingMethodType.ORDERED]:
+        if (
+            grading_method is GradingMethodType.RANKING
+            or grading_method is GradingMethodType.ORDERED
+        ):
             if grading_method is GradingMethodType.ORDERED:
                 for index, answer in enumerate(true_answer_list):
                     answer["ranking"] = index
@@ -620,27 +621,23 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif (
-            grading_method is GradingMethodType.DAG
-            and not order_blocks_options.has_optional_blocks
-        ):
-            depends_graph, group_belonging = extract_dag(true_answer_list)
-            num_initial_correct, true_answer_length = grade_dag(
-                submission, depends_graph, group_belonging
-            )
-        elif (
-            grading_method is GradingMethodType.DAG
-            and order_blocks_options.has_optional_blocks
-        ):
-            depends_multigraph, final = extract_multigraph(true_answer_list)
-            num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
-                submission, depends_multigraph, final
+        elif grading_method is GradingMethodType.DAG:
+            if order_blocks_options.has_optional_blocks:
+                depends_multigraph, final = extract_multigraph(true_answer_list)
+                num_initial_correct, true_answer_length, depends_graph = (
+                    grade_multigraph(submission, depends_multigraph, final)
+                )
+            else:
+                depends_graph, group_belonging = extract_dag(true_answer_list)
+                num_initial_correct, true_answer_length = grade_dag(
+                    submission, depends_graph, group_belonging
+                )
+        elif grading_method is GradingMethodType.EXTERNAL:
+            raise NotImplementedError(
+                "grade function should never be called for EXTERNAL grading method"
             )
         else:
-            # this is so num_initial_correct and true_answer_length is not possibly unbound
-            num_initial_correct, true_answer_length = grade_dag(
-                submission, depends_graph, group_belonging
-            )
+            assert_never(grading_method)
 
         first_wrong = (
             None if num_initial_correct == len(submission) else num_initial_correct
@@ -670,9 +667,13 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
                     block["ordering_feedback"] = ""
 
         if order_blocks_options.partial_credit is PartialCreditType.NONE:
-            if num_initial_correct == true_answer_length:
+            if (
+                num_initial_correct == true_answer_length
+                # The student can't select additional incorrect options
+                and len(submission) == true_answer_length
+            ):
                 final_score = 1
-            elif num_initial_correct < true_answer_length:
+            else:
                 final_score = 0
         elif order_blocks_options.partial_credit is PartialCreditType.LCS:
             edit_distance = lcs_partial_credit(

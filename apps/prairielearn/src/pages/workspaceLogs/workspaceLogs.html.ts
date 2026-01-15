@@ -4,6 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { WorkspaceLogSchema } from '../../lib/db-types.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export const WorkspaceLogRowSchema = WorkspaceLogSchema.extend({
   date_formatted: z.string(),
@@ -15,7 +16,7 @@ export function WorkspaceLogs({
   resLocals,
 }: {
   workspaceLogs: WorkspaceLogRow[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   // Get the list of unique versions and the date at which they were created.
   // These are ordered by date, so we can use the date of the first log for
@@ -38,9 +39,6 @@ export function WorkspaceLogs({
     navContext: {
       page: 'workspace',
       type: 'plain',
-    },
-    options: {
-      enableEnhancedNav: false,
     },
     content: html`
       <h1 class="mb-4">Workspace logs</h1>
@@ -88,7 +86,7 @@ export function WorkspaceVersionLogs({
   containerLogs: string | null;
   containerLogsEnabled: boolean;
   containerLogsExpired: boolean;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return PageLayout({
     resLocals,
@@ -96,10 +94,6 @@ export function WorkspaceVersionLogs({
     navContext: {
       page: 'workspace',
       type: 'plain',
-    },
-    options: {
-      enableEnhancedNav: false,
-      paddingBottom: true,
     },
     content: html`
       <h1 class="mb-4">Workspace version logs</h1>

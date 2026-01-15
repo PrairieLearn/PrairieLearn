@@ -1,16 +1,17 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { stringify } from '@prairielearn/csv';
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type AdministratorQueryResult,
   loadAdminQueryModule,
 } from '../../admin_queries/lib/util.js';
-import { IdSchema, type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import { type QueryRun, QueryRunSchema } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AdministratorQuery, QueryRunRowSchema } from './administratorQuery.html.js';
 
@@ -19,7 +20,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/:query',
-  asyncHandler(async (req, res, next) => {
+  typedAsyncHandler<'plain'>(async (req, res, next) => {
     const module = await loadAdminQueryModule(req.params.query);
     if (module.specs.enabled === false) {
       throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
@@ -73,7 +74,7 @@ router.get(
 
 router.post(
   '/:query',
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const module = await loadAdminQueryModule(req.params.query);
     if (module.specs.enabled === false) {
       throw new HttpStatusError(403, 'Admin query is disabled in the current environment');
@@ -88,7 +89,7 @@ router.post(
     let result: AdministratorQueryResult | null = null;
     try {
       result = await module.default(queryParams);
-    } catch (err) {
+    } catch (err: any) {
       logger.error(err);
       error = err.toString();
     }
@@ -98,7 +99,7 @@ router.post(
       {
         name: req.params.query,
         params: queryParams,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
         error,
         result,
       },

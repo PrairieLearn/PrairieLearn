@@ -1,6 +1,6 @@
 -- BLOCK select_users
 SELECT
-  u.user_id,
+  u.id,
   u.uid,
   u.name,
   c.id AS course_id,
@@ -10,20 +10,20 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
   JOIN enrollments AS e ON (e.course_instance_id = ci.id)
-  JOIN users AS u ON (u.user_id = e.user_id)
+  JOIN users AS u ON (u.id = e.user_id)
 WHERE
   a.id = $assessment_id
 ORDER BY
   user_id;
 
--- BLOCK select_groups
+-- BLOCK select_teams
 SELECT
-  u.user_id,
+  u.id,
   u.uid,
   u.name,
-  g.name AS group_name,
+  t.name AS group_name, -- user-facing
   c.id AS course_id,
   c.short_name AS course,
   ci.id AS course_instance_id,
@@ -31,24 +31,24 @@ SELECT
 FROM
   assessments AS a
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
-  JOIN group_configs AS gc ON (gc.assessment_id = a.id)
-  JOIN groups AS g ON (g.group_config_id = gc.id)
+  JOIN courses AS c ON (c.id = ci.course_id)
+  JOIN team_configs AS tc ON (tc.assessment_id = a.id)
+  JOIN teams AS t ON (t.team_config_id = tc.id)
   JOIN LATERAL (
     SELECT
       *
     FROM
-      group_users AS gu
+      team_users AS tu
     WHERE
-      gu.group_id = g.id
+      tu.team_id = t.id
     LIMIT
       1
-  ) AS lgu ON (TRUE)
-  JOIN users AS u ON (u.user_id = lgu.user_id)
+  ) AS ltu ON (TRUE)
+  JOIN users AS u ON (u.id = ltu.user_id)
 WHERE
   a.id = $assessment_id
-  -- This query only works for assessments with group work enabled
-  AND a.group_work = TRUE
-  AND g.deleted_at IS NULL
+  -- This query only works for assessments with team work enabled
+  AND a.team_work = TRUE
+  AND t.deleted_at IS NULL
 ORDER BY
-  u.user_id;
+  u.id;

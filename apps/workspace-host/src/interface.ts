@@ -3,6 +3,7 @@
 import * as fs from 'node:fs/promises';
 import * as http from 'node:http';
 import * as net from 'node:net';
+import * as os from 'node:os';
 import * as path from 'node:path';
 
 import { ECRClient } from '@aws-sdk/client-ecr';
@@ -138,13 +139,15 @@ app.use(Sentry.expressErrorHandler());
 async
   .series([
     async () => {
-      // For backwards compatibility, we'll default to trying to load config
-      // files from both the application and repository root.
-      //
-      // We'll put the app config file second so that it can override anything
-      // in the repository root config file.
       let configPaths = [
+        // To support Git worktrees (useful for agentic development), we'll look
+        // for config files in `~/.config/prairielearn/config.json`. We check here
+        // first so the following repo/app configs can still take precedence.
+        path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
+        // For backwards compatibility, we'll check the repository root before loading
+        // app-specific config.
         path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+        // The app config file is checked last so that it will always take precedence.
         path.join(APP_ROOT_PATH, 'config.json'),
       ];
 
@@ -1033,7 +1036,7 @@ async function initSequence(workspace_id: string | number, useInitialZip: boolea
       // Don't set host to unhealthy.
       return;
     }
-  } catch (err) {
+  } catch (err: any) {
     logger.error(`Error initializing workspace ${workspace_id}; marking self as unhealthy`);
     await markSelfUnhealthy(err);
   }
@@ -1056,7 +1059,7 @@ async function sendGradedFilesArchive(workspace_id: string | number, res: Respon
         maxSize: config.workspaceMaxGradedFilesSize,
       },
     );
-  } catch (err) {
+  } catch (err: any) {
     res.status(500).send(err.message);
     return;
   }

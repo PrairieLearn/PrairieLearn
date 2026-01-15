@@ -14,7 +14,7 @@ export function ExamResetNotSupportedModal({
       </Modal.Header>
       <Modal.Body>
         <p>Resetting question variants is not supported for Exam assessments.</p>
-        <p class="mb-0">
+        <p className="mb-0">
           Consider alternative options, such as deleting assessment instances to allow students to
           start over.
         </p>
