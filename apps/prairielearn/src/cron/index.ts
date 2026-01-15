@@ -286,7 +286,7 @@ async function runJobs(jobsList: CronJob[]) {
         try {
           await tryJobWithLock(job, cronUuid);
           span.setStatus({ code: SpanStatusCode.OK });
-        } catch (err) {
+        } catch (err: any) {
           debug(`runJobs(): error running ${job.name}: ${err}`);
           logger.error(`cron: ${job.name} failure: ` + String(err), {
             message: err.message,

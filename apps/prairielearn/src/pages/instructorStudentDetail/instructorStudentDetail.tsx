@@ -3,13 +3,12 @@ import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
-import { features } from '../../lib/features/index.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -38,15 +37,8 @@ router.get(
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
-    const { urlPrefix } = pageContext;
-    const { course_instance: courseInstance, course, institution } = pageContext;
+    const { urlPrefix, course_instance: courseInstance } = pageContext;
     const courseInstanceUrl = getCourseInstanceUrl(courseInstance.id);
-
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: institution.id,
-      course_id: course.id,
-      course_instance_id: courseInstance.id,
-    });
 
     const student = await queryOptionalRow(
       sql.select_student_info,
@@ -65,10 +57,10 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.user_id
+    const gradebookRows = student.user?.id
       ? await getGradebookRows({
           course_instance_id: courseInstance.id,
-          user_id: student.user.user_id,
+          user_id: student.user.id,
           authz_data: res.locals.authz_data,
           req_date: res.locals.req_date,
           auth: 'instructor',
@@ -109,7 +101,7 @@ router.get(
               hasCourseInstancePermissionEdit={
                 pageContext.authz_data.has_course_instance_permission_edit
               }
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
+              hasModernPublishing={courseInstance.modern_publishing}
             />
           </Hydrate>
         ),
@@ -138,7 +130,7 @@ router.post(
     const enrollment = await selectEnrollmentById({
       id: enrollment_id,
       courseInstance,
-      requestedRole: 'Student Data Editor',
+      requiredRole: ['Student Data Editor'],
       authzData,
     });
 
@@ -151,7 +143,7 @@ router.post(
           enrollment,
           status: 'blocked',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
@@ -164,20 +156,20 @@ router.post(
           enrollment,
           status: 'joined',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;
       }
       case 'cancel_invitation': {
-        if (enrollment.status !== 'invited') {
-          throw new HttpStatusError(400, 'Enrollment is not invited');
+        if (!['invited', 'rejected'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
         }
         await deleteEnrollment({
           enrollment,
           actionDetail: 'invitation_deleted',
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
@@ -202,7 +194,7 @@ router.post(
           enrollment,
           pendingUid,
           authzData,
-          requestedRole: 'Student Data Editor',
+          requiredRole: ['Student Data Editor'],
         });
         res.redirect(req.originalUrl);
         break;

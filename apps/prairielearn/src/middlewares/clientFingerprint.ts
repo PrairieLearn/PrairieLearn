@@ -2,8 +2,8 @@ import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -26,7 +26,7 @@ export default asyncHandler(async (req, res, next) => {
     await sqldb.execute(sql.update_assessment_instance_fingerprint, {
       client_fingerprint_id,
       assessment_instance_id: res.locals.assessment_instance.id,
-      authn_user_id: res.locals.authn_user.user_id,
+      authn_user_id: res.locals.authn_user.id,
     });
   }
 
@@ -48,7 +48,7 @@ export async function getClientFingerprintId(req: Request, res: Response) {
     // that the authn user is the owner of the assessment. This will keep us
     // from inadvertently recording a fingerprint change
     // for an instructor viewing the assessment instance.
-    user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.authn_user.id,
     user_session_id,
     user_agent: req.headers['user-agent'],
     accept_language: req.headers['accept-language'],

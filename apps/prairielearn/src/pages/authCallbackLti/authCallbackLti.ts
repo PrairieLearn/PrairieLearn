@@ -7,16 +7,16 @@ import oauthSignature from 'oauth-signature';
 import { cache } from '@prairielearn/cache';
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { config } from '../../lib/config.js';
 import {
-  IdSchema,
   LtiCredentialSchema,
   LtiLinkSchema,
   SprocUsersIsInstructorInCourseInstanceSchema,
 } from '../../lib/db-types.js';
-import { ensureCheckedEnrollment } from '../../models/enrollment.js';
+import { ensureEnrollment } from '../../models/enrollment.js';
 import { selectUserById } from '../../models/user.js';
 
 const TIME_TOLERANCE_SEC = 3000;
@@ -154,13 +154,13 @@ router.post(
 
     if (!authzData.has_student_access_with_enrollment) {
       assert(courseInstance);
-      await ensureCheckedEnrollment({
+      await ensureEnrollment({
         institution,
         course,
         courseInstance,
         actionDetail: 'implicit_joined',
         authzData,
-        requestedRole: 'Student',
+        requiredRole: ['Student'],
       });
     }
 

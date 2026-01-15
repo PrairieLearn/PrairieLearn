@@ -5,6 +5,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
@@ -14,15 +15,14 @@ import {
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
-  DateFromISOString,
-  IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
-import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
+import { getTeamId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -125,10 +125,10 @@ export async function makeAssessmentInstance({
   client_fingerprint_id: string | null;
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
-    let group_id: string | null = null;
-    if (assessment.group_work) {
-      group_id = await getGroupId(assessment.id, user_id);
-      if (group_id == null) {
+    let team_id: string | null = null;
+    if (assessment.team_work) {
+      team_id = await getTeamId(assessment.id, user_id);
+      if (team_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
       }
     }
@@ -137,7 +137,7 @@ export async function makeAssessmentInstance({
       sql.insert_assessment_instance,
       {
         assessment_id: assessment.id,
-        group_id,
+        team_id,
         user_id,
         mode,
         time_limit_min,
@@ -377,13 +377,13 @@ export async function gradeAllAssessmentInstances({
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'grade_all_assessment_instances',
+    description: 'Grade all assessment instances for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -512,7 +512,7 @@ export async function selectAssessmentInstanceLog(
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
-  const fingerprintNumbers = {};
+  const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
   log.forEach((row) => {
     if (row.client_fingerprint) {
@@ -527,8 +527,8 @@ export async function selectAssessmentInstanceLog(
 }
 
 export async function selectAssessmentInstanceLogCursor(
-  assessment_instance_id,
-  include_files,
+  assessment_instance_id: string,
+  include_files: boolean,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
   return sqldb.queryCursor(
     sql.assessment_instance_log,
@@ -618,13 +618,13 @@ export async function deleteAllAssessmentInstancesForAssessment(
  *
  * @returns Whether or not the user should be allowed to delete the assessment instance.
  */
-export function canDeleteAssessmentInstance(resLocals): boolean {
+export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolean {
   return (
     // Check for permissions.
     (resLocals.authz_data.authn_has_course_permission_preview ||
       resLocals.authz_data.authn_has_course_instance_permission_view) &&
     // Check that the assessment instance belongs to this user, or that the
-    // user belongs to the group that created the assessment instance.
+    // user belongs to the team that created the assessment instance.
     resLocals.authz_result.authorized_edit &&
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.

@@ -435,7 +435,7 @@ export function assertSnapshotsMatch(
  */
 export function assertSnapshotSubset(
   snapshotA: Record<string, any[]>,
-  snapshotB: Record<string, any>,
+  snapshotB: Record<string, any[]>,
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys

@@ -1,6 +1,6 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
-import { CourseSchema, TagSchema, TopicSchema } from '../../lib/db-types.js';
+import { CourseSchema, type Tag, TagSchema, type Topic, TopicSchema } from '../../lib/db-types.js';
 import type { TagJsonInput, TopicJsonInput } from '../../schemas/infoCourse.js';
 import * as helperDb from '../helperDb.js';
 
@@ -36,9 +36,13 @@ function checkEntity(syncedEntity: any, entity: any) {
   assert.equal(syncedEntity.description, entity.description);
 }
 
-function checkEntityOrder(entityName, syncedEntities, courseData) {
-  courseData.course[entityName].forEach((entity, index) => {
-    assert.equal(syncedEntities.find((e) => e.name === entity.name).number, index + 1);
+function checkEntityOrder(
+  entityName: 'tags' | 'topics',
+  syncedEntities: Tag[] | Topic[],
+  courseData: util.CourseData,
+) {
+  courseData.course[entityName]!.forEach((entity, index) => {
+    assert.equal(syncedEntities.find((e) => e.name === entity.name)!.number, index + 1);
   });
 }
 
@@ -129,7 +133,7 @@ async function testDuplicate(entityName: 'tags' | 'topics') {
   const syncedEntities = await util.dumpTableWithSchema(entityName, schema);
   const syncedEntity = syncedEntities.find((as) => as.name === newEntity1.name);
   checkEntity(syncedEntity, newEntity2);
-  const syncedCourses = await util.dumpTableWithSchema('pl_courses', CourseSchema);
+  const syncedCourses = await util.dumpTableWithSchema('courses', CourseSchema);
   const syncedCourse = syncedCourses.find((c) => c.short_name === courseData.course.name);
   assert.isDefined(syncedCourse);
   assert.isNotNull(syncedCourse.sync_warnings);

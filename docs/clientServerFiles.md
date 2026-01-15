@@ -34,7 +34,7 @@ exampleCourse
 
 ## Access control
 
-Each different `clientFiles*` directory is accessible under the same [access control rules](accessControl/index.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
+Each different `clientFiles*` directory is accessible under the same [access control rules](assessment/accessControl.md) for the course instances and assessments. That is, `clientFilesCourse` is accessible to any student who has access to some course instance, while `clientFilesQuestion`, `clientFilesCourseInstance`, and `clientFilesAssessment` are accessible to students with access to the corresponding question, course instance, or assessment.
 
 ## Accessing files from HTML templates
 

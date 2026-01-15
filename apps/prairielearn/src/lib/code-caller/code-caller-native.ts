@@ -5,9 +5,7 @@ import * as path from 'node:path';
 import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
-import fs from 'fs-extra';
 
-import { run } from '@prairielearn/run';
 import { withResolvers } from '@prairielearn/utils';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
@@ -20,6 +18,7 @@ import {
   FunctionMissingError,
   type PrepareForCourseOptions,
 } from './code-caller-shared.js';
+import { getPythonPath } from './python-path.js';
 
 interface CodeCallerNativeChildProcess extends ChildProcess {
   stdio: [Writable, Readable, Readable, Readable, Readable];
@@ -46,7 +45,6 @@ interface CodeCallerNativeOptions {
   dropPrivileges: boolean;
   questionTimeoutMilliseconds: number;
   pingTimeoutMilliseconds: number;
-  pythonVenvSearchPaths: string[];
   errorLogger: (msg: string, data?: any) => void;
 }
 
@@ -116,15 +114,7 @@ export class CodeCallerNative implements CodeCaller {
    * cannot be async.
    */
   static async create(options: CodeCallerNativeOptions): Promise<CodeCallerNative> {
-    const pythonExecutable = await run(async () => {
-      for (const p of options.pythonVenvSearchPaths) {
-        const venvPython = path.resolve(REPOSITORY_ROOT_PATH, path.join(p, 'bin', 'python3.10'));
-        if (await fs.pathExists(venvPython)) return venvPython;
-      }
-
-      // Assume we're using the system Python.
-      return 'python3.10';
-    });
+    const pythonExecutable = await getPythonPath();
 
     const codeCaller = new CodeCallerNative({
       pythonExecutable,
@@ -579,7 +569,7 @@ export class CodeCallerNative implements CodeCaller {
     let err: Error | null = null;
     try {
       data = JSON.parse(this.outputData.join(''));
-    } catch (e) {
+    } catch (e: any) {
       err = new Error('Error decoding CodeCallerNative JSON: ' + e.message);
     }
     if (err) {

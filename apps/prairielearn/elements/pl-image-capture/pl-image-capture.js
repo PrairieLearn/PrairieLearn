@@ -40,6 +40,7 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       this.submitted_file_name = options.submitted_file_name;
       this.submission_files_url = options.submission_files_url;
       this.mobile_capture_enabled = options.mobile_capture_enabled;
+      this.manual_upload_enabled = options.manual_upload_enabled;
 
       /** Flag representing the current state of the capture before entering crop/zoom */
       this.previousCaptureChangedFlag = false;
@@ -74,6 +75,10 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
 
       if (this.mobile_capture_enabled) {
         this.listenForExternalImageCapture();
+      }
+
+      if (this.manual_upload_enabled) {
+        this.createManualUploadListener();
       }
 
       this.createCropRotateListeners();
@@ -128,6 +133,41 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
     }
 
+    createManualUploadListener() {
+      const manualUploadButtons = this.getManualUploadButtons();
+      const manualUploadInput = this.imageCaptureDiv.querySelector('.js-manual-upload-input');
+
+      this.ensureElementsExist({
+        manualUploadInput,
+      });
+
+      for (const manualUploadButton of manualUploadButtons) {
+        this.ensureElementsExist({
+          manualUploadButton,
+        });
+
+        manualUploadButton.addEventListener('click', () => {
+          manualUploadInput.click();
+        });
+      }
+
+      manualUploadInput.addEventListener('change', (event) => {
+        const target = event.target;
+        const file = target.files && target.files[0];
+        if (!file) return;
+
+        const reader = new FileReader();
+
+        reader.onload = () => {
+          this.loadCapturePreviewFromDataUrl({
+            dataUrl: reader.result,
+          });
+        };
+
+        reader.readAsDataURL(file);
+      });
+    }
+
     createLocalCameraCaptureListeners() {
       const localCaptureButtons = this.getUseLocalCaptureButtons();
 
@@ -177,6 +217,15 @@ const MAX_IMAGE_SIDE_LENGTH = 2000;
       }
 
       return this.imageCaptureDiv.querySelectorAll('.js-capture-with-mobile-device-button');
+    }
+
+    /** Retrieve the manual upload button elements for the horizontal and dropdown layouts. */
+    getManualUploadButtons() {
+      if (!this.manual_upload_enabled) {
+        throw new Error('Manual upload is not enabled, cannot get manual upload buttons');
+      }
+
+      return this.imageCaptureDiv.querySelectorAll('.js-manual-upload-button');
     }
 
     createCropRotateListeners() {

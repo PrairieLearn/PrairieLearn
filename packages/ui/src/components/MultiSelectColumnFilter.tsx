@@ -1,48 +1,55 @@
+import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useMemo } from 'preact/compat';
+import { type JSX, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+function defaultRenderValueLabel({ value }: { value: string }) {
+  return <span>{value}</span>;
 }
 
 /**
  * A component that allows the user to filter a column containing arrays of values.
  * Uses AND logic: rows must contain ALL selected values to match.
  *
+ * The filter options (`allColumnValues`) are strings (or string subtypes like
+ * enums). The column's `filterFn` is responsible for mapping these string
+ * values to the actual column data.
+ *
  * @param params
- * @param params.columnId - The ID of the column
- * @param params.columnLabel - The label of the column, e.g. "Rubric Items"
- * @param params.allColumnValues - All possible values that can appear in the column
+ * @param params.column - The TanStack Table column object
+ * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
- * @param params.columnValuesFilter - The current state of the column filter
- * @param params.setColumnValuesFilter - A function that sets the state of the column filter
  */
-export function MultiSelectColumnFilter<T extends readonly any[]>({
-  columnId,
-  columnLabel,
+export function MultiSelectColumnFilter<TData, TValue extends string = string>({
+  column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
-  columnValuesFilter,
-  setColumnValuesFilter,
 }: {
-  columnId: string;
-  columnLabel: string;
-  allColumnValues: T;
-  renderValueLabel?: (props: { value: T[number]; isSelected: boolean }) => JSX.Element;
-  columnValuesFilter: T[number][];
-  setColumnValuesFilter: (value: T[number][]) => void;
+  column: Column<TData, unknown>;
+  allColumnValues: TValue[];
+  renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
-  const selected = useMemo(() => new Set(columnValuesFilter), [columnValuesFilter]);
+  const columnId = column.id;
 
-  const toggleSelected = (value: T[number]) => {
+  const label =
+    column.columnDef.meta?.label ??
+    (typeof column.columnDef.header === 'string' ? column.columnDef.header : column.id);
+
+  const columnValuesFilter = column.getFilterValue() as TValue[] | undefined;
+
+  const selected = useMemo(() => {
+    return new Set(columnValuesFilter);
+  }, [columnValuesFilter]);
+
+  const toggleSelected = (value: TValue) => {
     const set = new Set(selected);
     if (set.has(value)) {
       set.delete(value);
     } else {
       set.add(value);
     }
-    setColumnValuesFilter(Array.from(set));
+    const newValue = Array.from(set);
+    column.setFilterValue(newValue);
   };
 
   const hasActiveFilter = selected.size > 0;
@@ -51,51 +58,62 @@ export function MultiSelectColumnFilter<T extends readonly any[]>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class="text-muted p-0"
+        className="text-muted p-0"
         id={`filter-${columnId}`}
-        aria-label={`Filter ${columnLabel.toLowerCase()}`}
-        title={`Filter ${columnLabel.toLowerCase()}`}
+        aria-label={`Filter ${label.toLowerCase()}`}
+        title={`Filter ${label.toLowerCase()}`}
       >
         <i
-          class={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          className={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu class="p-0">
-        <div class="p-3" style={{ minWidth: '250px' }}>
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{columnLabel}</div>
+      <Dropdown.Menu className="p-0">
+        <div className="p-3 pb-0" style={{ minWidth: '250px' }}>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <div className="fw-semibold">{label}</div>
             <button
               type="button"
-              class="btn btn-link btn-sm text-decoration-none p-0"
-              onClick={() => setColumnValuesFilter([])}
+              className="btn btn-link btn-sm text-decoration-none p-0"
+              onClick={() => column.setFilterValue([])}
             >
               Clear
             </button>
           </div>
+        </div>
 
-          <div class="list-group list-group-flush">
-            {allColumnValues.map((value) => {
-              const isSelected = selected.has(value);
-              return (
-                <div key={value} class="list-group-item d-flex align-items-center gap-3 px-0">
+        <div
+          className="list-group list-group-flush"
+          style={
+            {
+              // This is needed to prevent the last item's background from covering
+              // the dropdown's border radius.
+              '--bs-list-group-bg': 'transparent',
+            } as React.CSSProperties
+          }
+        >
+          {allColumnValues.map((value) => {
+            const isSelected = selected.has(value);
+            return (
+              <div key={value} className="list-group-item d-flex align-items-center gap-3">
+                <div className="form-check">
                   <input
-                    class="form-check-input"
+                    className="form-check-input"
                     type="checkbox"
                     checked={isSelected}
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,
                     })}
                   </label>
                 </div>
-              );
-            })}
-          </div>
+              </div>
+            );
+          })}
         </div>
       </Dropdown.Menu>
     </Dropdown>

@@ -1,8 +1,10 @@
 import { Node } from '@tiptap/core';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import clsx from 'clsx';
-import { type ComponentType, useState } from 'preact/compat';
-import { Card, OverlayTrigger, Tooltip } from 'react-bootstrap';
+import { type ComponentType, useState } from 'react';
+import { Card } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 interface RawHtmlAttrs {
   html: string;
@@ -21,24 +23,27 @@ const RawHtmlComponent = (
   const [nodes, setNodes] = useState<string[] | null>(null);
   const textareaRows = Math.min(10, node.attrs.html.split('\n').length);
   return (
-    <NodeViewWrapper class="p-0" contentEditable={false}>
-      <Card class="border-warning">
-        <Card.Header class="bg-warning-subtle d-flex align-items-center justify-content-between">
-          <div class="d-flex gap-2">
+    <NodeViewWrapper className="p-0" contentEditable={false}>
+      <Card className="border-warning">
+        <Card.Header className="bg-warning-subtle d-flex align-items-center justify-content-between">
+          <div className="d-flex gap-2">
             Raw HTML
             {nodes !== null && nodes.length !== 1 ? (
               <OverlayTrigger
                 placement="right"
-                overlay={
-                  <Tooltip>
-                    You must have exactly one parent element, but you have {nodes.length} (
-                    {nodes.join(', ')}). Either remove the extra elements, or combine them into a
-                    single element by wrapping both of them in a single div.
-                  </Tooltip>
-                }
+                tooltip={{
+                  body: (
+                    <>
+                      You must have exactly one parent element, but you have {nodes.length} (
+                      {nodes.join(', ')}). Either remove the extra elements, or combine them into a
+                      single element by wrapping both of them in a single div.
+                    </>
+                  ),
+                  props: { id: 'raw-html-warning-tooltip' },
+                }}
               >
                 <i
-                  class="bi bi-exclamation-triangle text-danger"
+                  className="bi bi-exclamation-triangle text-danger"
                   aria-label="Raw HTML warning"
                   role="img"
                 />
@@ -47,21 +52,27 @@ const RawHtmlComponent = (
           </div>
           <OverlayTrigger
             placement="left"
-            overlay={
-              <Tooltip>
-                This node type isn't supported by the rich text editor yet. You can edit the
-                underlying HTML here.
-              </Tooltip>
-            }
+            tooltip={{
+              body: (
+                <>
+                  This node type isn't supported by the rich text editor yet. You can edit the
+                  underlying HTML here.
+                </>
+              ),
+              props: { id: 'raw-html-help-tooltip' },
+            }}
           >
-            <i class="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
+            <i className="bi bi-question-circle" aria-label="Raw HTML help" role="img" />
           </OverlayTrigger>
         </Card.Header>
         <Card.Body>
           <textarea
             rows={textareaRows}
             value={node.attrs.html}
-            class={clsx('form-control', nodes !== null && nodes.length !== 1 && 'border-danger')}
+            className={clsx(
+              'form-control',
+              nodes !== null && nodes.length !== 1 && 'border-danger',
+            )}
             onChange={(e) => {
               const newHtml = e.currentTarget.value;
               const template = document.createElement('template');

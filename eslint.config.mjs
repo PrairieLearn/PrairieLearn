@@ -285,12 +285,11 @@ export default tseslint.config([
           ([ruleName, severity]) => [ruleName, severity === 'off' ? 'off' : 'error'],
         ),
       ),
-      '@eslint-react/no-forbidden-props': [
-        'error',
-        {
-          forbid: ['className', 'htmlFor', '/_/'],
-        },
-      ],
+      // We want to be able to use `useState` without the setter function for
+      // https://tkdodo.eu/blog/react-query-fa-qs#2-the-queryclient-is-not-stable
+      '@eslint-react/naming-convention/use-state': 'off',
+      // Forbid `snake_case` props.
+      '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
 
       ...eslintPluginUnicorn.configs.recommended.rules,
 
@@ -300,6 +299,7 @@ export default tseslint.config([
       'unicorn/no-array-callback-reference': 'off',
       'unicorn/no-array-method-this-argument': 'off',
       'unicorn/no-array-reduce': 'off', // Sometimes, an array reduce is more readable
+      'unicorn/no-array-reverse': 'off', // `Array.prototype.toReversed` is not yet supported by our TypeScript config
       'unicorn/no-array-sort': 'off', // Disabling for the time being to avoid unnecessary diffs
       'unicorn/no-hex-escape': 'off',
       'unicorn/no-lonely-if': 'off', // https://github.com/PrairieLearn/PrairieLearn/pull/12546#discussion_r2252261293
@@ -361,6 +361,9 @@ export default tseslint.config([
       // Use the recommended rules for vitest
       ...vitest.configs.recommended.rules,
 
+      // We are disabling the test for a reason.
+      'vitest/no-disabled-tests': ['off'],
+
       // This gives a lot of false positives; we sometimes author tests that
       // have the assertion in a helper function. We could refactor them in
       // the future, but for now we'll disable this rule.
@@ -399,6 +402,15 @@ export default tseslint.config([
       '@prairielearn/aws-client-shared-config': 'error',
       '@prairielearn/jsx-no-dollar-interpolation': 'error',
       '@prairielearn/no-unused-sql-blocks': 'error',
+      '@prairielearn/safe-db-types': [
+        'error',
+        {
+          allowDbTypes: [
+            // This is innocuous, it's just a string enum.
+            'SprocUsersGetDisplayedRoleSchema',
+          ],
+        },
+      ],
 
       '@stylistic/jsx-curly-brace-presence': [
         'error',
@@ -410,18 +422,6 @@ export default tseslint.config([
         {
           component: true,
           html: true,
-        },
-      ],
-      '@stylistic/jsx-sort-props': [
-        'error',
-        {
-          callbacksLast: true,
-          ignoreCase: true,
-          locale: 'auto',
-          multiline: 'ignore',
-          noSortAlphabetically: true,
-          reservedFirst: true,
-          shorthandLast: true,
         },
       ],
       '@stylistic/jsx-tag-spacing': [
@@ -473,6 +473,19 @@ export default tseslint.config([
       ...pluginQuery.configs['flat/recommended'][0].rules,
       '@tanstack/query/no-rest-destructuring': 'error',
 
+      'perfectionist/sort-jsx-props': [
+        'error',
+        {
+          customGroups: [
+            { elementNamePattern: '^on[A-Z]', groupName: 'callback' },
+            { elementNamePattern: '^(key|ref)$', groupName: 'reserved' },
+          ],
+          groups: ['reserved', 'unknown', 'shorthand-prop', 'callback'],
+          ignoreCase: true,
+          type: 'unsorted',
+        },
+      ],
+
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',
     },
@@ -505,16 +518,11 @@ export default tseslint.config([
 
       'jsx-a11y-x': {
         attributes: {
-          for: ['for'],
+          for: ['htmlFor'],
         },
       },
 
       ...eslintReact.configs['recommended-typescript'].settings,
-      'react-x': {
-        ...eslintReact.configs['recommended-typescript'].settings['react-x'],
-        // This is roughly the version that Preact's compat layer supports.
-        version: '18.0.0',
-      },
     },
   },
   {
@@ -530,6 +538,7 @@ export default tseslint.config([
       ],
       ...jsdoc.configs['flat/recommended-typescript-error'].rules,
       'jsdoc/check-line-alignment': 'error',
+      'jsdoc/check-tag-names': 'error',
       'jsdoc/convert-to-jsdoc-comments': [
         'error',
         {
@@ -656,15 +665,26 @@ export default tseslint.config([
     },
   },
   {
-    files: ['packages/preact-cjs/src/**/*', 'packages/preact-cjs-compat/src/**/*'],
-    rules: {
-      '@typescript-eslint/no-require-imports': 'off',
-    },
-  },
-  {
     files: ['apps/prairielearn/src/tests/**/*', 'scripts/**/*', 'contrib/**/*'],
     rules: {
       'no-console': 'off',
+    },
+  },
+  {
+    files: ['**/*.{ts,tsx}'],
+    rules: {
+      'no-restricted-imports': [
+        'error',
+        {
+          paths: [
+            {
+              importNames: ['OverlayTrigger'],
+              message: 'Use OverlayTrigger from @prairielearn/ui.',
+              name: 'react-bootstrap',
+            },
+          ],
+        },
+      ],
     },
   },
   {

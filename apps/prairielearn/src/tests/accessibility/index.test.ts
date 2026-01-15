@@ -16,7 +16,7 @@ import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
-import { ensureEnrollment } from '../../models/enrollment.js';
+import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as news_items from '../../news_items/index.js';
 import * as server from '../../server.js';
 import * as helperServer from '../helperServer.js';
@@ -90,6 +90,9 @@ async function checkPage(url: string) {
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
+      // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
+      // instead of colspan). HTML is case-insensitive, so we accept both.
+      'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
@@ -102,6 +105,9 @@ async function checkPage(url: string) {
       'no-trailing-whitespace': 'off',
       'script-type': 'off',
       'unique-landmark': 'off',
+      // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
+      // letter. We use relaxed mode to allow any non-empty ID without whitespace.
+      'valid-id': ['error', { relaxed: true }],
       'void-style': 'off',
       'wcag/h63': 'off',
       // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.
@@ -369,9 +375,10 @@ const SKIP_ROUTES = [
 
   // API routes.
   '/pl/course_instance/lookup',
+  '/pl/course_instance/:course_instance_id/instructor/instance_admin/publishing/extension/check',
 ];
 
-function shouldSkipPath(path) {
+function shouldSkipPath(path: string) {
   return SKIP_ROUTES.some((r) => {
     if (typeof r === 'string') {
       return r === path;
@@ -422,17 +429,17 @@ describe('accessibility', () => {
     );
 
     const user_id = await sqldb.queryRow(
-      'SELECT user_id FROM users WHERE uid = $uid',
+      'SELECT id FROM users WHERE uid = $uid',
       { uid: 'dev@example.com' },
       IdSchema,
     );
 
     const courseInstance = await selectCourseInstanceById(STATIC_ROUTE_PARAMS.course_instance_id);
 
-    const enrollment = await ensureEnrollment({
+    const enrollment = await ensureUncheckedEnrollment({
       courseInstance,
       userId: user_id,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });
@@ -471,7 +478,7 @@ describe('accessibility', () => {
     );
 
     await sqldb.executeRow(
-      'UPDATE pl_courses SET sharing_name = $sharing_name WHERE id = $course_id',
+      'UPDATE courses SET sharing_name = $sharing_name WHERE id = $course_id',
       { sharing_name: 'test', course_id },
     );
   });

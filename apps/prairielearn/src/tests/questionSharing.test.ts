@@ -8,9 +8,10 @@ import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { type Course, IdSchema, JobSequenceSchema } from '../lib/db-types.js';
+import { type Course, JobSequenceSchema } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -36,7 +37,7 @@ const SHARING_QUESTION_QID = 'shared-via-sharing-set';
 const PUBLICLY_SHARED_QUESTION_QID = 'shared-publicly';
 const DRAFT_QUESTION_QID = '__drafts__/draft_1';
 
-function sharingPageUrl(courseId) {
+function sharingPageUrl(courseId: string) {
   return `${baseUrl}/course/${courseId}/course_admin/sharing`;
 }
 
@@ -98,7 +99,7 @@ async function ensureInvalidSharingOperationFailsToSync() {
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
-async function syncSharingCourse(course_id) {
+async function syncSharingCourse(course_id: string) {
   const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
   const token = await getCsrfToken(syncUrl);
 
@@ -231,8 +232,8 @@ describe('Question Sharing', function () {
   });
 
   describe('Create a sharing set and add a question to it', () => {
-    let exampleCourseSharingToken;
-    let testCourseSharingToken;
+    let exampleCourseSharingToken: string | null;
+    let testCourseSharingToken: string | null;
 
     test.sequential(
       'Sync course with sharing enabled, disabling validating shared question paths',
@@ -370,7 +371,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: sharingSetId,
-          unsafe_course_sharing_token: testCourseSharingToken,
+          unsafe_course_sharing_token: testCourseSharingToken!,
         }),
       });
       assert(res.ok);
@@ -406,7 +407,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken,
+          unsafe_course_sharing_token: exampleCourseSharingToken!,
         }),
       });
       assert.equal(res.status, 400);
@@ -422,7 +423,7 @@ describe('Question Sharing', function () {
           __action: 'course_sharing_set_add',
           __csrf_token: token,
           unsafe_sharing_set_id: '1',
-          unsafe_course_sharing_token: exampleCourseSharingToken,
+          unsafe_course_sharing_token: exampleCourseSharingToken!,
         }),
       });
       assert.equal(res.status, 400);
@@ -435,7 +436,7 @@ describe('Question Sharing', function () {
   });
 
   describe('Test Sharing a Question Publicly', function () {
-    let publiclySharedQuestionId;
+    let publiclySharedQuestionId: string;
 
     beforeAll(async () => {
       publiclySharedQuestionId = await sqldb.queryRow(
@@ -718,21 +719,6 @@ describe('Question Sharing', function () {
       }
     });
 
-    test.sequential(
-      'Successfully access publicly shared assessment page for the shared assessment',
-      async () => {
-        const sharedAssessmentId = await sqldb.queryRow(
-          sql.select_assessment,
-          { tid: 'test', course_instance_id: sharingCourseInstanceId },
-          IdSchema,
-        );
-        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
-        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
-
-        assert(sharedAssessmentPage.ok);
-      },
-    );
-
     test.sequential('Successfully sync a shared course instance', async () => {
       sharingCourseData.courseInstances['Fa19'].courseInstance.shareSourcePublicly = true;
       await fs.writeJSON(
@@ -753,6 +739,21 @@ describe('Question Sharing', function () {
         const sharedCourseInstancePage = await fetchCheerio(sharedCourseInstanceUrl);
 
         assert(sharedCourseInstancePage.ok);
+      },
+    );
+
+    test.sequential(
+      'Successfully access publicly shared assessment page for the shared assessment',
+      async () => {
+        const sharedAssessmentId = await sqldb.queryRow(
+          sql.select_assessment,
+          { tid: 'test', course_instance_id: sharingCourseInstanceId },
+          IdSchema,
+        );
+        const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;
+        const sharedAssessmentPage = await fetchCheerio(sharedAssessmentUrl);
+
+        assert(sharedAssessmentPage.ok);
       },
     );
 

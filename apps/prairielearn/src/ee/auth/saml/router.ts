@@ -1,6 +1,6 @@
 import util from 'node:util';
 
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import passport from 'passport';
 
@@ -16,10 +16,10 @@ import { strategy } from './index.js';
 const router = Router({ mergeParams: true });
 
 router.get('/login', (req, res, next) => {
-  // @ts-expect-error Missing `additionalParams` on the type.
   passport.authenticate('saml', {
     failureRedirect: '/pl',
     session: false,
+    // @ts-expect-error Missing `additionalParams` on the type.
     additionalParams: req.query.RelayState
       ? {
           // This is used be the SAML configuration page to test SAML. It includes
@@ -32,7 +32,7 @@ router.get('/login', (req, res, next) => {
   })(req, res, next);
 });
 
-function authenticate(req, res): Promise<any> {
+function authenticate(req: Request, res: Response): Promise<any> {
   return new Promise((resolve, reject) => {
     passport.authenticate(
       'saml',
@@ -40,7 +40,7 @@ function authenticate(req, res): Promise<any> {
         failureRedirect: '/pl',
         session: false,
       },
-      (err, user) => {
+      (err: any, user: Express.User | false | null) => {
         if (err) {
           reject(err);
         } else {

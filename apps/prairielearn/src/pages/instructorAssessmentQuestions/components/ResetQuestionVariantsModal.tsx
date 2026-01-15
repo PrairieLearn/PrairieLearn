@@ -28,10 +28,10 @@ export function ResetQuestionVariantsModal({
           <input type="hidden" name="__action" value="reset_question_variants" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
           <input type="hidden" name="unsafe_assessment_question_id" value={assessmentQuestionId} />
-          <button type="button" class="btn btn-secondary me-1" onClick={onHide}>
+          <button type="button" className="btn btn-secondary me-1" onClick={onHide}>
             Cancel
           </button>
-          <button type="submit" class="btn btn-danger">
+          <button type="submit" className="btn btn-danger">
             Reset question variants
           </button>
         </form>

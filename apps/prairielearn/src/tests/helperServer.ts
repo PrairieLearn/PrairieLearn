@@ -138,7 +138,7 @@ export async function after(): Promise<void> {
   }
 }
 
-export async function waitForJobSequence(job_sequence_id) {
+export async function waitForJobSequence(job_sequence_id: string) {
   let job_sequence: JobSequence;
   while (true) {
     job_sequence = await sqldb.queryRow(
@@ -152,7 +152,10 @@ export async function waitForJobSequence(job_sequence_id) {
   return job_sequence;
 }
 
-export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success' | 'Error') {
+export async function waitForJobSequenceStatus(
+  job_sequence_id: string,
+  status: 'Success' | 'Error',
+) {
   const job_sequence = await waitForJobSequence(job_sequence_id);
 
   // In the case of a failure, print more information to aid debugging.
@@ -165,6 +168,6 @@ export async function waitForJobSequenceStatus(job_sequence_id, status: 'Success
   assert.equal(job_sequence.status, status);
 }
 
-export async function waitForJobSequenceSuccess(job_sequence_id) {
+export async function waitForJobSequenceSuccess(job_sequence_id: string) {
   await waitForJobSequenceStatus(job_sequence_id, 'Success');
 }

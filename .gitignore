@@ -55,11 +55,6 @@ docker-compose.override.yml
 /server.log
 /apps/prairielearn/server.log
 
-### Tests
-/tests/testFileEditor/courseLive/
-/tests/testFileEditor/courseOrigin/
-/tests/testFileEditor/courseDev/
-
 ## Yarn
 node_modules
 yarn-error.log
@@ -111,8 +106,10 @@ coverage.xml
 .vitest-reports
 
 ## Playwright
+test-results/
 apps/prairielearn/test-results/
 apps/prairielearn/playwright/.cache/
+.playwright-mcp/
 
 ## TypeScript cache
 *.tsbuildinfo

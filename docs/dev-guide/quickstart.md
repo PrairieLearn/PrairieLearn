@@ -36,18 +36,19 @@ sudo make dev-workspace-host # or sudo make start-workspace-host
 sudo make dev
 ```
 
-!!! note "Debugging workspaces"
+On a macOS native installation, you should set the following in your `config.json`:
 
-    If your workspaces won't start, check that you have set `"workspaceHostHomeDirRoot"` and `"workspaceHomeDirRoot"` in your `config.json`. If you are running natively on Mac OS, you may need to change `"workspaceDevContainerHostname"` to "localhost".
+```json title="config.json"
+{
+  "workspaceDevContainerHostname": "localhost",
+  "workspaceJobsDirectoryOwnerUid": 1001,
+  "workspaceJobsDirectoryOwnerGid": 1001
+}
+```
 
-    ```json file="config.json"
-    {
-        ...
-        "workspaceDevContainerHostname": "localhost"
-    }
-    ```
+More information can be found in the [config.json](configJson.md#running-workspaces-external-graders-natively-on-macos) documentation.
 
-    Also check that `"workspaceJobsDirectoryOwnerUid"` and `"workspaceJobsDirectoryOwnerGid"` are set to the correct values in your `config.json`. Many containers can only run as UID 1001 or 0 (see `pl-gosu-helper.sh`). Make sure you run as root locally!
+??? note "Troubleshooting workspaces"
 
     You can list the active hosts with:
 
@@ -57,14 +58,14 @@ sudo make dev
 
     If you see no hosts, the workspace host is not running. If the `ready_at` column is an older date, the workspace host may also not be running.
 
-    Additionally, since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
+    Since PrairieLearn manages the workspace files, you need to also run PrairieLearn as root.
 
 ## Documentation
 
 If you want to preview the documentation, run:
 
 ```sh
-make preview-docs
+make dev-docs
 ```
 
 ## Testing
@@ -74,14 +75,16 @@ If you are contributing code to PrairieLearn, you must ensure that your changes 
 Run the test suite (Docker must be installed and running):
 
 ```sh
-make test
+make test-all
 ```
 
-Or, to run tests for just a specific language:
+Or, to run just a specific subset of tests:
 
 ```sh
-make test-js     # Javascript only
-make test-python # Python only
+make test-js           # Javascript tests (both packages and applications)
+make test-prairielearn # PrairieLearn application tests
+make test-python       # Python tests
+make test-e2e          # E2E tests (run `make e2e-deps` first)
 ```
 
 ### JavaScript tests

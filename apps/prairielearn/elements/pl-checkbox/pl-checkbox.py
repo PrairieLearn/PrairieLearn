@@ -829,8 +829,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
             "feedback": feedback,
         }
     elif result == "invalid":
-        # FIXME: add more invalid examples
-        data["raw_submitted_answers"][name] = None
+        # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
+        # This mimics what a browser does when no checkbox is selected: we simply get no value
+        # for that form field.
         data["format_errors"][name] = "You must select at least one option."
     else:
         assert_never(result)

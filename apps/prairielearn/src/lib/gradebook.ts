@@ -1,6 +1,6 @@
 /* eslint no-restricted-imports: ["error", {"patterns": ["db-types.js"] }] */
 
-import { type CursorIterator, loadSqlEquiv, queryCursor, queryRows } from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
 import {
   type StaffGradebookRow,
@@ -59,46 +59,4 @@ async function getGradebookRows({
   );
 }
 
-async function getGradebookRowsCursor(
-  params: GetGradebookRowsParams & { auth: 'student' },
-): Promise<CursorIterator<StudentGradebookRow>>;
-
-async function getGradebookRowsCursor(
-  params: GetGradebookRowsParams & { auth: 'instructor' },
-): Promise<CursorIterator<StaffGradebookRow>>;
-
-async function getGradebookRowsCursor({
-  course_instance_id,
-  user_id,
-  authz_data,
-  req_date,
-  auth,
-}: GetGradebookRowsParams): Promise<
-  CursorIterator<StudentGradebookRow> | CursorIterator<StaffGradebookRow>
-> {
-  if (auth === 'student') {
-    return await queryCursor(
-      sql.select_assessment_instances,
-      {
-        course_instance_id,
-        user_id,
-        authz_data,
-        req_date,
-      },
-      StudentGradebookRowSchema,
-    );
-  }
-
-  return await queryCursor(
-    sql.select_assessment_instances,
-    {
-      course_instance_id,
-      user_id,
-      authz_data,
-      req_date,
-    },
-    StaffGradebookRowSchema,
-  );
-}
-
-export { getGradebookRows, getGradebookRowsCursor };
+export { getGradebookRows };

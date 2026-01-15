@@ -18,7 +18,7 @@ All non-text content must have a text alternative that serves an equivalent purp
 
 ### Images and figures (`pl-figure`)
 
-When using the [`pl-figure`](../elements.md#pl-figure-element) element to embed images, always provide descriptive alternative text (alt text) via the `alt` attribute. Good alt text is concise and conveys the essential information or function of the image.
+When using the [`pl-figure`](../elements/pl-figure.md) element to embed images, always provide descriptive alternative text (alt text) via the `alt` attribute. Good alt text is concise and conveys the essential information or function of the image.
 
 ```html
 <pl-figure
@@ -48,7 +48,7 @@ Many elements support an `aria-label` attribute to provide a label that is not v
 </pl-multiple-choice>
 ```
 
-Consult [the documentation for each specific PrairieLearn element](../elements.md) to understand its accessibility features and best practices.
+Consult [the documentation for each specific PrairieLearn element](../elements/index.md) to understand its accessibility features and best practices.
 
 ## Perceivable content
 
@@ -78,5 +78,5 @@ Most PrairieLearn elements are designed to meet these requirements by default. H
 While PrairieLearn aims to provide accessible building blocks, it's important to test your questions for accessibility.
 
 - **Keyboard-only navigation**: Can you navigate and answer the question using only the keyboard?
-- **Screen reader**: Use a screen reader (e.g., [NVDA](https://www.nvaccess.org/download/) or [JAWS](https://www.freedomscientific.com/products/software/jaws/) for Windows, [Orca](https://help.gnome.org/users/orca/stable/index.html.en) for Linux, or [VoiceOver](https://www.apple.com/accessibility/voiceover/) for macOS) to experience the question like a student who is blind or has low vision.
+- **Screen reader**: Use a screen reader (e.g., [NVDA](https://www.nvaccess.org/download/) or [JAWS](https://www.freedomscientific.com/products/software/jaws/) for Windows, [Orca](https://help.gnome.org/orca/index.html) for Linux, or [VoiceOver](https://www.apple.com/accessibility/voiceover/) for macOS) to experience the question like a student who is blind or has low vision.
 - **Accessibility checkers**: Browser extensions and online tools can help identify common accessibility issues. However, they cannot identify all issues, so manual testing is still important.
