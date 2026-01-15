@@ -17,7 +17,7 @@ $(function() {
             <div class="card-header pl-order-blocks-header bg-primary-subtle">
                 <span class="me-2">{{source-header}}</span>
                 <button type="button" class="btn btn-light btn-sm align-middle" data-bs-toggle="popover" data-bs-html="true" title="Order Blocks Help Button" data-bs-content="{{help_text}}">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                    <i class="fas fa-question-circle" aria-hidden="true"></i>
                 </button>
             </div>
             <ul id="order-blocks-options-{{uuid}}" role="listbox" name="{{answer_name}}" class="card-body list-group pl-order-blocks-connected-sortable" aria-label="Options Area">
@@ -62,13 +62,13 @@ $(function() {
         <div class="card-header">
             Your answer:
         {{#correct}}
-            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         {{/correct}}
         {{#partially_correct}}
-            <span class="badge text-bg-warning"><i class="fa fa-times" aria-hidden="true"></i> {{partially_correct}}%</span>
+            <span class="badge text-bg-warning"><i class="fas fa-times" aria-hidden="true"></i> {{partially_correct}}%</span>
         {{/partially_correct}}
         {{#incorrect}}
-            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         {{/incorrect}}
         </div>
         <ul class="card-body list-group list-unstyled">
@@ -79,14 +79,14 @@ $(function() {
                         <li>
                             <div class="pl-order-blocks-correctness-badge-container">
                                 {{#allow_feedback_badges}}
-                                <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fas {{icon}}" aria-hidden="true"></i></span>
                                 {{/allow_feedback_badges}}
                                 <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                             </div>
                         </li>
                     </ul>
                     <div>
-                        <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                        <span class="pl-order-blocks-feedback-icon"><i class="fas fa-question-circle" aria-hidden="true"></i></span>
                         {{distractor_feedback}}
                     </div>
                 </li>
@@ -98,14 +98,14 @@ $(function() {
                             <li>
                                 <div class="pl-order-blocks-correctness-badge-container">
                                     {{#allow_feedback_badges}}
-                                    <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                                    <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fas {{icon}}" aria-hidden="true"></i></span>
                                     {{/allow_feedback_badges}}
                                     <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                                 </div>
                             </li>
                         </ul>
                         <div>
-                            <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                            <span class="pl-order-blocks-feedback-icon"><i class="fas fa-question-circle" aria-hidden="true"></i></span>
                             {{ordering_feedback}}
                         </div>
                     </li>
@@ -114,7 +114,7 @@ $(function() {
                     <li>
                         <div class="pl-order-blocks-correctness-badge-container">
                             {{#allow_feedback_badges}}
-                            <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fa {{icon}}" aria-hidden="true"></i></span>
+                            <span class="pl-order-blocks-correctness-badge badge {{badge_type}}"><i class="fas {{icon}}" aria-hidden="true"></i></span>
                             {{/allow_feedback_badges}}
                             <div class="{{block_formatting}} pl-order-block" style="margin-left: {{indent}}px;flex-grow:1;">{{{inner_html}}}</div>
                         </div>
@@ -130,8 +130,8 @@ $(function() {
     {{#parse-error}}
         <strong>Your answer: </strong>
         <div id="pl-order-blocks" class="d-inline-block">
-            <span class="badge text-danger badge-invalid"><i class="fa fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
-            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fa fa-question-circle" aria-hidden="true"></i></a>
+            <span class="badge text-danger badge-invalid"><i class="fas fa-exclamation-triangle" aria-hidden="true"></i> Invalid</span>
+            <button type="button" class="btn btn-sm btn-secondary small border" data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true" style="margin-left: 5px" title="Format Error" data-bs-content="{{parse-error}}"> Why <i class="fas fa-question-circle" aria-hidden="true"></i></a>
         </div>
     {{/parse-error}}
 {{/submission}}
@@ -158,7 +158,7 @@ $(function() {
                     <li class="{{block_formatting}} pl-order-block">{{{inner_html}}}</li>
                 </ul>
                 <div>
-                    <span class="pl-order-blocks-feedback-icon"><i class="fa fa-question-circle" aria-hidden="true"></i></span>
+                    <span class="pl-order-blocks-feedback-icon"><i class="fas fa-question-circle" aria-hidden="true"></i></span>
                     {{distractor_feedback}}
                 </div>
             </li>
