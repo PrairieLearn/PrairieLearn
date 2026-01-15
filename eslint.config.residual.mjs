@@ -3,16 +3,12 @@
  *
  * This config includes:
  * - @html-eslint: HTML/Mustache file linting (oxlint can't parse HTML)
- * - @stylistic: Stylistic rules (token-based, not supported by oxlint)
- * - perfectionist: Sorting rules (token-based)
- * - jsx-a11y-x: JSX accessibility rules
- * - @eslint-react: React-specific rules
- * - react-hooks: React hooks rules
- * - no-floating-promise: Promise handling
- * - react-you-might-not-need-an-effect: React effect optimization
- * - you-dont-need-lodash-underscore: Lodash alternatives
- * - @tanstack/eslint-plugin-query: React Query rules
+ * - @stylistic: Stylistic rules (token-based, not supported by oxlint jsPlugins)
+ * - perfectionist: Sorting rules (token-based, not supported by oxlint jsPlugins)
+ * - @prairielearn/safe-db-types: Uses TypeScript type-checker APIs
+ * - jsx-a11y-x/no-noninteractive-element-interactions: Not in oxlint
  *
+ * Most other plugins have been migrated to oxlint via native plugins or jsPlugins.
  * Run oxlint first for faster feedback, then this config for remaining rules.
  */
 // @ts-check
@@ -21,16 +17,14 @@ import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
-import pluginQuery from '@tanstack/eslint-plugin-query';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
 import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
-import noFloatingPromise from 'eslint-plugin-no-floating-promise';
 import perfectionist from 'eslint-plugin-perfectionist';
 import reactHooks from 'eslint-plugin-react-hooks';
-import reactYouMightNotNeedAnEffect from 'eslint-plugin-react-you-might-not-need-an-effect';
 import eslintPluginUnicorn from 'eslint-plugin-unicorn';
+import youDontNeedLodash from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
@@ -103,6 +97,7 @@ export default tseslint.config([
     extends: [
       // Include tseslint but we'll disable its rules - needed for eslint-disable comments
       ...tseslint.configs.recommended,
+      // Include lodash plugin with rules disabled - needed for eslint-disable comments
       ...compat.extends('plugin:you-dont-need-lodash-underscore/all'),
     ],
     files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
@@ -156,14 +151,11 @@ export default tseslint.config([
       ...eslintReact.configs['recommended-typescript'].plugins,
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
-      '@tanstack/query': pluginQuery,
       'import-x': importX,
       jsdoc,
       'jsx-a11y-x': jsxA11yX,
-      'no-floating-promise': noFloatingPromise,
       perfectionist,
       'react-hooks': reactHooks,
-      'react-you-might-not-need-an-effect': reactYouMightNotNeedAnEffect,
       unicorn: eslintPluginUnicorn,
     },
     rules: {
@@ -197,56 +189,26 @@ export default tseslint.config([
         Object.keys(importX.rules || {}).map((rule) => [`import-x/${rule}`, 'off']),
       ),
 
-      // no-floating-promise
-      'no-floating-promise/no-floating-promise': 'error',
+      // Disable all react-hooks rules - they're handled by oxlint
+      // We include the plugin only to support eslint-disable comments in code
+      'react-hooks/exhaustive-deps': 'off',
+      'react-hooks/rules-of-hooks': 'off',
 
-      // react-hooks
-      'react-hooks/exhaustive-deps': 'error',
-      'react-hooks/rules-of-hooks': 'error',
+      // Disable all you-dont-need-lodash-underscore rules - they're handled by oxlint jsPlugins
+      // (rules are enabled by the extends above, we disable them here)
+      ...Object.fromEntries(
+        Object.keys(youDontNeedLodash.rules || {}).map((rule) => [
+          `you-dont-need-lodash-underscore/${rule}`,
+          'off',
+        ]),
+      ),
 
-      // react-you-might-not-need-an-effect
-      'react-you-might-not-need-an-effect/no-adjust-state-on-prop-change': 'error',
-      'react-you-might-not-need-an-effect/no-chain-state-updates': 'error',
-      'react-you-might-not-need-an-effect/no-derived-state': 'error',
-      'react-you-might-not-need-an-effect/no-empty-effect': 'error',
-      'react-you-might-not-need-an-effect/no-event-handler': 'error',
-      'react-you-might-not-need-an-effect/no-initialize-state': 'error',
-      'react-you-might-not-need-an-effect/no-pass-data-to-parent': 'error',
-      'react-you-might-not-need-an-effect/no-pass-live-state-to-parent': 'error',
-      'react-you-might-not-need-an-effect/no-pass-ref-to-parent': 'error',
-      'react-you-might-not-need-an-effect/no-reset-all-state-on-prop-change': 'error',
-
-      // @eslint-react
-      ...eslintReact.configs['recommended-typescript'].rules,
-      '@eslint-react/dom/no-string-style-prop': 'off',
-      '@eslint-react/dom/no-unknown-property': 'off',
-      '@eslint-react/jsx-no-undef': 'off',
-      '@eslint-react/jsx-uses-react': 'off',
-      '@eslint-react/jsx-uses-vars': 'off',
-      '@eslint-react/naming-convention/use-state': 'off',
-      '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
-
-      // jsx-a11y-x (strict config)
-      ...jsxA11yX.flatConfigs.strict.rules,
-      'jsx-a11y-x/control-has-associated-label': [
-        'off',
-        {
-          ignoreElements: ['audio', 'canvas', 'embed', 'input', 'textarea', 'tr', 'video'],
-          ignoreRoles: [
-            'grid',
-            'listbox',
-            'menu',
-            'menubar',
-            'radiogroup',
-            'row',
-            'tablist',
-            'toolbar',
-            'tree',
-            'treegrid',
-          ],
-          includeRoles: ['alert', 'dialog'],
-        },
-      ],
+      // Disable all jsx-a11y-x rules - they're handled by oxlint
+      // We include the plugin only for no-noninteractive-element-interactions (not in oxlint)
+      ...Object.fromEntries(
+        Object.keys(jsxA11yX.rules || {}).map((rule) => [`jsx-a11y-x/${rule}`, 'off']),
+      ),
+      // This rule is not available in oxlint, so we enable it here
       'jsx-a11y-x/no-noninteractive-element-interactions': [
         'error',
         {
@@ -255,6 +217,16 @@ export default tseslint.config([
           img: ['onError', 'onLoad'],
         },
       ],
+
+      // @eslint-react (complex plugin structure, not supported by oxlint jsPlugins)
+      ...eslintReact.configs['recommended-typescript'].rules,
+      '@eslint-react/dom/no-string-style-prop': 'off',
+      '@eslint-react/dom/no-unknown-property': 'off',
+      '@eslint-react/jsx-no-undef': 'off',
+      '@eslint-react/jsx-uses-react': 'off',
+      '@eslint-react/jsx-uses-vars': 'off',
+      '@eslint-react/naming-convention/use-state': 'off',
+      '@eslint-react/no-forbidden-props': ['error', { forbid: ['/_/'] }],
 
       // @stylistic rules
       '@stylistic/jsx-curly-brace-presence': [
@@ -287,7 +259,7 @@ export default tseslint.config([
         { allowDbTypes: ['SprocUsersGetDisplayedRoleSchema'] },
       ],
 
-      // perfectionist - sorting rules
+      // perfectionist - sorting rules (token-based, not supported by oxlint jsPlugins)
       'perfectionist/sort-jsx-props': [
         'error',
         {
@@ -300,18 +272,6 @@ export default tseslint.config([
           type: 'unsorted',
         },
       ],
-
-      // @tanstack/query
-      '@tanstack/query/exhaustive-deps': 'error',
-      '@tanstack/query/infinite-query-property-order': 'error',
-      '@tanstack/query/mutation-property-order': 'error',
-      '@tanstack/query/no-rest-destructuring': 'error',
-      '@tanstack/query/no-unstable-deps': 'error',
-      '@tanstack/query/no-void-query-fn': 'error',
-      '@tanstack/query/stable-query-client': 'error',
-
-      // Disable lodash rules that we allow
-      'you-dont-need-lodash-underscore/omit': 'off',
     },
   },
 
@@ -351,7 +311,6 @@ export default tseslint.config([
     rules: {
       // Disable type-aware rules for browser scripts
       '@prairielearn/safe-db-types': 'off',
-      'no-floating-promise/no-floating-promise': 'off',
     },
   },
 ]);

@@ -20,9 +20,11 @@
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true,
     "editor.codeActionsOnSave": {
+      "source.fixAll.oxc": "explicit",
       "source.fixAll.eslint": "explicit"
     }
   },
+  "oxc.typeAware": true,
   "[html][css][scss][json][jsonc][yaml][github-actions-workflow][sql][markdown][toml][shellscript]": {
     "editor.defaultFormatter": "esbenp.prettier-vscode",
     "editor.formatOnSave": true

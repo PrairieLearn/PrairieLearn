@@ -6,6 +6,7 @@
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",
     "dbaeumer.vscode-eslint",
+    "oxc.oxc-vscode",
     // If you haven't run `make python-deps`, this is going to give you errors.
     "dorzey.vscode-sqlfluff",
     "ms-playwright.playwright",
