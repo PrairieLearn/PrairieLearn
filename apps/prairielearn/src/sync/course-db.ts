@@ -1153,9 +1153,9 @@ function validateAssessment({
     }
 
     if (usedLegacyProps.length > 0) {
+      const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
       errors.push(
-        'Cannot use both "teams" and legacy group properties in the same assessment. ' +
-          `Found: ${usedLegacyProps.map((p) => `"${p}"`).join(', ')}.`,
+        'Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
       );
     }
   }
