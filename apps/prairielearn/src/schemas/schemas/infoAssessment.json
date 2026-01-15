@@ -166,7 +166,7 @@
       "additionalProperties": false,
       "properties": {
         "enabled": {
-          "description": "Whether team work is enabled for this assessment.",
+          "description": "Whether teams are enabled for this assessment.",
           "type": "boolean",
           "default": true
         },
