@@ -65,28 +65,23 @@ export async function createCourseRepo(courseTemplateDir: string): Promise<Cours
   const courseLiveDir = path.join(baseDir, 'courseLive');
   const courseDevDir = path.join(baseDir, 'courseDev');
 
-  // Create bare origin repo with master as default branch
   await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
     cwd: '.',
     env: process.env,
   });
 
-  // Clone to live directory
   await execa('git', ['clone', courseOriginDir, courseLiveDir], {
     cwd: '.',
     env: process.env,
   });
 
-  // Copy template files
   await fs.copy(courseTemplateDir, courseLiveDir);
 
-  // Add, commit, and push
   const execOptions = { cwd: courseLiveDir, env: process.env };
   await execa('git', ['add', '-A'], execOptions);
   await execa('git', ['commit', '-m', 'Initial commit'], execOptions);
   await execa('git', ['push', 'origin', 'master'], execOptions);
 
-  // Clone to dev directory
   await execa('git', ['clone', courseOriginDir, courseDevDir], {
     cwd: '.',
     env: process.env,
@@ -134,7 +129,6 @@ export async function createSharingCourseRepo(
   const gitOptionsOrigin: GitOptions = { cwd: originDir, env: process.env };
   const gitOptionsLive: GitOptions = { cwd: liveDir, env: process.env };
 
-  // Initialize non-bare origin (content written externally via syncUtil.writeCourseToDirectory)
   await execa('git', ['-c', 'init.defaultBranch=master', 'init'], gitOptionsOrigin);
 
   return { gitOptionsOrigin, gitOptionsLive };

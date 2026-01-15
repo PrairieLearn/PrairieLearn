@@ -30,10 +30,8 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-// Module-level variable to store the course repo setup
 let courseRepo: CourseRepoSetup;
 
-// Getters for course directories (initialized in beforeAll)
 function courseLiveDir() {
   return courseRepo.courseLiveDir;
 }
