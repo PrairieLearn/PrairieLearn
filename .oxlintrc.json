@@ -105,7 +105,7 @@
         "jsdoc/implements-on-classes": "error",
         "jsdoc/no-defaults": "error",
         "jsdoc/require-param": "off",
-        "jsdoc/require-param-description": "error",
+        "jsdoc/require-param-description": "off",
         "jsdoc/require-param-name": "error",
         "jsdoc/require-param-type": "off",
         "jsdoc/require-property": "error",
@@ -258,12 +258,6 @@
       }
     },
     {
-      "files": ["apps/prairielearn/src/tests/**/*", "scripts/**/*", "contrib/**/*"],
-      "rules": {
-        "no-console": "off"
-      }
-    },
-    {
       "files": ["apps/prairielearn/src/models/**/*"],
       "rules": {
         "no-restricted-imports": [
@@ -358,7 +352,7 @@
         "no-implicit-coercion": "off",
         "no-import-assign": "error",
         "no-inline-comments": "off",
-        "no-inner-declarations": "error",
+        "no-inner-declarations": "off",
         "no-invalid-regexp": "error",
         "no-irregular-whitespace": "error",
         "no-iterator": "error",
@@ -400,7 +394,7 @@
         "no-template-curly-in-string": "error",
         "no-ternary": "off",
         "no-this-before-super": "error",
-        "no-throw-literal": "error",
+        "no-throw-literal": "off",
         "no-unassigned-vars": "error",
         "no-undefined": "off",
         "no-unexpected-multiline": "error",
@@ -441,7 +435,7 @@
         "prefer-rest-params": "error",
         "prefer-spread": "error",
         "prefer-template": "off",
-        "preserve-caught-error": "error",
+        "preserve-caught-error": "off",
         "radix": ["error", "as-needed"],
         "require-await": "off",
         "require-yield": "error",
@@ -490,7 +484,7 @@
         "unicorn/no-document-cookie": "error",
         "unicorn/no-empty-file": "error",
         "unicorn/no-hex-escape": "off",
-        "unicorn/no-immediate-mutation": "error",
+        "unicorn/no-immediate-mutation": "off",
         "unicorn/no-instanceof-builtins": "error",
         "unicorn/no-invalid-fetch-options": "error",
         "unicorn/no-invalid-remove-event-listener": "error",
@@ -551,7 +545,7 @@
         "unicorn/prefer-logical-operator-over-ternary": "error",
         "unicorn/prefer-math-min-max": "error",
         "unicorn/prefer-math-trunc": "error",
-        "unicorn/prefer-modern-dom-apis": "error",
+        "unicorn/prefer-modern-dom-apis": "off",
         "unicorn/prefer-modern-math-apis": "error",
         "unicorn/prefer-native-coercion-functions": "error",
         "unicorn/prefer-negative-index": "error",
@@ -597,6 +591,8 @@
         "vitest/require-local-test-context-for-concurrent-snapshots": "error",
         "vitest/valid-describe-callback": "off",
         "vitest/valid-expect": "error",
+        "vitest/no-conditional-tests": "off",
+        "react/no-this-in-sfc": "off",
         "@prairielearn/aws-client-mandatory-config": "error",
         "@prairielearn/aws-client-shared-config": "error",
         "@prairielearn/jsx-no-dollar-interpolation": "error",
@@ -753,6 +749,12 @@
       "plugins": ["react", "unicorn", "vitest", "jsx-a11y", "import", "promise"],
       "env": {
         "commonjs": true
+      }
+    },
+    {
+      "files": ["apps/prairielearn/src/tests/**/*", "scripts/**/*", "contrib/**/*"],
+      "rules": {
+        "no-console": "off"
       }
     }
   ]

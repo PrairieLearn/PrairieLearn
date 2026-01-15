@@ -270,6 +270,7 @@
     "@types/express-serve-static-core": "^4.19.8",
     "@types/folder-hash": "^4.0.4",
     "@types/fs-extra": "^11.0.4",
+    "@types/he": "^1.2.3",
     "@types/jju": "^1.4.5",
     "@types/jquery": "^3.5.33",
     "@types/js-cookie": "^3.0.6",

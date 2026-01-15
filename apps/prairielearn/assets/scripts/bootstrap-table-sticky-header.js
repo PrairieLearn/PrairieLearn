@@ -4,6 +4,7 @@
 // This version makes the sticky header aware of non-window scrolling containers, necessary for
 // the side nav component when enhanced navigation is enabled.
 
+/* oxlint-disable jsdoc/check-tag-names -- Third-party license comment */
 /**
  * (The MIT License)
  *
