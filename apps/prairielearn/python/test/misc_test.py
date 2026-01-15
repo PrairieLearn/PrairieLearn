@@ -421,10 +421,6 @@ class TimeoutTestCase(NamedTuple):
     return_feedback: str | None
     timeout: float
     timeout_format_error: str | None
-    should_timeout: bool
-    expected_score: float
-    expected_feedback: str | None
-    expected_error_substring: str | None
 
 
 @pytest.mark.parametrize(
@@ -437,10 +433,6 @@ class TimeoutTestCase(NamedTuple):
             return_feedback=None,
             timeout=0.1,
             timeout_format_error=None,
-            should_timeout=True,
-            expected_score=0.0,
-            expected_feedback=None,
-            expected_error_substring="Grading timed out",
         ),
         TimeoutTestCase(
             test_name="custom_message",
@@ -449,10 +441,6 @@ class TimeoutTestCase(NamedTuple):
             return_feedback=None,
             timeout=0.1,
             timeout_format_error="Your answer did not converge, try a simpler expression.",
-            should_timeout=True,
-            expected_score=0.0,
-            expected_feedback=None,
-            expected_error_substring="Your answer did not converge, try a simpler expression.",
         ),
         TimeoutTestCase(
             test_name="no_timeout_when_fast",
@@ -461,10 +449,6 @@ class TimeoutTestCase(NamedTuple):
             return_feedback="Well done!",
             timeout=5.0,
             timeout_format_error="Should not see this",
-            should_timeout=False,
-            expected_score=1.0,
-            expected_feedback="Well done!",
-            expected_error_substring=None,
         ),
         TimeoutTestCase(
             test_name="timeout",
@@ -473,10 +457,6 @@ class TimeoutTestCase(NamedTuple):
             return_feedback=None,
             timeout=0.1,
             timeout_format_error="Your answer did not converge.",
-            should_timeout=True,
-            expected_score=0.0,
-            expected_feedback=None,
-            expected_error_substring="Your answer did not converge.",
         ),
     ],
 )
@@ -501,25 +481,24 @@ def test_grade_answer_parametrized_timeout(
         timeout_format_error=case.timeout_format_error,
     )
 
-    if case.should_timeout:
+    # Determine expected values based on whether timeout should occur
+    should_timeout = case.sleep_duration > case.timeout
+
+    if should_timeout:
         assert question_name in question_data["format_errors"]
-        if case.expected_error_substring:
-            assert (
-                case.expected_error_substring
-                in question_data["format_errors"][question_name]
-            )
+        expected_error_substring = case.timeout_format_error or "Grading timed out"
+        assert expected_error_substring in question_data["format_errors"][question_name]
+        assert question_data["partial_scores"][question_name]["score"] == 0.0
     else:
         assert question_name not in question_data["format_errors"]
+        expected_score = 1.0 if case.return_value else 0.0
+        assert question_data["partial_scores"][question_name]["score"] == expected_score
 
-    assert (
-        question_data["partial_scores"][question_name]["score"] == case.expected_score
-    )
-
-    if case.expected_feedback:
-        assert (
-            question_data["partial_scores"][question_name].get("feedback")
-            == case.expected_feedback
-        )
+        if case.return_feedback:
+            assert (
+                question_data["partial_scores"][question_name].get("feedback")
+                == case.return_feedback
+            )
 
 
 @pytest.mark.repeat(100)
