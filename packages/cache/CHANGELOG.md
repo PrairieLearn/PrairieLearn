@@ -1,5 +1,11 @@
 # @prairielearn/cache
 
+## 2.1.5
+
+### Patch Changes
+
+- 99ff19f: Add missing `repository` field to `package.json`
+
 ## 2.1.4
 
 ### Patch Changes
