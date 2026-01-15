@@ -1115,11 +1115,7 @@ function formatValues(qids: Set<string> | string[]) {
  */
 function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson | null {
   // Only convert if we have legacy group roles
-  if (assessment.groupRoles.length === 0) {
-    return null;
-  }
 
-  // Collect roles that can assign roles from the legacy format
   const canAssignRoles = assessment.groupRoles
     .filter((role) => role.canAssignRoles)
     .map((role) => role.name);
@@ -1425,7 +1421,7 @@ function validateAssessment({
     );
   }
 
-  const teams: TeamsJson | null = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
+  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
 
   // Validate teams/groups if we have roles defined
   if (teams != null) {
