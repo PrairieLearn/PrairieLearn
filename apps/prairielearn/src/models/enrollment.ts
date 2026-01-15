@@ -460,7 +460,7 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'removed', 'blocked']);
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'blocked']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
