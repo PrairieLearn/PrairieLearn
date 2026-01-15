@@ -11080,6 +11080,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"eslint-plugin-oxlint@npm:^1.39.0":
+  version: 1.39.0
+  resolution: "eslint-plugin-oxlint@npm:1.39.0"
+  dependencies:
+    jsonc-parser: "npm:^3.3.1"
+  checksum: 10c0/ce4bccb57cffb0c7209fd7adf616576cac5a6e94cae788f5a52cbba012dee8b0356fbb1ac28532e94824f00f6c57c9d95e550eb9fae2df40ad82677f8d5e8940
+  languageName: node
+  linkType: hard
+
 "eslint-plugin-perfectionist@npm:^5.3.1":
   version: 5.3.1
   resolution: "eslint-plugin-perfectionist@npm:5.3.1"
@@ -13399,7 +13408,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"jsonc-parser@npm:~3.3.1":
+"jsonc-parser@npm:^3.3.1, jsonc-parser@npm:~3.3.1":
   version: 3.3.1
   resolution: "jsonc-parser@npm:3.3.1"
   checksum: 10c0/269c3ae0a0e4f907a914bf334306c384aabb9929bd8c99f909275ebd5c2d3bc70b9bcd119ad794f339dec9f24b6a4ee9cd5a8ab2e6435e730ad4075388fc2ab6
@@ -16167,6 +16176,7 @@ __metadata:
     eslint-plugin-jsdoc: "npm:^62.0.0"
     eslint-plugin-jsx-a11y-x: "npm:^0.1.1"
     eslint-plugin-no-floating-promise: "npm:^2.0.0"
+    eslint-plugin-oxlint: "npm:^1.39.0"
     eslint-plugin-perfectionist: "npm:^5.3.1"
     eslint-plugin-react-hooks: "npm:^7.0.1"
     eslint-plugin-react-you-might-not-need-an-effect: "npm:^0.8.5"

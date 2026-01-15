@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 import {
-  // eslint-disable-next-line no-restricted-imports
+  // oxlint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,
   type OverlayTriggerProps as BootstrapOverlayTriggerProps,
   Popover,

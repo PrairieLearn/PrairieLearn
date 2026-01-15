@@ -10,27 +10,23 @@
  *
  * Most other plugins have been migrated to oxlint via native plugins or jsPlugins.
  * Run oxlint first for faster feedback, then this config for remaining rules.
+ *
+ * eslint-plugin-oxlint is used to automatically disable ESLint rules that oxlint handles.
  */
 // @ts-check
-import { FlatCompat } from '@eslint/eslintrc';
 import eslintReact from '@eslint-react/eslint-plugin';
 import html from '@html-eslint/eslint-plugin';
 import htmlParser from '@html-eslint/parser';
 import stylistic from '@stylistic/eslint-plugin';
 import { globalIgnores } from 'eslint/config';
 import importX from 'eslint-plugin-import-x';
-import jsdoc from 'eslint-plugin-jsdoc';
 import jsxA11yX from 'eslint-plugin-jsx-a11y-x';
+import oxlint from 'eslint-plugin-oxlint';
 import perfectionist from 'eslint-plugin-perfectionist';
-import reactHooks from 'eslint-plugin-react-hooks';
-import eslintPluginUnicorn from 'eslint-plugin-unicorn';
-import youDontNeedLodash from 'eslint-plugin-you-dont-need-lodash-underscore';
 import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 import prairielearn from '@prairielearn/eslint-plugin';
-
-const compat = new FlatCompat({ baseDirectory: import.meta.dirname });
 
 export default tseslint.config([
   // Global ignores - same as main config
@@ -92,13 +88,9 @@ export default tseslint.config([
   },
 
   // JS/TS files - plugins that oxlint can't handle
-  // Note: We include typescript-eslint plugin (with rules disabled) to support eslint-disable comments
   {
     extends: [
-      // Include tseslint but we'll disable its rules - needed for eslint-disable comments
       ...tseslint.configs.recommended,
-      // Include lodash plugin with rules disabled - needed for eslint-disable comments
-      ...compat.extends('plugin:you-dont-need-lodash-underscore/all'),
     ],
     files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
     languageOptions: {
@@ -152,63 +144,30 @@ export default tseslint.config([
       '@prairielearn': prairielearn,
       '@stylistic': stylistic,
       'import-x': importX,
-      jsdoc,
       'jsx-a11y-x': jsxA11yX,
       perfectionist,
-      'react-hooks': reactHooks,
-      unicorn: eslintPluginUnicorn,
     },
     rules: {
-      // Disable all @typescript-eslint rules - they're handled by oxlint
-      // We include the plugin only to support eslint-disable comments in code
-      ...Object.fromEntries(
-        Object.keys(tseslint.configs.recommended[2]?.rules || {}).map((rule) => [rule, 'off']),
-      ),
-      ...Object.fromEntries(
-        Object.keys(tseslint.configs.strict[3]?.rules || {}).map((rule) => [rule, 'off']),
-      ),
-      ...Object.fromEntries(
-        Object.keys(tseslint.configs.stylistic[3]?.rules || {}).map((rule) => [rule, 'off']),
-      ),
+      // import-x/order - not supported by oxlint
+      'import-x/order': [
+        'error',
+        {
+          alphabetize: {
+            order: 'asc',
+          },
+          'newlines-between': 'always',
+          pathGroups: [
+            {
+              group: 'external',
+              pattern: '@prairielearn/**',
+              position: 'after',
+            },
+          ],
+          pathGroupsExcludedImportTypes: ['builtin'],
+        },
+      ],
 
-      // Disable all unicorn rules - they're handled by oxlint
-      // We include the plugin only to support eslint-disable comments in code
-      ...Object.fromEntries(
-        Object.keys(eslintPluginUnicorn.rules || {}).map((rule) => [`unicorn/${rule}`, 'off']),
-      ),
-
-      // Disable all jsdoc rules - they're handled by oxlint
-      // We include the plugin only to support eslint-disable comments in code
-      ...Object.fromEntries(
-        Object.keys(jsdoc.rules || {}).map((rule) => [`jsdoc/${rule}`, 'off']),
-      ),
-
-      // Disable all import-x rules - they're handled by oxlint
-      // We include the plugin only to support eslint-disable comments in code
-      ...Object.fromEntries(
-        Object.keys(importX.rules || {}).map((rule) => [`import-x/${rule}`, 'off']),
-      ),
-
-      // Disable all react-hooks rules - they're handled by oxlint
-      // We include the plugin only to support eslint-disable comments in code
-      'react-hooks/exhaustive-deps': 'off',
-      'react-hooks/rules-of-hooks': 'off',
-
-      // Disable all you-dont-need-lodash-underscore rules - they're handled by oxlint jsPlugins
-      // (rules are enabled by the extends above, we disable them here)
-      ...Object.fromEntries(
-        Object.keys(youDontNeedLodash.rules || {}).map((rule) => [
-          `you-dont-need-lodash-underscore/${rule}`,
-          'off',
-        ]),
-      ),
-
-      // Disable all jsx-a11y-x rules - they're handled by oxlint
-      // We include the plugin only for no-noninteractive-element-interactions (not in oxlint)
-      ...Object.fromEntries(
-        Object.keys(jsxA11yX.rules || {}).map((rule) => [`jsx-a11y-x/${rule}`, 'off']),
-      ),
-      // This rule is not available in oxlint, so we enable it here
+      // jsx-a11y-x/no-noninteractive-element-interactions is not in oxlint, so we enable it here
       'jsx-a11y-x/no-noninteractive-element-interactions': [
         'error',
         {
@@ -313,4 +272,8 @@ export default tseslint.config([
       '@prairielearn/safe-db-types': 'off',
     },
   },
+
+  // eslint-plugin-oxlint: Automatically disable ESLint rules that oxlint handles
+  // This should be the last config in the array
+  ...oxlint.buildFromOxlintConfigFile('./.oxlintrc.json'),
 ]);

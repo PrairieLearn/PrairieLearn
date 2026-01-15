@@ -86,7 +86,7 @@ function makeAutoScalingGroupConfigSource(): ConfigSource {
       // but this client will really only be used once, typically at application
       // startup.
       //
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const autoscaling = new AutoScaling({ region: existingConfig.awsRegion as string });
       const data = await autoscaling.describeAutoScalingInstances({
         InstanceIds: [existingConfig.instanceId as string],
@@ -116,7 +116,7 @@ function makeQueueUrlConfigSource(): ConfigSource {
       // about reusing credentials here, since this client will only be used
       // once at application startup.
       //
-      // eslint-disable-next-line @prairielearn/aws-client-shared-config
+      // oxlint-disable-next-line @prairielearn/aws-client-shared-config
       const sqs = new SQSClient({ region: existingConfig.awsRegion as string });
 
       for (const prefix of queuePrefixes) {
