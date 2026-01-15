@@ -1110,12 +1110,9 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
- * Converts legacy group properties to the new teams format for unified validation.
- * Returns null if no legacy group roles are defined.
+ * Converts legacy group properties to the new teams format for unified handling.
  */
-function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson | null {
-  // Only convert if we have legacy group roles
-
+export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson {
   const canAssignRoles = assessment.groupRoles
     .filter((role) => role.canAssignRoles)
     .map((role) => role.name);
@@ -1421,13 +1418,15 @@ function validateAssessment({
     );
   }
 
+  // Convert legacy group properties to teams format for unified validation
   const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
+  // Use 'team' for new schema, 'group' for legacy properties (for error messages)
+  const teamType = assessment.teams != null ? 'team' : 'group';
 
   // Validate teams/groups if we have roles defined
-  if (teams != null) {
+  if (teams.roles.length > 0) {
     const rolePerms = teams.rolePermissions;
 
-    // Validate at least one role in canAssignRoles has minMembers >= 1
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
     const hasAssigner = teams.roles.some(
       (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
@@ -1436,17 +1435,14 @@ function validateAssessment({
       errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    // Build set of valid role names
     const validRoleNames = new Set(teams.roles.map((r) => r.name));
 
-    // Validate canAssignRoles references valid roles
     rolePerms.canAssignRoles.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(`"canAssignRoles" contains non-existent role "${roleName}".`);
       }
     });
 
-    // Validate canView references valid roles at assessment level
     rolePerms.canView.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
@@ -1455,7 +1451,6 @@ function validateAssessment({
       }
     });
 
-    // Validate canSubmit references valid roles at assessment level
     rolePerms.canSubmit.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
@@ -1464,10 +1459,11 @@ function validateAssessment({
       }
     });
 
-    // Validate role min/max constraints
     teams.roles.forEach((role) => {
       if (teams.minMembers != null && role.minMembers > teams.minMembers) {
-        warnings.push(`Role "${role.name}" has a minMembers greater than the team's minMembers.`);
+        warnings.push(
+          `Role "${role.name}" has a minMembers greater than the ${teamType}'s minMembers.`,
+        );
       }
       if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
         errors.push(
@@ -1490,11 +1486,10 @@ function validateAssessment({
       }
     });
 
-    // Helper to validate canView/canSubmit at zone and question levels
     const validateViewAndSubmitRolePermissions = (
       canView: string[],
       canSubmit: string[],
-      area: string,
+      area: 'zone' | 'zone question',
     ): void => {
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {

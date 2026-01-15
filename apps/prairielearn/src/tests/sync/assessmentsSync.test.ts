@@ -1299,6 +1299,38 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
+      /Role "Manager" has a minMembers greater than the group's minMembers\./,
+    );
+  });
+
+  it('still validates when teams.minMembers is 0', async () => {
+    const courseData = util.getCourseData();
+    const teamAssessment = makeAssessment(courseData, 'Homework');
+    teamAssessment.teams = {
+      enabled: true,
+      minMembers: 0,
+      roles: [{ name: 'Manager', minMembers: 1 }],
+      studentPermissions: {
+        canCreateTeam: false,
+        canJoinTeam: false,
+        canLeaveTeam: false,
+        canNameTeam: true,
+      },
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: [],
+        canSubmit: [],
+      },
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsMinZero'] =
+      teamAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('teamsMinZero');
+    assert.isNotOk(syncedAssessment.sync_errors);
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
       /Role "Manager" has a minMembers greater than the team's minMembers\./,
     );
   });

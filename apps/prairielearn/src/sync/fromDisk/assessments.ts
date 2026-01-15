@@ -14,7 +14,7 @@ import {
   type QuestionPointsJson,
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData } from '../course-db.js';
+import { type CourseInstanceData, convertLegacyGroupsToTeams } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -104,9 +104,13 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = assessment.groupRoles.map((role) => role.name);
-  const assessmentCanView = assessment.canView.length > 0 ? assessment.canView : allRoleNames;
-  const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
+
+  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
+  const allRoleNames = teams.roles.map((role) => role.name);
+  const assessmentCanView =
+    teams.rolePermissions.canView.length > 0 ? teams.rolePermissions.canView : allRoleNames;
+  const assessmentCanSubmit =
+    teams.rolePermissions.canSubmit.length > 0 ? teams.rolePermissions.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
@@ -315,21 +319,12 @@ function getParamsForAssessment(
     });
   });
 
-  // Determine team configuration - prefer new teams schema over legacy group properties
-  const teamsConfig = assessment.teams;
-  const teamRoles = teamsConfig
-    ? teamsConfig.roles.map((role) => ({
-        role_name: role.name,
-        minimum: role.minMembers,
-        maximum: role.maxMembers,
-        can_assign_roles: teamsConfig.rolePermissions.canAssignRoles.includes(role.name),
-      }))
-    : assessment.groupRoles.map((role) => ({
-        role_name: role.name,
-        minimum: role.minimum,
-        maximum: role.maximum,
-        can_assign_roles: role.canAssignRoles,
-      }));
+  const teamRoles = teams.roles.map((role) => ({
+    role_name: role.name,
+    minimum: role.minMembers,
+    maximum: role.maxMembers,
+    can_assign_roles: teams.rolePermissions.canAssignRoles.includes(role.name),
+  }));
 
   return {
     type: assessment.type,
@@ -358,32 +353,20 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    // Team configuration - use new teams schema if present, otherwise fall back to legacy group properties
-    team_work: teamsConfig ? teamsConfig.enabled : assessment.groupWork,
-    team_max_size: teamsConfig
-      ? (teamsConfig.maxMembers ?? null)
-      : (assessment.groupMaxSize ?? null),
-    team_min_size: teamsConfig
-      ? (teamsConfig.minMembers ?? null)
-      : (assessment.groupMinSize ?? null),
-    student_team_create: teamsConfig
-      ? teamsConfig.studentPermissions.canCreateTeam
-      : assessment.studentGroupCreate,
-    student_team_choose_name: teamsConfig
-      ? teamsConfig.studentPermissions.canNameTeam
-      : assessment.studentGroupChooseName,
-    student_team_join: teamsConfig
-      ? teamsConfig.studentPermissions.canJoinTeam
-      : assessment.studentGroupJoin,
-    student_team_leave: teamsConfig
-      ? teamsConfig.studentPermissions.canLeaveTeam
-      : assessment.studentGroupLeave,
+    // Team configuration from unified teams object
+    team_work: teams.enabled,
+    team_max_size: teams.maxMembers ?? null,
+    team_min_size: teams.minMembers ?? null,
+    student_team_create: teams.studentPermissions.canCreateTeam,
+    student_team_choose_name: teams.studentPermissions.canNameTeam,
+    student_team_join: teams.studentPermissions.canJoinTeam,
+    student_team_leave: teams.studentPermissions.canLeaveTeam,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
     has_roles: teamRoles.length > 0,
-    json_can_view: teamsConfig ? teamsConfig.rolePermissions.canView : assessment.canView,
-    json_can_submit: teamsConfig ? teamsConfig.rolePermissions.canSubmit : assessment.canSubmit,
+    json_can_view: teams.rolePermissions.canView,
+    json_can_submit: teams.rolePermissions.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
     modern_access_control: false,
     allowAccess,
