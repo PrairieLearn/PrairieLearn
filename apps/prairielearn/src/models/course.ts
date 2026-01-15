@@ -1,7 +1,6 @@
 import assert from 'assert';
-import { exec } from 'child_process';
-import { promisify } from 'util';
 
+import { execa } from 'execa';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -59,18 +58,52 @@ export function getLockNameForCoursePath(coursePath: string): string {
 
 export async function getCourseCommitHash(coursePath: string): Promise<string> {
   try {
-    const { stdout } = await promisify(exec)('git rev-parse HEAD', {
+    const { stdout } = await execa('git', ['rev-parse', 'HEAD'], {
       cwd: coursePath,
       env: process.env,
     });
     return stdout.trim();
   } catch (err: any) {
-    throw new error.AugmentedError(`Could not get git status; exited with code ${err.code}`, {
+    throw new error.AugmentedError(`Could not get git status; exited with code ${err.exitCode}`, {
       data: {
         stdout: err.stdout,
         stderr: err.stderr,
       },
     });
+  }
+}
+
+/**
+ * Gets the default branch from a git repository by querying origin/HEAD.
+ * Returns 'master' as fallback if the query fails.
+ */
+export async function getGitDefaultBranch(coursePath: string): Promise<string> {
+  try {
+    const { stdout } = await execa('git', ['symbolic-ref', '--short', 'refs/remotes/origin/HEAD'], {
+      cwd: coursePath,
+      env: process.env,
+    });
+    // Strip 'origin/' prefix if present
+    const branch = stdout.trim().replace(/^origin\//, '');
+    return branch || 'master';
+  } catch {
+    return 'master';
+  }
+}
+
+/**
+ * Gets the remote URL for 'origin' from a git repository.
+ * Returns null if the query fails.
+ */
+export async function getGitRemoteUrl(coursePath: string): Promise<string | null> {
+  try {
+    const { stdout } = await execa('git', ['remote', 'get-url', 'origin'], {
+      cwd: coursePath,
+      env: process.env,
+    });
+    return stdout.trim() || null;
+  } catch {
+    return null;
   }
 }
 
@@ -177,8 +210,23 @@ export async function selectCoursesWithEditAccess({
   return courses.filter((c) => c.permissions_course.has_course_permission_edit);
 }
 
-export async function selectOrInsertCourseByPath(coursePath: string): Promise<Course> {
-  return await queryRow(sql.select_or_insert_course_by_path, { path: coursePath }, CourseSchema);
+/**
+ * Selects a course by its path. If it doesn't already exist, it is created
+ * using the provided options, if specified.
+ */
+export async function selectOrInsertCourseByPath(
+  coursePath: string,
+  options?: { branch?: string; repository?: string | null },
+): Promise<Course> {
+  return await queryRow(
+    sql.select_or_insert_course_by_path,
+    {
+      path: coursePath,
+      branch: options?.branch ?? 'master',
+      repository: options?.repository ?? null,
+    },
+    CourseSchema,
+  );
 }
 
 export async function deleteCourse({
