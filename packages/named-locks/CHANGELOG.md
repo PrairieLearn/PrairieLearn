@@ -1,5 +1,13 @@
 # @prairielearn/named-locks
 
+## 3.0.28
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/postgres@4.5.2
+
 ## 3.0.27
 
 ### Patch Changes

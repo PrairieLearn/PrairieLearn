@@ -1,5 +1,17 @@
 # @prairielearn/ui
 
+## 2.0.0
+
+### Major Changes
+
+- d94c74c: Use React instead of Preact
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/browser-utils@2.6.1
+
 ## 1.10.0
 
 ### Minor Changes

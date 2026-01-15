@@ -1,5 +1,11 @@
 # @prairielearn/express-list-endpoints
 
+## 1.0.19
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 1.0.18
 
 ### Patch Changes
