@@ -1428,7 +1428,7 @@ function validateAssessment({
   const teams: TeamsJson | null = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
 
   // Validate teams/groups if we have roles defined
-  if (teams != null && teams.roles.length > 0) {
+  if (teams != null) {
     const rolePerms = teams.rolePermissions;
 
     // Validate at least one role in canAssignRoles has minMembers >= 1
