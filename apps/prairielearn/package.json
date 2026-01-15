@@ -139,7 +139,7 @@
     "domhandler": "^5.0.3",
     "dompurify": "^3.3.1",
     "dropzone": "^5.9.3",
-    "ejs": "^3.1.10",
+    "ejs": "^4.0.1",
     "es-main": "^1.4.0",
     "execa": "^9.6.1",
     "express": "^4.22.1",
