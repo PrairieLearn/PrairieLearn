@@ -668,15 +668,15 @@ You can add a `text` property to your `infoAssessment.json`, which can be used t
 | `client_files_course_instance` | URL path to course instance-level client files |
 | `client_files_assessment`      | URL path to assessment-level client files      |
 
+```json title="infoAssessment.json"
+{
+  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\">Formula sheet</a>"
+}
+```
+
 !!! note "Legacy syntax"
 
     For backward compatibility, `camelCase` names with EJS syntax (`<%= clientFilesCourse %>`, `<%= clientFilesCourseInstance %>`, `<%= clientFilesAssessment %>`) are supported. Prefer the use of the `snake_case` mustache template variables (`{{ client_files_course }}`, `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`) instead.
-
-    ```json title="infoAssessment.json"
-    {
-      "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
-    }
-    ```
 
 See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for details about making files available to users.
 
