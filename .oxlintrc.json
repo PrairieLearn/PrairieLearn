@@ -1,8 +1,6 @@
 {
   "$schema": "./node_modules/oxlint/configuration_schema.json",
-  "plugins": [
-    "typescript"
-  ],
+  "plugins": ["typescript"],
   "categories": {
     "correctness": "off"
   },
@@ -76,12 +74,7 @@
   ],
   "overrides": [
     {
-      "files": [
-        "**/*.ts",
-        "**/*.tsx",
-        "**/*.mts",
-        "**/*.cts"
-      ],
+      "files": ["**/*.ts", "**/*.tsx", "**/*.mts", "**/*.cts"],
       "rules": {
         "constructor-super": "off",
         "no-class-assign": "off",
@@ -103,9 +96,7 @@
       }
     },
     {
-      "files": [
-        "**/*.{ts,tsx}"
-      ],
+      "files": ["**/*.{ts,tsx}"],
       "rules": {
         "jsdoc/check-access": "error",
         "jsdoc/check-property-names": "error",
@@ -130,9 +121,7 @@
           {
             "paths": [
               {
-                "importNames": [
-                  "OverlayTrigger"
-                ],
+                "importNames": ["OverlayTrigger"],
                 "message": "Use OverlayTrigger from @prairielearn/ui.",
                 "name": "react-bootstrap"
               }
@@ -140,14 +129,10 @@
           }
         ]
       },
-      "plugins": [
-        "jsdoc"
-      ]
+      "plugins": ["jsdoc"]
     },
     {
-      "files": [
-        "**/*.js"
-      ],
+      "files": ["**/*.js"],
       "rules": {
         "jsdoc/check-access": "error",
         "jsdoc/check-property-names": "error",
@@ -168,14 +153,10 @@
         "jsdoc/require-returns-type": "error",
         "jsdoc/require-yields": "error"
       },
-      "plugins": [
-        "jsdoc"
-      ]
+      "plugins": ["jsdoc"]
     },
     {
-      "files": [
-        "apps/prairielearn/**/*.{ts,tsx}"
-      ],
+      "files": ["apps/prairielearn/**/*.{ts,tsx}"],
       "rules": {
         "constructor-super": "off",
         "no-class-assign": "off",
@@ -251,11 +232,7 @@
             "allow": [
               {
                 "from": "lib",
-                "name": [
-                  "Error",
-                  "URL",
-                  "URLSearchParams"
-                ]
+                "name": ["Error", "URL", "URLSearchParams"]
               }
             ],
             "allowAny": true,
@@ -269,42 +246,32 @@
         "@typescript-eslint/non-nullable-type-assertion-style": "error",
         "@typescript-eslint/prefer-includes": "error",
         "@typescript-eslint/prefer-nullish-coalescing": "off",
-        "@typescript-eslint/prefer-optional-chain": "error"
+        // See https://github.com/oxc-project/oxc/issues/17968
+        "@typescript-eslint/prefer-optional-chain": "off"
       }
     },
     {
-      "files": [
-        "apps/prairielearn/assets/scripts/**/*",
-        "apps/prairielearn/elements/**/*.js"
-      ],
+      "files": ["apps/prairielearn/assets/scripts/**/*", "apps/prairielearn/elements/**/*.js"],
       "env": {
         "browser": true,
         "jquery": true
       }
     },
     {
-      "files": [
-        "apps/prairielearn/src/tests/**/*",
-        "scripts/**/*",
-        "contrib/**/*"
-      ],
+      "files": ["apps/prairielearn/src/tests/**/*", "scripts/**/*", "contrib/**/*"],
       "rules": {
         "no-console": "off"
       }
     },
     {
-      "files": [
-        "apps/prairielearn/src/models/**/*"
-      ],
+      "files": ["apps/prairielearn/src/models/**/*"],
       "rules": {
         "no-restricted-imports": [
           "error",
           {
             "patterns": [
               {
-                "group": [
-                  "**/safe-db-types.js"
-                ],
+                "group": ["**/safe-db-types.js"],
                 "message": "Import from db-types instead of safe-db-types in the models directory. Otherwise, this code should live in the lib directory."
               }
             ]
@@ -313,9 +280,7 @@
       }
     },
     {
-      "files": [
-        "**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"
-      ],
+      "files": ["**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}"],
       "rules": {
         "accessor-pairs": "error",
         "array-callback-return": "off",
@@ -325,18 +290,11 @@
         "class-methods-use-this": "off",
         "complexity": "off",
         "constructor-super": "error",
-        "curly": [
-          "error",
-          "multi-line",
-          "consistent"
-        ],
+        "curly": ["error", "multi-line", "consistent"],
         "default-case": "off",
         "default-case-last": "error",
         "default-param-last": "error",
-        "eqeqeq": [
-          "error",
-          "smart"
-        ],
+        "eqeqeq": ["error", "smart"],
         "for-direction": "error",
         "func-names": "off",
         "func-style": "off",
@@ -364,12 +322,7 @@
         "no-console": [
           "error",
           {
-            "allow": [
-              "warn",
-              "error",
-              "table",
-              "trace"
-            ]
+            "allow": ["warn", "error", "table", "trace"]
           }
         ],
         "no-const-assign": "error",
@@ -434,11 +387,7 @@
         "no-prototype-builtins": "error",
         "no-redeclare": "off",
         "no-regex-spaces": "error",
-        "no-restricted-globals": [
-          "error",
-          "__filename",
-          "__dirname"
-        ],
+        "no-restricted-globals": ["error", "__filename", "__dirname"],
         "no-restricted-imports": "error",
         "no-return-assign": "error",
         "no-script-url": "error",
@@ -493,10 +442,7 @@
         "prefer-spread": "error",
         "prefer-template": "off",
         "preserve-caught-error": "error",
-        "radix": [
-          "error",
-          "as-needed"
-        ],
+        "radix": ["error", "as-needed"],
         "require-await": "off",
         "require-yield": "error",
         "sort-imports": [
@@ -504,12 +450,7 @@
           {
             "ignoreDeclarationSort": true,
             "ignoreMemberSort": false,
-            "memberSyntaxSortOrder": [
-              "none",
-              "all",
-              "multiple",
-              "single"
-            ]
+            "memberSyntaxSortOrder": ["none", "all", "multiple", "single"]
           }
         ],
         "sort-keys": "off",
@@ -642,18 +583,12 @@
         "unicorn/switch-case-braces": "off",
         "unicorn/text-encoding-identifier-case": "off",
         "unicorn/throw-new-error": "off",
-        "vitest/expect-expect": [
-          "off"
-        ],
+        "vitest/expect-expect": ["off"],
         "vitest/no-conditional-expect": "error",
-        "vitest/no-disabled-tests": [
-          "off"
-        ],
+        "vitest/no-disabled-tests": ["off"],
         "vitest/no-focused-tests": "error",
         "vitest/no-commented-out-tests": "error",
-        "vitest/no-identical-title": [
-          "off"
-        ],
+        "vitest/no-identical-title": ["off"],
         "vitest/no-import-node-test": "error",
         "vitest/no-interpolation-in-snapshots": "error",
         "vitest/no-mocks-import": "error",
@@ -815,14 +750,7 @@
         "WritableStreamDefaultController": "readonly",
         "WritableStreamDefaultWriter": "readonly"
       },
-      "plugins": [
-        "react",
-        "unicorn",
-        "vitest",
-        "jsx-a11y",
-        "import",
-        "promise"
-      ],
+      "plugins": ["react", "unicorn", "vitest", "jsx-a11y", "import", "promise"],
       "env": {
         "commonjs": true
       }
