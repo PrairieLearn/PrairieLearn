@@ -20,26 +20,25 @@ describe('renderText', () => {
   describe('EJS-style syntax (legacy)', () => {
     it('renders clientFilesCourse', () => {
       const text = '<a href="<%= clientFilesCourse %>/file.pdf">Link</a>';
-      // EJS replacement happens first (via regex), so slashes are not escaped
-      const expected = `<a href="${urlPrefix}/assessment/${assessmentId}/clientFilesCourse/file.pdf">Link</a>`;
+      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourse/file.pdf">Link</a>`;
       assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
     });
 
     it('renders clientFilesCourseInstance', () => {
       const text = '<a href="<%= clientFilesCourseInstance %>/file.pdf">Link</a>';
-      const expected = `<a href="${urlPrefix}/assessment/${assessmentId}/clientFilesCourseInstance/file.pdf">Link</a>`;
+      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourseInstance/file.pdf">Link</a>`;
       assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
     });
 
     it('renders clientFilesAssessment', () => {
       const text = '<a href="<%= clientFilesAssessment %>/file.pdf">Link</a>';
-      const expected = `<a href="${urlPrefix}/assessment/${assessmentId}/clientFilesAssessment/file.pdf">Link</a>`;
+      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
       assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
     });
 
     it('handles whitespace variations', () => {
       const text = '<a href="<%=clientFilesAssessment%>/file.pdf">Link</a>';
-      const expected = `<a href="${urlPrefix}/assessment/${assessmentId}/clientFilesAssessment/file.pdf">Link</a>`;
+      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
       assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
     });
   });

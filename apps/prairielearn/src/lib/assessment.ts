@@ -93,13 +93,12 @@ export function renderText(
     clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
 
-  // First handle legacy EJS-style <%= var %> syntax via regex
+  // Convert legacy EJS-style <%= var %> syntax to Mustache template variables {{ var }}
   const text = assessment.text
-    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, context.clientFilesCourse)
-    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, context.clientFilesCourseInstance)
-    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, context.clientFilesAssessment);
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ clientFilesCourse }}')
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ clientFilesCourseInstance }}')
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ clientFilesAssessment }}');
 
-  // Then handle Mustache-style {{ var }} syntax
   return mustache.render(text, context);
 }
 
