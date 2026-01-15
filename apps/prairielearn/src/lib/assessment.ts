@@ -1,6 +1,6 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import * as ejs from 'ejs';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -92,7 +92,15 @@ export function renderText(
     clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
     clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
-  return ejs.render(assessment.text, context);
+
+  // First handle legacy EJS-style <%= var %> syntax via regex
+  const text = assessment.text
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, context.clientFilesCourse)
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, context.clientFilesCourseInstance)
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, context.clientFilesAssessment);
+
+  // Then handle Mustache-style {{ var }} syntax
+  return mustache.render(text, context);
 }
 
 /**
