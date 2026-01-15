@@ -40,7 +40,7 @@
   },
   "devDependencies": {
     "@types/async": "^3.2.25",
-    "@types/dockerode": "^3.3.47",
+    "@types/dockerode": "^4.0.0",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^22.19.6",
     "@types/tmp": "^0.2.6",
