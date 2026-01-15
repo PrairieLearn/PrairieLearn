@@ -23,7 +23,7 @@ import {
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { ESCAPED_SHORT_NAME_PATTERN } from '../../lib/short-name.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -136,7 +136,7 @@ export function InstructorQuestionSettings({
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
-                pattern="${ESCAPED_SHORT_NAME_PATTERN}|${resLocals.question.qid}"
+                pattern="${SHORT_NAME_PATTERN}|${RegExp.escape(resLocals.question.qid)}"
                 data-other-values="${qids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />

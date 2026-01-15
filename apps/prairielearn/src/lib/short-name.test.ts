@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHORT_NAME_REGEX, isValidShortName } from './short-name.js';
+import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX, isValidShortName } from './short-name.js';
 
 describe('short-name validation', () => {
   describe('valid short names', () => {
@@ -72,6 +72,26 @@ describe('short-name validation', () => {
     it.each(disallowedCharCases)('rejects $name: "$value"', ({ value }) => {
       expect(isValidShortName(value)).toBe(false);
       expect(SHORT_NAME_REGEX.test(value)).toBe(false);
+    });
+  });
+
+  describe('SHORT_NAME_PATTERN derivation', () => {
+    it('is derived from SHORT_NAME_REGEX.source', () => {
+      expect(SHORT_NAME_PATTERN).toBe(SHORT_NAME_REGEX.source);
+    });
+
+    it('works in HTML pattern context (browser wraps in ^(?:...)$)', () => {
+      // Browsers implicitly anchor pattern attributes with ^(?:...)$
+      const htmlPatternRegex = new RegExp(`^(?:${SHORT_NAME_PATTERN})$`);
+
+      // Valid cases should match
+      expect(htmlPatternRegex.test('question1')).toBe(true);
+      expect(htmlPatternRegex.test('folder/question')).toBe(true);
+
+      // Invalid cases should not match
+      expect(htmlPatternRegex.test('/question')).toBe(false);
+      expect(htmlPatternRegex.test('question/')).toBe(false);
+      expect(htmlPatternRegex.test('my question')).toBe(false);
     });
   });
 });
