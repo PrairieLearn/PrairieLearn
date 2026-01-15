@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
@@ -25,12 +24,10 @@ const locals = {} as {
     assessment_instance_score_perc: number;
   };
   getSubmittedAnswer: (variant: any) => object;
-  settingsUrl: string;
+  siteUrl: string;
   baseUrl: string;
   apiToken: string;
   assessmentId: string;
-  __csrf_token: string;
-  __action: string;
   apiUrl: string;
   apiCourseInstanceUrl: string;
   apiPublicCourseInstanceUrl: string;
@@ -88,70 +85,13 @@ describe('API', { timeout: 60_000 }, function () {
   });
 
   describe('settings page', function () {
-    it('loads successfully', async function () {
-      locals.settingsUrl = locals.baseUrl + '/settings';
-      const res = await fetch(locals.settingsUrl);
-      assert.isTrue(res.ok);
-      const page$ = cheerio.load(await res.text());
-
-      const button = page$('[data-testid="generate-token-button"]').get(0);
-      assert(button);
-
-      // Load the popover content
-      assert.isString(button.attribs['data-bs-content']);
-
-      const data$ = cheerio.load(button.attribs['data-bs-content']);
-
-      // Validate that the CSRF token is present
-      const csrfInput = data$('form input[name="__csrf_token"]').get(0);
-      const csrfToken = csrfInput?.attribs.value;
-      assert.isString(csrfToken);
-
-      // Store CSRF token for later requests
-      locals.__csrf_token = csrfToken!;
-
-      // Validate the action input
-      const actionInput = data$('form input[name="__action"]').get(0);
-      const action = actionInput?.attribs.value;
-      assert.equal(action, 'token_generate');
-
-      // Persist the action for later
-      // TODO: just hardcode this!
-      locals.__action = action!;
-
-      // Validate that there's an input for the token name
-      assert.lengthOf(data$('form input[name="token_name"]'), 1);
-
-      // There shouldn't be an access token displayed on the page
-      assert.lengthOf(page$('.new-access-token'), 0);
-    });
-
     it('generates a token', async function () {
-      const res = await fetch(locals.settingsUrl, {
-        method: 'POST',
-        body: new URLSearchParams({
-          __action: locals.__action,
-          __csrf_token: locals.__csrf_token,
-          token_name: 'test',
-        }),
-        redirect: 'follow',
-      });
-      assert.isTrue(res.ok);
+      // The helper validates page structure, form elements, and token format
+      // Note: generateApiToken expects the site URL without /pl suffix
+      locals.apiToken = await generateApiToken(locals.siteUrl);
 
-      // Extract the token from the response
-      const page$ = cheerio.load(await res.text());
-      const tokenContainer = page$('.new-access-token');
-      assert.lengthOf(tokenContainer, 1);
-      locals.apiToken = tokenContainer.text().trim();
-
-      // Check that the token has the correct format
-      assert.ok(
-        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/.test(locals.apiToken),
-      );
-    });
-
-    it('settings page does not show token again after reloading', async function () {
-      const res = await fetch(locals.settingsUrl);
+      // Ensure that the token is not displayed after reloading the page.
+      const res = await fetch(locals.baseUrl + '/settings');
       assert.isTrue(res.ok);
       const pageContent = await res.text();
       assert.isFalse(pageContent.includes(locals.apiToken));

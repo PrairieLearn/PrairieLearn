@@ -215,6 +215,8 @@ export function assertAlert($: cheerio.CheerioAPI, text: string, expectedLength 
   assert.lengthOf(alerts, expectedLength);
 }
 
+const UUID_REGEX = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 /**
  * Generates an API access token for testing by navigating through the settings UI.
  *
@@ -232,17 +234,37 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
   }
   let page$ = cheerio.load(await res.text());
 
+  // Verify no token is already displayed (security check)
+  if (page$('.new-access-token').length > 0) {
+    throw new Error('Token already displayed on initial page load - this should not happen');
+  }
+
   // Find the generate token button and extract the CSRF token from its popover
   const button = page$('[data-testid="generate-token-button"]').get(0);
   if (!button) {
     throw new Error('Could not find generate-token-button');
   }
 
-  const data$ = cheerio.load(button.attribs['data-bs-content']);
+  const popoverContent = button.attribs['data-bs-content'];
+  if (typeof popoverContent !== 'string') {
+    throw new Error('Generate token button missing data-bs-content attribute');
+  }
+
+  const data$ = cheerio.load(popoverContent);
   const csrfInput = data$('form input[name="__csrf_token"]').get(0);
   const csrfToken = csrfInput?.attribs.value;
   if (!csrfToken) {
     throw new Error('Could not find CSRF token in generate token form');
+  }
+
+  // Validate form structure
+  const actionInput = data$('form input[name="__action"]').get(0);
+  if (actionInput?.attribs.value !== 'token_generate') {
+    throw new Error('Generate token form has unexpected __action value');
+  }
+
+  if (data$('form input[name="token_name"]').length !== 1) {
+    throw new Error('Generate token form missing token_name input');
   }
 
   // Submit the form to generate a token
@@ -262,9 +284,18 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
   // Extract the token from the response
   page$ = cheerio.load(await res.text());
   const tokenContainer = page$('.new-access-token');
-  if (tokenContainer.length === 0) {
-    throw new Error('Could not find new-access-token container in response');
+  if (tokenContainer.length !== 1) {
+    throw new Error(
+      `Expected exactly 1 .new-access-token container, found ${tokenContainer.length}`,
+    );
   }
 
-  return tokenContainer.text().trim();
+  const token = tokenContainer.text().trim();
+
+  // Validate token format (UUID)
+  if (!UUID_REGEX.test(token)) {
+    throw new Error(`Generated token does not match expected UUID format: ${token}`);
+  }
+
+  return token;
 }
