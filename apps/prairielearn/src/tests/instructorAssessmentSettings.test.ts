@@ -13,7 +13,11 @@ import { AssessmentSchema } from '../lib/db-types.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -22,7 +26,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const siteUrl = `http://localhost:${config.serverPort}`;
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 let assessmentLiveInfoPath: string;
 let assessmentDevInfoPath: string;
 
@@ -36,7 +40,7 @@ function assessmentDevDir() {
 
 describe('Editing assessment settings', () => {
   beforeAll(async () => {
-    courseRepo = await createCourseRepo(courseTemplateDir);
+    courseRepo = await createCourseRepoFixture(courseTemplateDir);
     assessmentLiveInfoPath = path.join(assessmentLiveDir(), 'HW1', 'infoAssessment.json');
     assessmentDevInfoPath = path.join(assessmentDevDir(), 'HW1', 'infoAssessment.json');
     await helperServer.before(courseRepo.courseLiveDir)();

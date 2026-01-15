@@ -12,13 +12,17 @@ import {
 } from '../models/course-permissions.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 
 const getCourseInstanceFileContents = async (shortName: string) => {
   const courseInstanceInfoPath = path.join(
@@ -32,7 +36,7 @@ const getCourseInstanceFileContents = async (shortName: string) => {
 
 describe('Creating a course instance', () => {
   beforeAll(async () => {
-    courseRepo = await createCourseRepo(courseTemplateDir);
+    courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });

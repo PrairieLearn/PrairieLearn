@@ -18,7 +18,7 @@ import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
-import { type CourseRepoSetup, createCourseRepo } from './helperCourse.js';
+import { type CourseRepoFixture, createCourseRepoFixture } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
 
@@ -26,7 +26,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -441,7 +441,7 @@ const publicCopyTestData: EditData[] = [
 describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
     beforeAll(async () => {
-      courseRepo = await createCourseRepo(courseTemplateDir);
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
         course_path: courseRepo.courseLiveDir,
@@ -459,7 +459,7 @@ describe('test course editor', { timeout: 20_000 }, function () {
 
   describe('Copy from another course', function () {
     beforeAll(async () => {
-      courseRepo = await createCourseRepo(courseTemplateDir);
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
         course_path: courseRepo.courseLiveDir,

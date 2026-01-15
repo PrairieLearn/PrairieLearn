@@ -5,17 +5,21 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { config } from '../lib/config.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${config.serverPort}`;
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 
 describe('Updating a course instance ID', () => {
   beforeAll(async () => {
-    courseRepo = await createCourseRepo(courseTemplateDir);
+    courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });

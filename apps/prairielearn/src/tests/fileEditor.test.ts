@@ -18,7 +18,7 @@ import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
-import { type CourseRepoSetup, createCourseRepo } from './helperCourse.js';
+import { type CourseRepoFixture, createCourseRepoFixture } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -30,7 +30,7 @@ let elemList: cheerio.Cheerio<Element>;
 // Uses course within tests/testFileEditor
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 
 const courseInstancePath = path.join('courseInstances', 'Fa18');
 const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
@@ -256,7 +256,7 @@ const verifyFileData = [
 describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
-      courseRepo = await createCourseRepo(courseTemplateDir);
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
       await helperServer.before(courseRepo.courseLiveDir)();
       await sqldb.execute(sql.update_course_repository, {
         course_path: courseRepo.courseLiveDir,

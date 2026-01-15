@@ -16,7 +16,11 @@ import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, type GitOptions, createCourseRepo } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  type GitOptions,
+  createCourseRepoFixture,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { makeMockLogger } from './mockLogger.js';
 import * as syncUtil from './sync/util.js';
@@ -66,7 +70,7 @@ async function accessSharedQuestionAssessment(course_instance_id: string) {
   return res;
 }
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 let gitOptionsOrigin: GitOptions;
 let gitOptionsLive: GitOptions;
 
@@ -149,7 +153,7 @@ describe('Question Sharing', function () {
       },
     };
 
-    courseRepo = await createCourseRepo({
+    courseRepo = await createCourseRepoFixture({
       populateOrigin: async (originDir) => {
         await syncUtil.writeCourseToDirectory(sharingCourseData, originDir);
 

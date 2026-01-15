@@ -10,21 +10,25 @@ import { insertCoursePermissionsByUserUid } from '../models/course-permissions.j
 import { selectCourseById } from '../models/course.js';
 
 import { fetchCheerio } from './helperClient.js';
-import { type CourseRepoSetup, createCourseRepo, updateCourseRepository } from './helperCourse.js';
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 const siteUrl = `http://localhost:${config.serverPort}`;
 
-let courseRepo: CourseRepoSetup;
+let courseRepo: CourseRepoFixture;
 
 const courseLiveInfoPath = () => path.join(courseRepo.courseLiveDir, 'infoCourse.json');
 const courseDevInfoPath = () => path.join(courseRepo.courseDevDir, 'infoCourse.json');
 
 describe('Editing course settings', () => {
   beforeAll(async () => {
-    courseRepo = await createCourseRepo(courseTemplateDir);
+    courseRepo = await createCourseRepoFixture(courseTemplateDir);
     await helperServer.before(courseRepo.courseLiveDir)();
     await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
   });
