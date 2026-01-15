@@ -199,8 +199,7 @@ describe('API', { timeout: 60_000 }, function () {
     );
 
     test.sequential('GET to API for single assessment succeeds', async function () {
-      locals.apiAssessmentUrl =
-        locals.apiCourseInstanceUrl + `/assessments/${locals.assessmentId}`;
+      locals.apiAssessmentUrl = locals.apiCourseInstanceUrl + `/assessments/${locals.assessmentId}`;
 
       const res = await fetch(locals.apiAssessmentUrl, {
         headers: {
@@ -277,8 +276,7 @@ describe('API', { timeout: 60_000 }, function () {
     });
 
     test.sequential('GET to API for single submission succeeds', async function () {
-      locals.apiSubmissionUrl =
-        locals.apiCourseInstanceUrl + `/submissions/${locals.submissionId}`;
+      locals.apiSubmissionUrl = locals.apiCourseInstanceUrl + `/submissions/${locals.submissionId}`;
 
       const res = await fetch(locals.apiSubmissionUrl, {
         headers: {
@@ -374,8 +372,7 @@ describe('API', { timeout: 60_000 }, function () {
 
     test.sequential('GET to API for assessment access rules succeeds', async function () {
       locals.apiAssessmentAccessRulesUrl =
-        locals.apiCourseInstanceUrl +
-        `/assessments/${locals.assessmentId}/assessment_access_rules`;
+        locals.apiCourseInstanceUrl + `/assessments/${locals.assessmentId}/assessment_access_rules`;
 
       const res = await fetch(locals.apiAssessmentAccessRulesUrl, {
         headers: {
@@ -432,7 +429,6 @@ describe('API course sync', { timeout: 60_000 }, function () {
   const baseUrl = 'http://localhost:' + config.serverPort;
   const apiUrl = baseUrl + '/pl/api/v1';
   let syncTestCourseId: string;
-  let syncTestOriginDir: string;
   let apiCourseSyncUrl: string;
   let courseSyncJobSequenceId: string;
   let apiToken: string;
@@ -442,19 +438,15 @@ describe('API course sync', { timeout: 60_000 }, function () {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    // Generate an API token using the shared helper
     apiToken = await generateApiToken(baseUrl, 'sync-test');
-
-    // Create course with git repository using the shared fixture helper
-    const courseData = syncUtil.getCourseData();
-    courseData.course.name = 'API Sync Test Course';
 
     const fixture = await createCourseRepoFixture({
       populateOrigin: async (originDir) => {
+        const courseData = syncUtil.getCourseData();
+        courseData.course.name = 'API Sync Test Course';
         await syncUtil.writeCourseToDirectory(courseData, originDir);
       },
     });
-    syncTestOriginDir = fixture.courseOriginDir;
 
     // Sync the live directory to the database
     const syncResults = await syncUtil.syncCourseData(fixture.courseLiveDir);
@@ -463,7 +455,7 @@ describe('API course sync', { timeout: 60_000 }, function () {
     // Update repository field to point to origin
     await updateCourseRepository({
       courseId: syncTestCourseId,
-      repository: syncTestOriginDir,
+      repository: fixture.courseOriginDir,
     });
   });
 
