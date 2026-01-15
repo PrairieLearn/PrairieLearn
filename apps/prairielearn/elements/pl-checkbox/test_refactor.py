@@ -1,8 +1,6 @@
 """
-Tests for refactored pl-checkbox element.
-
-These tests verify that the refactoring (internal enums, extracted functions)
-maintains the exact same behavior as the original code.
+These tests verify that the refactoring from #13324
+has backwards compatibility with the original element.
 """
 
 import importlib
@@ -14,7 +12,6 @@ import pytest
 
 pl_checkbox = importlib.import_module("pl-checkbox")
 
-# Type aliases for cleaner code
 DisplayType = pl_checkbox.DisplayType
 OrderType = pl_checkbox.OrderType
 
