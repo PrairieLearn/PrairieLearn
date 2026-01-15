@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/error",
-  "version": "2.0.23",
+  "version": "2.0.24",
   "type": "module",
   "repository": {
     "type": "git",
@@ -9,8 +9,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -19,7 +19,8 @@
   "devDependencies": {
     "@prairielearn/html": "workspace:^",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.5",
+    "@types/node": "^22.19.6",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",

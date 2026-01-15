@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -358,7 +358,7 @@ export function RubricSettings({
     }
   };
 
-  const copyMustachePattern = async (e: Event, param: string) => {
+  const copyMustachePattern = async (e: React.MouseEvent, param: string) => {
     const button = e.currentTarget as HTMLElement;
     await navigator.clipboard.writeText(param);
     button.animate(
@@ -524,8 +524,9 @@ export function RubricSettings({
           data-bs-target="#rubric-setting"
           aria-expanded="false"
           aria-controls="rubric-setting"
+          aria-label="Toggle rubric settings"
         >
-          <i className="fa fa-angle-up ms-1 expand-icon" />
+          <i className="fa fa-angle-up ms-1 expand-icon" aria-hidden="true" />
         </button>
       </div>
       <div id="rubric-setting" className="js-collapsible-card-body p-2 collapse">
@@ -558,8 +559,9 @@ export function RubricSettings({
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="If the rubric is applied to manual points only, then a student's auto points are kept, and the rubric items will be added to (or subtracted from) the autograder results."
+                      aria-label="More information about applying rubric to manual points"
                     >
-                      <i className="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -587,8 +589,9 @@ export function RubricSettings({
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title={`If the rubric is applied to total points, then a student's auto points will be ignored, and the rubric items will be based on the total points of the question (${assessmentQuestion.max_points} points).`}
+                      aria-label="More information about applying rubric to total points"
                     >
-                      <i className="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" aria-hidden="true" />
                     </button>
                   </div>
                 </div>
@@ -638,8 +641,9 @@ export function RubricSettings({
                   data-bs-toggle="tooltip"
                   data-bs-placement="bottom"
                   data-bs-title="This setting only affects starting points. Rubric items may always be added with positive or negative points."
+                  aria-label="More information about grading mode"
                 >
-                  <i className="fas fa-circle-info" />
+                  <i className="fas fa-circle-info" aria-hidden="true" />
                 </button>
               </div>
             </div>
@@ -655,8 +659,9 @@ export function RubricSettings({
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="By default, penalties applied by rubric items cannot cause the rubric to have negative points. This value overrides this limit, e.g., for penalties that affect auto points or the assessment as a whole."
+                      aria-label="More information about minimum rubric score"
                     >
-                      <i className="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" aria-hidden="true" />
                     </button>
                     <input
                       className="form-control"
@@ -676,8 +681,9 @@ export function RubricSettings({
                       data-bs-toggle="tooltip"
                       data-bs-placement="bottom"
                       data-bs-title="By default, points are limited to the maximum points assigned to the question, and credit assigned by rubric items do not violate this limit. This value allows rubric points to extend beyond this limit, e.g., for bonus credit."
+                      aria-label="More information about maximum extra credit"
                     >
-                      <i className="fas fa-circle-info" />
+                      <i className="fas fa-circle-info" aria-hidden="true" />
                     </button>
                     <input
                       className="form-control"
@@ -691,7 +697,7 @@ export function RubricSettings({
               </div>
             </div>
             <div className="mb-3 col-12 col-md-6 col-xl-5">
-              <label className="form-label" for="grader_guidelines">
+              <label className="form-label" htmlFor="grader_guidelines">
                 Grader guidelines (not shown to students)
               </label>
               <textarea
@@ -712,7 +718,7 @@ export function RubricSettings({
           <table className="table table-sm border-bottom mb-3" aria-label="Rubric items">
             <thead>
               <tr className="table-light fw-bold">
-                <td style="width:1px" />
+                <td style={{ width: '1px' }} />
                 <td>Points</td>
                 <td>Description</td>
                 <td>Detailed explanation</td>
@@ -782,8 +788,7 @@ export function RubricSettings({
             </button>
           )}
           <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
-            <i className="fas fa-download" />
-            Export rubric
+            <i className="fas fa-download" aria-hidden="true" /> Export rubric
           </button>
           {hasCourseInstancePermissionEdit && (
             <button
@@ -792,8 +797,7 @@ export function RubricSettings({
               className="btn btn-sm btn-primary"
               onClick={() => setShowImportModal(!showImportModal)}
             >
-              <i className="fas fa-upload" />
-              Import rubric
+              <i className="fas fa-upload" aria-hidden="true" /> Import rubric
             </button>
           )}
           <Modal
@@ -806,7 +810,7 @@ export function RubricSettings({
               <Modal.Title>Import rubric settings</Modal.Title>
             </Modal.Header>
             <Modal.Body>
-              <label className="form-label" for="rubric-settings-file-input">
+              <label className="form-label" htmlFor="rubric-settings-file-input">
                 Choose file
               </label>
               <input
@@ -855,8 +859,9 @@ export function RubricSettings({
               data-bs-toggle="tooltip"
               data-bs-placement="bottom"
               data-bs-title="Imported rubric point values will be scaled to match the maximum points for this question."
+              aria-label="More information about importing rubrics"
             >
-              <i className="fas fa-circle-info" />
+              <i className="fas fa-circle-info" aria-hidden="true" />
             </button>
           )}
         </div>
@@ -864,7 +869,7 @@ export function RubricSettings({
           <div className="small form-text text-muted">
             Rubric items may use these entries, which are replaced with the corresponding values for
             the student variant (click to copy):
-            <ul style="max-height: 7rem; overflow-y: auto;">
+            <ul style={{ maxHeight: '7rem', overflowY: 'auto' }}>
               {params.map((param) => (
                 <li key={`${param}`}>
                   <button
@@ -922,8 +927,9 @@ export function RubricSettings({
             data-bs-toggle="tooltip"
             data-bs-placement="bottom"
             data-bs-title="Changes in rubric item values update the points for all previously graded submissions. If this option is selected, these submissions will also be tagged for manual grading, requiring a review by a grader."
+            aria-label="More information about requiring manual grading"
           >
-            <i className="fas fa-circle-info" />
+            <i className="fas fa-circle-info" aria-hidden="true" />
           </button>
         </div>
         {hasCourseInstancePermissionEdit && (
@@ -988,13 +994,14 @@ function RubricRow({
               type="button"
               className="btn btn-sm btn-ghost"
               style={{ cursor: 'grab' }}
+              aria-label="Drag to reorder"
               draggable
               onDragStart={onDragStart}
             >
-              <i className="fas fa-arrows-up-down" />
+              <i className="fas fa-arrows-up-down" aria-hidden="true" />
             </button>
             <button type="button" className="visually-hidden" aria-label="Move up" onClick={moveUp}>
-              <i className="fas fa-arrow-up" />
+              <i className="fas fa-arrow-up" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -1002,7 +1009,7 @@ function RubricRow({
               aria-label="Move down"
               onClick={moveDown}
             >
-              <i className="fas fa-arrow-down" />
+              <i className="fas fa-arrow-down" aria-hidden="true" />
             </button>
             <button
               type="button"
@@ -1010,7 +1017,7 @@ function RubricRow({
               aria-label="Delete"
               onClick={deleteRow}
             >
-              <i className="fas fa-trash text-danger" />
+              <i className="fas fa-trash text-danger" aria-hidden="true" />
             </button>
           </>
         )}
@@ -1054,7 +1061,7 @@ function RubricRow({
         <input
           type="number"
           className="form-control"
-          style="width:5rem"
+          style={{ width: '5rem' }}
           step="any"
           value={item.rubric_item.points}
           aria-label="Points"
@@ -1069,7 +1076,7 @@ function RubricRow({
           type="text"
           className="form-control"
           maxLength={100}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           value={item.rubric_item.description}
           aria-label="Description"
           disabled={!hasCourseInstancePermissionEdit}
@@ -1090,7 +1097,7 @@ function RubricRow({
            */
           value={item.rubric_item.explanation ?? ''}
           maxLength={10000}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           aria-label="Explanation"
           disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ explanation: e.currentTarget.value })}
@@ -1102,7 +1109,7 @@ function RubricRow({
           className="form-control"
           value={item.rubric_item.grader_note ?? ''}
           maxLength={10000}
-          style="min-width:15rem"
+          style={{ minWidth: '15rem' }}
           aria-label="Grader note"
           disabled={!hasCourseInstancePermissionEdit}
           onInput={(e) => updateRubricItem({ grader_note: e.currentTarget.value })}
@@ -1144,13 +1151,16 @@ function RubricRow({
             <span>New</span>
           ) : item.disagreement_count ? (
             <>
-              <i className="bi bi-x-square-fill text-danger" />{' '}
+              <i className="bi bi-x-square-fill text-danger" aria-hidden="true" />{' '}
               <span className="text-muted">
                 ({item.disagreement_count}/{submissionCount} disagree)
               </span>
             </>
           ) : (
-            <i className="bi bi-check-square-fill text-success" />
+            <>
+              <i className="bi bi-check-square-fill text-success" aria-hidden="true" />
+              <span className="visually-hidden">All submissions agree</span>
+            </>
           )}
         </td>
       ) : (

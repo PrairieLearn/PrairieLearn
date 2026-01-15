@@ -10,8 +10,8 @@
   "private": true,
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch"
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch"
   },
   "dependencies": {
     "@prairielearn/path-utils": "workspace:^",
@@ -24,7 +24,8 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.5",
+    "@types/node": "^22.19.6",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9"
   }

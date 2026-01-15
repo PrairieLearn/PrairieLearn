@@ -1,5 +1,11 @@
 # @prairielearn/session
 
+## 3.0.26
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 3.0.25
 
 ### Patch Changes

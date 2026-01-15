@@ -1,7 +1,7 @@
 import { flexRender } from '@tanstack/react-table';
 import type { Header, SortDirection, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import type { JSX } from 'preact/jsx-runtime';
+import type { CSSProperties, JSX } from 'react';
 
 function SortIcon({ sortMethod }: { sortMethod: false | SortDirection }) {
   if (sortMethod === 'asc') {
@@ -24,7 +24,7 @@ function ResizeHandle<RowDataModel>({
 }) {
   const minSize = header.column.columnDef.minSize ?? 0;
   const maxSize = header.column.columnDef.maxSize ?? 0;
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
       e.preventDefault();
       const currentSize = header.getSize();
@@ -121,7 +121,7 @@ export function TanstackTableHeaderCell<RowDataModel>({
 
   // In measurement mode, we don't want to set the size of the header from tanstack.
   const headerSize = measurementMode ? undefined : header.getSize();
-  const style: JSX.CSSProperties = {
+  const style: CSSProperties = {
     display: 'flex',
     width: headerSize,
     minWidth: 0,

@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/vite-plugin-express",
-  "version": "1.0.5",
+  "version": "1.0.6",
   "type": "module",
   "repository": {
     "type": "git",
@@ -9,8 +9,8 @@
   },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "debounce": "^3.0.0",
@@ -20,8 +20,9 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.5",
+    "@types/node": "^22.19.6",
     "@types/picomatch": "^4.0.2",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3"
   }
 }

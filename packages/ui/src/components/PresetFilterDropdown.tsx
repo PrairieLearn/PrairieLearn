@@ -1,5 +1,5 @@
 import type { ColumnFiltersState, Table } from '@tanstack/react-table';
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import { ButtonGroup, Dropdown } from 'react-bootstrap';
 
 /**

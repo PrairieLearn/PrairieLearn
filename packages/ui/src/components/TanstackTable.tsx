@@ -2,14 +2,19 @@ import { flexRender } from '@tanstack/react-table';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import type { Cell, Header, Row, Table } from '@tanstack/table-core';
 import clsx from 'clsx';
-import type { ComponentChildren } from 'preact';
-import { useEffect, useMemo, useRef, useState } from 'preact/hooks';
-import type { JSX } from 'preact/jsx-runtime';
+import {
+  type ComponentProps,
+  type JSX,
+  type ReactNode,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 import { useDebouncedCallback } from 'use-debounce';
 
-import type { ComponentProps } from '@prairielearn/preact-cjs';
 import { run } from '@prairielearn/run';
 
 import { ColumnManager } from './ColumnManager.js';
@@ -35,7 +40,7 @@ function TableCell<RowDataModel>({
   canSort: boolean;
   canFilter: boolean;
   wrapText: boolean;
-  handleGridKeyDown: (e: KeyboardEvent, rowIdx: number, colIdx: number) => void;
+  handleGridKeyDown: (e: React.KeyboardEvent, rowIdx: number, colIdx: number) => void;
 }) {
   return (
     <td
@@ -91,7 +96,7 @@ interface TanstackTableProps<RowDataModel> {
   rowHeight?: number;
   noResultsState?: JSX.Element;
   emptyState?: JSX.Element;
-  scrollRef?: React.RefObject<HTMLDivElement> | null;
+  scrollRef?: React.RefObject<HTMLDivElement | null> | null;
 }
 
 const DEFAULT_FILTER_MAP = {};
@@ -174,7 +179,7 @@ export function TanstackTable<RowDataModel>({
     ...row.getCenterVisibleCells(),
   ];
 
-  const handleGridKeyDown = (e: KeyboardEvent, rowIdx: number, colIdx: number) => {
+  const handleGridKeyDown = (e: React.KeyboardEvent, rowIdx: number, colIdx: number) => {
     const rowLength = getVisibleCells(rows[rowIdx]).length;
     const adjacentCells: Record<KeyboardEvent['key'], { row: number; col: number }> = {
       ArrowDown: {
@@ -630,7 +635,7 @@ export function TanstackTableEmptyState({
   children,
 }: {
   iconName: `bi-${string}`;
-  children: ComponentChildren;
+  children: ReactNode;
 }) {
   return (
     <div className="d-flex flex-column justify-content-center align-items-center text-muted">

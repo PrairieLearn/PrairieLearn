@@ -1,11 +1,10 @@
 import clsx from 'clsx';
-import { isFragment, isValidElement } from 'preact/compat';
+import { Fragment, type ReactElement, type ReactNode, isValidElement } from 'react';
 import superjson from 'superjson';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
 import { AugmentedError } from '@prairielearn/error';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { type ComponentChildren, Fragment, type VNode } from '@prairielearn/preact-cjs';
 
 import { renderHtml } from './index.js';
 
@@ -30,18 +29,18 @@ function escapeJsonForHtml(value: any): string {
 }
 
 /**
- * Render an entire Preact page as an HTML document.
+ * Render an entire React page as an HTML document.
  *
- * @param content - A Preact VNode to render to HTML.
+ * @param content - A React node to render to HTML.
  * @returns An HTML string containing the rendered content.
  */
-export function renderHtmlDocument(content: VNode) {
+export function renderHtmlDocument(content: ReactNode): string {
   return `<!doctype html>\n${renderHtml(content)}`;
 }
 
-interface HydrateProps {
+interface HydrateProps<T> {
   /** The component to hydrate. */
-  children: ComponentChildren;
+  children: ReactElement<T>;
   /** Optional override for the component's name or displayName. */
   nameOverride?: string;
   /** Whether to apply full height styles. */
@@ -51,33 +50,32 @@ interface HydrateProps {
 }
 
 /**
- * A component that renders a Preact component for client-side hydration.
+ * A component that renders a React component for client-side hydration.
  * All interactive components will need to be hydrated.
- * This component is intended to be used within a non-interactive Preact component
+ * This component is intended to be used within a non-interactive React component
  * that will be rendered without hydration through `renderHtml`.
  */
-export function Hydrate({
+export function Hydrate<T>({
   children,
   nameOverride,
   className,
   fullHeight = false,
-}: HydrateProps): VNode {
+}: HydrateProps<T>): ReactNode {
   if (!isValidElement(children)) {
-    throw new Error('<Hydrate> expects a single Preact component as its child');
+    throw new Error('<Hydrate> expects a single React component as its child');
   }
 
-  if (isFragment(children)) {
+  if (children.type === Fragment) {
     throw new Error('<Hydrate> does not support fragments');
   }
 
-  const content = children as VNode;
-  const { type: Component, props } = content;
+  const { type: Component, props } = children;
   if (typeof Component !== 'function') {
-    throw new Error('<Hydrate> expects a Preact component');
+    throw new Error('<Hydrate> expects a React component');
   }
 
   // Note that we don't use `Component.name` here because it can be minified or mangled.
-  const componentName = nameOverride ?? Component.displayName;
+  const componentName = nameOverride ?? (Component as any).displayName;
   if (!componentName) {
     // This is only defined in development, not in production when the function name is minified.
     const componentDevName = Component.name || 'UnknownComponent';
@@ -107,7 +105,7 @@ ${componentDevName}.displayName = '${componentDevName}';</code></pre>
           Make sure you create a script at
           <code>esm-bundles/hydrated-components/${componentName}.ts</code> registering the
           component:
-          <pre><code>import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
+          <pre><code>import { registerHydratedComponent } from '@prairielearn/react/hydrated-component';
 
 import { ${componentName} } from './path/to/component.js';
 
@@ -144,16 +142,16 @@ registerHydratedComponent(${componentName});</code></pre>
 }
 
 /**
- * Renders a Preact component for client-side hydration and returns an HTML-safe string.
+ * Renders a React component for client-side hydration and returns an HTML-safe string.
  * This function is intended to be used within a tagged template literal, e.g. html`...`.
  *
- * @param content - A Preact VNode to render to HTML.
+ * @param content - A React node to render to HTML.
  * @returns An `HtmlSafeString` containing the rendered HTML.
  */
 export function hydrateHtml<T>(
-  content: VNode<T>,
-  props: Omit<HydrateProps, 'children'> = {},
+  content: ReactElement<T>,
+  props: Omit<HydrateProps<T>, 'children'> = {},
 ): HtmlSafeString {
-  // Useful for adding Preact components to existing tagged-template pages.
+  // Useful for adding React components to existing tagged-template pages.
   return renderHtml(<Hydrate {...props}>{content}</Hydrate>);
 }

@@ -1,5 +1,5 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import {
