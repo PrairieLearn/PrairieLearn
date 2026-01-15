@@ -2,7 +2,7 @@ import * as path from 'node:path';
 
 import { execa } from 'execa';
 import fs from 'fs-extra';
-import * as tmp from 'tmp';
+import * as tmp from 'tmp-promise';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
@@ -58,7 +58,7 @@ interface PopulateOriginOptions {
 export async function createCourseRepoFixture(
   options: PopulateOriginOptions | string,
 ): Promise<CourseRepoFixture> {
-  const baseDir = tmp.dirSync().name;
+  const { path: baseDir } = await tmp.dir({ unsafeCleanup: true });
   const courseOriginDir = path.join(baseDir, 'courseOrigin');
   const courseLiveDir = path.join(baseDir, 'courseLive');
   const courseDevDir = path.join(baseDir, 'courseDev');
