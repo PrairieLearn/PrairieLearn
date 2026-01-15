@@ -36,6 +36,7 @@ export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
+  'left',
   'removed',
   'rejected',
   'blocked',

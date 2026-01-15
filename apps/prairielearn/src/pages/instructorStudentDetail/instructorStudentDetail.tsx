@@ -175,8 +175,8 @@ router.post(
         break;
       }
       case 'invite_student': {
-        if (!['rejected', 'removed'].includes(enrollment.status)) {
-          throw new HttpStatusError(400, 'Enrollment is not rejected or removed');
+        if (!['rejected', 'left', 'removed'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not rejected, left, or removed');
         }
 
         const pendingUid = await run(async () => {

@@ -444,7 +444,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(firstResponse.status, 200);
       assert.equal(firstResponse.url, homeUrl);
 
-      // Verify enrollment is now removed
+      // Verify enrollment is now left
       const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.id,
@@ -453,7 +453,7 @@ describe('Homepage enrollment actions', () => {
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
-      assert.equal(enrollment.status, 'removed');
+      assert.equal(enrollment.status, 'left');
 
       // Second unenroll (should be a no-op)
       const csrfToken2 = await getCsrfToken(homeUrl);
@@ -468,7 +468,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(secondResponse.status, 200);
       assert.equal(secondResponse.url, homeUrl);
 
-      // Verify enrollment is still removed
+      // Verify enrollment is still left
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.id,
         courseInstance,
@@ -476,7 +476,7 @@ describe('Homepage enrollment actions', () => {
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'removed');
+      assert.equal(finalEnrollment.status, 'left');
     });
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {
