@@ -4429,7 +4429,6 @@ __metadata:
     "@types/express-serve-static-core": "npm:^4.19.8"
     "@types/folder-hash": "npm:^4.0.4"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/he": "npm:^1.2.3"
     "@types/jju": "npm:^1.4.5"
     "@types/jquery": "npm:^3.5.33"
     "@types/js-cookie": "npm:^3.0.6"
@@ -6901,13 +6900,6 @@ __metadata:
   version: 7946.0.14
   resolution: "@types/geojson@npm:7946.0.14"
   checksum: 10c0/54f3997708fa2970c03eeb31f7e4540a0eb6387b15e9f8a60513a1409c23cafec8d618525404573468b59c6fecbfd053724b3327f7fca416729c26271d799f55
-  languageName: node
-  linkType: hard
-
-"@types/he@npm:^1.2.3":
-  version: 1.2.3
-  resolution: "@types/he@npm:1.2.3"
-  checksum: 10c0/562e4ec00e31e3d464e79e6da4b8a5c21999d38ceca6a8facaa96e89c2d646f410bb58bb81f48a7472aeb4655ce40d27b7d77e5a4fa5a2d9caa0f3037caab5b7
   languageName: node
   linkType: hard
 

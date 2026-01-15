@@ -88,24 +88,16 @@ export function renderText(
   const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
 
   const context = {
-    // snake_case names (preferred, consistent with question.html and honor code templating)
     client_files_course: assessmentUrlPrefix + '/clientFilesCourse',
     client_files_course_instance: assessmentUrlPrefix + '/clientFilesCourseInstance',
     client_files_assessment: assessmentUrlPrefix + '/clientFilesAssessment',
-    // camelCase names (legacy, for backward compatibility)
-    clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
-    clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-    clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
 
-  // Convert legacy EJS-style <%= var %> syntax to Mustache template variables {{ var }}
+  // Convert all legacy EJS-style template variables to Mustache template variables.
   const text = assessment.text
-    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ clientFilesCourse }}')
-    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ clientFilesCourseInstance }}')
-    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ clientFilesAssessment }}')
-    .replaceAll(/<%=\s*client_files_course\s*%>/g, '{{ client_files_course }}')
-    .replaceAll(/<%=\s*client_files_course_instance\s*%>/g, '{{ client_files_course_instance }}')
-    .replaceAll(/<%=\s*client_files_assessment\s*%>/g, '{{ client_files_assessment }}');
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ client_files_course }}')
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
 
   return mustache.render(text, context);
 }
