@@ -23,7 +23,7 @@ Run `make build` from the root directory to build all TypeScript code and check 
 
 Run `make typecheck-python` from the root directory to type check all Python code.
 
-## Database and Schema changes
+## Database and schema changes
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
@@ -66,6 +66,8 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 
 ## Testing
 
+See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
+
 TypeScript tests are written with Vitest. Unit tests are located next to the code they test in files with a `.test.ts` suffix. Integration tests are located in dedicated `tests` directories, e.g. `apps/prairielearn/src/tests`.
 
 Python tests are written with Pytest.
@@ -89,12 +91,11 @@ To test UI code looks correct, you should try to connect to the development serv
 The PrairieLearn web application renders HTML in one of two ways:
 
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
-- Interactive components are built and rendered with Preact and hydrated with utilities from the `@prairielearn/preact` package. See [`packages/preact/README.md`](packages/preact/README.md) for details.
+- Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
-## Preact quirks
+## React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
-- Use `clsx` in Preact components.
+- Use `clsx` in React components.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
-- If you get a build error relating to the type of an error being unknown, you can use `yarn tsc -p assets/scripts/tsconfig.json --traceResolution` to debug the issue.

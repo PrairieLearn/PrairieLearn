@@ -5,14 +5,14 @@ import {
   unstable_createAdapterProvider,
 } from 'nuqs/adapters/custom';
 import { NuqsAdapter as NuqsReactAdapter } from 'nuqs/adapters/react';
-import React from 'preact/compat';
+import { createContext, use } from 'react';
 
 import type { NumericColumnFilterValue } from './NumericInputColumnFilter.js';
 
-const AdapterContext = React.createContext('');
+const AdapterContext = createContext('');
 
 function useExpressAdapterContext(): unstable_AdapterInterface {
-  const context = React.useContext(AdapterContext);
+  const context = use(AdapterContext);
 
   return {
     searchParams: new URLSearchParams(context),
@@ -34,9 +34,9 @@ export function NuqsAdapter({ children, search }: { children: React.ReactNode; s
   if (typeof location === 'undefined') {
     // We're rendering on the server.
     return (
-      <AdapterContext.Provider value={search}>
+      <AdapterContext value={search}>
         <NuqsExpressAdapter>{children}</NuqsExpressAdapter>
-      </AdapterContext.Provider>
+      </AdapterContext>
     );
   }
 

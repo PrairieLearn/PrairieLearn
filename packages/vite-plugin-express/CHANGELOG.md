@@ -1,5 +1,11 @@
 # @prairielearn/vite-plugin-express
 
+## 1.0.6
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 1.0.5
 
 ### Patch Changes

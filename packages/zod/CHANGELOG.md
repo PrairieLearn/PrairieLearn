@@ -1,5 +1,11 @@
 # @prairielearn/zod
 
+## 1.5.1
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 1.5.0
 
 ### Minor Changes

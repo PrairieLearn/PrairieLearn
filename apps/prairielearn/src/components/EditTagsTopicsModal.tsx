@@ -99,7 +99,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               )}
             </div>
             <div className="mb-3">
-              <label className="form-label" for="name">
+              <label className="form-label" htmlFor="name">
                 Name
               </label>
               <input
@@ -122,7 +122,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               )}
             </div>
             <div className="mb-3">
-              <label className="form-label" for="color">
+              <label className="form-label" htmlFor="color">
                 Color
               </label>
               <div className="d-flex gap-2 align-items-center">
@@ -171,7 +171,7 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               )}
             </div>
             <div className="mb-3">
-              <label className="form-label" for="description">
+              <label className="form-label" htmlFor="description">
                 Description
               </label>
               <input
