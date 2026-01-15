@@ -16,7 +16,6 @@ import pandas as pd
 import prairielearn as pl
 import pytest
 from numpy.typing import ArrayLike
-from sympy import exp, simplify, sin, symbols
 
 
 def city_dataframe() -> pd.DataFrame:
@@ -415,30 +414,11 @@ def test_grade_answer_parametrized_key_error_blank(
     assert question_data["partial_scores"][question_name]["score"] == 0.0
 
 
-# Helper functions for timeout tests
-def _slow_grading_function(_: str) -> tuple[bool, str | None]:
-    time.sleep(2)
-    return (True, None)
-
-
-def _fast_grading_function(ans: str) -> tuple[bool, str | None]:
-    if ans == "correct":
-        return (True, "Well done!")
-    return (False, "Try again")
-
-
-def _sympy_timeout_grading_function(_: str) -> tuple[bool, str | None]:
-    # This is a complex sympy comparison that will take a long time
-    x = symbols("x")
-    expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 5
-    expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 125
-    result = simplify(expr1 - expr2)
-    return (result == 0, None)
-
-
 class TimeoutTestCase(NamedTuple):
     test_name: str
-    grading_function: Callable[[str], tuple[bool, str | None]]
+    sleep_duration: float
+    return_value: bool
+    return_feedback: str | None
     timeout: float
     timeout_format_error: str | None
     should_timeout: bool
@@ -452,7 +432,9 @@ class TimeoutTestCase(NamedTuple):
     [
         TimeoutTestCase(
             test_name="default_message",
-            grading_function=_slow_grading_function,
+            sleep_duration=2.0,
+            return_value=True,
+            return_feedback=None,
             timeout=0.1,
             timeout_format_error=None,
             should_timeout=True,
@@ -462,7 +444,9 @@ class TimeoutTestCase(NamedTuple):
         ),
         TimeoutTestCase(
             test_name="custom_message",
-            grading_function=_slow_grading_function,
+            sleep_duration=2.0,
+            return_value=True,
+            return_feedback=None,
             timeout=0.1,
             timeout_format_error="Your answer did not converge, try a simpler expression.",
             should_timeout=True,
@@ -472,7 +456,9 @@ class TimeoutTestCase(NamedTuple):
         ),
         TimeoutTestCase(
             test_name="no_timeout_when_fast",
-            grading_function=_fast_grading_function,
+            sleep_duration=0.0,
+            return_value=True,
+            return_feedback="Well done!",
             timeout=5.0,
             timeout_format_error="Should not see this",
             should_timeout=False,
@@ -481,8 +467,10 @@ class TimeoutTestCase(NamedTuple):
             expected_error_substring=None,
         ),
         TimeoutTestCase(
-            test_name="sympy_timeout",
-            grading_function=_sympy_timeout_grading_function,
+            test_name="timeout",
+            sleep_duration=2.0,
+            return_value=True,
+            return_feedback=None,
             timeout=0.1,
             timeout_format_error="Your answer did not converge.",
             should_timeout=True,
@@ -500,10 +488,15 @@ def test_grade_answer_parametrized_timeout(
     question_name = f"timeout_test_{case.test_name}"
     question_data["submitted_answers"] = {question_name: "correct"}
 
+    def grading_function(_: str) -> tuple[bool, str | None]:
+        if case.sleep_duration > 0.0:
+            time.sleep(case.sleep_duration)
+        return (case.return_value, case.return_feedback)
+
     pl.grade_answer_parameterized(
         question_data,
         question_name,
-        case.grading_function,
+        grading_function,
         timeout=case.timeout,
         timeout_format_error=case.timeout_format_error,
     )
