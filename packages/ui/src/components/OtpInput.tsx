@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { Fragment, useRef, useState } from 'preact/compat';
+import { Fragment, type KeyboardEvent, useRef, useState } from 'react';
 import { FieldError, Input, TextField } from 'react-aria-components';
 
 export function formatOtpValue(raw: string, maxLength: number): string {
@@ -65,7 +65,7 @@ export function OtpInput({
     });
   };
 
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
     let newPos = cursorPosition;
     if (e.key === 'ArrowLeft') {
       newPos = Math.max(0, cursorPosition - 1);
