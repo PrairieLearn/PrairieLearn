@@ -353,7 +353,6 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    // Team configuration from unified teams object
     team_work: teams.enabled,
     team_max_size: teams.maxMembers ?? null,
     team_min_size: teams.minMembers ?? null,

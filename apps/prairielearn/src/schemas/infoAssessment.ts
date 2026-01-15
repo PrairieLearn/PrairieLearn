@@ -98,7 +98,7 @@ export const TeamsJsonSchema = z
   .object({
     enabled: z
       .boolean()
-      .describe('Whether team work is enabled for this assessment.')
+      .describe('Whether teams are enabled for this assessment.')
       .optional()
       .default(true),
     minMembers: z.number().describe('Minimum number of students in a team.').optional(),
