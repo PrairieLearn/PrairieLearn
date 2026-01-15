@@ -1,3 +1,4 @@
+import he from 'he';
 import { assert, describe, it } from 'vitest';
 
 import { renderText } from './assessment.js';
@@ -5,8 +6,7 @@ import { renderText } from './assessment.js';
 describe('renderText', () => {
   const urlPrefix = '/pl/course_instance/1';
   const assessmentId = '42';
-  // Mustache HTML-escapes / to &#x2F; which is valid and browsers decode it correctly
-  const escapedUrlPrefix = '&#x2F;pl&#x2F;course_instance&#x2F;1';
+  const expectedUrlBase = `${urlPrefix}/assessment/${assessmentId}`;
 
   it('returns null for null text', () => {
     assert.isNull(renderText({ id: assessmentId, text: null }, urlPrefix));
@@ -17,63 +17,105 @@ describe('renderText', () => {
     assert.equal(renderText({ id: assessmentId, text }, urlPrefix), text);
   });
 
-  describe('EJS-style syntax (legacy)', () => {
+  describe('EJS-style syntax (legacy camelCase)', () => {
     it('renders clientFilesCourse', () => {
       const text = '<a href="<%= clientFilesCourse %>/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourse/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourse/file.pdf">Link</a>`);
     });
 
     it('renders clientFilesCourseInstance', () => {
       const text = '<a href="<%= clientFilesCourseInstance %>/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourseInstance/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`);
     });
 
     it('renders clientFilesAssessment', () => {
       const text = '<a href="<%= clientFilesAssessment %>/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
     });
 
     it('handles whitespace variations', () => {
       const text = '<a href="<%=clientFilesAssessment%>/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
     });
   });
 
-  describe('Mustache-style syntax', () => {
+  describe('EJS-style syntax (legacy snake_case)', () => {
+    it('renders client_files_course', () => {
+      const text = '<a href="<%= client_files_course %>/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourse/file.pdf">Link</a>`);
+    });
+
+    it('renders client_files_course_instance', () => {
+      const text = '<a href="<%= client_files_course_instance %>/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`);
+    });
+
+    it('renders client_files_assessment', () => {
+      const text = '<a href="<%= client_files_assessment %>/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
+    });
+  });
+
+  describe('Mustache-style syntax (camelCase)', () => {
     it('renders clientFilesCourse', () => {
       const text = '<a href="{{ clientFilesCourse }}/file.pdf">Link</a>';
-      // Mustache HTML-escapes the output, so / becomes &#x2F;
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourse/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourse/file.pdf">Link</a>`);
     });
 
     it('renders clientFilesCourseInstance', () => {
       const text = '<a href="{{ clientFilesCourseInstance }}/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourseInstance/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`);
     });
 
     it('renders clientFilesAssessment', () => {
       const text = '<a href="{{ clientFilesAssessment }}/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
     });
 
     it('handles no whitespace', () => {
       const text = '<a href="{{clientFilesAssessment}}/file.pdf">Link</a>';
-      const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/file.pdf">Link</a>`;
-      assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
+    });
+  });
+
+  describe('Mustache-style syntax (snake_case)', () => {
+    it('renders client_files_course', () => {
+      const text = '<a href="{{ client_files_course }}/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourse/file.pdf">Link</a>`);
+    });
+
+    it('renders client_files_course_instance', () => {
+      const text = '<a href="{{ client_files_course_instance }}/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`);
+    });
+
+    it('renders client_files_assessment', () => {
+      const text = '<a href="{{ client_files_assessment }}/file.pdf">Link</a>';
+      const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+      assert.equal(result, `<a href="${expectedUrlBase}/clientFilesAssessment/file.pdf">Link</a>`);
     });
   });
 
   it('renders multiple Mustache variables in same text', () => {
     const text =
       '<a href="{{ clientFilesCourse }}/a.pdf">A</a> <a href="{{ clientFilesAssessment }}/b.pdf">B</a>';
-    const expected = `<a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesCourse/a.pdf">A</a> <a href="${escapedUrlPrefix}&#x2F;assessment&#x2F;${assessmentId}&#x2F;clientFilesAssessment/b.pdf">B</a>`;
-    assert.equal(renderText({ id: assessmentId, text }, urlPrefix), expected);
+    const result = he.decode(renderText({ id: assessmentId, text }, urlPrefix)!);
+    assert.equal(
+      result,
+      `<a href="${expectedUrlBase}/clientFilesCourse/a.pdf">A</a> <a href="${expectedUrlBase}/clientFilesAssessment/b.pdf">B</a>`,
+    );
   });
 });
