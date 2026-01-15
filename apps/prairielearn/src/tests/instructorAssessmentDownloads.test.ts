@@ -18,6 +18,7 @@ import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
 
+import { getCSRFToken } from './helperClient.js';
 import * as helperExam from './helperExam.js';
 import type { TestExamQuestion } from './helperExam.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -58,12 +59,6 @@ async function fetchPage(url: string): Promise<cheerio.CheerioAPI> {
   const res = await fetch(url);
   assert.equal(res.status, 200);
   return cheerio.load(await res.text());
-}
-
-function getCsrfToken($: cheerio.CheerioAPI, selector = 'form'): string {
-  const elemList = $(`${selector} input[name="__csrf_token"]`);
-  assert.isAtLeast(elemList.length, 1);
-  return elemList[0].attribs.value;
 }
 
 async function downloadCsv(url: string): Promise<any[]> {
@@ -377,11 +372,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
       ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
       ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
-      let res = await fetch(ctx.instructorAssessmentGroupsUrl, {
+      const res = await fetch(ctx.instructorAssessmentGroupsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_team',
-          __csrf_token: getCsrfToken(ctx.$),
+          __csrf_token: getCSRFToken(ctx.$),
           team_name: 'testteam',
           uids: ctx.studentUsers.map((u: any) => u.uid).join(','),
         }),
@@ -389,24 +384,37 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.equal(res.status, 200);
 
       await withUser(ctx.studentUsers[0], async () => {
-        ctx.$ = await fetchPage(ctx.assessmentUrl);
-        res = await fetch(ctx.assessmentUrl, {
+        let studentRes = await fetch(ctx.assessmentUrl);
+        assert.equal(studentRes.status, 200);
+        ctx.$ = cheerio.load(await studentRes.text());
+
+        studentRes = await fetch(ctx.assessmentUrl, {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'new_instance',
-            __csrf_token: getCsrfToken(ctx.$),
+            __csrf_token: getCSRFToken(ctx.$),
           }),
         });
-        assert.equal(res.status, 200);
-        ctx.$ = cheerio.load(await res.text());
+        assert.equal(studentRes.status, 200);
+        ctx.$ = cheerio.load(await studentRes.text());
 
         const questionLinks = ctx.$('a[href*="/instance_question/"]');
         assert.isAtLeast(questionLinks.length, 1, 'Should have at least one question link');
-        ctx.questionUrl = ctx.siteUrl + questionLinks[0].attribs.href;
-        ctx.$ = await fetchPage(ctx.questionUrl);
-        const variantInput = ctx.$('input[name="__variant_id"]');
-        assert.isAtLeast(variantInput.length, 1, 'Should have variant_id input');
-        ctx.variant_id = variantInput[0].attribs.value;
+        const questionHref = questionLinks.first().attr('href');
+        assert.isString(questionHref);
+        ctx.questionUrl = ctx.siteUrl + questionHref;
+
+        studentRes = await fetch(ctx.questionUrl);
+        assert.equal(studentRes.status, 200);
+        ctx.$ = cheerio.load(await studentRes.text());
+
+        // For Calculation type questions, the variant data is in .question-data element
+        const questionDataElem = ctx.$('.question-data');
+        assert.isAtLeast(questionDataElem.length, 1, 'Should have question-data element');
+        const questionData = JSON.parse(
+          decodeURIComponent(Buffer.from(questionDataElem.text(), 'base64').toString()),
+        );
+        ctx.variant_id = questionData.variant.id;
 
         ctx.variant = await queryRow(
           'SELECT * FROM variants WHERE id = $1',
@@ -414,17 +422,22 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
           VariantSchema,
         );
 
-        res = await fetch(ctx.questionUrl, {
+        // For Calculation questions, use postData format with JSON stringified content
+        studentRes = await fetch(ctx.questionUrl, {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'grade',
-            __csrf_token: getCsrfToken(ctx.$, '.question-form'),
-            __variant_id: ctx.variant_id,
-            wx: String(ctx.variant.true_answer.wx),
-            wy: String(ctx.variant.true_answer.wy),
+            __csrf_token: getCSRFToken(ctx.$),
+            postData: JSON.stringify({
+              variant: questionData.variant,
+              submittedAnswer: {
+                wx: ctx.variant.true_answer.wx,
+                wy: ctx.variant.true_answer.wy,
+              },
+            }),
           }),
         });
-        assert.equal(res.status, 200);
+        assert.equal(studentRes.status, 200);
       });
 
       ctx.assessment = await selectAssessmentById(ctx.assessment_id);
