@@ -15,10 +15,12 @@ export function EditAssessmentSetsModal({
   state,
   onClose,
   onSave,
+  existingNames,
 }: {
   state: EditAssessmentSetsModalState;
   onClose: () => void;
   onSave: (assessmentSet: StaffAssessmentSet) => void;
+  existingNames: Set<string>;
 }) {
   const assessmentSetToEdit =
     state.type === 'create'
@@ -119,6 +121,12 @@ export function EditAssessmentSetsModal({
               />
               {invalidName && (
                 <div className="invalid-feedback">Assessment set name is required</div>
+              )}
+              {assessmentSet.name && existingNames.has(assessmentSet.name) && (
+                <div className="alert alert-warning mt-2 mb-0 py-2" role="alert">
+                  <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This assessment
+                  set has the same name as another set.
+                </div>
               )}
             </div>
             <div className="mb-3">

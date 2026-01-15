@@ -206,6 +206,24 @@ export function AssessmentSetsPage({
     useState<StaffAssessmentSet[]>(assessmentSets);
   const [modalState, setModalState] = useState<EditAssessmentSetsModalState>({ type: 'closed' });
 
+  const duplicateNames = useMemo(() => {
+    const nameCounts = new Map<string, number>();
+    for (const set of assessmentSetsState) {
+      nameCounts.set(set.name, (nameCounts.get(set.name) ?? 0) + 1);
+    }
+    return Array.from(nameCounts.entries())
+      .filter(([, count]) => count > 1)
+      .map(([name]) => name);
+  }, [assessmentSetsState]);
+
+  // Names of other assessment sets (excluding the one currently being edited)
+  const existingNames = useMemo(() => {
+    const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.id : null;
+    return new Set(
+      assessmentSetsState.filter((set) => set.id !== editingId).map((set) => set.name),
+    );
+  }, [assessmentSetsState, modalState]);
+
   const handleCreate = () => {
     setModalState({
       type: 'create',
@@ -288,6 +306,14 @@ export function AssessmentSetsPage({
           </div>
         </div>
 
+        {editMode && duplicateNames.length > 0 && (
+          <div className="alert alert-warning m-3 mb-0" role="alert">
+            <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
+            <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Only the last
+            assessment set with each name will be synced.
+          </div>
+        )}
+
         <div className="table-responsive">
           <AssessmentSetsTable
             assessmentSetsState={assessmentSetsState}
@@ -302,6 +328,7 @@ export function AssessmentSetsPage({
       </div>
 
       <EditAssessmentSetsModal
+        existingNames={existingNames}
         state={modalState}
         onClose={() => setModalState({ type: 'closed' })}
         onSave={handleSave}
