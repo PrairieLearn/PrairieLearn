@@ -788,8 +788,7 @@ export function RubricSettings({
             </button>
           )}
           <button type="button" className="btn btn-sm btn-primary" onClick={exportRubric}>
-            <i className="fas fa-download" aria-hidden="true" />{' '}
-            Export rubric
+            <i className="fas fa-download" aria-hidden="true" /> Export rubric
           </button>
           {hasCourseInstancePermissionEdit && (
             <button
@@ -798,8 +797,7 @@ export function RubricSettings({
               className="btn btn-sm btn-primary"
               onClick={() => setShowImportModal(!showImportModal)}
             >
-              <i className="fas fa-upload" aria-hidden="true" />{' '}
-              Import rubric
+              <i className="fas fa-upload" aria-hidden="true" /> Import rubric
             </button>
           )}
           <Modal
