@@ -58,9 +58,9 @@ def convassessment(assessdict):
     """Code to convert an assessment"""
     # search and replace: (\s == whitespace)
     p1 = re.compile(r'<\%\s+print\(\s*clientFile\s*\(\s*"([^"]+)\s*"\s*\)\s*\)\s+\%>')
-    r1 = r"<%= clientFilesCourse %>/\1"
+    r1 = r"{{ clientFilesCourse }}/\1"
     p2 = re.compile(r'<\%\s+print\(\s*testFile\s*\(\s*"([^"]+)\s*"\s*\)\s*\)\s+\%>')
-    r2 = r"<%= clientFilesAssessment %>/\1"
+    r2 = r"{{ clientFilesAssessment }}/\1"
 
     options = assessdict["options"]
     newdict = OrderedDict()

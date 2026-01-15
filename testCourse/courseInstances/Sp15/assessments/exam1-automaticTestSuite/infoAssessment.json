@@ -28,5 +28,5 @@
       ]
     }
   ],
-  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"<%= clientFilesAssessment %>/formulas.pdf\">PDF version</a></li>"
+  "text": "The following formula sheets are available to you on this exam:<ul><li><a href=\"{{ clientFilesAssessment }}/formulas.pdf\">PDF version</a></li>"
 }
