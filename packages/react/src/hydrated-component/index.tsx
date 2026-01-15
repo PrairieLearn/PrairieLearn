@@ -1,10 +1,9 @@
-import '../debug.js';
-
+import type { ComponentType } from 'react';
+import { hydrateRoot } from 'react-dom/client';
 import { observe } from 'selector-observer';
 import superjson from 'superjson';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { type ComponentType, hydrate } from '@prairielearn/preact-cjs';
 
 import { HydratedComponentsRegistry } from './registry.js';
 
@@ -14,7 +13,7 @@ import { HydratedComponentsRegistry } from './registry.js';
 const registry = new HydratedComponentsRegistry();
 
 /**
- * Registers a Preact component for client-side hydration. The component should have a
+ * Registers a React component for client-side hydration. The component should have a
  * `displayName` property. If it's missing, or the name of the component bundle differs,
  * you can provide a `nameOverride`.
  */
@@ -47,7 +46,7 @@ onDocumentReady(() => {
       if (!dataElement.textContent) throw new Error('Data element has no content');
       const data: object = superjson.parse(dataElement.textContent);
 
-      hydrate(<Component {...data} />, el);
+      hydrateRoot(el, <Component {...data} />);
     },
   });
 });

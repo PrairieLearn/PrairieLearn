@@ -1,11 +1,11 @@
 {
-  "name": "@prairielearn/preact",
-  "version": "1.1.0",
+  "name": "@prairielearn/react",
+  "version": "1.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
-    "directory": "packages/preact"
+    "directory": "packages/react"
   },
   "exports": {
     ".": "./dist/index.js",
@@ -21,11 +21,12 @@
     "@prairielearn/compiled-assets": "workspace:^",
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
-    "@prairielearn/preact-cjs": "workspace:^",
     "@prairielearn/utils": "workspace:^",
+    "@types/react": "^19.2.8",
+    "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
-    "preact": "^10.28.1",
-    "preact-render-to-string": "^6.6.5",
+    "react": "^19.2.3",
+    "react-dom": "^19.2.3",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.6"
   },

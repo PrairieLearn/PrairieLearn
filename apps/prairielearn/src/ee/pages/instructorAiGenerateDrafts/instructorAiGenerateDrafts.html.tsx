@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { compiledScriptTag, compiledStylesheetTag } from '@prairielearn/compiled-assets';
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact/server';
+import { hydrateHtml } from '@prairielearn/react/server';
 import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../../components/Modal.js';

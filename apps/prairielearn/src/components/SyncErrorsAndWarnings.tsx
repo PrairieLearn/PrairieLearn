@@ -40,7 +40,7 @@ export function SyncErrorsAndWarnings({
           </p>
           <pre
             className={clsx('text-white', 'rounded', 'p-3', exampleCourse && 'mb-0')}
-            style="background-color: black;"
+            style={{ backgroundColor: 'black' }}
           >
             {syncErrorsAnsified && (
               /* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */
@@ -68,7 +68,7 @@ export function SyncErrorsAndWarnings({
           </p>
           <pre
             className={clsx('text-white', 'rounded', 'p-3', exampleCourse && 'mb-0')}
-            style="background-color: black;"
+            style={{ backgroundColor: 'black' }}
           >
             {syncWarningsAnsified && (
               /* eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml */

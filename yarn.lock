@@ -4384,8 +4384,7 @@ __metadata:
     "@prairielearn/path-utils": "workspace:^"
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/postgres-tools": "workspace:^"
-    "@prairielearn/preact": "workspace:^"
-    "@prairielearn/preact-cjs": "workspace:^"
+    "@prairielearn/react": "workspace:^"
     "@prairielearn/run": "workspace:^"
     "@prairielearn/sanitize": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
@@ -4472,6 +4471,8 @@ __metadata:
     "@types/pem": "npm:^1.14.4"
     "@types/pg": "npm:^8.16.0"
     "@types/qrcode-svg": "npm:^1.1.5"
+    "@types/react": "npm:^19.2.8"
+    "@types/react-dom": "npm:^19.2.3"
     "@types/serve-favicon": "npm:^2.5.7"
     "@types/serve-static": "npm:^2.2.0"
     "@types/streamifier": "npm:^0.1.2"
@@ -4587,8 +4588,6 @@ __metadata:
     pem: "npm:^1.14.8"
     pg: "npm:^8.16.3"
     popper.js: "npm:^1.16.1"
-    preact: "npm:^10.28.1"
-    preact-render-to-string: "npm:^6.6.5"
     prettier: "npm:3.7.4"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.1"
@@ -4639,44 +4638,23 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat":
+"@prairielearn/react@workspace:^, @prairielearn/react@workspace:packages/react":
   version: 0.0.0-use.local
-  resolution: "@prairielearn/preact-cjs-compat@workspace:packages/preact-cjs-compat"
-  dependencies:
-    "@prairielearn/preact-cjs": "workspace:^"
-    "@prairielearn/tsconfig": "workspace:^"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
-    typescript: "npm:^5.9.3"
-  languageName: unknown
-  linkType: soft
-
-"@prairielearn/preact-cjs@workspace:^, @prairielearn/preact-cjs@workspace:packages/preact-cjs":
-  version: 0.0.0-use.local
-  resolution: "@prairielearn/preact-cjs@workspace:packages/preact-cjs"
-  dependencies:
-    "@prairielearn/tsconfig": "workspace:^"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
-    original-preact: "npm:preact@^10.28.1"
-    typescript: "npm:^5.9.3"
-  languageName: unknown
-  linkType: soft
-
-"@prairielearn/preact@workspace:^, @prairielearn/preact@workspace:packages/preact":
-  version: 0.0.0-use.local
-  resolution: "@prairielearn/preact@workspace:packages/preact"
+  resolution: "@prairielearn/react@workspace:packages/react"
   dependencies:
     "@prairielearn/browser-utils": "workspace:^"
     "@prairielearn/compiled-assets": "workspace:^"
     "@prairielearn/error": "workspace:^"
     "@prairielearn/html": "workspace:^"
-    "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@prairielearn/utils": "workspace:^"
     "@types/node": "npm:^22.19.5"
+    "@types/react": "npm:^19.2.8"
+    "@types/react-dom": "npm:^19.2.3"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     clsx: "npm:^2.1.1"
-    preact: "npm:^10.28.1"
-    preact-render-to-string: "npm:^6.6.5"
+    react: "npm:^19.2.3"
+    react-dom: "npm:^19.2.3"
     selector-observer: "npm:^2.1.6"
     superjson: "npm:^2.2.6"
     typescript: "npm:^5.9.3"
@@ -4784,16 +4762,19 @@ __metadata:
   resolution: "@prairielearn/ui@workspace:packages/ui"
   dependencies:
     "@prairielearn/browser-utils": "workspace:^"
-    "@prairielearn/preact-cjs": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@tanstack/react-table": "npm:^8.21.3"
     "@tanstack/react-virtual": "npm:^3.13.18"
     "@tanstack/table-core": "npm:^8.21.3"
     "@types/node": "npm:^22.19.5"
+    "@types/react": "npm:^19.2.8"
+    "@types/react-dom": "npm:^19.2.3"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     clsx: "npm:^2.1.1"
     nuqs: "npm:^2.8.6"
+    react: "npm:^19.2.3"
     react-bootstrap: "npm:3.0.0-beta.5"
+    react-dom: "npm:^19.2.3"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
     use-debounce: "npm:^10.1.0"
@@ -7330,12 +7311,30 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@types/react-dom@npm:^19.2.3":
+  version: 19.2.3
+  resolution: "@types/react-dom@npm:19.2.3"
+  peerDependencies:
+    "@types/react": ^19.2.0
+  checksum: 10c0/b486ebe0f4e2fb35e2e108df1d8fc0927ca5d6002d5771e8a739de11239fe62d0e207c50886185253c99eb9dedfeeb956ea7429e5ba17f6693c7acb4c02f8cd1
+  languageName: node
+  linkType: hard
+
 "@types/react-transition-group@npm:^4.4.12":
   version: 4.4.12
   resolution: "@types/react-transition-group@npm:4.4.12"
   peerDependencies:
     "@types/react": "*"
   checksum: 10c0/0441b8b47c69312c89ec0760ba477ba1a0808a10ceef8dc1c64b1013ed78517332c30f18681b0ec0b53542731f1ed015169fed1d127cc91222638ed955478ec7
+  languageName: node
+  linkType: hard
+
+"@types/react@npm:^19.2.8":
+  version: 19.2.8
+  resolution: "@types/react@npm:19.2.8"
+  dependencies:
+    csstype: "npm:^3.2.2"
+  checksum: 10c0/832834998c4ee971fca72ecf1eb95dc924ad3931a2112c687a4dae498aabd115c5fa4db09186853e34a646226b0223808c8f867df03d17601168f9cf119448de
   languageName: node
   linkType: hard
 
@@ -9641,10 +9640,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"csstype@npm:^3.0.2, csstype@npm:^3.1.3":
-  version: 3.1.3
-  resolution: "csstype@npm:3.1.3"
-  checksum: 10c0/80c089d6f7e0c5b2bd83cf0539ab41474198579584fa10d86d0cafe0642202343cbc119e076a0b1aece191989477081415d66c9fefbf3c957fc2fc4b7009f248
+"csstype@npm:^3.0.2, csstype@npm:^3.1.3, csstype@npm:^3.2.2":
+  version: 3.2.3
+  resolution: "csstype@npm:3.2.3"
+  checksum: 10c0/cd29c51e70fa822f1cecd8641a1445bed7063697469d35633b516e60fe8c1bde04b08f6c5b6022136bb669b64c63d4173af54864510fbb4ee23281801841a3ce
   languageName: node
   linkType: hard
 
@@ -12555,15 +12554,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"immutability-helper@npm:^2.7.1":
-  version: 2.9.1
-  resolution: "immutability-helper@npm:2.9.1"
-  dependencies:
-    invariant: "npm:^2.2.0"
-  checksum: 10c0/0e087f39f1e3dce387094471e55c6e6bf2ab109eaf07d8549b4ca4b01f60712331a5c45fc89344c9e273fa27742cd9b6443d9adee19edaefc1e546dba33087e1
-  languageName: node
-  linkType: hard
-
 "import-fresh@npm:^3.2.1":
   version: 3.3.0
   resolution: "import-fresh@npm:3.3.0"
@@ -12652,7 +12642,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"invariant@npm:^2.2.0, invariant@npm:^2.2.4":
+"invariant@npm:^2.2.4":
   version: 2.2.4
   resolution: "invariant@npm:2.2.4"
   dependencies:
@@ -15316,13 +15306,6 @@ __metadata:
   languageName: node
   linkType: hard
 
-"original-preact@npm:preact@^10.28.1":
-  version: 10.28.1
-  resolution: "preact@npm:10.28.1"
-  checksum: 10c0/864aa7550f0a4b9f4f944a1e59f46f788b987d24bf5a532afefdb41e437c15fe80e933b7e8561980b8abe16565e39a224ec4b743382792bee0e1854d12e5771c
-  languageName: node
-  linkType: hard
-
 "os-tmpdir@npm:^1.0.2":
   version: 1.0.2
   resolution: "os-tmpdir@npm:1.0.2"
@@ -15970,7 +15953,6 @@ __metadata:
     linkinator: "npm:^7.5.3"
     markdownlint-cli: "npm:^0.47.0"
     node-gyp: "npm:^12.1.0"
-    preact-compat: "npm:^3.19.0"
     prettier: "npm:3.7.4"
     prettier-plugin-pkg: "npm:^0.21.2"
     prettier-plugin-sh: "npm:^0.18.0"
@@ -15986,66 +15968,6 @@ __metadata:
     typescript-eslint: "npm:^8.53.0"
     vitest: "npm:^4.0.17"
   languageName: unknown
-  linkType: soft
-
-"preact-compat@npm:^3.19.0":
-  version: 3.19.0
-  resolution: "preact-compat@npm:3.19.0"
-  dependencies:
-    immutability-helper: "npm:^2.7.1"
-    preact-context: "npm:^1.1.3"
-    preact-render-to-string: "npm:^3.8.2"
-    preact-transition-group: "npm:^1.1.1"
-    prop-types: "npm:^15.6.2"
-    standalone-react-addons-pure-render-mixin: "npm:^0.1.1"
-  peerDependencies:
-    preact: <10
-  checksum: 10c0/fea8b9c08596e52cf782feeec3a9b805e7cee8499eb992b245cda722a6efa8f22cfe2d640db0349c9f13e3790b437df538bd06276cc4908d2540114620283e27
-  languageName: node
-  linkType: hard
-
-"preact-context@npm:^1.1.3":
-  version: 1.1.4
-  resolution: "preact-context@npm:1.1.4"
-  peerDependencies:
-    preact: ^8.2.7
-  checksum: 10c0/a3eb81da4a2a2751d4ba3e3c888a20f2978e0a57e3fa1ff438ec717e09ad742f10dd8a7cf3ba5145a0b680bd000097502f5493f41df0e1926962d003cab54007
-  languageName: node
-  linkType: hard
-
-"preact-render-to-string@npm:^3.8.2":
-  version: 3.8.2
-  resolution: "preact-render-to-string@npm:3.8.2"
-  dependencies:
-    pretty-format: "npm:^3.5.1"
-  peerDependencies:
-    preact: "*"
-  checksum: 10c0/e139fb6d0bbfa4131f5ab07ab8175fd1633fb4dc3d68a045499b38bf30428131e7a7ebdf86778f9a2981b6f315083eb2d698302e74351ac1a48cebc3baa0bb35
-  languageName: node
-  linkType: hard
-
-"preact-render-to-string@npm:^6.6.5":
-  version: 6.6.5
-  resolution: "preact-render-to-string@npm:6.6.5"
-  peerDependencies:
-    preact: ">=10 || >= 11.0.0-0"
-  checksum: 10c0/1cb0bd147a88899c3cf3f458d87173bf57d6b44aded92dd9bb1ea63e82915b1dc328ec12949b8e6868fbcc711d9993669b55172b7429d21c1740faad3578399b
-  languageName: node
-  linkType: hard
-
-"preact-transition-group@npm:^1.1.1":
-  version: 1.1.1
-  resolution: "preact-transition-group@npm:1.1.1"
-  peerDependencies:
-    preact: "*"
-  checksum: 10c0/dc40e114508cff3e7952d4681eb717d20514cd87349da7455b46ed897d71c4e1b209eeadc1f2788cf851d25c3e9d781456c177a16549ebfb4c76fae3222668c6
-  languageName: node
-  linkType: hard
-
-"preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "preact@link:./packages/preact-cjs::locator=prairielearn%40workspace%3A."
-  languageName: node
   linkType: soft
 
 "prelude-ls@npm:^1.2.1":
@@ -16123,13 +16045,6 @@ __metadata:
   version: 7.1.0
   resolution: "pretty-bytes@npm:7.1.0"
   checksum: 10c0/9458f17007bbf8b61d11ef82091bfe7f87bb2f3fd7e6aa917744eb6dc709346995f698ecbf6597ac353b0d44bb7982054f7a2325f3260c9909d09aaafbdab5ca
-  languageName: node
-  linkType: hard
-
-"pretty-format@npm:^3.5.1":
-  version: 3.8.0
-  resolution: "pretty-format@npm:3.8.0"
-  checksum: 10c0/69f12937bfb7b2a537a7463b9f875a16322401f1e44d7702d643faa0d21991126c24c093217ef6da403b54c15942a834174fa1c016b72e2cb9edaae6bb3729b6
   languageName: node
   linkType: hard
 
@@ -16624,11 +16539,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "react-dom@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
+"react-dom@npm:^19.2.3":
+  version: 19.2.3
+  resolution: "react-dom@npm:19.2.3"
+  dependencies:
+    scheduler: "npm:^0.27.0"
+  peerDependencies:
+    react: ^19.2.3
+  checksum: 10c0/dc43f7ede06f46f3acc16ee83107c925530de9b91d1d0b3824583814746ff4c498ea64fd65cd83aba363205268adff52e2827c582634ae7b15069deaeabc4892
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "react-hook-form@npm:^7.71.0":
   version: 7.71.0
@@ -16661,11 +16581,12 @@ __metadata:
   languageName: node
   linkType: hard
 
-"react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A.":
-  version: 0.0.0-use.local
-  resolution: "react@link:./packages/preact-cjs-compat::locator=prairielearn%40workspace%3A."
+"react@npm:^19.2.3":
+  version: 19.2.3
+  resolution: "react@npm:19.2.3"
+  checksum: 10c0/094220b3ba3a76c1b668f972ace1dd15509b157aead1b40391d1c8e657e720c201d9719537375eff08f5e0514748c0319063392a6f000e31303aafc4471f1436
   languageName: node
-  linkType: soft
+  linkType: hard
 
 "read-yaml-file@npm:^1.1.0":
   version: 1.1.0
@@ -17191,6 +17112,13 @@ __metadata:
   dependencies:
     xmlchars: "npm:^2.2.0"
   checksum: 10c0/3847b839f060ef3476eb8623d099aa502ad658f5c40fd60c105ebce86d244389b0d76fcae30f4d0c728d7705ceb2f7e9b34bb54717b6a7dbedaf5dad2d9a4b74
+  languageName: node
+  linkType: hard
+
+"scheduler@npm:^0.27.0":
+  version: 0.27.0
+  resolution: "scheduler@npm:0.27.0"
+  checksum: 10c0/4f03048cb05a3c8fddc45813052251eca00688f413a3cee236d984a161da28db28ba71bd11e7a3dd02f7af84ab28d39fb311431d3b3772fed557945beb00c452
   languageName: node
   linkType: hard
 
@@ -17728,13 +17656,6 @@ __metadata:
   version: 0.0.2
   resolution: "stackback@npm:0.0.2"
   checksum: 10c0/89a1416668f950236dd5ac9f9a6b2588e1b9b62b1b6ad8dff1bfc5d1a15dbf0aafc9b52d2226d00c28dffff212da464eaeebfc6b7578b9d180cef3e3782c5983
-  languageName: node
-  linkType: hard
-
-"standalone-react-addons-pure-render-mixin@npm:^0.1.1":
-  version: 0.1.1
-  resolution: "standalone-react-addons-pure-render-mixin@npm:0.1.1"
-  checksum: 10c0/1c6ca4c69c621e05adaa53e1f0424829ad37e1bb7eea4e32656c9c31e225b302613f9ca5d6c141f47caa38cba7d043e7b6ee30a07e51e8762598afcfa490d818
   languageName: node
   linkType: hard
 

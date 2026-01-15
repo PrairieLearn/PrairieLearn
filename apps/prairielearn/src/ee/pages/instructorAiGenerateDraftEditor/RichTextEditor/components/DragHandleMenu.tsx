@@ -1,7 +1,7 @@
 import DragHandle from '@tiptap/extension-drag-handle-react';
 import { NodeSelection } from '@tiptap/pm/state';
 import type { Editor } from '@tiptap/react';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 
 import { OverlayTrigger } from '@prairielearn/ui';
 
