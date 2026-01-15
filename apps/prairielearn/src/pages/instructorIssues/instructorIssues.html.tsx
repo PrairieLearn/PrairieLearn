@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
@@ -12,14 +13,13 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Issue,
   IssueSchema,
   QuestionSchema,
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const PAGE_SIZE = 100;
 
@@ -65,7 +65,7 @@ export function InstructorIssues({
   closedCount,
   chosenPage,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;

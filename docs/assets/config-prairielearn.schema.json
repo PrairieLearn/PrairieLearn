@@ -939,18 +939,6 @@
       "type": "string",
       "default": "development"
     },
-    "titleOverride": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterText": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterTextHref": {
-      "type": ["string", "null"],
-      "default": null
-    },
     "announcementHtml": {
       "type": ["string", "null"],
       "default": null
@@ -1144,13 +1132,6 @@
     "courseFilesApiUrl": {
       "type": ["string", "null"],
       "default": null
-    },
-    "pythonVenvSearchPaths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [".venv"]
     },
     "costPerMillionTokens": {
       "type": "object",

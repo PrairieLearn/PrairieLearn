@@ -33,7 +33,7 @@ export const specs: AdministratorQuerySpecs = {
 const sql = loadSqlEquiv(import.meta.url);
 
 const UserRowSchema = z.object({
-  user_id: UserSchema.shape.user_id,
+  id: UserSchema.shape.id,
   uid: UserSchema.shape.uid,
   name: UserSchema.shape.name,
   course_id: CourseSchema.shape.id,
@@ -42,10 +42,10 @@ const UserRowSchema = z.object({
   course_instance: CourseInstanceSchema.shape.short_name,
 });
 type UserRow = z.infer<typeof UserRowSchema>;
-const GroupRowSchema = UserRowSchema.extend({
+const TeamRowSchema = UserRowSchema.extend({
   group_name: z.string(),
 });
-type GroupRow = z.infer<typeof GroupRowSchema>;
+type TeamRow = z.infer<typeof TeamRowSchema>;
 
 export default async function ({
   assessment_id,
@@ -63,19 +63,19 @@ export default async function ({
     const assessment = await selectOptionalAssessmentById(assessment_id);
     if (!assessment) return { rows: [], columns };
 
-    const users = assessment.group_work
-      ? await queryRows(sql.select_groups, { assessment_id }, GroupRowSchema)
+    const users = assessment.team_work
+      ? await queryRows(sql.select_teams, { assessment_id }, TeamRowSchema)
       : await queryRows(sql.select_users, { assessment_id }, UserRowSchema);
-    if (assessment.group_work) columns.splice(0, 0, 'group_name');
+    if (assessment.team_work) columns.splice(0, 0, 'group_name');
 
-    const rows = await mapSeries(users, async (user: UserRow | GroupRow) => ({
+    const rows = await mapSeries(users, async (user: UserRow | TeamRow) => ({
       ...user,
       assessment_id: assessment.id,
       assessment: assessment.title,
       assessment_instance_id: await makeAssessmentInstance({
         assessment,
-        user_id: user.user_id,
-        authn_user_id: user.user_id,
+        user_id: user.id,
+        authn_user_id: user.id,
         mode,
         date: new Date(),
         time_limit_min: null,

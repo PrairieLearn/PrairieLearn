@@ -291,7 +291,7 @@ export default tseslint.config([
       '@eslint-react/no-forbidden-props': [
         'error',
         {
-          forbid: ['className', 'htmlFor', '/_/'],
+          forbid: ['class', 'htmlFor', '/_/'],
         },
       ],
 
@@ -428,18 +428,6 @@ export default tseslint.config([
           html: true,
         },
       ],
-      '@stylistic/jsx-sort-props': [
-        'error',
-        {
-          callbacksLast: true,
-          ignoreCase: true,
-          locale: 'auto',
-          multiline: 'ignore',
-          noSortAlphabetically: true,
-          reservedFirst: true,
-          shorthandLast: true,
-        },
-      ],
       '@stylistic/jsx-tag-spacing': [
         'error',
         {
@@ -488,6 +476,19 @@ export default tseslint.config([
       // https://github.com/TanStack/query/blob/6402d756b702ac560b69a5ce84d6e4e764b96451/packages/eslint-plugin-query/src/index.ts#L43
       ...pluginQuery.configs['flat/recommended'][0].rules,
       '@tanstack/query/no-rest-destructuring': 'error',
+
+      'perfectionist/sort-jsx-props': [
+        'error',
+        {
+          customGroups: [
+            { elementNamePattern: '^on[A-Z]', groupName: 'callback' },
+            { elementNamePattern: '^(key|ref)$', groupName: 'reserved' },
+          ],
+          groups: ['reserved', 'unknown', 'shorthand-prop', 'callback'],
+          ignoreCase: true,
+          type: 'unsorted',
+        },
+      ],
 
       // The _.omit function is still useful in some contexts.
       'you-dont-need-lodash-underscore/omit': 'off',

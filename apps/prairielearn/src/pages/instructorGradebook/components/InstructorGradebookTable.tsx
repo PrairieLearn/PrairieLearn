@@ -30,6 +30,7 @@ import {
   NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
+  type TanstackTableCsvCell,
   numericColumnFilterFn,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
@@ -259,14 +260,14 @@ function GradebookTable({
           <span>
             Role{' '}
             <button
-              class="btn btn-xs btn-ghost"
+              className="btn btn-xs btn-ghost"
               type="button"
               aria-label="Roles help"
               data-bs-toggle="modal"
               data-bs-target="#role-help"
               onClick={(e) => e.stopPropagation()}
             >
-              <i class="bi-question-circle-fill" aria-hidden="true" />
+              <i className="bi-question-circle-fill" aria-hidden="true" />
             </button>
           </span>
         ),
@@ -318,7 +319,7 @@ function GradebookTable({
                 header: () => (
                   <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
                     <span
-                      class={clsx('badge', `color-${assessment.color}`)}
+                      className={clsx('badge', `color-${assessment.color}`)}
                       title={assessment.label}
                     >
                       {assessment.label}
@@ -336,7 +337,7 @@ function GradebookTable({
                   }
 
                   return (
-                    <span class="text-nowrap">
+                    <span className="text-nowrap">
                       <a
                         href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
                       >
@@ -346,7 +347,7 @@ function GradebookTable({
                         assessmentInstanceId={assessmentData.assessment_instance_id}
                         courseInstanceId={courseInstanceId}
                         currentScore={score}
-                        otherUsers={assessmentData.uid_other_users_group}
+                        otherUsers={assessmentData.uid_other_users_team}
                         csrfToken={csrfToken}
                       />
                     </span>
@@ -467,21 +468,23 @@ function GradebookTable({
         title="Gradebook"
         singularLabel="user"
         pluralLabel="users"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         downloadButtonOptions={{
           filenameBase,
           mapRowToData: (row: GradebookRow) => {
-            const data: Record<string, string | number | null> = {
-              UID: row.uid,
-              Name: row.user_name,
-              UIN: row.uin,
-              Role: row.role,
-              Enrollment: row.enrollment?.status ?? null,
-            };
+            const data: TanstackTableCsvCell[] = [
+              { name: 'UID', value: row.uid },
+              { name: 'Name', value: row.user_name },
+              { name: 'UIN', value: row.uin },
+              { name: 'Role', value: row.role },
+              { name: 'Enrollment', value: row.enrollment?.status ?? null },
+            ];
             for (const assessment of courseAssessments) {
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              data[assessment.label] = row.scores[assessment.assessment_id]?.score_perc ?? null;
+              data.push({
+                name: assessment.label,
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                value: row.scores[assessment.assessment_id]?.score_perc ?? null,
+              });
             }
             return data;
           },

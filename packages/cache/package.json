@@ -4,18 +4,19 @@
   "type": "module",
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput"
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.8.2",
+    "ioredis": "^5.9.1",
     "lru-cache": "^11.2.4",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "typescript": "^5.9.3"
   }
 }

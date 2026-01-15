@@ -32,6 +32,7 @@
   },
   "typescript.preferences.autoImportSpecifierExcludeRegexes": ["^react$"],
   "typescript.tsdk": "node_modules/typescript/lib",
+  "typescript.experimental.useTsgo": true,
   "json.schemaDownload.enable": true,
   "json.schemas": [
     {
@@ -77,5 +78,8 @@
   "sqlfluff.executablePath": "${workspaceFolder}/.venv/bin/sqlfluff",
   "vitest.maximumConfigs": 100,
   // This conflicts with the Prettier formatter, so we disable it.
-  "yaml.format.enable": false
+  "yaml.format.enable": false,
+  "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
+  "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
+  "java.project.sourcePaths": ["graders/java"]
 }
