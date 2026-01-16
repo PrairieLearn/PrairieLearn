@@ -36,6 +36,7 @@ export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
+  'left',
   'removed',
   'rejected',
   'blocked',
@@ -559,7 +560,7 @@ export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
-  branch: z.string().nullable(),
+  branch: z.string(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,

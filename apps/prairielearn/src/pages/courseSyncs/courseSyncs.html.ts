@@ -113,7 +113,7 @@ export function CourseSyncs({
               </tr>
               <tr>
                 <th class="align-middle">Branch</th>
-                <td colspan="2">${course.branch ?? html`&mdash;`}</td>
+                <td colspan="2">${course.branch}</td>
               </tr>
             </tbody>
           </table>
