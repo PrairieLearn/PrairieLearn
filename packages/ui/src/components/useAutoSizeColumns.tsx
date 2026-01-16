@@ -1,9 +1,9 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
 import { type JSX, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import { type Root, createRoot } from 'react-dom/client';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
-import { flushSync } from 'react-dom';
 
 function HiddenMeasurementHeader<TData>({
   table,
@@ -99,7 +99,9 @@ export function useAutoSizeColumns<TData>(
         measurementRootRef.current = createRoot(container);
       }
 
-      // Render headers into hidden container
+      // Render headers into hidden container. We need to use `flushSync` to ensure
+      // that it's rendered synchronously before we measure.
+      // eslint-disable-next-line @eslint-react/dom/no-flush-sync
       flushSync(() => {
         measurementRootRef.current?.render(
           <HiddenMeasurementHeader
