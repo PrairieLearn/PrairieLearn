@@ -14,10 +14,7 @@
   "zones": [
     {
       "title": "Hard questions",
-      "questions": [
-        { "id": "addVectors", "points": [10, 5, 1] },
-        { "id": "positionTimeGraph", "points": [10] }
-      ]
+      "questions": [{ "id": "positionTimeGraph", "points": [10] }]
     }
   ]
 }
