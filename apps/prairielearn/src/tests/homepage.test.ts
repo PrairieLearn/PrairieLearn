@@ -6,7 +6,7 @@ import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import { type Enrollment, EnrollmentSchema, type EnumEnrollmentStatus } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -34,7 +34,7 @@ async function createEnrollmentWithStatus({
 }: {
   userId: string | null;
   courseInstanceId: string;
-  status: 'invited' | 'joined' | 'blocked' | 'removed' | 'rejected';
+  status: EnumEnrollmentStatus;
   pendingUid?: string | null;
 }): Promise<Enrollment> {
   return await queryRow(

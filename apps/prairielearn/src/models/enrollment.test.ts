@@ -3,7 +3,12 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import {
+  type CourseInstance,
+  type Enrollment,
+  EnrollmentSchema,
+  type EnumEnrollmentStatus,
+} from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
@@ -26,7 +31,7 @@ async function createEnrollmentWithStatus({
 }: {
   userId: string | null;
   courseInstance: CourseInstance;
-  status: 'invited' | 'joined' | 'blocked' | 'removed' | 'rejected';
+  status: EnumEnrollmentStatus;
   firstJoinedAt?: Date | null;
   pendingUid?: string | null;
 }): Promise<Enrollment> {
