@@ -113,9 +113,7 @@ export const TeamsJsonSchema = z
     rolePermissions: TeamRolePermissionsJsonSchema.optional().default({}),
   })
   .strict()
-  .describe(
-    'Configuration for team-based assessments. Cannot be used with legacy group properties.',
-  );
+  .describe('Configuration for team-based assessments.');
 
 export type TeamsJson = z.infer<typeof TeamsJsonSchema>;
 

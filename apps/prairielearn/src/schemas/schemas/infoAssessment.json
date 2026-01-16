@@ -169,7 +169,7 @@
       "deprecated": true
     },
     "teams": {
-      "description": "Configuration for team-based assessments. Cannot be used with legacy group properties.",
+      "description": "Configuration for team-based assessments.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
