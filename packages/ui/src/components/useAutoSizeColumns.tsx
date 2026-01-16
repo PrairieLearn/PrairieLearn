@@ -3,6 +3,7 @@ import { type JSX, type RefObject, useEffect, useMemo, useRef, useState } from '
 import { type Root, createRoot } from 'react-dom/client';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
+import { flushSync } from 'react-dom';
 
 function HiddenMeasurementHeader<TData>({
   table,
@@ -99,13 +100,15 @@ export function useAutoSizeColumns<TData>(
       }
 
       // Render headers into hidden container
-      measurementRootRef.current?.render(
-        <HiddenMeasurementHeader
-          table={table}
-          columnsToMeasure={columnsToMeasure}
-          filters={filters ?? {}}
-        />,
-      );
+      flushSync(() => {
+        measurementRootRef.current?.render(
+          <HiddenMeasurementHeader
+            table={table}
+            columnsToMeasure={columnsToMeasure}
+            filters={filters ?? {}}
+          />,
+        );
+      });
 
       // Force layout calculation
       void container.offsetWidth;
