@@ -175,8 +175,9 @@ router.post(
         break;
       }
       case 'invite_student': {
-        // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
-        if (!['rejected', 'left', 'removed'].includes(enrollment.status)) {
+        // We intentionally don't allow instructors to re-invite removed enrollments.
+        // They can only transition them directly back to `joined`.
+        if (!['rejected', 'left'].includes(enrollment.status)) {
           throw new HttpStatusError(400, 'Enrollment is not rejected or left');
         }
 
