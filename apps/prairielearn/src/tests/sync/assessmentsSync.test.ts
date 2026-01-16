@@ -4039,4 +4039,84 @@ describe('Assessment syncing', () => {
     assert.isOk(recorderRole);
     assert.equal(recorderRole.can_assign_roles, false);
   });
+
+  it('cascades teams.rolePermissions to zones and questions when not overridden', async () => {
+    const courseData = util.getCourseData();
+    const teamAssessment = makeAssessment(courseData, 'Homework');
+    teamAssessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 4,
+      roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager', 'Recorder'], // Assessment-level default
+        canSubmit: ['Recorder'], // Assessment-level default
+      },
+    };
+    teamAssessment.zones?.push({
+      title: 'test zone',
+      // No canView/canSubmit specified - should inherit from assessment
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          // No canView/canSubmit specified - should inherit from zone (which inherits from assessment)
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamCascadeAssessment'] =
+      teamAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    // Get synced data
+    const syncedData = await getSyncedAssessmentData('teamCascadeAssessment');
+    const assessmentQuestion = syncedData.assessment_questions[0];
+    assert.isDefined(assessmentQuestion);
+
+    // Check team roles were created
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    const manager = syncedRoles.find((role) => role.role_name === 'Manager');
+    const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.isDefined(manager);
+    assert.isDefined(recorder);
+    assert.isDefined(contributor);
+
+    // Check permissions cascaded correctly
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionSchema,
+    );
+
+    const managerPermission = getPermission(syncedPermissions, manager, assessmentQuestion);
+    const recorderPermission = getPermission(syncedPermissions, recorder, assessmentQuestion);
+    const contributorPermission = getPermission(syncedPermissions, contributor, assessmentQuestion);
+
+    // Manager should have can_view=true (from rolePermissions.canView)
+    // but can_submit=false (not in rolePermissions.canSubmit)
+    assert.isDefined(managerPermission);
+    assert.isTrue(
+      managerPermission.can_view,
+      'Manager should inherit can_view from teams.rolePermissions',
+    );
+    assert.isFalse(managerPermission.can_submit, 'Manager should not have can_submit');
+
+    // Recorder should have both can_view=true and can_submit=true
+    assert.isDefined(recorderPermission);
+    assert.isTrue(
+      recorderPermission.can_view,
+      'Recorder should inherit can_view from teams.rolePermissions',
+    );
+    assert.isTrue(
+      recorderPermission.can_submit,
+      'Recorder should inherit can_submit from teams.rolePermissions',
+    );
+
+    // Contributor should have neither (not in canView or canSubmit)
+    assert.isDefined(contributorPermission);
+    assert.isFalse(contributorPermission.can_view, 'Contributor should not have can_view');
+    assert.isFalse(contributorPermission.can_submit, 'Contributor should not have can_submit');
+  });
 });
