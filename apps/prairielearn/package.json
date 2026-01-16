@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "build": "tsgo --build --incremental && tscp -b && compiled-assets build ./assets ./public/build",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
@@ -283,7 +286,7 @@
     "@types/minimist": "^1.2.5",
     "@types/multer": "^2.0.0",
     "@types/mustache": "^4.2.6",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@types/node-fetch": "^2.6.13",
     "@types/node-jose": "^1.1.13",
     "@types/oauth-signature": "^1.5.2",

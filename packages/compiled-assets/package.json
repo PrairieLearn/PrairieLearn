@@ -7,6 +7,9 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/compiled-assets"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "bin": "dist/cli.js",
   "main": "dist/index.js",
   "scripts": {
@@ -26,7 +29,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "express": "^4.22.1",

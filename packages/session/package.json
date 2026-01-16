@@ -7,6 +7,9 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/session"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsgo",
@@ -26,7 +29,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@types/node-fetch": "^2.6.13",
     "@types/on-headers": "^1.0.4",
     "@types/set-cookie-parser": "^2.4.10",
