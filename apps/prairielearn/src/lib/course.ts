@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -16,6 +17,7 @@ import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 import * as chunks from './chunks.js';
 import { config } from './config.js';
 import { type Course, type User, UserSchema } from './db-types.js';
+import { REPOSITORY_ROOT_PATH } from './paths.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -81,6 +83,16 @@ export async function pullAndUpdateCourse({
     }
     if (!branch || !repository) {
       job.fail('Git repository or branch are not set for this course. Exiting...');
+      return;
+    }
+
+    // Safety check: refuse to perform git operations if the course is a
+    // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
+    // and `git reset` commands could delete or modify files with pending changes.
+    if (contains(REPOSITORY_ROOT_PATH, path)) {
+      job.fail(
+        'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
+      );
       return;
     }
 

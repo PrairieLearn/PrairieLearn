@@ -1,8 +1,6 @@
 """
-Tests for refactored pl-checkbox element.
-
-These tests verify that the refactoring (internal enums, extracted functions)
-maintains the exact same behavior as the original code.
+These tests verify that the refactoring from #13324
+has backwards compatibility with the original element.
 """
 
 import importlib
@@ -13,6 +11,9 @@ import lxml.html
 import pytest
 
 pl_checkbox = importlib.import_module("pl-checkbox")
+
+DisplayType = pl_checkbox.DisplayType
+OrderType = pl_checkbox.OrderType
 
 
 def create_test_data(
@@ -305,7 +306,17 @@ def test_partial_credit_type_conversion() -> None:
 
     assert (
         pl_checkbox.get_partial_credit_mode(build_element(False, "PC"))
-        == pl_checkbox.PartialCreditType.ALL_OR_NOTHING
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element(False, None))
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element(True, None))
+        == pl_checkbox.PartialCreditType.NET_CORRECT
     )
 
     assert (
@@ -321,8 +332,63 @@ def test_partial_credit_type_conversion() -> None:
         == pl_checkbox.PartialCreditType.EACH_ANSWER
     )
 
-    with pytest.raises(ValueError, match="Unknown partial_credit_method"):
+    # Invalid method with old-style partial-credit="true" - the ValueError from invalid method
+    # is caught and falls through to new-style parsing, which then errors on partial-credit-method being set
+    with pytest.raises(ValueError, match=r"You cannot set partial-credit-method"):
         pl_checkbox.get_partial_credit_mode(build_element(True, "INVALID"))
+
+
+def test_partial_credit_default() -> None:
+    """Test that default partial credit mode is OFF when no attributes specified."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-checkbox answers-name="test"></pl-checkbox>'
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(element)
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+
+def test_partial_credit_method_without_partial_credit() -> None:
+    """Test that partial-credit-method is ignored when partial-credit is not set."""
+    element = lxml.html.fragment_fromstring(
+        '<pl-checkbox answers-name="test" partial-credit-method="COV"></pl-checkbox>'
+    )
+    # partial-credit-method without partial-credit is silently ignored, returns default
+    assert (
+        pl_checkbox.get_partial_credit_mode(element)
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+
+def test_partial_credit_new() -> None:
+    """Test that internal enum conversion works correctly."""
+
+    def build_element(partial_credit_type: str) -> lxml.html.HtmlElement:
+        attrs = 'answers-name="test"'
+        attrs += f' partial-credit="{partial_credit_type}"'
+        return lxml.html.fragment_fromstring(f"<pl-checkbox {attrs}></pl-checkbox>")
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("off"))
+        == pl_checkbox.PartialCreditType.OFF
+    )
+
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("net-correct"))
+        == pl_checkbox.PartialCreditType.NET_CORRECT
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("coverage"))
+        == pl_checkbox.PartialCreditType.COVERAGE
+    )
+    assert (
+        pl_checkbox.get_partial_credit_mode(build_element("each-answer"))
+        == pl_checkbox.PartialCreditType.EACH_ANSWER
+    )
+
+    with pytest.raises(ValueError, match=r"Invalid partial-credit value.*"):
+        pl_checkbox.get_partial_credit_mode(build_element("other"))
 
 
 def test_order_type_conversion() -> None:
@@ -413,3 +479,229 @@ def test_generate_number_correct_text(case: NumberCorrectTestCase) -> None:
         show_number_correct=case.show_number_correct,
     )
     assert result == case.expected
+
+
+# Backward Compatibility Tests for Attribute Functions
+
+
+class DisplayTypeTestCase(NamedTuple):
+    html_attrs: str
+    expected_display_type: DisplayType
+    should_raise_error: bool
+    id: str
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        # Test new display attribute
+        DisplayTypeTestCase(
+            html_attrs='display="block"',
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="new_display_block",
+        ),
+        DisplayTypeTestCase(
+            html_attrs='display="inline"',
+            expected_display_type=DisplayType.INLINE,
+            should_raise_error=False,
+            id="new_display_inline",
+        ),
+        # Test deprecated inline attribute (backward compatibility)
+        DisplayTypeTestCase(
+            html_attrs='inline="true"',
+            expected_display_type=DisplayType.INLINE,
+            should_raise_error=False,
+            id="deprecated_inline_true",
+        ),
+        DisplayTypeTestCase(
+            html_attrs='inline="false"',
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="deprecated_inline_false",
+        ),
+        DisplayTypeTestCase(
+            html_attrs="",  # No attributes - should default to block
+            expected_display_type=DisplayType.BLOCK,
+            should_raise_error=False,
+            id="no_attributes_default",
+        ),
+        # Test error condition: both inline and display attributes set
+        DisplayTypeTestCase(
+            html_attrs='inline="true" display="block"',
+            expected_display_type=DisplayType.BLOCK,  # Not used due to error
+            should_raise_error=True,
+            id="both_inline_and_display_error",
+        ),
+    ],
+)
+def test_get_display_type_backward_compatibility(case: DisplayTypeTestCase) -> None:
+    """Test get_display_type function for backward compatibility with inline attribute."""
+    html_content = f"<pl-checkbox {case.html_attrs}></pl-checkbox>"
+    element = lxml.html.fragment_fromstring(html_content)
+
+    if case.should_raise_error:
+        with pytest.raises(
+            ValueError,
+            match='Setting display should be done with the "display" attribute',
+        ):
+            pl_checkbox.get_display_type(element)
+    else:
+        result = pl_checkbox.get_display_type(element)
+        assert result == case.expected_display_type
+
+
+class OrderTypeTestCase(NamedTuple):
+    html_attrs: str
+    expected_order_type: OrderType
+    should_raise_error: bool
+    id: str
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        # Test new order attribute
+        OrderTypeTestCase(
+            html_attrs='order="fixed"',
+            expected_order_type=OrderType.FIXED,
+            should_raise_error=False,
+            id="new_order_fixed",
+        ),
+        OrderTypeTestCase(
+            html_attrs='order="random"',
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="new_order_random",
+        ),
+        # Test deprecated fixed-order attribute (backward compatibility)
+        OrderTypeTestCase(
+            html_attrs='fixed-order="true"',
+            expected_order_type=OrderType.FIXED,
+            should_raise_error=False,
+            id="deprecated_fixed_order_true",
+        ),
+        OrderTypeTestCase(
+            html_attrs='fixed-order="false"',
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="deprecated_fixed_order_false",
+        ),
+        OrderTypeTestCase(
+            html_attrs="",  # No attributes - should default to random
+            expected_order_type=OrderType.RANDOM,
+            should_raise_error=False,
+            id="no_attributes_default",
+        ),
+        # Test error condition: both fixed-order and order attributes set
+        OrderTypeTestCase(
+            html_attrs='fixed-order="true" order="random"',
+            expected_order_type=OrderType.RANDOM,  # Not used due to error
+            should_raise_error=True,
+            id="both_fixed_order_and_order_error",
+        ),
+    ],
+)
+def test_get_order_type_backward_compatibility(case: OrderTypeTestCase) -> None:
+    """Test get_order_type function for backward compatibility with fixed-order attribute."""
+    html_content = f"<pl-checkbox {case.html_attrs}></pl-checkbox>"
+    element = lxml.html.fragment_fromstring(html_content)
+
+    if case.should_raise_error:
+        with pytest.raises(
+            ValueError,
+            match='Setting answer choice order should be done with the "order" attribute',
+        ):
+            pl_checkbox.get_order_type(element)
+    else:
+        result = pl_checkbox.get_order_type(element)
+        assert result == case.expected_order_type
+
+
+def test_grade_with_duplicate_submissions() -> None:
+    """Test grading behavior when submitted answers contain duplicates."""
+    # Test that duplicates in submitted answers are handled correctly via set()
+    data = create_test_data(
+        submitted=["a", "b", "b", "c"],  # Duplicate 'b'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.grade(element_html, data)
+
+    # With duplicates, set(['a', 'b', 'b', 'c']) == set(['a', 'b', 'c'])
+    # So it should be treated as selecting a, b, c (all correct)
+    assert data["partial_scores"]["test"]["score"] == 1.0
+
+
+def test_grade_with_duplicate_submissions_partial_credit() -> None:
+    """Test partial credit grading with duplicate submissions."""
+    # Test NET_CORRECT (PC) mode with duplicates
+    data = create_test_data(
+        submitted=["a", "a", "b"],  # Duplicate 'a', missing 'c'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="net-correct"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    # set(['a', 'a', 'b']) == set(['a', 'b'])
+    # t = 2 (correct answers selected: a, b)
+    # f = 0 (incorrect answers selected: none)
+    # n = 3 (total correct answers: a, b, c)
+    # score = max(0, (2 - 0) / 3) = 2/3 ≈ 0.6667
+    assert math.isclose(data["partial_scores"]["test"]["score"], 2 / 3, rel_tol=1e-9)
+
+
+def test_grade_with_duplicate_correct_answers() -> None:
+    """Test that grading correctly handles when correct_answers has duplicates.
+
+    This tests the edge case where the data structure itself might contain
+    duplicate keys in correct_answers, which would be unusual but should be
+    handled gracefully by the set() conversion.
+    """
+    # Manually create data with duplicate correct answer keys
+    data = {
+        "submitted_answers": {"test": ["a", "b"]},
+        "correct_answers": {
+            "test": [{"key": "a"}, {"key": "b"}, {"key": "b"}]
+        },  # Duplicate 'b'
+        "params": {"test": [{"key": "a"}, {"key": "b"}, {"key": "c"}]},
+        "partial_scores": {},
+    }
+
+    element_html = '<pl-checkbox answers-name="test"></pl-checkbox>'
+
+    pl_checkbox.grade(element_html, data)
+
+    # Even with duplicate 'b' in correct_answers, set() should handle it
+    # Submitted: {a, b}, Correct: {a, b} (after set conversion)
+    assert data["partial_scores"]["test"]["score"] == 1.0  # type: ignore[reportCallIssue, reportArgumentType]
+
+
+def test_grade_coverage_with_duplicates() -> None:
+    """Test COV grading mode with duplicate submissions."""
+    data = create_test_data(
+        submitted=["a", "b", "b", "d"],  # Duplicate 'b', one incorrect 'd'
+        correct=["a", "b", "c"],
+        all_params=["a", "b", "c", "d"],
+    )
+
+    element_html = (
+        '<pl-checkbox answers-name="test" partial-credit="coverage"></pl-checkbox>'
+    )
+
+    pl_checkbox.grade(element_html, data)
+
+    # set(['a', 'b', 'b', 'd']) == set(['a', 'b', 'd'])
+    # t = 2 (correct answers in submitted: a, b)
+    # c = 3 (total correct: a, b, c)
+    # n = 3 (total submitted after set: a, b, d)
+    # score = (2/3) * (2/3) = 4/9 ≈ 0.4444
+    assert math.isclose(data["partial_scores"]["test"]["score"], 4 / 9, rel_tol=1e-9)
