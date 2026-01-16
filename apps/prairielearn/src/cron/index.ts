@@ -114,6 +114,11 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
+    {
+      name: 'fetchBlogPosts',
+      module: await import('./fetchBlogPosts.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchBlogPostsSec,
+    },
   ];
 
   if (isEnterprise()) {

@@ -8,9 +8,13 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import { CourseInstancePublishingExtensionSchema } from '../../lib/db-types.js';
+import {
+  type CachedBlogPost,
+  CourseInstancePublishingExtensionSchema,
+} from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
+import { BlogPostAlert } from './components/BlogPostAlert.js';
 import { HomeCards } from './components/HomeCards.js';
 
 export const InstructorHomePageCourseSchema = z.object({
@@ -52,6 +56,7 @@ export function Home({
   urlPrefix,
   isDevMode,
   search,
+  unreadBlogPosts,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -61,6 +66,7 @@ export function Home({
   urlPrefix: string;
   isDevMode: boolean;
   search: string;
+  unreadBlogPosts: CachedBlogPost[];
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -83,6 +89,7 @@ export function Home({
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
+      <BlogPostAlert posts={unreadBlogPosts} csrfToken={csrfToken} />
       <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards

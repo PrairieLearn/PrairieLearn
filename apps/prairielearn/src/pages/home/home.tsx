@@ -18,6 +18,10 @@ import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
+  markBlogPostsAsReadForUser,
+  selectUnreadBlogPostsForUser,
+} from '../../models/blog-posts.js';
+import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
@@ -118,6 +122,12 @@ router.get(
       StaffInstitutionSchema,
     );
 
+    // Only show blog post alerts to instructors (users with instructor courses)
+    const unreadBlogPosts =
+      instructorCourses.length > 0
+        ? await selectUnreadBlogPostsForUser(res.locals.authn_user.id, 3)
+        : [];
+
     const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'student',
@@ -147,6 +157,7 @@ router.get(
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
             search={search}
+            unreadBlogPosts={unreadBlogPosts}
           />
         ),
       }),
@@ -157,6 +168,23 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
+    // Handle dismiss_blog_alert separately since it doesn't require course_instance_id
+    const ActionSchema = z.object({
+      __action: z.enum([
+        'accept_invitation',
+        'reject_invitation',
+        'unenroll',
+        'dismiss_blog_alert',
+      ]),
+    });
+    const { __action } = ActionSchema.parse(req.body);
+
+    if (__action === 'dismiss_blog_alert') {
+      await markBlogPostsAsReadForUser(res.locals.authn_user.id);
+      res.redirect(req.originalUrl);
+      return;
+    }
+
     const BodySchema = z.object({
       __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
       course_instance_id: z.string().min(1),
