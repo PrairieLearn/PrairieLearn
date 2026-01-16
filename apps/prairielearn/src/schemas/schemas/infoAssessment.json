@@ -102,63 +102,71 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support group work.",
+      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using teams instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a group.",
-      "type": "number"
+      "description": "Maximum number of students in a group. DEPRECATED -- prefer using teams instead.",
+      "type": "number",
+      "deprecated": true
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a group.",
-      "type": "number"
+      "description": "Minimum number of students in a group. DEPRECATED -- prefer using teams instead.",
+      "type": "number",
+      "deprecated": true
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a group.",
+      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using teams instead.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/GroupRoleJsonSchema"
       },
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canSubmit": {
-      "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.",
       "type": "array",
       "items": {
         "type": "string"
       },
-      "uniqueItems": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canView": {
-      "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.",
       "type": "array",
       "items": {
         "type": "string"
       },
-      "uniqueItems": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "studentGroupCreate": {
-      "description": "Whether students can create groups.",
+      "description": "Whether students can create groups. DEPRECATED -- prefer using teams instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using teams instead.",
       "type": "boolean",
-      "default": true
+      "default": true,
+      "deprecated": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join groups.",
+      "description": "Whether students can join groups. DEPRECATED -- prefer using teams instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave groups.",
+      "description": "Whether students can leave groups. DEPRECATED -- prefer using teams instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "teams": {
       "description": "Configuration for team-based assessments. Cannot be used with legacy group properties.",
@@ -243,21 +251,19 @@
               "default": []
             },
             "canView": {
-              "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+              "description": "Role names that can view questions.",
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "uniqueItems": true,
               "default": []
             },
             "canSubmit": {
-              "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+              "description": "Role names that can submit questions.",
               "type": "array",
               "items": {
                 "type": "string"
               },
-              "uniqueItems": true,
               "default": []
             }
           },
@@ -434,7 +440,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names that can submit questions in this zone. Only applicable for group assessments.",
+          "description": "A list of team role names that can submit questions in this zone. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -443,7 +449,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names that can view questions in this zone. Only applicable for group assessments.",
+          "description": "A list of team role names that can view questions in this zone. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -518,7 +524,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+          "description": "A list of team role names matching those in teams.roles that can submit the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -527,7 +533,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+          "description": "A list of team role names matching those in teams.roles that can view the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"

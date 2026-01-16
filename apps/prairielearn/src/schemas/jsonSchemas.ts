@@ -54,11 +54,11 @@ import {
 import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
- * Rewrite the group role annotation for canView and canSubmit fields.
+ * Rewrite the team role annotation for canView and canSubmit fields.
  * zod-to-json-schema doesn't support a concept of unique items in an array (only sets),
  * so we need to override the schema.
  */
-const rewriteGroupRoleAnnotation = (
+const rewriteTeamRoleAnnotation = (
   def: ZodTypeDef,
   refs: Refs,
 ): JsonSchema7Type | undefined | typeof ignoreOverride => {
@@ -66,9 +66,21 @@ const rewriteGroupRoleAnnotation = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    let annotation = `A list of group role names matching those in groupRoles that can ${action} the question. Only applicable for group assessments.`;
+    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
+    const inTeams = refs.currentPath.includes('teams');
+    if (inTeams) {
+      return ignoreOverride;
+    }
+
+    if (!inQuestion && !inZone) {
+      return ignoreOverride;
+    }
+
+    let annotation = `A list of team role names matching those in teams.roles that can ${action} the question. Only applicable for team assessments.`;
+
+    // Zone annotation
     if (inZone) {
-      annotation = `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`;
+      annotation = `A list of team role names that can ${action} questions in this zone. Only applicable for team assessments.`;
     }
     return {
       description: annotation,
@@ -90,7 +102,7 @@ const prairielearnZodToJsonSchema = (
 ) => {
   const jsonSchema = zodToJsonSchema(schema, {
     ...options,
-    override: rewriteGroupRoleAnnotation,
+    override: rewriteTeamRoleAnnotation,
     // Many people have done insane things in their JSON files that don't pass
     // strict validation. For now, we'll be lenient and avoid the use of `.strict()`
     // in our Zod schemas in places where that could cause problems. In the
