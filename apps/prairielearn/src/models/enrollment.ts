@@ -460,7 +460,8 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'blocked']);
+  // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'removed', 'blocked']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
