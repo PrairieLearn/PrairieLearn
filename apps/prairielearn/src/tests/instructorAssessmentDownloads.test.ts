@@ -408,33 +408,24 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
         assert.equal(studentRes.status, 200);
         ctx.$ = cheerio.load(await studentRes.text());
 
-        // For Calculation type questions, the variant data is in .question-data element
-        const questionDataElem = ctx.$('.question-data');
-        assert.isAtLeast(questionDataElem.length, 1, 'Should have question-data element');
-        const questionData = JSON.parse(
-          decodeURIComponent(Buffer.from(questionDataElem.text(), 'base64').toString()),
-        );
-        ctx.variant_id = questionData.variant.id;
+        // For v3/Freeform questions, get the variant ID from the hidden input
+        const variantId = ctx.$('input[name="__variant_id"]').val();
+        assert.isString(variantId);
 
         ctx.variant = await queryRow(
           'SELECT * FROM variants WHERE id = $1',
-          [ctx.variant_id],
+          [variantId],
           VariantSchema,
         );
 
-        // For Calculation questions, use postData format with JSON stringified content
+        // Submit the correct answer for the addNumbers question
         studentRes = await fetch(ctx.questionUrl, {
           method: 'POST',
           body: new URLSearchParams({
             __action: 'grade',
             __csrf_token: getCSRFToken(ctx.$),
-            postData: JSON.stringify({
-              variant: questionData.variant,
-              submittedAnswer: {
-                wx: ctx.variant.true_answer.wx,
-                wy: ctx.variant.true_answer.wy,
-              },
-            }),
+            __variant_id: variantId as string,
+            c: String(ctx.variant.true_answer.c),
           }),
         });
         assert.equal(studentRes.status, 200);
