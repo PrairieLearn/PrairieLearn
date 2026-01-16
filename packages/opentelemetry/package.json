@@ -1,11 +1,14 @@
 {
   "name": "@prairielearn/opentelemetry",
-  "version": "3.1.2",
+  "version": "4.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/opentelemetry"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -40,7 +43,7 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^2.4.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tsx": "^4.21.0",

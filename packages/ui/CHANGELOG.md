@@ -1,5 +1,16 @@
 # @prairielearn/ui
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- f1da6ea: Make `useAutoSizeColumns` compatible with React 18+
+  - @prairielearn/browser-utils@2.6.2
+
 ## 2.0.0
 
 ### Major Changes

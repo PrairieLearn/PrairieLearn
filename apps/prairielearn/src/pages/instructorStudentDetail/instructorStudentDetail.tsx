@@ -177,7 +177,7 @@ router.post(
       case 'invite_student': {
         // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
         if (!['rejected', 'left', 'removed'].includes(enrollment.status)) {
-          throw new HttpStatusError(400, 'Enrollment is not rejected or left');
+          throw new HttpStatusError(400, 'Enrollment is not rejected, left, or removed');
         }
 
         const pendingUid = await run(async () => {

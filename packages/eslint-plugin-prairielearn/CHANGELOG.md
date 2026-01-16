@@ -1,5 +1,11 @@
 # @prairielearn/eslint-plugin
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
 ## 2.3.2
 
 ### Patch Changes
