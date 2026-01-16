@@ -51,7 +51,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                                                                                                                                      |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                                                                                                                                |
 | `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                                                                                                                                             |
-| `final`               | boolean            | —       | Required on exactly one `pl-answer` tag when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
+| `final`               | boolean            | —       | Required on any number of final `pl-answer` tags when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
 
 !!! note
 
@@ -76,11 +76,11 @@ Different ordering of the blocks in the source area defined via the attribute `s
 
 ## Optional Blocks
 
-This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
+This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
 
 !!! note
 
-    When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
+    When using optional blocks, each correct ordering must end with one block labeled final. The `pl-answer` tags that declares these blocks must have the attribute `final` set to `true`.
     A question cannot include block groups with optional blocks.
 
 ## Optional Blocks Example

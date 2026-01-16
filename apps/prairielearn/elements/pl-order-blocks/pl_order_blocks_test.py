@@ -333,37 +333,3 @@ def test_final_tag_failure(
     order_blocks_options = OrderBlocksOptions(html_element)
     with pytest.raises(ValueError, match=error):
         order_blocks_options.validate()
-
-
-@pytest.mark.parametrize(
-    ("options", "answer_options_list", "error"),
-    [
-        (
-            {
-                "answers-name": "test",
-                "grading-method": "dag",
-                "weight": 2,
-                "indentation": False,
-                "partial-credit": "lcs",
-            },
-            [
-                {"tag": "1", "depends": r""},
-                {"tag": "2", "depends": r"1", "final": True},
-                {"tag": "3", "depends": r"1|2", "final": True},
-            ],
-            "Multiple 'final' attributes are not allowed.",
-        ),
-    ],
-)
-def test_multiple_final_tag_failure(
-    options: dict, answer_options_list: list[dict], error: str
-) -> None:
-    """Tests two final tags in pl-answer-tag while using multigraph features"""
-    tags_html = "\n".join(
-        build_tag("pl-answer", answer_options) for answer_options in answer_options_list
-    )
-    question = build_tag("pl-order-blocks", options, tags_html)
-    html_element = lxml.html.fromstring(question)
-    order_blocks_options = OrderBlocksOptions(html_element)
-    with pytest.raises(ValueError, match=error):
-        order_blocks_options.validate()

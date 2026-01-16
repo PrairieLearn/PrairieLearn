@@ -91,15 +91,14 @@ def extract_dag(
 
 def extract_multigraph(
     answers_list: list[OrderBlocksAnswerData],
-) -> tuple[Multigraph, str]:
+) -> tuple[Multigraph, list[str]]:
     depends_graph = {}
-    final = ""
+    final_tags = []
     for ans in answers_list:
         depends_graph.update({ans["tag"]: ans["depends"]})
         if ans["final"]:
-            final = ans["tag"]
-
-    return depends_graph, final
+            final_tags.append(ans["tag"])
+    return depends_graph, final_tags
 
 
 def solve_problem(
@@ -121,8 +120,8 @@ def solve_problem(
             solution = solve_dag(depends_graph, group_belonging)
             return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
         if has_optional_blocks:
-            depends_graph, final = extract_multigraph(answers_list)
-            solution = solve_multigraph(depends_graph, final)[0]
+            depends_graph, final_tags = extract_multigraph(answers_list)
+            solution = solve_multigraph(depends_graph, final_tags)[0]
             answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
             return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:

@@ -352,8 +352,8 @@ class OrderBlocksOptions:
         if self.has_optional_blocks:
             has_final = False
             for options in self.answer_options:
-                if options.final and has_final:
-                    raise ValueError("Multiple 'final' attributes are not allowed.")
+                # if options.final and has_final:
+                #     raise ValueError("Multiple 'final' attributes are not allowed.")
                 if options.final and not has_final:
                     has_final = True
 
