@@ -1,5 +1,16 @@
 # @prairielearn/compiled-assets
 
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/html@5.0.0
+
 ## 3.3.3
 
 ### Patch Changes

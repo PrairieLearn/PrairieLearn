@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "4.0.9",
+  "version": "5.0.0",
   "type": "module",
   "repository": {
     "type": "git",

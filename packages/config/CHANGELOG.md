@@ -1,5 +1,16 @@
 # @prairielearn/config
 
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/aws-imds@3.0.0
+
 ## 3.2.1
 
 ### Patch Changes

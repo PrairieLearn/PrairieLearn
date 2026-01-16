@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/express-list-endpoints",
-  "version": "1.0.19",
+  "version": "2.0.0",
   "type": "module",
   "repository": {
     "type": "git",

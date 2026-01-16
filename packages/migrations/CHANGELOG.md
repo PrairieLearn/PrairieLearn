@@ -1,5 +1,19 @@
 # @prairielearn/migrations
 
+## 5.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/named-locks@4.0.0
+  - @prairielearn/postgres@5.0.0
+  - @prairielearn/logger@3.0.0
+  - @prairielearn/error@3.0.0
+
 ## 4.0.5
 
 ### Patch Changes

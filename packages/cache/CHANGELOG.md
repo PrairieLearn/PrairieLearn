@@ -1,5 +1,13 @@
 # @prairielearn/cache
 
+## 2.1.6
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/logger@3.0.0
+  - @prairielearn/sentry@5.0.0
+
 ## 2.1.5
 
 ### Patch Changes
