@@ -136,7 +136,14 @@ export function InstructorQuestionSettings({
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
-                pattern="${SHORT_NAME_PATTERN}|${RegExp.escape(resLocals.question.qid)}"
+                pattern="${SHORT_NAME_PATTERN}|${
+                  // NOTE: this will not be compatible with browsers, as it was only
+                  // just added to modern browsers as of January 2025. If/when this
+                  // page is converted to Preact, we should use a custom validation
+                  // function instead of the `pattern` attribute to enforce this.
+                  // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
+                  RegExp.escape(resLocals.question.qid)
+                }"
                 data-other-values="${qids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />
