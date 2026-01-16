@@ -7,7 +7,7 @@
   ],
   "packageManager": "yarn@4.8.1",
   "engines": {
-    "node": ">=24.13.0"
+    "node": ">=24.0.0"
   },
   "scripts": {
     "dev": "yarn workspace @prairielearn/prairielearn dev",
