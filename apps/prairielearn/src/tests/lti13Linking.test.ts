@@ -226,7 +226,7 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(linkRes.status, 302);
     const location = linkRes.headers.get('location');
     assert.ok(location);
-    assert.match(location, /\/done$/, 'Expected redirect location to end with /done');
+    assert.match(location, /\?done$/, 'Expected redirect location to end with ?done query param');
 
     const linkRecord = await queryOptionalRow(
       `SELECT * FROM lti13_course_instances
