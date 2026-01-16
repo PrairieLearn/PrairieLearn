@@ -6,7 +6,7 @@ import { execute, loadSqlEquiv, queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
-import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import { type Enrollment, EnrollmentSchema, type EnumEnrollmentStatus } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -34,7 +34,7 @@ async function createEnrollmentWithStatus({
 }: {
   userId: string | null;
   courseInstanceId: string;
-  status: 'invited' | 'joined' | 'blocked' | 'removed' | 'rejected';
+  status: EnumEnrollmentStatus;
   pendingUid?: string | null;
 }): Promise<Enrollment> {
   return await queryRow(
@@ -444,7 +444,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(firstResponse.status, 200);
       assert.equal(firstResponse.url, homeUrl);
 
-      // Verify enrollment is now removed
+      // Verify enrollment is now left
       const courseInstance = await selectCourseInstanceById('1');
       const enrollment = await selectOptionalEnrollmentByUserId({
         userId: user.id,
@@ -453,7 +453,7 @@ describe('Homepage enrollment actions', () => {
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(enrollment);
-      assert.equal(enrollment.status, 'removed');
+      assert.equal(enrollment.status, 'left');
 
       // Second unenroll (should be a no-op)
       const csrfToken2 = await getCsrfToken(homeUrl);
@@ -468,7 +468,7 @@ describe('Homepage enrollment actions', () => {
       assert.equal(secondResponse.status, 200);
       assert.equal(secondResponse.url, homeUrl);
 
-      // Verify enrollment is still removed
+      // Verify enrollment is still left
       const finalEnrollment = await selectOptionalEnrollmentByUserId({
         userId: user.id,
         courseInstance,
@@ -476,7 +476,7 @@ describe('Homepage enrollment actions', () => {
         authzData: dangerousFullSystemAuthz(),
       });
       assert.isNotNull(finalEnrollment);
-      assert.equal(finalEnrollment.status, 'removed');
+      assert.equal(finalEnrollment.status, 'left');
     });
 
     await execute(sql.delete_enrollment_by_course_instance_and_user, {

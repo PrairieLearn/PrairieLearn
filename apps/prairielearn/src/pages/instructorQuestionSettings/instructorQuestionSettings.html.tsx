@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { type HtmlValue, escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';

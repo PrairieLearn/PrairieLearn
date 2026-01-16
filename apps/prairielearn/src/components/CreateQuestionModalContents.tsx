@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'react';
 
 import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
 
@@ -9,7 +9,7 @@ interface SelectableCardProps {
   description: string;
   selected: boolean;
   onClick: () => void;
-  onKeyDown: (e: KeyboardEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
   cardRef: (el: HTMLElement | null) => void;
 }
 
@@ -22,7 +22,7 @@ function SelectableCard({
   onKeyDown,
   cardRef,
 }: SelectableCardProps) {
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onClick();
@@ -79,7 +79,7 @@ interface RadioCardGroupProps {
 function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
-  const handleKeyDown = (e: KeyboardEvent, currentIndex: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     let newIndex = currentIndex;
 
     switch (e.key) {
@@ -196,7 +196,7 @@ export function CreateQuestionModalContents({
   return (
     <>
       <div className="mb-3">
-        <label className="form-label" for="title">
+        <label className="form-label" htmlFor="title">
           Title
         </label>
         <input
@@ -213,7 +213,7 @@ export function CreateQuestionModalContents({
       </div>
 
       <div className="mb-3">
-        <label className="form-label" for="qid">
+        <label className="form-label" htmlFor="qid">
           Question identifier (QID)
         </label>
         <input
@@ -245,7 +245,7 @@ export function CreateQuestionModalContents({
 
       {isTemplateSelected && filteredTemplateQuestions.length > 0 && (
         <div className="mb-3">
-          <label className="form-label" for="template_qid">
+          <label className="form-label" htmlFor="template_qid">
             Template
           </label>
           <select

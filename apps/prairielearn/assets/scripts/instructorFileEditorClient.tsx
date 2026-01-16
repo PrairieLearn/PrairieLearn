@@ -4,7 +4,7 @@ import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';

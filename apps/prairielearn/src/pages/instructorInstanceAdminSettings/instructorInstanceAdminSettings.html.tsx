@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -115,7 +115,7 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="orig_hash" value={origHash} />
             <div className="mb-3">
-              <label className="form-label" for="ciid">
+              <label className="form-label" htmlFor="ciid">
                 CIID
               </label>
               <input
@@ -151,7 +151,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="long_name">
+              <label className="form-label" htmlFor="long_name">
                 Long Name
               </label>
               <input
@@ -169,7 +169,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="display_timezone">
+              <label className="form-label" htmlFor="display_timezone">
                 Timezone
               </label>
               <Form.Select
@@ -179,11 +179,7 @@ export function InstructorInstanceAdminSettings({
                 name="display_timezone"
               >
                 {availableTimezones.map((tz) => (
-                  <option
-                    key={tz.name}
-                    value={tz.name}
-                    selected={tz.name === defaultValues.display_timezone}
-                  >
+                  <option key={tz.name} value={tz.name}>
                     {formatTimezone(tz)}
                   </option>
                 ))}
@@ -201,7 +197,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="group_assessments_by">
+              <label className="form-label" htmlFor="group_assessments_by">
                 Group assessments by
               </label>
               <Form.Select
@@ -210,12 +206,8 @@ export function InstructorInstanceAdminSettings({
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >
-                <option value="Set" selected={defaultValues.group_assessments_by === 'Set'}>
-                  Set
-                </option>
-                <option value="Module" selected={defaultValues.group_assessments_by === 'Module'}>
-                  Module
-                </option>
+                <option value="Set">Set</option>
+                <option value="Module">Module</option>
               </Form.Select>
               <small className="form-text text-muted">
                 Determines how assessments will be grouped on the student assessments page.

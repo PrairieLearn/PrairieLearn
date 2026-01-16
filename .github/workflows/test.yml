@@ -139,7 +139,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -154,7 +154,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -220,7 +220,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid

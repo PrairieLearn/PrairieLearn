@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
-    "build": "tsc && tscp",
+    "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.958.0",
-    "@aws-sdk/client-s3": "^3.958.0",
-    "@aws-sdk/credential-providers": "^3.958.0",
-    "@aws-sdk/lib-storage": "^3.958.0",
+    "@aws-sdk/client-ecr": "^3.969.0",
+    "@aws-sdk/client-s3": "^3.969.0",
+    "@aws-sdk/credential-providers": "^3.969.0",
+    "@aws-sdk/lib-storage": "^3.969.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -35,7 +38,7 @@
     "dockerode": "^4.0.9",
     "express": "^4.22.1",
     "express-async-handler": "^1.2.0",
-    "ioredis": "^5.8.2",
+    "ioredis": "^5.9.1",
     "lodash": "^4.17.21",
     "minimist": "^1.2.8",
     "node-fetch": "3.3.2",
@@ -44,14 +47,15 @@
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.19.3",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@types/node": "^24.10.9",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
+    "@vitest/coverage-v8": "^4.0.17",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.11",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.17"
   },
   "nodemonConfig": {
     "ext": "js,jsx,ts,tsx,json,sql",

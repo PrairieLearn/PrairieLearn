@@ -1,4 +1,5 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
+import { useEffect, useRef } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
@@ -15,6 +16,32 @@ import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from 
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
 
+/**
+ * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
+ * since React doesn't support indeterminate as a native attribute.
+ */
+function SelectAllCheckbox({ table }: { table: Table<InstanceQuestionRow> }) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const isIndeterminate = table.getIsSomeRowsSelected();
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={table.getIsAllRowsSelected()}
+      // Prevent browser from autocompleting the checkbox value when you return to the page.
+      autoComplete="off"
+      onChange={table.getToggleAllRowsSelectedHandler()}
+    />
+  );
+}
+
 interface CreateColumnsParams {
   aiGradingMode: boolean;
   instanceQuestionGroups: InstanceQuestionGroup[];
@@ -27,7 +54,7 @@ interface CreateColumnsParams {
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
   displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
 
@@ -87,16 +114,7 @@ export function createColumns({
   return [
     columnHelper.display({
       id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          indeterminate={table.getIsSomeRowsSelected()}
-          // Prevent browser from autocompleting the checkbox value when you return to the page.
-          autocomplete="off"
-          onChange={table.getToggleAllRowsSelectedHandler()}
-        />
-      ),
+      header: ({ table }) => <SelectAllCheckbox table={table} />,
       cell: ({ row, table }) => {
         return <input type="checkbox" {...createCheckboxProps(row, table)} />;
       },

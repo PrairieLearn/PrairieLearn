@@ -105,8 +105,7 @@ export function CopyCourseInstanceModal({
     },
   });
 
-  const onFormSubmit = async (data: CopyFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: CopyFormValues) => {
     void copyMutation.mutate(data);
   };
 
@@ -134,7 +133,7 @@ export function CopyCourseInstanceModal({
             )}
 
             <div className="mb-3">
-              <label className="form-label" for="copy-long-name">
+              <label className="form-label" htmlFor="copy-long-name">
                 Long name
               </label>
               <input
@@ -162,7 +161,7 @@ export function CopyCourseInstanceModal({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" for="copy-short-name">
+              <label className="form-label" htmlFor="copy-short-name">
                 Short name
               </label>
               <input

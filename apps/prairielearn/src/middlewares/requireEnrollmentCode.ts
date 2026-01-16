@@ -63,12 +63,9 @@ export default asyncHandler(async (req, res, next) => {
     courseInstance,
   });
 
-  // If user is enrolled and joined/invited/rejected/removed, let them through.
-  // This means that an invited/rejected user can skip the process of entering an enrollment code.
-  if (
-    existingEnrollment &&
-    ['joined', 'invited', 'removed', 'rejected'].includes(existingEnrollment.status)
-  ) {
+  // If user is enrolled and joined/invited/rejected, let them through.
+  // Removed users need to re-enter the enrollment code.
+  if (existingEnrollment && ['joined', 'invited', 'rejected'].includes(existingEnrollment.status)) {
     next();
     return;
   }
