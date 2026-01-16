@@ -1,4 +1,4 @@
-import { useRef } from 'preact/compat';
+import React, { useRef } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -20,24 +20,32 @@ interface EnrollmentCodeFormData {
  * @param params.show - If the form is shown (only used for modal style)
  * @param params.onHide - The function to call when the form is hidden (only used for modal style)
  * @param params.courseInstanceId - The ID of the course instance the code is for (optional)
+ * @param params.leadingContent - Content to display above the form
+ * @param params.showInstructorHelp - Whether to show the instructor help text
  */
 export function EnrollmentCodeForm({
   style,
   show,
   onHide,
   courseInstanceId,
+  leadingContent,
+  showInstructorHelp = false,
 }:
   | {
       style: 'raw-form';
       show?: undefined;
       onHide?: undefined;
       courseInstanceId?: string;
+      leadingContent?: React.ReactNode;
+      showInstructorHelp?: boolean;
     }
   | {
       style: 'modal';
       show: boolean;
       onHide: () => void;
       courseInstanceId?: string;
+      leadingContent?: React.ReactNode;
+      showInstructorHelp?: boolean;
     }) {
   const {
     register,
@@ -114,10 +122,10 @@ export function EnrollmentCodeForm({
   ];
 
   // Handle paste event
-  const handlePaste = (e: ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
     const target = e.target as HTMLInputElement;
-    const pastedText = e.clipboardData?.getData('text') || '';
+    const pastedText = e.clipboardData.getData('text') || '';
     const formatted = formatInput(pastedText);
     const currentField = fields.find((f) => f.field === target.name);
     const cursorPosition = run(() => {
@@ -162,7 +170,10 @@ export function EnrollmentCodeForm({
   };
 
   // Handle key navigation
-  const handleKeyDown = (e: KeyboardEvent, field: keyof EnrollmentCodeFormData) => {
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: keyof EnrollmentCodeFormData,
+  ) => {
     const target = e.target as HTMLInputElement;
     const cursorPosition = target.selectionStart ?? 0;
     const valueLength = target.value.length;
@@ -270,77 +281,84 @@ export function EnrollmentCodeForm({
 
   const formContent = (
     <>
+      {leadingContent}
       {errors.root?.serverError && (
         <Alert variant="danger" dismissible onClose={() => clearErrors('root.serverError')}>
           {errors.root.serverError.message}
         </Alert>
       )}
-      <div className="mb-3">
-        <label for="enrollment-code" className="form-label">
-          Enter your enrollment code
-        </label>
-        <div className="d-flex gap-2 align-items-center">
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={3}
-            placeholder="ABC"
-            {...code1Props}
-            ref={(e) => {
-              input1Ref.current = e;
-              ref1(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code1')}
-            onPaste={handlePaste}
-          />
-          <span className="text-muted">-</span>
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={3}
-            placeholder="DEF"
-            {...code2Props}
-            ref={(e) => {
-              input2Ref.current = e;
-              ref2(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code2')}
-            onPaste={handlePaste}
-          />
-          <span className="text-muted">-</span>
-          <input
-            type="text"
-            className="form-control text-center"
-            style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
-            maxLength={4}
-            placeholder="GHIJ"
-            {...code3Props}
-            ref={(e) => {
-              input3Ref.current = e;
-              ref3(e);
-            }}
-            onKeyDown={(e) => handleKeyDown(e, 'code3')}
-            onPaste={handlePaste}
-          />
+      <div className="d-flex flex-column gap-3">
+        <div>
+          <div className="d-flex gap-2 align-items-center">
+            <input
+              type="text"
+              className="form-control text-center"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
+              maxLength={3}
+              placeholder="ABC"
+              {...code1Props}
+              ref={(e) => {
+                input1Ref.current = e;
+                ref1(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code1')}
+              onPaste={handlePaste}
+            />
+            <span className="text-muted">-</span>
+            <input
+              type="text"
+              className="form-control text-center"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
+              maxLength={3}
+              placeholder="DEF"
+              {...code2Props}
+              ref={(e) => {
+                input2Ref.current = e;
+                ref2(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code2')}
+              onPaste={handlePaste}
+            />
+            <span className="text-muted">-</span>
+            <input
+              type="text"
+              className="form-control text-center"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
+              maxLength={4}
+              placeholder="GHIJ"
+              {...code3Props}
+              ref={(e) => {
+                input3Ref.current = e;
+                ref3(e);
+              }}
+              onKeyDown={(e) => handleKeyDown(e, 'code3')}
+              onPaste={handlePaste}
+            />
+          </div>
+          {(errors.code1 || errors.code2 || errors.code3) && (
+            <div className="form-text text-danger">
+              {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
+            </div>
+          )}
         </div>
-        {(errors.code1 || errors.code2 || errors.code3) && (
-          <div className="form-text text-danger">
-            {errors.code1?.message ?? errors.code2?.message ?? errors.code3?.message}
+        <div className="small text-muted">
+          Don't have an enrollment code? Your instructor may have given you a link to your course or
+          asked you to access it from another learning management system.
+        </div>
+        {showInstructorHelp && (
+          <div className="small text-muted">
+            <b>Instructors: </b>
+            You can find both the enrollment code and a self-enrollment link on the settings page of
+            your course instance.
           </div>
         )}
-        <div className="form-text">
-          If you don't have a code, ask your instructor for the enrollment code or link to the
-          course.
-        </div>
       </div>
     </>
   );
 
   const submitButton = (
     <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
-      {isSubmitting ? 'Looking up code...' : 'Join Course'}
+      {isSubmitting ? 'Looking up code...' : 'Join course'}
     </button>
   );
 
@@ -348,7 +366,7 @@ export function EnrollmentCodeForm({
     return (
       <form onSubmit={handleSubmit(onSubmit)}>
         {formContent}
-        <div className="d-grid">{submitButton}</div>
+        <div className="d-grid mt-3">{submitButton}</div>
       </form>
     );
   }

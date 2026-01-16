@@ -1,6 +1,7 @@
 {
   "recommendations": [
     "Tobermory.es6-string-html",
+    "TypeScriptTeam.native-preview",
     "charliermarsh.ruff",
     "editorconfig.editorconfig",
     "esbenp.prettier-vscode",

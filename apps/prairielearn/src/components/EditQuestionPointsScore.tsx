@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useEffect, useRef, useState } from 'preact/compat';
+import { useEffect, useRef, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
 
 import { escapeHtml, html } from '@prairielearn/html';
@@ -146,7 +146,7 @@ function EditQuestionPointsScoreFormHtml({
   `;
 }
 
-// Preact version with mutation support
+// React version with mutation support
 interface EditQuestionPointsMutationParams {
   instance_question_id: string;
   modified_at: string;
@@ -249,7 +249,7 @@ function EditQuestionPointsScoreForm({
     );
   }
 
-  const handleSubmit = (e: Event) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -344,7 +344,7 @@ export function EditQuestionPointsScoreButton({
   urlPrefix: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef?: React.RefObject<HTMLDivElement> | null;
+  scrollRef?: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const mutation = useEditQuestionPointsMutation({ csrfToken });
   const [show, setShow] = useState(false);

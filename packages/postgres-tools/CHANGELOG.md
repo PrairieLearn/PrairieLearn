@@ -1,5 +1,24 @@
 # @prairielearn/postgres-tools
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/postgres@5.0.0
+
+## 2.0.29
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/postgres@4.5.2
+
 ## 2.0.28
 
 ### Patch Changes

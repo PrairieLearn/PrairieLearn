@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useMutation } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import z from 'zod';
@@ -145,8 +145,7 @@ export function ExtensionModifyModal({
     onSuccess,
   });
 
-  const onFormSubmit = async (data: ExtensionFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: ExtensionFormValues) => {
     void saveMutation.mutate(data);
   };
 
@@ -210,14 +209,14 @@ export function ExtensionModifyModal({
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
           <div className="mb-3">
-            <label className="form-label" for="ext-name">
+            <label className="form-label" htmlFor="ext-name">
               Extension name (optional)
             </label>
             <input id="ext-name" type="text" className="form-control" {...register('name')} />
           </div>
           <div className="mb-3">
             <div className="d-flex justify-content-between align-items-center mb-2">
-              <label className="form-label" for="ext-date">
+              <label className="form-label" htmlFor="ext-date">
                 End date
               </label>
               <button
@@ -232,7 +231,7 @@ export function ExtensionModifyModal({
               id="ext-date"
               type="datetime-local"
               step="1"
-              className="form-control"
+              className={clsx('form-control', errors.end_date && 'is-invalid')}
               {...register('end_date', {
                 required: 'End date is required',
                 validate: (value) => {
@@ -248,7 +247,7 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.end_date && (
-              <div className="text-danger small">{String(errors.end_date.message)}</div>
+              <div className="form-text text-danger">{errors.end_date.message}</div>
             )}
             <small className="form-text">Current course end date: {currentUnpublishText}</small>
           </div>
@@ -258,12 +257,13 @@ export function ExtensionModifyModal({
             </Alert>
           )}
           <div className="mb-0">
-            <label className="form-label" for="ext-uids">
+            <label className="form-label" htmlFor="ext-uids">
               UIDs
             </label>
             <textarea
               id="ext-uids"
-              className="form-control"
+              className={clsx('form-control', errors.uids && 'is-invalid')}
+              aria-errormessage={errors.uids ? 'ext-uids-error' : undefined}
               aria-describedby="ext-uids-help"
               rows={5}
               {...register('uids', {
@@ -271,7 +271,9 @@ export function ExtensionModifyModal({
               })}
             />
             {errors.uids && !errors.uids.message?.toString().startsWith('UNENROLLED:') && (
-              <div className="text-danger small">{String(errors.uids.message)}</div>
+              <div className="form-text text-danger" id="ext-uids-error">
+                {String(errors.uids.message)}
+              </div>
             )}
             <small id="ext-uids-help" className="form-text">
               Enter UIDs separated by commas, whitespace, or new lines.

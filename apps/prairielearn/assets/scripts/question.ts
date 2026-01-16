@@ -2,6 +2,7 @@ import { type Socket, io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import type {
   StatusMessage,
   StatusMessageSubmission,
@@ -12,7 +13,6 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
-import { mathjaxTypeset } from './lib/mathjax.js';
 
 onDocumentReady(() => {
   const questionContainer = document.querySelector<HTMLElement>('.question-container');

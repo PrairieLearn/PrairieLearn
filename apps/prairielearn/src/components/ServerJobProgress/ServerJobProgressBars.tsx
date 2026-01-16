@@ -1,6 +1,7 @@
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import { Alert, ProgressBar } from 'react-bootstrap';
 
+import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 
 /**
@@ -13,6 +14,7 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
  *
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  * @param params.jobsProgress Progress information for each server job.
+ * @param params.courseInstanceId The course instance ID of the server jobs.
  *
  * @param params.statusIcons Icons for indicating the server job status.
  * @param params.statusIcons.inProgress Icon for in-progress jobs.
@@ -29,12 +31,14 @@ import type { JobProgress } from '../../lib/serverJobProgressSocket.shared.js';
 export function ServerJobsProgressInfo({
   itemNames,
   jobsProgress,
+  courseInstanceId,
   statusIcons = {},
   statusText = {},
   onDismissCompleteJobSequence,
 }: {
   itemNames: string;
   jobsProgress: JobProgress[];
+  courseInstanceId: string;
   statusIcons?: {
     inProgress?: string;
     complete?: string;
@@ -65,6 +69,7 @@ export function ServerJobsProgressInfo({
         <ServerJobProgressInfo
           key={`server-job-progress-bar-${jobProgress.job_sequence_id}`}
           jobSequenceId={jobProgress.job_sequence_id}
+          courseInstanceId={courseInstanceId}
           nums={{
             complete: jobProgress.num_complete,
             failed: jobProgress.num_failed,
@@ -85,6 +90,7 @@ export function ServerJobsProgressInfo({
  *
  * @param params
  * @param params.jobSequenceId The server job sequence ID to display progress info for.
+ * @param params.courseInstanceId The course instance ID of the server job to display.
  * @param params.itemNames What the name of the job items are (e.g. "submissions graded", "students invited").
  *
  * @param params.nums
@@ -106,13 +112,15 @@ export function ServerJobsProgressInfo({
  */
 function ServerJobProgressInfo({
   jobSequenceId,
+  courseInstanceId,
+  itemNames,
   nums,
   statusIcons,
   statusText,
-  itemNames,
   onDismissCompleteJobSequence,
 }: {
   jobSequenceId: string;
+  courseInstanceId: string;
   itemNames: string;
   nums: {
     complete: number;
@@ -160,6 +168,24 @@ function ServerJobProgressInfo({
     };
   }, [statusText, statusIcons, jobStatus]);
 
+  const progressInfo = useMemo(() => {
+    switch (jobStatus) {
+      case 'inProgress':
+        return (
+          <>
+            {`${nums.complete}/${nums.total} ${itemNames}`}
+            <span className="text-danger">{nums.failed > 0 ? ` (${nums.failed} failed)` : ''}</span>
+          </>
+        );
+      case 'failed':
+        return `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`;
+      case 'complete':
+        return `${nums.total} ${itemNames}`;
+      default:
+        return <></>;
+    }
+  }, [jobStatus, nums, itemNames]);
+
   return (
     <Alert
       variant={variant}
@@ -167,39 +193,41 @@ function ServerJobProgressInfo({
       dismissible={jobStatus === 'complete' || jobStatus === 'failed'}
       onClose={() => onDismissCompleteJobSequence(jobSequenceId)}
     >
-      <div className="d-flex flex-column flex-md-row align-items-md-center gap-2 gap-md-3">
+      <div className="d-flex flex-column flex-lg-row align-items-lg-center gap-2 gap-lg-3">
         <div className="d-flex align-items-center gap-2">
           <i className={`bi ${icon} fs-5`} aria-hidden="true" />
           <strong>{text}</strong>
         </div>
+
         {jobStatus === 'inProgress' ? (
-          <>
-            <div className="flex-grow-1">
-              <ProgressBar
-                now={
-                  nums.total !== 0 // Prevent division by 0
-                    ? (nums.complete / nums.total) * 100
-                    : 0
-                }
-                variant="primary"
-                striped
-                animated
-              />
-            </div>
-            <div className="text-muted small">
-              {`${nums.complete}/${nums.total} ${itemNames}`}
-              <span className="text-danger">
-                {nums.failed > 0 ? ` (${nums.failed} failed)` : ''}
-              </span>
-            </div>
-          </>
-        ) : (
-          <div className="text-muted small">
-            {jobStatus === 'failed'
-              ? `${nums.total - nums.failed}/${nums.total} ${itemNames} (${nums.failed} failed)`
-              : `${nums.total} ${itemNames}`}
+          <div className="flex-grow-1">
+            <ProgressBar
+              now={
+                nums.total !== 0 // Prevent division by 0
+                  ? (nums.complete / nums.total) * 100
+                  : 0
+              }
+              variant="primary"
+              striped
+              animated
+            />
           </div>
+        ) : (
+          <></>
         )}
+
+        <div className="d-flex flex-wrap align-items-center gap-2 gap-lg-3">
+          <div className="text-muted small">{progressInfo}</div>
+          <a
+            href={getCourseInstanceJobSequenceUrl(courseInstanceId, jobSequenceId)}
+            className="text-decoration-none small"
+            target="_blank"
+            rel="noreferrer"
+            aria-label="View job logs"
+          >
+            View logs
+          </a>
+        </div>
       </div>
     </Alert>
   );
