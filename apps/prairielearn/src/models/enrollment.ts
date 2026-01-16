@@ -460,6 +460,7 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
+  // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
   assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'removed', 'blocked']);
 
   const newEnrollment = await queryRow(
@@ -586,6 +587,7 @@ export async function setEnrollmentStatus({
   requiredRole: CourseInstanceRole[];
 }): Promise<Enrollment> {
   const transitionInformation: {
+    equivalentStatuses?: EnumEnrollmentStatus[];
     previousStatus: EnumEnrollmentStatus;
     actionDetail: SupportedActionsForTable<'enrollments'>;
     permittedRoles: CourseInstanceRole[];
@@ -599,6 +601,9 @@ export async function setEnrollmentStatus({
         };
       case 'left':
         return {
+          // If a student tries to leave a course but has already been removed by
+          // an instructor, we will treat this as a no-op.
+          equivalentStatuses: ['removed'],
           previousStatus: 'joined',
           actionDetail: 'left',
           permittedRoles: ['Student'],
@@ -631,8 +636,12 @@ export async function setEnrollmentStatus({
     if (lockedEnrollment.user_id) {
       await selectAndLockUser(lockedEnrollment.user_id);
     }
-    // The enrollment is already in the desired status, so we can return early.
-    if (lockedEnrollment.status === status) {
+
+    if (
+      lockedEnrollment.status === status ||
+      transitionInformation.equivalentStatuses?.includes(lockedEnrollment.status)
+    ) {
+      // The enrollment is already in the desired status, so we can return early.
       return lockedEnrollment;
     }
 
