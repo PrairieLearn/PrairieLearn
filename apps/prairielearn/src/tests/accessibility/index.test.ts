@@ -13,7 +13,6 @@ import { IdSchema } from '@prairielearn/zod';
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
-import { TEST_COURSE_PATH } from '../../lib/paths.js';
 import { assertNever } from '../../lib/types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
@@ -398,7 +397,7 @@ describe('accessibility', () => {
     config.cronActive = false;
     // We use the test course since editing functionality is disabled in the
     // example course.
-    await helperServer.before(TEST_COURSE_PATH)();
+    await helperServer.before()();
     config.cronActive = true;
 
     // We want to test a news item page, so we need to "init" them.
