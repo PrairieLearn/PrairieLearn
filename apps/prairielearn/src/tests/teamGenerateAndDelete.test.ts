@@ -4,7 +4,6 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import * as teamUpdate from '../lib/team-update.js';
 import { deleteAllTeams } from '../lib/teams.js';
 import { selectAssessmentById } from '../models/assessment.js';
@@ -17,7 +16,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 const locals: Record<string, any> = {};
 
 describe('test random teams and delete teams', { timeout: 20_000 }, function () {
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 
