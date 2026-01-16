@@ -430,6 +430,12 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // fail to parse, we'll take the hit and reparse with jju to generate
     // a better error report for users.
     const json = JSON.parse(contents);
+
+    // The UUID is required in all files except infoCourse.json. Since this file
+    // used to require a UUID, we allow it to be parsed without a warning. In
+    // the future, once we're confident that most courses have removed the UUID
+    // from infoCourse.json, we can add a warning for unnecessary UUIDs in that
+    // file. Also, see https://github.com/PrairieLearn/PrairieLearn/issues/13709
     if (filePath !== 'infoCourse.json') {
       if (!json.uuid) {
         return infofile.makeError('UUID is missing');
