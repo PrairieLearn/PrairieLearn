@@ -1,5 +1,5 @@
 FROM prairielearn/workspace-vscode-base:latest
-ARG CACHEBUST=2025-12-15-14-21-51
+ARG CACHEBUST=2026-01-15-14-21-34
 
 # Run the rest of the build commands in a bash shell in login mode so that
 # conda/mamba shell hooks will work. This also allows images derived from
@@ -31,7 +31,7 @@ USER coder
 WORKDIR "/home/coder"
 
 # Create the virtual environment as the coder user
-RUN uv venv --python-preference managed --python 3.12 /home/coder/.venv
+RUN uv venv --python-preference managed --python 3.13 /home/coder/.venv
 
 COPY requirements.txt /home/coder/requirements.txt
 RUN uv pip install -r /home/coder/requirements.txt

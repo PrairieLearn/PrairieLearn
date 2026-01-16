@@ -1,7 +1,7 @@
 columns
     announcement_color: text
     announcement_html: text
-    branch: text default 'master'::text
+    branch: text not null default 'master'::text
     commit_hash: text
     course_instance_enrollment_limit: integer
     created_at: timestamp with time zone not null default now()

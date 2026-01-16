@@ -4,7 +4,7 @@ import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import { type PlanName } from '../../lib/billing/plans-types.js';

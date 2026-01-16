@@ -97,6 +97,8 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+check-npm-packages:
+	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
@@ -157,9 +159,9 @@ format-python:
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@yarn tsc -p contrib
+	@yarn tsgo -p contrib --noEmit
 typecheck-scripts:
-	@yarn tsc -p scripts
+	@yarn tsgo -p scripts --noEmit
 typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps

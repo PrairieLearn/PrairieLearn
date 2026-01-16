@@ -7,7 +7,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, TeamRoleSchema, type User } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
@@ -267,7 +266,7 @@ async function prepareTeam() {
 
 describe('Assessment instance with team roles & permissions - Homework', function () {
   describe('valid team role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;
@@ -418,7 +417,7 @@ describe('Assessment instance with team roles & permissions - Homework', functio
   });
 
   describe('invalid role configuration tests', { timeout: 20_000 }, function () {
-    beforeAll(helperServer.before(TEST_COURSE_PATH));
+    beforeAll(helperServer.before());
 
     beforeAll(function () {
       storedConfig.authUid = config.authUid;

@@ -123,7 +123,7 @@ export function NumericInputColumnFilter<TData, TValue>({
                 );
               }}
             />
-            <label className="form-check-label" for={`${columnId}-empty-filter`}>
+            <label className="form-check-label" htmlFor={`${columnId}-empty-filter`}>
               Empty values
             </label>
           </div>
