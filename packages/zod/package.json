@@ -2,7 +2,7 @@
   "name": "@prairielearn/zod",
   "version": "1.5.1",
   "type": "module",
-  "r"node": ">=24.0.0"
+  "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/zod"

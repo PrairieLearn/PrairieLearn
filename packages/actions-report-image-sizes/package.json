@@ -2,7 +2,7 @@
   "name": "@prairielearn/actions-report-image-sizes",
   "version": "1.0.0",
   "repository": {
-    "node": ">=24.0.0"
+    "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/actions-report-image-sizes"
   },
