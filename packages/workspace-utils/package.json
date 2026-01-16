@@ -8,6 +8,9 @@
     "directory": "packages/workspace-utils"
   },
   "private": true,
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsgo && tscp",

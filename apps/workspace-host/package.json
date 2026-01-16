@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",

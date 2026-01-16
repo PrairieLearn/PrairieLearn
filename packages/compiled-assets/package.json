@@ -7,6 +7,9 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/compiled-assets"
   },
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "bin": "dist/cli.js",
   "main": "dist/index.js",
   "scripts": {

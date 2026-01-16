@@ -7,6 +7,9 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/html-ejs"
   },
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsgo",

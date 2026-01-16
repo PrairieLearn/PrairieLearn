@@ -7,6 +7,9 @@
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/csv"
   },
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "main": "./dist/index.js",
   "scripts": {
     "build": "tsgo",

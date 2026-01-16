@@ -8,6 +8,9 @@
     "directory": "packages/express-list-endpoints"
   },
   "license": "MIT",
+  "engines": {
+    "node": ">=24.13.0"
+  },
   "main": "dist/index.js",
   "scripts": {
     "build": "tsgo",

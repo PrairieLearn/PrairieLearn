@@ -2,10 +2,13 @@
   "name": "@prairielearn/session",
   "version": "3.0.26",
   "type": "module",
-  "repository": {
+  "r"node": ">=24.0.0"
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/session"
+  },
+  "engines": {
+    "node": ">=24.13.0"
   },
   "main": "dist/index.js",
   "scripts": {
