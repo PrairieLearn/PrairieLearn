@@ -40,7 +40,7 @@
   "devDependencies": {
     "@opentelemetry/context-async-hooks": "^2.4.0",
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tsx": "^4.21.0",
