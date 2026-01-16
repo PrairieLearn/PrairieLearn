@@ -589,15 +589,15 @@ export async function setEnrollmentStatus({
 }): Promise<Enrollment> {
   const transitionInformation: {
     equivalentStatuses?: EnumEnrollmentStatus[];
-    previousStatus: EnumEnrollmentStatus;
-    actionDetail: SupportedActionsForTable<'enrollments'>;
+    previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
+    actionDetail: SupportedActionsForTable<'enrollments'> | null;
     permittedRoles: CourseInstanceRole[];
   } = run(() => {
     switch (status) {
       case 'joined':
         return {
-          previousStatus: 'blocked',
-          actionDetail: 'unblocked',
+          previousStatus: ['blocked', 'removed'],
+          actionDetail: null,
           permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
         };
       case 'left':
@@ -661,10 +661,27 @@ export async function setEnrollmentStatus({
       EnrollmentSchema,
     );
 
+    // Determine the action detail. For transitions to 'joined', this depends on
+    // the previous status.
+    const actionDetail: SupportedActionsForTable<'enrollments'> = run(() => {
+      if (transitionInformation.actionDetail !== null) {
+        return transitionInformation.actionDetail;
+      }
+      // For transitions to 'joined', determine action detail based on previous status.
+      switch (lockedEnrollment.status) {
+        case 'blocked':
+          return 'unblocked';
+        case 'removed':
+          return 'reenrolled';
+        default:
+          throw new error.HttpStatusError(500, 'Unexpected previous status');
+      }
+    });
+
     await insertAuditEvent({
       tableName: 'enrollments',
       action: 'update',
-      actionDetail: transitionInformation.actionDetail,
+      actionDetail,
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,

@@ -25,6 +25,7 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invitation_deleted: 'Invitation cancelled',
     left: 'Student left course',
     removed: 'Student removed from course',
+    reenrolled: 'Student re-enrolled in course',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];

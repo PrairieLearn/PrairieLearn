@@ -174,6 +174,19 @@ router.post(
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
+      case 'reenroll_student': {
+        if (enrollment.status !== 'removed') {
+          throw new HttpStatusError(400, 'Enrollment is not removed');
+        }
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'joined',
+          authzData,
+          requiredRole: ['Student Data Editor'],
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
       case 'invite_student': {
         // We intentionally don't allow instructors to re-invite removed enrollments.
         // They can only transition them directly back to `joined`.

@@ -127,6 +127,19 @@ export function OverviewCard({
                   </button>
                 </form>
               )}
+              {enrollment.status === 'removed' && (
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value={csrfToken} />
+                  <input type="hidden" name="__action" value="reenroll_student" />
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                  >
+                    <i className="fas fa-user-plus" aria-hidden="true" />
+                    <span>Re-enroll student</span>
+                  </button>
+                </form>
+              )}
             </div>
           )}
         </div>

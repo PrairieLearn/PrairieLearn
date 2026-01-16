@@ -67,6 +67,7 @@ export type SupportedTableActionCombination =
         | 'invitation_deleted'
         | 'left'
         | 'removed'
+        | 'reenrolled'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<
