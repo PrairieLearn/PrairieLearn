@@ -12,7 +12,6 @@
 '@prairielearn/migrations': major
 '@prairielearn/formatter': major
 '@prairielearn/aws-imds': major
-'@prairielearn/html-ejs': major
 '@prairielearn/postgres': major
 '@prairielearn/sanitize': major
 '@prairielearn/session': major
