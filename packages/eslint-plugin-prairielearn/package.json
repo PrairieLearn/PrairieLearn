@@ -2,7 +2,7 @@
   "name": "@prairielearn/eslint-plugin",
   "version": "2.3.2",
   "repository": {
-    "type": "git",
+    "node": ">=24.0.0"
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/eslint-plugin"
   },

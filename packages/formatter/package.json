@@ -2,7 +2,7 @@
   "name": "@prairielearn/formatter",
   "version": "1.5.2",
   "type": "module",
-  "repository": {
+  "r"node": ">=24.0.0"
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/formatter"
