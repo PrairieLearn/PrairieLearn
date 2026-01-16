@@ -178,6 +178,18 @@ export function InstructorCourseAdminSettings({
                 The GitHub repository that can be used to sync course files.
               </small>
             </div>
+            <div class="mb-3">
+              <label class="form-label" for="branch">Branch</label>
+              <input
+                type="text"
+                class="form-control"
+                id="branch"
+                name="branch"
+                value="${resLocals.course.branch ?? '—'}"
+                disabled
+              />
+              <small class="form-text text-muted">The git branch used for this course.</small>
+            </div>
             <div class="form-check mb-3">
               <input
                 type="checkbox"

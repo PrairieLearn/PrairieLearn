@@ -559,7 +559,7 @@ export type ClientFingerprint = z.infer<typeof ClientFingerprintSchema>;
 export const CourseSchema = z.object({
   announcement_color: z.string().nullable(),
   announcement_html: z.string().nullable(),
-  branch: z.string(),
+  branch: z.string().nullable(),
   commit_hash: z.string().nullable(),
   course_instance_enrollment_limit: z.number().nullable(),
   created_at: DateFromISOString,
