@@ -1,6 +1,7 @@
 /**
  * Tests for LTI 1.3 course instance linking and admin page.
  */
+import * as cheerio from 'cheerio';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
 import nodeJose from 'node-jose';
@@ -15,15 +16,13 @@ import { selectOptionalUserByUid } from '../models/user.js';
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 import {
+  LTI_CONTEXT_ID,
+  LTI_DEPLOYMENT_ID,
   createLti13Instance,
   grantCoursePermissions,
   linkLtiContext,
   makeLoginExecutor,
 } from './lti13TestHelpers.js';
-
-// Constants from JWT claims - must match what's in makeLoginExecutor
-const LTI_DEPLOYMENT_ID = '7fdce954-4c33-47c9-97b4-e435dbbed9bb';
-const LTI_CONTEXT_ID = 'f6bc7a50-448c-4469-94f7-54d6ea882c2a';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
@@ -211,9 +210,9 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(linkingPageRes.status, 200);
 
     const linkingPageText = await linkingPageRes.text();
-    const csrfMatch = linkingPageText.match(/name="__csrf_token"\s+value="([^"]+)"/);
-    assert.ok(csrfMatch, 'Could not find CSRF token');
-    const csrfToken = csrfMatch[1];
+    const $ = cheerio.load(linkingPageText);
+    const csrfToken = $('input[name="__csrf_token"]').val() as string;
+    assert.ok(csrfToken, 'Could not find CSRF token');
 
     const linkRes = await fetchWithCookies(targetLinkUri, {
       method: 'POST',
@@ -227,7 +226,7 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(linkRes.status, 302);
     const location = linkRes.headers.get('location');
     assert.ok(location);
-    assert.include(location, 'done');
+    assert.match(location, /\/done$/, 'Expected redirect location to end with /done');
 
     const linkRecord = await queryOptionalRow(
       `SELECT * FROM lti13_course_instances
@@ -245,6 +244,8 @@ describe('LTI 1.3 course instance linking', () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
+    // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
+    // since the target user doesn't exist yet - grantCoursePermissions will create them.
     await grantCoursePermissions({
       uid: 'linked-instructor@example.com',
       courseId: '1',
@@ -306,6 +307,8 @@ describe('LTI 1.3 course instance linking', () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
+      // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
+      // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-test@example.com',
         courseId: '1',
@@ -356,6 +359,8 @@ describe('LTI 1.3 course instance linking', () => {
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
+      // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
+      // since the target user doesn't exist yet - grantCoursePermissions will create them.
       await grantCoursePermissions({
         uid: 'admin-redirect@example.com',
         courseId: '1',

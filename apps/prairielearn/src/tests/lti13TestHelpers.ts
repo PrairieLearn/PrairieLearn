@@ -14,6 +14,10 @@ import { fetchCheerio } from './helperClient.js';
 
 export const CLIENT_ID = 'prairielearn_test_lms';
 
+// LTI claim constants - used in JWT tokens and must match across test files
+export const LTI_DEPLOYMENT_ID = '7fdce954-4c33-47c9-97b4-e435dbbed9bb';
+export const LTI_CONTEXT_ID = 'f6bc7a50-448c-4469-94f7-54d6ea882c2a';
+
 export async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
   const server = app.listen(port);
 
@@ -87,19 +91,18 @@ export async function makeLoginExecutor({
   assert.ok(state);
 
   const key = keystore.get('test');
-  const joseKey = await jose.importJWK(key.toJSON(true) as any);
+  const joseKey = await jose.importJWK(key.toJSON(true) as jose.JWK);
   const fakeIdToken = await new jose.SignJWT({
     nonce,
     // The below values are based on data observed by Dave during an actual
     // login with Canvas.
     'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiResourceLinkRequest',
     'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
-    'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
-      '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
+    'https://purl.imsglobal.org/spec/lti/claim/deployment_id': LTI_DEPLOYMENT_ID,
     // This MUST match the value in the login request.
     'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': targetLinkUri,
     'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
-      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+      id: LTI_CONTEXT_ID,
       title: 'Test Course',
     },
     'https://purl.imsglobal.org/spec/lti/claim/roles': isInstructor
@@ -113,7 +116,7 @@ export async function makeLoginExecutor({
           'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
         ],
     'https://purl.imsglobal.org/spec/lti/claim/context': {
-      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
+      id: LTI_CONTEXT_ID,
       type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
       label: 'TEST 101',
       title: 'Test Course',
@@ -301,6 +304,10 @@ export async function linkLtiContext({
   );
 }
 
+/**
+ * Grants course permissions to a user, creating the user if they don't exist.
+ * Returns the user object for use in subsequent operations.
+ */
 export async function grantCoursePermissions({
   uid,
   courseId,
@@ -332,4 +339,6 @@ export async function grantCoursePermissions({
       authn_user_id: authnUserId,
     });
   }
+
+  return user;
 }
