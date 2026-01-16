@@ -1,5 +1,39 @@
 # @prairielearn/ui
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- f1da6ea: Make `useAutoSizeColumns` compatible with React 18+
+  - @prairielearn/browser-utils@2.6.2
+
+## 2.0.0
+
+### Major Changes
+
+- d94c74c: Use React instead of Preact
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/browser-utils@2.6.1
+
+## 1.10.0
+
+### Minor Changes
+
+- e2bffd9: Prefer `className` instead of `class`
+
+### Patch Changes
+
+- Updated dependencies [e2bffd9]
+  - @prairielearn/preact-cjs@2.0.0
+
 ## 1.9.1
 
 ### Patch Changes

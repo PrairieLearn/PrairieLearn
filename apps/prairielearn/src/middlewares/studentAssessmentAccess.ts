@@ -37,6 +37,7 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
     // are both used, as there's otherwise no way to totally block access.
     res.status(403).send(
       StudentAssessmentAccess({
+        // @ts-expect-error The types on checkStudentAssessmentAccess aren't perfect
         resLocals: res.locals,
         showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
         showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',

@@ -12,25 +12,10 @@ import * as Sentry from '@prairielearn/sentry';
 
 import { makeAwsClientConfig } from '../../lib/aws.js';
 import { config } from '../../lib/config.js';
-import { pullAndUpdateCourse } from '../../lib/course.js';
 import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 
 const docker = new Docker();
-
-/**
- * @param locals res.locals
- * @returns The ID of the job sequence created for this process
- */
-export async function pullAndUpdate(locals: UntypedResLocals): Promise<string> {
-  const { jobSequenceId } = await pullAndUpdateCourse({
-    courseId: locals.course.id,
-    userId: locals.user.id,
-    authnUserId: locals.authz_data.authn_user.id,
-    ...locals.course,
-  });
-  return jobSequenceId;
-}
 
 /**
  * @param locals res.locals

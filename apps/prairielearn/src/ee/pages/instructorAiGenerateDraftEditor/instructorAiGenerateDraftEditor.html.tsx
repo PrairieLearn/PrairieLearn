@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import { Hydrate } from '@prairielearn/preact/server';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';

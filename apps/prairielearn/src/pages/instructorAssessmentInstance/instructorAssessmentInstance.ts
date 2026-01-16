@@ -1,7 +1,6 @@
 import { pipeline } from 'node:stream/promises';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -17,7 +16,7 @@ import {
 } from '../../lib/assessment.js';
 import * as ltiOutcomes from '../../lib/ltiOutcomes.js';
 import { updateInstanceQuestionScore } from '../../lib/manualGrading.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix, sanitizeString } from '../../lib/sanitize-name.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { resetVariantsForInstanceQuestion } from '../../models/variant.js';
@@ -36,7 +35,7 @@ const DateDurationResultSchema = z.object({
   assessment_instance_duration: z.string(),
 });
 
-function makeLogCsvFilename(locals: UntypedResLocals) {
+function makeLogCsvFilename(locals: ResLocalsForPage<'assessment-instance'>) {
   return (
     assessmentFilenamePrefix(
       locals.assessment,
@@ -44,7 +43,7 @@ function makeLogCsvFilename(locals: UntypedResLocals) {
       locals.course_instance,
       locals.course,
     ) +
-    sanitizeString(locals.instance_group?.name ?? locals.instance_user?.uid ?? 'unknown') +
+    sanitizeString(locals.instance_team?.name ?? locals.instance_user?.uid ?? 'unknown') +
     '_' +
     locals.assessment_instance.number +
     '_' +
@@ -58,7 +57,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     const logCsvFilename = makeLogCsvFilename(res.locals);
     const assessment_instance_stats = await sqldb.queryRows(
       sql.assessment_instance_stats,
@@ -106,7 +105,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (req.params.filename === makeLogCsvFilename(res.locals)) {
       const cursor = await selectAssessmentInstanceLogCursor(
         res.locals.assessment_instance.id,
@@ -162,7 +161,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }

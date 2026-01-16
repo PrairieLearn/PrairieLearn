@@ -8,14 +8,14 @@ import * as assessment from '../../lib/assessment.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
-  canUserAssignGroupRoles,
-  getGroupConfig,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  leaveGroup,
-  updateGroupRoles,
+  canUserAssignTeamRoles,
+  getQuestionTeamPermissions,
+  getTeamConfig,
+  getTeamInfo,
+  leaveTeam,
+  updateTeamRoles,
 } from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
@@ -34,13 +34,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
-async function ensureUpToDate(locals: UntypedResLocals) {
+async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.id,
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
+    // @ts-expect-error This reload doesn't set 'formatted_date'
     locals.assessment_instance = await queryRow(
       sql.select_assessment_instance,
       { assessment_instance_id: locals.assessment_instance.id },
@@ -134,7 +135,7 @@ router.post(
     }
     if (
       !res.locals.authz_result.authorized_edit &&
-      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_group'].includes(
+      ['attach_file', 'attach_text', 'delete_file', 'timeLimitFinish', 'leave_team'].includes(
         req.body.__action,
       )
     ) {
@@ -175,16 +176,16 @@ router.post(
       } else {
         res.redirect(req.originalUrl);
       }
-    } else if (req.body.__action === 'leave_group') {
+    } else if (req.body.__action === 'leave_team') {
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');
       }
-      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
+      await leaveTeam(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(
         `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       );
-    } else if (req.body.__action === 'update_group_roles') {
-      await updateGroupRoles(
+    } else if (req.body.__action === 'update_team_roles') {
+      await updateTeamRoles(
         req.body,
         res.locals.assessment.id,
         res.locals.assessment_instance.team_id,
@@ -209,7 +210,14 @@ router.get(
   // have a corresponding page view event to show in the logs.
   clientFingerprint,
   logPageView('studentAssessmentInstance'),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<
+    'assessment-instance',
+    {
+      has_manual_grading_question: boolean;
+      has_auto_grading_question: boolean;
+      assessment_text_templated: string | null;
+    }
+  >(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
@@ -253,22 +261,22 @@ router.get(
       return;
     }
 
-    // Get the group config info
-    const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id, groupConfig);
+    // Get the team config info
+    const teamConfig = await getTeamConfig(res.locals.assessment.id);
+    const teamInfo = await getTeamInfo(res.locals.assessment_instance.team_id!, teamConfig);
     const userCanAssignRoles =
-      groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
+      teamConfig.has_roles &&
+      (canUserAssignTeamRoles(teamInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
-    if (groupConfig.has_roles) {
+    if (teamConfig.has_roles) {
       // Get the role permissions. If the authorized user has course instance
       // permission, then role restrictions don't apply.
       if (!res.locals.authz_data.has_course_instance_permission_view) {
         for (const question of instance_question_rows) {
-          question.group_role_permissions = await getQuestionGroupPermissions(
+          question.team_role_permissions = await getQuestionTeamPermissions(
             question.id,
-            res.locals.assessment_instance.team_id,
+            res.locals.assessment_instance.team_id!,
             res.locals.authz_data.user.id,
           );
         }
@@ -279,8 +287,8 @@ router.get(
       StudentAssessmentInstance({
         instance_question_rows,
         showTimeLimitExpiredModal,
-        groupConfig,
-        groupInfo,
+        teamConfig,
+        teamInfo,
         userCanAssignRoles,
         userCanDeleteAssessmentInstance: assessment.canDeleteAssessmentInstance(res.locals),
         resLocals: res.locals,
