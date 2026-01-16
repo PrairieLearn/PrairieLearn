@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/eslint-plugin",
-  "version": "2.3.2",
+  "version": "3.0.0",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
