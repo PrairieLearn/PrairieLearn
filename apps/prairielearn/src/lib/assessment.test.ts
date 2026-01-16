@@ -25,6 +25,7 @@ describe('renderText', () => {
     });
 
     it('renders clientFilesCourseInstance', () => {
+      // Also tests whitespace variations
       const text = '<a href="<%=    clientFilesCourseInstance%>/file.pdf">Link</a>';
       const expected = `<a href="${expectedUrlBase}/clientFilesCourseInstance/file.pdf">Link</a>`;
       assert.equal(decode(renderText({ id: assessmentId, text }, urlPrefix)!), expected);
