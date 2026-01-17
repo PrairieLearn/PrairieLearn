@@ -622,9 +622,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         elif grading_method is GradingMethodType.DAG:
             if order_blocks_options.has_optional_blocks:
-                depends_multigraph, final = extract_multigraph(true_answer_list)
+                depends_multigraph, final_tags = extract_multigraph(true_answer_list)
                 num_initial_correct, true_answer_length, depends_graph = (
-                    grade_multigraph(submission, depends_multigraph, final)
+                    grade_multigraph(submission, depends_multigraph, final_tags)
                 )
             else:
                 depends_graph, group_belonging = extract_dag(true_answer_list)
