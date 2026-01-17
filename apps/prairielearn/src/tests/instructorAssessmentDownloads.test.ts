@@ -9,13 +9,15 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import { VariantSchema } from '../lib/db-types.js';
+import type { Assessment, User, Variant } from '../lib/db-types.js';
+import { VariantSchema } from '../lib/db-types.js'; // eslint-disable-line no-duplicate-imports
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 import { selectAssessmentSetById } from '../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
+import type { Filenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.html.js';
 import { getFilenames } from '../pages/instructorAssessmentDownloads/instructorAssessmentDownloads.js';
 
 import { getCSRFToken } from './helperClient.js';
@@ -65,6 +67,20 @@ async function downloadCsv(url: string): Promise<any[]> {
   const res = await fetch(url);
   assert.equal(res.status, 200);
   return csvParse<any>(await res.text(), { columns: true, cast: true });
+}
+
+async function assertDownloadSucceeds(url: string, filename: string): Promise<void> {
+  const res = await fetch(url);
+  assert.equal(res.status, 200, `Failed to download ${filename}`);
+  if (filename.endsWith('.csv')) {
+    const data = csvParse<any>(await res.text(), { columns: true, cast: true });
+    assert.isAtLeast(data.length, 1, `CSV file ${filename} should have at least one row`);
+  } else if (filename.endsWith('.zip')) {
+    const zip = await unzipper.Open.buffer(Buffer.from(await res.arrayBuffer()));
+    assert.isAtLeast(zip.files.length, 1, `ZIP file ${filename} should have at least one file`);
+  } else {
+    assert.fail(`Unknown file type: ${filename}`);
+  }
 }
 
 describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
@@ -335,26 +351,29 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
             locals.assessment_id +
             '/downloads/' +
             filename;
-          const res = await fetch(downloadUrl);
-          assert.equal(res.status, 200, `Failed to download ${filename}`);
-          if (filename.endsWith('.csv')) {
-            const csvContent = await res.text();
-            const data = csvParse<any>(csvContent, { columns: true, cast: true });
-            assert.isAtLeast(data.length, 1);
-          } else if (filename.endsWith('.zip')) {
-            const zipContent = Buffer.from(await res.arrayBuffer());
-            const zip = await unzipper.Open.buffer(zipContent);
-            assert.isAtLeast(zip.files.length, 1);
-          } else {
-            assert.fail(`Unknown file type: ${filename}`);
-          }
+          await assertDownloadSucceeds(downloadUrl, filename);
         }),
       );
     });
   });
 
   describe('Group Work Downloads', function () {
-    const ctx: Record<string, any> = {};
+    interface GroupWorkTestContext {
+      assessment_id: string;
+      siteUrl: string;
+      courseInstanceBaseUrl: string;
+      assessmentUrl: string;
+      instructorAssessmentGroupsUrl: string;
+      instructorAssessmentDownloadsUrl: string;
+      studentUsers: User[];
+      $: cheerio.CheerioAPI;
+      questionUrl: string;
+      variant: Variant;
+      assessment: Assessment;
+      filenames: Filenames;
+    }
+
+    const ctx: Partial<GroupWorkTestContext> = {};
 
     beforeAll(async function () {
       const assessment = await selectAssessmentByTid({
@@ -378,7 +397,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
           __action: 'add_team',
           __csrf_token: getCSRFToken(ctx.$),
           team_name: 'testteam',
-          uids: ctx.studentUsers.map((u: any) => u.uid).join(','),
+          uids: ctx.studentUsers.map((u) => u.uid).join(','),
         }),
       });
       assert.equal(res.status, 200);
@@ -451,19 +470,19 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.teamsCsvFilename,
       );
-      const teamRows = data.filter((row: any) => row['groupName'] === 'testteam');
+      const teamRows = data.filter((row) => row['groupName'] === 'testteam');
       assert.lengthOf(teamRows, 2);
 
-      const uids = teamRows.map((row: any) => row['UID']);
-      assert.include(uids, ctx.studentUsers[0].uid);
-      assert.include(uids, ctx.studentUsers[1].uid);
+      const uids = teamRows.map((row) => row['UID']);
+      assert.include(uids, ctx.studentUsers![0].uid);
+      assert.include(uids, ctx.studentUsers![1].uid);
     });
 
     it('scores_by_group.csv should contain team with valid score', async () => {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresTeamCsvFilename,
       );
-      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      const teamRow = data.find((row) => row['Group name'] === 'testteam');
       assert.isDefined(teamRow);
       assert.isString(teamRow['Usernames']);
       assert.property(teamRow, 'Exam 14');
@@ -475,7 +494,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsTeamCsvFilename,
       );
-      const teamRow = data.find((row: any) => row['Group name'] === 'testteam');
+      const teamRow = data.find((row) => row['Group name'] === 'testteam');
       assert.isDefined(teamRow);
       assert.isString(teamRow['Usernames']);
       assert.property(teamRow, 'Exam 14');
@@ -488,17 +507,10 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
       await Promise.all(
         filenames.map(async (filename) => {
-          const res = await fetch(ctx.instructorAssessmentDownloadsUrl + '/' + filename);
-          assert.equal(res.status, 200, `Failed to download ${filename}`);
-          if (filename.endsWith('.csv')) {
-            const data = csvParse<any>(await res.text(), { columns: true, cast: true });
-            assert.isAtLeast(data.length, 1);
-          } else if (filename.endsWith('.zip')) {
-            const zip = await unzipper.Open.buffer(Buffer.from(await res.arrayBuffer()));
-            assert.isAtLeast(zip.files.length, 1);
-          } else {
-            assert.fail(`Unknown file type: ${filename}`);
-          }
+          await assertDownloadSucceeds(
+            ctx.instructorAssessmentDownloadsUrl + '/' + filename,
+            filename,
+          );
         }),
       );
     });
