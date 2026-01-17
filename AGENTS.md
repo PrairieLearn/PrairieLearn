@@ -43,6 +43,8 @@ Run `make format-js-cached` / `make lint-js-cached` from the root directory to f
 
 Run `make format-python` / `make lint-python` from the root directory to format/lint all Python code.
 
+Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+
 ## Conventions
 
 ### Stylistic conventions
