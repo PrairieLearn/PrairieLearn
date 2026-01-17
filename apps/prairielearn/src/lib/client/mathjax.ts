@@ -60,6 +60,7 @@ const {
       // for elements like pl-drawing where line breaks can cause rendering
       // issues, since pl-drawing relies on MathJax returning a single SVG
       // element.
+      // See: https://docs.mathjax.org/en/latest/output/linebreaks.html#in-line-breaking
       linebreaks: { inline: false },
     },
     loader: {
