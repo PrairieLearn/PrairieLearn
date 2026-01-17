@@ -96,6 +96,38 @@ For generated floating point answers, it's important to use consistent rounding 
 
 Next, the `prepare` function is called after all elements (e.g. `<pl-integer-input>`) have run `prepare()`. This may be done to do any sort of final post-processing, but is not commonly used.
 
+??? tip "Using `prepare` for progressive reveal questions"
+
+    If you want to conditionally show parts of a question based on grading results (e.g., reveal step 2 only after step 1 is correct), you may encounter issues with elements like `<pl-order-blocks>` that need their `prepare()` function to run in order to set up `correct_answers`.
+
+    The solution is to ensure elements are included in the HTML during `prepare`, then hide them afterward:
+
+    ```python title="server.py"
+    def generate(data):
+        # Set to True so elements are included when prepare() runs
+        data["params"]["show_step2"] = True
+
+    def prepare(data):
+        # Hide step 2 initially; grade() will reveal it when step 1 is correct
+        data["params"]["show_step2"] = False
+
+    def grade(data):
+        if data["partial_scores"]["step1"]["score"] == 1:
+            data["params"]["show_step2"] = True
+    ```
+
+    ```html title="question.html"
+    <pl-question-panel>
+      Step 1: ...
+      <pl-integer-input answers-name="step1"></pl-integer-input>
+
+      {{#params.show_step2}}
+      Step 2: ...
+      <pl-order-blocks answers-name="step2">...</pl-order-blocks>
+      {{/params.show_step2}}
+    </pl-question-panel>
+    ```
+
 ## Step 3: `render`
 
 Next, the `render(data, html)` function is called to render the question. You can use this function to override how the question is rendered. The render function expects two parameters, `data` and `html`, and should return a string of HTML. The HTML after the mustache template has been rendered is available through the `html` parameter. This is rarely used except for very advanced questions, and we won't need it for this example.
