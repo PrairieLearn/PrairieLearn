@@ -157,6 +157,9 @@ format-python:
 	@uv run ruff check --fix ./
 	@uv run ruff format ./
 
+format-changed:
+	@node scripts/format-changed.mjs
+
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
 	@yarn tsgo -p contrib --noEmit
