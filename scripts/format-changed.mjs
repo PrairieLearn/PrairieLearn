@@ -118,7 +118,7 @@ let hasErrors = false;
 // Run ESLint
 if (eslintFiles.length > 0) {
   console.log(`Running ESLint on ${eslintFiles.length} file(s)...`);
-  const result = await runCommand('yarn', ['eslint', '--fix', ...eslintFiles]);
+  const result = await runCommand('yarn', ['eslint', '--fix', '--', ...eslintFiles]);
   if (!result.success) {
     console.error('ESLint encountered errors');
     hasErrors = true;
@@ -128,7 +128,7 @@ if (eslintFiles.length > 0) {
 // Run Prettier
 if (prettierFiles.length > 0) {
   console.log(`Running Prettier on ${prettierFiles.length} file(s)...`);
-  const result = await runCommand('yarn', ['prettier', '--write', ...prettierFiles]);
+  const result = await runCommand('yarn', ['prettier', '--write', '--', ...prettierFiles]);
   if (!result.success) {
     console.error('Prettier encountered errors');
     hasErrors = true;
@@ -139,13 +139,13 @@ if (prettierFiles.length > 0) {
 if (ruffFiles.length > 0) {
   console.log(`Running Ruff on ${ruffFiles.length} file(s)...`);
 
-  const checkResult = await runCommand('uv', ['run', 'ruff', 'check', '--fix', ...ruffFiles]);
+  const checkResult = await runCommand('uv', ['run', 'ruff', 'check', '--fix', '--', ...ruffFiles]);
   if (!checkResult.success) {
     console.error('Ruff check encountered errors');
     hasErrors = true;
   }
 
-  const formatResult = await runCommand('uv', ['run', 'ruff', 'format', ...ruffFiles]);
+  const formatResult = await runCommand('uv', ['run', 'ruff', 'format', '--', ...ruffFiles]);
   if (!formatResult.success) {
     console.error('Ruff format encountered errors');
     hasErrors = true;
