@@ -26,6 +26,7 @@ $(function() {
                         uuid="{{uuid}}"
                         string="{{inner_html}}"
                         {{#distractor_bin}}data-distractor-bin="{{distractor_bin}}"{{/distractor_bin}}
+                        role="option"
                         tabindex="0">
                         <div class="pl-order-block-row">
                             <div class="pl-order-block-handle" aria-hidden="true" role="presentation">
@@ -35,9 +36,6 @@ $(function() {
                                 {{{inner_html}}}
                             </div>
                         </div>
-                        tabindex="0"
-                        role="option"
-                        >{{{inner_html}}}
                     </li>
                 {{/options}}
             </ul>
