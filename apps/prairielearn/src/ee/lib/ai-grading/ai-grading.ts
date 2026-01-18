@@ -3,7 +3,12 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import { type GenerateObjectResult, type JSONParseError, type TypeValidationError, generateObject } from 'ai';
+import {
+  type GenerateObjectResult,
+  type JSONParseError,
+  type TypeValidationError,
+  generateObject,
+} from 'ai';
 import * as async from 'async';
 import { z } from 'zod';
 
@@ -337,7 +342,7 @@ export async function aiGrade({
             // TODO: Remove this temporary fix once Google fixes the underlying issue.
             // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
             return correctGeminiMalformedRubricGradingJson(options.text);
-          }
+          };
 
           if (!hasImage || !submission.submitted_answer) {
             return {
