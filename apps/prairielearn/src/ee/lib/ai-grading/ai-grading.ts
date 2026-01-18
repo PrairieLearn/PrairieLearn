@@ -350,11 +350,11 @@ export async function aiGrade({
                 model,
                 schema: RubricGradingResultSchema,
                 messages: input,
+                experimental_repairText,
                 providerOptions: {
                   openai: openaiProviderOptions,
                 },
               }),
-              experimental_repairText,
               rotationCorrectionApplied: false,
             };
           }
