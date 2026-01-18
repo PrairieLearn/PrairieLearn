@@ -78,7 +78,7 @@ export function ServerJobsProgressInfo({
           statusIcons={statusIconsSafe}
           statusText={{
             ...statusTextSafe,
-            failed: jobProgress.failure_message ?? statusTextSafe.failed,
+            failed: jobProgress.job_failure_message ?? statusTextSafe.failed,
           }}
           itemNames={itemNames}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}

@@ -50,7 +50,8 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 2;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 
 /**
  * Grade instance questions using AI.
@@ -184,17 +185,20 @@ export async function aiGrade({
     if (rateLimitExceeded) {
       job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
 
-      item_statuses = instance_questions.reduce((acc, instance_question) => {
-        acc[instance_question.id] = JobItemStatus.failed;
-        return acc;
-      }, {} as Record<string, JobItemStatus>);
+      item_statuses = instance_questions.reduce(
+        (acc, instance_question) => {
+          acc[instance_question.id] = JobItemStatus.failed;
+          return acc;
+        },
+        {} as Record<string, JobItemStatus>,
+      );
 
       await emitServerJobProgressUpdate({
         job_sequence_id: serverJob.jobSequenceId,
         num_complete: instance_questions.length,
         num_failed: instance_questions.length,
         num_total: instance_questions.length,
-        failure_message: 'Hourly usage cap reached. Try again later.',
+        job_failure_message: HOURLY_USAGE_CAP_REACHED_MESSAGE,
         item_statuses,
       });
       return;
@@ -615,7 +619,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            failure_message: rateLimitExceeded ? 'Hourly usage cap reached. Try again later.' : undefined,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
 
           const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
@@ -642,7 +646,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
-            failure_message: rateLimitExceeded ? 'Hourly usage cap reached. Try again later.' : undefined,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
           for (const log of logs) {
             switch (log.messageType) {
