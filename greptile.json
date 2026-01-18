@@ -1,0 +1,69 @@
+{
+  "strictness": 2,
+  "commentTypes": ["syntax", "logic", "style"],
+  "triggerOnUpdates": true,
+
+  "labels": [],
+  "disabledLabels": [],
+  "includeAuthors": [],
+  "excludeAuthors": ["dependabot[bot]", "dependabot-preview[bot]", "github-actions[bot]"],
+  "includeBranches": [],
+  "excludeBranches": [],
+  "ignoreKeywords": "",
+  "includeKeywords": "",
+  "fileChangeLimit": 100,
+  "ignorePatterns": "greptile.json\n*.lock",
+
+  "instructions": "",
+  "customContext": {
+    "other": [
+      {
+        "scope": [],
+        "content": ""
+      }
+    ],
+    "rules": [
+      {
+        "scope": [],
+        "rule": ""
+      }
+    ],
+    "files": [
+      {
+        "scope": [],
+        "path": "",
+        "description": ""
+      }
+    ]
+  },
+  "patternRepositories": [],
+
+  "comment": "",
+  "shouldUpdateDescription": false,
+  "updateExistingSummaryComment": true,
+  "updateSummaryOnly": false,
+  "fixWithAI": true,
+  "hideFooter": true,
+
+  "summarySection": {
+    "included": false
+  },
+  "issuesTableSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "confidenceScoreSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "sequenceDiagramSection": {
+    "included": false,
+    "collapsible": false,
+    "defaultOpen": false
+  },
+
+  "statusCheck": true,
+  "statusCommentsEnabled": false
+}
