@@ -187,7 +187,8 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
 
   const existingComment = comments.find(
     (comment) =>
-      comment.body?.startsWith(`## ${title}`) && comment.user?.login === 'github-actions[bot]',
+      comment.body?.startsWith(`<details><summary><h3>${title}</h3>`) &&
+      comment.user?.login === 'github-actions[bot]',
   );
 
   // Sort images by name and platform.
@@ -196,9 +197,36 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     return a.newTag.localeCompare(b.newTag);
   });
 
-  // Generate new comment body.
+  // Calculate summary statistics for images with comparable sizes.
+  const imagesWithChange = sortedImages.filter((img) => img.oldSize != null);
+  const changes = imagesWithChange.map((img) => (img.newSize / img.oldSize! - 1) * 100);
+
+  const biggestIncrease = Math.max(...changes, 0);
+  const biggestSavings = Math.min(...changes, 0);
+
+  // Filter out noise from the summary statistics.
+  const THRESHOLD = 0.5;
+  const hasSignificantIncrease = biggestIncrease > THRESHOLD;
+  const hasSignificantSavings = biggestSavings < -THRESHOLD;
+
+  let summaryLine: string;
+  if (hasSignificantIncrease && hasSignificantSavings) {
+    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%, biggest savings: ${biggestSavings.toFixed(2)}%`;
+  } else if (hasSignificantIncrease) {
+    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%`;
+  } else if (hasSignificantSavings) {
+    summaryLine = `Biggest savings: ${biggestSavings.toFixed(2)}%`;
+  } else {
+    summaryLine = 'No significant size changes';
+  }
+
+  // Generate new comment body with collapsible format.
   const lines = [
-    `## ${title}`,
+    `<details><summary><h3>${title}</h3>`,
+    '',
+    summaryLine,
+    '',
+    '</summary>',
     '',
     // Markdown table header
     '| Image | Platform | Old Size | New Size | Change |',
@@ -215,13 +243,15 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     const oldSize = image.oldSize ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB` : 'N/A';
     const newSize = `${(image.newSize / 1024 / 1024).toFixed(2)} MB`;
     const change = image.oldSize
-      ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2)}%`
+      ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replace('-0', '0')}%`
       : 'N/A';
 
     lines.push(
       `| [${image.name}:${image.newTag}](${imageLink}) | ${image.platform} | ${oldSize} | ${newSize} | ${change} |`,
     );
   }
+
+  lines.push('', '</details>');
 
   const body = lines.join('\n');
 
