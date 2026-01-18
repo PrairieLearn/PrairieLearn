@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
@@ -9,7 +9,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -38,7 +38,7 @@ export function ManualGradingAssessment({
   num_open_instances,
   adminFeaturesEnabled,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
@@ -170,7 +170,7 @@ function AssessmentQuestionRow({
   resLocals,
   question,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   question: ManualGradingQuestion;
 }) {
   const showGradingButton =
@@ -299,7 +299,7 @@ function GraderAssignmentModal({
                 value={staff.id}
                 className="form-check-input"
               />
-              <label className="form-check-label" for={`grader-assignment-${staff.id}`}>
+              <label className="form-check-label" htmlFor={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>

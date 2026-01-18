@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
 import { type PublishingStatus, computeStatus } from '../lib/publishing.js';
@@ -233,7 +233,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-unpublished`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-unpublished`}>
               Unpublished
             </label>
           </div>
@@ -241,7 +241,7 @@ export function CourseInstancePublishingForm({
             <>
               <input type="hidden" name="start_date" value={startDate} />
               <input type="hidden" name="end_date" value={endDate} />
-              <div className="ms-4 mt-1 small text-muted">
+              <div className="ms-4 small text-muted">
                 Course is not accessible by any students
                 {startDate && ' except those with extensions'}.
                 {endDate && (
@@ -284,7 +284,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-publish-scheduled`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-publish-scheduled`}>
               Scheduled to be published
             </label>
           </div>
@@ -292,7 +292,7 @@ export function CourseInstancePublishingForm({
           {selectedStatus === 'publish_scheduled' && (
             <>
               {startDate && endDate && (
-                <div className="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
@@ -313,7 +313,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-start-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-start-date`}>
                       Start date
                     </label>
                     {canEdit && (
@@ -355,7 +355,7 @@ export function CourseInstancePublishingForm({
 
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-end-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
@@ -413,14 +413,14 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label className="form-check-label" for={`${formId}-status-published`}>
+            <label className="form-check-label" htmlFor={`${formId}-status-published`}>
               Published
             </label>
           </div>
           {selectedStatus === 'published' && (
             <>
               {startDate && endDate && (
-                <div className="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course{' '}
                   {plainDateTimeStringToDate(startDate, displayTimezone).getTime() ===
                     originalStartDate?.getTime() && originalStatus === 'published'
@@ -447,7 +447,7 @@ export function CourseInstancePublishingForm({
               <div className="ms-4 mt-2">
                 <div className="mb-3">
                   <div className="d-flex justify-content-between align-items-center">
-                    <label className="form-label mb-0" for={`${formId}-end-date`}>
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (

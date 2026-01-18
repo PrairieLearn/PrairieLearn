@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -14,7 +14,6 @@ import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { features } from '../../lib/features/index.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
@@ -215,7 +214,6 @@ router.get(
       __csrf_token: csrfToken,
       course_instance: courseInstance,
       course,
-      institution,
     } = pageContext;
 
     const search = getUrl(req).search;
@@ -237,13 +235,6 @@ router.get(
       );
       return;
     }
-
-    const enrollmentManagementEnabled =
-      (await features.enabled('enrollment-management', {
-        institution_id: institution.id,
-        course_id: course.id,
-        course_instance_id: courseInstance.id,
-      })) && authz_data.is_administrator;
 
     const students = await queryRows(
       sql.select_users_and_enrollments_for_course_instance,
@@ -278,7 +269,6 @@ router.get(
         content: (
           <Hydrate fullHeight>
             <InstructorStudents
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}

@@ -1,19 +1,19 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert, Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import {
   AssessmentInstanceScoreResultSchema,
-  type OtherGroupUser,
+  type OtherTeamUser,
 } from '../instructorGradebook.types.js';
 
 interface EditScoreButtonProps {
   assessmentInstanceId: string;
   courseInstanceId: string;
   currentScore: number;
-  otherUsers: OtherGroupUser[];
+  otherUsers: OtherTeamUser[];
   csrfToken: string;
 }
 

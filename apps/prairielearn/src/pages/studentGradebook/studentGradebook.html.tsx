@@ -1,13 +1,13 @@
-import { Fragment } from 'preact/jsx-runtime';
+import { Fragment } from 'react';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { Scorebar } from '../../components/Scorebar.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export interface StudentGradebookTableRow {
   assessment_id: string;
   assessment_instance_id: string;
-  assessment_group_work: boolean;
+  assessment_team_work: boolean;
   title: string;
   assessment_set_heading: string;
   assessment_set_color: string;
@@ -22,7 +22,7 @@ export function StudentGradebook({
   rows,
   csvFilename,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   rows: StudentGradebookTableRow[];
   csvFilename: string;
 }) {
@@ -56,7 +56,7 @@ export function StudentGradebook({
             <table className="table table-sm table-hover" aria-label="Gradebook">
               <thead>
                 <tr>
-                  <th style="width: 1%">
+                  <th style={{ width: '1%' }}>
                     <span className="visually-hidden">Label</span>
                   </th>
                   <th>
@@ -70,18 +70,18 @@ export function StudentGradebook({
                   <Fragment key={`${row.assessment_id}-${row.assessment_instance_id}`}>
                     {row.start_new_set && (
                       <tr>
-                        <th colspan={3}>{row.assessment_set_heading}</th>
+                        <th colSpan={3}>{row.assessment_set_heading}</th>
                       </tr>
                     )}
                     <tr>
-                      <td className="align-middle" style="width: 1%">
+                      <td className="align-middle" style={{ width: '1%' }}>
                         <span className={`badge color-${row.assessment_set_color}`}>
                           {row.label}
                         </span>
                       </td>
                       <td className="align-middle">
                         {row.title}{' '}
-                        {row.assessment_group_work && (
+                        {row.assessment_team_work && (
                           <i className="fas fa-users" aria-hidden="true" />
                         )}
                       </td>

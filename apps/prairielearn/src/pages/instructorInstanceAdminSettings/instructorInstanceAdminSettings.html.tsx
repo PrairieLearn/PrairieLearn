@@ -1,7 +1,7 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { QueryClient } from '@tanstack/react-query';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Form } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -32,9 +32,9 @@ export function InstructorInstanceAdminSettings({
   studentLink,
   publicLink,
   selfEnrollLink,
-  enrollmentManagementEnabled,
   infoCourseInstancePath,
   isDevMode,
+  isAdministrator,
 }: {
   csrfToken: string;
   urlPrefix: string;
@@ -50,9 +50,9 @@ export function InstructorInstanceAdminSettings({
   studentLink: string;
   publicLink: string;
   selfEnrollLink: string;
-  enrollmentManagementEnabled: boolean;
   infoCourseInstancePath: string;
   isDevMode: boolean;
+  isAdministrator: boolean;
 }) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -65,8 +65,6 @@ export function InstructorInstanceAdminSettings({
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
-    show_in_enroll_page:
-      courseInstance.hide_in_enroll_page == null ? true : !courseInstance.hide_in_enroll_page,
     self_enrollment_enabled: courseInstance.self_enrollment_enabled,
     self_enrollment_use_enrollment_code: courseInstance.self_enrollment_use_enrollment_code,
     self_enrollment_restrict_to_institution: courseInstance.self_enrollment_restrict_to_institution,
@@ -116,7 +114,7 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="orig_hash" value={origHash} />
             <div className="mb-3">
-              <label className="form-label" for="ciid">
+              <label className="form-label" htmlFor="ciid">
                 CIID
               </label>
               <input
@@ -153,7 +151,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="long_name">
+              <label className="form-label" htmlFor="long_name">
                 Long Name
               </label>
               <input
@@ -171,7 +169,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="display_timezone">
+              <label className="form-label" htmlFor="display_timezone">
                 Timezone
               </label>
               <Form.Select
@@ -181,11 +179,7 @@ export function InstructorInstanceAdminSettings({
                 name="display_timezone"
               >
                 {availableTimezones.map((tz) => (
-                  <option
-                    key={tz.name}
-                    value={tz.name}
-                    selected={tz.name === defaultValues.display_timezone}
-                  >
+                  <option key={tz.name} value={tz.name}>
                     {formatTimezone(tz)}
                   </option>
                 ))}
@@ -203,7 +197,7 @@ export function InstructorInstanceAdminSettings({
               </small>
             </div>
             <div className="mb-3">
-              <label className="form-label" for="group_assessments_by">
+              <label className="form-label" htmlFor="group_assessments_by">
                 Group assessments by
               </label>
               <Form.Select
@@ -212,12 +206,8 @@ export function InstructorInstanceAdminSettings({
                 {...register('group_assessments_by')}
                 name="group_assessments_by"
               >
-                <option value="Set" selected={defaultValues.group_assessments_by === 'Set'}>
-                  Set
-                </option>
-                <option value="Module" selected={defaultValues.group_assessments_by === 'Module'}>
-                  Module
-                </option>
+                <option value="Set">Set</option>
+                <option value="Module">Module</option>
               </Form.Select>
               <small className="form-text text-muted">
                 Determines how assessments will be grouped on the student assessments page.
@@ -229,7 +219,6 @@ export function InstructorInstanceAdminSettings({
               hasModernPublishing={courseInstance.modern_publishing}
               control={control}
               trigger={trigger}
-              enrollmentManagementEnabled={enrollmentManagementEnabled}
               studentLink={studentLink}
               selfEnrollLink={selfEnrollLink}
               enrollmentCode={courseInstance.enrollment_code}
@@ -315,7 +304,7 @@ export function InstructorInstanceAdminSettings({
           csrfToken={csrfToken}
           courseShortName={course.short_name}
           courseInstance={courseInstance}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
+          isAdministrator={isAdministrator}
           onHide={() => setShowCopyModal(false)}
         />
       </div>

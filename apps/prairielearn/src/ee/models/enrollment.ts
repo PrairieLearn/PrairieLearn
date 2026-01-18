@@ -96,10 +96,11 @@ export async function getEnrollmentCountsForCourseInstance(
   };
 }
 
-export enum PotentialEnterpriseEnrollmentStatus {
+export enum PotentialEnrollmentStatus {
   ALLOWED = 'allowed',
   LIMIT_EXCEEDED = 'limit_exceeded',
   PLAN_GRANTS_REQUIRED = 'plan_grants_required',
+  INELIGIBLE = 'ineligible',
 }
 
 /**
@@ -123,7 +124,7 @@ export async function checkPotentialEnterpriseEnrollment({
   course: Course;
   courseInstance: CourseInstance;
   authzData: any;
-}): Promise<PotentialEnterpriseEnrollmentStatus> {
+}): Promise<Exclude<PotentialEnrollmentStatus, PotentialEnrollmentStatus.INELIGIBLE>> {
   const hasPlanGrants = await checkPlanGrants({
     institution,
     courseInstance,
@@ -131,7 +132,7 @@ export async function checkPotentialEnterpriseEnrollment({
   });
 
   if (!hasPlanGrants) {
-    return PotentialEnterpriseEnrollmentStatus.PLAN_GRANTS_REQUIRED;
+    return PotentialEnrollmentStatus.PLAN_GRANTS_REQUIRED;
   }
 
   // Check if the user is a paid user. If they are, we'll bypass any enrollment
@@ -150,7 +151,7 @@ export async function checkPotentialEnterpriseEnrollment({
   });
   const planNames = getPlanNamesFromPlanGrants(planGrants);
   if (planGrantsMatchPlanFeatures(planNames, ['basic'])) {
-    return PotentialEnterpriseEnrollmentStatus.ALLOWED;
+    return PotentialEnrollmentStatus.ALLOWED;
   }
 
   // Note that this check is susceptible to race conditions: if two users
@@ -198,8 +199,8 @@ export async function checkPotentialEnterpriseEnrollment({
     freeCourseEnrollmentCount + 1 > courseYearlyEnrollmentLimit ||
     freeCourseInstanceEnrollmentCount + 1 > courseInstanceEnrollmentLimit
   ) {
-    return PotentialEnterpriseEnrollmentStatus.LIMIT_EXCEEDED;
+    return PotentialEnrollmentStatus.LIMIT_EXCEEDED;
   }
 
-  return PotentialEnterpriseEnrollmentStatus.ALLOWED;
+  return PotentialEnrollmentStatus.ALLOWED;
 }

@@ -12,7 +12,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -360,7 +360,7 @@ export function AssessmentQuestionTable({
       rubric_grading_item_ids: setRubricItemsFilter,
       ai_grading_status: undefined,
       uid: undefined,
-      user_or_group_name: undefined,
+      user_or_team_name: undefined,
       select: undefined,
       index: undefined,
     };
@@ -463,7 +463,7 @@ export function AssessmentQuestionTable({
           return [col.id, aiGradingMode];
         }
         // Some columns are always hidden by default.
-        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
+        if (['user_or_team_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
           return [col.id, false];
         }
 
@@ -545,7 +545,7 @@ export function AssessmentQuestionTable({
   // Determine student info checkbox state based on column visibility
   const studentInfoCheckboxState = useMemo(() => {
     const visibility = columnVisibility;
-    const nameVisible = visibility.user_or_group_name;
+    const nameVisible = visibility.user_or_team_name;
     const uidVisible = visibility.uid;
 
     if (nameVisible && uidVisible) return 'checked';
@@ -553,8 +553,16 @@ export function AssessmentQuestionTable({
     return 'unchecked';
   }, [columnVisibility]);
 
+  // Ref for the student info checkbox to handle indeterminate state
+  const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (studentInfoCheckboxRef.current) {
+      studentInfoCheckboxRef.current.indeterminate = studentInfoCheckboxState === 'indeterminate';
+    }
+  }, [studentInfoCheckboxState]);
+
   // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
-  const handleStudentInfoCheckboxClick = () => {
+  const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
     const currentVisibility = table.getState().columnVisibility;
 
@@ -563,20 +571,20 @@ export function AssessmentQuestionTable({
       // Checked -> Unchecked (hide both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: false,
+        user_or_team_name: false,
         uid: false,
       };
     } else {
       // Unchecked or Indeterminate -> Checked (show both)
       newVisibility = {
         ...currentVisibility,
-        user_or_group_name: true,
+        user_or_team_name: true,
         uid: true,
       };
     }
 
     void setColumnVisibility(newVisibility);
-  };
+  }, [studentInfoCheckboxState, table, setColumnVisibility]);
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
@@ -730,9 +738,9 @@ export function AssessmentQuestionTable({
             <div className="px-2 py-1 d-flex align-items-center">
               <label className="form-check text-nowrap d-flex align-items-stretch">
                 <input
+                  ref={studentInfoCheckboxRef}
                   type="checkbox"
                   checked={studentInfoCheckboxState === 'checked'}
-                  indeterminate={studentInfoCheckboxState === 'indeterminate'}
                   className="form-check-input"
                   onChange={handleStudentInfoCheckboxClick}
                 />
@@ -952,7 +960,7 @@ export function AssessmentQuestionTable({
             },
             {
               name: assessment.team_work ? 'Group Name' : 'Name',
-              value: row.user_or_group_name || '',
+              value: row.user_or_team_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
             {

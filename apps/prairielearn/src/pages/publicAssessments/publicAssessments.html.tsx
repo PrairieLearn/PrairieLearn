@@ -1,7 +1,7 @@
-import { Fragment } from 'preact';
+import { Fragment } from 'react';
 import z from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
@@ -40,14 +40,14 @@ export function PublicAssessments({
   course,
   courseInstanceCopyTargets,
   questionsForCopy,
-  enrollmentManagementEnabled,
+  isAdministrator,
 }: {
   rows: SafeAssessmentRow[];
   courseInstance: PublicCourseInstance;
   course: PublicCourse;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
-  enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }) {
   return (
     <div className="card mb-4">
@@ -61,7 +61,7 @@ export function PublicAssessments({
                 courseInstance={courseInstance}
                 courseInstanceCopyTargets={courseInstanceCopyTargets}
                 questionsForCopy={questionsForCopy}
-                enrollmentManagementEnabled={enrollmentManagementEnabled}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
           </div>
@@ -72,7 +72,7 @@ export function PublicAssessments({
         <table className="table table-sm table-hover">
           <thead>
             <tr>
-              <th style="width: 1%">
+              <th style={{ width: '1%' }}>
                 <span className="visually-hidden">Label</span>
               </th>
               <th>
@@ -96,7 +96,7 @@ export function PublicAssessments({
                   </tr>
                 )}
                 <tr id={`row-${row.id}`}>
-                  <td className="align-middle" style="width: 1%">
+                  <td className="align-middle" style={{ width: '1%' }}>
                     <span className={`badge color-${row.assessment_set.color}`}>{row.label}</span>
                   </td>
                   <td className="align-middle">

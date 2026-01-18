@@ -1,5 +1,5 @@
-import { useMemo } from 'preact/compat';
 import QR from 'qrcode-svg';
+import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { html, unsafeHtml } from '@prairielearn/html';
@@ -55,7 +55,7 @@ export function QRCodeModal({
       <Modal.Body>
         <div
           className="d-flex"
-          style="max-height: 80vh;"
+          style={{ maxHeight: '80vh' }}
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: svg }}
         />
