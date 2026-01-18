@@ -786,6 +786,7 @@ export async function correctImagesOrientation({
     rotatedSubmittedAnswer,
     rotationCorrections,
   };
+}
 /**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *
