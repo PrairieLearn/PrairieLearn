@@ -50,7 +50,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const PARALLEL_SUBMISSION_GRADING_LIMIT = 2;
 
 /**
  * Grade instance questions using AI.
@@ -158,7 +158,7 @@ export async function aiGrade({
     }
   });
 
-  const item_statuses = instance_questions.reduce(
+  let item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
       acc[instance_question.id] = JobItemStatus.queued;
       return acc;
@@ -183,6 +183,20 @@ export async function aiGrade({
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
       job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
+
+      item_statuses = instance_questions.reduce((acc, instance_question) => {
+        acc[instance_question.id] = JobItemStatus.failed;
+        return acc;
+      }, {} as Record<string, JobItemStatus>);
+
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete: instance_questions.length,
+        num_failed: instance_questions.length,
+        num_total: instance_questions.length,
+        failure_message: 'Hourly usage cap reached. Try again later.',
+        item_statuses,
+      });
       return;
     }
 
@@ -601,6 +615,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            failure_message: rateLimitExceeded ? 'Hourly usage cap reached. Try again later.' : undefined,
           });
 
           const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
@@ -627,6 +642,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            failure_message: rateLimitExceeded ? 'Hourly usage cap reached. Try again later.' : undefined,
           });
           for (const log of logs) {
             switch (log.messageType) {

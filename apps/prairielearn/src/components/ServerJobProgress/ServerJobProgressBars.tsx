@@ -76,7 +76,10 @@ export function ServerJobsProgressInfo({
             total: jobProgress.num_total,
           }}
           statusIcons={statusIconsSafe}
-          statusText={statusTextSafe}
+          statusText={{
+            ...statusTextSafe,
+            failed: jobProgress.failure_message ?? statusTextSafe.failed,
+          }}
           itemNames={itemNames}
           onDismissCompleteJobSequence={onDismissCompleteJobSequence}
         />

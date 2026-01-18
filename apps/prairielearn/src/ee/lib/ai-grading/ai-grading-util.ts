@@ -535,6 +535,8 @@ export async function addAiGradingCostToIntervalUsage({
   } else {
     cache.incrementByFloat(key, responseCost);
   }
+}
+/**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *
  * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.

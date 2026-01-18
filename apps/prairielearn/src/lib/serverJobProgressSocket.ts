@@ -85,6 +85,7 @@ export function connection(socket: Socket) {
       num_complete: progressData.num_complete,
       num_failed: progressData.num_failed,
       num_total: progressData.num_total,
+      failure_message: progressData.failure_message,
       item_statuses: progressData.item_statuses,
     } satisfies ProgressUpdateMessage);
   });

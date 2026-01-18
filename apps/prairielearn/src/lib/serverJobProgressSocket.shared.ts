@@ -29,6 +29,7 @@ export const JobProgressSchema = z.object({
   num_complete: z.number().int().nonnegative(),
   num_failed: z.number().int().nonnegative(),
   num_total: z.number().int().nonnegative(),
+  failure_message: z.string().optional(),
   item_statuses: z.record(z.string(), JobItemStatusEnum).optional(),
 });
 
