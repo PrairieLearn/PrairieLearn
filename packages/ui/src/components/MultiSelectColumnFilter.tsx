@@ -1,28 +1,31 @@
 import type { Column } from '@tanstack/table-core';
 import clsx from 'clsx';
-import { type JSX, useMemo } from 'preact/compat';
+import { type JSX, useMemo } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span>{String(value)}</span>;
+function defaultRenderValueLabel({ value }: { value: string }) {
+  return <span>{value}</span>;
 }
 
 /**
  * A component that allows the user to filter a column containing arrays of values.
  * Uses AND logic: rows must contain ALL selected values to match.
  *
+ * The filter options (`allColumnValues`) are strings (or string subtypes like
+ * enums). The column's `filterFn` is responsible for mapping these string
+ * values to the actual column data.
+ *
  * @param params
  * @param params.column - The TanStack Table column object
- * @param params.allColumnValues - All possible values that can appear in the column filter
+ * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function MultiSelectColumnFilter<TData, TValue>({
+export function MultiSelectColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
-  column: Column<TData, TValue>;
-  /** In some cases, the filter values are not the same as the column values, but `TValue` is a good estimation. */
+  column: Column<TData, unknown>;
   allColumnValues: TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
@@ -55,23 +58,23 @@ export function MultiSelectColumnFilter<TData, TValue>({
     <Dropdown align="end">
       <Dropdown.Toggle
         variant="link"
-        class="text-muted p-0"
+        className="text-muted p-0"
         id={`filter-${columnId}`}
         aria-label={`Filter ${label.toLowerCase()}`}
         title={`Filter ${label.toLowerCase()}`}
       >
         <i
-          class={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
+          className={clsx('bi', hasActiveFilter ? ['bi-funnel-fill', 'text-primary'] : 'bi-funnel')}
           aria-hidden="true"
         />
       </Dropdown.Toggle>
-      <Dropdown.Menu class="p-0">
-        <div class="p-3 pb-0" style={{ minWidth: '250px' }}>
-          <div class="d-flex align-items-center justify-content-between mb-2">
-            <div class="fw-semibold">{label}</div>
+      <Dropdown.Menu className="p-0">
+        <div className="p-3 pb-0" style={{ minWidth: '250px' }}>
+          <div className="d-flex align-items-center justify-content-between mb-2">
+            <div className="fw-semibold">{label}</div>
             <button
               type="button"
-              class="btn btn-link btn-sm text-decoration-none p-0"
+              className="btn btn-link btn-sm text-decoration-none p-0"
               onClick={() => column.setFilterValue([])}
             >
               Clear
@@ -80,26 +83,28 @@ export function MultiSelectColumnFilter<TData, TValue>({
         </div>
 
         <div
-          class="list-group list-group-flush"
-          style={{
-            // This is needed to prevent the last item's background from covering
-            // the dropdown's border radius.
-            '--bs-list-group-bg': 'transparent',
-          }}
+          className="list-group list-group-flush"
+          style={
+            {
+              // This is needed to prevent the last item's background from covering
+              // the dropdown's border radius.
+              '--bs-list-group-bg': 'transparent',
+            } as React.CSSProperties
+          }
         >
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
             return (
-              <div key={value} class="list-group-item d-flex align-items-center gap-3">
-                <div class="form-check">
+              <div key={value} className="list-group-item d-flex align-items-center gap-3">
+                <div className="form-check">
                   <input
-                    class="form-check-input"
+                    className="form-check-input"
                     type="checkbox"
                     checked={isSelected}
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label class="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

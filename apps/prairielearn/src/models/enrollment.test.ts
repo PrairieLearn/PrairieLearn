@@ -3,7 +3,12 @@ import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 import { queryRow } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import { type CourseInstance, type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import {
+  type CourseInstance,
+  type Enrollment,
+  EnrollmentSchema,
+  type EnumEnrollmentStatus,
+} from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
@@ -26,7 +31,7 @@ async function createEnrollmentWithStatus({
 }: {
   userId: string | null;
   courseInstance: CourseInstance;
-  status: 'invited' | 'joined' | 'blocked' | 'removed' | 'rejected';
+  status: EnumEnrollmentStatus;
   firstJoinedAt?: Date | null;
   pendingUid?: string | null;
 }): Promise<Enrollment> {
@@ -382,10 +387,10 @@ describe('DB validation of enrollment', () => {
         first_joined_at: '2025-01-01',
         pending_uid: null,
       },
-      // status is 'removed', first_joined_at must not be null
+      // status is 'left', first_joined_at must not be null
       {
         user_id: user4.id,
-        status: 'removed',
+        status: 'left',
         created_at: '2025-01-01',
         first_joined_at: '2025-01-01',
         pending_uid: null,
@@ -418,6 +423,12 @@ describe('DB validation of enrollment', () => {
       uin: 'invalid2',
       email: 'invalid_user_2@example.com',
     });
+    const invalidUser3 = await getOrCreateUser({
+      uid: 'invalid_user_3@example.com',
+      name: 'Invalid User 3',
+      uin: 'invalid3',
+      email: 'invalid_user_3@example.com',
+    });
 
     // Invalid states that should violate the constraint
     const invalidStates = [
@@ -429,9 +440,17 @@ describe('DB validation of enrollment', () => {
         first_joined_at: null,
         pending_uid: null,
       },
-      // status is 'removed', first_joined_at is null
+      // status is 'left', first_joined_at is null
       {
         user_id: invalidUser2.id,
+        status: 'left',
+        created_at: '2025-01-01',
+        first_joined_at: null,
+        pending_uid: null,
+      },
+      // status is 'removed', first_joined_at is null
+      {
+        user_id: invalidUser3.id,
         status: 'removed',
         created_at: '2025-01-01',
         first_joined_at: null,

@@ -43,15 +43,15 @@ refresh-workspace-hosts:
 refresh-workspace-hosts-dev:
 	@yarn refresh-workspace-hosts-dev
 
-dev: start-support python-deps-core
+dev: start-support python-deps
 	@yarn dev
-dev-vite: start-support python-deps-core
+dev-vite: start-support python-deps
 	@yarn dev-vite
-dev-bun: python-deps-core
+dev-bun: python-deps
 	@yarn dev-bun
 dev-workspace-host: start-support
 	@yarn dev-workspace-host
-dev-all: start-support python-deps-core
+dev-all:
 	@$(MAKE) -s -j2 dev dev-workspace-host
 
 start: start-support
@@ -97,6 +97,8 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+check-npm-packages:
+	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
@@ -114,6 +116,8 @@ lint-js-cached:
 lint-python:
 	@uv run ruff check ./
 	@uv run ruff format --check ./
+lint-docs-links: build-docs
+	@yarn linkinator ./site | python3 scripts/process_linkinator_output.py
 # Lint HTML files, and the build output of the docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
@@ -153,11 +157,14 @@ format-python:
 	@uv run ruff check --fix ./
 	@uv run ruff format ./
 
+format-changed:
+	@node scripts/format-changed.mjs
+
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@yarn tsc -p contrib
+	@yarn tsgo -p contrib --noEmit
 typecheck-scripts:
-	@yarn tsc -p scripts
+	@yarn tsgo -p scripts --noEmit
 typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps
@@ -169,7 +176,7 @@ changeset:
 	@yarn changeset
 	@yarn prettier --write ".changeset/**/*.md"
 
-lint-docs: lint-d2 lint-links lint-markdown
+lint-docs: lint-d2 lint-links lint-markdown lint-docs-links
 
 build-docs:
 	@uv run mkdocs build --strict

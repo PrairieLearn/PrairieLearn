@@ -3,7 +3,7 @@ import z from 'zod';
 
 import * as error from '@prairielearn/error';
 import { execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
@@ -34,9 +34,11 @@ import {
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import { getJobSequenceIds } from '../../../lib/server-jobs.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -90,6 +92,28 @@ router.get(
       unfilledInstanceQuestionInfo,
       res.locals.assessment_question,
     );
+
+    const initialOngoingJobSequenceTokens = await run(async () => {
+      if (!aiGradingEnabled) {
+        return null;
+      }
+
+      const ongoingJobSequenceIds = await getJobSequenceIds({
+        assessment_question_id: res.locals.assessment_question.id,
+        status: 'Running',
+        type: 'ai_grading',
+      });
+
+      const jobSequenceTokens = ongoingJobSequenceIds.reduce(
+        (acc, jobSequenceId) => {
+          acc[jobSequenceId] = generateJobSequenceToken(jobSequenceId);
+          return acc;
+        },
+        {} as Record<string, string>,
+      );
+
+      return jobSequenceTokens;
+    });
 
     const {
       authz_data,
@@ -153,6 +177,7 @@ router.get(
                     ? await calculateAiGradingStats(assessment_question)
                     : null
                 }
+                initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
                 numOpenInstances={num_open_instances}
                 isDevMode={process.env.NODE_ENV === 'development'}
                 questionTitle={question.title ?? ''}
@@ -306,7 +331,10 @@ router.post(
           instance_question_ids,
         });
 
-        res.send({ job_sequence_id });
+        res.send({
+          job_sequence_id,
+          job_sequence_token: generateJobSequenceToken(job_sequence_id),
+        });
         return;
       } else if (req.body.batch_action === 'ai_instance_question_group_selected') {
         if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
@@ -433,7 +461,10 @@ router.post(
         }),
       });
 
-      res.json({ job_sequence_id });
+      res.json({
+        job_sequence_id,
+        job_sequence_token: generateJobSequenceToken(job_sequence_id),
+      });
     } else if (req.body.__action === 'ai_instance_question_group_assessment_all') {
       if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');

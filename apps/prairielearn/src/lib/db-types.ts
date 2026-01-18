@@ -36,6 +36,7 @@ export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
+  'left',
   'removed',
   'rejected',
   'blocked',
@@ -320,7 +321,7 @@ export const AssessmentSchema = z.object({
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
-  team_work: z.boolean().nullable(),
+  team_work: z.boolean(),
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
@@ -593,7 +594,6 @@ export const CourseInstanceSchema = z.object({
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
-  hide_in_enroll_page: z.boolean().nullable(),
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),
@@ -891,19 +891,6 @@ export const TeamUserRoleSchema = z.object({
 });
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
 
-// Backwards compatibility aliases for renamed group/team tables
-export const GroupSchema = TeamSchema;
-export type Group = Team;
-export const GroupConfigSchema = TeamConfigSchema;
-export type GroupConfig = TeamConfig;
-export const GroupRoleSchema = TeamRoleSchema;
-export type GroupRole = TeamRole;
-export const GroupUserSchema = TeamUserSchema;
-export type GroupUser = TeamUser;
-export const GroupUserRoleSchema = TeamUserRoleSchema;
-export type GroupUserRole = TeamUserRole;
-export const GroupLogSchema = TeamLogSchema;
-
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),
   assessment_instance_id: IdSchema,
@@ -1002,6 +989,7 @@ export type Issue = z.infer<typeof IssueSchema>;
 export const JobSchema = z.object({
   arguments: z.string().array().nullable(),
   assessment_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   command: z.string().nullable(),
   course_id: IdSchema.nullable(),
@@ -1031,6 +1019,7 @@ export type Job = z.infer<typeof JobSchema>;
 
 export const JobSequenceSchema = z.object({
   assessment_id: IdSchema.nullable(),
+  assessment_question_id: IdSchema.nullable(),
   authn_user_id: IdSchema.nullable(),
   course_id: IdSchema.nullable(),
   course_instance_id: IdSchema.nullable(),
@@ -1361,19 +1350,6 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
-export const SubmissionGradingContextEmbeddingSchema = z.object({
-  assessment_question_id: IdSchema,
-  created_at: DateFromISOString,
-  embedding: z.string(),
-  id: IdSchema,
-  submission_id: IdSchema,
-  submission_text: z.string(),
-  updated_at: DateFromISOString,
-});
-export type SubmissionGradingContextEmbedding = z.infer<
-  typeof SubmissionGradingContextEmbeddingSchema
->;
-
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
   broken: z.boolean().nullable(),
@@ -1652,7 +1628,6 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
-  'submission_grading_context_embeddings',
   'submissions',
   'tags',
   'time_series',

@@ -6,6 +6,15 @@ FROM
 WHERE
   id = $course_id;
 
+-- BLOCK select_course_by_short_name
+SELECT
+  c.*
+FROM
+  courses AS c
+WHERE
+  c.short_name = $short_name
+  AND c.deleted_at IS NULL;
+
 -- BLOCK select_course_by_instance_id
 SELECT
   c.*
@@ -60,9 +69,17 @@ WITH
   ),
   inserted_course AS (
     INSERT INTO
-      courses AS c (path, display_timezone, institution_id)
+      courses AS c (
+        path,
+        branch,
+        repository,
+        display_timezone,
+        institution_id
+      )
     SELECT
       $path,
+      $branch,
+      $repository,
       i.display_timezone,
       i.id
     FROM

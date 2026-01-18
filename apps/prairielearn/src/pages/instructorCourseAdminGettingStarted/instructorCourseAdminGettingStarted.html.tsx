@@ -2,14 +2,14 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import type { GettingStartedTaskInfo } from '../../lib/getting-started.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function InstructorCourseAdminGettingStarted({
   tasks,
   resLocals,
 }: {
   tasks: GettingStartedTaskInfo[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
 }) {
   return PageLayout({
     resLocals,

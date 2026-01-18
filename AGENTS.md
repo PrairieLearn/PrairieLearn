@@ -11,7 +11,9 @@ This is a monorepo that contains both applications (in `apps/*`) and libraries (
 - `apps/grader-host`: The application that runs external grading jobs.
 - `apps/workspace-host`: The application that runs workspace containers.
 
-If you update a package in `packages/`, make sure to add a changeset.
+## Packages
+
+Libraries live in `packages/`. If you update a package, you MUST add a changeset using `yarn changeset`.
 
 ## Building and type checking
 
@@ -21,7 +23,7 @@ Run `make build` from the root directory to build all TypeScript code and check 
 
 Run `make typecheck-python` from the root directory to type check all Python code.
 
-## Database and Schema changes
+## Database and schema changes
 
 All applications share a single Postgres database. See `database/` for descriptions of the database tables and enums. All tables have corresponding Zod types in `apps/prairielearn/src/lib/db-types.ts`.
 
@@ -41,6 +43,8 @@ Run `make format-js-cached` / `make lint-js-cached` from the root directory to f
 
 Run `make format-python` / `make lint-python` from the root directory to format/lint all Python code.
 
+Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+
 ## Conventions
 
 ### Stylistic conventions
@@ -48,11 +52,14 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 - NEVER use `as any` casts in TypeScript code to avoid type errors.
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
+- Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
 
 ### Library usage conventions
 
 - Use `@tanstack/react-query` for API calls.
 - Use `react-hook-form` for form handling.
+- Prefer `extractPageContext(res.locals, ...)` over accessing `res.locals` properties directly in route handlers. This provides better type safety and ensures consistent access patterns.
+- Use `nuqs` for URL query state in hydrated components. Use `NuqsAdapter` from `@prairielearn/ui` and pass the search string from the router. See `pages/home/` for an example.
 
 ### User interface conventions
 
@@ -60,6 +67,8 @@ Run `make format-python` / `make lint-python` from the root directory to format/
 - Titles and buttons should use sentence case ("Save course", "Discard these changes").
 
 ## Testing
+
+See `.agents/skills/playwright-testing/SKILL.md` for more information on writing end-to-end tests with Playwright.
 
 TypeScript tests are written with Vitest. Unit tests are located next to the code they test in files with a `.test.ts` suffix. Integration tests are located in dedicated `tests` directories, e.g. `apps/prairielearn/src/tests`.
 
@@ -84,12 +93,11 @@ To test UI code looks correct, you should try to connect to the development serv
 The PrairieLearn web application renders HTML in one of two ways:
 
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
-- Interactive components are built and rendered with Preact and hydrated with utilities from the `@prairielearn/preact` package. See [`packages/preact/README.md`](packages/preact/README.md) for details.
+- Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
-## Preact quirks
+## React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
-- Use `clsx` and `class="..."` in Preact components.
+- Use `clsx` in React components.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
-- If you get a build error relating to the type of an error being unknown, you can use `yarn tsc -p assets/scripts/tsconfig.json --traceResolution` to debug the issue.

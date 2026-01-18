@@ -1,8 +1,8 @@
 import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import { Hydrate } from '@prairielearn/preact/server';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
@@ -50,7 +50,7 @@ export function InstructorAiGenerateDraftEditor({
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
-        <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">

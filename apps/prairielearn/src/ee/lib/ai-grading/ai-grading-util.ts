@@ -469,3 +469,46 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
+
+/**
+ * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
+ *
+ * TODO: Remove this function once Google fixes the underlying issue. This is a temporary workaround.
+ * Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
+ *
+ * If a rubric item key contains escaped backslashes, Google Gemini generates
+ * unescaped backslashes in the JSON response, leading to a JSON parsing error.
+ *
+ * Example: Rubric item key \\mathbb{x} gets generated as \mathbb{x}, which is invalid JSON since
+ * it contains an unescaped backslash.
+ *
+ * This function escapes all backslashes of rubric item keys in the JSON response.
+ *
+ * @param rawResponseText - The raw AI grading response returned from the Gemini model.
+ * - The response must be a JSON string containing a "rubric_items" key.
+ * - The "rubric_items" key must be the last key in the JSON object.
+ *
+ * @returns The corrected JSON as a string, or null if it could not be corrected.
+ */
+export function correctGeminiMalformedRubricGradingJson(rawResponseText: string): string | null {
+  const RUBRIC_ITEMS_KEY = '"rubric_items":';
+
+  const startRubric = rawResponseText.indexOf(RUBRIC_ITEMS_KEY);
+  if (startRubric === -1) return null;
+
+  // The rubric items object starts right after the "rubric_items": key.
+  const rubricItemsRaw = rawResponseText.slice(startRubric + RUBRIC_ITEMS_KEY.length).trim();
+
+  // Gemini sometimes returns unescaped backslashes in the rubric item keys.
+  // We need to escape them properly.
+  // This only changes the keys of rubricItemsRaw since its values are all booleans.
+  const correctedRubricItems = rubricItemsRaw.replaceAll('\\', '\\\\');
+
+  // All characters before the rubric items, including the "rubric_items": key.
+  const charactersBeforeRubricItemsObject = rawResponseText.slice(
+    0,
+    startRubric + RUBRIC_ITEMS_KEY.length,
+  );
+
+  return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
+}

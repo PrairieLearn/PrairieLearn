@@ -2,7 +2,7 @@
 name = "prairielearn"
 version = "0.0.0"
 readme = "README.md"
-requires-python = ">=3.10.18,<3.11"
+requires-python = ">=3.13,<3.14"
 classifiers = ["Private :: Do Not Upload"]
 
 dependencies = [
@@ -14,13 +14,13 @@ dependencies = [
   "jinja2==3.1.6",
   "lxml==6.0.2",
   "matplotlib==3.10.8",
-  "networkx==3.4.2",
+  "networkx==3.6.1",
   "nltk==3.9.2",
-  "numpy==1.26.4",
+  "numpy==2.3.5",
   "openpyxl==3.1.5",
   "pandas==2.3.3",
   "Pillow==12.0.0",
-  "Pint==0.24.4",
+  "Pint==0.25.2",
   "psutil==7.2.1",
   "PuLP==3.3.0",
   "pyarrow==22.0.0",
@@ -32,8 +32,8 @@ dependencies = [
   "regex==2025.11.3",
   "requests==2.32.5",
   "schemdraw==0.22",
-  "scikit-learn==1.7.2",
-  "scipy==1.15.3",
+  "scikit-learn==1.8.0",
+  "scipy==1.16.3",
   "seaborn==0.13.2",
   "statsmodels==0.14.6",
   "sympy==1.14.0",
@@ -52,7 +52,7 @@ dev = [
   "squawk-cli==2.34.0",
   "sqlfluff==3.5.0",
   "types-chevron==0.14.2.20250103",
-  "types-lxml==2025.11.25",
+  "types-lxml==2026.1.1",
   "types-Pygments==2.19.0.20251121",
   "pandas-stubs==2.3.3.251219",
 ]
@@ -64,11 +64,11 @@ docs = [
   "mkdocs-exclude==1.0.2",
   "mkdocs-gen-files==0.6.0",
   "mkdocs-literate-nav==0.6.2",
-  "mkdocs-material==9.7.0",
+  "mkdocs-material==9.7.1",
   "mkdocs==1.6.1",
-  "mkdocstrings-python==1.18.2",
+  "mkdocstrings-python==2.0.1",
   "mkdocstrings==1.0.0",
-  "pymdown-extensions==10.17.2",
+  "pymdown-extensions==10.20",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
   "ruff==0.14.10",
@@ -259,14 +259,14 @@ ignore = [
   "./exampleCourse/questions/**/tests",                 # autograder tests, use different dependencies
 ]
 extraPaths = ["./apps/prairielearn/python"]
-pythonVersion = "3.10"
+pythonVersion = "3.13"
 executionEnvironments = [
   # TODO: after https://github.com/tamasfe/taplo/issues/332, split with newlines
-  { root = "./graders/python", pythonVersion = "3.12", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
+  { root = "./graders/python", reportUntypedNamedTuple = "none", reportUntypedFunctionDecorator = "none", reportUnnecessaryComparison = "none", reportUnnecessaryIsInstance = "none", reportMissingTypeArgument = "none", extraPaths = [
   ] },
-  { root = "./graders/c", pythonVersion = "3.12", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
+  { root = "./graders/c", reportArgumentType = "none", reportOperatorIssue = "none", reportAttributeAccessIssue = "none", reportIndexIssue = "none", reportCallIssue = "none", reportMissingTypeArgument = "none", extraPaths = [
   ] },
-  { root = "./exampleCourse/questions", pythonVersion = "3.10", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
+  { root = "./exampleCourse/questions", reportArgumentType = "none", reportUnknownParameterType = "none", reportMissingParameterType = "none", reportOperatorIssue = "none", reportCallIssue = "none", reportConstantRedefinition = "none" },
 ]
 reportUnnecessaryTypeIgnoreComment = "error"
 # These rules would require significant changes
