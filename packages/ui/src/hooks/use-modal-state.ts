@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 /**
  * A hook to manage the state of a modal dialog that's rendered with a certain set of data.

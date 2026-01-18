@@ -3,7 +3,7 @@ import { z } from 'zod';
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatDateYMDHM } from '@prairielearn/formatter';
 import { html, unsafeHtml } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact/server';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 import { InstructorInfoPanel } from '../../../components/InstructorInfoPanel.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -86,7 +86,7 @@ export function InstanceQuestion({
     },
     headContent: html`
       ${compiledScriptTag('question.ts')}
-      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
@@ -254,8 +254,8 @@ export function InstanceQuestion({
             lastGrader,
             question: resLocals.question,
             variant: resLocals.variant,
-            instance_group: resLocals.instance_group,
-            instance_group_uid_list: resLocals.instance_group_uid_list,
+            instance_team: resLocals.instance_team,
+            instance_team_uid_list: resLocals.instance_team_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
             question_is_shared: resLocals.question_is_shared,

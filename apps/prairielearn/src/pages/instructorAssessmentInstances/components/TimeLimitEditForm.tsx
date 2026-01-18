@@ -1,5 +1,5 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
 
@@ -44,7 +44,7 @@ function TimeLimitExplanation({ action }: { action: TimeLimitAction }) {
     default:
       assertNever(action);
   }
-  return <small class="form-text text-muted">{explanation}</small>;
+  return <small className="form-text text-muted">{explanation}</small>;
 }
 
 export function TimeLimitEditForm({
@@ -108,7 +108,7 @@ export function TimeLimitEditForm({
   }
 
   return (
-    <form name="set-time-limit-form" class="js-popover-form" method="POST">
+    <form name="set-time-limit-form" className="js-popover-form" method="POST">
       <input type="hidden" name="__action" value={row.action ?? 'set_time_limit'} />
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       {row.assessment_instance_id ? (
@@ -116,9 +116,9 @@ export function TimeLimitEditForm({
       ) : null}
       {row.action !== 'set_time_limit_all' && !row.open ? (
         <div>
-          <div class="form-check">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="radio"
               name="reopen_without_limit"
               id="reopen_without_limit"
@@ -126,13 +126,13 @@ export function TimeLimitEditForm({
               checked={form.reopen_without_limit}
               onClick={() => updateFormState('reopen_without_limit', true)}
             />
-            <label class="form-check-label" for="reopen_without_limit">
+            <label className="form-check-label" htmlFor="reopen_without_limit">
               Re-open without time limit
             </label>
           </div>
-          <div class="form-check">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="radio"
               name="reopen_without_limit"
               id="reopen_with_limit"
@@ -140,7 +140,7 @@ export function TimeLimitEditForm({
               checked={!form.reopen_without_limit}
               onClick={() => updateFormState('reopen_without_limit', false)}
             />
-            <label class="form-check-label" for="reopen_with_limit">
+            <label className="form-check-label" htmlFor="reopen_with_limit">
               Re-open with time limit
             </label>
           </div>
@@ -154,7 +154,7 @@ export function TimeLimitEditForm({
       {showTimeLimitOptions ? (
         <p>
           <select
-            class="form-select select-time-limit"
+            className="form-select select-time-limit"
             name="action"
             aria-label="Time limit options"
             value={form.action}
@@ -191,28 +191,28 @@ export function TimeLimitEditForm({
       form.action !== 'set_exact' &&
       form.action !== 'remove' &&
       form.action !== 'expire' ? (
-        <div class="input-group mb-2">
+        <div className="input-group mb-2">
           <input
-            class="form-control time-limit-field"
+            className="form-control time-limit-field"
             type="number"
             name="time_add"
             aria-label="Time value"
             value={form.time_add}
             onChange={(e) => updateFormState('time_add', Number.parseFloat(e.currentTarget.value))}
           />
-          <span class="input-group-text time-limit-field">minutes</span>
+          <span className="input-group-text time-limit-field">minutes</span>
         </div>
       ) : null}
       {showTimeLimitOptions && form.action === 'set_exact' ? (
-        <div class="input-group date-picker mb-2">
+        <div className="input-group date-picker mb-2">
           <input
-            class="form-control date-picker"
+            className="form-control date-picker"
             type="datetime-local"
             name="date"
             value={form.date}
             onChange={(e) => updateFormState('date', e.currentTarget.value)}
           />
-          <span class="input-group-text date-picker">{timezone}</span>
+          <span className="input-group-text date-picker">{timezone}</span>
         </div>
       ) : null}
       {(row.open || !form.reopen_without_limit) &&
@@ -224,9 +224,9 @@ export function TimeLimitEditForm({
       ) : null}
       <p>
         {row.has_closed_instance ? (
-          <div class="form-check">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="checkbox"
               name="reopen_closed"
               value="true"
@@ -234,17 +234,17 @@ export function TimeLimitEditForm({
               id="reopen_closed"
               onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
             />
-            <label class="form-check-label" for="reopen_closed">
+            <label className="form-check-label" htmlFor="reopen_closed">
               Also re-open closed instances
             </label>
           </div>
         ) : null}
       </p>
-      <div class="btn-toolbar justify-content-end">
-        <button type="button" class="btn btn-secondary me-2" data-bs-dismiss="popover">
+      <div className="btn-toolbar justify-content-end">
+        <button type="button" className="btn btn-secondary me-2" data-bs-dismiss="popover">
           Cancel
         </button>
-        <button type="submit" class="btn btn-primary">
+        <button type="submit" className="btn btn-primary">
           Set
         </button>
       </div>

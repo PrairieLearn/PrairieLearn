@@ -74,8 +74,8 @@ SELECT
   ) AS assessment_instance_time_limit_expired,
   to_jsonb(u) AS instance_user,
   users_get_displayed_role (u.id, ci.id) AS instance_role,
-  to_jsonb(g) AS instance_group,
-  teams_uid_list (g.id) AS instance_group_uid_list,
+  to_jsonb(t) AS instance_team,
+  teams_uid_list (t.id) AS instance_team_uid_list,
   to_jsonb(iq) || to_jsonb(iqnag) AS instance_question,
   jsonb_build_object(
     'id',
@@ -109,9 +109,9 @@ FROM
   JOIN assessments AS a ON (a.id = ai.assessment_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
-  LEFT JOIN teams AS g ON (
-    g.id = ai.team_id
-    AND g.deleted_at IS NULL
+  LEFT JOIN teams AS t ON (
+    t.id = ai.team_id
+    AND t.deleted_at IS NULL
   )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
   JOIN LATERAL authz_assessment_instance (

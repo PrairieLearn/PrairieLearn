@@ -1,4 +1,5 @@
 import { type Row, type Table, createColumnHelper } from '@tanstack/react-table';
+import { useEffect, useRef } from 'react';
 
 import { run } from '@prairielearn/run';
 import { OverlayTrigger, numericColumnFilterFn } from '@prairielearn/ui';
@@ -15,6 +16,32 @@ import { PointsWithEditButton, ScoreWithEditButton, generateAiGraderName } from 
 
 const columnHelper = createColumnHelper<InstanceQuestionRow>();
 
+/**
+ * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
+ * since React doesn't support indeterminate as a native attribute.
+ */
+function SelectAllCheckbox({ table }: { table: Table<InstanceQuestionRow> }) {
+  const checkboxRef = useRef<HTMLInputElement>(null);
+  const isIndeterminate = table.getIsSomeRowsSelected();
+
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isIndeterminate;
+    }
+  }, [isIndeterminate]);
+
+  return (
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={table.getIsAllRowsSelected()}
+      // Prevent browser from autocompleting the checkbox value when you return to the page.
+      autoComplete="off"
+      onChange={table.getToggleAllRowsSelectedHandler()}
+    />
+  );
+}
+
 interface CreateColumnsParams {
   aiGradingMode: boolean;
   instanceQuestionGroups: InstanceQuestionGroup[];
@@ -27,7 +54,7 @@ interface CreateColumnsParams {
   createCheckboxProps: (row: Row<InstanceQuestionRow>, table: Table<InstanceQuestionRow>) => any;
   onEditPointsSuccess: () => void;
   onEditPointsConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
   displayedStatuses: Record<string, JobItemStatus | undefined>;
 }
 
@@ -36,7 +63,7 @@ export type ColumnId =
   | 'ai_grading_status'
   | 'index'
   | 'instance_question_group_name'
-  | 'user_or_group_name'
+  | 'user_or_team_name'
   | 'uid'
   | 'requires_manual_grading'
   | 'assigned_grader_name'
@@ -87,16 +114,7 @@ export function createColumns({
   return [
     columnHelper.display({
       id: 'select',
-      header: ({ table }) => (
-        <input
-          type="checkbox"
-          checked={table.getIsAllRowsSelected()}
-          indeterminate={table.getIsSomeRowsSelected()}
-          // Prevent browser from autocompleting the checkbox value when you return to the page.
-          autocomplete="off"
-          onChange={table.getToggleAllRowsSelectedHandler()}
-        />
-      ),
+      header: ({ table }) => <SelectAllCheckbox table={table} />,
       cell: ({ row, table }) => {
         return <input type="checkbox" {...createCheckboxProps(row, table)} />;
       },
@@ -116,7 +134,7 @@ export function createColumns({
         const row = info.row.original;
         const rowId = row.instance_question.id;
         return (
-          <div class="d-flex align-items-center gap-2">
+          <div className="d-flex align-items-center gap-2">
             <a
               href={`${urlPrefix}/assessment/${assessment.id}/manual_grading/instance_question/${row.instance_question.id}`}
             >
@@ -134,7 +152,9 @@ export function createColumns({
                   ),
                 }}
               >
-                <button class="btn btn-danger badge rounded-pill">{row.open_issue_count}</button>
+                <button className="btn btn-danger badge rounded-pill">
+                  {row.open_issue_count}
+                </button>
               </OverlayTrigger>
             ) : null}
             {row.assessment_open ? (
@@ -151,11 +171,11 @@ export function createColumns({
                   // It's possible there are better ways to handle this?
                   // eslint-disable-next-line jsx-a11y-x/no-interactive-element-to-noninteractive-role
                   role="status"
-                  class="btn btn-xs btn-ghost"
+                  className="btn btn-xs btn-ghost"
                   aria-label="Assessment instance is still open"
                 >
                   <i
-                    class="fas fa-exclamation-triangle fa-width-auto text-warning"
+                    className="fas fa-exclamation-triangle fa-width-auto text-warning"
                     aria-hidden="true"
                   />
                 </button>
@@ -173,12 +193,12 @@ export function createColumns({
       cell: (info) => {
         const value = info.getValue();
         if (!value) {
-          return <span class="text-secondary">No Group</span>;
+          return <span className="text-secondary">No Group</span>;
         }
         const group = instanceQuestionGroups.find((g) => g.instance_question_group_name === value);
         const rowId = info.row.original.instance_question.id;
         return (
-          <span class="d-flex align-items-center gap-2">
+          <span className="d-flex align-items-center gap-2">
             {value}
             {group && (
               <OverlayTrigger
@@ -187,8 +207,11 @@ export function createColumns({
                   props: { id: `submission-group-${rowId}-description-tooltip` },
                 }}
               >
-                <button class="btn btn-xs btn-ghost" aria-label="Group description">
-                  <i class="fas fa-circle-info fa-width-auto text-secondary" aria-hidden="true" />
+                <button className="btn btn-xs btn-ghost" aria-label="Group description">
+                  <i
+                    className="fas fa-circle-info fa-width-auto text-secondary"
+                    aria-hidden="true"
+                  />
                 </button>
               </OverlayTrigger>
             )}
@@ -211,8 +234,8 @@ export function createColumns({
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
 
-    columnHelper.accessor('user_or_group_name', {
-      id: 'user_or_group_name',
+    columnHelper.accessor('user_or_team_name', {
+      id: 'user_or_team_name',
       header: assessment.team_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),
@@ -327,7 +350,7 @@ export function createColumns({
             <span>
               {row.instance_question.ai_grading_status !== 'None' && (
                 <span
-                  class={`badge rounded-pill text-bg-light border ${
+                  className={`badge rounded-pill text-bg-light border ${
                     row.instance_question.ai_grading_status === 'Graded' ||
                     row.instance_question.ai_grading_status === 'LatestRubric'
                       ? ''
@@ -347,7 +370,9 @@ export function createColumns({
           if (!info.getValue()) return 'Unassigned';
           if (row.instance_question.is_ai_graded) {
             return (
-              <span class="badge rounded-pill text-bg-light border">{generateAiGraderName()}</span>
+              <span className="badge rounded-pill text-bg-light border">
+                {generateAiGraderName()}
+              </span>
             );
           }
           return info.getValue();
@@ -407,12 +432,12 @@ export function createColumns({
 
         if (row.instance_question.rubric_difference === null) {
           if (!row.instance_question.point_difference) {
-            return <i class="bi bi-check-square-fill text-success" />;
+            return <i className="bi bi-check-square-fill text-success" />;
           } else {
             const prefix = row.instance_question.point_difference < 0 ? '' : '+';
             return (
-              <span class="text-danger">
-                <i class="bi bi-x-square-fill" /> {prefix}
+              <span className="text-danger">
+                <i className="bi bi-x-square-fill" /> {prefix}
                 {formatPoints(row.instance_question.point_difference)}
               </span>
             );
@@ -427,7 +452,7 @@ export function createColumns({
                 props: { id: `ai-agreement-${rowId}-agreement-tooltip` },
               }}
             >
-              <i class="bi bi-check-square-fill text-success" />
+              <i className="bi bi-check-square-fill text-success" />
             </OverlayTrigger>
           );
         }
@@ -443,7 +468,7 @@ export function createColumns({
                       props: { id: `ai-agreement-${rowId}-false-positive-tooltip` },
                     }}
                   >
-                    <i class="bi bi-plus-square-fill text-danger" />
+                    <i className="bi bi-plus-square-fill text-danger" />
                   </OverlayTrigger>
                 ) : (
                   <OverlayTrigger
@@ -452,7 +477,7 @@ export function createColumns({
                       props: { id: `ai-agreement-${rowId}-false-negative-tooltip` },
                     }}
                   >
-                    <i class="bi bi-dash-square-fill text-danger" />
+                    <i className="bi bi-dash-square-fill text-danger" />
                   </OverlayTrigger>
                 )}{' '}
                 <span>{item.description}</span>

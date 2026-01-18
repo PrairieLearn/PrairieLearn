@@ -1,5 +1,17 @@
 # @prairielearn/utils
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.0.5
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.4
 
 ### Patch Changes

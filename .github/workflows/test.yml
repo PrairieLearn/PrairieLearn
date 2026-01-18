@@ -109,9 +109,11 @@ jobs:
       # doesn't require it.
       - name: Install OS packages
         run: |
-          sudo apt-get update
           sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-16-pgvector
+          sudo apt-get install -y --no-install-recommends postgresql-common
+          # Configure Postgres repository, purge existing postgres version, and install v17
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
+          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector git gcc libc6-dev graphviz libgraphviz-dev redis
 
       # The two `sed` commands are here to handle the fact that the default
       # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
@@ -123,10 +125,10 @@ jobs:
       # We also update the configuration to try to speed up Postgres itself.
       - name: Start Postgres
         run: |
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
-          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
           fsync = off
           full_page_writes = off
           synchronous_commit = off
@@ -137,7 +139,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -152,7 +154,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -218,7 +220,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid

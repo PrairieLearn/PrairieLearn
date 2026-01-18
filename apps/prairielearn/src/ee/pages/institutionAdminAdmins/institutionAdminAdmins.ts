@@ -1,10 +1,10 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
 
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import { selectOptionalUserByUid } from '../../../models/user.js';
 import { selectAndAuthzInstitutionAsAdmin } from '../../lib/selectAndAuthz.js';
@@ -28,7 +28,7 @@ const MAX_UIDS = 10;
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
       user_id: res.locals.authn_user.id,
@@ -54,7 +54,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const institution = await selectAndAuthzInstitutionAsAdmin({
       institution_id: req.params.institution_id,
       user_id: res.locals.authn_user.id,

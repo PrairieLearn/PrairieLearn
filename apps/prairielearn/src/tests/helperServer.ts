@@ -77,7 +77,7 @@ export function before(courseDir: string | string[] = TEST_COURSE_PATH): () => P
       const httpServer = await server.startServer(app);
 
       debug('before(): initialize socket server');
-      socketServer.init(httpServer);
+      await socketServer.init(httpServer);
 
       debug('before(): initialize cache');
       await cache.init({
