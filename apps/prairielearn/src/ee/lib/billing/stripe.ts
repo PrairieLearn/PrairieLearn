@@ -128,5 +128,3 @@ export async function getPricesForPlans(plans: PlanName[]): Promise<Record<strin
   }
   return prices;
 }
-
-export { formatStripePrice } from './stripe.shared.js';

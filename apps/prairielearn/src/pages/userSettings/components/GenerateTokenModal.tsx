@@ -27,6 +27,7 @@ export function GenerateTokenModal({ show, csrfToken, onClose }: GenerateTokenMo
               name="token_name"
               placeholder="My token"
               autoComplete="off"
+              required
             />
           </div>
         </form>

@@ -135,10 +135,11 @@ function PersonalAccessTokensCard({
               type="button"
               className="btn btn-light btn-sm ms-auto"
               data-testid="generate-token-button"
+              aria-label="Generate access token"
               onClick={() => setShowGenerateModal(true)}
             >
               <i className="fa fa-plus" aria-hidden="true" />
-              <span className="d-none d-sm-inline">Generate new token</span>
+              <span className="d-none d-sm-inline">Generate access token</span>
             </button>
           )}
         </div>

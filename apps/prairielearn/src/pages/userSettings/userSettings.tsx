@@ -34,12 +34,9 @@ router.get(
 
     // If the raw tokens are present for any of these hashes, include them
     // in this response and then delete them from memory
-    const newAccessTokens: string[] = [];
-    accessTokens.forEach((accessToken) => {
-      if (accessToken.token) {
-        newAccessTokens.push(accessToken.token);
-      }
-    });
+    const newAccessTokens = accessTokens
+      .map(({ token }) => token)
+      .filter((token) => token !== null);
 
     // Now that we've rendered these tokens, remove any tokens from the DB
     if (newAccessTokens.length > 0) {
