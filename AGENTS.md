@@ -10,7 +10,6 @@ Backend: TypeScript / Express / Python / PostgreSQL
 ## Applications
 
 - `apps/prairielearn`: The main PrairieLearn web application. Key files:
-
   - `apps/prairielearn/src/server.ts`: Entry point for the PrairieLearn web application. Initializes the Express server and maps URLs to pages.
   - `apps/prairielearn/src/pages/`: Individual pages of the PrairieLearn application. You would add a new page here.
 
@@ -47,7 +46,7 @@ Formatting:
 - Individual files: `yarn prettier --write path/to/file.ts`
 - All files: `make format-js`
 
-SQL files should also be formatted with `yarn prettier --write path/to/file.sql`.
+SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
 
 ### Python
 

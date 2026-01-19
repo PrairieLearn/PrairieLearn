@@ -688,7 +688,8 @@ export async function authzCourseOrInstance(req: Request, res: Response) {
   }
 
   // The session middleware does not run for API requests.
-  res.locals.side_nav_expanded = (req as { session?: { side_nav_expanded?: boolean } }).session?.side_nav_expanded ?? true; // The side nav is expanded by default.
+  res.locals.side_nav_expanded =
+    (req as { session?: { side_nav_expanded?: boolean } }).session?.side_nav_expanded ?? true; // The side nav is expanded by default.
 
   res.locals.course_has_course_instances = await selectCourseHasCourseInstances({
     course: res.locals.course,
