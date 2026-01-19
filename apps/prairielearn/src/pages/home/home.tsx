@@ -176,28 +176,20 @@ router.post(
       withAuthzData: false,
     });
 
-    // Handle dismiss_news_alert separately since it doesn't require course_instance_id
-    const ActionSchema = z.object({
-      __action: z.enum([
-        'accept_invitation',
-        'reject_invitation',
-        'unenroll',
-        'dismiss_news_alert',
-      ]),
-    });
-    const { __action } = ActionSchema.parse(req.body);
+    const BodySchema = z.discriminatedUnion('__action', [
+      z.object({ __action: z.literal('dismiss_news_alert') }),
+      z.object({
+        __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
+        course_instance_id: z.string().min(1),
+      }),
+    ]);
+    const body = BodySchema.parse(req.body);
 
-    if (__action === 'dismiss_news_alert') {
+    if (body.__action === 'dismiss_news_alert') {
       await markNewsItemsAsReadForUser(res.locals.authn_user.id);
       res.redirect(req.originalUrl);
       return;
     }
-
-    const BodySchema = z.object({
-      __action: z.enum(['accept_invitation', 'reject_invitation', 'unenroll']),
-      course_instance_id: z.string().min(1),
-    });
-    const body = BodySchema.parse(req.body);
 
     const { authzData, courseInstance, institution, course } =
       await constructCourseOrInstanceContext({
