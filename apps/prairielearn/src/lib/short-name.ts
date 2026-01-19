@@ -14,15 +14,6 @@ export const SHORT_NAME_REGEX =
  */
 export const SHORT_NAME_PATTERN = SHORT_NAME_REGEX.source;
 
-/**
- * Validates whether a string is a valid short name using our short name regex.
- *
- * @param shortName - The string that we are validating.
- */
-export function isValidShortName(shortName: string): boolean {
-  return SHORT_NAME_REGEX.test(shortName);
-}
-
 interface ShortNameValidationSuccess {
   valid: true;
 }
@@ -72,16 +63,8 @@ export function validateShortName(
   if (shortName.includes('//')) {
     return validationError('Cannot contain two consecutive slashes');
   }
-  // Check for invalid characters (anything not alphanumeric, dash, underscore, or slash)
-  const invalidChar = shortName.match(/[^-A-Za-z0-9_/]/);
-  if (invalidChar) {
-    const char = invalidChar[0];
-    if (char === ' ') {
-      return validationError('Cannot contain spaces');
-    }
-    return validationError(`Cannot contain the character "${char}"`);
-  }
-  // Final regex check for edge cases
+
+  // Use regex for general validation
   if (!SHORT_NAME_REGEX.test(shortName)) {
     return validationError(
       'Must use only letters, numbers, dashes, underscores, and forward slashes',
