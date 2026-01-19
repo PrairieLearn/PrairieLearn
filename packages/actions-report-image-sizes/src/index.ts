@@ -187,8 +187,8 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
 
   const existingComment = comments.find(
     (comment) =>
-      (comment.body?.startsWith(`## ${title}`) || /* Old format */
-      comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
+      (comment.body?.startsWith(`## ${title}`) /* Old format */ ||
+        comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
       comment.user?.login === 'github-actions[bot]',
   );
 
