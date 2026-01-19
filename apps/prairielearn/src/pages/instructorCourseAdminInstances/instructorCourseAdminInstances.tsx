@@ -32,7 +32,6 @@ router.get(
     try {
       await fs.access(res.locals.course.path);
     } catch (err: any) {
-      console.error(err);
       if (err.code === 'ENOENT') {
         needToSync = true;
       } else {
