@@ -12,10 +12,9 @@ const parser = new Parser<Record<string, never>, { categories?: string[] }>();
  * Checks if an RSS item has any of the specified category tags.
  */
 function hasMatchingCategory(
-  categories: string[] | undefined,
+  categories: string[],
   allowedCategories: string[],
 ): boolean {
-  if (!categories || categories.length === 0) return false;
   if (allowedCategories.length === 0) return true; // No filter = allow all
 
   const normalizedAllowed = new Set(allowedCategories.map((c) => c.trim().toLowerCase()));
@@ -40,7 +39,7 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
     // Filter to only include items with matching categories
     const allowedCategories = config.newsFeedCategories;
     const items = feed.items.filter((item) =>
-      hasMatchingCategory(item.categories, allowedCategories),
+      hasMatchingCategory(item.categories ?? [], allowedCategories),
     );
 
     if (items.length === 0) {
