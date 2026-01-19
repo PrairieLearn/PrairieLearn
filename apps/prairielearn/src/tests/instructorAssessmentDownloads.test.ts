@@ -9,8 +9,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import { queryRow } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
-import type { Assessment, User, Variant } from '../lib/db-types.js';
-import { VariantSchema } from '../lib/db-types.js'; // eslint-disable-line no-duplicate-imports
+import { type Assessment, type User, type Variant, VariantSchema } from '../lib/db-types.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 import { selectAssessmentSetById } from '../models/assessment-set.js';
 import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
@@ -358,7 +357,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
   });
 
   describe('Group Work Downloads', function () {
-    interface GroupWorkTestContext {
+    const ctx = {} as {
       assessment_id: string;
       siteUrl: string;
       courseInstanceBaseUrl: string;
@@ -371,9 +370,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       variant: Variant;
       assessment: Assessment;
       filenames: Filenames;
-    }
-
-    const ctx: Partial<GroupWorkTestContext> = {};
+    };
 
     beforeAll(async function () {
       const assessment = await selectAssessmentByTid({
@@ -444,7 +441,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
             __action: 'grade',
             __csrf_token: getCSRFToken(ctx.$),
             __variant_id: variantId as string,
-            c: String(ctx.variant.true_answer.c),
+            c: String(ctx.variant.true_answer!.c),
           }),
         });
         assert.equal(studentRes.status, 200);
@@ -453,8 +450,8 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       ctx.assessment = await selectAssessmentById(ctx.assessment_id);
       ctx.filenames = getFilenames({
         assessment: ctx.assessment,
-        assessment_set: await selectAssessmentSetById(ctx.assessment.assessment_set_id),
-        course_instance: await selectCourseInstanceById(ctx.variant.course_instance_id),
+        assessment_set: await selectAssessmentSetById(ctx.assessment.assessment_set_id!),
+        course_instance: await selectCourseInstanceById(ctx.variant.course_instance_id!),
         course: await selectCourseById(ctx.variant.course_id),
       } as ResLocalsForPage<'assessment'>);
     });
@@ -474,8 +471,8 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.lengthOf(teamRows, 2);
 
       const uids = teamRows.map((row) => row['UID']);
-      assert.include(uids, ctx.studentUsers![0].uid);
-      assert.include(uids, ctx.studentUsers![1].uid);
+      assert.include(uids, ctx.studentUsers[0].uid);
+      assert.include(uids, ctx.studentUsers[1].uid);
     });
 
     it('scores_by_group.csv should contain team with valid score', async () => {
