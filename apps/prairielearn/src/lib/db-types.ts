@@ -535,7 +535,7 @@ export type Author = z.infer<typeof AuthorSchema>;
 export const BatchedMigrationJobSchema = null;
 export const BatchedMigrationSchema = null;
 
-export const CachedBlogPostSchema = z.object({
+export const CachedNewsItemSchema = z.object({
   fetched_at: DateFromISOString,
   guid: z.string(),
   id: IdSchema,
@@ -543,7 +543,7 @@ export const CachedBlogPostSchema = z.object({
   pub_date: DateFromISOString,
   title: z.string(),
 });
-export type CachedBlogPost = z.infer<typeof CachedBlogPostSchema>;
+export type CachedNewsItem = z.infer<typeof CachedNewsItemSchema>;
 
 export const ChunkSchema = z.object({
   assessment_id: IdSchema.nullable(),
@@ -1433,12 +1433,12 @@ export const UserSchema = z.object({
 });
 export type User = z.infer<typeof UserSchema>;
 
-export const UserBlogReadTimestampSchema = z.object({
+export const UserNewsReadTimestampSchema = z.object({
   id: IdSchema,
   last_read_at: DateFromISOString,
   user_id: IdSchema,
 });
-export type UserBlogReadTimestamp = z.infer<typeof UserBlogReadTimestampSchema>;
+export type UserNewsReadTimestamp = z.infer<typeof UserNewsReadTimestampSchema>;
 
 export const UserSessionSchema = z.object({
   created_at: DateFromISOString,

@@ -1,5 +1,5 @@
--- Create cached_blog_posts table to store RSS feed items
-CREATE TABLE IF NOT EXISTS cached_blog_posts (
+-- Create cached_news_items table to store RSS feed items
+CREATE TABLE IF NOT EXISTS cached_news_items (
   id BIGSERIAL PRIMARY KEY,
   title TEXT NOT NULL,
   link TEXT NOT NULL,
@@ -8,10 +8,10 @@ CREATE TABLE IF NOT EXISTS cached_blog_posts (
   fetched_at TIMESTAMPTZ NOT NULL DEFAULT now()
 );
 
-CREATE INDEX IF NOT EXISTS cached_blog_posts_pub_date_idx ON cached_blog_posts (pub_date DESC);
+CREATE INDEX IF NOT EXISTS cached_news_items_pub_date_idx ON cached_news_items (pub_date DESC);
 
--- Create user_blog_read_timestamps table to track when users dismissed blog alerts
-CREATE TABLE IF NOT EXISTS user_blog_read_timestamps (
+-- Create user_news_read_timestamps table to track when users dismissed news alerts
+CREATE TABLE IF NOT EXISTS user_news_read_timestamps (
   id BIGSERIAL PRIMARY KEY,
   user_id BIGINT NOT NULL UNIQUE REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
   last_read_at TIMESTAMPTZ NOT NULL DEFAULT now()

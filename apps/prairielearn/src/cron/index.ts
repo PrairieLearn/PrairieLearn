@@ -115,9 +115,9 @@ export async function init() {
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
     {
-      name: 'fetchBlogPosts',
-      module: await import('./fetchBlogPosts.js'),
-      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchBlogPostsSec,
+      name: 'fetchNewsItems',
+      module: await import('./fetchNewsItems.js'),
+      intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
     },
   ];
 

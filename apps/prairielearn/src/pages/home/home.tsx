@@ -18,14 +18,14 @@ import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
-  markBlogPostsAsReadForUser,
-  selectUnreadBlogPostsForUser,
-} from '../../models/blog-posts.js';
-import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import {
+  markNewsItemsAsReadForUser,
+  selectUnreadNewsItemsForUser,
+} from '../../models/news-items.js';
 
 import {
   Home,
@@ -122,10 +122,10 @@ router.get(
       StaffInstitutionSchema,
     );
 
-    // Only show blog post alerts to instructors (users with instructor courses)
-    const unreadBlogPosts =
+    // Only show news alerts to instructors (users with instructor courses)
+    const unreadNewsItems =
       instructorCourses.length > 0
-        ? await selectUnreadBlogPostsForUser(res.locals.authn_user.id, 3)
+        ? await selectUnreadNewsItemsForUser(res.locals.authn_user.id, 3)
         : [];
 
     const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
@@ -157,7 +157,7 @@ router.get(
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
             search={search}
-            unreadBlogPosts={unreadBlogPosts}
+            unreadNewsItems={unreadNewsItems}
           />
         ),
       }),
@@ -168,19 +168,19 @@ router.get(
 router.post(
   '/',
   asyncHandler(async (req, res) => {
-    // Handle dismiss_blog_alert separately since it doesn't require course_instance_id
+    // Handle dismiss_news_alert separately since it doesn't require course_instance_id
     const ActionSchema = z.object({
       __action: z.enum([
         'accept_invitation',
         'reject_invitation',
         'unenroll',
-        'dismiss_blog_alert',
+        'dismiss_news_alert',
       ]),
     });
     const { __action } = ActionSchema.parse(req.body);
 
-    if (__action === 'dismiss_blog_alert') {
-      await markBlogPostsAsReadForUser(res.locals.authn_user.id);
+    if (__action === 'dismiss_news_alert') {
+      await markNewsItemsAsReadForUser(res.locals.authn_user.id);
       res.redirect(req.originalUrl);
       return;
     }
