@@ -1,6 +1,8 @@
+ PrairieLearn is an educational learning platform with a focus on automated assessments.
+
 # Organization
 
-This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`). PrairieLearn is an educational learning platform similar to Canvas, with a focus on automated assessments.
+This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
 
 ## Tech stack
 
@@ -22,7 +24,6 @@ Libraries live in `packages/`. If you update a package, you MUST add a changeset
 
 Frequently used packages:
 
-- `@prairielearn/postgres`: Wrapper for interacting with the Postgres database using Zod.
 - `@prairielearn/ui`: UI components for the PrairieLearn web application.
 
 ## Building, type checking, and linting
@@ -36,15 +37,17 @@ Typechecking:
 - Individual files: use `./scripts/typecheck-file.sh path/to/file.ts`
 - All files: `make build`. You will need to do this after making changes to a package.
 
+Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+
 Linting:
 
-- Individual files: `yarn eslint path/to/file.ts`
+- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using an skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
 
 Formatting:
 
 - Individual files: `yarn prettier --write path/to/file.ts`
-- All files: `make format-js`
+- Changed files: `make format-changed` (staged + unstaged + untracked) compared to HEAD. Use this in most cases -- fall back to `make format-js`.
 
 SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
 
@@ -52,18 +55,18 @@ SQL, shell, markdown, and JSON files should also be formatted with `yarn prettie
 
 Typechecking:
 
-- Individual files: `yarn pyright path/to/file.py`
+- Individual files: `yarn pyright path/to/file.py`. Prefer using an skill / LSP / MCP for this to improve performance.
 - All files: `make typecheck-python`
 
 Linting:
 
-- Individual files: `uv run ruff check path/to/file.py`
+- Individual files: `uv run ruff check --fix path/to/file.py`
 - All files: `make lint-python`
 
 Formatting:
 
 - Individual files: `uv run ruff format path/to/file.py`
-- All files: `make format-python`
+- Changed files: `make format-changed` (staged + unstaged + untracked) compared to HEAD. Use this in most cases -- fall back to `make format-python`.
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
