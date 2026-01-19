@@ -674,7 +674,7 @@ export async function setEnrollmentStatus({
         case 'removed':
           return 'reenrolled';
         default:
-          throw new error.HttpStatusError(500, 'Unexpected previous status');
+          throw new Error(`Unexpected previous status: ${lockedEnrollment.status}`);
       }
     });
 
