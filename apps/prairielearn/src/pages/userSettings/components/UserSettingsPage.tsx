@@ -233,6 +233,9 @@ function TokenList({
   );
 }
 
+// Example of broken LaTeX rendering that users might see if MathJax isn't working.
+const EXAMPLE_BROKEN_LATEX = String.raw`$ x = \frac{-b \pm \sqrt{b^2 - 4ac}}{2a} $`;
+
 function BrowserConfigurationCard() {
   const handleResetMathJax = () => {
     localStorage.removeItem('MathJax-Menu-Settings');
@@ -251,9 +254,8 @@ function BrowserConfigurationCard() {
           PrairieLearn.
         </p>
         <p>
-          If math formulas show up as code like{' '}
-          <strong>$ x = rac {'{-b pm sqrt {b^2 - 4ac}}{2a}'} $</strong> resetting the MathJax menu
-          settings might help.
+          If math formulas show up as code like <strong>{EXAMPLE_BROKEN_LATEX}</strong> resetting
+          the MathJax menu settings might help.
         </p>
         <button type="button" className="btn btn-sm btn-primary" onClick={handleResetMathJax}>
           Reset MathJax menu settings
