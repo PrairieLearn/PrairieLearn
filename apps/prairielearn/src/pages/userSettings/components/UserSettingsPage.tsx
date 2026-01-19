@@ -1,34 +1,25 @@
 import { useState } from 'react';
 
+import { formatDate } from '@prairielearn/formatter';
+
+import type { UserAccessToken } from '../../../lib/client/safe-db-types.js';
+
 import { DeleteTokenModal } from './DeleteTokenModal.js';
 import { GenerateTokenModal } from './GenerateTokenModal.js';
 
-export interface AccessToken {
-  created_at: string;
-  id: string;
-  last_used_at: string | null;
-  name: string;
-  token_hash: string;
-  token: string | null;
-}
-
-interface UserInfo {
-  uid: string;
-  name: string | null;
-  uin: string | null;
-  email: string | null;
-}
-
-interface InstitutionInfo {
-  long_name: string;
-  short_name: string;
-}
-
 interface UserSettingsPageProps {
-  user: UserInfo;
-  institution: InstitutionInfo;
+  user: {
+    uid: string;
+    name: string | null;
+    uin: string | null;
+    email: string | null;
+  };
+  institution: {
+    long_name: string;
+    short_name: string;
+  };
   authnProviderName: string;
-  accessTokens: AccessToken[];
+  accessTokens: UserAccessToken[];
   newAccessTokens: string[];
   isExamMode: boolean;
   csrfToken: string;
@@ -44,7 +35,7 @@ export function UserSettingsPage({
   csrfToken,
 }: UserSettingsPageProps) {
   const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [tokenToDelete, setTokenToDelete] = useState<AccessToken | null>(null);
+  const [tokenToDelete, setTokenToDelete] = useState<UserAccessToken | null>(null);
 
   const handleResetMathJax = () => {
     localStorage.removeItem('MathJax-Menu-Settings');
@@ -182,9 +173,9 @@ function TokenList({
   isExamMode,
   onDeleteToken,
 }: {
-  accessTokens: AccessToken[];
+  accessTokens: UserAccessToken[];
   isExamMode: boolean;
-  onDeleteToken: (token: AccessToken) => void;
+  onDeleteToken: (token: UserAccessToken) => void;
 }) {
   if (isExamMode) {
     return (
@@ -208,9 +199,11 @@ function TokenList({
         <li key={token.id} className="list-group-item d-flex align-items-center">
           <div className="d-flex flex-column me-3">
             <strong>{token.name}</strong>
-            <span className="text-muted">Created at {token.created_at}</span>
+            <span className="text-muted">Created at {formatDate(token.created_at, 'UTC')}</span>
             <span className="text-muted">
-              {token.last_used_at !== null ? `Last used at ${token.last_used_at}` : 'Never used'}
+              {token.last_used_at !== null
+                ? `Last used at ${formatDate(token.last_used_at, 'UTC')}`
+                : 'Never used'}
             </span>
           </div>
           <button

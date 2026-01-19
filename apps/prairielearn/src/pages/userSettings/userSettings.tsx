@@ -2,30 +2,20 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
-import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
+import { UserAccessTokenSchema } from '../../lib/client/safe-db-types.js';
+import { AccessTokenSchema, InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
 
 import { UserSettingsPage } from './components/UserSettingsPage.js';
-
-export const AccessTokenSchema = z.object({
-  created_at: z.string(),
-  id: IdSchema,
-  last_used_at: z.string().nullable(),
-  name: z.string(),
-  token_hash: z.string(),
-  token: z.string().nullable(),
-});
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -91,7 +81,7 @@ router.get(
                   short_name: authn_institution.short_name,
                 }}
                 authnProviderName={res.locals.authn_provider_name}
-                accessTokens={accessTokens}
+                accessTokens={UserAccessTokenSchema.array().parse(accessTokens)}
                 newAccessTokens={newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
