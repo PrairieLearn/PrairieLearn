@@ -1,7 +1,6 @@
- PrairieLearn is an educational learning platform with a focus on automated assessments.
+# PrairieLearn
 
-# Organization
-
+PrairieLearn is an educational learning platform with a focus on automated assessments.
 This is a monorepo that contains both applications (in `apps/*`) and libraries (in `packages/*`).
 
 ## Tech stack
@@ -123,14 +122,14 @@ Tests expect Postgres, Redis, and an S3-compatible store to be running, and usua
 
 To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
 
-## Rendering HTML
+### Rendering HTML
 
 The PrairieLearn web application renders HTML in one of two ways:
 
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
 - Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
-## React guidance
+### React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
