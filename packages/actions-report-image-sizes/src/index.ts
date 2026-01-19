@@ -199,7 +199,7 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
   });
 
   // Calculate summary statistics for images with comparable sizes.
-  const imagesWithChange = sortedImages.filter((img) => img.oldSize != null);
+  const imagesWithChange = sortedImages.filter((img) => img.oldSize != null && img.oldSize > 0);
   const changes = imagesWithChange.map((img) => (img.newSize / img.oldSize! - 1) * 100);
 
   const biggestIncrease = Math.max(...changes, 0);
@@ -243,9 +243,10 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     // Compute sizes and deltas
     const oldSize = image.oldSize ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB` : 'N/A';
     const newSize = `${(image.newSize / 1024 / 1024).toFixed(2)} MB`;
-    const change = image.oldSize
-      ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replaceAll('-0.00', '0.00')}%`
-      : 'N/A';
+    const change =
+      image.oldSize && image.oldSize > 0
+        ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replaceAll('-0.00', '0.00')}%`
+        : 'N/A';
 
     lines.push(
       `| [${image.name}:${image.newTag}](${imageLink}) | ${image.platform} | ${oldSize} | ${newSize} | ${change} |`,
@@ -277,7 +278,9 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
 function logSizeReport(changedImages: ChangedImage[]) {
   changedImages.forEach((image) => {
     const delta =
-      image.oldSize != null ? ((image.newSize / image.oldSize - 1) * 100).toFixed(2) : null;
+      image.oldSize != null && image.oldSize > 0
+        ? ((image.newSize / image.oldSize - 1) * 100).toFixed(2)
+        : null;
     const formattedOldSize = image.oldSize
       ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB`
       : null;
