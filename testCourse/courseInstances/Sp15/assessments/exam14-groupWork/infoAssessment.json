@@ -16,7 +16,6 @@
       "title": "Hard questions",
       "questions": [
         { "id": "addNumbers", "points": [10, 5, 1] },
-        { "id": "addVectors", "points": [10, 5, 1] },
         { "id": "positionTimeGraph", "points": [10] }
       ]
     }
