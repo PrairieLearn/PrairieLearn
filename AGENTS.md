@@ -29,14 +29,14 @@ Frequently used packages:
 
 When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
 
+Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+
 ### TypeScript
 
 Typechecking:
 
 - Individual files: use `./scripts/typecheck-file.sh path/to/file.ts`
 - All files: `make build`. You will need to do this after making changes to a package.
-
-Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
 
 Linting:
 
@@ -46,9 +46,7 @@ Linting:
 Formatting:
 
 - Individual files: `yarn prettier --write path/to/file.ts`
-- Changed files: `make format-changed` (staged + unstaged + untracked) compared to HEAD. Use this in most cases -- fall back to `make format-js`.
-
-SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
+- All files: `make format-js`
 
 ### Python
 
@@ -65,10 +63,11 @@ Linting:
 Formatting:
 
 - Individual files: `uv run ruff format path/to/file.py`
-- Changed files: `make format-changed` (staged + unstaged + untracked) compared to HEAD. Use this in most cases -- fall back to `make format-python`.
+- All files: `make format-python`
 
 ### Other tools / languages (e.g. SQL, Markdown, Shell)
 
+SQL, shell, markdown, and JSON files should also be formatted with `yarn prettier --write path/to/file.{sql,sh,md,json}`.
 Reference the Makefile for commands to format/lint/typecheck other tools / languages.
 
 ## Database and schema changes
@@ -142,5 +141,5 @@ Elements (similar to React components, used to build interactive questions) are 
 
 ### Testing
 
-- For Python tests, use `pytest path/to/testfile.py` from the root directory.
+- For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
 - To run all Python tests, use `make test-python` from the root directory.
