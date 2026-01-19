@@ -2,8 +2,8 @@
 SELECT
   cni.*
 FROM
-  cached_news_items cni
-  LEFT JOIN user_news_read_timestamps unrt ON unrt.user_id = $user_id
+  cached_news_items AS cni
+  LEFT JOIN user_news_read_timestamps AS unrt ON unrt.user_id = $user_id
 WHERE
   cni.pub_date > COALESCE(unrt.last_read_at, '-infinity'::timestamptz)
 ORDER BY
