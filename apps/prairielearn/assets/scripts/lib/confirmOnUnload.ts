@@ -37,12 +37,17 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // `setAttribute` to set the `value` attribute when they initialize their
   // inputs if their specific use-case requires it.
   form.querySelectorAll<HTMLInputElement>('[data-deferred-initial-value]').forEach((input) => {
+    // Elements without a name cannot contribute to form data
+    if (!input.name) return;
     const observer = new MutationObserver(() => {
-      const formData = new URLSearchParams(form.dataset.originalFormData);
-      // Update only the relevant input value. Assumes that the input's name is unique in the form.
-      formData.delete(input.name);
-      formData.append(input.name, input.value);
-      form.dataset.originalFormData = formData.toString();
+      // If the original form data is not set, the initial update has not occurred yet, so rely on that to retrieve the value.
+      if (form.dataset.originalFormData !== undefined) {
+        const formData = new URLSearchParams(form.dataset.originalFormData);
+        // Update only the relevant input value. Assumes that the input's name is unique in the form.
+        formData.delete(input.name);
+        formData.append(input.name, input.value);
+        form.dataset.originalFormData = formData.toString();
+      }
       observer.disconnect();
     });
     observer.observe(input, { attributes: true, attributeFilter: ['value'] });
@@ -50,6 +55,7 @@ export function confirmOnUnload(form: HTMLFormElement) {
 
   // Check form state on unload
   window.addEventListener('beforeunload', (event) => {
+    // TODO Compare entries without regard to order
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
     if (!isSameForm) {
