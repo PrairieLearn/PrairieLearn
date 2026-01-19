@@ -17,6 +17,7 @@ import {
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { getCourseEditErrorUrl, getCourseInstanceSettingsUrl } from '../../../lib/client/url.js';
+import { validateShortName } from '../../../lib/short-name.js';
 
 interface CreateFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
@@ -164,9 +165,9 @@ export function CreateCourseInstanceModal({
                 aria-errormessage={errors.short_name ? 'create-short-name-error' : undefined}
                 {...register('short_name', {
                   required: 'Short name is required',
-                  pattern: {
-                    value: /^[-A-Za-z0-9_/]+$/,
-                    message: 'Use only letters, numbers, dashes, and underscores, with no spaces',
+                  validate: (value) => {
+                    const result = validateShortName(value);
+                    return result.valid || result.message;
                   },
                 })}
               />

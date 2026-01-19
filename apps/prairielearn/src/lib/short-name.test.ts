@@ -1,6 +1,11 @@
 import { describe, expect, it } from 'vitest';
 
-import { SHORT_NAME_PATTERN, SHORT_NAME_REGEX, isValidShortName } from './short-name.js';
+import {
+  SHORT_NAME_PATTERN,
+  SHORT_NAME_REGEX,
+  isValidShortName,
+  validateShortName,
+} from './short-name.js';
 
 describe('short-name validation', () => {
   describe('valid short names', () => {
@@ -92,6 +97,100 @@ describe('short-name validation', () => {
       expect(htmlPatternRegex.test('/question')).toBe(false);
       expect(htmlPatternRegex.test('question/')).toBe(false);
       expect(htmlPatternRegex.test('my question')).toBe(false);
+    });
+  });
+
+  describe('validateShortName', () => {
+    describe('valid short names', () => {
+      it('returns valid: true for simple alphanumeric', () => {
+        expect(validateShortName('question1')).toEqual({ valid: true });
+      });
+
+      it('returns valid: true for directory paths', () => {
+        expect(validateShortName('folder/question')).toEqual({ valid: true });
+      });
+
+      it('returns valid: true for existing short name match', () => {
+        // Even if the name would otherwise be invalid, matching existing is allowed
+        expect(validateShortName('/invalid', '/invalid')).toEqual({ valid: true });
+      });
+    });
+
+    describe('error messages for leading/trailing slashes', () => {
+      it('returns specific error for leading slash', () => {
+        expect(validateShortName('/question')).toEqual({
+          valid: false,
+          message: 'Cannot start with a slash',
+          serverMessage: 'cannot start with a slash',
+        });
+      });
+
+      it('returns specific error for trailing slash', () => {
+        expect(validateShortName('question/')).toEqual({
+          valid: false,
+          message: 'Cannot end with a slash',
+          serverMessage: 'cannot end with a slash',
+        });
+      });
+
+      it('returns leading slash error for both leading and trailing', () => {
+        // Leading slash check comes first
+        expect(validateShortName('/question/')).toEqual({
+          valid: false,
+          message: 'Cannot start with a slash',
+          serverMessage: 'cannot start with a slash',
+        });
+      });
+    });
+
+    describe('error messages for consecutive slashes', () => {
+      it('returns specific error for double slashes', () => {
+        expect(validateShortName('folder//question')).toEqual({
+          valid: false,
+          message: 'Cannot contain two consecutive slashes',
+          serverMessage: 'cannot contain two consecutive slashes',
+        });
+      });
+    });
+
+    describe('error messages for invalid characters', () => {
+      it('returns specific error for spaces', () => {
+        expect(validateShortName('my question')).toEqual({
+          valid: false,
+          message: 'Cannot contain spaces',
+          serverMessage: 'cannot contain spaces',
+        });
+      });
+
+      it('returns specific error for other invalid characters', () => {
+        expect(validateShortName('question@1')).toEqual({
+          valid: false,
+          message: 'Cannot contain the character "@"',
+          serverMessage: 'cannot contain the character "@"',
+        });
+      });
+
+      it('returns specific error for dot', () => {
+        expect(validateShortName('question.1')).toEqual({
+          valid: false,
+          message: 'Cannot contain the character "."',
+          serverMessage: 'cannot contain the character "."',
+        });
+      });
+    });
+
+    describe('existingShortName parameter', () => {
+      it('allows exact match of existing short name', () => {
+        expect(validateShortName('question1', 'question1')).toEqual({ valid: true });
+      });
+
+      it('validates when different from existing short name', () => {
+        expect(validateShortName('/invalid', 'question1')).toEqual({
+          valid: false,
+          message: 'Cannot start with a slash',
+          serverMessage: 'cannot start with a slash',
+        });
+      });
     });
   });
 });

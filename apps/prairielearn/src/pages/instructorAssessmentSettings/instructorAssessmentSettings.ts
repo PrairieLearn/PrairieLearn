@@ -25,6 +25,7 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
@@ -155,13 +156,11 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, `Invalid TID (was falsy): ${req.body.aid}`);
+        throw new error.HttpStatusError(400, `Invalid AID (was falsy): ${req.body.aid}`);
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
-        throw new error.HttpStatusError(
-          400,
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
-        );
+      const validation = validateShortName(req.body.aid, res.locals.assessment.tid ?? undefined);
+      if (!validation.valid) {
+        throw new error.HttpStatusError(400, `Invalid AID: ${validation.serverMessage}`);
       }
 
       const paths = getPaths(undefined, res.locals);

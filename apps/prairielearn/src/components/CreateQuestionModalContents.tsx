@@ -222,6 +222,8 @@ export function CreateQuestionModalContents({
           id="qid"
           name="qid"
           aria-describedby="qid_help"
+          // TODO: use `validateShortName` with react-hook-form to provide more specific
+          //validation feedback (e.g., "cannot start with a slash").
           pattern={SHORT_NAME_PATTERN}
           required
         />

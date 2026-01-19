@@ -10,7 +10,7 @@ import { PublicLinkSharing } from '../../components/LinkSharing.js';
 import type { NavPage } from '../../components/Navbar.types.js';
 import type { PageContext } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { SHORT_NAME_REGEX } from '../../lib/short-name.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 import { encodePathNoNormalize } from '../../lib/uri-util.shared.js';
 
@@ -127,8 +127,11 @@ export function InstructorInstanceAdminSettings({
                 required
                 {...register('ciid', {
                   required: 'CIID is required',
-                  pattern: SHORT_NAME_REGEX,
                   validate: {
+                    shortName: (value) => {
+                      const result = validateShortName(value, defaultValues.ciid);
+                      return result.valid || result.message;
+                    },
                     duplicate: (value) => {
                       if (shortNames.has(value) && value !== defaultValues.ciid) {
                         return 'This ID is already in use';
@@ -138,16 +141,12 @@ export function InstructorInstanceAdminSettings({
                   },
                 })}
               />
-              {errors.ciid?.type !== 'pattern' && (
-                <div className="invalid-feedback">{errors.ciid?.message}</div>
-              )}
+              {errors.ciid && <div className="invalid-feedback">{errors.ciid.message}</div>}
               <small className="form-text text-muted">
-                <span className={clsx(errors.ciid?.type === 'pattern' && 'text-danger')}>
-                  Use only letters, numbers, dashes, and underscores, with no spaces.
-                </span>{' '}
-                You may use forward slashes to separate directories. The recommended format is{' '}
-                <code>Fa19</code> or <code>Fall2019</code>. Add suffixes if there are multiple
-                versions, like <code>Fa19honors</code>.
+                Use only letters, numbers, dashes, and underscores, with no spaces. You may use
+                forward slashes to separate directories. The recommended format is <code>Fa19</code>{' '}
+                or <code>Fall2019</code>. Add suffixes if there are multiple versions, like{' '}
+                <code>Fa19honors</code>.
               </small>
             </div>
             <div className="mb-3">
