@@ -3,6 +3,9 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
     "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
@@ -44,7 +47,7 @@
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "fast-glob": "^3.3.3",

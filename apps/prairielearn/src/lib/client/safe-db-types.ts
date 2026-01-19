@@ -18,6 +18,7 @@
 import { type z } from 'zod';
 
 import {
+  AccessTokenSchema as RawAccessTokenSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
@@ -41,6 +42,17 @@ import {
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
+
+/** Access Tokens */
+export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
+  created_at: true,
+  id: true,
+  last_used_at: true,
+  name: true,
+  user_id: true,
+});
+export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
+export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
 /** Alternative Groups */
 export const StaffAlternativeGroupSchema =

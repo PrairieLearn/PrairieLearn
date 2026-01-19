@@ -1,5 +1,11 @@
 # @prairielearn/opentelemetry
 
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
 ## 3.1.2
 
 ### Patch Changes

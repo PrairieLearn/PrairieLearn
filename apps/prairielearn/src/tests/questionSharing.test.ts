@@ -10,7 +10,8 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { type Course, JobSequenceSchema } from '../lib/db-types.js';
+import { pullAndUpdateCourse } from '../lib/course.js';
+import { type Course } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { getCourseCommitHash, selectCourseById } from '../models/course.js';
 import * as syncFromDisk from '../sync/syncFromDisk.js';
@@ -92,19 +93,14 @@ async function ensureInvalidSharingOperationFailsToSync() {
   assert(syncResult.status === 'complete' && !syncResult.hadJsonErrorsOrWarnings);
 }
 
-async function syncSharingCourse(course_id: string) {
-  const syncUrl = `${baseUrl}/course/${course_id}/course_admin/syncs`;
-  const token = await getCsrfToken(syncUrl);
-
-  await fetch(syncUrl, {
-    method: 'POST',
-    body: new URLSearchParams({
-      __action: 'pull',
-      __csrf_token: token,
-    }),
+async function pullAndSyncSharingCourse(course: Course) {
+  const { jobSequenceId } = await pullAndUpdateCourse({
+    course,
+    userId: null,
+    authnUserId: null,
   });
-  const jobSequence = await sqldb.queryRow(sql.select_last_job_sequence, JobSequenceSchema);
-  return jobSequence.id;
+  const jobSequence = await helperServer.waitForJobSequence(jobSequenceId);
+  return jobSequence.status;
 }
 
 describe('Question Sharing', function () {
@@ -168,6 +164,10 @@ describe('Question Sharing', function () {
       },
     });
     const syncResults = await syncUtil.syncCourseData(courseRepo.courseLiveDir);
+    await updateCourseRepository({
+      courseId: syncResults.courseId,
+      repository: courseRepo.courseOriginDir,
+    });
     sharingCourse = await selectCourseById(syncResults.courseId);
     sharingCourseInstanceId = await sqldb.queryRow(
       sql.select_course_instance,
@@ -524,20 +524,11 @@ describe('Question Sharing', function () {
       await fs.rename(questionTempPath, questionPath);
     });
 
-    test.sequential(
-      'Ensure sync through sync page succeeds before renaming shared question',
-      async () => {
-        await updateCourseRepository({
-          courseId: sharingCourse.id,
-          repository: courseRepo.courseOriginDir,
-        });
-
-        const job_sequence_id = await syncSharingCourse(sharingCourse.id);
-        await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Success');
-      },
-    );
-
     test.sequential('Rename shared question in origin, ensure live does not sync it', async () => {
+      // Ensure that we can sync before renaming.
+      const initialSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(initialSyncStatus, 'Success');
+
       const questionPath = path.join(courseRepo.courseOriginDir, 'questions', SHARING_QUESTION_QID);
       const questionTempPath = questionPath + '_temp';
       await fs.rename(questionPath, questionTempPath);
@@ -548,8 +539,8 @@ describe('Question Sharing', function () {
 
       const commitHash = await getCourseCommitHash(courseRepo.courseLiveDir);
 
-      const job_sequence_id = await syncSharingCourse(sharingCourse.id);
-      await helperServer.waitForJobSequenceStatus(job_sequence_id, 'Error');
+      const renameSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(renameSyncStatus, 'Error');
 
       assert.equal(
         commitHash,
@@ -568,8 +559,8 @@ describe('Question Sharing', function () {
       // remove breaking change in origin repo
       await execa('git', ['reset', '--hard', 'HEAD~1'], { cwd: courseRepo.courseOriginDir });
 
-      const job_sequence_id_success = await syncSharingCourse(sharingCourse.id);
-      await helperServer.waitForJobSequenceStatus(job_sequence_id_success, 'Success');
+      const finalSyncStatus = await pullAndSyncSharingCourse(sharingCourse);
+      assert.equal(finalSyncStatus, 'Success');
     });
 
     test.sequential('Remove question from sharing set, ensure live does not sync it', async () => {
