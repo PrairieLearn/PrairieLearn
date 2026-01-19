@@ -223,11 +223,7 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
 
   // Generate new comment body with collapsible format.
   const lines = [
-    `<details><summary><b>${title}</b>`,
-    '',
-    summaryLine,
-    '',
-    '</summary>',
+    `<details><summary><b>${title}</b></summary>`,
     '',
     // Markdown table header
     '| Image | Platform | Old Size | New Size | Change |',
@@ -253,7 +249,7 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     );
   }
 
-  lines.push('', '</details>');
+  lines.push('', '</details>', '', summaryLine);
 
   const body = lines.join('\n');
 
