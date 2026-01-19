@@ -305,6 +305,10 @@
       "type": "number",
       "default": 600
     },
+    "cronIntervalFetchNewsItemsSec": {
+      "type": "number",
+      "default": 10800
+    },
     "cronDailySec": {
       "type": "number",
       "default": 28800
@@ -1132,6 +1136,17 @@
     "courseFilesApiUrl": {
       "type": ["string", "null"],
       "default": null
+    },
+    "newsFeedUrl": {
+      "type": ["string", "null"],
+      "default": null
+    },
+    "newsFeedCategories": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      },
+      "default": ["Release"]
     },
     "costPerMillionTokens": {
       "type": "object",
