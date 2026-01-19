@@ -81,8 +81,8 @@ router.get(
                   short_name: authn_institution.short_name,
                 }}
                 authnProviderName={res.locals.authn_provider_name}
-                accessTokens={UserAccessTokenSchema.array().parse(accessTokens)}
-                newAccessTokens={newAccessTokens}
+                accessTokens={isExamMode ? [] : UserAccessTokenSchema.array().parse(accessTokens)}
+                newAccessTokens={isExamMode ? [] : newAccessTokens}
                 isExamMode={isExamMode}
                 csrfToken={res.locals.__csrf_token}
               />
