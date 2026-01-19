@@ -19,6 +19,20 @@ find_tsconfig() {
     echo "tsconfig.json"
 }
 
+# Find all module augmentation files in the project
+# These need to be included to ensure type augmentations are applied
+# Searches for both "declare module" and "declare global" patterns
+find_module_augmentation_files() {
+    # Search from project root for .ts and .d.ts files containing augmentations
+    # Exclude node_modules, dist, and build directories
+    grep -rlE "declare (module|global)" . \
+        --include="*.ts" --include="*.d.ts" \
+        --exclude-dir=node_modules \
+        --exclude-dir=dist \
+        --exclude-dir=build \
+        2> /dev/null || true
+}
+
 # Build list of "tsconfig|file" pairs
 pairs=""
 for file in "$@"; do
@@ -43,6 +57,9 @@ for tsconfig in $tsconfigs; do
     # Get all files for this tsconfig
     files=$(echo "$pairs" | awk -F'|' -v tc="$tsconfig" '$1 == tc {print $2}' | tr '\n' ' ')
 
+    # Find module augmentation files
+    augmentation_files=$(find_module_augmentation_files)
+
     # Build include array
     includes=""
     for file in $files; do
@@ -50,6 +67,18 @@ for tsconfig in $tsconfigs; do
             includes="$includes,"
         fi
         includes="$includes\"$file\""
+    done
+
+    # Add module augmentation files to includes (avoiding duplicates)
+    for aug_file in $augmentation_files; do
+        # Skip if this file is already in the includes list
+        if echo "$files" | grep -qF "$aug_file"; then
+            continue
+        fi
+        if [ -n "$includes" ]; then
+            includes="$includes,"
+        fi
+        includes="$includes\"$aug_file\""
     done
 
     TMP=$(mktemp .tsconfig-lint.XXXXXX.json)
