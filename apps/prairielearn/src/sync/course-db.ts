@@ -1174,6 +1174,8 @@ function validateAssessment({
       'groupMaxSize',
       'groupMinSize',
       'groupRoles',
+      'canView',
+      'canSubmit',
       'studentGroupCreate',
       'studentGroupJoin',
       'studentGroupLeave',
