@@ -136,7 +136,16 @@ export function InstructorQuestionSettings({
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
-                pattern="${SHORT_NAME_PATTERN}|${
+                pattern="${
+                  // TODO: if/when this page is converted to Preact, we should use a custom
+                  // validation function instead of `pattern` so that we can provide more
+                  // specific validation feedback around the rules enforced by this pattern,
+                  // namely specific guidance like "cannot start with a slash" or "cannot
+                  // contain two consecutive slashes".
+                  //
+                  // TODO: make the same change on the question creation modal as well.
+                  SHORT_NAME_PATTERN
+                }|${
                   // NOTE: this will not be compatible with browsers, as it was only
                   // just added to modern browsers as of January 2025. If/when this
                   // page is converted to Preact, we should use a custom validation
