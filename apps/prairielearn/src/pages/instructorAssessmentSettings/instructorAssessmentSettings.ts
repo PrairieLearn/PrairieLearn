@@ -156,11 +156,14 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, `Invalid AID (was falsy): ${req.body.aid}`);
+        throw new error.HttpStatusError(400, 'AID is required');
       }
-      const validation = validateShortName(req.body.aid, res.locals.assessment.tid ?? undefined);
-      if (!validation.valid) {
-        throw new error.HttpStatusError(400, `Invalid AID: ${validation.serverMessage}`);
+      const shortNameValidation = validateShortName(
+        req.body.aid,
+        res.locals.assessment.tid ?? undefined,
+      );
+      if (!shortNameValidation.valid) {
+        throw new error.HttpStatusError(400, `Invalid AID: ${shortNameValidation.serverMessage}`);
       }
 
       const paths = getPaths(undefined, res.locals);
