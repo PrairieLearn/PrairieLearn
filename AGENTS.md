@@ -40,7 +40,7 @@ Run `make format-changed` from the root directory to format all changed files (s
 
 Linting:
 
-- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using an skill / LSP / MCP for this to improve performance.
+- Individual files: `yarn eslint --fix path/to/file.ts`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make lint-js`
 
 Formatting:
@@ -54,7 +54,7 @@ SQL, shell, markdown, and JSON files should also be formatted with `yarn prettie
 
 Typechecking:
 
-- Individual files: `yarn pyright path/to/file.py`. Prefer using an skill / LSP / MCP for this to improve performance.
+- Individual files: `yarn pyright path/to/file.py`. Prefer using a skill / LSP / MCP for this to improve performance.
 - All files: `make typecheck-python`
 
 Linting:
