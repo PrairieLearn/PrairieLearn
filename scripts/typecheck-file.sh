@@ -1,5 +1,8 @@
 #!/bin/bash -e
 
+# NOTE: This script is used to typecheck a single file.
+# This may not work in all cases, see https://github.com/PrairieLearn/PrairieLearn/pull/13830#discussion_r2706300244
+
 if [ $# -eq 0 ]; then
     echo "Usage: $0 <file1.ts> [file2.ts] ..." >&2
     exit 1

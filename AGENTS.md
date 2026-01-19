@@ -35,7 +35,7 @@ Run `make format-changed` from the root directory to format all changed files (s
 
 Typechecking:
 
-- Individual files: use `./scripts/typecheck-file.sh path/to/file.ts`
+- Individual files: `make build` + grep for the file in the build output. Don't use `./scripts/typecheck-file.sh path/to/file.ts` unless the user asks for it.
 - All files: `make build`. You will need to do this after making changes to a package.
 
 Linting:
