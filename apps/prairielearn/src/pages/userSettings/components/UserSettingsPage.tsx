@@ -34,62 +34,95 @@ export function UserSettingsPage({
   isExamMode,
   csrfToken,
 }: UserSettingsPageProps) {
-  const [showGenerateModal, setShowGenerateModal] = useState(false);
-  const [tokenToDelete, setTokenToDelete] = useState<UserAccessToken | null>(null);
-
-  const handleResetMathJax = () => {
-    localStorage.removeItem('MathJax-Menu-Settings');
-    // eslint-disable-next-line no-alert -- Matches original behavior for user feedback
-    alert('MathJax menu settings have been reset');
-  };
-
   return (
     <>
       <h1 className="mb-4">Settings</h1>
 
-      {/* User Profile Card */}
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex align-items-center">
-          <h2>User profile</h2>
-        </div>
-        <div className="table-responsive">
-          <table
-            className="table table-sm two-column-description"
-            aria-label="User profile information"
-          >
-            <tbody>
-              <tr>
-                <th>UID</th>
-                <td>{user.uid}</td>
-              </tr>
-              <tr>
-                <th>Name</th>
-                <td>{user.name}</td>
-              </tr>
-              <tr>
-                <th>Unique Identifier (UIN)</th>
-                <td>{user.uin}</td>
-              </tr>
-              <tr>
-                <th>Email</th>
-                <td>{user.email}</td>
-              </tr>
-              <tr>
-                <th>Institution</th>
-                <td>
-                  {institution.long_name} ({institution.short_name})
-                </td>
-              </tr>
-              <tr>
-                <th>Authentication method</th>
-                <td>{authnProviderName}</td>
-              </tr>
-            </tbody>
-          </table>
-        </div>
-      </div>
+      <UserProfileCard user={user} institution={institution} authnProviderName={authnProviderName} />
 
-      {/* Personal Access Tokens Card */}
+      <PersonalAccessTokensCard
+        accessTokens={accessTokens}
+        newAccessTokens={newAccessTokens}
+        isExamMode={isExamMode}
+        csrfToken={csrfToken}
+      />
+
+      <BrowserConfigurationCard />
+    </>
+  );
+}
+
+UserSettingsPage.displayName = 'UserSettingsPage';
+
+function UserProfileCard({
+  user,
+  institution,
+  authnProviderName,
+}: {
+  user: UserSettingsPageProps['user'];
+  institution: UserSettingsPageProps['institution'];
+  authnProviderName: string;
+}) {
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
+        <h2>User profile</h2>
+      </div>
+      <div className="table-responsive">
+        <table
+          className="table table-sm two-column-description"
+          aria-label="User profile information"
+        >
+          <tbody>
+            <tr>
+              <th>UID</th>
+              <td>{user.uid}</td>
+            </tr>
+            <tr>
+              <th>Name</th>
+              <td>{user.name}</td>
+            </tr>
+            <tr>
+              <th>Unique Identifier (UIN)</th>
+              <td>{user.uin}</td>
+            </tr>
+            <tr>
+              <th>Email</th>
+              <td>{user.email}</td>
+            </tr>
+            <tr>
+              <th>Institution</th>
+              <td>
+                {institution.long_name} ({institution.short_name})
+              </td>
+            </tr>
+            <tr>
+              <th>Authentication method</th>
+              <td>{authnProviderName}</td>
+            </tr>
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function PersonalAccessTokensCard({
+  accessTokens,
+  newAccessTokens,
+  isExamMode,
+  csrfToken,
+}: {
+  accessTokens: UserAccessToken[];
+  newAccessTokens: string[];
+  isExamMode: boolean;
+  csrfToken: string;
+}) {
+  const [showGenerateModal, setShowGenerateModal] = useState(false);
+  const [tokenToDelete, setTokenToDelete] = useState<UserAccessToken | null>(null);
+
+  return (
+    <>
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex align-items-center">
           <h2>Personal access tokens</h2>
@@ -130,27 +163,6 @@ export function UserSettingsPage({
         </div>
       </div>
 
-      {/* Browser Configuration Card */}
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex">
-          <h2>Browser configuration</h2>
-        </div>
-        <div className="card-body">
-          <p>
-            This section will let you reset browser settings related to technology inside
-            PrairieLearn.
-          </p>
-          <p>
-            If math formulas shows up as code like{' '}
-            <strong>$ x = rac {'{-b pm sqrt {b^2 - 4ac}}{2a}'} $</strong> resetting the MathJax menu
-            settings might help.
-          </p>
-          <button type="button" className="btn btn-sm btn-primary" onClick={handleResetMathJax}>
-            Reset MathJax menu settings
-          </button>
-        </div>
-      </div>
-
       <GenerateTokenModal
         show={showGenerateModal}
         csrfToken={csrfToken}
@@ -165,8 +177,6 @@ export function UserSettingsPage({
     </>
   );
 }
-
-UserSettingsPage.displayName = 'UserSettingsPage';
 
 function TokenList({
   accessTokens,
@@ -216,5 +226,35 @@ function TokenList({
         </li>
       ))}
     </>
+  );
+}
+
+function BrowserConfigurationCard() {
+  const handleResetMathJax = () => {
+    localStorage.removeItem('MathJax-Menu-Settings');
+    // eslint-disable-next-line no-alert -- Matches original behavior for user feedback
+    alert('MathJax menu settings have been reset');
+  };
+
+  return (
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex">
+        <h2>Browser configuration</h2>
+      </div>
+      <div className="card-body">
+        <p>
+          This section will let you reset browser settings related to technology inside
+          PrairieLearn.
+        </p>
+        <p>
+          If math formulas shows up as code like{' '}
+          <strong>$ x = rac {'{-b pm sqrt {b^2 - 4ac}}{2a}'} $</strong> resetting the MathJax menu
+          settings might help.
+        </p>
+        <button type="button" className="btn btn-sm btn-primary" onClick={handleResetMathJax}>
+          Reset MathJax menu settings
+        </button>
+      </div>
+    </div>
   );
 }
