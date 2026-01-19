@@ -15,6 +15,7 @@ import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getSearchParams } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -216,7 +217,7 @@ router.post(
   typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (req.body.__action === 'add_question') {
       if (!req.body.qid) {
-        throw new error.HttpStatusError(400, 'qid is required');
+        throw new error.HttpStatusError(400, 'QID is required');
       }
       if (!req.body.title) {
         throw new error.HttpStatusError(400, 'title is required');
@@ -224,11 +225,9 @@ router.post(
       if (!req.body.start_from) {
         throw new error.HttpStatusError(400, 'start_from is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
-        throw new error.HttpStatusError(
-          400,
-          `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
-        );
+      const shortNameValidation = validateShortName(req.body.qid);
+      if (!shortNameValidation.valid) {
+        throw new error.HttpStatusError(400, `Invalid QID: ${shortNameValidation.serverMessage}`);
       }
       const usesTemplate = ['example', 'course'].includes(req.body.start_from);
       if (usesTemplate && !req.body.template_qid) {
