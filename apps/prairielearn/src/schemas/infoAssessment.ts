@@ -77,8 +77,7 @@ export type TeamStudentPermissionsJson = z.infer<typeof TeamStudentPermissionsJs
 
 export const TeamRolePermissionsJsonSchema = z
   .object({
-    canAssignRoles: z
-      .array(z.string())
+    canAssignRoles: uniqueArray(z.string())
       .describe('Role names that can assign other users to roles.')
       .optional()
       .default([]),
