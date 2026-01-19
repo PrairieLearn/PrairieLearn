@@ -251,7 +251,7 @@ function BrowserConfigurationCard() {
           PrairieLearn.
         </p>
         <p>
-          If math formulas shows up as code like{' '}
+          If math formulas show up as code like{' '}
           <strong>$ x = rac {'{-b pm sqrt {b^2 - 4ac}}{2a}'} $</strong> resetting the MathJax menu
           settings might help.
         </p>
