@@ -87,7 +87,6 @@ for tsconfig in $tsconfigs; do
     TMP=$(mktemp .tsconfig-lint.XXXXXX.json)
     TMP_FILES+=("$TMP")
 
-
     cat > "$TMP" << EOF
 {
   "extends": "./$tsconfig",
