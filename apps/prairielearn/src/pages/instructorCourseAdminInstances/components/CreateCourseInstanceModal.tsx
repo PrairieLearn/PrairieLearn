@@ -97,8 +97,7 @@ export function CreateCourseInstanceModal({
     },
   });
 
-  const onFormSubmit = async (data: CreateFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: CreateFormValues) => {
     void createMutation.mutate(data);
   };
 
@@ -126,7 +125,7 @@ export function CreateCourseInstanceModal({
             )}
 
             <div className="mb-3">
-              <label className="form-label" for="create-long-name">
+              <label className="form-label" htmlFor="create-long-name">
                 Long name
               </label>
               <input
@@ -153,7 +152,7 @@ export function CreateCourseInstanceModal({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" for="create-short-name">
+              <label className="form-label" htmlFor="create-short-name">
                 Short name
               </label>
               <input

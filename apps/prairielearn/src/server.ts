@@ -10,6 +10,7 @@ import * as Sentry from '@prairielearn/sentry';
 import * as fs from 'node:fs';
 import * as http from 'node:http';
 import * as https from 'node:https';
+import * as os from 'node:os';
 import * as path from 'node:path';
 import * as url from 'node:url';
 import * as util from 'node:util';
@@ -83,6 +84,7 @@ import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import { selectCourseById } from './models/course.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -2199,13 +2201,15 @@ if (shouldStartServer) {
     setServerState('pending');
     logger.verbose('PrairieLearn server start');
 
-    // For backwards compatibility, we'll default to trying to load config
-    // files from both the application and repository root.
-    //
-    // We'll put the app config file second so that it can override anything
-    // in the repository root config file.
     let configPaths = [
+      // To support Git worktrees (useful for agentic development), we'll look
+      // for config files in `~/.config/prairielearn/config.json`. We check here
+      // first so the following repo/app configs can still take precedence.
+      path.join(os.homedir(), '.config', 'prairielearn', 'config.json'),
+      // For backwards compatibility, we'll check the repository root before loading
+      // app-specific config.
       path.join(REPOSITORY_ROOT_PATH, 'config.json'),
+      // The app config file is checked last so that it will always take precedence.
       path.join(APP_ROOT_PATH, 'config.json'),
     ];
 
@@ -2521,8 +2525,9 @@ if (shouldStartServer) {
 
     if ('sync-course' in argv) {
       logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+      const course = await selectCourseById(argv['sync-course']);
       const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-        courseId: argv['sync-course'],
+        course,
         authnUserId: null,
         userId: null,
       });
@@ -2570,7 +2575,7 @@ if (shouldStartServer) {
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    socketServer.init(httpServer);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2681,7 +2686,7 @@ if (shouldStartServer) {
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  socketServer.init(httpServer);
+  await socketServer.init(httpServer);
 }
 
 /**

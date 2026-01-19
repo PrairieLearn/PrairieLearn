@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'preact/hooks';
-import { Fragment } from 'preact/jsx-runtime';
+import { Fragment, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';

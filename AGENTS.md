@@ -43,6 +43,8 @@ Run `make format-js-cached` / `make lint-js-cached` from the root directory to f
 
 Run `make format-python` / `make lint-python` from the root directory to format/lint all Python code.
 
+Run `make format-changed` from the root directory to format all changed files (staged + unstaged + untracked) compared to HEAD. This is useful for formatting all your work-in-progress changes.
+
 ## Conventions
 
 ### Stylistic conventions
@@ -91,12 +93,11 @@ To test UI code looks correct, you should try to connect to the development serv
 The PrairieLearn web application renders HTML in one of two ways:
 
 - Static HTML is rendered with an `html` tagged-template literal from the `@prairielearn/html` package. See [`packages/html/README.md`](packages/html/README.md) for details.
-- Interactive components are built and rendered with Preact and hydrated with utilities from the `@prairielearn/preact` package. See [`packages/preact/README.md`](packages/preact/README.md) for details.
+- Interactive components are built and rendered with React and hydrated with utilities from the `@prairielearn/react` package. See [`packages/react/README.md`](packages/react/README.md) for details.
 
-## Preact quirks
+## React guidance
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
-- Use `clsx` in Preact components.
+- Use `clsx` in React components.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
-- If you get a build error relating to the type of an error being unknown, you can use `yarn tsc -p assets/scripts/tsconfig.json --traceResolution` to debug the issue.

@@ -357,5 +357,5 @@ export function courseRepoContentUrl(
     return `https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse${path}`;
   }
   const repoPrefix = httpPrefixForCourseRepo(course.repository);
-  return repoPrefix ? `${repoPrefix}/tree/${course.branch}${path}` : null;
+  return repoPrefix && course.branch ? `${repoPrefix}/tree/${course.branch}${path}` : null;
 }

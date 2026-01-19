@@ -1,6 +1,6 @@
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import {
   RawStudentCourseInstanceSchema,
@@ -119,9 +119,8 @@ function DevModeCard({ isDevMode }: { isDevMode: boolean }) {
           different page or if you reload the current page in your web browser.
         </p>
         <p className="mb-0">
-          See the
-          <a href="https://prairielearn.readthedocs.io">PrairieLearn documentation</a>
-          for information on creating questions and assessments.
+          See the <a href="https://prairielearn.readthedocs.io">PrairieLearn documentation</a> for
+          information on creating questions and assessments.
         </p>
       </div>
     </div>

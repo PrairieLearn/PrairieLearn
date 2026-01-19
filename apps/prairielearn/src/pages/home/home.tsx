@@ -218,7 +218,7 @@ router.post(
         });
         if (
           !enrollment ||
-          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+          !['left', 'removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
         ) {
           flash('error', 'Failed to accept invitation');
           break;
@@ -263,14 +263,14 @@ router.post(
           authzData,
         });
 
-        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+        if (!enrollment || !['joined', 'left', 'removed'].includes(enrollment.status)) {
           flash('error', 'Failed to unenroll');
           break;
         }
 
         await setEnrollmentStatus({
           enrollment,
-          status: 'removed',
+          status: 'left',
           authzData,
           requiredRole: ['Student'],
         });

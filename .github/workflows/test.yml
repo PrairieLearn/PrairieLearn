@@ -139,7 +139,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
@@ -220,7 +220,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
