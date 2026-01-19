@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -15,6 +14,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
@@ -39,7 +39,7 @@ const router = Router();
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     res.locals.navPage = 'home';
 
     // Potentially prompt the user to accept the terms before proceeding.
@@ -167,7 +167,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     // Handle dismiss_news_alert separately since it doesn't require course_instance_id
     const ActionSchema = z.object({
       __action: z.enum([
