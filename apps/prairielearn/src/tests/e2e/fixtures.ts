@@ -48,7 +48,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
       // The file editor requires git
-      execSync('git init', { cwd: tempTestCoursePath });
+      execSync('git init -b main', { cwd: tempTestCoursePath });
       execSync('git add -A', { cwd: tempTestCoursePath });
       execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
       execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
