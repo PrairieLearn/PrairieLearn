@@ -187,7 +187,8 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
 
   const existingComment = comments.find(
     (comment) =>
-      comment.body?.startsWith(`<details><summary><h3>${title}</h3>`) &&
+      (comment.body?.startsWith(`## ${title}`) || /* Old format */
+      comment.body?.startsWith(`<details><summary><b>${title}</b>`)) &&
       comment.user?.login === 'github-actions[bot]',
   );
 
@@ -202,27 +203,27 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
   const changes = imagesWithChange.map((img) => (img.newSize / img.oldSize! - 1) * 100);
 
   const biggestIncrease = Math.max(...changes, 0);
-  const biggestSavings = Math.min(...changes, 0);
+  const biggestDecrease = Math.min(...changes, 0);
 
   // Filter out noise from the summary statistics.
   const THRESHOLD = 0.5;
   const hasSignificantIncrease = biggestIncrease > THRESHOLD;
-  const hasSignificantSavings = biggestSavings < -THRESHOLD;
+  const hasSignificantDecrease = biggestDecrease < -THRESHOLD;
 
   let summaryLine: string;
-  if (hasSignificantIncrease && hasSignificantSavings) {
-    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%, biggest savings: ${biggestSavings.toFixed(2)}%`;
+  if (hasSignificantIncrease && hasSignificantDecrease) {
+    summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%, biggest decrease: ${biggestDecrease.toFixed(2)}%`;
   } else if (hasSignificantIncrease) {
     summaryLine = `Biggest increase: ${biggestIncrease.toFixed(2)}%`;
-  } else if (hasSignificantSavings) {
-    summaryLine = `Biggest savings: ${biggestSavings.toFixed(2)}%`;
+  } else if (hasSignificantDecrease) {
+    summaryLine = `Biggest decrease: ${biggestDecrease.toFixed(2)}%`;
   } else {
     summaryLine = 'No significant size changes';
   }
 
   // Generate new comment body with collapsible format.
   const lines = [
-    `<details><summary><h3>${title}</h3>`,
+    `<details><summary><b>${title}</b>`,
     '',
     summaryLine,
     '',
@@ -243,7 +244,7 @@ async function commentSizeReport(title: string, changedImages: ChangedImage[]) {
     const oldSize = image.oldSize ? `${(image.oldSize / 1024 / 1024).toFixed(2)} MB` : 'N/A';
     const newSize = `${(image.newSize / 1024 / 1024).toFixed(2)} MB`;
     const change = image.oldSize
-      ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replace('-0', '0')}%`
+      ? `${((image.newSize / image.oldSize - 1) * 100).toFixed(2).replaceAll('-0.00', '0.00')}%`
       : 'N/A';
 
     lines.push(
