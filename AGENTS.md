@@ -11,8 +11,8 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 - `apps/prairielearn`: The main PrairieLearn web application. Key files:
 
-    - `apps/prairielearn/src/server.ts`: Entry point for the PrairieLearn web application. Initializes the Express server and maps URLs to pages.
-    - `apps/prairielearn/src/pages/`: Individual pages of the PrairieLearn application. You would add a new page here.
+  - `apps/prairielearn/src/server.ts`: Entry point for the PrairieLearn web application. Initializes the Express server and maps URLs to pages.
+  - `apps/prairielearn/src/pages/`: Individual pages of the PrairieLearn application. You would add a new page here.
 
 - `apps/grader-host`: The application that runs external grading jobs.
 - `apps/workspace-host`: The application that runs workspace containers.
@@ -134,7 +134,6 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Use `clsx` in React components.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
-
 
 ## Python guidance
 

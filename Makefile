@@ -122,7 +122,7 @@ lint-docs-links: build-docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
+	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md" --ignore "**/test-results/**" --ignore .claude
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
