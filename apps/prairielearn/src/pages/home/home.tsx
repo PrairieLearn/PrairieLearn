@@ -39,7 +39,7 @@ const router = Router();
 
 router.get(
   '/',
-  typedAsyncHandler<'plain'>(async (req, res) => {
+  typedAsyncHandler<'plain', { navPage: 'home' }>(async (req, res) => {
     res.locals.navPage = 'home';
 
     // Potentially prompt the user to accept the terms before proceeding.
@@ -169,7 +169,7 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const {
-      authn_user: { uid },
+      authn_user: { uid, id: authn_user_id },
     } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'student',
@@ -186,7 +186,7 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     if (body.__action === 'dismiss_news_alert') {
-      await markNewsItemsAsReadForUser(res.locals.authn_user.id);
+      await markNewsItemsAsReadForUser(authn_user_id);
       res.redirect(req.originalUrl);
       return;
     }
@@ -297,7 +297,7 @@ router.post(
         break;
       }
       default: {
-        assertNever(body.__action);
+        assertNever(body);
       }
     }
 
