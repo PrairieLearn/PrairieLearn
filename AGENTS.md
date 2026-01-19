@@ -80,7 +80,7 @@ If you make a change to the database, make sure to update the database schema de
 
 Prefer interacting with the database using model functions in `apps/prairielearn/src/models/`.
 
-Configuration files are stored at paths like `infoCourse.json`, `infoCourseInstance.json`, `infoAssessment.json`, `infoQuestion.json`, etc, and are used to configure various aspects of PrairieLearn. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
+Configuration files are stored at paths like `infoCourse.json`, `infoCourseInstance.json`, `infoAssessment.json`, `infoQuestion.json`, etc., and are used to configure various aspects of PrairieLearn. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
 ## TypeScript guidance
 

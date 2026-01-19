@@ -30,10 +30,18 @@ done
 tsconfigs=$(echo "$pairs" | cut -d'|' -f1 | sort -u)
 
 # Run tsc once per tsconfig with all its files
+TMP_FILES=()
+cleanup() {
+  for f in "${TMP_FILES[@]}"; do
+    rm -f "$f"
+  done
+}
+trap cleanup EXIT
+
 exit_code=0
 for tsconfig in $tsconfigs; do
   # Get all files for this tsconfig
-  files=$(echo "$pairs" | grep "^$tsconfig|" | cut -d'|' -f2 | tr '\n' ' ')
+  files=$(echo "$pairs" | awk -F'|' -v tc="$tsconfig" '$1 == tc {print $2}' | tr '\n' ' ')
 
   # Build include array
   includes=""
@@ -45,7 +53,7 @@ for tsconfig in $tsconfigs; do
   done
 
   TMP=$(mktemp .tsconfig-lint.XXXXXX.json)
-  trap 'rm -f "$TMP"' EXIT
+  TMP_FILES+=("$TMP")
 
   cat >"$TMP" <<EOF
 {
