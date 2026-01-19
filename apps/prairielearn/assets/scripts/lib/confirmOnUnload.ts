@@ -36,9 +36,13 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // initialization. Custom elements also have the option of using
   // `setAttribute` to set the `value` attribute when they initialize their
   // inputs if their specific use-case requires it.
-  form.querySelectorAll<HTMLInputElement>('[data-deferred-init]').forEach((input) => {
+  form.querySelectorAll<HTMLInputElement>('[data-deferred-initial-value]').forEach((input) => {
     const observer = new MutationObserver(() => {
-      saveQuestionFormData(form);
+      const formData = new URLSearchParams(form.dataset.originalFormData);
+      // Update only the relevant input value. Assumes that the input's name is unique in the form.
+      formData.delete(input.name);
+      formData.append(input.name, input.value);
+      form.dataset.originalFormData = formData.toString();
       observer.disconnect();
     });
     observer.observe(input, { attributes: true, attributeFilter: ['value'] });
