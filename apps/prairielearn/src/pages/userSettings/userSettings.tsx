@@ -2,16 +2,30 @@ import * as crypto from 'crypto';
 
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { Hydrate } from '@prairielearn/react/server';
+import { IdSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { UserSettingsPurchasesCard } from '../../ee/lib/billing/components/UserSettingsPurchasesCard.js';
 import { getPurchasesForUser } from '../../ee/lib/billing/purchases.js';
 import { InstitutionSchema, UserSchema } from '../../lib/db-types.js';
 import { ipToMode } from '../../lib/exam-mode.js';
 import { isEnterprise } from '../../lib/license.js';
 
-import { AccessTokenSchema, UserSettings } from './userSettings.html.js';
+import { UserSettingsPage } from './components/UserSettingsPage.js';
+
+export const AccessTokenSchema = z.object({
+  created_at: z.string(),
+  id: IdSchema,
+  last_used_at: z.string().nullable(),
+  name: z.string(),
+  token_hash: z.string(),
+  token: z.string().nullable(),
+});
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -52,16 +66,44 @@ router.get(
       authn_user_id: authn_user.id,
     });
 
+    const isExamMode = mode !== 'Public';
+
     res.send(
-      UserSettings({
-        authn_user,
-        authn_institution,
-        authn_provider_name: res.locals.authn_provider_name,
-        accessTokens,
-        newAccessTokens,
-        purchases,
-        isExamMode: mode !== 'Public',
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'User Settings',
+        navContext: {
+          page: 'user_settings',
+          type: 'plain',
+        },
+        content: (
+          <>
+            <Hydrate>
+              <UserSettingsPage
+                user={{
+                  uid: authn_user.uid,
+                  name: authn_user.name,
+                  uin: authn_user.uin,
+                  email: authn_user.email,
+                }}
+                institution={{
+                  long_name: authn_institution.long_name,
+                  short_name: authn_institution.short_name,
+                }}
+                authnProviderName={res.locals.authn_provider_name}
+                accessTokens={accessTokens}
+                newAccessTokens={newAccessTokens}
+                isExamMode={isExamMode}
+                csrfToken={res.locals.__csrf_token}
+              />
+            </Hydrate>
+            {
+              // TODO: if/when we start hydrating this, we'll need to make sure we're
+              // only sending safe data to the client.
+              isEnterprise() && <UserSettingsPurchasesCard purchases={purchases} />
+            }
+          </>
+        ),
       }),
     );
   }),

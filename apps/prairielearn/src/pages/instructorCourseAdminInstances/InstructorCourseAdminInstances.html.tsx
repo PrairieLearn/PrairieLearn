@@ -90,6 +90,7 @@ export function InstructorCourseAdminInstancesInner({
   const [showCreateModal, setShowCreateModal] = useState(false);
 
   const canCreateInstances = canEditCourse && !course.example_course && !needToSync;
+  console.log({ canEditCourse, needToSync, isAdministrator, exampleCourse: course.example_course });
 
   return (
     <>
