@@ -24,7 +24,7 @@ function isExampleCourse(courseDir: string): boolean {
    * - Only administrators get API access to the example course.
    */
   return (
-    resolve(REPOSITORY_ROOT_PATH, config.exampleCoursePathIdentifier) ===
+    resolve(REPOSITORY_ROOT_PATH, config.exampleCoursePath) ===
     resolve(REPOSITORY_ROOT_PATH, courseDir)
   );
 }

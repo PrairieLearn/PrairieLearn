@@ -1249,9 +1249,9 @@
         }
       }
     },
-    "exampleCoursePathIdentifier": {
+    "exampleCoursePath": {
       "type": "string",
-      "default": "exampleCourse"
+      "default": "./exampleCourse"
     }
   }
 }
