@@ -11,10 +11,7 @@ const parser = new Parser<Record<string, never>, { categories?: string[] }>();
 /**
  * Checks if an RSS item has any of the specified category tags.
  */
-function hasMatchingCategory(
-  categories: string[],
-  allowedCategories: string[],
-): boolean {
+function hasMatchingCategory(categories: string[], allowedCategories: string[]): boolean {
   if (allowedCategories.length === 0) return true; // No filter = allow all
 
   const normalizedAllowed = new Set(allowedCategories.map((c) => c.trim().toLowerCase()));

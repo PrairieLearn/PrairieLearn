@@ -10,7 +10,7 @@ async function syncAllCourses(page: Page) {
   await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
 }
 
-test.describe('News alert', () => {
+test.describe.serial('News alert', () => {
   test.beforeAll(async ({ browser, workerPort }) => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
     await syncAllCourses(page);
