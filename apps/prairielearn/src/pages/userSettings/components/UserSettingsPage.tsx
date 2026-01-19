@@ -38,7 +38,11 @@ export function UserSettingsPage({
     <>
       <h1 className="mb-4">Settings</h1>
 
-      <UserProfileCard user={user} institution={institution} authnProviderName={authnProviderName} />
+      <UserProfileCard
+        user={user}
+        institution={institution}
+        authnProviderName={authnProviderName}
+      />
 
       <PersonalAccessTokensCard
         accessTokens={accessTokens}
