@@ -1,9 +1,9 @@
 import { Modal } from 'react-bootstrap';
 
-import type { AccessToken } from './UserSettingsPage.js';
+import type { UserAccessToken } from '../../../lib/client/safe-db-types.js';
 
 interface DeleteTokenModalProps {
-  token: AccessToken | null;
+  token: UserAccessToken | null;
   csrfToken: string;
   onClose: () => void;
 }
