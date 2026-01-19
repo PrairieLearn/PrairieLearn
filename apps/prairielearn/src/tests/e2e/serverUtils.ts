@@ -139,7 +139,24 @@ export async function startServerSubprocess(
         return;
       }
 
-      serverProcess.on('exit', () => resolve());
+      // Temporarily catch ECONNRESET errors that occur when the server is killed
+      // while there are still active HTTP connections (e.g., from the browser).
+      // These are expected during shutdown and can be safely ignored.
+      const handleUncaughtException = (err: Error & { code?: string }) => {
+        if (err.code === 'ECONNRESET') {
+          // Ignore connection reset errors during server shutdown
+          return;
+        }
+        // Re-throw other errors
+        throw err;
+      };
+      process.on('uncaughtException', handleUncaughtException);
+
+      serverProcess.on('exit', () => {
+        // Remove the handler after cleanup is complete
+        process.removeListener('uncaughtException', handleUncaughtException);
+        resolve();
+      });
 
       // Kill the entire process group (yarn + tsx + server) using negative PID
       // This ensures SIGTERM reaches the actual server process for graceful shutdown
