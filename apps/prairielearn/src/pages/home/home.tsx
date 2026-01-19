@@ -168,6 +168,14 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
+    const {
+      authn_user: { uid },
+    } = extractPageContext(res.locals, {
+      pageType: 'plain',
+      accessType: 'student',
+      withAuthzData: false,
+    });
+
     // Handle dismiss_news_alert separately since it doesn't require course_instance_id
     const ActionSchema = z.object({
       __action: z.enum([
@@ -190,14 +198,6 @@ router.post(
       course_instance_id: z.string().min(1),
     });
     const body = BodySchema.parse(req.body);
-
-    const {
-      authn_user: { uid },
-    } = extractPageContext(res.locals, {
-      pageType: 'plain',
-      accessType: 'student',
-      withAuthzData: false,
-    });
 
     const { authzData, courseInstance, institution, course } =
       await constructCourseOrInstanceContext({
