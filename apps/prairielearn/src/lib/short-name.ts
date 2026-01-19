@@ -1,7 +1,12 @@
 /**
  * Regular expression for validating short names, including course instance short names and QIDs.
+ *
+ * The RegExp is compiled with the `v` flag, which matches the behavior of browsers when this is
+ * used in a `pattern` attribute. This is important, because it forces/allows us to escape the
+ * `-` character in character classes.
  */
-export const SHORT_NAME_REGEX = /^[-A-Za-z0-9_][-A-Za-z0-9_]*(\/[-A-Za-z0-9_][-A-Za-z0-9_]*)*$/;
+export const SHORT_NAME_REGEX =
+  /^[A-Za-z0-9\-_][A-Za-z0-9\-_]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_]*)*$/v;
 
 /**
  * String pattern for short names, suitable for use in HTML pattern attributes.
