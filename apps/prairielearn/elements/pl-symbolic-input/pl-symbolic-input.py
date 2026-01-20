@@ -360,6 +360,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
+
+    # If no variables attribute was specified but we have a correct answer dict,
+    # use the correct answer's variables for parsing. This ensures assumptions
+    # can be applied correctly without requiring explicit variables attribute.
+    # See https://github.com/PrairieLearn/PrairieLearn/issues/12053
+    if not variables:
+        a_tru = data["correct_answers"].get(name, {})
+        if isinstance(a_tru, dict) and "_variables" in a_tru:
+            variables = a_tru["_variables"]
+
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
