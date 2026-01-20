@@ -98,6 +98,7 @@ router.post(
 
       const body = z
         .object({
+          __action: z.literal('save_assessment_sets'),
           orig_hash: z.string(),
           assessment_sets: z.string().transform((s) =>
             z
@@ -115,6 +116,8 @@ router.post(
           ),
         })
         .parse(req.body);
+
+      throw new error.HttpStatusError(400, 'failure');
 
       const origHash = body.orig_hash;
       const resolveAssessmentSets = body.assessment_sets

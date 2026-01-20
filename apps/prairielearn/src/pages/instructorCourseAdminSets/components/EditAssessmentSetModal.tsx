@@ -122,12 +122,14 @@ export function EditAssessmentSetsModal({
               {invalidName && (
                 <div className="invalid-feedback">Assessment set name is required</div>
               )}
-              {assessmentSet.name && existingNames.has(assessmentSet.name) && (
-                <div className="alert alert-warning mt-2 mb-0 py-2" role="alert">
-                  <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This assessment
-                  set has the same name as another set.
-                </div>
-              )}
+              {state.type !== 'closed' &&
+                assessmentSet.name &&
+                existingNames.has(assessmentSet.name) && (
+                  <div className="alert alert-warning mt-2 mb-0 py-2" role="alert">
+                    <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This assessment
+                    set has the same name as another set.
+                  </div>
+                )}
             </div>
             <div className="mb-3">
               <label className="form-label" htmlFor="heading">
