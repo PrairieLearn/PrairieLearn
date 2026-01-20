@@ -285,6 +285,32 @@ export function useManualGradingActions({
     },
   });
 
+  const setAiGradingModelMutation = useMutation({
+    mutationFn: async (value: AiGradingModelId) => {
+      const response = await fetch(window.location.pathname, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+        body: JSON.stringify({
+          __csrf_token: csrfToken,
+          __action: 'set_ai_grading_model',
+          value,
+        }),
+      });
+
+      if (response.status === 204) {
+        return null;
+      }
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error);
+      }
+    },
+  });
+
   return {
     batchActionMutation,
     handleBatchAction,
@@ -292,5 +318,6 @@ export function useManualGradingActions({
     deleteAiGroupingsMutation,
     groupSubmissionMutation,
     setAiGradingModeMutation,
+    setAiGradingModelMutation
   };
 }

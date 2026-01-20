@@ -31,6 +31,7 @@ import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
 import {
   AI_GRADING_MODELS,
+  AI_GRADING_MODEL_ID_TO_NAME,
   type AiGradingModelId,
   DEFAULT_AI_GRADING_MODEL,
 } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
@@ -110,40 +111,16 @@ function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingModelSelectionEnabled,
-  onSelectModel,
+  onClick,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingModelSelectionEnabled: boolean;
-  onSelectModel: (modelId: AiGradingModelId) => void;
+  onClick: () => void;
 }) {
-  if (!aiGradingModelSelectionEnabled) {
-    return (
-      <Dropdown.Item
-        disabled={numToGrade === 0}
-        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Item>
-    );
-  }
-
   return (
-    <Dropdown drop="end">
-      <Dropdown.Toggle className={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu>
-        <p className="my-0 text-muted px-3">AI grader model</p>
-        <Dropdown.Divider />
-        {AI_GRADING_MODELS.map((model) => (
-          <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
-            {model.name}
-          </Dropdown.Item>
-        ))}
-      </Dropdown.Menu>
-    </Dropdown>
+    <Dropdown.Item disabled={numToGrade === 0} onClick={onClick}>
+      <AiGradingOptionContent text={text} numToGrade={numToGrade} />
+    </Dropdown.Item>
   );
 }
 
@@ -227,6 +204,7 @@ export function AssessmentQuestionTable({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
   const [rowSelection, setRowSelection] = useState({});
+  const [defaultAiGradingModel, setDefaultAiGradingModel] = useState<AiGradingModelId>(DEFAULT_AI_GRADING_MODEL);
   const [showDeleteAiGradingModal, setShowDeleteAiGradingModal] = useState(false);
   const [showDeleteAiGroupingsModal, setShowDeleteAiGroupingsModal] = useState(false);
   const scrollRef = useRef<HTMLDivElement | null>(null);
@@ -770,12 +748,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         batchActionMutation.mutate(
                           {
                             action: 'ai_grade_assessment_graded',
-                            modelId,
+                            modelId: defaultAiGradingModel,
                           },
                           {
                             onSuccess: (data) => {
@@ -793,10 +770,9 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
+                          { batch_action: 'ai_grade_assessment_selected', model_id: defaultAiGradingModel },
                           selectedIds,
                           (data) => {
                             if (data && 'job_sequence_token' in data) {
@@ -813,12 +789,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         batchActionMutation.mutate(
                           {
                             action: 'ai_grade_assessment_all',
-                            modelId,
+                            modelId: defaultAiGradingModel,
                           },
                           {
                             onSuccess: (data) => {
@@ -876,6 +851,28 @@ export function AssessmentQuestionTable({
                     </Dropdown.Item>
                   </Dropdown.Menu>
                 </Dropdown>
+                {aiGradingModelSelectionEnabled ? (
+                  <Dropdown>
+                    <Dropdown.Toggle variant="light" size="sm">
+                      <i className="bi bi-stars" aria-hidden="true" />
+                      <span className="text-muted">Model:</span>{' '}
+                      <span>{AI_GRADING_MODEL_ID_TO_NAME[defaultAiGradingModel]}</span>
+                    </Dropdown.Toggle>
+                    <Dropdown.Menu align="end">
+                      <p className="my-0 text-muted px-3">AI grader model</p>
+                      <Dropdown.Divider />
+                      {AI_GRADING_MODELS.map((model) => (
+                        <Dropdown.Item
+                          key={model.modelId}
+                          active={defaultAiGradingModel === model.modelId}
+                          onClick={() => setDefaultAiGradingModel(model.modelId)}
+                        >
+                          {model.name}
+                        </Dropdown.Item>
+                      ))}
+                    </Dropdown.Menu>
+                  </Dropdown>
+                ) : <></>}
               </>
             ) : (
               <Dropdown>

@@ -20,6 +20,7 @@ import {
 import {
   deleteAiGradingJobs,
   setAiGradingMode,
+  setAiGradingModel,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
@@ -285,6 +286,13 @@ router.post(
       }
 
       await setAiGradingMode(res.locals.assessment_question.id, req.body.value);
+      res.sendStatus(204);
+    } else if (req.body.__action === 'set_ai_grading_model') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      await setAiGradingModel(res.locals.assessment_question.id, req.body.value);
       res.sendStatus(204);
     } else if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {

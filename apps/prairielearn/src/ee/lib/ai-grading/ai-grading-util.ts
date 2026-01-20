@@ -470,6 +470,10 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
 
+export async function setAiGradingModel(assessment_question_id: string, ai_grading_model: AiGradingModelId) {
+  await execute(sql.set_ai_grading_model, { assessment_question_id, ai_grading_model });
+}
+
 /**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *

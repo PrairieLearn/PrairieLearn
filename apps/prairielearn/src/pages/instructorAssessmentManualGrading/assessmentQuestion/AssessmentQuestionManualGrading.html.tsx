@@ -90,16 +90,22 @@ function AssessmentQuestionManualGradingInner({
 
   return (
     <>
-      {setAiGradingModeMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => setAiGradingModeMutation.reset()}
-        >
-          <strong>Error:</strong> {setAiGradingModeMutation.error.message}
-        </Alert>
-      )}
+      {[
+        setAiGradingModeMutation,
+        setAiGradingModeMutation
+      ].map((mutation) => (
+        mutation.isError && (
+          <Alert
+            variant="danger"
+            className="mb-3"
+            dismissible
+            onClose={() => mutation.reset()}
+          >
+            <strong>Error:</strong> {mutation.error.message}
+          </Alert>
+        )
+      ))}
+      
       <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb mb-0">
