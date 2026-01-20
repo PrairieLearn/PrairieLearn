@@ -75,7 +75,7 @@
         {{^editable}}disabled{{/editable}}
         aria-label="{{aria_label}}"
     >
-        <option value="" disabled selected data-content="{{placeholder}}"></option>
+        <option value="" {{^allow_blank}}disabled{{/allow_blank}} selected data-content="{{placeholder}}"></option>
         {{#answers}}
             <option
                 value="{{key}}"
