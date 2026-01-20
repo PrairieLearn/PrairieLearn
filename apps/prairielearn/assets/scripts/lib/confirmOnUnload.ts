@@ -7,6 +7,7 @@ function getQuestionFormData(form: HTMLFormElement): string {
   form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]').forEach((input) => {
     if (input.name) formData.delete(input.name);
   });
+  formData.sort(); // Ensure consistent ordering for comparison
   return formData.toString();
 }
 
@@ -46,6 +47,7 @@ export function confirmOnUnload(form: HTMLFormElement) {
         // Update only the relevant input value. Assumes that the input's name is unique in the form.
         formData.delete(input.name);
         formData.append(input.name, input.value);
+        formData.sort(); // Ensure consistent ordering for comparison
         form.dataset.originalFormData = formData.toString();
       }
       observer.disconnect();
@@ -55,7 +57,6 @@ export function confirmOnUnload(form: HTMLFormElement) {
 
   // Check form state on unload
   window.addEventListener('beforeunload', (event) => {
-    // TODO Compare entries without regard to order
     const isSameForm = form.dataset.originalFormData === getQuestionFormData(form);
 
     if (!isSameForm) {
