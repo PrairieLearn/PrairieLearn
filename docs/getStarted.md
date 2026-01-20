@@ -70,7 +70,7 @@ To provide a simple example, here we first create a question without any randomi
 
 - Navigate to the "Preview" tab to see your question. Try it out!
 
-Note that this question does not use any server side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
+Note that this question does not use any server-side code, and for that reason, the file `server.py` is not needed. Indeed, you could just delete `server.py` for this question. (we will not remove the file for the purpose of the following steps of this tutorial).
 
 ## Start a new question from an existing one _inside_ your own course
 
@@ -90,7 +90,7 @@ We will add randomization to the previous question, using the [`server.py` file]
 
 - Navigate to the "Files" tab of your new question.
 
-- Click the "Edit" button next to `server.py`. Here is where you can define the question variables, and add randomization. Here is a how we can modify the original area example:
+- Click the "Edit" button next to `server.py`. Here is where you can define the question variables, and add randomization. Here is how we can modify the original area example:
 
   ```python title="server.py"
   import random
