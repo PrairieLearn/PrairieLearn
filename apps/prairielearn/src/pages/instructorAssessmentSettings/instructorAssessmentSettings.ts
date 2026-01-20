@@ -160,7 +160,7 @@ router.post(
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
         );
       }
 
