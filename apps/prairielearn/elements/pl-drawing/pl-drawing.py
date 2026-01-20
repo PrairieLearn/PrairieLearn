@@ -379,8 +379,8 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if data["panel"] == "submission":
         parse_error = data["format_errors"].get(name, None)
         html_params["parse_error"] = parse_error
-        showscore = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
-        if showscore and name in data["partial_scores"]:
+        show_score = pl.get_boolean_attrib(element, "show-score", SHOW_SCORE_DEFAULT)
+        if show_score and name in data["partial_scores"]:
             score = data["partial_scores"][name].get("score")
             if score is not None:
                 score_type, score_value = pl.determine_score_params(score)
