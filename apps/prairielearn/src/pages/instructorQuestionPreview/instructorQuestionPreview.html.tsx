@@ -45,11 +45,11 @@ export function InstructorQuestionPreview({
       pageNote: resLocals.question.qid,
     },
     headContent: html`
-      ${compiledScriptTag('question.ts')}
       <meta
         name="mathjax-fonts-path"
         content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
       />
+      ${compiledScriptTag('question.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg-nofont.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
