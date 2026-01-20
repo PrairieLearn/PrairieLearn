@@ -200,7 +200,13 @@ class TestSympy:
             # See https://github.com/PrairieLearn/PrairieLearn/issues/13661 for additional details.
             ("3j", ["j"], False, 3 * sympy.Symbol("j"), None),
             ("3J", ["J"], False, 3 * sympy.Symbol("J"), None),  # Uppercase
-            ("3j", ["n"], True, 3 * sympy.I, None),  # Regression: complex when allowed
+            (
+                "3j",
+                ["n"],
+                True,
+                3 * sympy.I,
+                None,
+            ),  # Ensure complex numbers still work when allowed
             ("3j", ["x"], False, None, psu.HasInvalidSymbolError),  # j not declared
             ("3e5j", ["j"], False, None, psu.HasFloatError),  # Scientific notation
         ],
