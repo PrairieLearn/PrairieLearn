@@ -65,9 +65,8 @@ export function CourseSyncs({
             <tbody>
               <tr>
                 <th class="align-middle">Current commit hash</th>
-                <td colspan="2">${course.commit_hash}</td>
+                <td colspan="2">${course.commit_hash ?? html`&mdash;`}</td>
               </tr>
-
               <tr>
                 <th class="align-middle">Path on disk</th>
                 <td class="align-middle">${course.path}</td>
@@ -84,17 +83,37 @@ export function CourseSyncs({
               </tr>
               <tr>
                 <th class="align-middle">Remote repository</th>
-                <td class="align-middle">${course.repository}</td>
+                <td class="align-middle">${course.repository ?? html`&mdash;`}</td>
                 <td>
-                  <form name="confirm-form" method="POST">
-                    <input type="hidden" name="__action" value="pull" />
-                    <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
-                    <button type="submit" class="btn btn-sm btn-primary">
-                      <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
-                      Pull from remote git repository
-                    </button>
-                  </form>
+                  ${config.devMode
+                    ? html`
+                        <span
+                          class="d-inline-block"
+                          tabindex="0"
+                          data-bs-toggle="tooltip"
+                          data-bs-title="Pulling from a remote repository is not supported in development mode."
+                        >
+                          <button type="button" class="btn btn-sm btn-primary" disabled>
+                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                            Pull from remote git repository
+                          </button>
+                        </span>
+                      `
+                    : html`
+                        <form name="confirm-form" method="POST">
+                          <input type="hidden" name="__action" value="pull" />
+                          <input type="hidden" name="__csrf_token" value="${__csrf_token}" />
+                          <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="fa fa-cloud-download-alt" aria-hidden="true"></i>
+                            Pull from remote git repository
+                          </button>
+                        </form>
+                      `}
                 </td>
+              </tr>
+              <tr>
+                <th class="align-middle">Branch</th>
+                <td colspan="2">${course.branch}</td>
               </tr>
             </tbody>
           </table>

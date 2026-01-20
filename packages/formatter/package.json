@@ -1,11 +1,14 @@
 {
   "name": "@prairielearn/formatter",
-  "version": "1.5.2",
+  "version": "2.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/formatter"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -19,7 +22,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tsx": "^4.21.0",

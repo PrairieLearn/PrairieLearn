@@ -1,5 +1,11 @@
 # @prairielearn/postgres
 
+## 5.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
 ## 4.5.2
 
 ### Patch Changes

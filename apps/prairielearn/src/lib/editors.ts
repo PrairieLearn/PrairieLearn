@@ -41,7 +41,7 @@ import {
 } from './db-types.js';
 import { getNamesForCopy } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
-import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
@@ -317,6 +317,16 @@ export abstract class Editor {
           await syncCourseFromDisk(this.course, startGitHash, job);
           job.data.syncSucceeded = true;
 
+          return;
+        }
+
+        // Safety check: refuse to perform git operations if the course is a
+        // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
+        // and `git reset` commands could delete or modify files with pending changes.
+        if (contains(REPOSITORY_ROOT_PATH, this.course.path)) {
+          job.fail(
+            'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
+          );
           return;
         }
 

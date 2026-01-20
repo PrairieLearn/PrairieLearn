@@ -68,13 +68,15 @@ router.get(
     });
 
     if (existingEnrollment) {
-      if (!['invited', 'rejected', 'joined', 'removed'].includes(existingEnrollment.status)) {
+      if (
+        !['invited', 'rejected', 'joined', 'left', 'removed'].includes(existingEnrollment.status)
+      ) {
         throw new HttpStatusError(403, getEligibilityErrorMessage('blocked'));
       }
 
-      // If the user was invited, joined, or removed, then they have access so we can return the course instance ID.
+      // If the user was invited, joined, left, or removed, then they have access so we can return the course instance ID.
       // This means that rejected users will fall through to the self-enrollment checks.
-      if (['invited', 'joined', 'removed'].includes(existingEnrollment.status)) {
+      if (['invited', 'joined', 'left', 'removed'].includes(existingEnrollment.status)) {
         res.json({
           course_instance_id: courseInstance.id,
         });
