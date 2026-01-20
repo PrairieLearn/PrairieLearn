@@ -1,18 +1,48 @@
-function getQuestionFormData(form: HTMLFormElement): string {
+function getQuestionFormData(form: HTMLFormElement, updateDataset = false): string {
   // Cast FormData since TS does not support this parameter,
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);
-  formData.delete('__csrf_token');
-  formData.delete('__variant_id');
+  const skippedFields = new Set(['__csrf_token', '__variant_id']);
   form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]').forEach((input) => {
-    if (input.name) formData.delete(input.name);
+    if (input.name) skippedFields.add(input.name);
   });
+  skippedFields.forEach((field) => formData.delete(field));
   formData.sort(); // Ensure consistent ordering for comparison
+  if (updateDataset) {
+    form.dataset.formDataSkippedFields = JSON.stringify(Array.from(skippedFields));
+    form.dataset.originalFormData = formData.toString();
+  }
   return formData.toString();
 }
 
-export function saveQuestionFormData(form: HTMLFormElement | null) {
-  if (form) form.dataset.originalFormData = getQuestionFormData(form);
+export function saveQuestionFormData(form: HTMLFormElement) {
+  getQuestionFormData(form, true);
+}
+
+function updateQuestionFormData(form: HTMLFormElement, input: HTMLInputElement) {
+  // If the original form data is not set, the initial update has not occurred yet, so rely on that to retrieve the value.
+  if (form.dataset.originalFormData === undefined) return;
+  // If this input is marked to be skipped, do not update the form data.
+  const skippedFields = new Set(JSON.parse(form.dataset.formDataSkippedFields || '[]') as string[]);
+  if (skippedFields.has(input.name)) return;
+
+  const updatedFormData = new URLSearchParams(form.dataset.originalFormData);
+  // Update only the relevant input value. Assumes that the input's name is unique in the form.
+  updatedFormData.delete(input.name);
+  updatedFormData.append(input.name, input.value);
+
+  // The deferred initialization may have added new fields to the form, so
+  // ensure those are included as well to ensure no problems on unload. Add any
+  // fields that were not present in the original form data and are not marked
+  // to be skipped.
+  new FormData(form).forEach((value, key) => {
+    if (!updatedFormData.has(key) && !skippedFields.has(key)) {
+      updatedFormData.append(key, value.toString());
+    }
+  });
+
+  updatedFormData.sort(); // Ensure consistent ordering for comparison
+  form.dataset.originalFormData = updatedFormData.toString();
 }
 
 export function confirmOnUnload(form: HTMLFormElement) {
@@ -41,15 +71,7 @@ export function confirmOnUnload(form: HTMLFormElement) {
     // Elements without a name cannot contribute to form data
     if (!input.name) return;
     const observer = new MutationObserver(() => {
-      // If the original form data is not set, the initial update has not occurred yet, so rely on that to retrieve the value.
-      if (form.dataset.originalFormData !== undefined) {
-        const formData = new URLSearchParams(form.dataset.originalFormData);
-        // Update only the relevant input value. Assumes that the input's name is unique in the form.
-        formData.delete(input.name);
-        formData.append(input.name, input.value);
-        formData.sort(); // Ensure consistent ordering for comparison
-        form.dataset.originalFormData = formData.toString();
-      }
+      updateQuestionFormData(form, input);
       observer.disconnect();
     });
     observer.observe(input, { attributes: true, attributeFilter: ['value'] });
