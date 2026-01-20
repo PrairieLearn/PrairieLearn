@@ -197,7 +197,7 @@ class TestSympy:
     @pytest.mark.parametrize(
         ("a_sub", "variables", "allow_complex", "expected", "expected_error"),
         [
-            # See issue #13661 for additional details.
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/13661 for additional details.
             ("3j", ["j"], False, 3 * sympy.Symbol("j"), None),
             ("3J", ["J"], False, 3 * sympy.Symbol("J"), None),  # Uppercase
             ("3j", ["n"], True, 3 * sympy.I, None),  # Regression: complex when allowed
