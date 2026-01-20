@@ -117,8 +117,6 @@ router.post(
         })
         .parse(req.body);
 
-      throw new error.HttpStatusError(400, 'failure');
-
       const origHash = body.orig_hash;
       const resolveAssessmentSets = body.assessment_sets
         .map((assessmentSet) => {
