@@ -125,7 +125,7 @@ export function InstructorCourseAdminInstancesInner({
               <thead>
                 <tr>
                   <th>Long Name</th>
-                  <th>CIID</th>
+                  <th>Short name</th>
                   <th>Start date</th>
                   <th>End date</th>
                   <th>Students</th>
