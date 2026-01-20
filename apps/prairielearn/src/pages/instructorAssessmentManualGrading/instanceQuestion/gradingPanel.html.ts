@@ -92,13 +92,13 @@ export function GradingPanel({
     : [emptyGroup];
 
   const graderGuidelines = resLocals.rubric_data?.rubric.grader_guidelines;
-  const mustache_data = {
+  const mustacheParams = {
     correct_answers: resLocals.submission.true_answer ?? {},
     params: resLocals.submission.params ?? {},
     submitted_answers: resLocals.submission.submitted_answer,
   };
   const graderGuidelinesRendered = graderGuidelines
-    ? markdownToHtml(mustache.render(graderGuidelines, mustache_data), { inline: true })
+    ? markdownToHtml(mustache.render(graderGuidelines, mustacheParams), { inline: true })
     : null;
 
   return html`
