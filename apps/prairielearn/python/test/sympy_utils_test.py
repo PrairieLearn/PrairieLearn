@@ -247,9 +247,7 @@ class TestSympy:
         self, a_sub: str, variables: list[str] | None, expected: sympy.Expr
     ) -> None:
         """Test that scientific notation patterns with +/- are treated as multiplication with e."""
-        result = psu.convert_string_to_sympy(
-            a_sub, variables, allow_complex=True
-        )
+        result = psu.convert_string_to_sympy(a_sub, variables, allow_complex=True)
         assert result == expected
 
     def test_string_conversion_complex_conflict(self) -> None:
