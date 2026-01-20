@@ -457,14 +457,7 @@ def evaluate_with_source(
 
     # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
     # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
-    # Euler's number plus 3), not 2000.0. This fixes issue #11709.
-    #
-    # Examples:
-    #   "2e+3" -> "2*e+3" (2e + 3)
-    #   "2e-3" -> "2*e-3" (2e - 3)
-    #
-    # Note: We intentionally do NOT transform "2e3" (without +/-) since that's
-    # more ambiguous and could legitimately be intended as scientific notation.
+    # Euler's number plus 3), not 2000.0.
     expr = re.sub(r"(\d)([eE])([+-])", r"\1*\2\3", expr)
 
     # When complex numbers are not allowed, prevent Python from interpreting
