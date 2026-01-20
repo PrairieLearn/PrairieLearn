@@ -298,6 +298,8 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         rubric_items,
         grader_guidelines: rubric?.grader_guidelines ?? null,
+        params: variant.params ?? {},
+        true_answer: variant.true_answer ?? {},
         model_id,
       });
 
