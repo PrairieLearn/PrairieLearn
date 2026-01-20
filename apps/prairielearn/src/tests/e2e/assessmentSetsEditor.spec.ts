@@ -156,7 +156,9 @@ test.describe('Assessment sets editor', () => {
     await expect(tbody.locator('.badge', { hasText: originalAbbrev })).toBeVisible();
 
     // Click the edit button for the row we just created
-    const row = tbody.locator('tr').filter({ has: page.locator('.badge', { hasText: originalAbbrev }) });
+    const row = tbody
+      .locator('tr')
+      .filter({ has: page.locator('.badge', { hasText: originalAbbrev }) });
     await row.getByRole('button', { name: 'Edit' }).click();
 
     // Verify modal opens with current values
@@ -217,7 +219,9 @@ test.describe('Assessment sets editor', () => {
     await expect(tbody.locator('.badge', { hasText: deleteAbbrev })).toBeVisible();
 
     // Click the delete button for the row we just created
-    const row = tbody.locator('tr').filter({ has: page.locator('.badge', { hasText: deleteAbbrev }) });
+    const row = tbody
+      .locator('tr')
+      .filter({ has: page.locator('.badge', { hasText: deleteAbbrev }) });
     await row.getByRole('button', { name: 'Delete' }).click();
 
     // Verify it's removed from the table

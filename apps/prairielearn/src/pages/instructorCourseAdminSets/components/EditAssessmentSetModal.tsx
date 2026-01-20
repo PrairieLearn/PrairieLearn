@@ -95,6 +95,8 @@ export function EditAssessmentSetsModal({
                 className={clsx('form-control', invalidAbbreviation && 'is-invalid')}
                 id="abbreviation"
                 value={assessmentSet.abbreviation}
+                aria-invalid={invalidAbbreviation}
+                aria-describedby={invalidAbbreviation ? 'abbreviation-error' : undefined}
                 onChange={(e) =>
                   setAssessmentSet({
                     ...assessmentSet,
@@ -103,7 +105,9 @@ export function EditAssessmentSetsModal({
                 }
               />
               {invalidAbbreviation && (
-                <div className="invalid-feedback">Assessment set abbreviation is required</div>
+                <div id="abbreviation-error" className="invalid-feedback">
+                  Assessment set abbreviation is required
+                </div>
               )}
             </div>
             <div className="mb-3">
@@ -115,17 +119,36 @@ export function EditAssessmentSetsModal({
                 className={clsx('form-control', invalidName && 'is-invalid')}
                 id="name"
                 value={assessmentSet.name}
+                aria-invalid={invalidName}
+                aria-describedby={
+                  [
+                    invalidName ? 'name-error' : null,
+                    state.type !== 'closed' &&
+                    assessmentSet.name &&
+                    existingNames.has(assessmentSet.name)
+                      ? 'name-warning'
+                      : null,
+                  ]
+                    .filter(Boolean)
+                    .join(' ') || undefined
+                }
                 onChange={(e) =>
                   setAssessmentSet({ ...assessmentSet, name: (e.target as HTMLInputElement).value })
                 }
               />
               {invalidName && (
-                <div className="invalid-feedback">Assessment set name is required</div>
+                <div id="name-error" className="invalid-feedback">
+                  Assessment set name is required
+                </div>
               )}
               {state.type !== 'closed' &&
                 assessmentSet.name &&
                 existingNames.has(assessmentSet.name) && (
-                  <div className="alert alert-warning mt-2 mb-0 py-2" role="alert">
+                  <div
+                    id="name-warning"
+                    className="alert alert-warning mt-2 mb-0 py-2"
+                    role="alert"
+                  >
                     <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This assessment
                     set has the same name as another set.
                   </div>
@@ -157,6 +180,8 @@ export function EditAssessmentSetsModal({
                   className={clsx('form-select', invalidColor && 'is-invalid')}
                   id="color"
                   value={assessmentSet.color}
+                  aria-invalid={invalidColor}
+                  aria-describedby={invalidColor ? 'color-error' : undefined}
                   onChange={(e) =>
                     setAssessmentSet({
                       ...assessmentSet,
@@ -173,7 +198,9 @@ export function EditAssessmentSetsModal({
                 <ColorSwatch color={assessmentSet.color} />
               </div>
               {invalidColor && (
-                <div className="invalid-feedback d-block">Assessment set color is required</div>
+                <div id="color-error" className="invalid-feedback d-block">
+                  Assessment set color is required
+                </div>
               )}
             </div>
           </>
