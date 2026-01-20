@@ -784,6 +784,7 @@ def validate_string_as_sympy(
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
 ) -> str | None:
     """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
 
@@ -798,6 +799,7 @@ def validate_string_as_sympy(
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
         )
     except HasFloatError as exc:
         return (

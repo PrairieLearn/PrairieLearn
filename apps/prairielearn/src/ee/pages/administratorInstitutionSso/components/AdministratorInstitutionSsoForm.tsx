@@ -72,10 +72,10 @@ export function AdministratorInstitutionSsoForm({
                 name="enabled_authn_provider_ids"
                 checked={isEnabled}
                 disabled={provider.name === 'SAML' && !hasSamlProvider}
-                onChange={(e) => {
+                onChange={({ currentTarget }) => {
                   setEnabledProviderIds((prev) => {
                     const newSet = new Set(prev);
-                    if (e.currentTarget.checked) {
+                    if (currentTarget.checked) {
                       newSet.add(provider.id);
                     } else {
                       newSet.delete(provider.id);
@@ -84,7 +84,7 @@ export function AdministratorInstitutionSsoForm({
                   });
 
                   // If the default provider is being disabled, reset to null (none).
-                  if (!e.currentTarget.checked && defaultProviderId === provider.id) {
+                  if (!currentTarget.checked && defaultProviderId === provider.id) {
                     setDefaultProviderId(null);
                   }
                 }}
