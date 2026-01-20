@@ -1,5 +1,6 @@
 import clsx from 'clsx';
 import { Fragment, type ReactElement, type ReactNode, isValidElement } from 'react';
+import { renderToString } from 'react-dom/server';
 import superjson from 'superjson';
 
 import { compiledScriptPath, compiledScriptPreloadPaths } from '@prairielearn/compiled-assets';
@@ -134,9 +135,15 @@ registerHydratedComponent(${componentName});</code></pre>
       <div
         data-component={componentName}
         className={clsx('js-hydrated-component', { 'h-100': fullHeight }, className)}
-      >
-        <Component {...props} />
-      </div>
+        // Render the component in an isolated React tree so that it's at the "root"
+        // position, matching the client-side hydration which also places the component
+        // at the root of its own tree. This ensures hooks like `useId()` generate
+        // consistent values between server and client.
+        // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+        dangerouslySetInnerHTML={{
+          __html: renderToString(<Component {...props} />),
+        }}
+      />
     </Fragment>
   );
 }

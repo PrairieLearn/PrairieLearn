@@ -236,7 +236,6 @@ router.post(
       await insertStripeCheckoutSessionForUserInCourseInstance({
         agent_user_id: user.id,
         stripe_object_id: session.id,
-        institution_id: institution.id,
         course_instance_id: courseInstance.id,
         subject_user_id: user.id,
         data: session,

@@ -117,8 +117,8 @@ describe('checkEnrollmentEligibility', () => {
   });
 
   it('returns eligible when user has non-blocked enrollment', () => {
-    // A joined/invited/removed enrollment should not block eligibility
-    const statuses = ['joined', 'invited', 'removed', 'rejected'] as const;
+    // A joined/invited/left/removed enrollment should not block eligibility
+    const statuses = ['joined', 'invited', 'left', 'removed', 'rejected'] as const;
     for (const status of statuses) {
       const result = checkEnrollmentEligibility({
         ...baseParams,

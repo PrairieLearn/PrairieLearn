@@ -60,7 +60,7 @@ export function StudentInstanceQuestion({
             )}
           `
         : ''}
-      <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>
@@ -103,7 +103,12 @@ export function StudentInstanceQuestion({
                   </div>
                 </div>
               `
-            : QuestionContainer({ resLocals, questionContext, questionCopyTargets })}
+            : QuestionContainer({
+                resLocals,
+                questionContext,
+                questionCopyTargets,
+                showFooter: resLocals.assessment_instance.open,
+              })}
         </div>
 
         <div class="col-lg-3 col-sm-12">
