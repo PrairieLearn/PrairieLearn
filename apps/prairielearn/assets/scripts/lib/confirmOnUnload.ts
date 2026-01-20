@@ -15,7 +15,8 @@ function getQuestionFormData(form: HTMLFormElement, updateDataset = false): stri
   return formData.toString();
 }
 
-export function saveQuestionFormData(form: HTMLFormElement) {
+export function saveQuestionFormData(form: HTMLFormElement | null) {
+  if (!form) return;
   getQuestionFormData(form, true);
 }
 
