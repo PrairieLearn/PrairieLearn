@@ -21,6 +21,7 @@ import {
   PointsSingleJsonSchema,
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
+  TeamRoleJsonSchema,
   ZoneAssessmentJsonSchema,
   ZoneQuestionJsonSchema,
 } from './infoAssessment.js';
@@ -54,11 +55,11 @@ import {
 import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
- * Rewrite the team role annotation for canView and canSubmit fields.
+ * Override certain fields in the JSON schema.
  * zod-to-json-schema doesn't support a concept of unique items in an array (only sets),
- * so we need to override the schema.
+ * so we need to override the schema for canView, canSubmit, and roles fields.
  */
-const rewriteTeamRoleAnnotation = (
+const schemaOverride = (
   def: ZodTypeDef,
   refs: Refs,
 ): JsonSchema7Type | undefined | typeof ignoreOverride => {
@@ -68,25 +69,59 @@ const rewriteTeamRoleAnnotation = (
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
     const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
     const inTeams = refs.currentPath.includes('teams');
+
+    // Skip fields inside teams.rolePermissions - let default handle them
     if (inTeams) {
       return ignoreOverride;
     }
 
-    if (!inQuestion && !inZone) {
-      return ignoreOverride;
+    // Question level
+    if (inQuestion) {
+      return {
+        description: `A list of team role names that can ${action} the question. Only applicable for team assessments.`,
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+        uniqueItems: true,
+        default: [],
+      };
     }
 
-    let annotation = `A list of team role names matching those in teams.roles that can ${action} the question. Only applicable for team assessments.`;
-
-    // Zone annotation
+    // Zone level
     if (inZone) {
-      annotation = `A list of team role names that can ${action} questions in this zone. Only applicable for team assessments.`;
+      return {
+        description: `A list of team role names that can ${action} questions in this zone. Only applicable for team assessments.`,
+        type: 'array',
+        items: {
+          type: 'string',
+        },
+        uniqueItems: true,
+        default: [],
+      };
     }
+
+    // Assessment level (deprecated legacy group properties)
+    // Note: `deprecated: true` is added automatically by the traverse function below
+    // because the description contains "DEPRECATED"
     return {
-      description: annotation,
+      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.`,
       type: 'array',
       items: {
         type: 'string',
+      },
+      uniqueItems: true,
+      default: [],
+    };
+  }
+
+  // Add uniqueItems to the roles array in teams
+  if (segment === 'roles' && refs.currentPath.includes('teams')) {
+    return {
+      description: 'Array of custom user roles in a team.',
+      type: 'array',
+      items: {
+        $ref: '#/definitions/TeamRoleJsonSchema',
       },
       uniqueItems: true,
       default: [],
@@ -102,7 +137,7 @@ const prairielearnZodToJsonSchema = (
 ) => {
   const jsonSchema = zodToJsonSchema(schema, {
     ...options,
-    override: rewriteTeamRoleAnnotation,
+    override: schemaOverride,
     // Many people have done insane things in their JSON files that don't pass
     // strict validation. For now, we'll be lenient and avoid the use of `.strict()`
     // in our Zod schemas in places where that could cause problems. In the
@@ -152,6 +187,7 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     ZoneAssessmentJsonSchema,
     ZoneQuestionJsonSchema,
     GroupRoleJsonSchema,
+    TeamRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
   },

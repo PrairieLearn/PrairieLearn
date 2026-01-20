@@ -132,6 +132,7 @@
       "items": {
         "type": "string"
       },
+      "uniqueItems": true,
       "default": [],
       "deprecated": true
     },
@@ -141,6 +142,7 @@
       "items": {
         "type": "string"
       },
+      "uniqueItems": true,
       "default": [],
       "deprecated": true
     },
@@ -190,25 +192,9 @@
           "description": "Array of custom user roles in a team.",
           "type": "array",
           "items": {
-            "description": "A custom role for use in team assessments.",
-            "type": "object",
-            "required": ["name"],
-            "properties": {
-              "name": {
-                "description": "The team role's name (e.g., Manager, Recorder).",
-                "type": "string"
-              },
-              "minMembers": {
-                "description": "The minimum number of users that should be in this role.",
-                "type": "number",
-                "default": 0
-              },
-              "maxMembers": {
-                "description": "The maximum number of users that should be in this role.",
-                "type": "number"
-              }
-            }
+            "$ref": "#/definitions/TeamRoleJsonSchema"
           },
+          "uniqueItems": true,
           "default": []
         },
         "studentPermissions": {
@@ -524,7 +510,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of team role names matching those in teams.roles that can submit the question. Only applicable for team assessments.",
+          "description": "A list of team role names that can submit the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -533,7 +519,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of team role names matching those in teams.roles that can view the question. Only applicable for team assessments.",
+          "description": "A list of team role names that can view the question. Only applicable for team assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -633,6 +619,26 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
+    },
+    "TeamRoleJsonSchema": {
+      "description": "A custom role for use in team assessments.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The team role's name (e.g., Manager, Recorder).",
+          "type": "string"
+        },
+        "minMembers": {
+          "description": "The minimum number of users that should be in this role.",
+          "type": "number",
+          "default": 0
+        },
+        "maxMembers": {
+          "description": "The maximum number of users that should be in this role.",
+          "type": "number"
+        }
+      }
     },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

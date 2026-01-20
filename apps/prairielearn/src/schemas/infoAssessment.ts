@@ -286,13 +286,13 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   canSubmit: uniqueArray(z.string())
     .describe(
-      'A list of team role names matching those in teams.roles that can submit the question. Only applicable for team assessments.',
+      'A list of team role names that can submit the question. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
   canView: uniqueArray(z.string())
     .describe(
-      'A list of team role names matching those in teams.roles that can view the question. Only applicable for team assessments.',
+      'A list of team role names that can view the question. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
