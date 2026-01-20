@@ -169,10 +169,6 @@ Students can enroll in a course instance through a few different ways:
 
 3. They can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage.
 
-!!! tip "Course listing page has been removed"
-
-    The courses listing page was removed in January 2026 in favor of the new self-enrollment system. Instructors should provide their students with either an enrollment code or a direct link to their course instance. Both of these can be found on the course instance settings page.
-
 ### Enrollment security
 
 There are a few settings that can be changed to control who can enroll in a course instance, and when they can enroll.
