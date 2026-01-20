@@ -4578,7 +4578,6 @@ __metadata:
     pem: "npm:^1.14.8"
     pg: "npm:^8.17.0"
     popper.js: "npm:^1.16.1"
-    preact: "npm:^10.28.1"
     prettier: "npm:3.8.0"
     qrcode-svg: "npm:^1.1.0"
     qs: "npm:^6.14.1"

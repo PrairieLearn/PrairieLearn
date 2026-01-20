@@ -1,6 +1,6 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Form, InputGroup } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -352,7 +352,7 @@ export function TimeLimitPopover({
         ),
         props: {
           id: `time-limit-popover-${row.assessment_instance_id ?? 'all'}`,
-          class: 'popover-narrow-fixed',
+          className: 'popover-narrow-fixed',
         },
       }}
       popperConfig={{

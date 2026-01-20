@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { type JSX, useCallback, useMemo, useRef, useState } from 'preact/compat';
+import { type JSX, useCallback, useMemo, useRef, useState } from 'react';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
@@ -450,7 +450,7 @@ interface AssessmentInstancesTableProps {
   assessmentSetName: string;
   assessmentSetAbbr: string;
   assessmentNumber: string;
-  assessmentGroupWork: boolean;
+  assessmentTeamWork: boolean;
   assessmentMultipleInstance: boolean;
   hasCourseInstancePermissionEdit: boolean;
   timezone: string;
@@ -464,7 +464,7 @@ function AssessmentInstancesTableInner({
   assessmentSetName,
   assessmentSetAbbr,
   assessmentNumber,
-  assessmentGroupWork,
+  assessmentTeamWork,
   assessmentMultipleInstance,
   hasCourseInstancePermissionEdit,
   timezone,
@@ -584,8 +584,8 @@ function AssessmentInstancesTableInner({
   const columns = useMemo(() => {
     // Custom sort function for details link column
     const detailsSortFn = (rowA: Row<AssessmentInstanceRow>, rowB: Row<AssessmentInstanceRow>) => {
-      const nameKey = assessmentGroupWork ? 'group_name' : 'uid';
-      const idKey = assessmentGroupWork ? 'group_id' : 'user_id';
+      const nameKey = assessmentTeamWork ? 'team_name' : 'uid';
+      const idKey = assessmentTeamWork ? 'team_id' : 'user_id';
 
       const nameA = rowA.original[nameKey] ?? '';
       const nameB = rowB.original[nameKey] ?? '';
@@ -626,7 +626,7 @@ function AssessmentInstancesTableInner({
         minSize: 220,
         cell: (info) => {
           const row = info.row.original;
-          const name = assessmentGroupWork ? row.group_name : row.uid;
+          const name = assessmentTeamWork ? row.team_name : row.uid;
           const number = !assessmentMultipleInstance && row.number === 1 ? '' : `#${row.number}`;
           return (
             <a href={`${urlPrefix}/assessment_instance/${info.getValue()}`}>
@@ -641,17 +641,17 @@ function AssessmentInstancesTableInner({
       }),
 
       // Conditional columns for individual vs. group assessments
-      ...(assessmentGroupWork
+      ...(assessmentTeamWork
         ? [
-            columnHelper.accessor('group_name', {
-              id: 'group_name',
+            columnHelper.accessor('team_name', {
+              id: 'team_name',
               header: 'Name',
               meta: { label: 'Name' },
             }),
             columnHelper.accessor('uid_list', {
               id: 'uid_list',
-              header: 'Group Members',
-              meta: { label: 'Group Members', wrapText: true },
+              header: 'Team Members',
+              meta: { label: 'Team Members', wrapText: true },
               cell: (info) => {
                 const list = info.getValue();
                 if (!list?.[0]) return <small>(empty)</small>;
@@ -660,16 +660,16 @@ function AssessmentInstancesTableInner({
             }),
             columnHelper.accessor('user_name_list', {
               id: 'user_name_list',
-              header: 'Group Member Name',
-              meta: { label: 'Group Member Name', wrapText: true },
+              header: 'Team Member Name',
+              meta: { label: 'Team Member Name', wrapText: true },
               cell: (info) => {
                 const list = info.getValue();
                 if (!list?.[0]) return <small>(empty)</small>;
                 return <small>{list.join(', ')}</small>;
               },
             }),
-            columnHelper.accessor('group_roles', {
-              id: 'group_roles',
+            columnHelper.accessor('team_roles', {
+              id: 'team_roles',
               header: () => (
                 <span>
                   Roles <HelpButton label="Roles help" onClick={() => setHelpModal('role')} />
@@ -684,7 +684,7 @@ function AssessmentInstancesTableInner({
               },
               filterFn: (row, columnId, filterValues: string[]) => {
                 if (filterValues.length === 0) return true;
-                const roles = row.original.group_roles ?? [];
+                const roles = row.original.team_roles ?? [];
                 return filterValues.some((v) => roles.includes(v));
               },
             }),
@@ -844,7 +844,7 @@ function AssessmentInstancesTableInner({
         header: 'Actions',
         cell: (info) => (
           <InstanceActionsCell
-            assessmentGroupWork={assessmentGroupWork}
+            assessmentTeamWork={assessmentTeamWork}
             csrfToken={csrfToken}
             hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit}
             row={info.row.original}
@@ -857,7 +857,7 @@ function AssessmentInstancesTableInner({
       }),
     ];
   }, [
-    assessmentGroupWork,
+    assessmentTeamWork,
     assessmentMultipleInstance,
     assessmentSetAbbr,
     assessmentNumber,
@@ -875,17 +875,17 @@ function AssessmentInstancesTableInner({
   }, [columns]);
 
   // Default visibility: hide UID, number, total_time by default for individual
-  // hide group_name, user_name_list, total_time by default for group
+  // hide team_name, user_name_list, total_time by default for group
   const defaultColumnVisibility = useMemo(() => {
-    const hidden = assessmentGroupWork
-      ? ['group_name', 'user_name_list', 'number', 'total_time']
+    const hidden = assessmentTeamWork
+      ? ['team_name', 'user_name_list', 'number', 'total_time']
       : ['uid', 'number', 'total_time'];
     // Also hide fingerprint changes for group work by default
-    if (assessmentGroupWork) {
+    if (assessmentTeamWork) {
       hidden.push('client_fingerprint_id_change_count');
     }
     return Object.fromEntries(allColumnIds.map((id) => [id, !hidden.includes(id)]));
-  }, [allColumnIds, assessmentGroupWork]);
+  }, [allColumnIds, assessmentTeamWork]);
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -895,8 +895,8 @@ function AssessmentInstancesTableInner({
   // Column filters state
   const columnFilters = useMemo(() => {
     if (roleFilter.length === 0) return [];
-    return [{ id: assessmentGroupWork ? 'group_roles' : 'role', value: roleFilter }];
-  }, [roleFilter, assessmentGroupWork]);
+    return [{ id: assessmentTeamWork ? 'team_roles' : 'role', value: roleFilter }];
+  }, [roleFilter, assessmentTeamWork]);
 
   // Custom global filter function
   const globalFilterFn = (
@@ -907,12 +907,12 @@ function AssessmentInstancesTableInner({
     const search = filterValue.toLowerCase();
     if (!search) return true;
 
-    if (assessmentGroupWork) {
+    if (assessmentTeamWork) {
       return (
-        row.original.group_name?.toLowerCase().includes(search) ||
+        row.original.team_name?.toLowerCase().includes(search) ||
         row.original.uid_list?.some((uid) => uid.toLowerCase().includes(search)) ||
         row.original.user_name_list?.some((name) => name?.toLowerCase().includes(search)) ||
-        row.original.group_roles?.some((role) => role.toLowerCase().includes(search)) ||
+        row.original.team_roles?.some((role) => role.toLowerCase().includes(search)) ||
         false
       );
     } else {
@@ -962,9 +962,9 @@ function AssessmentInstancesTableInner({
 
   // Filters for header cells
   const filters: Record<string, (props: { header: FilterHeader }) => JSX.Element> = useMemo(() => {
-    const columnId = assessmentGroupWork ? 'group_roles' : 'role';
+    const columnId = assessmentTeamWork ? 'team_roles' : 'role';
     return { [columnId]: RoleFilter };
-  }, [assessmentGroupWork]);
+  }, [assessmentTeamWork]);
 
   return (
     <>
@@ -1004,13 +1004,13 @@ function AssessmentInstancesTableInner({
         downloadButtonOptions={{
           filenameBase: `assessment_instances_${assessmentSetAbbr}${assessmentNumber}`,
           mapRowToData: (row: AssessmentInstanceRow) => {
-            const data: TanstackTableCsvCell[] = assessmentGroupWork
+            const data: TanstackTableCsvCell[] = assessmentTeamWork
               ? [
-                  { name: 'Group Name', value: row.group_name },
-                  { name: 'Group Members', value: row.uid_list?.join(', ') ?? null },
+                  { name: 'Team Name', value: row.team_name },
+                  { name: 'Team Members', value: row.uid_list?.join(', ') ?? null },
                   {
                     name: 'Roles',
-                    value: row.group_roles ? [...new Set(row.group_roles)].join(', ') : null,
+                    value: row.team_roles ? [...new Set(row.team_roles)].join(', ') : null,
                   },
                 ]
               : [
@@ -1041,7 +1041,7 @@ function AssessmentInstancesTableInner({
                 options={{
                   'All instances': [],
                   'Students only': [
-                    { id: assessmentGroupWork ? 'group_roles' : 'role', value: ['Student'] },
+                    { id: assessmentTeamWork ? 'team_roles' : 'role', value: ['Student'] },
                   ],
                 }}
                 table={table}
@@ -1066,7 +1066,7 @@ function AssessmentInstancesTableInner({
           ),
         }}
         globalFilter={{
-          placeholder: assessmentGroupWork
+          placeholder: assessmentTeamWork
             ? 'Search by group name, members...'
             : 'Search by UID, name...',
         }}

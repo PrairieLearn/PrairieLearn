@@ -1,5 +1,5 @@
 import { useMutation } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Dropdown, Modal } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';
@@ -13,7 +13,7 @@ interface InstanceActionsCellProps {
   csrfToken: string;
   timezone: string;
   hasCourseInstancePermissionEdit: boolean;
-  assessmentGroupWork: boolean;
+  assessmentTeamWork: boolean;
   onActionComplete: () => void;
 }
 
@@ -22,7 +22,7 @@ export function InstanceActionsCell({
   csrfToken,
   timezone,
   hasCourseInstancePermissionEdit,
-  assessmentGroupWork,
+  assessmentTeamWork,
   onActionComplete,
 }: InstanceActionsCellProps) {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
@@ -199,9 +199,9 @@ export function InstanceActionsCell({
         </Modal.Header>
         <Modal.Body>
           Are you sure you want to delete assessment instance #{row.number} for{' '}
-          {assessmentGroupWork ? (
+          {assessmentTeamWork ? (
             <>
-              <strong>{row.group_name}</strong> ({row.uid_list?.join(', ') || 'empty'})
+              <strong>{row.team_name}</strong> ({row.uid_list?.join(', ') || 'empty'})
             </>
           ) : (
             <>

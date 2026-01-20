@@ -3,7 +3,7 @@ import { Router } from 'express';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import {
@@ -73,8 +73,8 @@ router.get(
               assessmentSetName={res.locals.assessment_set.name}
               assessmentSetAbbr={res.locals.assessment_set.abbreviation}
               assessmentNumber={res.locals.assessment.number}
-              assessmentGroupWork={res.locals.assessment.team_work}
-              assessmentMultipleInstance={res.locals.assessment.multiple_instance}
+              assessmentTeamWork={res.locals.assessment.team_work ?? false}
+              assessmentMultipleInstance={res.locals.assessment.multiple_instance ?? false}
               hasCourseInstancePermissionEdit={
                 res.locals.authz_data.has_course_instance_permission_edit
               }
