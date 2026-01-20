@@ -81,7 +81,7 @@ export function InstructorAssessments({
                     <tr>
                       <th style="width: 1%"><span class="visually-hidden">Label</span></th>
                       <th><span class="visually-hidden">Title</span></th>
-                      <th>AID</th>
+                      <th>Short name</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
                       <th class="text-center">Mean Score</th>
@@ -288,7 +288,7 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="aid">Assessment identifier (AID)</label>
+        <label class="form-label" for="aid">Short name</label>
         <input
           type="text"
           class="form-control"

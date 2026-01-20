@@ -280,7 +280,7 @@ function AssessmentInstanceInfo({
   return html`
     <h3 class="card-title h5">Assessment instance</h3>
     <div class="d-flex flex-wrap">
-      <div class="pe-1">AID:</div>
+      <div class="pe-1">Assessment:</div>
       <div>
         <a href="${instructorUrlPrefix}/assessment/${assessment.id}">${assessment.tid}</a>
       </div>

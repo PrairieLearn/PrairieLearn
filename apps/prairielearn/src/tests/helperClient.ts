@@ -239,32 +239,9 @@ export async function generateApiToken(baseUrl: string, tokenName = 'test'): Pro
     throw new Error('Token already displayed on initial page load - this should not happen');
   }
 
-  // Find the generate token button and extract the CSRF token from its popover
-  const button = page$('[data-testid="generate-token-button"]').get(0);
-  if (!button) {
-    throw new Error('Could not find generate-token-button');
-  }
-
-  const popoverContent = button.attribs['data-bs-content'];
-  if (typeof popoverContent !== 'string') {
-    throw new Error('Generate token button missing data-bs-content attribute');
-  }
-
-  const data$ = cheerio.load(popoverContent);
-  const csrfInput = data$('form input[name="__csrf_token"]').get(0);
-  const csrfToken = csrfInput?.attribs.value;
+  const csrfToken = page$('span[id=test_csrf_token]').text();
   if (!csrfToken) {
     throw new Error('Could not find CSRF token in generate token form');
-  }
-
-  // Validate form structure
-  const actionInput = data$('form input[name="__action"]').get(0);
-  if (actionInput?.attribs.value !== 'token_generate') {
-    throw new Error('Generate token form has unexpected __action value');
-  }
-
-  if (data$('form input[name="token_name"]').length !== 1) {
-    throw new Error('Generate token form missing token_name input');
   }
 
   // Submit the form to generate a token

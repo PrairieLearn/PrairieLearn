@@ -321,11 +321,14 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
       if (!req.body.ciid) {
-        throw new error.HttpStatusError(400, 'CIID is required');
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
       const shortNameValidation = validateShortName(req.body.ciid, courseInstance.short_name);
       if (!shortNameValidation.valid) {
-        throw new error.HttpStatusError(400, `Invalid CIID: ${shortNameValidation.serverMessage}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid short name: ${shortNameValidation.serverMessage}`,
+        );
       }
 
       const paths = getPaths(undefined, res.locals);
@@ -413,7 +416,7 @@ router.post(
       } catch {
         throw new error.HttpStatusError(
           400,
-          `Invalid CIID (could not be normalized): ${req.body.ciid}`,
+          `Invalid short name (could not be normalized): ${req.body.ciid}`,
         );
       }
       const editor = new MultiEditor(

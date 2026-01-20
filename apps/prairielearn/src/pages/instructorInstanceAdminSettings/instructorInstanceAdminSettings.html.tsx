@@ -116,7 +116,7 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="orig_hash" value={origHash} />
             <div className="mb-3">
               <label className="form-label" htmlFor="ciid">
-                CIID
+                Short name
               </label>
               <input
                 type="text"
@@ -126,7 +126,7 @@ export function InstructorInstanceAdminSettings({
                 disabled={!canEdit}
                 required
                 {...register('ciid', {
-                  required: 'CIID is required',
+                  required: 'Short name is required',
                   validate: {
                     shortName: (value) => {
                       const result = validateShortName(value, defaultValues.ciid);

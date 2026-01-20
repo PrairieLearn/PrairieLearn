@@ -156,14 +156,17 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, 'AID is required');
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
       const shortNameValidation = validateShortName(
         req.body.aid,
         res.locals.assessment.tid ?? undefined,
       );
       if (!shortNameValidation.valid) {
-        throw new error.HttpStatusError(400, `Invalid AID: ${shortNameValidation.serverMessage}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid short name: ${shortNameValidation.serverMessage}`,
+        );
       }
 
       const paths = getPaths(undefined, res.locals);
@@ -218,7 +221,7 @@ router.post(
         } catch {
           throw new error.HttpStatusError(
             400,
-            `Invalid TID (could not be normalized): ${req.body.aid}`,
+            `Invalid short name (could not be normalized): ${req.body.aid}`,
           );
         }
       });

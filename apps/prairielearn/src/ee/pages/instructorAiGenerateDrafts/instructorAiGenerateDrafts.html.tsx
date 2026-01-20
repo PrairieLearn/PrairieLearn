@@ -38,6 +38,10 @@ export function InstructorAIGenerateDrafts({
     resLocals,
     pageTitle: resLocals.pageTitle,
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
       ${compiledScriptTag('mathjaxSetup.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>

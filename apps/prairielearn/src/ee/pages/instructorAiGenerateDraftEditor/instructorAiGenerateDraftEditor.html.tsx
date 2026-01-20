@@ -44,6 +44,10 @@ export function InstructorAiGenerateDraftEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
+        <meta
+          name="mathjax-fonts-path"
+          content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+        />
         ${[
           HeadContents({ resLocals }),
           compiledScriptTag('question.ts'),
