@@ -326,6 +326,170 @@ describe('LTI 1.3 course instance linking', () => {
     assert.notInclude(res.url, '/instructor/');
   });
 
+  describe('LTI 1.3 linking authorization', () => {
+    test.sequential('instructor without course permissions does not see linking form', async () => {
+      // First, clean up any existing link to test the unauthorized view
+      await execute(
+        `DELETE FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+      );
+
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+      // Login as instructor via LTI (passes LTI role check) but WITHOUT granting
+      // any PrairieLearn course permissions
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Unauthorized Instructor',
+          email: 'unauthorized-instructor@example.com',
+          uin: '999000111',
+          sub: 'unauthorized-instructor-sub-1',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: true,
+      });
+
+      const loginRes = await executor.login();
+      assert.equal(loginRes.status, 200);
+
+      // The linking page should NOT show the course instance selector for instructors
+      // without course permissions - this is the authorization check at the UI level
+      const linkingPageRes = await fetchWithCookies(targetLinkUri);
+      assert.equal(linkingPageRes.status, 200);
+
+      const linkingPageText = await linkingPageRes.text();
+      const $ = cheerio.load(linkingPageText);
+
+      // Verify the linking form is NOT shown (no course instance selector)
+      const courseInstanceSelector = $('select[name="unsafe_course_instance_id"]');
+      assert.equal(
+        courseInstanceSelector.length,
+        0,
+        'Instructor without permissions should not see course instance selector',
+      );
+
+      // Verify no link was created
+      const linkRecord = await queryOptionalRow(
+        `SELECT * FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND deployment_id = $deployment_id
+         AND context_id = $context_id`,
+        { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
+        Lti13CourseInstanceSchema,
+      );
+      assert.isNull(linkRecord, 'No link should have been created');
+    });
+
+    test.sequential('cannot link course instance from different institution', async () => {
+      // Create a second institution with its own course and course instance
+      await execute(`
+        INSERT INTO institutions (id, short_name, long_name, uid_regexp)
+        VALUES ('2', 'Other', 'Other Institution', '@other\\.edu$')
+        ON CONFLICT (id) DO NOTHING
+      `);
+
+      await execute(`
+        INSERT INTO courses (id, short_name, title, institution_id, path, branch, display_timezone, options)
+        VALUES ('2', 'OTHER 101', 'Other Course', '2', '/course2', 'main', 'America/Chicago', '{}')
+        ON CONFLICT (id) DO NOTHING
+      `);
+
+      await execute(`
+        INSERT INTO course_instances (id, course_id, short_name, long_name, display_timezone, enrollment_code)
+        VALUES ('2', '2', 'Other CI', 'Other Course Instance', 'America/Chicago', 'OTHER101-001')
+        ON CONFLICT (id) DO NOTHING
+      `);
+
+      const fetchWithCookies = fetchCookie(fetch);
+      const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
+
+      // Grant permissions for the OTHER institution's course (institution 2)
+      // This user has permissions for course 2, but the LTI instance is in institution 1
+      await grantCoursePermissions({
+        uid: 'cross-inst-instructor@example.com',
+        courseId: '2',
+        courseRole: 'Editor',
+        courseInstanceId: '2',
+        courseInstanceRole: 'Student Data Editor',
+        authnUserId: '1',
+      });
+
+      const executor = await makeLoginExecutor({
+        user: {
+          name: 'Cross Institution Instructor',
+          email: 'cross-inst-instructor@example.com',
+          uin: '888000222',
+          sub: 'cross-inst-instructor-sub-1',
+        },
+        fetchWithCookies,
+        oidcProviderPort,
+        keystore,
+        loginUrl: `${siteUrl}/pl/lti13_instance/1/auth/login`,
+        callbackUrl: `${siteUrl}/pl/lti13_instance/1/auth/callback`,
+        targetLinkUri,
+        isInstructor: true,
+      });
+
+      const loginRes = await executor.login();
+      assert.equal(loginRes.status, 200);
+
+      // Fetch the linking page to get a CSRF token
+      const linkingPageRes = await fetchWithCookies(targetLinkUri);
+      assert.equal(linkingPageRes.status, 200);
+
+      const linkingPageText = await linkingPageRes.text();
+      const $ = cheerio.load(linkingPageText);
+      const csrfToken = $('input[name="__csrf_token"]').val() as string;
+      assert.ok(csrfToken, 'Could not find CSRF token');
+
+      // Attempt to link course instance from institution 2 to LTI instance from institution 1
+      // Use redirect: 'manual' to see the actual response status
+      const linkRes = await fetchWithCookies(targetLinkUri, {
+        method: 'POST',
+        body: new URLSearchParams({
+          __csrf_token: csrfToken,
+          unsafe_course_instance_id: '2', // Course instance from different institution
+        }),
+        redirect: 'manual',
+      });
+
+      // Should get 403 because the course instance belongs to a different institution
+      // than the LTI instance
+      assert.equal(
+        linkRes.status,
+        403,
+        'Expected 403 when linking course from different institution',
+      );
+
+      // Verify no link was created
+      const linkRecord = await queryOptionalRow(
+        `SELECT * FROM lti13_course_instances
+         WHERE lti13_instance_id = '1'
+         AND course_instance_id = '2'`,
+        {},
+        Lti13CourseInstanceSchema,
+      );
+      assert.isNull(linkRecord, 'No cross-institution link should have been created');
+
+      // Re-create the link for subsequent tests that depend on it
+      await linkLtiContext({
+        lti13InstanceId: '1',
+        deploymentId: LTI_DEPLOYMENT_ID,
+        contextId: LTI_CONTEXT_ID,
+        courseInstanceId: '1',
+      });
+    });
+  });
+
   describe('LTI 1.3 instructor admin page', () => {
     test.sequential('GET admin page shows linked instance', async () => {
       const fetchWithCookies = fetchCookie(fetch);

@@ -29,7 +29,9 @@ export async function withServer<T>(app: express.Express, port: number, fn: () =
   try {
     return await fn();
   } finally {
-    server.close();
+    await new Promise<void>((resolve, reject) => {
+      server.close((err) => (err ? reject(err) : resolve()));
+    });
   }
 }
 
@@ -91,6 +93,7 @@ export async function makeLoginExecutor({
   assert.ok(state);
 
   const key = keystore.get('test');
+  assert.ok(key, 'Test keystore must contain a key with kid="test"');
   const joseKey = await jose.importJWK(key.toJSON(true) as jose.JWK);
   const fakeIdToken = await new jose.SignJWT({
     nonce,
@@ -205,11 +208,13 @@ export async function createLti13Instance({
   const newInstanceButtonValue = newInstanceButton.attr('value');
   assert.ok(newInstanceButtonValue);
 
-  // Create a new LTI instance.
+  const newInstanceCsrfToken = newInstanceForm.find('input[name=__csrf_token]').val();
+  assert.ok(typeof newInstanceCsrfToken === 'string', 'CSRF token not found in new instance form');
+
   const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
     method: 'POST',
     body: new URLSearchParams({
-      __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
+      __csrf_token: newInstanceCsrfToken,
       __action: newInstanceButtonValue,
     }),
   });
@@ -222,12 +227,16 @@ export async function createLti13Instance({
   const savePlatformOptionsButton = ltiInstanceResponse.$('button:contains(Save platform options)');
   const platformOptionsForm = savePlatformOptionsButton.closest('form');
 
-  // Update the platform options.
+  const platformCsrfToken = platformOptionsForm.find('input[name=__csrf_token]').val();
+  const platformAction = platformOptionsForm.find('input[name=__action]').val();
+  assert.ok(typeof platformCsrfToken === 'string', 'CSRF token not found in platform options form');
+  assert.ok(typeof platformAction === 'string', 'Action not found in platform options form');
+
   const updatePlatformOptionsResponse = await fetchCheerio(instanceUrl, {
     method: 'POST',
     body: new URLSearchParams({
-      __csrf_token: platformOptionsForm.find('input[name=__csrf_token]').val() as string,
-      __action: platformOptionsForm.find('input[name=__action]').val() as string,
+      __csrf_token: platformCsrfToken,
+      __action: platformAction,
       platform: 'Unknown',
       issuer_params: JSON.stringify(issuer_params),
       custom_fields: JSON.stringify({
@@ -248,12 +257,17 @@ export async function createLti13Instance({
     );
     const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
 
-    // Update the instance's attribute settings.
+    const plConfigCsrfToken = prairieLearnOptionsForm.find('input[name=__csrf_token]').val();
+    assert.ok(
+      typeof plConfigCsrfToken === 'string',
+      'CSRF token not found in PrairieLearn config form',
+    );
+
     const updateRes = await fetchCheerio(instanceUrl, {
       method: 'POST',
       body: new URLSearchParams({
         __action: 'save_pl_config',
-        __csrf_token: prairieLearnOptionsForm.find('input[name=__csrf_token]').val() as string,
+        __csrf_token: plConfigCsrfToken,
         uid_attribute: attributes.uid_attribute,
         uin_attribute: attributes.uin_attribute,
         email_attribute: attributes.email_attribute,
@@ -266,11 +280,13 @@ export async function createLti13Instance({
   const addKeyButtonValue = addKeyButton.attr('value');
   assert.ok(addKeyButtonValue);
 
-  // Create a key
+  const keystoreCsrfToken = keystoreForm.find('input[name=__csrf_token]').val();
+  assert.ok(typeof keystoreCsrfToken === 'string', 'CSRF token not found in keystore form');
+
   const createKeyResponse = await fetchCheerio(instanceUrl, {
     method: 'POST',
     body: new URLSearchParams({
-      __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
+      __csrf_token: keystoreCsrfToken,
       __action: addKeyButtonValue,
     }),
   });
@@ -320,11 +336,17 @@ export async function grantCoursePermissions({
 }: {
   uid: string;
   courseId: string;
-  courseRole: 'Owner' | 'Editor' | 'Viewer' | 'None';
+  courseRole: 'Owner' | 'Editor' | 'Viewer' | 'Previewer' | 'None';
   courseInstanceId?: string;
   courseInstanceRole?: 'Student Data Viewer' | 'Student Data Editor';
   authnUserId: string;
 }) {
+  if ((courseInstanceId && !courseInstanceRole) || (!courseInstanceId && courseInstanceRole)) {
+    throw new Error(
+      'grantCoursePermissions: courseInstanceId and courseInstanceRole must both be provided or both omitted',
+    );
+  }
+
   const user = await insertCoursePermissionsByUserUid({
     course_id: courseId,
     uid,

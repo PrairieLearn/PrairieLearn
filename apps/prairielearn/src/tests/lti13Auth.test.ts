@@ -92,7 +92,13 @@ describe('LTI 1.3 authentication', () => {
 
   test.sequential('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
-    const data = await fetch(url).then((res) => res.json() as any);
+    const data: {
+      title: string;
+      oidc_initiation_url: string;
+      target_link_uri: string;
+      public_jwk_url: string;
+      custom_fields: Record<string, string>;
+    } = await fetch(url).then((res) => res.json());
 
     assert.equal(data.title, 'PrairieLearn');
     assert.equal(data.oidc_initiation_url, `${siteUrl}/pl/lti13_instance/1/auth/login`);
@@ -237,7 +243,8 @@ describe('LTI 1.3 authentication', () => {
   });
 
   describe('LTI 1.3 instance that does not provide UIDs', () => {
-    const fetchWithCookies = fetchCookie(fetch);
+    // Shared cookie jar for tests that need session continuity (login flow spanning multiple tests)
+    const sharedFetchWithCookies = fetchCookie(fetch);
 
     test.sequential('create second LTI 1.3 instance', async () => {
       await createLti13Instance({
@@ -266,7 +273,7 @@ describe('LTI 1.3 authentication', () => {
           uin: '987654321',
           sub: USER_WITHOUT_UID_SUB,
         },
-        fetchWithCookies,
+        fetchWithCookies: sharedFetchWithCookies,
         oidcProviderPort,
         keystore,
         loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
@@ -286,7 +293,7 @@ describe('LTI 1.3 authentication', () => {
       const res = await fetchCheerio(`${siteUrl}/pl/login`);
       assert.equal(res.status, 200);
 
-      const loginRes = await fetchWithCookies(`${siteUrl}/pl/login`, {
+      const loginRes = await sharedFetchWithCookies(`${siteUrl}/pl/login`, {
         method: 'POST',
         body: new URLSearchParams({
           __csrf_token: res.$('input[name=__csrf_token]').val() as string,
@@ -344,8 +351,6 @@ describe('LTI 1.3 authentication', () => {
   });
 
   describe('LTI 1.3 instance that does not provide UINs', () => {
-    const fetchWithCookies = fetchCookie(fetch);
-
     test.sequential('create LTI 1.3 instance with UID but no UIN attribute', async () => {
       await createLti13Instance({
         siteUrl,
@@ -371,6 +376,9 @@ describe('LTI 1.3 authentication', () => {
         const newUid = 'new-uid-no-uin@example.com';
         const testSub = 'uid-update-test-sub-no-uin-67890';
         const testUin = '1234512345';
+
+        // Fresh cookie jar for initial login
+        const fetchWithCookies = fetchCookie(fetch);
 
         const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const initialExecutor = await makeLoginExecutor({
@@ -401,7 +409,6 @@ describe('LTI 1.3 authentication', () => {
           uin: testUin,
         });
 
-        const secondTargetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const executor = await makeLoginExecutor({
           user: {
             name: 'UID Update Test User No UIN',
@@ -414,12 +421,12 @@ describe('LTI 1.3 authentication', () => {
           keystore,
           loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
           callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-          targetLinkUri: secondTargetLinkUri,
+          targetLinkUri,
         });
 
         const loginResult = await executor.login();
         assert.equal(loginResult.status, 200);
-        assert.equal(loginResult.url, secondTargetLinkUri);
+        assert.equal(loginResult.url, targetLinkUri);
 
         const updatedUser = await selectOptionalUserByUid(newUid);
         const oldUser = await selectOptionalUserByUid(initialUid);
