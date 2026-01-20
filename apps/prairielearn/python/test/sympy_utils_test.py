@@ -213,7 +213,6 @@ class TestSympy:
         expected: sympy.Expr | None,
         expected_error: type[psu.BaseSympyError] | None,
     ) -> None:
-        """Test issue #13661: 3j as variable multiplication vs complex literal."""
         if expected_error is not None:
             with pytest.raises(expected_error):
                 psu.convert_string_to_sympy(
