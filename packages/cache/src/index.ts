@@ -92,7 +92,9 @@ export class Cache {
         if (currentValue) {
           const parsedValue = Number.parseFloat(currentValue);
           if (!Number.isNaN(parsedValue)) {
-            this.memoryCache.set(scopedKey, JSON.stringify(parsedValue + increment));
+            this.memoryCache.set(scopedKey, JSON.stringify(parsedValue + increment), {
+              noUpdateTTL: true,
+            });
           } else {
             logger.warn('Cache incrementByFloat error: current value is not a number', {
               key,

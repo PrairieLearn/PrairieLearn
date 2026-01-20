@@ -6,6 +6,7 @@ import type {
   UserContent,
 } from 'ai';
 import * as cheerio from 'cheerio';
+import mustache from 'mustache';
 import memoize from 'p-memoize';
 import { z } from 'zod';
 
