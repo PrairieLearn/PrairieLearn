@@ -1,7 +1,9 @@
 import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
 import * as cheerio from 'cheerio';
+import mustache from 'mustache';
 import { z } from 'zod';
 
+import { markdownToHtml } from '@prairielearn/markdown';
 import {
   callRow,
   execute,
@@ -57,6 +59,8 @@ export async function generatePrompt({
   submitted_answer,
   rubric_items,
   grader_guidelines,
+  params,
+  true_answer,
   model_id,
 }: {
   questionPrompt: string;
@@ -65,6 +69,8 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
   grader_guidelines: string | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
   model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
@@ -81,7 +87,14 @@ export async function generatePrompt({
         },
         {
           role: 'user',
-          content: grader_guidelines,
+          content: markdownToHtml(
+            mustache.render(grader_guidelines, {
+              submitted_answers: submitted_answer,
+              correct_answers: true_answer,
+              params,
+            }),
+            { inline: true },
+          ),
         },
       ] satisfies ModelMessage[])
     : [];

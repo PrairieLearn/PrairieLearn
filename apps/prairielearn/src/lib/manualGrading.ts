@@ -172,7 +172,7 @@ export async function selectRubricData({
 
   if (submission) {
     // Render rubric items: description, explanation and grader note
-    const mustache_data = {
+    const mustacheParams = {
       correct_answers: submission.true_answer ?? {},
       params: submission.params ?? {},
       submitted_answers: submission.submitted_answer,
@@ -180,15 +180,15 @@ export async function selectRubricData({
 
     for (const item of rubric_data?.rubric_items || []) {
       item.description_rendered = item.rubric_item.description
-        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustache_data), {
+        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustacheParams), {
             inline: true,
           })
         : '';
       item.explanation_rendered = item.rubric_item.explanation
-        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustache_data))
+        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustacheParams))
         : '';
       item.grader_note_rendered = item.rubric_item.grader_note
-        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustache_data))
+        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustacheParams))
         : '';
 
       // Yield to the event loop to avoid blocking too long.
