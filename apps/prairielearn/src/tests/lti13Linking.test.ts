@@ -125,6 +125,17 @@ describe('LTI 1.3 course instance linking', () => {
     const fetchWithCookies = fetchCookie(fetch);
     const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
+    // Grant permissions before LTI login. Use dev admin user (ID 1) as authn_user
+    // since the target user doesn't exist yet - grantCoursePermissions will create them.
+    await grantCoursePermissions({
+      uid: 'linking-instructor@example.com',
+      courseId: '1',
+      courseRole: 'Editor',
+      courseInstanceId: '1',
+      courseInstanceRole: 'Student Data Editor',
+      authnUserId: '1',
+    });
+
     const executor = await makeLoginExecutor({
       user: {
         name: 'Linking Test Instructor',
