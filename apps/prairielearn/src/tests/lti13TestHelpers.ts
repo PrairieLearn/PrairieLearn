@@ -152,7 +152,7 @@ export async function makeLoginExecutor({
 
   // Run a server to respond to JWKS requests.
   const app = express();
-  app.get('/jwks', (req, res) => {
+  app.get('/jwks', (_req, res) => {
     res.setHeader('Content-Type', 'application/json');
     // Pass `false` to `toJSON` to only include public keys.
     res.end(JSON.stringify(keystore.toJSON(false)));
@@ -305,8 +305,10 @@ export async function linkLtiContext({
 }
 
 /**
- * Grants course permissions to a user, creating the user if they don't exist.
- * Returns the user object for use in subsequent operations.
+ * Grants course permissions to a user via insertCoursePermissionsByUserUid
+ * (which creates the user if they don't exist).
+ *
+ * @returns The user object, useful for subsequent permission operations
  */
 export async function grantCoursePermissions({
   uid,

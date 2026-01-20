@@ -59,18 +59,23 @@ describe('LTI 1.3 course instance linking', () => {
 
     // Enable LTI 1.3 as auth provider
     const ssoResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`);
+    assert.equal(ssoResponse.status, 200, 'Failed to load SSO settings page');
+
     const saveButton = ssoResponse.$('button:contains(Save)');
     const form = saveButton.closest('form');
     const lti13Input = form.find('label:contains(LTI 1.3)').closest('div').find('input');
+    const lti13InputValue = lti13Input.attr('value');
+    assert.ok(lti13InputValue, 'Could not find LTI 1.3 input value in SSO form');
 
-    await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
+    const enableLtiResponse = await fetchCheerio(`${siteUrl}/pl/administrator/institution/1/sso`, {
       method: 'POST',
       body: new URLSearchParams({
         __csrf_token: form.find('input[name=__csrf_token]').val() as string,
-        enabled_authn_provider_ids: lti13Input.attr('value')!,
+        enabled_authn_provider_ids: lti13InputValue,
         default_authn_provider_id: '',
       }),
     });
+    assert.equal(enableLtiResponse.status, 200, 'Failed to enable LTI 1.3 as auth provider');
   });
 
   afterAll(async () => {
@@ -141,7 +146,11 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(res.url, targetLinkUri);
 
     const pageText = await res.text();
-    assert.include(pageText, 'Link');
+    const $ = cheerio.load(pageText);
+    assert.ok(
+      $('select[name="unsafe_course_instance_id"]').length > 0,
+      'Expected course instance selector on linking page',
+    );
   });
 
   test.sequential('student sees "not ready" page for unlinked context', async () => {
@@ -168,7 +177,11 @@ describe('LTI 1.3 course instance linking', () => {
     assert.equal(res.status, 200);
 
     const pageText = await res.text();
-    assert.include(pageText, "isn't ready yet");
+    const $ = cheerio.load(pageText);
+    assert.ok(
+      $('h2:contains("isn\'t ready yet")').length > 0,
+      'Expected "not ready yet" message for student on unlinked context',
+    );
   });
 
   test.sequential('instructor can link course instance via POST', async () => {
@@ -352,7 +365,11 @@ describe('LTI 1.3 course instance linking', () => {
       assert.equal(adminPageRes.status, 200);
 
       const pageText = await adminPageRes.text();
-      assert.include(pageText, 'LTI');
+      const $ = cheerio.load(pageText);
+      assert.ok(
+        $('h1:contains("LTI 1.3 configuration")').length > 0,
+        'Expected LTI 1.3 configuration page',
+      );
     });
 
     test.sequential('GET admin page redirects when no ID provided', async () => {
