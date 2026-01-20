@@ -66,7 +66,10 @@ export function confirmOnUnload(form: HTMLFormElement) {
   // common case of `<input type="hidden">` elements used for deferred
   // initialization. Custom elements also have the option of using
   // `setAttribute` to set the `value` attribute when they initialize their
-  // inputs if their specific use-case requires it.
+  // inputs if their specific use-case requires it. See:
+  // https://html.spec.whatwg.org/multipage/common-dom-interfaces.html#reflecting-content-attributes-in-idl-attributes
+  // https://html.spec.whatwg.org/multipage/input.html#hidden-state-(type=hidden)
+  // https://html.spec.whatwg.org/multipage/input.html#dom-input-value-default
   form.querySelectorAll<HTMLInputElement>('[data-deferred-initial-value]').forEach((input) => {
     // Elements without a name cannot contribute to form data
     if (!input.name) return;
