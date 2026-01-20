@@ -73,7 +73,7 @@ router.get(
               assessmentSetName={res.locals.assessment_set.name}
               assessmentSetAbbr={res.locals.assessment_set.abbreviation}
               assessmentNumber={res.locals.assessment.number}
-              assessmentTeamWork={res.locals.assessment.team_work ?? false}
+              assessmentTeamWork={res.locals.assessment.team_work}
               assessmentMultipleInstance={res.locals.assessment.multiple_instance ?? false}
               hasCourseInstancePermissionEdit={
                 res.locals.authz_data.has_course_instance_permission_edit
