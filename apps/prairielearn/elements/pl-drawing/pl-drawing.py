@@ -74,6 +74,10 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         element, "gradable", defaults.element_defaults["gradable"]
     )
 
+    weight = pl.get_integer_attrib(element, "weight", WEIGHT_DEFAULT)
+    if weight < 0:
+        raise ValueError('Attribute "weight" must be a non-negative integer')
+
     load_extensions(data)
 
     # Some preparation for elements with grading componenet
@@ -399,20 +403,36 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     load_extensions(data)
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    if allow_blank and data["submitted_answers"].get(name, "") == "":
+
+    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+    raw_submitted_answer = data["submitted_answers"].get(name)
+
+    # A blank submission could be `None`
+    if allow_blank and raw_submitted_answer is None:
+        data["submitted_answers"][name] = None
         return
 
     try:
-        data["submitted_answers"][name] = json.loads(data["submitted_answers"][name])
+        data["submitted_answers"][name] = json.loads(raw_submitted_answer)
         if (
             data["submitted_answers"][name] is None
             or len(data["submitted_answers"][name]) == 0
         ):
-            data["format_errors"][name] = defaults.no_submission_error
             data["submitted_answers"][name] = None
+
+            # A blank submission could be `[]`
+            if allow_blank:
+                return
+
+            data["format_errors"][name] = defaults.no_submission_error
     except (json.JSONDecodeError, KeyError):
-        data["format_errors"][name] = defaults.no_submission_error
         data["submitted_answers"][name] = None
+
+        # This shouldn't happen, but we will handle it just in case
+        if allow_blank:
+            return
+
+        data["format_errors"][name] = defaults.no_submission_error
 
 
 def grade(element_html: str, data: pl.QuestionData) -> None:
@@ -443,7 +463,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(
         element, "answers-name", defaults.element_defaults["answers-name"]
     )
-    student = data["submitted_answers"][name]
+    student = data["submitted_answers"].get(name)
     reference = data["correct_answers"].get(name, [])
 
     if not isinstance(student, list) or len(student) == 0:
@@ -461,7 +481,7 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             }
             return
         else:
-            data["format_errors"][name] = "No submitted answer."
+            data["format_errors"][name] = defaults.no_submission_error
             return
 
     matches = {}  # If a reference object is matched to a student object
@@ -665,5 +685,21 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         }
 
     elif result == "invalid":
-        data["format_errors"][name] = ""
-        data["raw_submitted_answers"][name] = "invalid submission"
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
+        if allow_blank:
+            # When allow-blank is true, blank submissions score 0 instead of format error
+            data["raw_submitted_answers"][name] = "[]"
+            data["partial_scores"][name] = {
+                "score": 0,
+                "weight": weight,
+                "feedback": {
+                    "correct": False,
+                    "partial": False,
+                    "incorrect": True,
+                    "missing": {},
+                    "matches": {},
+                },
+            }
+        else:
+            data["format_errors"][name] = ""
+            data["raw_submitted_answers"][name] = "invalid submission"
