@@ -30,6 +30,6 @@
     "included": false
   },
 
-  "statusCheck": true,
+  "statusCheck": false,
   "statusCommentsEnabled": false
 }
