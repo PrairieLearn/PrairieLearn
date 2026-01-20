@@ -419,6 +419,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
     )
 
     if error_msg is not None:
