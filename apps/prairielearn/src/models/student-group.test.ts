@@ -12,6 +12,8 @@ import { getOrCreateUser } from '../tests/utils/auth.js';
 import {
   addEnrollmentToStudentGroup,
   createStudentGroup,
+  createStudentGroupAndAddEnrollments,
+  createStudentGroupWithErrorHandling,
   deleteStudentGroup,
   removeEnrollmentFromStudentGroup,
   renameStudentGroup,
@@ -19,6 +21,8 @@ import {
   selectStudentGroupById,
   selectStudentGroupsByCourseInstance,
   selectStudentGroupsForEnrollment,
+  updateStudentGroup,
+  verifyGroupBelongsToCourseInstance,
 } from './student-group.js';
 
 describe('Student Group Model', () => {
@@ -536,6 +540,168 @@ describe('Student Group Model', () => {
 
       const groups = await selectStudentGroupsForEnrollment(enrollment.id);
       assert.equal(groups.length, 0);
+    });
+  });
+
+  describe('updateStudentGroup', () => {
+    it('updates student group name and color', async () => {
+      const group = await createStudentGroup({
+        course_instance_id: '1',
+        name: 'Original Name',
+        color: 'blue1',
+      });
+
+      const updatedGroup = await updateStudentGroup({
+        id: group.id,
+        name: 'New Name',
+        color: 'green1',
+      });
+
+      assert.equal(updatedGroup.id, group.id);
+      assert.equal(updatedGroup.name, 'New Name');
+      assert.equal(updatedGroup.color, 'green1');
+    });
+
+    it('sets color to null when null is passed', async () => {
+      const group = await createStudentGroup({
+        course_instance_id: '1',
+        name: 'Test Group',
+        color: 'blue1',
+      });
+
+      const updatedGroup = await updateStudentGroup({
+        id: group.id,
+        name: 'Test Group',
+        color: null,
+      });
+
+      assert.equal(updatedGroup.color, null);
+    });
+  });
+
+  describe('verifyGroupBelongsToCourseInstance', () => {
+    it('returns group when it belongs to the course instance', async () => {
+      const group = await createStudentGroup({
+        course_instance_id: '1',
+        name: 'Test Group',
+      });
+
+      const verifiedGroup = await verifyGroupBelongsToCourseInstance(group.id, '1');
+      assert.equal(verifiedGroup.id, group.id);
+      assert.equal(verifiedGroup.name, 'Test Group');
+    });
+
+    it('throws 403 when group does not belong to course instance', async () => {
+      const group = await createStudentGroup({
+        course_instance_id: '1',
+        name: 'Test Group',
+      });
+
+      try {
+        await verifyGroupBelongsToCourseInstance(group.id, '999999');
+        assert.fail('Expected error to be thrown');
+      } catch (err: any) {
+        assert.equal(err.status, 403);
+        assert.include(err.message, 'does not belong to this course instance');
+      }
+    });
+  });
+
+  describe('createStudentGroupWithErrorHandling', () => {
+    it('creates a student group successfully', async () => {
+      const group = await createStudentGroupWithErrorHandling({
+        course_instance_id: '1',
+        name: 'Unique Group Name',
+      });
+
+      assert.isOk(group);
+      assert.equal(group.name, 'Unique Group Name');
+    });
+
+    it('throws user-friendly error for duplicate names', async () => {
+      await createStudentGroup({
+        course_instance_id: '1',
+        name: 'Duplicate Name',
+      });
+
+      try {
+        await createStudentGroupWithErrorHandling({
+          course_instance_id: '1',
+          name: 'Duplicate Name',
+        });
+        assert.fail('Expected error to be thrown');
+      } catch (err: any) {
+        assert.equal(err.status, 400);
+        assert.include(err.message, 'group with this name already exists');
+      }
+    });
+  });
+
+  describe('createStudentGroupAndAddEnrollments', () => {
+    it('creates a group and adds enrollments', async () => {
+      const user1 = await getOrCreateUser({
+        uid: 'create-enroll-1@example.com',
+        name: 'Create Enroll User 1',
+        uin: 'ceu1',
+        email: 'create-enroll-1@example.com',
+      });
+
+      const user2 = await getOrCreateUser({
+        uid: 'create-enroll-2@example.com',
+        name: 'Create Enroll User 2',
+        uin: 'ceu2',
+        email: 'create-enroll-2@example.com',
+      });
+
+      const enrollment1 = await queryRow(
+        `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+         VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
+         RETURNING *`,
+        {
+          user_id: user1.id,
+          course_instance_id: '1',
+          first_joined_at: new Date(),
+        },
+        EnrollmentSchema,
+      );
+
+      const enrollment2 = await queryRow(
+        `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+         VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
+         RETURNING *`,
+        {
+          user_id: user2.id,
+          course_instance_id: '1',
+          first_joined_at: new Date(),
+        },
+        EnrollmentSchema,
+      );
+
+      const group = await createStudentGroupAndAddEnrollments({
+        course_instance_id: '1',
+        name: 'Group With Enrollments',
+        enrollment_ids: [enrollment1.id, enrollment2.id],
+      });
+
+      assert.equal(group.name, 'Group With Enrollments');
+
+      const enrollments = await selectEnrollmentsInStudentGroup(group.id);
+      assert.equal(enrollments.length, 2);
+      assert.isTrue(enrollments.some((e) => e.id === enrollment1.id));
+      assert.isTrue(enrollments.some((e) => e.id === enrollment2.id));
+    });
+
+    it('creates a group with no enrollments when empty array passed', async () => {
+      const group = await createStudentGroupAndAddEnrollments({
+        course_instance_id: '1',
+        name: 'Empty Group',
+        enrollment_ids: [],
+      });
+
+      assert.equal(group.name, 'Empty Group');
+
+      const enrollments = await selectEnrollmentsInStudentGroup(group.id);
+      assert.equal(enrollments.length, 0);
     });
   });
 });

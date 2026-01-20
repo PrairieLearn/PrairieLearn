@@ -183,7 +183,7 @@ export async function createStudentGroupWithErrorHandling({
   try {
     return await createStudentGroup({ course_instance_id, name });
   } catch (err: any) {
-    if (err.constraint === 'student_groups_course_instance_id_name_key') {
+    if (err.constraint === 'student_groups_course_instance_id_name_unique') {
       throw new HttpStatusError(400, 'A group with this name already exists');
     }
     throw err;

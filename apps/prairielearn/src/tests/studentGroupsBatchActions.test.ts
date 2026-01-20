@@ -247,4 +247,91 @@ describe('Student groups batch actions', () => {
       assert.notEqual(addResponse.status, 200);
     },
   );
+
+  test.sequential('should create a new group and add students to it', async () => {
+    const pageResponse = await fetchCheerio(studentsUrl);
+    assert.equal(pageResponse.status, 200);
+
+    const csrfToken = getCSRFToken(pageResponse.$);
+
+    // Create a new group and add students in one action
+    const createResponse = await fetchCheerio(studentsUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        __action: 'create_group_and_add_students',
+        __csrf_token: csrfToken,
+        enrollment_ids: [enrollment1Id, enrollment2Id],
+        name: 'New Created Group',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    });
+
+    assert.equal(createResponse.status, 200);
+
+    // Verify the group was created and students were added
+    const memberships = await queryRows(
+      "SELECT sge.* FROM student_group_enrollments sge JOIN student_groups sg ON sge.student_group_id = sg.id WHERE sg.name = 'New Created Group'",
+      [],
+      EnrollmentSchema.pick({ id: true }).extend({ enrollment_id: EnrollmentSchema.shape.id }),
+    );
+
+    assert.equal(memberships.length, 2);
+
+    const memberEnrollmentIds = memberships.map((m) => m.enrollment_id);
+    assert.include(memberEnrollmentIds, enrollment1Id);
+    assert.include(memberEnrollmentIds, enrollment2Id);
+  });
+
+  test.sequential('should fail to create group with duplicate name', async () => {
+    const pageResponse = await fetchCheerio(studentsUrl);
+    assert.equal(pageResponse.status, 200);
+
+    const csrfToken = getCSRFToken(pageResponse.$);
+
+    // Try to create another group with the same name as the one we just created
+    const createResponse = await fetchCheerio(studentsUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        __action: 'create_group_and_add_students',
+        __csrf_token: csrfToken,
+        enrollment_ids: [enrollment3Id],
+        name: 'New Created Group', // Same name as previous test
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    });
+
+    // Should fail with 400 because group name already exists
+    assert.equal(createResponse.status, 400);
+  });
+
+  test.sequential('should fail to create group with empty name', async () => {
+    const pageResponse = await fetchCheerio(studentsUrl);
+    assert.equal(pageResponse.status, 200);
+
+    const csrfToken = getCSRFToken(pageResponse.$);
+
+    // Try to create a group with an empty name
+    const createResponse = await fetchCheerio(studentsUrl, {
+      method: 'POST',
+      body: JSON.stringify({
+        __action: 'create_group_and_add_students',
+        __csrf_token: csrfToken,
+        enrollment_ids: [enrollment1Id],
+        name: '',
+      }),
+      headers: {
+        'Content-Type': 'application/json',
+        Accept: 'application/json',
+      },
+    });
+
+    // Should fail because name is required
+    assert.notEqual(createResponse.status, 200);
+  });
 });
