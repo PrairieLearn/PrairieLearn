@@ -522,7 +522,7 @@ async function inviteNewEnrollment({
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
  *
- * Transitions users in the 'blocked', 'rejected', 'left', or 'removed' status to 'invited'.
+ * Transitions users in the 'blocked', 'rejected', or 'left' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,
