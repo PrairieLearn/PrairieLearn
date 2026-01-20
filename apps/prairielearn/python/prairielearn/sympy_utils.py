@@ -455,6 +455,18 @@ def evaluate_with_source(
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
+    # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
+    # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
+    # Euler's number plus 3), not 2000.0. This fixes issue #11709.
+    #
+    # Examples:
+    #   "2e+3" -> "2*e+3" (2e + 3)
+    #   "2e-3" -> "2*e-3" (2e - 3)
+    #
+    # Note: We intentionally do NOT transform "2e3" (without +/-) since that's
+    # more ambiguous and could legitimately be intended as scientific notation.
+    expr = re.sub(r"(\d)([eE])([+-])", r"\1*\2\3", expr)
+
     # When complex numbers are not allowed, prevent Python from interpreting
     # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
     # so that 'j' is treated as a variable instead. This fixes issue #13661.
@@ -462,9 +474,6 @@ def evaluate_with_source(
     # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
     # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
     # (complex) + "n" regardless - they will still fail with HasComplexError.
-    #
-    # Scientific notation like "3e5j" becomes "3e5*j" which fails with HasFloatError
-    # since floats aren't allowed in symbolic expressions. This is correct behavior.
     if not allow_complex:
         expr = re.sub(r"(\d)([jJ])(?![a-zA-Z0-9])", r"\1*\2", expr)
 
