@@ -155,12 +155,12 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, `Invalid TID (was falsy): ${req.body.aid}`);
+        throw new error.HttpStatusError(400, `Invalid short name (was falsy): ${req.body.aid}`);
       }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
         throw new error.HttpStatusError(
           400,
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
         );
       }
 
@@ -216,7 +216,7 @@ router.post(
         } catch {
           throw new error.HttpStatusError(
             400,
-            `Invalid TID (could not be normalized): ${req.body.aid}`,
+            `Invalid short name (could not be normalized): ${req.body.aid}`,
           );
         }
       });
