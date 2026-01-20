@@ -1,4 +1,5 @@
 import crypto from 'node:crypto';
+import path from 'node:path';
 
 import { slash } from '@vitest/utils/helpers';
 import { resolve } from 'pathe';
@@ -124,6 +125,11 @@ export const sharedConfig = defineConfig({
           ],
         ]
       : ['default'],
+  },
+  server: {
+    watch: {
+      ignored: [path.resolve('./.venv')],
+    },
   },
 });
 
