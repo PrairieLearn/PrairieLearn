@@ -1146,7 +1146,7 @@
       "items": {
         "type": "string"
       },
-      "default": ["Release"]
+      "default": []
     },
     "costPerMillionTokens": {
       "type": "object",

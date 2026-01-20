@@ -582,8 +582,11 @@ export const ConfigSchema = z.object({
   courseFilesApiUrl: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
-  /** List of RSS category tags to filter news items by. Only items with at least one matching category will be shown. */
-  newsFeedCategories: z.array(z.string()).default(['Release']),
+  /**
+   * List of RSS category tags to filter news items by. Only items with at least one matching category will be shown to users.
+   * If no categories are specified, all items will be shown.
+   */
+  newsFeedCategories: z.array(z.string()).default([]),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
