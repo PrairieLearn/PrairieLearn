@@ -16,7 +16,7 @@ export function AssessmentQuestionHeaders({
     <>
       {question.start_new_zone ? (
         <tr>
-          <th colspan={nTableCols}>
+          <th colSpan={nTableCols}>
             Zone {question.zone.number}. {question.zone.title}{' '}
             {question.zone.number_choose == null
               ? '(Choose all questions)'
@@ -36,7 +36,7 @@ export function AssessmentQuestionHeaders({
       )}
       {question.start_new_alternative_group && question.alternative_group_size > 1 ? (
         <tr>
-          <td colspan={nTableCols}>
+          <td colSpan={nTableCols}>
             {question.alternative_group.number}.{' '}
             {question.alternative_group.number_choose == null
               ? 'Choose all questions from:'

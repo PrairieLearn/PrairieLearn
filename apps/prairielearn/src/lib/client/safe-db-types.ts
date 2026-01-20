@@ -18,6 +18,7 @@
 import { type z } from 'zod';
 
 import {
+  AccessTokenSchema as RawAccessTokenSchema,
   AlternativeGroupSchema as RawAlternativeGroupSchema,
   AssessmentInstanceSchema as RawAssessmentInstanceSchema,
   AssessmentModuleSchema as RawAssessmentModuleSchema,
@@ -41,6 +42,17 @@ import {
   UserSchema as RawUserSchema,
   ZoneSchema as RawZoneSchema,
 } from '../db-types.js';
+
+/** Access Tokens */
+export const RawUserAccessTokenSchema = RawAccessTokenSchema.pick({
+  created_at: true,
+  id: true,
+  last_used_at: true,
+  name: true,
+  user_id: true,
+});
+export const UserAccessTokenSchema = RawUserAccessTokenSchema.brand<'UserAccessToken'>();
+export type UserAccessToken = z.infer<typeof UserAccessTokenSchema>;
 
 /** Alternative Groups */
 export const StaffAlternativeGroupSchema =
@@ -257,9 +269,9 @@ export const RawStudentCourseInstanceSchema = RawStaffCourseInstanceSchema.pick(
   course_id: true,
   deleted_at: true,
   display_timezone: true,
-  hide_in_enroll_page: true,
   id: true,
   long_name: true,
+  modern_publishing: true,
   publishing_end_date: true,
   publishing_start_date: true,
   short_name: true,
@@ -268,11 +280,13 @@ export const StudentCourseInstanceSchema =
   RawStudentCourseInstanceSchema.brand<'StudentCourseInstance'>();
 export type StudentCourseInstance = z.infer<typeof StudentCourseInstanceSchema>;
 
-export const RawPublicCourseInstanceSchema = RawStudentCourseInstanceSchema.pick({
+export const RawPublicCourseInstanceSchema = RawStaffCourseInstanceSchema.pick({
   assessments_group_by: true,
   display_timezone: true,
   id: true,
   long_name: true,
+  self_enrollment_enabled: true,
+  self_enrollment_use_enrollment_code: true,
   short_name: true,
 });
 export const PublicCourseInstanceSchema =

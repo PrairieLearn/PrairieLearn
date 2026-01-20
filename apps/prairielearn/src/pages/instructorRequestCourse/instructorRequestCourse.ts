@@ -1,7 +1,6 @@
 import * as path from 'path';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { flash } from '@prairielearn/flash';
@@ -15,6 +14,7 @@ import { config } from '../../lib/config.js';
 import * as github from '../../lib/github.js';
 import { isEnterprise } from '../../lib/license.js';
 import * as opsbot from '../../lib/opsbot.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { RequestCourse } from './instructorRequestCourse.html.js';
 import {
@@ -27,7 +27,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const rows = await queryRows(
       sql.get_requests,
       { user_id: res.locals.authn_user.id },
@@ -47,7 +47,7 @@ router.get(
             ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'label']) ?? '',
           'cr-title':
             ltiClaim.get(['https://purl.imsglobal.org/spec/lti/claim/context', 'title']) ?? '',
-          'cr-institution': res.locals.authn_institution.long_name ?? '',
+          'cr-institution': res.locals.authn_institution.long_name,
         };
       } catch {
         // If LTI information expired or otherwise errors, don't error here.
@@ -62,7 +62,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const short_name = req.body['cr-shortname'].toUpperCase() || '';
     const title = req.body['cr-title'] || '';
     const github_user = req.body['cr-ghuser'] || null;

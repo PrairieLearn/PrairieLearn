@@ -13,9 +13,10 @@ import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
+import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
+import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
   selectOptionalEnrollmentByUid,
@@ -123,9 +124,7 @@ router.get(
       withAuthzData: false,
     });
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: res.locals.authn_institution.id,
-    });
+    const search = getUrl(req).search;
 
     res.send(
       PageLayout({
@@ -147,7 +146,7 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
+            search={search}
           />
         ),
       }),
@@ -186,6 +185,29 @@ router.post(
       throw new HttpStatusError(403, 'Access denied');
     }
 
+    // Invitations and rejections are only supported for modern publishing courses.
+    if (
+      !courseInstance.modern_publishing &&
+      ['accept_invitation', 'reject_invitation'].includes(body.__action)
+    ) {
+      flash(
+        'error',
+        'Invitations and rejections are only supported for courses using modern publishing.',
+      );
+      res.redirect(req.originalUrl);
+      return;
+    }
+
+    if (
+      courseInstance.modern_publishing &&
+      computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
+        'published'
+    ) {
+      flash('error', 'This course instance is not accessible to students');
+      res.redirect(req.originalUrl);
+      return;
+    }
+
     switch (body.__action) {
       case 'accept_invitation': {
         const enrollment = await selectOptionalEnrollmentByUid({
@@ -196,7 +218,7 @@ router.post(
         });
         if (
           !enrollment ||
-          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+          !['left', 'removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
         ) {
           flash('error', 'Failed to accept invitation');
           break;
@@ -241,14 +263,14 @@ router.post(
           authzData,
         });
 
-        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+        if (!enrollment || !['joined', 'left', 'removed'].includes(enrollment.status)) {
           flash('error', 'Failed to unenroll');
           break;
         }
 
         await setEnrollmentStatus({
           enrollment,
-          status: 'removed',
+          status: 'left',
           authzData,
           requiredRole: ['Student'],
         });

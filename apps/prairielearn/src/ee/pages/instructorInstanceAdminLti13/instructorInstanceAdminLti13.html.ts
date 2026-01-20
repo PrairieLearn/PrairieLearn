@@ -11,7 +11,7 @@ import {
   type Lti13Assessment,
   type Lti13Instance,
 } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { type Lineitems, type Lti13CombinedInstance } from '../../lib/lti13.js';
 
 export const AssessmentRowSchema = AssessmentSchema.merge(
@@ -27,7 +27,7 @@ export function InstructorInstanceAdminLti13NoInstances({
   resLocals,
   lti13_instances,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lti13_instances: Lti13Instance[];
 }): string {
   return PageLayout({
@@ -98,7 +98,7 @@ export function InstructorInstanceAdminLti13({
   assessments,
   lineitems,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   instance: Lti13CombinedInstance;
   instances: Lti13CombinedInstance[];
   assessments: AssessmentRow[];
@@ -218,7 +218,7 @@ function LinkedAssessments({
   assessments,
   lineitems,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course-instance'>;
   lms_name: string;
   assessments: AssessmentRow[];
   lineitems: Lti13Assessment[];

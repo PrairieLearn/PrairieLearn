@@ -1,8 +1,7 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 import z from 'zod';
 
-import { EnrollmentCodeForm } from '../../../components/EnrollmentCodeForm.js';
 import {
   RawStudentCourseInstanceSchema,
   RawStudentCourseSchema,
@@ -24,7 +23,7 @@ export function StudentCoursesCard({
   csrfToken,
   urlPrefix,
   isDevMode,
-  enrollmentManagementEnabled,
+  setShowJoinModal,
 }: {
   studentCourses: StudentHomePageCourse[];
   hasInstructorCourses: boolean;
@@ -32,7 +31,7 @@ export function StudentCoursesCard({
   csrfToken: string;
   urlPrefix: string;
   isDevMode: boolean;
-  enrollmentManagementEnabled: boolean;
+  setShowJoinModal: (value: boolean) => void;
 }) {
   const heading = hasInstructorCourses ? 'Courses with student access' : 'Courses';
   const [rejectingCourseId, setRejectingCourseId] = useState<string | null>(null);
@@ -45,28 +44,20 @@ export function StudentCoursesCard({
     (ci) => ci.enrollment.status === 'joined',
   );
 
-  const [showEnrollmentCodeModal, setShowEnrollmentCodeModal] = useState(false);
-
   return (
     <div className="card mb-4">
       <div className="card-header bg-primary text-white d-flex align-items-center">
         <h2>{heading}</h2>
-        {canAddCourses &&
-          (enrollmentManagementEnabled ? (
-            <button
-              type="button"
-              className="btn btn-light btn-sm ms-auto"
-              onClick={() => setShowEnrollmentCodeModal(true)}
-            >
-              <i className="bi bi-plus-circle me-sm-1" aria-hidden="true" />
-              <span className="d-none d-sm-inline">Add course</span>
-            </button>
-          ) : (
-            <a href={`${urlPrefix}/enroll`} className="btn btn-light btn-sm ms-auto">
-              <i className="bi bi-plus-circle me-sm-1" aria-hidden="true" />
-              <span className="d-none d-sm-inline">Add course</span>
-            </a>
-          ))}
+        {canAddCourses && (
+          <button
+            type="button"
+            className="btn btn-light btn-sm ms-auto"
+            onClick={() => setShowJoinModal(true)}
+          >
+            <i className="bi bi-plus-circle me-sm-1" aria-hidden="true" />
+            <span className="d-none d-sm-inline">Add course</span>
+          </button>
+        )}
       </div>
 
       {studentCourses.length === 0 ? (
@@ -150,12 +141,6 @@ export function StudentCoursesCard({
           </table>
         </div>
       )}
-
-      <EnrollmentCodeForm
-        style="modal"
-        show={showEnrollmentCodeModal}
-        onHide={() => setShowEnrollmentCodeModal(false)}
-      />
 
       <Modal
         show={rejectingCourseId !== null}

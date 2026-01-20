@@ -32,7 +32,6 @@ interface StudentDetailProps {
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit?: boolean;
-  enrollmentManagementEnabled: boolean;
   hasModernPublishing: boolean;
 }
 
@@ -44,7 +43,6 @@ export function InstructorStudentDetail({
   courseInstanceUrl,
   csrfToken,
   hasCourseInstancePermissionEdit,
-  enrollmentManagementEnabled,
   hasModernPublishing,
 }: StudentDetailProps) {
   const { user, course_instance } = student;
@@ -69,13 +67,12 @@ export function InstructorStudentDetail({
   };
 
   return (
-    <TimezoneContext.Provider value={course_instance.display_timezone}>
+    <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}
-        enrollmentManagementEnabled={enrollmentManagementEnabled}
         hasModernPublishing={hasModernPublishing}
       />
 
@@ -102,7 +99,7 @@ export function InstructorStudentDetail({
         </div>
         <StudentAuditEventsTable events={auditEvents} />
       </div>
-    </TimezoneContext.Provider>
+    </TimezoneContext>
   );
 }
 

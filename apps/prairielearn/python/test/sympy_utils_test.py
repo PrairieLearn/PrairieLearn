@@ -194,6 +194,42 @@ class TestSympy:
             a_sub, ["i", "j"], allow_complex=False
         )
 
+    @pytest.mark.parametrize(
+        ("a_sub", "variables", "allow_complex", "expected", "expected_error"),
+        [
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/13661 for additional details.
+            ("3j", ["j"], False, 3 * sympy.Symbol("j"), None),
+            ("3J", ["J"], False, 3 * sympy.Symbol("J"), None),  # Uppercase
+            (
+                "3j",
+                ["n"],
+                True,
+                3 * sympy.I,
+                None,
+            ),  # Ensure complex numbers still work when allowed
+            ("3j", ["x"], False, None, psu.HasInvalidSymbolError),  # j not declared
+            ("3e5j", ["j"], False, None, psu.HasFloatError),  # Scientific notation
+        ],
+    )
+    def test_j_complex_literal_handling(
+        self,
+        a_sub: str,
+        variables: list[str],
+        allow_complex: bool,  # noqa: FBT001
+        expected: sympy.Expr | None,
+        expected_error: type[psu.BaseSympyError] | None,
+    ) -> None:
+        if expected_error is not None:
+            with pytest.raises(expected_error):
+                psu.convert_string_to_sympy(
+                    a_sub, variables, allow_complex=allow_complex
+                )
+        else:
+            result = psu.convert_string_to_sympy(
+                a_sub, variables, allow_complex=allow_complex
+            )
+            assert result == expected
+
     def test_string_conversion_complex_conflict(self) -> None:
         """
         Check for no issues in the case where complex is not
@@ -371,7 +407,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
     def test_escape_error(self, a_sub: str) -> None:
-        with pytest.raises(psu.HasEscapeError):
+        with pytest.raises(psu.HasParseError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
@@ -389,7 +425,7 @@ class TestExceptions:
             (INVALID_FUNCTION_CASES, "invalid", ()),
             (INVALID_VARIABLE_CASES, "invalid symbol", ()),
             (INVALID_PARSE_CASES, "syntax error", ()),
-            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
+            (INVALID_ESCAPE_CASES, "syntax error", ()),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
             # TODO: not handled
             # (COMPLEX_CASES, "must be expressed as integers", ("i",)),

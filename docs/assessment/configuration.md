@@ -660,13 +660,23 @@ Access control options can also be used to control the open/close dates of asses
 
 ## Adding text and links to assessments
 
-You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The following mustache template variables are available:
+
+| Variable                       | Description                                    |
+| ------------------------------ | ---------------------------------------------- |
+| `client_files_course`          | URL path to course-level client files          |
+| `client_files_course_instance` | URL path to course instance-level client files |
+| `client_files_assessment`      | URL path to assessment-level client files      |
 
 ```json title="infoAssessment.json"
 {
-  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\">Formula sheet</a>"
 }
 ```
+
+!!! note "Legacy syntax"
+
+    For backward compatibility, `camelCase` names with EJS syntax (`<%= clientFilesCourse %>`, `<%= clientFilesCourseInstance %>`, `<%= clientFilesAssessment %>`) are supported. Prefer the use of the `snake_case` mustache template variables (`{{ client_files_course }}`, `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`) instead.
 
 See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for details about making files available to users.
 
@@ -810,7 +820,7 @@ For example:
 
 Some instructors may wish to publish links that point students directly to their assessments on PrairieLearn. These links may be published in course web pages, LMS systems like Compass or Canvas, or sent to students via email or other messaging platforms. Instructors should note that the URL listed on the browser points to the instructor view of an assessment, which is typically not accessible to students.
 
-The appropriate link to provide to students can be found by opening the "Settings" tab of the Assessment. This page includes, among other useful information, a Student Link that can be provided to students. This link points students directly to the specific assessment, enrolling them automatically in the course if they are not yet enrolled.
+The "Settings" tab of each assessment contains such a link that can be provided directly to students. This link brings students directly to that assessment, and if self-enrollment is enabled, it will enroll them automatically in the course if they are not yet enrolled.
 
 ## Client fingerprint tracking and changes
 
