@@ -1,5 +1,7 @@
 import { z } from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
@@ -18,14 +20,25 @@ export const UserDetailSchema = z.object({
 
 export type UserDetail = z.infer<typeof UserDetailSchema>;
 
+export const StudentGroupInfoSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  color: z.string().nullable(),
+});
+export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+
 export function OverviewCard({
   student,
+  studentGroups,
+  availableStudentGroups,
   courseInstanceUrl,
   csrfToken,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
+  studentGroups: StudentGroupInfo[];
+  availableStudentGroups: StudentGroupInfo[];
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit: boolean;
@@ -159,6 +172,76 @@ export function OverviewCard({
           <div className="d-flex">
             <div className="fw-bold me-1">First joined:</div>
             <FriendlyDate date={enrollment.first_joined_at} />
+          </div>
+        )}
+
+        {/* Student Groups Section */}
+        {(studentGroups.length > 0 || availableStudentGroups.length > 0) && (
+          <div className="mt-3">
+            <div className="fw-bold mb-2">Student groups:</div>
+            <div className="d-flex flex-wrap align-items-center gap-2">
+              {studentGroups.map((group) => (
+                <span
+                  key={group.id}
+                  className="badge d-inline-flex align-items-center"
+                  style={{ backgroundColor: `var(--color-${group.color ?? 'gray1'})` }}
+                >
+                  {group.name}
+                  {hasCourseInstancePermissionEdit && (
+                    <form method="POST" className="d-inline ms-1">
+                      <input type="hidden" name="__csrf_token" value={csrfToken} />
+                      <input type="hidden" name="__action" value="remove_from_group" />
+                      <input type="hidden" name="student_group_id" value={group.id} />
+                      <button
+                        type="submit"
+                        className="btn-close btn-close-white"
+                        style={{ fontSize: '0.6rem' }}
+                        aria-label={`Remove from ${group.name}`}
+                      />
+                    </form>
+                  )}
+                </span>
+              ))}
+              {studentGroups.length === 0 && (
+                <span className="text-muted fst-italic">No groups</span>
+              )}
+              {hasCourseInstancePermissionEdit && availableStudentGroups.length > 0 && (
+                <div className="dropdown">
+                  <button
+                    className="btn btn-sm btn-outline-secondary dropdown-toggle"
+                    type="button"
+                    data-bs-toggle="dropdown"
+                    aria-expanded="false"
+                  >
+                    <i className="fas fa-plus me-1" />
+                    Add to group
+                  </button>
+                  <ul className="dropdown-menu">
+                    {availableStudentGroups
+                      .filter((g) => !studentGroups.some((sg) => sg.id === g.id))
+                      .map((group) => (
+                        <li key={group.id}>
+                          <form method="POST">
+                            <input type="hidden" name="__csrf_token" value={csrfToken} />
+                            <input type="hidden" name="__action" value="add_to_group" />
+                            <input type="hidden" name="student_group_id" value={group.id} />
+                            <button type="submit" className="dropdown-item">
+                              {group.name}
+                            </button>
+                          </form>
+                        </li>
+                      ))}
+                    {availableStudentGroups.filter(
+                      (g) => !studentGroups.some((sg) => sg.id === g.id),
+                    ).length === 0 && (
+                      <li>
+                        <span className="dropdown-item text-muted">Already in all groups</span>
+                      </li>
+                    )}
+                  </ul>
+                </div>
+              )}
+            </div>
           </div>
         )}
       </div>

@@ -25,6 +25,7 @@ import { z } from 'zod';
 
 import {
   CategoricalColumnFilter,
+  MultiSelectColumnFilter,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
   NuqsAdapter,
@@ -46,6 +47,7 @@ import {
   type CourseAssessmentRow,
   type GradebookRow,
   GradebookRowSchema,
+  type GradebookStudentGroup,
 } from '../instructorGradebook.types.js';
 
 import { EditScoreButton } from './EditScoreModal.js';
@@ -78,12 +80,20 @@ function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[]
   return leafIds;
 }
 
-type ColumnId = 'uid' | 'user_name' | 'uin' | 'role' | 'enrollment_status' | `a${number}`;
+type ColumnId =
+  | 'uid'
+  | 'user_name'
+  | 'uin'
+  | 'role'
+  | 'enrollment_status'
+  | 'student_groups'
+  | `a${number}`;
 
 interface GradebookTableProps {
   csrfToken: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
+  studentGroups: GradebookStudentGroup[];
   urlPrefix: string;
   courseInstanceId: string;
   filenameBase: string;
@@ -93,6 +103,7 @@ function GradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows: initialGradebookRows,
+  studentGroups,
   urlPrefix,
   courseInstanceId,
   filenameBase,
@@ -114,6 +125,10 @@ function GradebookTable({
   const [statusFilter, setStatusFilter] = useQueryState<EnumEnrollmentStatus[]>(
     'status',
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
+  );
+  const [studentGroupsFilter, setStudentGroupsFilter] = useQueryState<string[]>(
+    'student_groups',
+    parseAsArrayOf(parseAsString).withDefault([]),
   );
 
   const assessmentIds = useMemo(() => {
@@ -143,6 +158,7 @@ function GradebookTable({
       role: (_columnId: string, value: GradebookRow['role'][]) => setRoleFilter(value),
       enrollment_status: (_columnId: string, value: EnumEnrollmentStatus[]) =>
         setStatusFilter(value),
+      student_groups: (_columnId: string, value: string[]) => setStudentGroupsFilter(value),
       ...Object.fromEntries(
         assessmentIds.map((assessmentId) => [
           `a${assessmentId}`,
@@ -157,7 +173,13 @@ function GradebookTable({
         ]),
       ),
     };
-  }, [assessmentIds, setAssessmentFilterValues, setRoleFilter, setStatusFilter]);
+  }, [
+    assessmentIds,
+    setAssessmentFilterValues,
+    setRoleFilter,
+    setStatusFilter,
+    setStudentGroupsFilter,
+  ]);
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters = useMemo<ColumnFiltersState>(() => {
@@ -173,12 +195,17 @@ function GradebookTable({
       filters.push({ id: 'role', value: roleFilter });
     }
 
+    // Apply student groups filter
+    if (studentGroupsFilter.length > 0) {
+      filters.push({ id: 'student_groups', value: studentGroupsFilter });
+    }
+
     Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
       filters.push({ id: columnId, value: filterValue });
     });
 
     return filters;
-  }, [statusFilter, roleFilter, assessmentFilterValues]);
+  }, [statusFilter, roleFilter, studentGroupsFilter, assessmentFilterValues]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -296,6 +323,44 @@ function GradebookTable({
         },
       }),
 
+      // Student Groups column
+      columnHelper.accessor('student_groups', {
+        id: 'student_groups',
+        meta: {
+          label: 'Groups',
+        },
+        header: () => (
+          <span className="d-inline-flex align-items-center gap-1">
+            <span>Groups</span>
+            <i className="fas fa-users" />
+          </span>
+        ),
+        cell: (info) => {
+          const groups = info.getValue();
+          if (groups.length === 0) return '—';
+          return (
+            <div className="d-flex flex-wrap gap-1">
+              {groups.map((group) => (
+                <span
+                  key={group.id}
+                  className="badge"
+                  style={{ backgroundColor: `var(--color-${group.color ?? 'gray1'})` }}
+                >
+                  {group.name}
+                </span>
+              ))}
+            </div>
+          );
+        },
+        filterFn: (row, columnId, filterValues: string[]) => {
+          if (filterValues.length === 0) return true;
+          const groupIds = new Set(
+            row.getValue<GradebookRow['student_groups']>(columnId).map((g) => g.id),
+          );
+          return filterValues.some((id) => groupIds.has(id));
+        },
+      }),
+
       // Dynamic assessment columns
       ...Array.from(assessmentsBySet.groups.entries()).map(([setId, assessments]) =>
         columnHelper.group({
@@ -366,15 +431,16 @@ function GradebookTable({
   // Extract only leaf column IDs (exclude group columns)
   const allColumnIds = extractLeafColumnIds(columns);
 
-  // Set default visibility: hide name, UIN, role, and enrollment status columns by default
-  const defaultColumnVisibility = Object.fromEntries(
-    allColumnIds.map((id) => {
-      if (['uin', 'role', 'enrollment_status'].includes(id)) {
-        return [id, false];
-      }
-      return [id, true];
-    }),
-  );
+  // Set default visibility: hide UIN, role, enrollment status columns by default.
+  // Show student_groups column by default only if there are student groups.
+  const defaultColumnVisibility = useMemo(() => {
+    const hiddenByDefault = new Set(['uin', 'role', 'enrollment_status']);
+    // Hide student_groups column if there are no groups
+    if (studentGroups.length === 0) {
+      hiddenByDefault.add('student_groups');
+    }
+    return Object.fromEntries(allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]));
+  }, [allColumnIds, studentGroups.length]);
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -407,6 +473,8 @@ function GradebookTable({
       };
     });
 
+    const groupIds = studentGroups.map((g) => g.id);
+
     return {
       role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
         <CategoricalColumnFilter
@@ -422,9 +490,24 @@ function GradebookTable({
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
+      student_groups: ({
+        header,
+      }: {
+        header: Header<GradebookRow, GradebookRow['student_groups']>;
+      }) => (
+        <MultiSelectColumnFilter
+          column={header.column as any}
+          allColumnValues={groupIds as any}
+          renderValueLabel={({ value }) => {
+            const group = studentGroups.find((g) => g.id === String(value));
+            if (!group) return <span>{String(value)}</span>;
+            return <span>{group.name}</span>;
+          }}
+        />
+      ),
       ...assessmentFilters,
     };
-  }, [courseAssessments]);
+  }, [courseAssessments, studentGroups]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -478,6 +561,13 @@ function GradebookTable({
               { name: 'UIN', value: row.uin },
               { name: 'Role', value: row.role },
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
+              {
+                name: 'Groups',
+                value:
+                  row.student_groups.length > 0
+                    ? row.student_groups.map((g) => g.name).join(', ')
+                    : null,
+              },
             ];
             for (const assessment of courseAssessments) {
               data.push({
@@ -525,6 +615,7 @@ export function InstructorGradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows,
+  studentGroups,
   urlPrefix,
   filenameBase,
   search,
@@ -543,6 +634,7 @@ export function InstructorGradebookTable({
           csrfToken={csrfToken}
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
+          studentGroups={studentGroups}
           urlPrefix={urlPrefix}
           filenameBase={filenameBase}
           courseInstanceId={courseInstanceId}

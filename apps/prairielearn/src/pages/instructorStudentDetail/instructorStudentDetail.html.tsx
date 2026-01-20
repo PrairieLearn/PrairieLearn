@@ -1,5 +1,7 @@
 import z from 'zod';
 
+import { IdSchema } from '@prairielearn/zod';
+
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
 import {
@@ -24,10 +26,19 @@ export const UserDetailSchema = z.object({
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
+export const StudentGroupInfoSchema = z.object({
+  id: IdSchema,
+  name: z.string(),
+  color: z.string().nullable(),
+});
+export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
+  studentGroups: StudentGroupInfo[];
+  availableStudentGroups: StudentGroupInfo[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
@@ -39,6 +50,8 @@ export function InstructorStudentDetail({
   auditEvents,
   gradebookRows,
   student,
+  studentGroups,
+  availableStudentGroups,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -70,6 +83,8 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
+        studentGroups={studentGroups}
+        availableStudentGroups={availableStudentGroups}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}

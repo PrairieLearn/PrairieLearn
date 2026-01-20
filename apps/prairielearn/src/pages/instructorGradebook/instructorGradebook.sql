@@ -151,7 +151,22 @@ SELECT
   u.user_name,
   u.role,
   to_jsonb(e.*) AS enrollment,
-  COALESCE(s.scores, '{}') AS scores
+  COALESCE(s.scores, '{}') AS scores,
+  COALESCE(
+    (
+      SELECT
+        json_agg(
+          json_build_object('id', sg.id, 'name', sg.name, 'color', sg.color)
+        )
+      FROM
+        student_group_enrollments sge
+        JOIN student_groups sg ON sg.id = sge.student_group_id
+          AND sg.deleted_at IS NULL
+      WHERE
+        sge.enrollment_id = e.id
+    ),
+    '[]'::json
+  ) AS student_groups
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (
@@ -174,4 +189,17 @@ FROM
   LEFT JOIN teams AS t ON (t.id = ai.team_id)
   LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
 WHERE
-  ai.id = $assessment_instance_id
+  ai.id = $assessment_instance_id;
+
+-- BLOCK course_student_groups
+SELECT
+  id,
+  name,
+  color
+FROM
+  student_groups
+WHERE
+  course_instance_id = $course_instance_id
+  AND deleted_at IS NULL
+ORDER BY
+  name

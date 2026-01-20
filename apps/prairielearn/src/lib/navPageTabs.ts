@@ -56,6 +56,20 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) => resLocals.billing_enabled,
       },
     ],
+    students: [
+      {
+        activeSubPage: 'students',
+        urlSuffix: '/instance_admin/students',
+        iconClasses: 'fas fa-users-line',
+        tabLabel: 'Students',
+      },
+      {
+        activeSubPage: 'student_groups',
+        urlSuffix: '/instance_admin/students/groups',
+        iconClasses: 'fas fa-users',
+        tabLabel: 'Student groups',
+      },
+    ],
     course_admin: [
       {
         activeSubPage: 'settings',

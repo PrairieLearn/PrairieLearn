@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { ColorJsonSchema } from './infoCourse.js';
 
 const AccessRuleJsonSchema = z
   .object({
@@ -48,6 +49,16 @@ const PublishingJsonSchema = z.object({
 });
 
 export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
+
+const StudentGroupJsonSchema = z
+  .object({
+    name: z.string().min(1).max(255).describe('The name of the student group.'),
+    color: ColorJsonSchema.describe('The color to display for this group.'),
+  })
+  .strict()
+  .describe('A student group definition.');
+
+export type StudentGroupJson = z.infer<typeof StudentGroupJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -120,6 +131,10 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
+    studentGroups: z
+      .array(StudentGroupJsonSchema)
+      .describe('Student group definitions for this course instance.')
+      .optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');

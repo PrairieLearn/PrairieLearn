@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
+import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
@@ -18,6 +19,13 @@ import {
   selectEnrollmentById,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import {
+  addEnrollmentToStudentGroup,
+  removeEnrollmentFromStudentGroup,
+  selectStudentGroupById,
+  selectStudentGroupsByCourseInstance,
+  selectStudentGroupsForEnrollment,
+} from '../../models/student-group.js';
 import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
@@ -57,15 +65,31 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const gradebookRows = student.user?.id
-      ? await getGradebookRows({
-          course_instance_id: courseInstance.id,
-          user_id: student.user.id,
-          authz_data: res.locals.authz_data,
-          req_date: res.locals.req_date,
-          auth: 'instructor',
-        })
-      : [];
+    const [gradebookRows, studentGroupsForEnrollment, allStudentGroups] = await Promise.all([
+      student.user?.id
+        ? getGradebookRows({
+            course_instance_id: courseInstance.id,
+            user_id: student.user.id,
+            authz_data: res.locals.authz_data,
+            req_date: res.locals.req_date,
+            auth: 'instructor',
+          })
+        : [],
+      selectStudentGroupsForEnrollment(req.params.enrollment_id),
+      selectStudentGroupsByCourseInstance(courseInstance.id),
+    ]);
+
+    // Transform to simple format
+    const studentGroups = studentGroupsForEnrollment.map((g) => ({
+      id: g.id,
+      name: g.name,
+      color: g.color,
+    }));
+    const availableStudentGroups = allStudentGroups.map((g) => ({
+      id: g.id,
+      name: g.name,
+      color: g.color,
+    }));
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -95,11 +119,13 @@ router.get(
               auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
+              studentGroups={studentGroups}
+              availableStudentGroups={availableStudentGroups}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
               csrfToken={pageContext.__csrf_token}
               hasCourseInstancePermissionEdit={
-                pageContext.authz_data.has_course_instance_permission_edit
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
               }
               hasModernPublishing={courseInstance.modern_publishing}
             />
@@ -196,6 +222,38 @@ router.post(
           pendingUid,
           authzData,
           requiredRole: ['Student Data Editor'],
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
+      case 'add_to_group': {
+        const { student_group_id } = z.object({ student_group_id: z.string() }).parse(req.body);
+
+        // Verify the group belongs to this course instance
+        const group = await selectStudentGroupById(student_group_id);
+        if (group.course_instance_id !== courseInstance.id) {
+          throw new HttpStatusError(403, 'Group does not belong to this course instance');
+        }
+
+        await addEnrollmentToStudentGroup({
+          enrollment_id,
+          student_group_id,
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
+      case 'remove_from_group': {
+        const { student_group_id } = z.object({ student_group_id: z.string() }).parse(req.body);
+
+        // Verify the group belongs to this course instance
+        const group = await selectStudentGroupById(student_group_id);
+        if (group.course_instance_id !== courseInstance.id) {
+          throw new HttpStatusError(403, 'Group does not belong to this course instance');
+        }
+
+        await removeEnrollmentFromStudentGroup({
+          enrollment_id,
+          student_group_id,
         });
         res.redirect(req.originalUrl);
         break;

@@ -18,6 +18,13 @@ import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import {
+  addEnrollmentToStudentGroup,
+  createStudentGroupAndAddEnrollments,
+  removeEnrollmentFromStudentGroup,
+  selectStudentGroupsByCourseInstance,
+  verifyGroupBelongsToCourseInstance,
+} from '../../models/student-group.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -102,99 +109,214 @@ router.post(
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
     }
 
-    const BodySchema = z.object({
-      uids: UniqueUidsFromStringSchema(1000),
-      __action: z.literal('invite_uids'),
-    });
-    const body = BodySchema.parse(req.body);
+    if (req.body.__action === 'invite_by_uid') {
+      const BodySchema = z.object({
+        uid: z.string().min(1),
+        __action: z.literal('invite_by_uid'),
+      });
+      const body = BodySchema.parse(req.body);
 
-    const serverJob = await createServerJob({
-      type: 'invite_students',
-      description: 'Invite students to course instance',
-      userId,
-      authnUserId,
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
-    });
+      const user = await selectOptionalUserByUid(body.uid);
 
-    serverJob.executeInBackground(async (job) => {
-      const counts = {
-        success: 0,
-        instructor: 0,
-        alreadyEnrolled: 0,
-        alreadyBlocked: 0,
-        alreadyInvited: 0,
-      };
+      if (user) {
+        const isInstructor = await callRow(
+          'users_is_instructor_in_course_instance',
+          [user.id, courseInstance.id],
+          z.boolean(),
+        );
 
-      for (const uid of body.uids) {
-        const user = await selectOptionalUserByUid(uid);
-        if (user) {
-          // Check if user is an instructor
-          const isInstructor = await callRow(
-            'users_is_instructor_in_course_instance',
-            [user.id, courseInstance.id],
-            z.boolean(),
-          );
-          if (isInstructor) {
-            job.info(`${uid}: Skipped (instructor)`);
-            counts.instructor++;
-            continue;
-          }
+        if (isInstructor) {
+          throw new HttpStatusError(400, 'The user is an instructor');
+        }
+      }
+
+      // Try to find an existing enrollment so we can error gracefully.
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData: res.locals.authz_data,
+      });
+
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'joined') {
+          throw new HttpStatusError(400, 'The user is already enrolled');
         }
 
-        const existingEnrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Viewer'],
-          authzData,
-        });
+        if (existingEnrollment.status === 'invited') {
+          throw new HttpStatusError(400, 'The user has an existing invitation');
+        }
+      }
 
-        if (existingEnrollment) {
-          if (existingEnrollment.status === 'joined') {
-            job.info(`${uid}: Skipped (already enrolled)`);
-            counts.alreadyEnrolled++;
-            continue;
+      const enrollment = await inviteStudentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Editor'],
+        authzData: res.locals.authz_data,
+      });
+
+      const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+
+      res.json({ data: staffEnrollment });
+    } else if (req.body.__action === 'batch_add_to_group') {
+      const BodySchema = z.object({
+        __action: z.literal('batch_add_to_group'),
+        enrollment_ids: z.array(z.string()),
+        student_group_id: z.string(),
+      });
+      const body = BodySchema.parse(req.body);
+
+      // Verify the group belongs to this course instance
+      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
+
+      // Add each enrollment to the group
+      for (const enrollmentId of body.enrollment_ids) {
+        await addEnrollmentToStudentGroup({
+          enrollment_id: enrollmentId,
+          student_group_id: body.student_group_id,
+        });
+      }
+
+      res.json({ success: true });
+    } else if (req.body.__action === 'create_group_and_add_students') {
+      const BodySchema = z.object({
+        __action: z.literal('create_group_and_add_students'),
+        enrollment_ids: z.array(z.string()),
+        name: z.string().min(1, 'Group name is required').max(255),
+      });
+      const body = BodySchema.parse(req.body);
+
+      try {
+        await createStudentGroupAndAddEnrollments({
+          course_instance_id: courseInstance.id,
+          name: body.name,
+          enrollment_ids: body.enrollment_ids,
+        });
+        res.json({ success: true });
+      } catch (err: any) {
+        if (err instanceof HttpStatusError && err.status === 400) {
+          res.status(400).json({ error: err.message });
+        } else {
+          throw err;
+        }
+      }
+    } else if (req.body.__action === 'batch_remove_from_group') {
+      const BodySchema = z.object({
+        __action: z.literal('batch_remove_from_group'),
+        enrollment_ids: z.array(z.string()),
+        student_group_id: z.string(),
+      });
+      const body = BodySchema.parse(req.body);
+
+      // Verify the group belongs to this course instance
+      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
+
+      // Remove each enrollment from the group
+      for (const enrollmentId of body.enrollment_ids) {
+        await removeEnrollmentFromStudentGroup({
+          enrollment_id: enrollmentId,
+          student_group_id: body.student_group_id,
+        });
+      }
+
+      res.json({ success: true });
+    } else if (req.body.__action === 'invite_uids') {
+      const BodySchema = z.object({
+        uids: UniqueUidsFromStringSchema(1000),
+        __action: z.literal('invite_uids'),
+      });
+      const body = BodySchema.parse(req.body);
+
+      const serverJob = await createServerJob({
+        type: 'invite_students',
+        description: 'Invite students to course instance',
+        userId,
+        authnUserId,
+        courseId: course.id,
+        courseInstanceId: courseInstance.id,
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        const counts = {
+          success: 0,
+          instructor: 0,
+          alreadyEnrolled: 0,
+          alreadyBlocked: 0,
+          alreadyInvited: 0,
+        };
+
+        for (const uid of body.uids) {
+          const user = await selectOptionalUserByUid(uid);
+          if (user) {
+            // Check if user is an instructor
+            const isInstructor = await callRow(
+              'users_is_instructor_in_course_instance',
+              [user.id, courseInstance.id],
+              z.boolean(),
+            );
+            if (isInstructor) {
+              job.info(`${uid}: Skipped (instructor)`);
+              counts.instructor++;
+              continue;
+            }
           }
-          if (existingEnrollment.status === 'invited') {
-            job.info(`${uid}: Skipped (already invited)`);
-            counts.alreadyInvited++;
-            continue;
+
+          const existingEnrollment = await selectOptionalEnrollmentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Viewer'],
+            authzData,
+          });
+
+          if (existingEnrollment) {
+            if (existingEnrollment.status === 'joined') {
+              job.info(`${uid}: Skipped (already enrolled)`);
+              counts.alreadyEnrolled++;
+              continue;
+            }
+            if (existingEnrollment.status === 'invited') {
+              job.info(`${uid}: Skipped (already invited)`);
+              counts.alreadyInvited++;
+              continue;
+            }
+            if (existingEnrollment.status === 'blocked') {
+              job.info(`${uid}: Skipped (blocked)`);
+              counts.alreadyBlocked++;
+              continue;
+            }
           }
-          if (existingEnrollment.status === 'blocked') {
-            job.info(`${uid}: Skipped (blocked)`);
-            counts.alreadyBlocked++;
-            continue;
-          }
+
+          await inviteStudentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Editor'],
+            authzData,
+          });
+          job.info(`${uid}: Invited`);
+          counts.success++;
         }
 
-        await inviteStudentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Editor'],
-          authzData,
-        });
-        job.info(`${uid}: Invited`);
-        counts.success++;
-      }
+        // Log summary at the end
+        job.info('\nSummary:');
+        job.info(`  Successfully invited: ${counts.success}`);
+        if (counts.alreadyEnrolled > 0) {
+          job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+        }
+        if (counts.alreadyInvited > 0) {
+          job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+        }
+        if (counts.alreadyBlocked > 0) {
+          job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
+        }
+        if (counts.instructor > 0) {
+          job.info(`  Skipped (instructor): ${counts.instructor}`);
+        }
+      });
 
-      // Log summary at the end
-      job.info('\nSummary:');
-      job.info(`  Successfully invited: ${counts.success}`);
-      if (counts.alreadyEnrolled > 0) {
-        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
-      }
-      if (counts.alreadyInvited > 0) {
-        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
-      }
-      if (counts.alreadyBlocked > 0) {
-        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
-      }
-      if (counts.instructor > 0) {
-        job.info(`  Skipped (instructor): ${counts.instructor}`);
-      }
-    });
-
-    res.json({ job_sequence_id: serverJob.jobSequenceId });
+      res.json({ job_sequence_id: serverJob.jobSequenceId });
+    } else {
+      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 
@@ -236,11 +358,17 @@ router.get(
       return;
     }
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const [students, allStudentGroups] = await Promise.all([
+      queryRows(
+        sql.select_users_and_enrollments_for_course_instance,
+        { course_instance_id: courseInstance.id },
+        StudentRowSchema,
+      ),
+      selectStudentGroupsByCourseInstance(courseInstance.id),
+    ]);
+
+    // Transform student groups to match the expected format
+    const studentGroups = allStudentGroups.map((g) => ({ id: g.id, name: g.name, color: g.color }));
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -272,6 +400,7 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentGroups={studentGroups}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
