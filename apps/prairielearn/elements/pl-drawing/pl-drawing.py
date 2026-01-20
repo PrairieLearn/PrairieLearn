@@ -403,8 +403,6 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     load_extensions(data)
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-
-    allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     raw_submitted_answer = data["submitted_answers"].get(name)
 
     # A blank submission could be `None`
