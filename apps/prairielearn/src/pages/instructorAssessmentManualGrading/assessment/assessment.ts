@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import { stringify } from '@prairielearn/csv';
@@ -22,8 +21,8 @@ import { generateAssessmentAiGradingStats } from '../../../ee/lib/ai-grading/ai-
 import { deleteAiGradingJobs } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { selectAssessmentQuestions } from '../../../lib/assessment-question.js';
-import { type Assessment } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -38,7 +37,7 @@ router.get(
     oneOfPermissions: ['has_course_instance_permission_view'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const questions = await queryRows(
       sql.select_questions_manual_grading,
       {
@@ -68,7 +67,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a student data editor)');
     }
@@ -157,7 +156,7 @@ router.post(
         throw new HttpStatusError(400, 'Invalid AI grading model specified');
       }
 
-      const assessment = res.locals.assessment as Assessment;
+      const assessment = res.locals.assessment;
 
       const assessmentQuestionRows = await selectAssessmentQuestions({
         assessment_id: assessment.id,
@@ -200,7 +199,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const stats = await generateAssessmentAiGradingStats(res.locals.assessment as Assessment);
+      const stats = await generateAssessmentAiGradingStats(res.locals.assessment);
       res.attachment('assessment_statistics.csv');
       stringify([...stats.perQuestion, stats.total], {
         header: true,
@@ -226,7 +225,7 @@ router.post(
         throw new HttpStatusError(403, 'Access denied (feature not available)');
       }
 
-      const assessment = res.locals.assessment as Assessment;
+      const assessment = res.locals.assessment;
       const assessmentQuestionRows = await selectAssessmentQuestions({
         assessment_id: assessment.id,
       });

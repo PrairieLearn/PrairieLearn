@@ -1,0 +1,35 @@
+{
+  "strictness": 2,
+  "commentTypes": ["syntax", "logic", "style"],
+  "triggerOnUpdates": true,
+
+  "excludeAuthors": ["dependabot[bot]", "dependabot-preview[bot]", "github-actions[bot]"],
+  "fileChangeLimit": 100,
+  "ignorePatterns": "greptile.json\n*.lock",
+
+  "shouldUpdateDescription": false,
+  "updateExistingSummaryComment": true,
+  "updateSummaryOnly": false,
+  "fixWithAI": true,
+  "hideFooter": true,
+
+  "summarySection": {
+    "included": false
+  },
+  "issuesTableSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "confidenceScoreSection": {
+    "included": true,
+    "collapsible": true,
+    "defaultOpen": false
+  },
+  "sequenceDiagramSection": {
+    "included": false
+  },
+
+  "statusCheck": true,
+  "statusCommentsEnabled": false
+}

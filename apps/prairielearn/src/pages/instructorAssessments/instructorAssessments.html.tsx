@@ -12,7 +12,7 @@ import { ScorebarHtml } from '../../components/Scorebar.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -26,7 +26,7 @@ export function InstructorAssessments({
   assessmentModules,
   assessmentsGroupBy,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
   csvFilename: string;

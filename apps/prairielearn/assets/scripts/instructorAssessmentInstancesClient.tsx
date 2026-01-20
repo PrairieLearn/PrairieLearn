@@ -1,5 +1,5 @@
 import { on } from 'delegated-events';
-import { render } from 'preact';
+import { createRoot } from 'react-dom/client';
 
 import { onDocumentReady, templateFromAttributes } from '@prairielearn/browser-utils';
 import { escapeHtml, html } from '@prairielearn/html';
@@ -403,9 +403,8 @@ onDocumentReady(() => {
 
     const div = document.createElement('div');
 
-    render(
+    createRoot(div).render(
       <TimeLimitEditForm row={$(this).data('row')} csrfToken={csrfToken} timezone={timezone} />,
-      div,
     );
 
     return div;

@@ -6,14 +6,14 @@ import type {
 } from '@prairielearn/migrations';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function AdministratorBatchedMigrations({
   batchedMigrations,
   resLocals,
 }: {
   batchedMigrations: BatchedMigrationRow[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   const hasBatchedMigrations = batchedMigrations.length > 0;
 
@@ -75,7 +75,7 @@ export function AdministratorBatchedMigration({
   batchedMigration: BatchedMigrationRow;
   recentSucceededJobs: BatchedMigrationJobRow[];
   recentFailedJobs: BatchedMigrationJobRow[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,

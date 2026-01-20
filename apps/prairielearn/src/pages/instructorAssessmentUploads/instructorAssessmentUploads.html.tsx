@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { config } from '../../lib/config.js';
 import { JobSequenceSchema, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const UploadJobSequenceSchema = z.object({
   job_sequence: JobSequenceSchema,
@@ -20,7 +20,7 @@ export function InstructorAssessmentUploads({
   resLocals,
   uploadJobSequences,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   uploadJobSequences: UploadJobSequence[];
 }) {
   return PageLayout({
@@ -72,7 +72,7 @@ function AssessmentUploadCard({
 }: {
   teamWork: boolean;
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
   authzHasPermissionEdit: boolean;
   uploadJobSequences: UploadJobSequence[];
   urlPrefix: string;

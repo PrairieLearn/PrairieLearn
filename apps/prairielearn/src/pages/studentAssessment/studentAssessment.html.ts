@@ -4,7 +4,7 @@ import { html, unsafeHtml } from '@prairielearn/html';
 import { PageLayout } from '../../components/PageLayout.js';
 import { TeamWorkInfoContainer } from '../../components/TeamWorkInfoContainer.js';
 import { type Assessment, type TeamConfig, type User } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type TeamInfo } from '../../lib/teams.js';
 
 export function StudentAssessment({
@@ -14,7 +14,7 @@ export function StudentAssessment({
   userCanAssignRoles,
   customHonorCode,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   teamConfig?: TeamConfig;
   teamInfo?: TeamInfo | null;
   userCanAssignRoles?: boolean;
@@ -168,7 +168,7 @@ function StudentTeamControls({
   userCanAssignRoles = false,
   resLocals,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   teamConfig?: TeamConfig;
   teamInfo?: TeamInfo | null;
   userCanAssignRoles?: boolean;

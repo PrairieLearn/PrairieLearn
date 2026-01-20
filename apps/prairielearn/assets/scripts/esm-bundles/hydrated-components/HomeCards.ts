@@ -1,4 +1,4 @@
-import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
+import { registerHydratedComponent } from '@prairielearn/react/hydrated-component';
 
 import { HomeCards } from '../../../../src/pages/home/components/HomeCards.js';
 

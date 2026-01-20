@@ -7,7 +7,7 @@ import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../lib/assets.js';
 import { type TeamConfig, UserSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const TeamUsersRowSchema = z.object({
   team_id: IdSchema,
@@ -28,7 +28,7 @@ export function InstructorAssessmentTeams({
   teamConfigInfo?: TeamConfig;
   teams?: TeamUsersRow[];
   notAssigned?: string[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
 }) {
   return PageLayout({
     resLocals,
@@ -500,7 +500,7 @@ function DeleteAllTeamsModal({
 }: {
   csrfToken: string;
   assessmentSetName: string;
-  assessmentNumber: number;
+  assessmentNumber: string;
 }) {
   return Modal({
     id: 'deleteAllTeamsModal',

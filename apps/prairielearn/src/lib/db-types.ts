@@ -36,6 +36,7 @@ export type EnumCourseInstanceRole = z.infer<typeof EnumCourseInstanceRoleSchema
 export const EnumEnrollmentStatusSchema = z.enum([
   'invited',
   'joined',
+  'left',
   'removed',
   'rejected',
   'blocked',
@@ -221,7 +222,17 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // *******************************************************************************
 
 export const AccessLogSchema = null;
-export const AccessTokenSchema = null;
+
+export const AccessTokenSchema = z.object({
+  created_at: DateFromISOString,
+  id: IdSchema,
+  last_used_at: DateFromISOString.nullable(),
+  name: z.string(),
+  token: z.string().nullable(),
+  token_hash: z.string(),
+  user_id: IdSchema,
+});
+export type AccessToken = z.infer<typeof AccessTokenSchema>;
 
 export const AdministratorSchema = z.object({
   id: IdSchema,
@@ -320,7 +331,7 @@ export const AssessmentSchema = z.object({
   sync_errors: z.string().nullable(),
   sync_job_sequence_id: IdSchema.nullable(),
   sync_warnings: z.string().nullable(),
-  team_work: z.boolean().nullable(),
+  team_work: z.boolean(),
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
@@ -593,7 +604,6 @@ export const CourseInstanceSchema = z.object({
   display_timezone: z.string(),
   enrollment_code: z.string(),
   enrollment_limit: z.number().nullable(),
-  hide_in_enroll_page: z.unknown(), // TODO: Drop column
   id: IdSchema,
   json_comment: JsonCommentSchema.nullable(),
   long_name: z.string().nullable(),

@@ -31,7 +31,7 @@ import {
   type TeamConfig,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type TeamInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 
@@ -81,7 +81,11 @@ export function StudentAssessmentInstance({
   instance_question_rows: InstanceQuestionRow[];
   showTimeLimitExpiredModal: boolean;
   userCanDeleteAssessmentInstance: boolean;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
 } & (
   | {
       teamConfig: TeamConfig;
@@ -363,8 +367,9 @@ export function StudentAssessmentInstance({
                                   ${instance_question_row.max_auto_points
                                     ? ExamQuestionAvailablePoints({
                                         open:
-                                          resLocals.assessment_instance.open &&
-                                          instance_question_row.open,
+                                          (resLocals.assessment_instance.open &&
+                                            instance_question_row.open) ??
+                                          false,
                                         currentWeight:
                                           (instance_question_row.points_list_original?.[
                                             instance_question_row.number_attempts
@@ -698,7 +703,11 @@ function InstanceQuestionTableHeader({
   resLocals,
   someQuestionsAllowRealTimeGrading,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment-instance'> & {
+    has_manual_grading_question: boolean;
+    has_auto_grading_question: boolean;
+    assessment_text_templated: string | null;
+  };
   someQuestionsAllowRealTimeGrading: boolean;
 }) {
   const trailingColumns =

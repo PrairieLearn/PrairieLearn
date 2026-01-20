@@ -33,7 +33,7 @@ export function PointsWithEditButton({
   csrfToken: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const points = row.instance_question[field];
   const maxPoints = row.assessment_question[`max_${field}`];
@@ -79,7 +79,7 @@ export function ScoreWithEditButton({
   csrfToken: string;
   onSuccess: () => void;
   onConflict: (conflictDetailsUrl: string) => void;
-  scrollRef: React.RefObject<HTMLDivElement> | null;
+  scrollRef: React.RefObject<HTMLDivElement | null> | null;
 }) {
   const score = row.instance_question.score_perc;
 

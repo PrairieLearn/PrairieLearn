@@ -7,7 +7,6 @@ import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { getSelfEnrollmentLinkUrl } from '../lib/client/url.js';
 import { config } from '../lib/config.js';
 import { type CourseInstance, EnrollmentSchema } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
@@ -202,7 +201,6 @@ describe('Self-enrollment settings transitions', () => {
     });
 
     await withUser(studentUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
         userId: studentUser.id,
         courseInstance,
@@ -243,7 +241,6 @@ describe('Self-enrollment settings transitions', () => {
     });
 
     await withUser(studentUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await selectOptionalEnrollmentByUserId({
         userId: studentUser.id,
         courseInstance,
@@ -365,6 +362,56 @@ describe('Self-enrollment settings transitions', () => {
       assert.isNotNull(finalEnrollment);
       assert.equal(finalEnrollment.status, 'rejected');
       assert.isNotNull(finalEnrollment.pending_uid);
+    });
+  });
+
+  it('does not allow removed user to self-enroll via the assessments endpoint when self-enrollment is disabled', async () => {
+    await deleteEnrollmentsInCourseInstance('1');
+    await updateCourseInstanceSettings('1', {
+      selfEnrollmentEnabled: false,
+      selfEnrollmentUseEnrollmentCode: false,
+      restrictToInstitution: false,
+    });
+
+    const removedUser = await getOrCreateUser({
+      uid: 'removed@example.com',
+      name: 'Removed Student',
+      uin: 'removed1',
+      email: 'removed@example.com',
+      institutionId: '1',
+    });
+
+    await execute(
+      `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
+       VALUES ($user_id, $course_instance_id, 'removed', $first_joined_at)`,
+      {
+        user_id: removedUser.id,
+        course_instance_id: '1',
+        first_joined_at: new Date(),
+      },
+    );
+
+    await withUser(removedUser, async () => {
+      const initialEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: removedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(initialEnrollment);
+      assert.equal(initialEnrollment.status, 'removed');
+
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
+
+      const finalEnrollment = await selectOptionalEnrollmentByUserId({
+        userId: removedUser.id,
+        courseInstance,
+        requiredRole: ['System'],
+        authzData: dangerousFullSystemAuthz(),
+      });
+      assert.isNotNull(finalEnrollment);
+      assert.equal(finalEnrollment.status, 'removed');
     });
   });
 
@@ -572,9 +619,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       user_id: sameInstitutionUser.id,
     });
 
-    // Use withUser helper to perform actions as the same institution user
     await withUser(sameInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: sameInstitutionUser.id, course_instance_id: '1' },
@@ -617,6 +662,7 @@ describe('Self-enrollment institution restriction transitions', () => {
     // Set up course instance with institution restriction enabled
     await updateCourseInstanceSettings('1', {
       selfEnrollmentEnabled: true,
+      // NOTE: You can only do this in the UI when you are using modern publishing.
       restrictToInstitution: true,
       selfEnrollmentUseEnrollmentCode: false,
     });
@@ -629,9 +675,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       email: 'student@example.com',
     });
 
-    // Use withUser helper to perform actions as the default institution user
     await withUser(defaultInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
@@ -639,36 +683,17 @@ describe('Self-enrollment institution restriction transitions', () => {
       );
       assert.isNull(initialEnrollment);
 
-      await features.runWithGlobalOverrides({ 'enrollment-management': true }, async () => {
-        // Hit the assessments endpoint with the enrollment management feature enabled.
-        // This should NOT trigger auto-enrollment.
-        const response = await fetch(assessmentsUrl);
-        assert.equal(response.status, 403);
+      // Hit the assessments endpoint - this should NOT trigger auto-enrollment
+      const response = await fetch(assessmentsUrl);
+      assert.equal(response.status, 403);
 
-        // Check that user is still not enrolled.
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isNull(finalEnrollment);
-      });
-
-      await features.runWithGlobalOverrides({ 'enrollment-management': false }, async () => {
-        // Hit the assessments endpoint with the enrollment management feature disabled.
-        // This SHOULD trigger auto-enrollment.
-        const response = await fetch(assessmentsUrl);
-        assert.equal(response.status, 200);
-
-        // Check that user is now enrolled.
-        const finalEnrollment = await queryOptionalRow(
-          'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
-          { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
-          EnrollmentSchema,
-        );
-        assert.isOk(finalEnrollment);
-        assert.equal(finalEnrollment.status, 'joined');
-      });
+      // Check that user is still not enrolled.
+      const finalEnrollment = await queryOptionalRow(
+        'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
+        { user_id: defaultInstitutionUser.id, course_instance_id: '1' },
+        EnrollmentSchema,
+      );
+      assert.isNull(finalEnrollment);
     });
   });
   it('allows user from different institution when restrictToInstitution is false', async () => {
@@ -686,7 +711,6 @@ describe('Self-enrollment institution restriction transitions', () => {
       selfEnrollmentUseEnrollmentCode: false,
     });
 
-    // Create user from different institution
     const differentInstitutionUser = await getOrCreateUser({
       uid: 'student@other.com',
       name: 'Different Institution Student',
@@ -700,9 +724,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       user_id: differentInstitutionUser.id,
     });
 
-    // Use withUser helper to perform actions as the different institution user
     await withUser(differentInstitutionUser, async () => {
-      // Check that user is not enrolled initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE user_id = $user_id AND course_instance_id = $course_instance_id',
         { user_id: differentInstitutionUser.id, course_instance_id: '1' },
@@ -765,9 +787,7 @@ describe('Self-enrollment institution restriction transitions', () => {
       EnrollmentSchema,
     );
 
-    // Use withUser helper to perform actions as the invited user
     await withUser(differentInstitutionUser, async () => {
-      // Check that user has an invited enrollment initially
       const initialEnrollment = await queryOptionalRow(
         'SELECT * FROM enrollments WHERE pending_uid = $pending_uid AND course_instance_id = $course_instance_id',
         { pending_uid: differentInstitutionUser.uid, course_instance_id: '1' },

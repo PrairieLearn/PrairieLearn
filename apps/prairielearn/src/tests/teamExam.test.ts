@@ -8,7 +8,6 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
@@ -78,7 +77,7 @@ async function joinTeam(
 }
 
 describe('Team based exam assessments', { timeout: 20_000 }, function () {
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
@@ -300,7 +299,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
 });
 
 describe('cross team exam access', { timeout: 20_000 }, function () {
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   beforeAll(function () {
     storedConfig.authUid = config.authUid;
@@ -399,7 +398,7 @@ describe('cross team exam access', { timeout: 20_000 }, function () {
 });
 
 describe('cross exam assessment access', { timeout: 20_000 }, function () {
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   beforeAll(function () {
     storedConfig.authUid = config.authUid;

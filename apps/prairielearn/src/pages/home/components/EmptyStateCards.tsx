@@ -1,10 +1,8 @@
 export function EmptyStateCards({
   urlPrefix,
-  enrollmentManagementEnabled,
   setShowJoinModal,
 }: {
   urlPrefix: string;
-  enrollmentManagementEnabled: boolean;
   setShowJoinModal: (value: boolean) => void;
 }) {
   return (
@@ -13,29 +11,19 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-person-badge text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-person-badge text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Students</h3>
             <p className="card-text mb-4">Add a course and start learning.</p>
             <div className="mt-auto">
-              {enrollmentManagementEnabled ? (
-                <button
-                  type="button"
-                  className="btn btn-primary w-100 d-flex gap-2 justify-content-center"
-                  onClick={() => setShowJoinModal(true)}
-                >
-                  <i className="bi bi-plus-circle" />
-                  Add course
-                </button>
-              ) : (
-                <a
-                  href={`${urlPrefix}/enroll`}
-                  className="btn btn-primary d-flex gap-2 justify-content-center"
-                >
-                  <i className="bi bi-plus-circle" />
-                  Add course
-                </a>
-              )}
+              <button
+                type="button"
+                className="btn btn-primary w-100 d-flex gap-2 justify-content-center"
+                onClick={() => setShowJoinModal(true)}
+              >
+                <i className="bi bi-plus-circle" />
+                Add course
+              </button>
             </div>
           </div>
         </div>
@@ -44,7 +32,7 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-mortarboard text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Instructors</h3>
             <p className="card-text mb-4">Create and manage courses for your students.</p>

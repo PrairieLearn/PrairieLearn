@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Popover } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -75,7 +75,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   needToSync: boolean;
   csrfToken: string;
   urlPrefix: string;
-  enrollmentManagementEnabled: boolean;
+  isAdministrator: boolean;
 }
 
 export function InstructorCourseAdminInstancesInner({
@@ -85,7 +85,7 @@ export function InstructorCourseAdminInstancesInner({
   needToSync,
   csrfToken,
   urlPrefix,
-  enrollmentManagementEnabled,
+  isAdministrator,
 }: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -97,7 +97,7 @@ export function InstructorCourseAdminInstancesInner({
         show={showCreateModal}
         course={course}
         csrfToken={csrfToken}
-        enrollmentManagementEnabled={enrollmentManagementEnabled}
+        isAdministrator={isAdministrator}
         onHide={() => setShowCreateModal(false)}
       />
 

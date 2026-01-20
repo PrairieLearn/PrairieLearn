@@ -13,7 +13,6 @@ import { constructCourseOrInstanceContext } from '../../lib/authz-data.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
-import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
 import { assertNever } from '../../lib/types.js';
@@ -125,10 +124,6 @@ router.get(
       withAuthzData: false,
     });
 
-    const enrollmentManagementEnabled = await features.enabled('enrollment-management', {
-      institution_id: res.locals.authn_institution.id,
-    });
-
     const search = getUrl(req).search;
 
     res.send(
@@ -151,7 +146,6 @@ router.get(
             adminInstitutions={adminInstitutions}
             urlPrefix={urlPrefix}
             isDevMode={config.devMode}
-            enrollmentManagementEnabled={enrollmentManagementEnabled}
             search={search}
           />
         ),
@@ -224,7 +218,7 @@ router.post(
         });
         if (
           !enrollment ||
-          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+          !['left', 'removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
         ) {
           flash('error', 'Failed to accept invitation');
           break;
@@ -269,14 +263,14 @@ router.post(
           authzData,
         });
 
-        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+        if (!enrollment || !['joined', 'left', 'removed'].includes(enrollment.status)) {
           flash('error', 'Failed to unenroll');
           break;
         }
 
         await setEnrollmentStatus({
           enrollment,
-          status: 'removed',
+          status: 'left',
           authzData,
           requiredRole: ['Student'],
         });

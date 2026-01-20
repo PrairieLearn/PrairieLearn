@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
@@ -74,7 +74,7 @@ function CopyEnrollmentLinkButton({
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const handleCopyLink = async (e: Event) => {
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const selfEnrollmentLink = run(() => {
       if (!courseInstance.self_enrollment_use_enrollment_code) {
@@ -87,7 +87,7 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCopyCode = async (e: Event) => {
+  const handleCopyCode = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const enrollmentCodeDashed =
       courseInstance.enrollment_code.slice(0, 3) +
@@ -152,7 +152,6 @@ interface StudentsCardProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
   selfEnrollLink: string;
@@ -169,7 +168,6 @@ function StudentsCard({
   authzData,
   course,
   courseInstance,
-  enrollmentManagementEnabled,
   students: initialStudents,
   timezone,
   csrfToken,
@@ -438,7 +436,7 @@ function StudentsCard({
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
+            {courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -547,7 +545,6 @@ export const InstructorStudents = ({
   timezone,
   courseInstance,
   course,
-  enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
 }: {
@@ -566,7 +563,6 @@ export const InstructorStudents = ({
           selfEnrollLink={selfEnrollLink}
           course={course}
           courseInstance={courseInstance}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}

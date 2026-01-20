@@ -660,13 +660,23 @@ Access control options can also be used to control the open/close dates of asses
 
 ## Adding text and links to assessments
 
-You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. You can use EJS syntax to access `clientFilesCourse`, `clientFilesCourseInstance`, and `clientFilesAssessment`.
+You can add a `text` property to your `infoAssessment.json`, which can be used to provide additional instructions, formula sheets, etc. The following mustache template variables are available:
+
+| Variable                       | Description                                    |
+| ------------------------------ | ---------------------------------------------- |
+| `client_files_course`          | URL path to course-level client files          |
+| `client_files_course_instance` | URL path to course instance-level client files |
+| `client_files_assessment`      | URL path to assessment-level client files      |
 
 ```json title="infoAssessment.json"
 {
-  "text": "<a href=\"<%= clientFilesAssessment %>/formulas.pdf\">Formula sheet</a>"
+  "text": "<a href=\"{{ client_files_assessment }}/formulas.pdf\">Formula sheet</a>"
 }
 ```
+
+!!! note "Legacy syntax"
+
+    For backward compatibility, `camelCase` names with EJS syntax (`<%= clientFilesCourse %>`, `<%= clientFilesCourseInstance %>`, `<%= clientFilesAssessment %>`) are supported. Prefer the use of the `snake_case` mustache template variables (`{{ client_files_course }}`, `{{ client_files_course_instance }}`, `{{ client_files_assessment }}`) instead.
 
 See the [`clientFiles` and `serverFiles`](../clientServerFiles.md) page for details about making files available to users.
 

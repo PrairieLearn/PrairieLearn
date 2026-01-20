@@ -1,4 +1,4 @@
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import type { Topic } from '../lib/db-types.js';
 
