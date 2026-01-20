@@ -7,11 +7,12 @@ interface ColorPickerProps {
 
 export function ColorPicker({ value, onChange }: ColorPickerProps) {
   return (
-    <div className="d-flex flex-wrap gap-2">
+    <div className="d-flex flex-wrap gap-2" role="radiogroup" aria-label="Select color">
       {ColorJsonSchema.options.map((color) => (
         <button
           key={color}
           type="button"
+          role="radio"
           className="btn btn-sm"
           style={{
             width: '32px',
@@ -20,6 +21,8 @@ export function ColorPicker({ value, onChange }: ColorPickerProps) {
             border: value === color ? '2px solid #0d6efd' : '1px solid #dee2e6',
           }}
           title={color}
+          aria-label={`Color: ${color}`}
+          aria-checked={value === color}
           onClick={() => onChange(color)}
         />
       ))}

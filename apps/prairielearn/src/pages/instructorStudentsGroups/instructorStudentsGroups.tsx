@@ -238,13 +238,14 @@ router.post(
         // Get the newly created group from database
         const groups = await selectStudentGroupsByCourseInstance(courseInstance.id);
         const newGroup = groups.find((g) => g.name === name);
-        if (newGroup) {
-          for (const user of enrolledUsers) {
-            await addEnrollmentToStudentGroup({
-              enrollment_id: user.enrollment.id,
-              student_group_id: newGroup.id,
-            });
-          }
+        if (!newGroup) {
+          throw new error.HttpStatusError(500, 'Group saved but not found in database');
+        }
+        for (const user of enrolledUsers) {
+          await addEnrollmentToStudentGroup({
+            enrollment_id: user.enrollment.id,
+            student_group_id: newGroup.id,
+          });
         }
       }
 
@@ -319,46 +320,48 @@ router.post(
       const groups = await selectStudentGroupsByCourseInstance(courseInstance.id);
       const updatedGroup = groups.find((g) => g.name === name);
 
-      if (updatedGroup) {
-        // Get current enrollments
-        const currentEnrollments = await sqldb.queryRows(
-          sql.select_enrollment_ids_for_group,
-          { student_group_id: updatedGroup.id },
-          z.object({ enrollment_id: z.string() }),
-        );
-        const currentEnrollmentIds = new Set(currentEnrollments.map((e) => e.enrollment_id));
+      if (!updatedGroup) {
+        throw new error.HttpStatusError(500, 'Group saved but not found in database');
+      }
 
-        // Parse UIDs and get desired enrollments
-        const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);
-        const desiredEnrollmentIds = new Set<string>();
-        if (uids.length > 0) {
-          const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-            uids,
-            courseInstance,
-            requiredRole: ['Student Data Editor'],
-            authzData: authz_data,
-          });
-          enrolledUsers.forEach((u) => desiredEnrollmentIds.add(u.enrollment.id));
-        }
+      // Get current enrollments
+      const currentEnrollments = await sqldb.queryRows(
+        sql.select_enrollment_ids_for_group,
+        { student_group_id: updatedGroup.id },
+        z.object({ enrollment_id: z.string() }),
+      );
+      const currentEnrollmentIds = new Set(currentEnrollments.map((e) => e.enrollment_id));
 
-        // Add new enrollments
-        for (const enrollmentId of desiredEnrollmentIds) {
-          if (!currentEnrollmentIds.has(enrollmentId)) {
-            await addEnrollmentToStudentGroup({
-              enrollment_id: enrollmentId,
-              student_group_id: updatedGroup.id,
-            });
-          }
-        }
+      // Parse UIDs and get desired enrollments
+      const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);
+      const desiredEnrollmentIds = new Set<string>();
+      if (uids.length > 0) {
+        const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
+          uids,
+          courseInstance,
+          requiredRole: ['Student Data Editor'],
+          authzData: authz_data,
+        });
+        enrolledUsers.forEach((u) => desiredEnrollmentIds.add(u.enrollment.id));
+      }
 
-        // Remove old enrollments
-        const toRemove = [...currentEnrollmentIds].filter((id) => !desiredEnrollmentIds.has(id));
-        if (toRemove.length > 0) {
-          await sqldb.execute(sql.bulk_remove_enrollments_from_group, {
+      // Add new enrollments
+      for (const enrollmentId of desiredEnrollmentIds) {
+        if (!currentEnrollmentIds.has(enrollmentId)) {
+          await addEnrollmentToStudentGroup({
+            enrollment_id: enrollmentId,
             student_group_id: updatedGroup.id,
-            enrollment_ids: toRemove,
           });
         }
+      }
+
+      // Remove old enrollments
+      const toRemove = [...currentEnrollmentIds].filter((id) => !desiredEnrollmentIds.has(id));
+      if (toRemove.length > 0) {
+        await sqldb.execute(sql.bulk_remove_enrollments_from_group, {
+          student_group_id: updatedGroup.id,
+          enrollment_ids: toRemove,
+        });
       }
 
       res.json({ success: true });
@@ -379,34 +382,37 @@ router.post(
 
       // Remove the group
       const groupIndex = studentGroups.findIndex((g) => g.name === group_name);
-      if (groupIndex !== -1) {
-        studentGroups.splice(groupIndex, 1);
-        courseInstanceJson.studentGroups = studentGroups;
+      if (groupIndex === -1) {
+        res.status(404).json({ error: 'Group not found in course configuration' });
+        return;
+      }
 
-        // Format and write using FileModifyEditor
-        const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
+      studentGroups.splice(groupIndex, 1);
+      courseInstanceJson.studentGroups = studentGroups;
 
-        const editor = new FileModifyEditor({
-          locals: res.locals,
-          container: {
-            rootPath: paths.rootPath,
-            invalidRootPaths: paths.invalidRootPaths,
-          },
-          filePath: courseInstanceJsonPath,
-          editContents: b64EncodeUnicode(formattedJson),
-          origHash: orig_hash,
+      // Format and write using FileModifyEditor
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
+
+      const editor = new FileModifyEditor({
+        locals: res.locals,
+        container: {
+          rootPath: paths.rootPath,
+          invalidRootPaths: paths.invalidRootPaths,
+        },
+        filePath: courseInstanceJsonPath,
+        editContents: b64EncodeUnicode(formattedJson),
+        origHash: orig_hash,
+      });
+
+      const serverJob = await editor.prepareServerJob();
+      try {
+        await editor.executeWithServerJob(serverJob);
+      } catch (err) {
+        res.status(500).json({
+          error: err instanceof Error ? err.message : 'Failed to save changes',
+          jobSequenceId: serverJob.jobSequenceId,
         });
-
-        const serverJob = await editor.prepareServerJob();
-        try {
-          await editor.executeWithServerJob(serverJob);
-        } catch {
-          res.status(500).json({
-            error: 'Failed to save changes',
-            jobSequenceId: serverJob.jobSequenceId,
-          });
-          return;
-        }
+        return;
       }
 
       res.json({ success: true });

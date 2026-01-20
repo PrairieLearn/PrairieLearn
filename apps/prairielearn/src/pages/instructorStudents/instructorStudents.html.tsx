@@ -1,5 +1,6 @@
 import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
+  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -16,7 +17,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Button, ButtonGroup, Dropdown, DropdownButton, Form } from 'react-bootstrap';
+import { Alert, Button, ButtonGroup, Dropdown, DropdownButton, Form } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -77,6 +78,7 @@ function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
       type="checkbox"
       checked={table.getIsAllRowsSelected()}
       autoComplete="off"
+      aria-label="Select all students"
       onChange={table.getToggleAllRowsSelectedHandler()}
     />
   );
@@ -90,11 +92,13 @@ function IndeterminateCheckbox({
   indeterminate,
   disabled,
   onChange,
+  'aria-label': ariaLabel,
 }: {
   checked: boolean;
   indeterminate: boolean;
   disabled?: boolean;
   onChange: () => void;
+  'aria-label': string;
 }) {
   const checkboxRef = useRef<HTMLInputElement>(null);
 
@@ -105,7 +109,14 @@ function IndeterminateCheckbox({
   }, [indeterminate]);
 
   return (
-    <input ref={checkboxRef} type="checkbox" checked={checked} disabled={disabled} onChange={onChange} />
+    <input
+      ref={checkboxRef}
+      type="checkbox"
+      checked={checked}
+      disabled={disabled}
+      aria-label={ariaLabel}
+      onChange={onChange}
+    />
   );
 }
 
@@ -481,7 +492,14 @@ function StudentsCard({
         id: 'select',
         header: ({ table }) => <SelectAllCheckbox table={table} />,
         cell: ({ row, table }) => {
-          return <input type="checkbox" {...createCheckboxProps(row, table)} />;
+          const uid = row.original.user?.uid ?? row.original.enrollment.pending_uid ?? 'student';
+          return (
+            <input
+              type="checkbox"
+              aria-label={`Select ${uid}`}
+              {...createCheckboxProps(row, table)}
+            />
+          );
         },
         size: 40,
         minSize: 40,
@@ -698,8 +716,29 @@ function StudentsCard({
     return `${baseMessage} Invite them to get started.`;
   });
 
+  // Combine mutation errors for display
+  const groupMutationError =
+    batchAddToGroupMutation.error ??
+    batchRemoveFromGroupMutation.error ??
+    createGroupAndAddMutation.error;
+
   return (
     <>
+      {groupMutationError && (
+        <Alert
+          variant="danger"
+          dismissible
+          onClose={() => {
+            batchAddToGroupMutation.reset();
+            batchRemoveFromGroupMutation.reset();
+            createGroupAndAddMutation.reset();
+          }}
+        >
+          {groupMutationError instanceof Error
+            ? groupMutationError.message
+            : 'Failed to update group membership'}
+        </Alert>
+      )}
       <TanstackTableCard
         table={table}
         title="Students"
@@ -755,6 +794,7 @@ function StudentsCard({
                           checked={isChecked}
                           indeterminate={isIndeterminate}
                           disabled={isGroupMutationPending}
+                          aria-label={`${isChecked ? 'Remove from' : 'Add to'} group "${group.name}"`}
                           onChange={() => {
                             if (isChecked) {
                               batchRemoveFromGroupMutation.mutate({
@@ -861,8 +901,8 @@ function StudentsCard({
               const groupIds = studentGroups.map((g) => g.id);
               return (
                 <MultiSelectColumnFilter
-                  column={header.column as any}
-                  allColumnValues={groupIds as any}
+                  column={header.column as Column<StudentRow, unknown>}
+                  allColumnValues={groupIds}
                   renderValueLabel={({ value }) => {
                     const group = studentGroups.find((g) => g.id === String(value));
                     if (!group) return <span>{String(value)}</span>;

@@ -1,5 +1,6 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
+  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -496,8 +497,8 @@ function GradebookTable({
         header: Header<GradebookRow, GradebookRow['student_groups']>;
       }) => (
         <MultiSelectColumnFilter
-          column={header.column as any}
-          allColumnValues={groupIds as any}
+          column={header.column as Column<GradebookRow, unknown>}
+          allColumnValues={groupIds}
           renderValueLabel={({ value }) => {
             const group = studentGroups.find((g) => g.id === String(value));
             if (!group) return <span>{String(value)}</span>;

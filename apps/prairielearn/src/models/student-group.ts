@@ -128,6 +128,28 @@ export async function removeEnrollmentFromStudentGroup({
 }
 
 /**
+ * Removes multiple enrollments from a student group in a single operation.
+ * Returns the count of enrollments actually removed.
+ */
+export async function batchRemoveEnrollmentsFromStudentGroup({
+  enrollment_ids,
+  student_group_id,
+}: {
+  enrollment_ids: string[];
+  student_group_id: string;
+}): Promise<number> {
+  if (enrollment_ids.length === 0) {
+    return 0;
+  }
+  const result = await queryRow(
+    sql.batch_remove_enrollments_from_student_group_with_count,
+    { enrollment_ids, student_group_id },
+    z.object({ count: z.number() }),
+  );
+  return result.count;
+}
+
+/**
  * Selects all enrollments in a given student group.
  */
 export async function selectEnrollmentsInStudentGroup(
@@ -192,6 +214,7 @@ export async function createStudentGroupWithErrorHandling({
 
 /**
  * Creates a new student group and adds the specified enrollments to it.
+ * Uses a transaction to ensure atomicity.
  * Returns the created group.
  */
 export async function createStudentGroupAndAddEnrollments({
@@ -203,20 +226,22 @@ export async function createStudentGroupAndAddEnrollments({
   name: string;
   enrollment_ids: string[];
 }): Promise<StudentGroup> {
-  const group = await createStudentGroupWithErrorHandling({
-    course_instance_id,
-    name,
-  });
-
-  // Add all enrollments to the group
-  for (const enrollmentId of enrollment_ids) {
-    await addEnrollmentToStudentGroup({
-      enrollment_id: enrollmentId,
-      student_group_id: group.id,
+  return await runInTransactionAsync(async () => {
+    const group = await createStudentGroupWithErrorHandling({
+      course_instance_id,
+      name,
     });
-  }
 
-  return group;
+    // Add all enrollments to the group
+    for (const enrollmentId of enrollment_ids) {
+      await addEnrollmentToStudentGroup({
+        enrollment_id: enrollmentId,
+        student_group_id: group.id,
+      });
+    }
+
+    return group;
+  });
 }
 
 /**

@@ -103,7 +103,8 @@ export function GroupModifyModal({
     let resp: Response | null = null;
     try {
       resp = await fetch(`${window.location.pathname}/check?${params.toString()}`);
-    } catch {
+    } catch (err) {
+      console.error('Failed to validate UIDs:', err);
       return 'Failed to validate UIDs';
     }
 

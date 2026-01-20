@@ -115,3 +115,18 @@ DELETE FROM student_group_enrollments
 WHERE
   student_group_id = $student_group_id
   AND enrollment_id = ANY ($enrollment_ids::bigint[]);
+
+-- BLOCK batch_remove_enrollments_from_student_group_with_count
+WITH
+  deleted AS (
+    DELETE FROM student_group_enrollments
+    WHERE
+      student_group_id = $student_group_id
+      AND enrollment_id = ANY ($enrollment_ids::bigint[])
+    RETURNING
+      *
+  )
+SELECT
+  count(*)::int AS count
+FROM
+  deleted;

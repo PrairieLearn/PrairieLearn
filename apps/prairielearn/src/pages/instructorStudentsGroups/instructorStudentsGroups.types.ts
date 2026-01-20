@@ -2,6 +2,8 @@ import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
+import { StudentGroupSchema } from '../../lib/db-types.js';
+
 export const StudentGroupRowSchema = z.object({
   id: IdSchema,
   name: z.string(),
@@ -17,13 +19,7 @@ export const StudentGroupUserDataSchema = z.object({
 export type StudentGroupUserData = z.infer<typeof StudentGroupUserDataSchema>;
 
 export const StudentGroupWithUserDataSchema = z.object({
-  student_group: z.object({
-    id: IdSchema,
-    name: z.string(),
-    color: z.string().nullable(),
-    course_instance_id: IdSchema,
-    deleted_at: z.coerce.date().nullable(),
-  }),
+  student_group: StudentGroupSchema,
   user_data: z.array(StudentGroupUserDataSchema),
 });
 export type StudentGroupWithUserData = z.infer<typeof StudentGroupWithUserDataSchema>;

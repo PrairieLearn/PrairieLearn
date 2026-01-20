@@ -20,8 +20,8 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import {
   addEnrollmentToStudentGroup,
+  batchRemoveEnrollmentsFromStudentGroup,
   createStudentGroupAndAddEnrollments,
-  removeEnrollmentFromStudentGroup,
   selectStudentGroupsByCourseInstance,
   verifyGroupBelongsToCourseInstance,
 } from '../../models/student-group.js';
@@ -170,14 +170,21 @@ router.post(
       await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
 
       // Add each enrollment to the group
+      let added = 0;
+      let alreadyInGroup = 0;
       for (const enrollmentId of body.enrollment_ids) {
-        await addEnrollmentToStudentGroup({
+        const result = await addEnrollmentToStudentGroup({
           enrollment_id: enrollmentId,
           student_group_id: body.student_group_id,
         });
+        if (result) {
+          added++;
+        } else {
+          alreadyInGroup++;
+        }
       }
 
-      res.json({ success: true });
+      res.json({ success: true, added, alreadyInGroup });
     } else if (req.body.__action === 'create_group_and_add_students') {
       const BodySchema = z.object({
         __action: z.literal('create_group_and_add_students'),
@@ -211,15 +218,13 @@ router.post(
       // Verify the group belongs to this course instance
       await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
 
-      // Remove each enrollment from the group
-      for (const enrollmentId of body.enrollment_ids) {
-        await removeEnrollmentFromStudentGroup({
-          enrollment_id: enrollmentId,
-          student_group_id: body.student_group_id,
-        });
-      }
+      // Remove enrollments from the group (returns count of removed)
+      const removed = await batchRemoveEnrollmentsFromStudentGroup({
+        enrollment_ids: body.enrollment_ids,
+        student_group_id: body.student_group_id,
+      });
 
-      res.json({ success: true });
+      res.json({ success: true, removed });
     } else if (req.body.__action === 'invite_uids') {
       const BodySchema = z.object({
         uids: UniqueUidsFromStringSchema(1000),
