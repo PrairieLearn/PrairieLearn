@@ -53,7 +53,7 @@ describe('assessment instance team synchronization test', function () {
       locals.assessmentsUrl = locals.courseInstanceBaseUrl + '/assessments';
     });
   });
-  describe('2. GET to instructor assessments URL group tab for the first assessment', function () {
+  describe('2. GET to instructor assessments URL teams tab for the first assessment', function () {
     it('should load successfully', async () => {
       const res = await fetch(locals.instructorAssessmentsUrlTeamTab);
       assert.equal(res.status, 200);

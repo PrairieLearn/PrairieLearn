@@ -356,13 +356,13 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     });
   });
 
-  describe('Group Work Downloads', function () {
+  describe('Team Work Downloads', function () {
     const ctx = {} as {
       assessment_id: string;
       siteUrl: string;
       courseInstanceBaseUrl: string;
       assessmentUrl: string;
-      instructorAssessmentGroupsUrl: string;
+      instructorAssessmentTeamsUrl: string;
       instructorAssessmentDownloadsUrl: string;
       studentUsers: User[];
       $: cheerio.CheerioAPI;
@@ -381,14 +381,14 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       ctx.siteUrl = 'http://localhost:' + config.serverPort;
       ctx.courseInstanceBaseUrl = ctx.siteUrl + '/pl/course_instance/1';
       ctx.assessmentUrl = ctx.courseInstanceBaseUrl + '/assessment/' + assessment.id;
-      ctx.instructorAssessmentGroupsUrl =
-        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/groups';
+      ctx.instructorAssessmentTeamsUrl =
+        ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/teams';
       ctx.instructorAssessmentDownloadsUrl =
         ctx.courseInstanceBaseUrl + '/instructor/assessment/' + assessment.id + '/downloads';
 
       ctx.studentUsers = await generateAndEnrollUsers({ count: 2, course_instance_id: '1' });
-      ctx.$ = await fetchPage(ctx.instructorAssessmentGroupsUrl);
-      const res = await fetch(ctx.instructorAssessmentGroupsUrl, {
+      ctx.$ = await fetchPage(ctx.instructorAssessmentTeamsUrl);
+      const res = await fetch(ctx.instructorAssessmentTeamsUrl, {
         method: 'POST',
         body: new URLSearchParams({
           __action: 'add_team',
@@ -456,18 +456,18 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       } as ResLocalsForPage<'assessment'>);
     });
 
-    it('should have team_work assessment with group-specific filenames', function () {
+    it('should have team_work assessment with team-specific filenames', function () {
       assert.isTrue(ctx.assessment.team_work);
       assert.isDefined(ctx.filenames.teamsCsvFilename);
       assert.isDefined(ctx.filenames.scoresTeamCsvFilename);
       assert.isDefined(ctx.filenames.pointsTeamCsvFilename);
     });
 
-    it('groups.csv should contain both team members', async () => {
+    it('teams.csv should contain both team members', async () => {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.teamsCsvFilename,
       );
-      const teamRows = data.filter((row) => row['groupName'] === 'testteam');
+      const teamRows = data.filter((row) => row['teamName'] === 'testteam');
       assert.lengthOf(teamRows, 2);
 
       const uids = teamRows.map((row) => row['UID']);
@@ -475,11 +475,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.include(uids, ctx.studentUsers[1].uid);
     });
 
-    it('scores_by_group.csv should contain team with valid score', async () => {
+    it('scores_by_team.csv should contain team with valid score', async () => {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresTeamCsvFilename,
       );
-      const teamRow = data.find((row) => row['Group name'] === 'testteam');
+      const teamRow = data.find((row) => row['Team name'] === 'testteam');
       assert.isDefined(teamRow);
       assert.isString(teamRow['Usernames']);
       assert.property(teamRow, 'Exam 14');
@@ -487,11 +487,11 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       assert.isAtLeast(teamRow['Exam 14'], 0);
     });
 
-    it('points_by_group.csv should contain team with valid points', async () => {
+    it('points_by_team.csv should contain team with valid points', async () => {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsTeamCsvFilename,
       );
-      const teamRow = data.find((row) => row['Group name'] === 'testteam');
+      const teamRow = data.find((row) => row['Team name'] === 'testteam');
       assert.isDefined(teamRow);
       assert.isString(teamRow['Usernames']);
       assert.property(teamRow, 'Exam 14');

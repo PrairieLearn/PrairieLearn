@@ -392,7 +392,7 @@ export async function createTeam({
         'The team name is invalid. Only alphanumerical characters (letters and digits) are allowed.',
       );
     }
-    if (/^group[0-9]{7,}$/.test(team_name)) {
+    if (/^team[0-9]{7,}$/.test(team_name)) {
       // This test is used to simplify the logic behind system-generated team
       // names. These are created automatically by adding one to the latest
       // team name with a number. Allowing a user to specify a team name with
@@ -401,7 +401,7 @@ export async function createTeam({
       // process to generate team names that don't take these numbers into
       // account is possible, this validation is simpler.
       throw new TeamOperationError(
-        'User-specified team names cannot start with "group" followed by a large number.',
+        'User-specified team names cannot start with "team" followed by a large number.',
       );
     }
   }

@@ -93,7 +93,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
 
   describe('instructor access for exam assessment', function () {
     test.sequential(
-      "should load the group tab for the first assessment's instructor URL",
+      "should load the teams tab for the first assessment's instructor URL",
       async function () {
         // Get exam assessment URL using ids from database
         const assessment = await selectAssessmentByTid({
@@ -110,7 +110,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
     );
 
     test.sequential(
-      "should load the group tab for the second assessment's instructor URL",
+      "should load the teams tab for the second assessment's instructor URL",
       async function () {
         // Get exam assessment URLs using ids from database
         const assessment = await selectAssessmentByTid({
@@ -187,7 +187,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
       assert.equal(
         $('#team-name').text(),
         TEAM_NAME,
-        'The group info should contain the correct group name',
+        'The team info should contain the correct team name',
       );
 
       let joinCode = $('#join-code').text();
@@ -200,7 +200,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
       assert.lengthOf(
         $('.text-center:contains(1 more)'),
         1,
-        'Page must show the group to be missing 1 more member',
+        'Page must show the team to be missing 1 more member',
       );
 
       // Join team as second user and check team info
@@ -213,7 +213,7 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
       assert.equal(
         $('#team-name').text(),
         TEAM_NAME,
-        'The group info should contain the correct group name',
+        'The team info should contain the correct team name',
       );
 
       joinCode = $('#join-code').text();
