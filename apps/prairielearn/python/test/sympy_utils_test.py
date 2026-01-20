@@ -444,6 +444,21 @@ class TestExceptions:
             assert format_error is not None
             assert target_string in format_error
 
+    def test_invalid_function_with_simplify_false(self) -> None:
+        """Test that invalid function calls are caught with simplify_expression=False.
+
+        This is a regression test for https://github.com/PrairieLearn/PrairieLearn/issues/13084
+        where using display-simplified-expression="false" would cause an unhandled exception
+        when students submitted expressions like "m(0)" where "m" is not a valid function.
+        """
+        error_msg = psu.validate_string_as_sympy(
+            "m(0)",
+            ["x"],
+            simplify_expression=False,
+        )
+        assert error_msg is not None
+        assert 'invalid symbol "m"' in error_msg
+
 
 @pytest.mark.parametrize(
     ("input_str", "expected_output"),
