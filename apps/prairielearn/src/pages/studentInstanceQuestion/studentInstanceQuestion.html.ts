@@ -42,6 +42,10 @@ export function StudentInstanceQuestion({
       page: 'assessment_instance',
     },
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledScriptTag('question.ts')}
       ${resLocals.assessment.type === 'Exam'
         ? html`
