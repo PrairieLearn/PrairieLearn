@@ -161,7 +161,7 @@ SELECT
       FROM
         student_group_enrollments sge
         JOIN student_groups sg ON sg.id = sge.student_group_id
-          AND sg.deleted_at IS NULL
+        AND sg.deleted_at IS NULL
       WHERE
         sge.enrollment_id = e.id
     ),

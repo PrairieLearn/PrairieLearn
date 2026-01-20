@@ -1,11 +1,17 @@
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import { queryOptionalRow, queryRow } from '@prairielearn/postgres';
+import { queryOptionalRow } from '@prairielearn/postgres';
 
 import { StudentGroupSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
+import {
+  createStudentGroup,
+  deleteStudentGroup,
+  selectStudentGroupsByCourseInstance,
+  updateStudentGroup,
+} from '../models/student-group.js';
 
-import { fetchCheerio, getCSRFToken } from './helperClient.js';
+import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
 
 const siteUrl = `http://localhost:${process.env.VITEST_POOL_ID ? 3007 + Number.parseInt(process.env.VITEST_POOL_ID) : 3007}`;
@@ -23,64 +29,39 @@ describe('Student groups page', () => {
   });
 
   test.sequential('should create a student group', async () => {
-    const pageResponse = await fetchCheerio(studentGroupsUrl);
-    assert.equal(pageResponse.status, 200);
-
-    const csrfToken = getCSRFToken(pageResponse.$);
-
-    // Create a new group
-    const createResponse = await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'create_group',
-        __csrf_token: csrfToken,
-        name: 'Test Group Alpha',
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
+    // Create a new group using the model function
+    const group = await createStudentGroup({
+      course_instance_id: '1',
+      name: 'Test Group Alpha',
+      color: 'blue1',
     });
 
-    assert.equal(createResponse.status, 200);
+    assert.isNotNull(group);
+    assert.equal(group.name, 'Test Group Alpha');
+    assert.equal(group.color, 'blue1');
 
     // Verify the group exists in the database
-    const group = await queryOptionalRow(
+    const dbGroup = await queryOptionalRow(
       "SELECT * FROM student_groups WHERE name = 'Test Group Alpha' AND course_instance_id = '1'",
       {},
       StudentGroupSchema,
     );
-    assert.isNotNull(group);
-    assert.equal(group.name, 'Test Group Alpha');
+    assert.isNotNull(dbGroup);
+    assert.equal(dbGroup.name, 'Test Group Alpha');
   });
 
   test.sequential('should rename a student group', async () => {
-    // First get the group ID
-    const group = await queryRow(
-      "SELECT * FROM student_groups WHERE name = 'Test Group Alpha' AND course_instance_id = '1'",
-      {},
-      StudentGroupSchema,
-    );
+    // First get the group
+    const groups = await selectStudentGroupsByCourseInstance('1');
+    const group = groups.find((g) => g.name === 'Test Group Alpha');
+    assert.isOk(group);
 
-    const pageResponse = await fetchCheerio(studentGroupsUrl);
-    assert.equal(pageResponse.status, 200);
-
-    const csrfToken = getCSRFToken(pageResponse.$);
-
-    // Rename the group
-    const renameResponse = await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'rename_group',
-        __csrf_token: csrfToken,
-        group_id: group.id,
-        name: 'Test Group Beta',
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
+    // Rename the group using the model function
+    await updateStudentGroup({
+      id: group.id,
+      name: 'Test Group Beta',
+      color: group.color ?? 'blue1',
     });
-
-    assert.equal(renameResponse.status, 200);
 
     // Verify the group was renamed in the database
     const renamedGroup = await queryOptionalRow(
@@ -102,36 +83,17 @@ describe('Student groups page', () => {
   });
 
   test.sequential('should delete a student group', async () => {
-    // First get the group ID
-    const group = await queryRow(
-      "SELECT * FROM student_groups WHERE name = 'Test Group Beta' AND course_instance_id = '1'",
-      {},
-      StudentGroupSchema,
-    );
+    // First get the group
+    const groups = await selectStudentGroupsByCourseInstance('1');
+    const group = groups.find((g) => g.name === 'Test Group Beta');
+    assert.isOk(group);
 
-    const pageResponse = await fetchCheerio(studentGroupsUrl);
-    assert.equal(pageResponse.status, 200);
+    // Delete the group using the model function
+    await deleteStudentGroup(group.id);
 
-    const csrfToken = getCSRFToken(pageResponse.$);
-
-    // Delete the group
-    const deleteResponse = await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_group',
-        __csrf_token: csrfToken,
-        group_id: group.id,
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
-    });
-
-    assert.equal(deleteResponse.status, 200);
-
-    // Verify the group no longer exists in the database
+    // Verify the group no longer exists in the database (or is soft-deleted)
     const deletedGroup = await queryOptionalRow(
-      'SELECT * FROM student_groups WHERE id = $id',
+      'SELECT * FROM student_groups WHERE id = $id AND deleted_at IS NULL',
       { id: group.id },
       StudentGroupSchema,
     );
@@ -139,71 +101,42 @@ describe('Student groups page', () => {
   });
 
   test.sequential('should not allow creating duplicate group names', async () => {
-    const pageResponse = await fetchCheerio(studentGroupsUrl);
-    const csrfToken = getCSRFToken(pageResponse.$);
-
     // Create a group
-    await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'create_group',
-        __csrf_token: csrfToken,
+    const group = await createStudentGroup({
+      course_instance_id: '1',
+      name: 'Unique Group',
+      color: 'green1',
+    });
+
+    // Try to create another group with the same name - should throw
+    let errorThrown = false;
+    try {
+      await createStudentGroup({
+        course_instance_id: '1',
         name: 'Unique Group',
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+        color: 'green1',
+      });
+    } catch (error) {
+      errorThrown = true;
+      // The database should enforce uniqueness
+      assert.include(
+        (error as Error).message.toLowerCase(),
+        'duplicate key value violates unique constraint',
+      );
+    }
 
-    // Try to create another group with the same name
-    const duplicateResponse = await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'create_group',
-        __csrf_token: csrfToken,
-        name: 'Unique Group',
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    assert.isTrue(errorThrown, 'Expected an error to be thrown for duplicate group name');
 
-    assert.equal(duplicateResponse.status, 400);
-
-    // Clean up: delete the group we created
-    const group = await queryRow(
-      "SELECT * FROM student_groups WHERE name = 'Unique Group' AND course_instance_id = '1'",
-      {},
-      StudentGroupSchema,
-    );
-    await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_group',
-        __csrf_token: csrfToken,
-        group_id: group.id,
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    // Clean up
+    await deleteStudentGroup(group.id);
   });
 
   test.sequential('should return groups with student counts via data.json', async () => {
     // Create a test group
-    const pageResponse = await fetchCheerio(studentGroupsUrl);
-    const csrfToken = getCSRFToken(pageResponse.$);
-
-    await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'create_group',
-        __csrf_token: csrfToken,
-        name: 'Count Test Group',
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
+    const group = await createStudentGroup({
+      course_instance_id: '1',
+      name: 'Count Test Group',
+      color: 'purple1',
     });
 
     // Fetch the data.json endpoint
@@ -219,24 +152,17 @@ describe('Student groups page', () => {
     const data = JSON.parse(text);
 
     assert.isArray(data);
-    const testGroup = data.find((g: { name: string }) => g.name === 'Count Test Group');
+    const testGroup = data.find(
+      (g: { student_group: { name: string } }) => g.student_group.name === 'Count Test Group',
+    );
     assert.isNotNull(testGroup);
-    assert.property(testGroup, 'id');
-    assert.property(testGroup, 'name');
-    assert.property(testGroup, 'student_count');
-    assert.equal(testGroup.student_count, 0);
+    assert.property(testGroup.student_group, 'id');
+    assert.property(testGroup.student_group, 'name');
+    assert.property(testGroup, 'user_data');
+    assert.isArray(testGroup.user_data);
+    assert.equal(testGroup.user_data.length, 0);
 
     // Clean up
-    await fetchCheerio(studentGroupsUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'delete_group',
-        __csrf_token: csrfToken,
-        group_id: testGroup.id,
-      }),
-      headers: {
-        Accept: 'application/json',
-      },
-    });
+    await deleteStudentGroup(group.id);
   });
 });
