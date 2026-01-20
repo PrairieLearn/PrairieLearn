@@ -42,6 +42,9 @@
         </div>
     {{/answers}}
     </span>
+    {{#editable}}{{#allow_blank}}
+    <button type="button" class="btn btn-link btn-sm p-0 ms-2 text-secondary small" onclick="window.PLMultipleChoiceClearRadio('{{name}}')">Clear</button>
+    {{/allow_blank}}{{/editable}}
 
 {{#display_score_badge}}
     {{#correct}}
@@ -73,6 +76,7 @@
         id="pl-multiple-choice-select-{{uuid}}"
         class="d-inline-flex"
         {{^editable}}disabled{{/editable}}
+        {{#allow_blank}}data-allow-blank="true"{{/allow_blank}}
         aria-label="{{aria_label}}"
     >
         <option value="" {{^allow_blank}}disabled{{/allow_blank}} selected data-content="{{placeholder}}"></option>
