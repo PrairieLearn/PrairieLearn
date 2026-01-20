@@ -65,6 +65,11 @@ const {
     },
     loader: {
       load: ['input/tex', 'ui/menu', outputComponent],
+      paths: {
+        'mathjax-newcm':
+          document.querySelector('meta[name="mathjax-fonts-path"]')?.getAttribute('content') ??
+          '/fallback-path',
+      },
     },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {
