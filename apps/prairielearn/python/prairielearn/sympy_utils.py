@@ -8,6 +8,7 @@ from prairielearn.sympy_utils import ...
 import ast
 import copy
 import html
+import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -453,6 +454,19 @@ def evaluate_with_source(
     # Replace '^' with '**' wherever it appears. In MATLAB, either can be used
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
+
+    # When complex numbers are not allowed, prevent Python from interpreting
+    # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
+    # so that 'j' is treated as a variable instead. This fixes issue #13661.
+    #
+    # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
+    # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
+    # (complex) + "n" regardless - they will still fail with HasComplexError.
+    #
+    # Scientific notation like "3e5j" becomes "3e5*j" which fails with HasFloatError
+    # since floats aren't allowed in symbolic expressions. This is correct behavior.
+    if not allow_complex:
+        expr = re.sub(r"(\d)([jJ])(?![a-zA-Z0-9])", r"\1*\2", expr)
 
     local_dict = {
         k: v
