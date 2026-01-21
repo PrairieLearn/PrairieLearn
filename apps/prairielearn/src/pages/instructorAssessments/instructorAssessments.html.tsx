@@ -271,7 +271,7 @@ function CreateAssessmentModal({
     id: 'createAssessmentModal',
     title: 'Create assessment',
     formMethod: 'POST',
-    // TODO: if/when this page is converted to Preact/React, use `validateShortName`
+    // TODO: if/when this page is converted to React, use `validateShortName`
     // from `../../lib/short-name.js` with react-hook-form to provide more specific
     // validation feedback (e.g., "cannot start with a slash").
     body: html`

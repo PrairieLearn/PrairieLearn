@@ -74,7 +74,19 @@ export function InstructorAssessmentSettings({
                 id="aid"
                 name="aid"
                 value="${resLocals.assessment.tid}"
-                pattern="${SHORT_NAME_PATTERN}"
+                pattern="${
+                  // TODO: if/when this page is converted to React, use `validateShortName`
+                  // from `../../lib/short-name.js` with react-hook-form to provide more specific
+                  // validation feedback (e.g., "cannot start with a slash").
+                  SHORT_NAME_PATTERN
+                }|${
+                  // NOTE: this will not be compatible with browsers, as it was only
+                  // just added to modern browsers as of January 2025. If/when this
+                  // page is converted to React, we should use a custom validation
+                  // function instead of the `pattern` attribute to enforce this.
+                  // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
+                  RegExp.escape(resLocals.assessment.tid)
+                }"
                 data-other-values="${tids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />
