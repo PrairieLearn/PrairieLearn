@@ -15,7 +15,9 @@ export const AssessmentInstanceRowSchema = z.object({
   client_fingerprint_id_change_count:
     AssessmentInstanceSchema.shape.client_fingerprint_id_change_count,
   date_formatted: z.string(),
-  date: AssessmentInstanceSchema.shape.date,
+  // While this is nullable in the database, in practice it is never null,
+  // so we mark it as such here for convenience.
+  date: AssessmentInstanceSchema.shape.date.unwrap(),
   duration_mins: z.number(),
   duration_secs: z.number(),
   duration: z.string(),
