@@ -313,7 +313,7 @@ export function AssessmentSetsPage({
         </div>
 
         {editMode && duplicateNames.length > 0 && (
-          <div className="alert alert-warning m-3 mb-0" role="alert">
+          <div className="alert alert-warning m-3" role="alert">
             <i className="fa fa-exclamation-triangle" aria-hidden="true" />{' '}
             <strong>Duplicate names detected:</strong> {duplicateNames.join(', ')}. Only the last
             assessment set with each name will be synced.
