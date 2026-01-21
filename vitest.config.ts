@@ -1,7 +1,9 @@
 import crypto from 'node:crypto';
+import { readFileSync } from 'node:fs';
 import path from 'node:path';
 
 import { slash } from '@vitest/utils/helpers';
+import ignore from 'ignore';
 import { resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
@@ -18,6 +20,11 @@ const SLOW_TESTS_SHARDS: Record<number, string[]> = {
 };
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
+
+// Loads and parses the gitignore file using the ignore package,
+// which already handles directories, nested paths and edge cases
+// using the same rules Git uses.
+const gitignore = ignore().add(readFileSync('.gitignore', 'utf8'));
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
 // This is a rough heuristic to try to balance the runtime of each shard.
@@ -128,7 +135,19 @@ export const sharedConfig = defineConfig({
   },
   server: {
     watch: {
-      ignored: [path.resolve('./.venv')],
+      // The file-watching system calls this function for every file change.
+      // Returning true means "ignore this file".
+      ignored: (filePath: string) => {
+        // Absolute paths need to be converted to relative paths,
+        // because .gitignore rules are evaluated relative to the root.
+        const relativePath = path.relative(process.cwd(), filePath).replaceAll('\\', '/'); // Windows compatibility
+
+        if (!relativePath) {
+          return false;
+        }
+
+        return gitignore.ignores(relativePath);
+      },
     },
   },
 });
