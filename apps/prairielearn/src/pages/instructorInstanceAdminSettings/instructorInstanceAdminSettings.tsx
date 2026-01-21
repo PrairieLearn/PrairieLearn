@@ -23,7 +23,7 @@ import {
   CourseInstanceRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOrigHash,
+  getOriginalHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -93,7 +93,7 @@ router.get(
     const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
     let origHash = '';
     if (infoCourseInfoPathExists) {
-      origHash = (await getOrigHash(fullInfoCourseInstancePath)) ?? '';
+      origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
     }
 
     const instanceGHLink = courseRepoContentUrl(

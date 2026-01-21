@@ -12,6 +12,7 @@ export const AssessmentForSetSchema = z.object({
   color: z.string(),
   course_instance_id: IdSchema,
   course_instance_short_name: z.string().nullable(),
+  course_instance_long_name: z.string().nullable(),
 });
 export type AssessmentForSet = z.infer<typeof AssessmentForSetSchema>;
 

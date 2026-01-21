@@ -25,7 +25,7 @@ import {
   QuestionCopyEditor,
   QuestionDeleteEditor,
   QuestionRenameEditor,
-  getOrigHash,
+  getOriginalHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -492,7 +492,7 @@ router.get(
 
     let origHash = '';
     if (questionInfoExists) {
-      origHash = (await getOrigHash(fullInfoPath)) ?? '';
+      origHash = (await getOriginalHash(fullInfoPath)) ?? '';
     }
 
     const canEdit =

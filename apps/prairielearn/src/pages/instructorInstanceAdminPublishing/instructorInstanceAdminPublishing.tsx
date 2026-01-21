@@ -18,7 +18,7 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
+import { FileModifyEditor, getOriginalHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -178,7 +178,7 @@ router.get(
     const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
     let origHash: string | null = null;
     if (infoCourseInstancePathExists) {
-      origHash = await getOrigHash(infoCourseInstancePath);
+      origHash = await getOriginalHash(infoCourseInstancePath);
     }
 
     const accessRules = await queryRows(

@@ -182,10 +182,10 @@ export function getUniqueNames({
   }
 }
 
-export async function getOrigHash(path: string) {
+export async function getOriginalHash(path: string) {
   try {
     return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') return null;
     throw err;
   }

@@ -18,7 +18,7 @@ import {
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  getOrigHash,
+  getOriginalHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
@@ -75,7 +75,7 @@ router.get(
 
     let origHash = '';
     if (infoAssessmentPathExists) {
-      origHash = (await getOrigHash(fullInfoAssessmentPath)) ?? '';
+      origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
     }
 
     const assessmentGHLink = courseRepoContentUrl(

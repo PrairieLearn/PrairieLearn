@@ -19,7 +19,9 @@ SELECT
             'course_instance_id',
             ci.id,
             'course_instance_short_name',
-            ci.short_name
+            ci.short_name,
+            'course_instance_long_name',
+            ci.long_name
           )
           ORDER BY
             ci.id DESC,

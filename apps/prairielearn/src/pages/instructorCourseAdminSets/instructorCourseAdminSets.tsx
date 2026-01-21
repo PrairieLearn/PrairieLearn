@@ -13,7 +13,7 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { AssessmentSetSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
+import { FileModifyEditor, getOriginalHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -38,7 +38,7 @@ router.get(
       InstructorCourseAdminSetRowSchema,
     );
 
-    const origHash = await getOrigHash(path.join(pageContext.course.path, 'infoCourse.json'));
+    const origHash = await getOriginalHash(path.join(pageContext.course.path, 'infoCourse.json'));
 
     const allowEdit =
       pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;

@@ -42,7 +42,12 @@ export function AssessmentSetUsageModal({ assessmentSet, onHide }: AssessmentSet
             {groupedAssessments.map(([courseInstanceId, assessments], groupIndex) => (
               <div key={courseInstanceId}>
                 <div className={`fw-bold ${groupIndex === 0 ? 'mt-0' : 'mt-3'}`}>
-                  {assessments[0].course_instance_short_name || 'Unnamed instance'}
+                  {assessments[0].course_instance_long_name || 'Unnamed instance'}
+                  {assessments[0].course_instance_short_name && (
+                    <span className="text-muted ms-1">
+                      ({assessments[0].course_instance_short_name})
+                    </span>
+                  )}
                 </div>
                 {assessments.map((assessment) => (
                   <div
