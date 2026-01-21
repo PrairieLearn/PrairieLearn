@@ -27,36 +27,47 @@ WITH
     WHERE
       iq.id = $iqId
   ),
-  tpz AS (SELECT * FROM assessment_instances_points((SELECT id FROM ai))),
+  tpz AS (
+    SELECT
+      *
+    FROM
+      assessment_instances_points (
+        (
+          SELECT
+            id
+          FROM
+            ai
+        )
+      )
+  ),
   used_iq AS (
     SELECT
       tpz.zid,
       unnest(tpz.max_iq_ids) AS iq_id
-    FROM tpz
+    FROM
+      tpz
   ),
   pending_by_zone AS (
     SELECT
       u.zid,
       CASE
-        WHEN z.max_points IS NULL THEN
+        WHEN z.max_points IS NULL THEN sum(
+          CASE
+            WHEN coalesce(aq.max_manual_points, 0) > 0
+            AND iq.requires_manual_grading THEN coalesce(aq.max_manual_points, 0)
+            ELSE 0
+          END
+        )
+        ELSE LEAST(
           sum(
             CASE
               WHEN coalesce(aq.max_manual_points, 0) > 0
               AND iq.requires_manual_grading THEN coalesce(aq.max_manual_points, 0)
               ELSE 0
             END
-          )
-        ELSE
-          LEAST(
-            sum(
-              CASE
-                WHEN coalesce(aq.max_manual_points, 0) > 0
-                AND iq.requires_manual_grading THEN coalesce(aq.max_manual_points, 0)
-                ELSE 0
-              END
-            ),
-            z.max_points
-          )
+          ),
+          z.max_points
+        )
       END AS pending_points
     FROM
       used_iq AS u
@@ -70,12 +81,37 @@ WITH
   pending AS (
     SELECT
       coalesce(sum(pending_points), 0) AS pending_points
-    FROM pending_by_zone
+    FROM
+      pending_by_zone
   )
 SELECT
   CASE
-    WHEN (SELECT max_points FROM ai) IS NULL OR (SELECT max_points FROM ai) <= 0 THEN 0
-    ELSE LEAST(100, GREATEST(0, (pending.pending_points / (SELECT max_points FROM ai)) * 100))
+    WHEN (
+      SELECT
+        max_points
+      FROM
+        ai
+    ) IS NULL
+    OR (
+      SELECT
+        max_points
+      FROM
+        ai
+    ) <= 0 THEN 0
+    ELSE LEAST(
+      100,
+      GREATEST(
+        0,
+        (
+          pending.pending_points / (
+            SELECT
+              max_points
+            FROM
+              ai
+          )
+        ) * 100
+      )
+    )
   END AS expected_score_perc_pending
 FROM
   pending;
