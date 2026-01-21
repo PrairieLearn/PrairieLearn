@@ -8,6 +8,7 @@ from prairielearn.sympy_utils import ...
 import ast
 import copy
 import html
+import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -454,6 +455,21 @@ def evaluate_with_source(
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
+    # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
+    # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
+    # Euler's number plus 3), not 2000.0.
+    expr = re.sub(r"(\d)([eE])([+-])", r"\1*\2\3", expr)
+
+    # When complex numbers are not allowed, prevent Python from interpreting
+    # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
+    # so that 'j' is treated as a variable instead. This fixes issue #13661.
+    #
+    # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
+    # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
+    # (complex) + "n" regardless - they will still fail with HasComplexError.
+    if not allow_complex:
+        expr = re.sub(r"(\d)([jJ])(?![a-zA-Z0-9])", r"\1*\2", expr)
+
     local_dict = {
         k: v
         for inner_dict in locals_for_eval.values()
@@ -770,6 +786,7 @@ def validate_string_as_sympy(
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
 ) -> str | None:
     """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
 
@@ -784,6 +801,7 @@ def validate_string_as_sympy(
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
         )
     except HasFloatError as exc:
         return (

@@ -5,6 +5,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -237,6 +238,21 @@ export async function aiGrade({
       const hasImage = containsImageCapture(submission_text);
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
+
+      const mustacheParams = {
+        correct_answers: submission.true_answer ?? {},
+        params: submission.params ?? {},
+        submitted_answers: submission.submitted_answer,
+      };
+      for (const rubric_item of rubric_items) {
+        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
+        rubric_item.explanation = rubric_item.explanation
+          ? mustache.render(rubric_item.explanation, mustacheParams)
+          : null;
+        rubric_item.grader_note = rubric_item.grader_note
+          ? mustache.render(rubric_item.grader_note, mustacheParams)
+          : null;
+      }
 
       const input = await generatePrompt({
         questionPrompt,

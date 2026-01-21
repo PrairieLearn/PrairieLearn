@@ -19,12 +19,14 @@ import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
+  type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
+  type TeamsJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -696,7 +698,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -729,11 +731,11 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  loadedJson.data = result.data;
-
-  const validationResult = validate(loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
+
+  loadedJson.data = result.data;
 
   return loadedJson;
 }
@@ -758,7 +760,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -1107,13 +1109,46 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
+/**
+ * Converts legacy group properties to the new teams format for unified handling.
+ */
+export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson {
+  const canAssignRoles = assessment.groupRoles
+    .filter((role) => role.canAssignRoles)
+    .map((role) => role.name);
+
+  return {
+    enabled: assessment.groupWork,
+    minMembers: assessment.groupMinSize,
+    maxMembers: assessment.groupMaxSize,
+    roles: assessment.groupRoles.map((role) => ({
+      name: role.name,
+      minMembers: role.minimum,
+      maxMembers: role.maximum,
+    })),
+    studentPermissions: {
+      canCreateTeam: assessment.studentGroupCreate,
+      canJoinTeam: assessment.studentGroupJoin,
+      canLeaveTeam: assessment.studentGroupLeave,
+      canNameTeam: assessment.studentGroupChooseName,
+    },
+    rolePermissions: {
+      canAssignRoles,
+      canView: assessment.canView,
+      canSubmit: assessment.canSubmit,
+    },
+  };
+}
+
 function validateAssessment({
   assessment,
+  rawAssessment,
   questions,
   sharingEnabled,
   courseInstanceExpired,
 }: {
   assessment: AssessmentJson;
+  rawAssessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
@@ -1125,6 +1160,38 @@ function validateAssessment({
     errors.push(
       '"shareSourcePublicly" cannot be used because sharing is not enabled for this course',
     );
+  }
+
+  // Check for conflict between legacy group properties and new teams schema
+  if (assessment.teams != null) {
+    const usedLegacyProps: string[] = [];
+
+    // We need to use `rawAssessment` here to check if the user specified any
+    // legacy properties in their JSON. `assessment` has already had default values
+    // filled in by Zod.
+    for (const prop of [
+      'groupWork',
+      'groupMaxSize',
+      'groupMinSize',
+      'groupRoles',
+      'canView',
+      'canSubmit',
+      'studentGroupCreate',
+      'studentGroupJoin',
+      'studentGroupLeave',
+      'studentGroupChooseName',
+    ]) {
+      if (prop in rawAssessment) {
+        usedLegacyProps.push(prop);
+      }
+    }
+
+    if (usedLegacyProps.length > 0) {
+      const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
+      errors.push(
+        `Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+      );
+    }
   }
 
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
@@ -1353,58 +1420,83 @@ function validateAssessment({
     );
   }
 
-  if (assessment.groupRoles.length > 0) {
-    // Ensure at least one mandatory role can assign roles
-    const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
-    );
+  // Convert legacy group properties to teams format for unified validation
+  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
+  // Use 'team' for new schema, 'group' for legacy properties (for error messages)
+  const teamType = assessment.teams != null ? 'team' : 'group';
 
-    if (!foundCanAssignRoles) {
-      errors.push('Could not find a role with minimum >= 1 and "canAssignRoles" set to "true".');
+  // Validate teams/groups if we have roles defined
+  if (teams.roles.length > 0) {
+    const rolePerms = teams.rolePermissions;
+
+    const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
+    const hasAssigner = teams.roles.some(
+      (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
+    );
+    if (!hasAssigner) {
+      errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    // Ensure values for role minimum and maximum are within bounds
-    assessment.groupRoles.forEach((role) => {
-      if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
-        warnings.push(
-          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
-        );
+    const validRoleNames = new Set(teams.roles.map((r) => r.name));
+
+    rolePerms.canAssignRoles.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(`"canAssignRoles" contains non-existent role "${roleName}".`);
       }
-      if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
+    });
+
+    rolePerms.canView.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
         errors.push(
-          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
-        );
-      }
-      if (
-        role.maximum != null &&
-        assessment.groupMaxSize != null &&
-        role.maximum > assessment.groupMaxSize
-      ) {
-        errors.push(
-          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
-        );
-      }
-      if (role.maximum != null && role.minimum > role.maximum) {
-        errors.push(
-          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
+          `The assessment's "canView" permission contains non-existent role "${roleName}".`,
         );
       }
     });
 
-    const validRoleNames = new Set();
-    assessment.groupRoles.forEach((role) => {
-      validRoleNames.add(role.name);
+    rolePerms.canSubmit.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(
+          `The assessment's "canSubmit" permission contains non-existent role "${roleName}".`,
+        );
+      }
+    });
+
+    teams.roles.forEach((role) => {
+      if (teams.minMembers != null && role.minMembers > teams.minMembers) {
+        warnings.push(
+          `Role "${role.name}" has a minMembers greater than the ${teamType}'s minMembers.`,
+        );
+      }
+      if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
+        errors.push(
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${teams.maxMembers}, found ${role.minMembers}).`,
+        );
+      }
+      if (
+        role.maxMembers != null &&
+        teams.maxMembers != null &&
+        role.maxMembers > teams.maxMembers
+      ) {
+        errors.push(
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${teams.maxMembers}, found ${role.maxMembers}).`,
+        );
+      }
+      if (role.maxMembers != null && role.minMembers > role.maxMembers) {
+        errors.push(
+          `Role "${role.name}" must have minMembers <= maxMembers. (Expected minMembers <= ${role.maxMembers}, found minMembers = ${role.minMembers}).`,
+        );
+      }
     });
 
     const validateViewAndSubmitRolePermissions = (
       canView: string[],
       canSubmit: string[],
-      area: string,
+      area: 'zone' | 'zone question',
     ): void => {
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canView" permission contains non-existent role "${roleName}".`,
           );
         }
       });
@@ -1412,19 +1504,15 @@ function validateAssessment({
       canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canSubmit" permission contains non-existent role "${roleName}".`,
           );
         }
       });
     };
 
-    // Validate role names at the assessment level
-    validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
-
-    // Validate role names for each zone
+    // Validate role names for each zone and question
     assessment.zones.forEach((zone) => {
       validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
-      // Validate role names for each question
       zone.questions.forEach((zoneQuestion) => {
         validateViewAndSubmitRolePermissions(
           zoneQuestion.canView,
@@ -1657,8 +1745,14 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     schema: schemas.infoAssessment,
     zodSchema: schemas.AssessmentJsonSchema,
-    validate: (assessment: AssessmentJson) =>
-      validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
+    validate: (assessment: AssessmentJson, rawAssessment: AssessmentJsonInput) =>
+      validateAssessment({
+        assessment,
+        rawAssessment,
+        questions,
+        sharingEnabled,
+        courseInstanceExpired,
+      }),
     recursive: true,
   });
   checkDuplicateUUIDs(
