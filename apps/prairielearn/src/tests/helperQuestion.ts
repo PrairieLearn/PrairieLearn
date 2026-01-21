@@ -16,7 +16,6 @@ import {
   SubmissionSchema,
   VariantSchema,
 } from '../lib/db-types.js';
-import { selectJobsByJobSequenceId } from '../lib/server-jobs.js';
 import { selectQuestionByQid } from '../models/question.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -698,13 +697,6 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
           console.log(issues);
         }
 
-        if (locals.job_sequence.status !== 'Success') {
-          const jobs = await selectJobsByJobSequenceId(locals.job_sequence_id);
-          for (const job of jobs) {
-            console.log(`Job ${job.id} (${job.status}):`);
-            console.log(job.output);
-          }
-        }
         assert.equal(locals.job_sequence.status, 'Success');
         assert.lengthOf(issues, 0);
       });
