@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+from collections import defaultdict
 from copy import deepcopy
 from typing import TypedDict
 
@@ -129,17 +130,18 @@ def shuffle_distractor_groups(
     all_blocks: list[OrderBlocksAnswerData],
 ) -> list[OrderBlocksAnswerData]:
     """Shuffle each correct block with its related distractors"""
-    new_block_ordering = []
+    distractors = defaultdict(list)
+    for block in all_blocks:
+        if block.get("distractor_for"):
+            distractors[block.get("distractor_for")].append(block)
+
+    new_block_ordering: list[OrderBlocksAnswerData] = []
     for block in all_blocks:
         if block.get("distractor_for"):
             continue
-        tag = block["tag"]
-        group = [
-            block,
-            *(b for b in all_blocks if b.get("distractor_for") == tag),
-        ]
-        random.shuffle(group)
-        new_block_ordering += group
+        block_with_distractors = [block, *distractors[block["tag"]]]
+        random.shuffle(block_with_distractors)
+        new_block_ordering.extend(block_with_distractors)
     return new_block_ordering
 
 
