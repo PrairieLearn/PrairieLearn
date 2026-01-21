@@ -1,12 +1,17 @@
 import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
+import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
-import { InstanceQuestionSchema } from '../lib/db-types.js';
+import {
+  AssessmentInstanceSchema,
+  InstanceQuestionSchema,
+  SprocAssessmentInstancesGradeSchema,
+} from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -24,6 +29,7 @@ import {
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
+const ExpectedScorePercPendingSchema = z.number();
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -111,6 +117,7 @@ let score_percent: number, score_points: number, adjust_points: number | null;
 let feedback_note: string;
 let rubric_items: RubricItem[] | undefined;
 let selected_rubric_items: number[] | undefined;
+let assessment_instance_id: string;
 
 async function submitGradeForm(
   method: 'rubric' | 'points' | 'percentage' = 'rubric',
@@ -465,7 +472,33 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
           { iqId },
           InstanceQuestionSchema,
         );
+        assessment_instance_id = instanceQuestion.assessment_instance_id;
         assert.equal(instanceQuestion.requires_manual_grading, false);
+      });
+
+      test.sequential('score_perc_pending should be 0 before manual grading is requested', async () => {
+        await sqldb.callRow(
+          'assessment_instances_grade',
+          [
+            assessment_instance_id,
+            '1', // authn_user_id
+            100, // credit
+            false, // only_log_if_score_updated
+            true, // allow_decrease
+          ],
+          SprocAssessmentInstancesGradeSchema,
+        );
+        const assessmentInstance = await sqldb.queryRow(
+          sql.get_assessment_instance_for_iq,
+          { iqId },
+          AssessmentInstanceSchema,
+        );
+        const expected_score_perc_pending = await sqldb.queryRow(
+          sql.get_expected_score_perc_pending_for_iq,
+          { iqId },
+          ExpectedScorePercPendingSchema,
+        );
+        assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
       });
 
       test.sequential('submit an answer to the question', async () => {
@@ -490,6 +523,38 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         );
         assert.equal(instanceQuestion.requires_manual_grading, true);
       });
+
+      test.sequential(
+        'score_perc_pending should reflect a newly pending manual question after submission',
+        async () => {
+          await sqldb.callRow(
+            'assessment_instances_grade',
+            [
+              assessment_instance_id,
+              '1', // authn_user_id
+              100, // credit
+              false, // only_log_if_score_updated
+              true, // allow_decrease
+            ],
+            SprocAssessmentInstancesGradeSchema,
+          );
+          const assessmentInstance = await sqldb.queryRow(
+            sql.get_assessment_instance_for_iq,
+            { iqId },
+            AssessmentInstanceSchema,
+          );
+          const expected_score_perc_pending = await sqldb.queryRow(
+            sql.get_expected_score_perc_pending_for_iq,
+            { iqId },
+            ExpectedScorePercPendingSchema,
+          );
+          assert.closeTo(
+            assessmentInstance.score_perc_pending,
+            expected_score_perc_pending,
+            0.0001,
+          );
+        },
+      );
     });
 
     describe('Manual grading behavior while instance is open', () => {
@@ -735,6 +800,31 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         score_points = (score_percent * 6) / 100;
         feedback_note = 'Test feedback note';
         await submitGradeForm('percentage');
+      });
+
+      test.sequential('score_perc_pending should drop after manual grading is completed', async () => {
+        await sqldb.callRow(
+          'assessment_instances_grade',
+          [
+            assessment_instance_id,
+            '1', // authn_user_id
+            100, // credit
+            false, // only_log_if_score_updated
+            true, // allow_decrease
+          ],
+          SprocAssessmentInstancesGradeSchema,
+        );
+        const assessmentInstance = await sqldb.queryRow(
+          sql.get_assessment_instance_for_iq,
+          { iqId },
+          AssessmentInstanceSchema,
+        );
+        const expected_score_perc_pending = await sqldb.queryRow(
+          sql.get_expected_score_perc_pending_for_iq,
+          { iqId },
+          ExpectedScorePercPendingSchema,
+        );
+        assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
       });
 
       checkGradingResults(mockStaff[0], mockStaff[2]);

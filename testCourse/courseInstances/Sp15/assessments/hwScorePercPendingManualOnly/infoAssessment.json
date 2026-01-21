@@ -1,0 +1,19 @@
+{
+  "uuid": "8b9e5177-2e1c-4471-a8dd-0f1cf5e2ac34",
+  "type": "Homework",
+  "title": "Homework score_perc_pending manual-only",
+  "set": "Homework",
+  "number": "98",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [
+        {
+          "id": "manualGrade/shortAnswer",
+          "points": 1,
+          "maxPoints": 10
+        }
+      ]
+    }
+  ]
+}
