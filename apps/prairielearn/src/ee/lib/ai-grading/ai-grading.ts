@@ -10,6 +10,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
@@ -28,7 +29,6 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
-import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
