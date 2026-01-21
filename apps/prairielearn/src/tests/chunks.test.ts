@@ -969,7 +969,12 @@ describe('chunks', () => {
       await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
 
       // Verify the symlink exists in the unpacked chunk and has the correct target
-      const unpackedSymlinkPath = path.join(courseRuntimeDir, 'serverFilesCourse', 'utils', 'shared.py');
+      const unpackedSymlinkPath = path.join(
+        courseRuntimeDir,
+        'serverFilesCourse',
+        'utils',
+        'shared.py',
+      );
       const stat = await fs.lstat(unpackedSymlinkPath);
       assert.isTrue(stat.isSymbolicLink(), 'Expected a symlink at utils/shared.py');
 
