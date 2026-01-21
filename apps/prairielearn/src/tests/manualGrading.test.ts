@@ -476,30 +476,37 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         assert.equal(instanceQuestion.requires_manual_grading, false);
       });
 
-      test.sequential('score_perc_pending should be 0 before manual grading is requested', async () => {
-        await sqldb.callRow(
-          'assessment_instances_grade',
-          [
-            assessment_instance_id,
-            '1', // authn_user_id
-            100, // credit
-            false, // only_log_if_score_updated
-            true, // allow_decrease
-          ],
-          SprocAssessmentInstancesGradeSchema,
-        );
-        const assessmentInstance = await sqldb.queryRow(
-          sql.get_assessment_instance_for_iq,
-          { iqId },
-          AssessmentInstanceSchema,
-        );
-        const expected_score_perc_pending = await sqldb.queryRow(
-          sql.get_expected_score_perc_pending_for_iq,
-          { iqId },
-          ExpectedScorePercPendingSchema,
-        );
-        assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
-      });
+      test.sequential(
+        'score_perc_pending should be 0 before manual grading is requested',
+        async () => {
+          await sqldb.callRow(
+            'assessment_instances_grade',
+            [
+              assessment_instance_id,
+              '1', // authn_user_id
+              100, // credit
+              false, // only_log_if_score_updated
+              true, // allow_decrease
+            ],
+            SprocAssessmentInstancesGradeSchema,
+          );
+          const assessmentInstance = await sqldb.queryRow(
+            sql.get_assessment_instance_for_iq,
+            { iqId },
+            AssessmentInstanceSchema,
+          );
+          const expected_score_perc_pending = await sqldb.queryRow(
+            sql.get_expected_score_perc_pending_for_iq,
+            { iqId },
+            ExpectedScorePercPendingSchema,
+          );
+          assert.closeTo(
+            assessmentInstance.score_perc_pending,
+            expected_score_perc_pending,
+            0.0001,
+          );
+        },
+      );
 
       test.sequential('submit an answer to the question', async () => {
         const gradeRes = await saveOrGrade(iqUrl, {}, 'save', [
@@ -802,30 +809,37 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
         await submitGradeForm('percentage');
       });
 
-      test.sequential('score_perc_pending should drop after manual grading is completed', async () => {
-        await sqldb.callRow(
-          'assessment_instances_grade',
-          [
-            assessment_instance_id,
-            '1', // authn_user_id
-            100, // credit
-            false, // only_log_if_score_updated
-            true, // allow_decrease
-          ],
-          SprocAssessmentInstancesGradeSchema,
-        );
-        const assessmentInstance = await sqldb.queryRow(
-          sql.get_assessment_instance_for_iq,
-          { iqId },
-          AssessmentInstanceSchema,
-        );
-        const expected_score_perc_pending = await sqldb.queryRow(
-          sql.get_expected_score_perc_pending_for_iq,
-          { iqId },
-          ExpectedScorePercPendingSchema,
-        );
-        assert.closeTo(assessmentInstance.score_perc_pending, expected_score_perc_pending, 0.0001);
-      });
+      test.sequential(
+        'score_perc_pending should drop after manual grading is completed',
+        async () => {
+          await sqldb.callRow(
+            'assessment_instances_grade',
+            [
+              assessment_instance_id,
+              '1', // authn_user_id
+              100, // credit
+              false, // only_log_if_score_updated
+              true, // allow_decrease
+            ],
+            SprocAssessmentInstancesGradeSchema,
+          );
+          const assessmentInstance = await sqldb.queryRow(
+            sql.get_assessment_instance_for_iq,
+            { iqId },
+            AssessmentInstanceSchema,
+          );
+          const expected_score_perc_pending = await sqldb.queryRow(
+            sql.get_expected_score_perc_pending_for_iq,
+            { iqId },
+            ExpectedScorePercPendingSchema,
+          );
+          assert.closeTo(
+            assessmentInstance.score_perc_pending,
+            expected_score_perc_pending,
+            0.0001,
+          );
+        },
+      );
 
       checkGradingResults(mockStaff[0], mockStaff[2]);
     });
