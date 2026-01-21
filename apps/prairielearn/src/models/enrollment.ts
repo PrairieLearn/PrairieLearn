@@ -587,56 +587,59 @@ export async function setEnrollmentStatus({
   authzData: AuthzData;
   requiredRole: CourseInstanceRole[];
 }): Promise<Enrollment> {
-  const transitionInformation: {
-    equivalentStatuses?: EnumEnrollmentStatus[];
-    previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
-    actionDetail: SupportedActionsForTable<'enrollments'> | null;
-    permittedRoles: CourseInstanceRole[];
-  } = run(() => {
-    switch (status) {
-      case 'joined':
-        return {
-          previousStatus: ['blocked', 'removed'],
-          actionDetail: null,
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      case 'left':
-        return {
-          // If a student tries to leave a course but has already been removed by
-          // an instructor, we will treat this as a no-op.
-          equivalentStatuses: ['removed'],
-          previousStatus: 'joined',
-          actionDetail: 'left',
-          permittedRoles: ['Student'],
-        };
-      case 'removed':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'removed',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      case 'rejected':
-        return {
-          previousStatus: 'invited',
-          actionDetail: 'invitation_rejected',
-          permittedRoles: ['Student'],
-        };
-      case 'blocked':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'blocked',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      default:
-        assertNever(status);
-    }
-  });
-
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
     if (lockedEnrollment.user_id) {
       await selectAndLockUser(lockedEnrollment.user_id);
     }
+
+    const transitionInformation: {
+      equivalentStatuses?: EnumEnrollmentStatus[];
+      previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
+      actionDetail: SupportedActionsForTable<'enrollments'>;
+      permittedRoles: CourseInstanceRole[];
+    } = run(() => {
+      switch (status) {
+        case 'joined':
+          return {
+            previousStatus: ['blocked', 'removed'],
+            // TODO: when we add support for re-enrolling via manual and LTI sync,
+            // we'll need to differentiate those action details here.
+            actionDetail:
+              lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
+            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+          };
+        case 'left':
+          return {
+            // If a student tries to leave a course but has already been removed by
+            // an instructor, we will treat this as a no-op.
+            equivalentStatuses: ['removed'],
+            previousStatus: 'joined',
+            actionDetail: 'left',
+            permittedRoles: ['Student'],
+          };
+        case 'removed':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'removed',
+            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+          };
+        case 'rejected':
+          return {
+            previousStatus: 'invited',
+            actionDetail: 'invitation_rejected',
+            permittedRoles: ['Student'],
+          };
+        case 'blocked':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'blocked',
+            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+          };
+        default:
+          assertNever(status);
+      }
+    });
 
     if (
       lockedEnrollment.status === status ||
@@ -661,27 +664,10 @@ export async function setEnrollmentStatus({
       EnrollmentSchema,
     );
 
-    // Determine the action detail. For transitions to 'joined', this depends on
-    // the previous status.
-    const actionDetail: SupportedActionsForTable<'enrollments'> = run(() => {
-      if (transitionInformation.actionDetail !== null) {
-        return transitionInformation.actionDetail;
-      }
-      // For transitions to 'joined', determine action detail based on previous status.
-      switch (lockedEnrollment.status) {
-        case 'blocked':
-          return 'unblocked';
-        case 'removed':
-          return 'reenrolled';
-        default:
-          throw new Error(`Unexpected previous status: ${lockedEnrollment.status}`);
-      }
-    });
-
     await insertAuditEvent({
       tableName: 'enrollments',
       action: 'update',
-      actionDetail,
+      actionDetail: transitionInformation.actionDetail,
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
