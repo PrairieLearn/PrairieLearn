@@ -389,11 +389,11 @@ function FilterHelpModal() {
             </tr>
             <tr>
               <td>
-                <code>assessment:<em>AID</em></code>
+                <code>assessment:<em>short_name</em></code>
               </td>
               <td>
-                Shows all issues with an assessment ID like <code>AID</code>; supports
-                <code>*</code> as a wildcard. For example,
+                Shows all issues with an assessment short name like <code>short_name</code>;
+                supports <code>*</code> as a wildcard. For example,
                 <code>assessment:exam/instantFeedback</code> shows all issues associated with the
                 assessment <code>exam/instantFeedback</code>, and
                 <code>assessment:exam/*</code> shows all issues associated with any assessment that
