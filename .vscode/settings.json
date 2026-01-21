@@ -80,5 +80,6 @@
   "yaml.format.enable": false,
   "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
   "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
-  "java.project.sourcePaths": ["graders/java"]
+  "java.project.sourcePaths": ["graders/java"],
+  "makefile.configureOnOpen": false
 }
