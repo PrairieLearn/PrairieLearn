@@ -11,13 +11,13 @@ Drag all the prime numbers below to the answer zone <strong>in ascending order</
 <p>
 This example uses the attributes <code>min-incorrect="2"</code> and
 <code>max-incorrect="4"</code> to display a minimum of 2 incorrect distractors and maximum of 4.
-Since this example uses the default values for <code>source-blocks-order="random"</code> and <code>grading-method="ordered"</code>,
-the blocks in the source area appear shuffled, and the correct answer from the solution area follows
+The attribute <code>source-blocks-order="random"</code> shuffles the blocks in the source area.
+The default <code>grading-method="ordered"</code> requires that the correct answer follows
 the order defined by the <code>pl-answers</code>.
 </p>
 
 </pl-question-panel>
-<pl-order-blocks answers-name="prime-numbers-ordered" min-incorrect="2" max-incorrect="4">
+<pl-order-blocks answers-name="prime-numbers-ordered" source-blocks-order="random" min-incorrect="2" max-incorrect="4">
   <pl-answer correct="false">1</pl-answer>
   <pl-answer correct="true">2</pl-answer>
   <pl-answer correct="true">3</pl-answer>

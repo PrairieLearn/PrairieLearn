@@ -10,13 +10,8 @@ Prove that $A \land B \land C \rightarrow A \land C$
 </p>
 
 <p>
-This example uses the attribute <code>grading-method="dag"</code> to control how the correct solution is ordered.
-This is especially useful when you want students to construct a mathematical proof, where the dependency of lines of the
-proof on one another is given by a directed acyclic graph (DAG) structure. The <code>depends</code> attribute on each
-line is used to denote which lines of the proof must appear before a particular line.
-Then a correct answer is a topological sort of the lines of the proof.
-The attribute <code>solution-placement="bottom"</code> is used
-to display the input area above the output area.
+This example uses the attribute <code>grading-method="dag"</code> to accept any valid topological ordering.
+The <code>depends</code> attribute on each block specifies which other blocks must appear before it.
 </p>
 </pl-question-panel>
 
