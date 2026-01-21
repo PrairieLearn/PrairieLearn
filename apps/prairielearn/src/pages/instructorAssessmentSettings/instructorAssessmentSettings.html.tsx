@@ -64,7 +64,7 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
-              <label class="form-label" for="aid">AID</label>
+              <label class="form-label" for="aid">Short name</label>
               <input
                 type="text"
                 class="form-control font-monospace"
