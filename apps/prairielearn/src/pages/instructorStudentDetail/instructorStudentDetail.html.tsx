@@ -67,7 +67,7 @@ export function InstructorStudentDetail({
   };
 
   return (
-    <TimezoneContext.Provider value={course_instance.display_timezone}>
+    <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
         courseInstanceUrl={courseInstanceUrl}
@@ -99,7 +99,7 @@ export function InstructorStudentDetail({
         </div>
         <StudentAuditEventsTable events={auditEvents} />
       </div>
-    </TimezoneContext.Provider>
+    </TimezoneContext>
   );
 }
 

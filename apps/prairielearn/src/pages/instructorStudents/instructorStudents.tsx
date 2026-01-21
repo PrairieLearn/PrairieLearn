@@ -4,7 +4,7 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';

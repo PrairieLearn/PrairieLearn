@@ -1,6 +1,6 @@
 import { decodeData } from '@prairielearn/browser-utils';
 
-import { mathjaxTypeset } from './lib/mathjax.js';
+import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 
 $(() => {
   resetInstructorGradingPanel();
