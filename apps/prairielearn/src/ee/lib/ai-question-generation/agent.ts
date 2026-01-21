@@ -5,10 +5,10 @@ import path from 'node:path';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { getErrorMessage } from '@ai-sdk/provider';
 import {
-  Experimental_Agent as Agent,
   type InferUITools,
   JsonToSseTransformStream,
   type LanguageModel,
+  ToolLoopAgent,
   type ToolSet,
   type ToolUIPart,
   type UIDataTypes,
@@ -320,15 +320,21 @@ export async function createQuestionGenerationAgent({
     return false;
   };
 
-  const agent = new Agent({
+  const agent = new ToolLoopAgent({
     model,
-    system: systemPrompt,
+    instructions: systemPrompt,
     stopWhen: [
       // Cap to 20 steps to avoid runaways.
       stepCountIs(20),
       // Check for user-initiated cancellation before each step.
       checkCancellation,
     ],
+    providerOptions: {
+      openai: {
+        reasoningEffort: 'low',
+        reasoningSummary: 'auto',
+      } satisfies OpenAIResponsesProviderOptions,
+    },
     prepareStep: async ({ steps }) => {
       const didListExamples = steps
         .at(-1)
@@ -431,8 +437,8 @@ export async function createQuestionGenerationAgent({
           const courseFilesClient = getCourseFilesClient();
           const result = await courseFilesClient.updateQuestionFiles.mutate({
             course_id: course.id,
-            user_id: user.user_id,
-            authn_user_id: authnUser.user_id,
+            user_id: user.id,
+            authn_user_id: authnUser.id,
             has_course_permission_edit: hasCoursePermissionEdit,
             question_id: question.id,
             files: writtenFiles,
@@ -445,9 +451,7 @@ export async function createQuestionGenerationAgent({
 
           // Only attempt rendering if there were no other errors.
           if (errors.length === 0) {
-            errors.push(
-              ...(await checkRender('success', [], course.id, user.user_id, question.id)),
-            );
+            errors.push(...(await checkRender('success', [], course.id, user.id, question.id)));
           }
 
           return { errors };
@@ -485,7 +489,8 @@ export async function editQuestionWithAgent({
     courseId: course.id,
     type: 'ai_question_generate',
     description: `${question ? 'Edit' : 'Generate'} a question with AI`,
-    authnUserId: authnUser.user_id,
+    userId: user.id,
+    authnUserId: authnUser.id,
   });
 
   const isExistingQuestion = !!question;
@@ -497,8 +502,8 @@ export async function editQuestionWithAgent({
     const courseFilesClient = getCourseFilesClient();
     const saveResults = await courseFilesClient.createQuestion.mutate({
       course_id: course.id,
-      user_id: user.user_id,
-      authn_user_id: authnUser.user_id,
+      user_id: user.id,
+      authn_user_id: authnUser.id,
       has_course_permission_edit: hasCoursePermissionEdit,
       is_draft: true,
       files: {
@@ -513,7 +518,7 @@ export async function editQuestionWithAgent({
 
     await execute(otherSql.insert_draft_question_metadata, {
       question_id: saveResults.question_id,
-      creator_id: authnUser.user_id,
+      creator_id: authnUser.id,
     });
 
     question = await selectQuestionById(saveResults.question_id);
@@ -560,7 +565,7 @@ export async function editQuestionWithAgent({
       messageId: messageRow.id,
     });
 
-    const args = run(() => {
+    const args = await run(async () => {
       if (messages) {
         const filteredMessages = messages.map((msg) => {
           return {
@@ -583,7 +588,7 @@ export async function editQuestionWithAgent({
           ...filteredMessages.slice(Math.max(filteredMessages.length - 10, 1)),
         ];
 
-        return { messages: convertToModelMessages(trimmedMessages) };
+        return { messages: await convertToModelMessages(trimmedMessages) };
       } else if (prompt) {
         return { prompt };
       } else {
@@ -591,15 +596,7 @@ export async function editQuestionWithAgent({
       }
     });
 
-    const res = agent.stream({
-      ...args,
-      providerOptions: {
-        openai: {
-          reasoningEffort: 'low',
-          reasoningSummary: 'auto',
-        } satisfies OpenAIResponsesProviderOptions,
-      },
-    });
+    const res = await agent.stream(args);
 
     let finalMessage = null as UIMessage<any, any> | null;
     const stream = res.toUIMessageStream<QuestionGenerationUIMessage>({
@@ -638,8 +635,17 @@ export async function editQuestionWithAgent({
 
     await stream.pipeTo(sseStream.writable);
 
-    const steps = await res.steps.catch(() => []);
-    const totalUsage = mergeUsage(emptyUsage(), await res.totalUsage.catch(() => emptyUsage()));
+    const steps = await res.steps.then(
+      (steps) => steps,
+      () => [],
+    );
+    const totalUsage = mergeUsage(
+      emptyUsage(),
+      await res.totalUsage.then(
+        (usage) => usage,
+        () => emptyUsage(),
+      ),
+    );
 
     job.info('Finish reason: ' + (await res.finishReason));
     job.info(JSON.stringify(steps, null, 2));
@@ -655,7 +661,7 @@ export async function editQuestionWithAgent({
     });
 
     await addCompletionCostToIntervalUsage({
-      userId: user.user_id,
+      userId: user.id,
       usage: totalUsage,
     });
   });

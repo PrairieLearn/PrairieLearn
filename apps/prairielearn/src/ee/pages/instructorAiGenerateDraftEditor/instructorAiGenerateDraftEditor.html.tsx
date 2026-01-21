@@ -1,5 +1,5 @@
 import { html, unsafeHtml } from '@prairielearn/html';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
@@ -62,6 +62,10 @@ export function InstructorAiGenerateDraftEditor({
       forcedInitialNavToggleState: false,
     },
     headContent: [
+      html`<meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />`,
       compiledScriptTag('question.ts'),
       compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
       html`<script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>`,
@@ -74,7 +78,7 @@ export function InstructorAiGenerateDraftEditor({
       `,
     ],
     content: (
-      <Hydrate class="app-content-container">
+      <Hydrate className="app-content-container">
         <AiQuestionGenerationEditor
           chatCsrfToken={chatCsrfToken}
           cancelCsrfToken={cancelCsrfToken}

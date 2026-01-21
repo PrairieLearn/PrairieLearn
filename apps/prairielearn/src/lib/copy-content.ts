@@ -8,7 +8,7 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../models/course.js';
-import type { CourseInstanceJson } from '../schemas/infoCourseInstance.js';
+import type { CourseInstanceJsonInput } from '../schemas/infoCourseInstance.js';
 
 import { config } from './config.js';
 import { type Course, type CourseInstance, type Question, type User } from './db-types.js';
@@ -34,7 +34,7 @@ async function getCopyTargets({
   urlSuffix: string;
 }): Promise<CopyTarget[] | null> {
   const editableCourses = await selectCoursesWithEditAccess({
-    user_id: user.user_id,
+    user_id: user.id,
     is_administrator,
   });
 
@@ -51,7 +51,7 @@ async function getCopyTargets({
       // we need to generate a corresponding CSRF token for each one.
       const csrfToken = generateCsrfToken({
         url: copyUrl,
-        authnUserId: authn_user.user_id,
+        authnUserId: authn_user.id,
       });
 
       return {
@@ -205,7 +205,7 @@ export async function copyQuestionBetweenCourses(
   const fromFolderPath = path.join(fromCourse.path, 'questions', question.qid);
 
   const fileTransferId = await initiateFileTransfer({
-    userId: res.locals.user.user_id,
+    userId: res.locals.user.id,
     fromCourse,
     toCourseId,
     transferType: 'CopyQuestion',
@@ -226,7 +226,7 @@ export async function copyCourseInstanceBetweenCourses({
   toCourseId: string;
   fromCourseInstance: CourseInstance;
   userId: string;
-  metadataOverrides: Partial<CourseInstanceJson>;
+  metadataOverrides: Partial<CourseInstanceJsonInput>;
 }) {
   if (!fromCourseInstance.short_name) {
     throw new Error(`Course Instance ${fromCourseInstance.long_name} does not have a short_name`);

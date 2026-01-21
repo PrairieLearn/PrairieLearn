@@ -27,8 +27,12 @@ export function PublicQuestionPreview({
       pageNote: 'Public Preview',
     },
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledScriptTag('question.ts')}
-      <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>

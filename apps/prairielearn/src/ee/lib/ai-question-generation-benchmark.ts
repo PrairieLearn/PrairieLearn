@@ -183,7 +183,8 @@ export async function benchmarkAiQuestionGeneration({
   const serverJob = await createServerJob({
     type: 'ai_question_generation_benchmark',
     description: 'Benchmark AI question generation',
-    authnUserId: user.user_id,
+    userId: user.id,
+    authnUserId: user.id,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -217,7 +218,7 @@ export async function benchmarkAiQuestionGeneration({
       path: courseDirectory.path,
       repository: null,
       branch: 'master',
-      authn_user_id: user.user_id,
+      authn_user_id: user.id,
     });
 
     // Sync the course to the database so future edits will do their thing.

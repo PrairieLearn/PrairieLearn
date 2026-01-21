@@ -12,7 +12,7 @@ import { ScorebarHtml } from '../../components/Scorebar.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -26,7 +26,7 @@ export function InstructorAssessments({
   assessmentModules,
   assessmentsGroupBy,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   rows: AssessmentRow[];
   assessmentIdsNeedingStatsUpdate: string[];
   csvFilename: string;
@@ -80,7 +80,7 @@ export function InstructorAssessments({
                     <tr>
                       <th style="width: 1%"><span class="visually-hidden">Label</span></th>
                       <th><span class="visually-hidden">Title</span></th>
-                      <th>AID</th>
+                      <th>Short name</th>
                       <th class="text-center">Students</th>
                       <th class="text-center">Scores</th>
                       <th class="text-center">Mean Score</th>
@@ -125,7 +125,7 @@ export function InstructorAssessments({
                                 : ''}
                             <a href="${urlPrefix}/assessment/${row.id}/">
                               ${row.title}
-                              ${row.group_work
+                              ${row.team_work
                                 ? html` <i class="fas fa-users" aria-hidden="true"></i> `
                                 : ''}
                             </a>
@@ -284,7 +284,7 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="aid">Assessment identifier (AID)</label>
+        <label class="form-label" for="aid">Short name</label>
         <input
           type="text"
           class="form-control"

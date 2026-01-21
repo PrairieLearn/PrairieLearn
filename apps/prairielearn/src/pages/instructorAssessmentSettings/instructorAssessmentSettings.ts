@@ -2,7 +2,6 @@ import * as path from 'path';
 
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
@@ -10,9 +9,10 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { AssessmentModuleSchema, AssessmentSetSchema, IdSchema } from '../../lib/db-types.js';
+import { AssessmentModuleSchema, AssessmentSetSchema } from '../../lib/db-types.js';
 import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
@@ -24,6 +24,7 @@ import {
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
@@ -34,7 +35,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const tids = await sqldb.queryRows(
       sql.tids,
       { course_instance_id: res.locals.course_instance.id },
@@ -62,9 +63,9 @@ router.get(
     const infoAssessmentPath = encodePath(
       path.join(
         'courseInstances',
-        res.locals.course_instance.short_name,
+        res.locals.course_instance.short_name!,
         'assessments',
-        res.locals.assessment.tid,
+        res.locals.assessment.tid!,
         'infoAssessment.json',
       ),
     );
@@ -106,10 +107,10 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (req.body.__action === 'copy_assessment') {
       const editor = new AssessmentCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -131,7 +132,7 @@ router.post(
       res.redirect(res.locals.urlPrefix + '/assessment/' + assessmentId + '/settings');
     } else if (req.body.__action === 'delete_assessment') {
       const editor = new AssessmentDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
       const serverJob = await editor.prepareServerJob();
       try {
@@ -144,9 +145,9 @@ router.post(
       const infoAssessmentPath = path.join(
         res.locals.course.path,
         'courseInstances',
-        res.locals.course_instance.short_name,
+        res.locals.course_instance.short_name!,
         'assessments',
-        res.locals.assessment.tid,
+        res.locals.assessment.tid!,
         'infoAssessment.json',
       );
       if (!(await fs.pathExists(infoAssessmentPath))) {
@@ -154,12 +155,12 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, `Invalid TID (was falsy): ${req.body.aid}`);
+        throw new error.HttpStatusError(400, `Invalid short name (was falsy): ${req.body.aid}`);
       }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
         throw new error.HttpStatusError(
           400,
-          `Invalid TID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.id}`,
+          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
         );
       }
 
@@ -215,21 +216,21 @@ router.post(
         } catch {
           throw new error.HttpStatusError(
             400,
-            `Invalid TID (could not be normalized): ${req.body.aid}`,
+            `Invalid short name (could not be normalized): ${req.body.aid}`,
           );
         }
       });
 
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           // This won't reflect if the operation is an update or a rename; we think that's OK.
           description: `${res.locals.course_instance.short_name}: Update assessment ${res.locals.assessment.tid}`,
         },
         [
           // Each of these editors will no-op if there wasn't any change.
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -238,7 +239,7 @@ router.post(
             editContents: b64EncodeUnicode(formattedJson),
             origHash: req.body.orig_hash,
           }),
-          new AssessmentRenameEditor({ locals: res.locals as any, tid_new }),
+          new AssessmentRenameEditor({ locals: res.locals, tid_new }),
         ],
       );
       const serverJob = await editor.prepareServerJob();

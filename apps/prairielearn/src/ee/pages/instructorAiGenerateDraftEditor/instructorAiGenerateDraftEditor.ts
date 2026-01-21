@@ -7,6 +7,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
@@ -16,7 +17,6 @@ import {
   AiQuestionGenerationMessageSchema,
   type Course,
   type EnumAiQuestionGenerationMessageStatus,
-  IdSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';
@@ -85,8 +85,8 @@ async function saveRevisedQuestion({
 
   const result = await client.updateQuestionFiles.mutate({
     course_id: course.id,
-    user_id: user.user_id,
-    authn_user_id: authn_user.user_id,
+    user_id: user.id,
+    authn_user_id: authn_user.id,
     question_id: question.id,
     has_course_permission_edit: authz_data.has_course_permission_edit,
     files,
@@ -100,7 +100,7 @@ async function saveRevisedQuestion({
 
   await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
-    prompting_user_id: authn_user.user_id,
+    prompting_user_id: authn_user.id,
     prompt_type: promptType,
     user_prompt: prompt,
     system_prompt: prompt,
@@ -263,7 +263,7 @@ router.post(
     assertCanCreateQuestion(res.locals);
 
     const intervalCost = await getIntervalUsage({
-      userId: res.locals.authn_user.user_id,
+      userId: res.locals.authn_user.id,
     });
 
     if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
@@ -318,8 +318,8 @@ router.post(
       // TODO: this needs to handle updating the question title as well.
       const result = await client.renameQuestion.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_id: res.locals.question.id,
         qid: req.body.qid,

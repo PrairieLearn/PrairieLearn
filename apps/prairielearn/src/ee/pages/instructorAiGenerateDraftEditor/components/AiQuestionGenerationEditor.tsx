@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from 'preact/hooks';
+import { useCallback, useRef, useState } from 'react';
 
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
@@ -54,10 +54,10 @@ export function AiQuestionGenerationEditor({
   }, [urlPrefix, question.id]);
 
   return (
-    <div class="app-content">
-      <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back shadow-sm z-1">
-        <a href={`${urlPrefix}/ai_generate_question_drafts`} class="btn btn-sm btn-ghost">
-          <i class="fa fa-arrow-left me-2" aria-hidden="true" />
+    <div className="app-content">
+      <div className="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back shadow-sm z-1">
+        <a href={`${urlPrefix}/ai_generate_question_drafts`} className="btn btn-sm btn-ghost">
+          <i className="fa fa-arrow-left me-2" aria-hidden="true" />
           Back to AI questions
         </a>
       </div>
@@ -73,11 +73,11 @@ export function AiQuestionGenerationEditor({
         onGenerationComplete={refreshFiles}
       />
 
-      <div class="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
-        <ul class="nav nav-tabs me-auto ps-2 pt-2">
-          <li class="nav-item">
+      <div className="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
+        <ul className="nav nav-tabs me-auto ps-2 pt-2">
+          <li className="nav-item">
             <a
-              class="nav-link active"
+              className="nav-link active"
               data-bs-toggle="tab"
               aria-current="page"
               href="#question-preview"
@@ -85,34 +85,34 @@ export function AiQuestionGenerationEditor({
               Preview
             </a>
           </li>
-          <li class="nav-item">
-            <a class="nav-link" data-bs-toggle="tab" href="#question-code">
+          <li className="nav-item">
+            <a className="nav-link" data-bs-toggle="tab" href="#question-code">
               Files
             </a>
           </li>
           {richTextEditorEnabled ? (
-            <li class="nav-item">
-              <a class="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
+            <li className="nav-item">
+              <a className="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
                 Rich Text Editor
               </a>
             </li>
           ) : null}
         </ul>
-        <div class="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
+        <div className="d-flex align-items-center justify-content-end flex-grow-1 border-bottom pe-2">
           <button
             type="button"
-            class="btn btn-sm btn-primary"
+            className="btn btn-sm btn-primary"
             data-bs-toggle="tooltip"
             data-bs-title="Finalize a question to use it on assessments and make manual edits"
             disabled={isGenerating}
             onClick={() => setShowFinalizeModal(true)}
           >
-            <i class="fa fa-check" aria-hidden="true" />
+            <i className="fa fa-check" aria-hidden="true" />
             Finalize question
           </button>
         </div>
       </div>
-      <div class="app-preview">
+      <div className="app-preview">
         <QuestionAndFilePreview
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}

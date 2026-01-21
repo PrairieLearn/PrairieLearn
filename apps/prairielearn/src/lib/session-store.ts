@@ -24,7 +24,11 @@ export class PostgresSessionStore implements SessionStore {
     });
   }
 
-  async set(session_id: string, data: any, expires_at: Date) {
+  async set(
+    session_id: string,
+    data: (Record<string, unknown> & { user_id?: string }) | null,
+    expires_at: Date,
+  ) {
     this.setCounter.add(1);
 
     await execute(sql.set_session, {

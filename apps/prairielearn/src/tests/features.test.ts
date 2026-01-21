@@ -137,14 +137,14 @@ describe('features', () => {
     const features = new FeatureManager(['test:example-feature-flag']);
     const context = { institution_id: '1', course_id: '1' };
 
-    await execute('UPDATE pl_courses SET options = $options WHERE id = 1', {
+    await execute('UPDATE courses SET options = $options WHERE id = 1', {
       options: {
         devModeFeatures: { 'test:example-feature-flag': true },
       },
     });
     assert.isTrue(await features.enabled('test:example-feature-flag', context));
 
-    await execute('UPDATE pl_courses SET options = $options WHERE id = 1', {
+    await execute('UPDATE courses SET options = $options WHERE id = 1', {
       options: {},
     });
     assert.isFalse(await features.enabled('test:example-feature-flag', context));

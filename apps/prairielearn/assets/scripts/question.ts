@@ -3,6 +3,7 @@ import { type Socket, io } from 'socket.io-client';
 
 import { decodeData, parseHTMLElement } from '@prairielearn/browser-utils';
 
+import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import type {
   StatusMessage,
   StatusMessageSubmission,
@@ -13,7 +14,6 @@ import type { GradingJobStatus } from '../../src/models/grading-job.js';
 import { confirmOnUnload } from './lib/confirmOnUnload.js';
 import { copyContentModal } from './lib/copyContent.js';
 import { setupCountdown } from './lib/countdown.js';
-import { mathjaxTypeset } from './lib/mathjax.js';
 
 // We use `selector-observer` here to handle the case of updating the page's
 // contents without reloading the whole page. At the time of writing, this was

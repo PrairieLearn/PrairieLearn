@@ -1,6 +1,4 @@
 import { useChat } from '@ai-sdk/react';
-import { type Signal, useSignal } from '@preact/signals';
-import { Show } from '@preact/signals/utils';
 import {
   DefaultChatTransport,
   type ReasoningUIPart,
@@ -9,7 +7,7 @@ import {
   type UIMessage,
 } from 'ai';
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { type ReactNode, useEffect, useRef, useState } from 'react';
 import Markdown from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
@@ -33,22 +31,22 @@ function ProgressStatus({
   showSpinner,
 }: {
   state: 'streaming' | 'success' | 'error';
-  statusText: preact.ComponentChildren;
+  statusText: ReactNode;
   showSpinner?: boolean;
 }) {
   return (
-    <div class="d-flex flex-row align-items-center gap-1 small text-muted">
+    <div className="d-flex flex-row align-items-center gap-1 small text-muted">
       {run(() => {
         if (state === 'streaming' || showSpinner) {
           return (
-            <div class="spinner-border spinner-border-text" role="status">
-              <span class="visually-hidden">Loading...</span>
+            <div className="spinner-border spinner-border-text" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
           );
         } else if (state === 'success') {
-          return <i class="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
+          return <i className="bi bi-fw bi-check-lg text-success" aria-hidden="true" />;
         } else {
-          return <i class="bi bi-fw bi-x text-danger" aria-hidden="true" />;
+          return <i className="bi bi-fw bi-x text-danger" aria-hidden="true" />;
         }
       })}
       <span>{statusText}</span>
@@ -62,10 +60,13 @@ function ToolCallStatus({
   showSpinner,
   children,
 }: {
-  state: ToolUIPart['state'];
-  statusText: preact.ComponentChildren;
+  state: Exclude<
+    ToolUIPart['state'],
+    'approval-requested' | 'approval-responded' | 'output-denied'
+  >;
+  statusText: ReactNode;
   showSpinner?: boolean;
-  children?: preact.ComponentChildren;
+  children?: ReactNode;
 }) {
   return (
     <div>
@@ -93,6 +94,15 @@ function ToolCallStatus({
 
 function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   const toolName = part.type.slice('tool-'.length);
+
+  if (
+    part.state === 'approval-requested' ||
+    part.state === 'approval-responded' ||
+    part.state === 'output-denied'
+  ) {
+    // We don't currently use or support these states.
+    return null;
+  }
 
   const statusText = run(() => {
     if (part.type === 'tool-getElementDocumentation') {
@@ -268,25 +278,25 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
   };
 
   return (
-    <div class="d-flex flex-column gap-1 border rounded p-1 small">
+    <div className="d-flex flex-column gap-1 border rounded p-1 small">
       <button
         type="button"
-        class="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
+        className="d-flex flex-row gap-2 align-items-center btn btn-link text-decoration-none p-0 text-start"
         aria-expanded={isExpanded}
         onClick={toggleExpanded}
       >
         <i
-          class={clsx('bi small text-muted', {
+          className={clsx('bi small text-muted', {
             'bi-chevron-right': !isExpanded,
             'bi-chevron-down': isExpanded,
           })}
           aria-hidden="true"
         />
-        <span class="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
+        <span className="small text-muted">{isStreaming ? 'Thinking...' : 'Thinking'}</span>
       </button>
 
       {isExpanded && (
-        <div class="markdown-body reasoning-body p-1 pt-0">
+        <div className="markdown-body reasoning-body p-1 pt-0">
           <Markdown>{part.text}</Markdown>
         </div>
       )}
@@ -296,7 +306,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
 
 function TextPart({ part }: { part: TextUIPart }) {
   return (
-    <div class="markdown-body">
+    <div className="markdown-body">
       <Markdown>{part.text}</Markdown>
     </div>
   );
@@ -334,7 +344,7 @@ function ScrollToBottomButton({
     !isAtBottom && (
       <button
         type="button"
-        class={clsx(
+        className={clsx(
           'position-absolute',
           'bottom-0',
           'start-50',
@@ -353,7 +363,7 @@ function ScrollToBottomButton({
         aria-label="Scroll to bottom"
         onClick={() => scrollToBottom()}
       >
-        <i class="bi bi-arrow-down-circle-fill lh-1" aria-hidden="true" />
+        <i className="bi bi-arrow-down-circle-fill lh-1" aria-hidden="true" />
       </button>
     )
   );
@@ -367,7 +377,7 @@ function Messages({
 }: {
   messages: QuestionGenerationUIMessage[];
   showJobLogsLink: boolean;
-  showSpinner: Signal<boolean>;
+  showSpinner: boolean;
   urlPrefix: string;
 }) {
   return messages.map((message, index) => {
@@ -375,10 +385,10 @@ function Messages({
 
     if (message.role === 'user') {
       return (
-        <div key={message.id} class="d-flex flex-row-reverse mb-3">
+        <div key={message.id} className="d-flex flex-row-reverse mb-3">
           <div
-            class="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
-            style="max-width: 90%"
+            className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
+            style={{ maxWidth: '90%' }}
           >
             <MessageParts parts={message.parts} />
           </div>
@@ -396,21 +406,19 @@ function Messages({
     });
 
     return (
-      <div key={message.id} class="d-flex flex-column gap-2 mb-3">
+      <div key={message.id} className="d-flex flex-column gap-2 mb-3">
         <MessageParts parts={message.parts} />
         {message.metadata?.status === 'canceled' && (
-          <div class="small text-muted fst-italic">
-            <i class="bi bi-stop-circle me-1" aria-hidden="true" />
+          <div className="small text-muted fst-italic">
+            <i className="bi bi-stop-circle me-1" aria-hidden="true" />
             Generation was stopped
           </div>
         )}
-        {isLastMessage && (
-          <Show when={showSpinner}>
-            <ProgressStatus state="streaming" statusText="Working..." />
-          </Show>
+        {isLastMessage && showSpinner && (
+          <ProgressStatus state="streaming" statusText="Working..." />
         )}
         {jobLogsUrl && (
-          <a class="small" href={jobLogsUrl} target="_blank">
+          <a className="small" href={jobLogsUrl} target="_blank">
             {' '}
             View job logs{' '}
           </a>
@@ -429,12 +437,13 @@ function useShowSpinner({
   status: string;
   messages: QuestionGenerationUIMessage[];
 }) {
-  const signal = useSignal<boolean>(false);
+  const [showSpinner, setShowSpinner] = useState(false);
 
   // Queue a show of the spinner after a delay when messages change.
   useEffect(() => {
     if (status !== 'streaming' && status !== 'submitted') {
-      signal.value = false;
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      setShowSpinner(false);
       return;
     }
 
@@ -443,7 +452,8 @@ function useShowSpinner({
     const lastMessage = messages.at(-1);
     const lastPart = lastMessage?.parts.at(-1);
     if (!lastPart || lastPart.type !== 'reasoning' || lastPart.text) {
-      signal.value = false;
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      setShowSpinner(false);
     }
 
     // If we're in a tool part that's not yet ready, we don't want to show the spinner.
@@ -452,17 +462,18 @@ function useShowSpinner({
       isToolPart(lastPart) &&
       ['input-streaming', 'input-available'].includes(lastPart.state)
     ) {
-      signal.value = false;
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+      setShowSpinner(false);
     }
 
     const id = setTimeout(() => {
-      signal.value = true;
+      setShowSpinner(true);
     }, 800);
 
     return () => clearTimeout(id);
-  }, [signal, status, messages]);
+  }, [status, messages]);
 
-  return signal;
+  return showSpinner;
 }
 
 export function AiQuestionGenerationChat({
@@ -546,18 +557,21 @@ export function AiQuestionGenerationChat({
     if (prevIsGeneratingRef.current === null) {
       prevIsGeneratingRef.current = isGenerating;
       // If we're already generating on mount (e.g., resuming a stream), notify parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (isGenerating) {
         onGeneratingChange?.(true);
       }
       return;
     }
 
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent, react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (!isGenerating) {
         onGenerationComplete?.();
       }
@@ -623,16 +637,16 @@ export function AiQuestionGenerationChat({
   const hasMessages = messages.length > 0;
 
   return (
-    <div class="app-chat-container">
-      <div ref={containerRef} class="app-chat px-2 pb-2 bg-light border-end">
+    <div className="app-chat-container">
+      <div ref={containerRef} className="app-chat px-2 pb-2 bg-light border-end">
         <div
-          class={clsx('app-chat-history', {
+          className={clsx('app-chat-history', {
             'd-flex align-items-center justify-content-center': !hasMessages,
           })}
         >
           {hasMessages ? (
-            <div ref={stickToBottom.scrollRef} class="overflow-y-auto w-100 h-100 pe-2">
-              <div ref={stickToBottom.contentRef} class="pt-2">
+            <div ref={stickToBottom.scrollRef} className="overflow-y-auto w-100 h-100 pe-2">
+              <div ref={stickToBottom.contentRef} className="pt-2">
                 <Messages
                   messages={messages}
                   urlPrefix={urlPrefix}
@@ -644,7 +658,7 @@ export function AiQuestionGenerationChat({
           ) : (
             // If this is an old draft question that was using `ai_question_generation_prompts`,
             // we won't have any messages to display. That's fine, just warn the user.
-            <div class="text-muted my-5">Message history unavailable.</div>
+            <div className="text-muted my-5">Message history unavailable.</div>
           )}
 
           <ScrollToBottomButton
@@ -653,9 +667,9 @@ export function AiQuestionGenerationChat({
           />
         </div>
 
-        <div class="app-chat-prompt mt-2">
+        <div className="app-chat-prompt mt-2">
           {error && (
-            <div class="alert alert-danger mb-2" role="alert">
+            <div className="alert alert-danger mb-2" role="alert">
               {run(() => {
                 if (error instanceof RateLimitError) {
                   return 'Rate limit exceeded. Please try again later.';
@@ -681,7 +695,12 @@ export function AiQuestionGenerationChat({
             }}
           />
         </div>
-        <div ref={resizerRef} class="app-chat-resizer" aria-label="Resize chat" role="separator" />
+        <div
+          ref={resizerRef}
+          className="app-chat-resizer"
+          aria-label="Resize chat"
+          role="separator"
+        />
       </div>
     </div>
   );

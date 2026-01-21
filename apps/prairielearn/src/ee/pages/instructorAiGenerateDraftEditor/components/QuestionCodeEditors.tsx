@@ -1,5 +1,5 @@
 import ace from 'ace-builds';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'react';
 
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
 
@@ -105,23 +105,23 @@ export function QuestionCodeEditors({
   }, [isGenerating]);
 
   return (
-    <div class="editor-panes p-2 gap-2">
+    <div className="editor-panes p-2 gap-2">
       {/* TODO: Move this to a more sensible location */}
-      <div class="editor-pane-status">
+      <div className="editor-pane-status">
         {isGenerating ? (
-          <div class="alert alert-info mb-0 py-2 d-flex align-items-center" role="alert">
-            <div class="spinner-border spinner-border-sm me-2" role="status">
-              <span class="visually-hidden">Loading...</span>
+          <div className="alert alert-info mb-0 py-2 d-flex align-items-center" role="alert">
+            <div className="spinner-border spinner-border-sm me-2" role="status">
+              <span className="visually-hidden">Loading...</span>
             </div>
             Editors are read-only while generation is in progress
           </div>
         ) : (
-          <div class="d-flex flex-row align-items-center justify-content-between ps-2">
+          <div className="d-flex flex-row align-items-center justify-content-between ps-2">
             <span>{hasChanges ? 'Unsaved changes.' : 'No unsaved changes.'}</span>
             <form method="post">
               <input type="hidden" name="__action" value="submit_manual_revision" />
               <input type="hidden" name="__csrf_token" value={csrfToken} />
-              <button type="submit" class="btn btn-sm btn-primary" disabled={!hasChanges}>
+              <button type="submit" className="btn btn-sm btn-primary" disabled={!hasChanges}>
                 Save edits
               </button>
               <input type="hidden" name="html" value={b64EncodeUnicode(htmlValue)} />
@@ -130,13 +130,19 @@ export function QuestionCodeEditors({
           </div>
         )}
       </div>
-      <div class="editor-pane-html d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 font-monospace bg-light">question.html</div>
-        <div ref={htmlEditorRef} class="flex-grow-1" />
+      <div
+        className="editor-pane-html d-flex flex-column border rounded"
+        style={{ overflow: 'hidden' }}
+      >
+        <div className="py-2 px-3 font-monospace bg-light">question.html</div>
+        <div ref={htmlEditorRef} className="flex-grow-1" />
       </div>
-      <div class="editor-pane-python d-flex flex-column border rounded" style="overflow: hidden">
-        <div class="py-2 px-3 font-monospace bg-light">server.py</div>
-        <div ref={pythonEditorRef} class="flex-grow-1" />
+      <div
+        className="editor-pane-python d-flex flex-column border rounded"
+        style={{ overflow: 'hidden' }}
+      >
+        <div className="py-2 px-3 font-monospace bg-light">server.py</div>
+        <div ref={pythonEditorRef} className="flex-grow-1" />
       </div>
     </div>
   );

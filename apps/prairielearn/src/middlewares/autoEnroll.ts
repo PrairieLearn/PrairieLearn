@@ -5,7 +5,7 @@ import { run } from '@prairielearn/run';
 import { EnrollmentPage } from '../components/EnrollmentPage.js';
 import { hasRole } from '../lib/authz-data-lib.js';
 import type { CourseInstance } from '../lib/db-types.js';
-import { features } from '../lib/features/index.js';
+import { checkEnrollmentEligibility } from '../lib/enrollment-eligibility.js';
 import { idsEqual } from '../lib/id.js';
 import { ensureEnrollment, selectOptionalEnrollmentByUid } from '../models/enrollment.js';
 
@@ -19,11 +19,6 @@ export default asyncHandler(async (req, res, next) => {
   // TODO: check if self-enrollment requires a secret link.
 
   const courseInstance: CourseInstance = res.locals.course_instance;
-
-  const enrollmentManagementEnabled = await features.enabledFromLocals(
-    'enrollment-management',
-    res.locals,
-  );
 
   // We select by user UID so that we can find invited/rejected enrollments as well
   const existingEnrollment = await run(async () => {
@@ -39,37 +34,25 @@ export default asyncHandler(async (req, res, next) => {
     });
   });
 
-  // Check if the self-enrollment institution restriction is satisfied
-  const institutionRestrictionSatisfied =
-    res.locals.authn_user.institution_id === res.locals.course.institution_id ||
-    !enrollmentManagementEnabled ||
-    // The default value for self-enrollment restriction is true.
-    // In the old system (before publishing was introduced), the default was false.
-    // So if publishing is not set up, we should ignore the restriction.
-    !courseInstance.modern_publishing ||
-    !courseInstance.self_enrollment_restrict_to_institution;
+  const enrollmentEligibility = checkEnrollmentEligibility({
+    user: res.locals.authn_user,
+    course: res.locals.course,
+    courseInstance,
+    existingEnrollment,
+  });
 
-  // If we have self-enrollment enabled, and it is before the enabled before date,
-  // and the institution restriction is satisfied, then we can enroll the user.
-  const selfEnrollmentEnabled = courseInstance.self_enrollment_enabled;
-  const selfEnrollmentExpired =
-    courseInstance.self_enrollment_enabled_before_date != null &&
-    new Date() >= courseInstance.self_enrollment_enabled_before_date;
-  const selfEnrollmentAllowed =
-    selfEnrollmentEnabled && !selfEnrollmentExpired && institutionRestrictionSatisfied;
-
-  // If the user is not enrolled or has been rejected then they can enroll if self-enrollment is allowed.
+  // If the user is not enrolled, or is rejected/left/removed then they can enroll if self-enrollment is allowed.
   const canSelfEnroll =
-    selfEnrollmentAllowed &&
-    (existingEnrollment == null || ['rejected'].includes(existingEnrollment.status));
+    enrollmentEligibility.eligible &&
+    (existingEnrollment == null ||
+      ['rejected', 'left', 'removed'].includes(existingEnrollment.status));
 
-  // If the user is enrolled and is invited/joined/removed, then they have access regardless of the self-enrollment status.
+  // If the user is enrolled and is invited/joined, then they have access regardless of the self-enrollment status.
   const canAccessCourseInstance =
-    existingEnrollment != null &&
-    ['invited', 'joined', 'removed'].includes(existingEnrollment.status);
+    existingEnrollment != null && ['invited', 'joined'].includes(existingEnrollment.status);
 
   if (
-    idsEqual(res.locals.user.user_id, res.locals.authn_user.user_id) &&
+    idsEqual(res.locals.user.id, res.locals.authn_user.id) &&
     res.locals.authz_data.authn_course_role === 'None' &&
     res.locals.authz_data.authn_course_instance_role === 'None' &&
     res.locals.authz_data.authn_has_student_access &&
@@ -88,26 +71,11 @@ export default asyncHandler(async (req, res, next) => {
       // This is the only part of the `authz_data` that would change as a
       // result of this enrollment, so we can just update it directly.
       res.locals.authz_data.has_student_access_with_enrollment = true;
-    } else if (existingEnrollment) {
-      res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
-      return;
-    } else if (selfEnrollmentExpired) {
+    } else if (!enrollmentEligibility.eligible) {
       res
         .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-expired' }));
+        .send(EnrollmentPage({ resLocals: res.locals, type: enrollmentEligibility.reason }));
       return;
-    } else if (!selfEnrollmentEnabled) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'self-enrollment-disabled' }));
-      return;
-    } else if (!institutionRestrictionSatisfied) {
-      res
-        .status(403)
-        .send(EnrollmentPage({ resLocals: res.locals, type: 'institution-restriction' }));
-      return;
-    } else {
-      // No fancy error page
     }
   }
 

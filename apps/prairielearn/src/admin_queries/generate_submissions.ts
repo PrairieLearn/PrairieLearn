@@ -90,8 +90,8 @@ export default async function ({
       const variant = await ensureVariant(
         question.id,
         instance_question.id,
-        user.user_id, // user_id
-        user.user_id, // authn_user_id
+        user.id, // user_id
+        user.id, // authn_user_id
         courseInstance,
         assessmentCourse,
         question_course,
@@ -110,16 +110,16 @@ export default async function ({
         question,
         assessmentCourse,
         currentTestType,
-        user.user_id,
-        user.user_id,
+        user.id,
+        user.id,
       );
       const { submission_id } = hasFatalIssue
         ? { submission_id: null } // If there is a fatal issue on test, we don't save the submission.
         : await saveSubmission(
             {
               ...data,
-              auth_user_id: user.user_id,
-              user_id: user.user_id,
+              auth_user_id: user.id,
+              user_id: user.id,
               variant_id: variant.id,
               submitted_answer: data.raw_submitted_answer,
               credit: 100,

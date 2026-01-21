@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'preact/hooks';
+import { useMemo, useRef, useState } from 'react';
 
 interface SelectableCardProps {
   id: string;
@@ -7,7 +7,7 @@ interface SelectableCardProps {
   description: string;
   selected: boolean;
   onClick: () => void;
-  onKeyDown: (e: KeyboardEvent) => void;
+  onKeyDown: (e: React.KeyboardEvent) => void;
   cardRef: (el: HTMLElement | null) => void;
 }
 
@@ -20,7 +20,7 @@ function SelectableCard({
   onKeyDown,
   cardRef,
 }: SelectableCardProps) {
-  const handleKeyDown = (e: KeyboardEvent) => {
+  const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onClick();
@@ -31,7 +31,7 @@ function SelectableCard({
   return (
     <div
       ref={cardRef}
-      class={clsx('card h-100', {
+      className={clsx('card h-100', {
         'border-primary bg-primary bg-opacity-10': selected,
         'border-secondary': !selected,
       })}
@@ -44,17 +44,23 @@ function SelectableCard({
       onClick={onClick}
       onKeyDown={handleKeyDown}
     >
-      <div class="card-body text-center d-flex flex-column justify-content-center">
-        <div id={`${id}_title`} class={clsx('card-title', { 'text-primary fw-bold': selected })}>
+      <div className="card-body text-center d-flex flex-column justify-content-center">
+        <div
+          id={`${id}_title`}
+          className={clsx('card-title', { 'text-primary fw-bold': selected })}
+        >
           {title}
         </div>
-        <div id={`${id}_description`} class={clsx('card-text small', { 'text-muted': !selected })}>
+        <div
+          id={`${id}_description`}
+          className={clsx('card-text small', { 'text-muted': !selected })}
+        >
           {description}
         </div>
       </div>
       {selected && (
-        <div class="position-absolute top-0 end-0 p-2">
-          <i class="fa fa-check-circle text-primary" aria-hidden="true" />
+        <div className="position-absolute top-0 end-0 p-2">
+          <i className="fa fa-check-circle text-primary" aria-hidden="true" />
         </div>
       )}
     </div>
@@ -69,9 +75,9 @@ interface RadioCardGroupProps {
 }
 
 function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps) {
-  const cardRefs = useRef<(HTMLElement | null)[]>([]);
+  const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
-  const handleKeyDown = (e: KeyboardEvent, currentIndex: number) => {
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
     let newIndex = currentIndex;
 
     switch (e.key) {
@@ -101,14 +107,14 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
 
     // Focus the newly selected element, but only after a rerender.
     setTimeout(() => {
-      cardRefs.current[newIndex]?.focus();
+      cardsRef.current[newIndex]?.focus();
     }, 0);
   };
 
   return (
-    <fieldset class="mb-3">
+    <fieldset className="mb-3">
       {/* `col-form-label` correctly overrides the default font size for `legend` */}
-      <legend class="col-form-label">{label}</legend>
+      <legend className="col-form-label">{label}</legend>
       <div
         role="radiogroup"
         aria-label={label}
@@ -127,7 +133,7 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
             description={option.description}
             selected={value === option.id}
             cardRef={(el) => {
-              cardRefs.current[index] = el;
+              cardsRef.current[index] = el;
             }}
             onClick={() => onChange(option.id)}
             onKeyDown={(e) => handleKeyDown(e, index)}
@@ -187,37 +193,37 @@ export function CreateQuestionModalContents({
 
   return (
     <>
-      <div class="mb-3">
-        <label class="form-label" for="title">
+      <div className="mb-3">
+        <label className="form-label" htmlFor="title">
           Title
         </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="title"
           name="title"
           aria-describedby="title_help"
           required
         />
-        <small id="title_help" class="form-text text-muted">
+        <small id="title_help" className="form-text text-muted">
           The full name of the question, visible to users.
         </small>
       </div>
 
-      <div class="mb-3">
-        <label class="form-label" for="qid">
+      <div className="mb-3">
+        <label className="form-label" htmlFor="qid">
           Question identifier (QID)
         </label>
         <input
           type="text"
-          class="form-control"
+          className="form-control"
           id="qid"
           name="qid"
           pattern="[\-A-Za-z0-9_\/]+"
           aria-describedby="qid_help"
           required
         />
-        <small id="qid_help" class="form-text text-muted">
+        <small id="qid_help" className="form-text text-muted">
           A short unique identifier for this question, such as "add-vectors" or "find-derivative".
           Use only letters, numbers, dashes, and underscores, with no spaces.
         </small>
@@ -236,12 +242,12 @@ export function CreateQuestionModalContents({
       <input type="hidden" name="start_from" value={startFrom} />
 
       {isTemplateSelected && filteredTemplateQuestions.length > 0 && (
-        <div class="mb-3">
-          <label class="form-label" for="template_qid">
+        <div className="mb-3">
+          <label className="form-label" htmlFor="template_qid">
             Template
           </label>
           <select
-            class="form-select"
+            className="form-select"
             id="template_qid"
             name="template_qid"
             aria-describedby="template_help"
@@ -256,7 +262,7 @@ export function CreateQuestionModalContents({
               </option>
             ))}
           </select>
-          <small id="template_help" class="form-text text-muted">
+          <small id="template_help" className="form-text text-muted">
             The question will be created from this template. To create your own template, create a
             question with a QID starting with "<code>template/</code>".
           </small>

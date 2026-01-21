@@ -46,14 +46,14 @@ BEGIN
         RETURNING * INTO u;
 
         INSERT INTO audit_logs (table_name, row_id, action,   new_state)
-        VALUES                 ('users', u.user_id, 'insert', to_jsonb(u));
+        VALUES                 ('users', u.id, 'insert', to_jsonb(u));
     END IF;
 
     -- update user data as needed
     IF name IS NOT NULL AND name IS DISTINCT FROM u.name THEN
         UPDATE users
         SET name = users_select_or_insert_lti.name
-        WHERE users.user_id = u.user_id
+        WHERE users.id = u.id
         RETURNING * INTO new_u;
 
         INSERT INTO audit_logs
@@ -61,13 +61,13 @@ BEGIN
             parameters,
             old_state, new_state)
         VALUES
-            ('users', 'name', u.user_id, 'update',
+            ('users', 'name', u.id, 'update',
             jsonb_build_object('name', name),
             to_jsonb(u), to_jsonb(new_u));
     END IF;
 
     -- verify user_id exists
-    user_id := u.user_id;
+    user_id := u.id;
     if user_id IS NULL THEN
         RAISE EXCEPTION 'computed NULL user_id';
     END IF;

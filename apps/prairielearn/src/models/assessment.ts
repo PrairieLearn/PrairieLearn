@@ -8,13 +8,13 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   type Assessment,
   AssessmentModuleSchema,
   AssessmentSchema,
   AssessmentSetSchema,
-  IdSchema,
 } from '../lib/db-types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -41,11 +41,6 @@ export async function selectAssessmentByTid({
     { course_instance_id, tid },
     AssessmentSchema,
   );
-}
-
-export async function selectAssessmentIsPublic(assessment_id: string): Promise<boolean> {
-  const isPublic = await queryRow(sql.check_assessment_is_public, { assessment_id }, z.boolean());
-  return isPublic;
 }
 
 export async function selectAssessmentInfoForJob(assessment_id: string) {

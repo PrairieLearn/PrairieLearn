@@ -1,5 +1,23 @@
 # @prairielearn/opentelemetry
 
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 3.1.2
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
+## 3.1.1
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+
 ## 3.1.0
 
 ### Minor Changes

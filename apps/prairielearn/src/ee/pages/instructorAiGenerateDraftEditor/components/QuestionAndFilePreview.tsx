@@ -1,5 +1,4 @@
-import type { Ref } from 'preact';
-import { useCallback, useEffect, useImperativeHandle, useRef } from 'preact/hooks';
+import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'react';
 
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
@@ -106,8 +105,9 @@ function useQuestionHtml({
       })
         .then(async (res) => {
           if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+          if (!wrapperRef.current) return;
 
-          replaceQuestionContainer(wrapperRef.current!, await res.text());
+          replaceQuestionContainer(wrapperRef.current, await res.text());
 
           // TODO: we should update the URL with the new variant ID.
         })
@@ -123,8 +123,9 @@ function useQuestionHtml({
     fetch(variantUrl)
       .then(async (res) => {
         if (!res.ok) throw new Error(`Server returned status ${res.status}`);
+        if (!wrapperRef.current) return;
 
-        replaceQuestionContainer(wrapperRef.current!, await res.text());
+        replaceQuestionContainer(wrapperRef.current, await res.text());
       })
       .catch((err) => {
         // TODO: better error handling?
@@ -184,16 +185,21 @@ export function QuestionAndFilePreview({
   useImperativeHandle(newVariantRef, () => ({ newVariant }));
 
   return (
-    <div class="tab-content" style="height: 100%">
-      <div role="tabpanel" id="question-preview" class="tab-pane active" style="height: 100%">
+    <div className="tab-content" style={{ height: '100%' }}>
+      <div
+        role="tabpanel"
+        id="question-preview"
+        className="tab-pane active"
+        style={{ height: '100%' }}
+      >
         <div
           ref={wrapperRef}
-          class="question-wrapper mx-auto p-3"
+          className="question-wrapper mx-auto p-3"
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: questionContainerHtml }}
         />
       </div>
-      <div role="tabpanel" id="question-code" class="tab-pane" style="height: 100%">
+      <div role="tabpanel" id="question-code" className="tab-pane" style={{ height: '100%' }}>
         <QuestionCodeEditors
           htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
@@ -201,7 +207,12 @@ export function QuestionAndFilePreview({
           isGenerating={isGenerating}
         />
       </div>
-      <div role="tabpanel" id="question-rich-text-editor" class="tab-pane" style="height: 100%">
+      <div
+        role="tabpanel"
+        id="question-rich-text-editor"
+        className="tab-pane"
+        style={{ height: '100%' }}
+      >
         {richTextEditorEnabled && (
           <RichTextEditor
             htmlContents={b64DecodeUnicode(questionFiles['question.html'] || '')}

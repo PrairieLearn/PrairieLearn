@@ -19,9 +19,9 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useEffect, useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
+import { useEffect, useState } from 'react';
 import { Card, Form } from 'react-bootstrap';
 
 import { DragHandleMenu } from './components/DragHandleMenu.js';
@@ -126,6 +126,7 @@ const RichTextEditor = ({
 
   // Set read-only mode when generating
   useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-derived-state
     editor?.setEditable(!isGenerating);
   }, [editor, isGenerating]);
 
@@ -139,9 +140,9 @@ const RichTextEditor = ({
 
   return (
     <>
-      <Card class="m-3">
+      <Card className="m-3">
         <Card.Header>
-          <div class="d-flex align-items-center justify-content-between">
+          <div className="d-flex align-items-center justify-content-between">
             Rich Text Editor
             <Form.Check
               type="switch"
@@ -154,31 +155,31 @@ const RichTextEditor = ({
         </Card.Header>
         <Card.Body>
           {isGenerating && (
-            <div class="alert alert-info mb-3 py-2 d-flex align-items-center" role="alert">
-              <div class="spinner-border spinner-border-sm me-2" role="status">
-                <span class="visually-hidden">Loading...</span>
+            <div className="alert alert-info mb-3 py-2 d-flex align-items-center" role="alert">
+              <div className="spinner-border spinner-border-sm me-2" role="status">
+                <span className="visually-hidden">Loading...</span>
               </div>
               Editor is read-only while generation is in progress
             </div>
           )}
-          <div class="d-flex align-items-center gap-2 mb-2" />
-          <div class="mb-3" />
-          <EditorContent editor={editor} class="border" />
+          <div className="d-flex align-items-center gap-2 mb-2" />
+          <div className="mb-3" />
+          <EditorContent editor={editor} className="border" />
           <DragHandleMenu editor={editor} />
           {debugMode && (
             <>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Formatted HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{formattedHtml ?? ''}</code>
                   </pre>
                 </Card.Body>
               </Card>
-              <Card class="mt-3">
+              <Card className="mt-3">
                 <Card.Header>Internal HTML</Card.Header>
                 <Card.Body>
-                  <pre class="mb-0">
+                  <pre className="mb-0">
                     <code>{rawHtml ?? ''}</code>
                   </pre>
                 </Card.Body>

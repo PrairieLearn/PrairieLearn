@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 export function PromptInput({
   sendMessage,
@@ -35,7 +35,7 @@ export function PromptInput({
     >
       <textarea
         id="user-prompt-llm"
-        class="form-control mb-2"
+        className="form-control mb-2"
         placeholder="Ask anything..."
         aria-label="Modification instructions"
         value={input}
@@ -48,16 +48,16 @@ export function PromptInput({
           }
         }}
       />
-      <div class="d-flex flex-row gap-2 justify-content-between align-items-center">
-        <div class="form-check form-switch form-check-inline">
+      <div className="d-flex flex-row gap-2 justify-content-between align-items-center">
+        <div className="form-check form-switch form-check-inline">
           <input
-            class="form-check-input"
+            className="form-check-input"
             type="checkbox"
             id="new-variant-after-changes"
             checked={loadNewVariantAfterChanges}
             onChange={(e) => setLoadNewVariantAfterChanges?.(e.currentTarget.checked)}
           />
-          <label class="form-check-label small text-muted" for="new-variant-after-changes">
+          <label className="form-check-label small text-muted" htmlFor="new-variant-after-changes">
             Load new variant after changes
           </label>
         </div>
@@ -66,24 +66,24 @@ export function PromptInput({
           <button
             type="button"
             aria-label="Stop generation"
-            class="btn btn-outline-danger btn-sm"
+            className="btn btn-outline-danger btn-sm"
             onClick={onStop}
           >
-            <i class="bi bi-stop-fill me-1" />
+            <i className="bi bi-stop-fill me-1" />
             Stop
           </button>
         ) : (
           <button
             type="submit"
-            class="btn btn-primary btn-sm"
+            className="btn btn-primary btn-sm"
             disabled={disabled || input.trim().length === 0}
             aria-label="Send prompt"
           >
-            <i class="bi bi-send-fill" />
+            <i className="bi bi-send-fill" />
           </button>
         )}
       </div>
-      <div class="text-muted small text-center mt-1">
+      <div className="text-muted small text-center mt-1">
         AI can make mistakes. Review the generated question.
       </div>
     </form>

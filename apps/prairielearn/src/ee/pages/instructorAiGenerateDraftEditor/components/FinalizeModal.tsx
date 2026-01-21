@@ -14,35 +14,35 @@ export function FinalizeModal({
       <Modal.Header closeButton>
         <Modal.Title>Finalize question</Modal.Title>
       </Modal.Header>
-      <form method="POST" autocomplete="off">
+      <form method="POST" autoComplete="off">
         <Modal.Body>
-          <div class="alert alert-primary" role="alert">
+          <div className="alert alert-primary" role="alert">
             After finalizing the question, you will be able to use it on assessments and make manual
             edits.
           </div>
-          <div class="mb-3">
-            <label for="question-title" class="form-label">
+          <div className="mb-3">
+            <label htmlFor="question-title" className="form-label">
               Title
             </label>
-            <input type="text" class="form-control" id="question-title" name="title" required />
-            <div class="form-text text-muted">
+            <input type="text" className="form-control" id="question-title" name="title" required />
+            <div className="form-text text-muted">
               The title of the question as it will appear in the question bank, e.g. "Add two random
               numbers".
             </div>
           </div>
-          <div class="mb-3">
-            <label for="question-qid" class="form-label">
+          <div className="mb-3">
+            <label htmlFor="question-qid" className="form-label">
               QID
             </label>
             <input
               type="text"
-              class="form-control"
+              className="form-control"
               id="question-qid"
               name="qid"
               pattern="[\-A-Za-z0-9_\/]+"
               required
             />
-            <div class="form-text text-muted">
+            <div className="form-text text-muted">
               A unique identifier that will be used to include this question in assessments, e.g.{' '}
               <code>add-random-numbers</code>.
             </div>
@@ -51,10 +51,10 @@ export function FinalizeModal({
         <Modal.Footer>
           <input type="hidden" name="__action" value="save_question" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" class="btn btn-secondary" onClick={onHide}>
+          <button type="button" className="btn btn-secondary" onClick={onHide}>
             Close
           </button>
-          <button type="submit" class="btn btn-primary">
+          <button type="submit" className="btn btn-primary">
             Finalize question
           </button>
         </Modal.Footer>

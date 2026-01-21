@@ -7,7 +7,7 @@ FROM
   grading_jobs AS gj
   JOIN submissions AS s ON (s.id = gj.submission_id)
   JOIN variants AS v ON (v.id = s.variant_id)
-  LEFT JOIN users AS u ON (u.user_id = gj.auth_user_id)
+  LEFT JOIN users AS u ON (u.id = gj.auth_user_id)
   JOIN course_instances AS ci ON (ci.id = v.course_instance_id)
 WHERE
   gj.id = $grading_job_id
