@@ -1,7 +1,7 @@
 import { Node } from '@tiptap/core';
 import { NodeViewWrapper, type ReactNodeViewProps, ReactNodeViewRenderer } from '@tiptap/react';
 import clsx from 'clsx';
-import { type ComponentType, useState } from 'preact/compat';
+import { type ComponentType, useState } from 'react';
 import { Card } from 'react-bootstrap';
 
 import { OverlayTrigger } from '@prairielearn/ui';

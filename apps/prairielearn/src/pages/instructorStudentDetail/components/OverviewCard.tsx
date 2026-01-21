@@ -101,7 +101,7 @@ export function OverviewCard({
                   <span>Cancel invitation</span>
                 </button>
               )}
-              {enrollment.status === 'removed' && (
+              {(enrollment.status === 'left' || enrollment.status === 'removed') && (
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="invite_student" />

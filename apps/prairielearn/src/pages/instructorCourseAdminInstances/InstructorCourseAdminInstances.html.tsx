@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Popover } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -125,7 +125,7 @@ export function InstructorCourseAdminInstancesInner({
               <thead>
                 <tr>
                   <th>Long Name</th>
-                  <th>CIID</th>
+                  <th>Short name</th>
                   <th>Start date</th>
                   <th>End date</th>
                   <th>Students</th>

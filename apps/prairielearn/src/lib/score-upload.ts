@@ -52,12 +52,6 @@ export async function uploadInstanceQuestionScores(
   serverJob.executeInBackground(async (job) => {
     job.info('Uploading question scores for ' + assessment_label);
 
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
-
     let successCount = 0;
     let errorCount = 0;
     let skippedCount = 0;
@@ -78,42 +72,18 @@ export async function uploadInstanceQuestionScores(
       },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        try {
-          if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
-            successCount++;
-            const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
-            if (output == null) {
-              output = msg;
-            } else {
-              output += '\n' + msg;
-            }
-          } else {
-            skippedCount++;
-            // NO OUTPUT
-          }
-        } catch (err: any) {
-          errorCount++;
-          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+    for await (const { info, record } of csvParser) {
+      try {
+        if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
+          successCount++;
+          job.verbose(`Processed CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        } else {
+          skippedCount++;
+          // NO OUTPUT
         }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output ?? '');
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+      } catch (err: any) {
+        errorCount++;
+        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`);
       }
     }
 
@@ -164,13 +134,7 @@ export async function uploadAssessmentInstanceScores(
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.verbose('Uploading total scores for ' + assessment_label);
-
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
+    job.info('Uploading total scores for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
@@ -181,43 +145,23 @@ export async function uploadAssessmentInstanceScores(
       { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        const msg = `Processing CSV line ${info.lines}: ${JSON.stringify(record)}`;
-        if (output == null) {
-          output = msg;
-        } else {
-          output += '\n' + msg;
-        }
-        try {
-          await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
-          successCount++;
-        } catch (err) {
-          errorCount++;
-          const msg = String(err);
-          output += '\n' + msg;
-        }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output);
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+    for await (const { info, record } of csvParser) {
+      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      try {
+        await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        job.error(String(err));
       }
     }
 
     if (errorCount === 0) {
-      job.verbose(
+      job.info(
         `Successfully updated scores for ${successCount} assessment instances, with no errors`,
       );
     } else {
-      job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+      job.info(`Successfully updated scores for ${successCount} assessment instances`);
       job.error(`Error updating ${errorCount} assessment instances`);
     }
   });

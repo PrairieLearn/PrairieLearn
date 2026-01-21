@@ -1,4 +1,4 @@
-import { useMemo } from 'preact/compat';
+import { useMemo } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
 import type { RubricData } from '../../../../lib/manualGrading.types.js';

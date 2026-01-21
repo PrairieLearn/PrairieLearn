@@ -65,6 +65,7 @@ export type SupportedTableActionCombination =
         | 'blocked'
         | 'unblocked'
         | 'invitation_deleted'
+        | 'left'
         | 'removed'
         | null;
     };

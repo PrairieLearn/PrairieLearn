@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
@@ -22,14 +22,14 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
 
   return (
     <div className="mb-3">
-      <label className="form-label" for="self_enrollment_code">
+      <label className="form-label" htmlFor="self_enrollment_code">
         Self-enrollment code
       </label>
       <InputGroup>
         <Form.Control
           id="self_enrollment_code"
           value={enrollmentCodeDashed}
-          style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
+          style={{ fontFamily: 'monospace', fontSize: '1.1em', letterSpacing: '0.1em' }}
           disabled
         />
         <OverlayTrigger
@@ -75,7 +75,7 @@ function SelfEnrollmentLink({
   return (
     <>
       <div className="mb-3">
-        <label className="form-label" for="self_enrollment_link">
+        <label className="form-label" htmlFor="self_enrollment_link">
           Self-enrollment link
         </label>
         <InputGroup>
@@ -246,7 +246,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabled ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_enabled">
+        <label className="form-check-label" htmlFor="self_enrollment_enabled">
           Allow self-enrollment
         </label>
         <div className="small text-muted">
@@ -269,7 +269,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_use_enrollment_code">
+        <label className="form-check-label" htmlFor="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
@@ -292,7 +292,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentRestrictToInstitution ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_restrict_to_institution">
+        <label className="form-check-label" htmlFor="self_enrollment_restrict_to_institution">
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
         <div className="small text-muted">
@@ -321,7 +321,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabledBeforeDateEnabled ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="disable_self_enrollment_after_date">
+        <label className="form-check-label" htmlFor="disable_self_enrollment_after_date">
           Self-enrollment cutoff date
         </label>
         <div className="small text-muted">

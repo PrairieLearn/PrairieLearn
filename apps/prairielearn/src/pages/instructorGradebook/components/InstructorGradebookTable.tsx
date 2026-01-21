@@ -20,7 +20,7 @@ import {
   useQueryState,
   useQueryStates,
 } from 'nuqs';
-import { useMemo, useRef, useState } from 'preact/compat';
+import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
