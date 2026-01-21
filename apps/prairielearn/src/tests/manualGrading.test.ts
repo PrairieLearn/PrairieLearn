@@ -8,12 +8,9 @@ import z from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import { config } from '../lib/config.js';
-import {
-  AssessmentInstanceSchema,
-  InstanceQuestionSchema,
-  SprocAssessmentInstancesGradeSchema,
-} from '../lib/db-types.js';
+import { AssessmentInstanceSchema, InstanceQuestionSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
@@ -508,17 +505,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential(
         'score_perc_pending should be 0 before manual grading is requested',
         async () => {
-          await sqldb.callRow(
-            'assessment_instances_grade',
-            [
-              assessment_instance_id,
-              '1', // authn_user_id
-              100, // credit
-              false, // only_log_if_score_updated
-              true, // allow_decrease
-            ],
-            SprocAssessmentInstancesGradeSchema,
-          );
+          await updateAssessmentInstanceGrade({
+            assessment_instance_id,
+            authn_user_id: '1',
+            credit: 100,
+            allowDecrease: true,
+          });
           const assessmentInstance = await sqldb.queryRow(
             sql.get_assessment_instance_for_iq,
             { iqId },
@@ -563,17 +555,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential(
         'score_perc_pending should reflect a newly pending manual question after submission',
         async () => {
-          await sqldb.callRow(
-            'assessment_instances_grade',
-            [
-              assessment_instance_id,
-              '1', // authn_user_id
-              100, // credit
-              false, // only_log_if_score_updated
-              true, // allow_decrease
-            ],
-            SprocAssessmentInstancesGradeSchema,
-          );
+          await updateAssessmentInstanceGrade({
+            assessment_instance_id,
+            authn_user_id: '1',
+            credit: 100,
+            allowDecrease: true,
+          });
           const assessmentInstance = await sqldb.queryRow(
             sql.get_assessment_instance_for_iq,
             { iqId },
@@ -819,17 +806,12 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
       test.sequential(
         'score_perc_pending should drop after manual grading is completed',
         async () => {
-          await sqldb.callRow(
-            'assessment_instances_grade',
-            [
-              assessment_instance_id,
-              '1', // authn_user_id
-              100, // credit
-              false, // only_log_if_score_updated
-              true, // allow_decrease
-            ],
-            SprocAssessmentInstancesGradeSchema,
-          );
+          await updateAssessmentInstanceGrade({
+            assessment_instance_id,
+            authn_user_id: '1',
+            credit: 100,
+            allowDecrease: true,
+          });
           const assessmentInstance = await sqldb.queryRow(
             sql.get_assessment_instance_for_iq,
             { iqId },

@@ -4,9 +4,13 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
-import { updateAssessmentInstanceScore } from '../lib/assessment.js';
+import { setAssessmentInstancePoints } from '../lib/assessment.js';
+import {
+  updateAssessmentInstanceGrade,
+  updateAssessmentInstancesScorePercPending,
+} from '../lib/assessment-grading.js';
 import { config } from '../lib/config.js';
-import { AssessmentInstanceSchema, SprocAssessmentInstancesGradeSchema } from '../lib/db-types.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
 
 import * as helperServer from './helperServer.js';
@@ -37,17 +41,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
       assessment_instance_id: assessmentInstance.id,
     });
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
       { assessment_id },
@@ -69,17 +68,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
       assessment_instance_id: assessmentInstance.id,
       pending_max_manual_points: 50,
     });
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
       { assessment_id },
@@ -96,17 +90,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
       { assessment_id },
       AssessmentInstanceSchema,
     );
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
       { assessment_id },
@@ -125,17 +114,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
       assessment_instance_id: assessmentInstance.id,
     });
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
       { assessment_id },
@@ -156,17 +140,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
       assessment_instance_id: assessmentInstance.id,
     });
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
       { assessment_id },
@@ -187,17 +166,12 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
       assessment_instance_id: assessmentInstance.id,
     });
-    await sqldb.callRow(
-      'assessment_instances_grade',
-      [
-        assessmentInstance.id,
-        '1', // authn_user_id
-        100, // credit
-        false, // only_log_if_score_updated
-        true, // allow_decrease
-      ],
-      SprocAssessmentInstancesGradeSchema,
-    );
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
 
     const pending = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
@@ -206,7 +180,7 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
     );
     assert.closeTo(pending.score_perc_pending, 100, 0.0001);
 
-    await updateAssessmentInstanceScore(pending.id, 42, '1');
+    await setAssessmentInstancePoints(pending.id, 42, '1');
 
     const refreshed = await sqldb.queryRow(
       sql.select_latest_assessment_instance,
@@ -221,5 +195,45 @@ describe('score_perc_pending', { timeout: 40_000 }, () => {
       z.number(),
     );
     assert.equal(pendingQuestions, 0);
+  });
+
+  it('updates score_perc_pending without recomputing score', async () => {
+    const assessment_id = await startAssessment('hwScorePercPendingManualOnly');
+    const assessmentInstance = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    await sqldb.execute(sql.mark_instance_questions_requires_manual_grading, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await updateAssessmentInstanceGrade({
+      assessment_instance_id: assessmentInstance.id,
+      authn_user_id: '1',
+      credit: 100,
+      allowDecrease: true,
+    });
+    const before = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.closeTo(before.score_perc_pending, 100, 0.0001);
+    const pointsBefore = before.points;
+    const scoreBefore = before.score_perc;
+
+    await sqldb.execute(sql.clear_instance_questions_requires_manual_grading, {
+      assessment_instance_id: assessmentInstance.id,
+    });
+    await updateAssessmentInstancesScorePercPending([assessmentInstance.id]);
+
+    const after = await sqldb.queryRow(
+      sql.select_latest_assessment_instance,
+      { assessment_id },
+      AssessmentInstanceSchema,
+    );
+    assert.equal(after.score_perc_pending, 0);
+    assert.equal(after.points, pointsBefore);
+    assert.equal(after.score_perc, scoreBefore);
   });
 });

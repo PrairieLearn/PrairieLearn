@@ -17,6 +17,13 @@ SET
 WHERE
   assessment_instance_id = $assessment_instance_id;
 
+-- BLOCK clear_instance_questions_requires_manual_grading
+UPDATE instance_questions
+SET
+  requires_manual_grading = FALSE
+WHERE
+  assessment_instance_id = $assessment_instance_id;
+
 -- BLOCK set_manual_requires_manual_grading_by_max_manual_points
 UPDATE instance_questions AS iq
 SET
