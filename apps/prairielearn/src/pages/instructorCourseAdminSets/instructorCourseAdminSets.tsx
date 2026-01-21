@@ -12,7 +12,6 @@ import { Hydrate } from '@prairielearn/react/server';
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAssessmentSetSchema } from '../../lib/client/safe-db-types.js';
 import { AssessmentSetSchema } from '../../lib/db-types.js';
 import { FileModifyEditor, getOrigHash, propertyValueWithDefault } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -20,6 +19,7 @@ import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
+import { InstructorCourseAdminSetRowSchema } from './instructorCourseAdminSets.shared.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -35,7 +35,7 @@ router.get(
     const assessmentSets = await sqldb.queryRows(
       sql.select_assessment_sets,
       { course_id: pageContext.course.id },
-      StaffAssessmentSetSchema,
+      InstructorCourseAdminSetRowSchema,
     );
 
     const origHash = await getOrigHash(path.join(pageContext.course.path, 'infoCourse.json'));

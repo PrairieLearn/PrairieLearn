@@ -18,10 +18,13 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { type AriaRole, useMemo, useState } from 'react';
 
-import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
-import type { StaffAssessmentSet } from '../../../lib/client/safe-db-types.js';
-import { ColorJsonSchema } from '../../../schemas/index.js';
+import { OverlayTrigger } from '@prairielearn/ui';
 
+import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
+import { ColorJsonSchema } from '../../../schemas/index.js';
+import type { InstructorCourseAdminSetRow } from '../instructorCourseAdminSets.shared.js';
+
+import { AssessmentSetUsageModal } from './AssessmentSetUsageModal.js';
 import {
   EditAssessmentSetsModal,
   type EditAssessmentSetsModalState,
@@ -29,11 +32,15 @@ import {
 
 const emptyAssessmentSet = {
   abbreviation: '',
+  assessments: [],
   color: '',
+  course_id: '',
   heading: '',
+  id: '',
   implicit: false,
   json_comment: '',
   name: '',
+  number: 0,
 };
 
 function AssessmentSetRow({
@@ -42,12 +49,14 @@ function AssessmentSetRow({
   allowEdit,
   onEdit,
   onDelete,
+  onShowUsage,
 }: {
-  assessmentSet: StaffAssessmentSet;
+  assessmentSet: InstructorCourseAdminSetRow;
   editMode: boolean;
   allowEdit: boolean;
   onEdit: () => void;
   onDelete: () => void;
+  onShowUsage: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: assessmentSet.id,
@@ -84,14 +93,33 @@ function AssessmentSetRow({
             >
               <i className="fa fa-edit" aria-hidden="true" />
             </button>
-            <button
-              className="btn btn-sm btn-ghost"
-              type="button"
-              aria-label="Delete"
-              onClick={onDelete}
-            >
-              <i className="fa fa-trash text-danger" aria-hidden="true" />
-            </button>
+            {assessmentSet.assessments.length > 0 ? (
+              <OverlayTrigger
+                trigger="click"
+                tooltip={{
+                  body: `This assessment set cannot be deleted because it is referenced by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}.`,
+                  props: { id: `delete-tooltip-${assessmentSet.id}` },
+                }}
+                rootClose
+              >
+                <button
+                  className="btn btn-sm btn-ghost"
+                  type="button"
+                  aria-label={`Cannot delete: used by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}`}
+                >
+                  <i className="fa fa-trash text-muted" aria-hidden="true" />
+                </button>
+              </OverlayTrigger>
+            ) : (
+              <button
+                className="btn btn-sm btn-ghost"
+                type="button"
+                aria-label="Delete"
+                onClick={onDelete}
+              >
+                <i className="fa fa-trash text-danger" aria-hidden="true" />
+              </button>
+            )}
           </div>
         </td>
       )}
@@ -101,6 +129,16 @@ function AssessmentSetRow({
       <td className="align-middle">{assessmentSet.name}</td>
       <td className="align-middle">
         <AssessmentSetHeading assessmentSet={assessmentSet} />
+      </td>
+      <td className="align-middle">
+        <button
+          type="button"
+          className="btn btn-sm btn-outline-secondary text-nowrap"
+          aria-label={`View ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'} using this set`}
+          onClick={onShowUsage}
+        >
+          View assessments
+        </button>
       </td>
     </tr>
   );
@@ -114,14 +152,18 @@ function AssessmentSetsTable({
   handleEdit,
   handleDelete,
   handleCreate,
+  handleShowUsage,
 }: {
-  assessmentSetsState: StaffAssessmentSet[];
-  setAssessmentSetsState: (setter: (items: StaffAssessmentSet[]) => StaffAssessmentSet[]) => void;
+  assessmentSetsState: InstructorCourseAdminSetRow[];
+  setAssessmentSetsState: (
+    setter: (items: InstructorCourseAdminSetRow[]) => InstructorCourseAdminSetRow[],
+  ) => void;
   editMode: boolean;
   allowEdit: boolean;
   handleEdit: (index: number) => void;
   handleDelete: (id: string) => void;
   handleCreate: () => void;
+  handleShowUsage: (assessmentSet: InstructorCourseAdminSetRow) => void;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
@@ -158,6 +200,7 @@ function AssessmentSetsTable({
               <th>Abbreviation</th>
               <th>Name</th>
               <th className="col-8">Heading</th>
+              <th>Action</th>
             </tr>
           </thead>
 
@@ -170,12 +213,13 @@ function AssessmentSetsTable({
                 allowEdit={allowEdit}
                 onEdit={() => handleEdit(index)}
                 onDelete={() => handleDelete(assessmentSet.id)}
+                onShowUsage={() => handleShowUsage(assessmentSet)}
               />
             ))}
 
             {editMode && allowEdit && (
               <tr>
-                <td colSpan={4}>
+                <td colSpan={5}>
                   <button className="btn btn-sm btn-ghost" type="button" onClick={handleCreate}>
                     <i className="fa fa-plus" aria-hidden="true" /> New assessment set
                   </button>
@@ -195,15 +239,16 @@ export function AssessmentSetsPage({
   origHash,
   csrfToken,
 }: {
-  assessmentSets: StaffAssessmentSet[];
+  assessmentSets: InstructorCourseAdminSetRow[];
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
   const [assessmentSetsState, setAssessmentSetsState] =
-    useState<StaffAssessmentSet[]>(assessmentSets);
+    useState<InstructorCourseAdminSetRow[]>(assessmentSets);
   const [modalState, setModalState] = useState<EditAssessmentSetsModalState>({ type: 'closed' });
+  const [usageModalSet, setUsageModalSet] = useState<InstructorCourseAdminSetRow | null>(null);
 
   const duplicateNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
@@ -220,8 +265,8 @@ export function AssessmentSetsPage({
     const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.id : null;
     return new Set(
       assessmentSetsState
-        .filter((set: StaffAssessmentSet) => set.id !== editingId)
-        .map((set: StaffAssessmentSet) => set.name),
+        .filter((set: InstructorCourseAdminSetRow) => set.id !== editingId)
+        .map((set: InstructorCourseAdminSetRow) => set.name),
     );
   }, [assessmentSetsState, modalState]);
 
@@ -229,7 +274,7 @@ export function AssessmentSetsPage({
     setModalState({
       type: 'create',
       assessmentSet: {
-        ...(emptyAssessmentSet as StaffAssessmentSet),
+        ...(emptyAssessmentSet as InstructorCourseAdminSetRow),
         id: crypto.randomUUID(),
         color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
       },
@@ -246,15 +291,15 @@ export function AssessmentSetsPage({
     });
   };
 
-  const handleSave = (assessmentSet: StaffAssessmentSet) => {
+  const handleSave = (assessmentSet: InstructorCourseAdminSetRow) => {
     if (modalState.type === 'create') {
-      setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) => [
+      setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) => [
         ...prevAssessmentSets,
         assessmentSet,
       ]);
     } else if (modalState.type === 'edit') {
-      setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) =>
-        prevAssessmentSets.map((d: StaffAssessmentSet) =>
+      setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) =>
+        prevAssessmentSets.map((d: InstructorCourseAdminSetRow) =>
           d.id === assessmentSet.id ? assessmentSet : d,
         ),
       );
@@ -263,9 +308,13 @@ export function AssessmentSetsPage({
   };
 
   const handleDelete = (deleteId: string) => {
-    setAssessmentSetsState((prevAssessmentSets: StaffAssessmentSet[]) =>
-      prevAssessmentSets.filter((d: StaffAssessmentSet) => d.id !== deleteId),
+    setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) =>
+      prevAssessmentSets.filter((d: InstructorCourseAdminSetRow) => d.id !== deleteId),
     );
+  };
+
+  const handleShowUsage = (assessmentSet: InstructorCourseAdminSetRow) => {
+    setUsageModalSet(assessmentSet);
   };
 
   return (
@@ -329,6 +378,7 @@ export function AssessmentSetsPage({
             handleEdit={handleEdit}
             handleDelete={handleDelete}
             handleCreate={handleCreate}
+            handleShowUsage={handleShowUsage}
           />
         </div>
       </div>
@@ -338,6 +388,11 @@ export function AssessmentSetsPage({
         state={modalState}
         onClose={() => setModalState({ type: 'closed' })}
         onSave={handleSave}
+      />
+
+      <AssessmentSetUsageModal
+        assessmentSet={usageModalSet}
+        onHide={() => setUsageModalSet(null)}
       />
     </>
   );
