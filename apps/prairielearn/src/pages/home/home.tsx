@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
@@ -15,7 +16,6 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
-import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
