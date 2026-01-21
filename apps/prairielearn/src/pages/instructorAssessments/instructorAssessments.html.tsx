@@ -1,6 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
@@ -9,6 +10,7 @@ import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
@@ -299,8 +301,7 @@ function CreateAssessmentModal({
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
-          A short unique identifier for this assessment, such as "exam1-functions" or
-          "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
+          ${renderHtml(<AssessmentShortNameDescription />)}
         </small>
       </div>
       <div class="mb-3">

@@ -15,6 +15,7 @@ import {
   CourseInstanceSelfEnrollmentForm,
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
+import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
@@ -181,9 +182,7 @@ export function CopyCourseInstanceModal({
                 })}
               />
               <small id="copy-short-name-help" className="form-text text-muted">
-                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                and headers where a short description is required. Use only letters, numbers,
-                dashes, and underscores, with no spaces.
+                <CourseInstanceShortNameDescription />
               </small>
               {errors.short_name && (
                 <div className="invalid-feedback" id="copy-short-name-error">

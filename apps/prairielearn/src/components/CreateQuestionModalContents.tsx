@@ -3,6 +3,8 @@ import { useMemo, useRef, useState } from 'react';
 
 import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
 
+import { QuestionShortNameDescription } from './ShortNameDescriptions.js';
+
 interface SelectableCardProps {
   id: string;
   title: string;
@@ -228,8 +230,7 @@ export function CreateQuestionModalContents({
           required
         />
         <small id="qid_help" className="form-text text-muted">
-          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
-          Use only letters, numbers, dashes, and underscores, with no spaces.
+          <QuestionShortNameDescription />
         </small>
       </div>
 

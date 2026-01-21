@@ -1,13 +1,16 @@
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -71,14 +74,12 @@ export function InstructorAssessmentSettings({
                 id="aid"
                 name="aid"
                 value="${resLocals.assessment.tid}"
-                pattern="[\\-A-Za-z0-9_\\/]+"
+                pattern="${SHORT_NAME_PATTERN}"
                 data-other-values="${tids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
-                The unique identifier for this assessment. This may contain only letters, numbers,
-                dashes, and underscores, with no spaces. You may use forward slashes to separate
-                directories.
+                ${renderHtml(<AssessmentShortNameDescription />)}
               </small>
             </div>
             <div class="mb-3">

@@ -17,6 +17,11 @@ describe('validateShortName', () => {
       { name: 'mixed characters', value: 'Exam1-Q2_test' },
       { name: 'directory with hyphen', value: 'my-folder/my-question' },
       { name: 'directory starting with hyphen', value: '-folder/-question' },
+      { name: 'with dot in middle', value: 'question.1' },
+      { name: 'with multiple dots', value: 'question.v1.2' },
+      { name: 'dot after directory', value: 'folder/question.1' },
+      { name: 'dot in directory name', value: 'folder.v1/question' },
+      { name: 'dots in both segments', value: 'folder.v1/question.v2' },
     ];
 
     it.each(validCases)('accepts $name: "$value"', ({ value }) => {
@@ -55,11 +60,23 @@ describe('validateShortName', () => {
     });
   });
 
+  describe('invalid short names - leading dots', () => {
+    const leadingDotCases = [
+      { name: 'leading dot', value: '.hidden' },
+      { name: 'leading dot in subdirectory', value: 'folder/.hidden' },
+      { name: 'leading dot in first directory', value: '.folder/question' },
+      { name: 'leading dot in middle directory', value: 'a/.b/c' },
+    ];
+
+    it.each(leadingDotCases)('rejects $name: "$value"', ({ value }) => {
+      expect(validateShortName(value).valid).toBe(false);
+      expect(SHORT_NAME_REGEX.test(value)).toBe(false);
+    });
+  });
+
   describe('invalid short names - disallowed characters', () => {
     const disallowedCharCases = [
       { name: 'space', value: 'my question' },
-      { name: 'dot', value: 'question.1' },
-      { name: 'leading dot', value: '.hidden' },
       { name: 'at sign', value: 'question@1' },
       { name: 'hash', value: 'question#1' },
       { name: 'asterisk', value: 'question*' },
@@ -96,6 +113,22 @@ describe('validateShortName', () => {
       valid: false,
       message: 'Cannot contain two consecutive slashes',
       serverMessage: 'cannot contain two consecutive slashes',
+    });
+  });
+
+  it('returns specific error for leading dot', () => {
+    expect(validateShortName('.hidden')).toEqual({
+      valid: false,
+      message: 'Path segments cannot start with a dot',
+      serverMessage: 'path segments cannot start with a dot',
+    });
+  });
+
+  it('returns specific error for leading dot in subdirectory', () => {
+    expect(validateShortName('folder/.hidden')).toEqual({
+      valid: false,
+      message: 'Path segments cannot start with a dot',
+      serverMessage: 'path segments cannot start with a dot',
     });
   });
 
@@ -139,10 +172,14 @@ describe('SHORT_NAME_PATTERN derivation', () => {
     // Valid cases should match
     expect(htmlPatternRegex.test('question1')).toBe(true);
     expect(htmlPatternRegex.test('folder/question')).toBe(true);
+    expect(htmlPatternRegex.test('question.v1')).toBe(true);
+    expect(htmlPatternRegex.test('folder.v1/question.v2')).toBe(true);
 
     // Invalid cases should not match
     expect(htmlPatternRegex.test('/question')).toBe(false);
     expect(htmlPatternRegex.test('question/')).toBe(false);
     expect(htmlPatternRegex.test('my question')).toBe(false);
+    expect(htmlPatternRegex.test('.hidden')).toBe(false);
+    expect(htmlPatternRegex.test('folder/.hidden')).toBe(false);
   });
 });

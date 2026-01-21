@@ -4,9 +4,12 @@
  * The RegExp is compiled with the `v` flag, which matches the behavior of browsers when this is
  * used in a `pattern` attribute. This is important, because it forces/allows us to escape the
  * `-` character in character classes.
+ *
+ * Dots are allowed in non-leading positions of each path segment (e.g., `foo.bar` or `foo/bar.baz`
+ * are valid, but `.foo` or `foo/.bar` are not).
  */
 export const SHORT_NAME_REGEX =
-  /^[A-Za-z0-9\-_][A-Za-z0-9\-_]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_]*)*$/v;
+  /^[A-Za-z0-9\-_][A-Za-z0-9\-_.]*(\/[A-Za-z0-9\-_][A-Za-z0-9\-_.]*)*$/v;
 
 /**
  * String pattern for short names, suitable for use in HTML pattern attributes.
@@ -63,11 +66,14 @@ export function validateShortName(
   if (shortName.includes('//')) {
     return validationError('Cannot contain two consecutive slashes');
   }
+  if (shortName.startsWith('.') || shortName.includes('/.')) {
+    return validationError('Path segments cannot start with a dot');
+  }
 
   // Use regex for general validation
   if (!SHORT_NAME_REGEX.test(shortName)) {
     return validationError(
-      'Must use only letters, numbers, dashes, underscores, and forward slashes',
+      'Must use only letters, numbers, dashes, underscores, dots, and forward slashes',
     );
   }
 

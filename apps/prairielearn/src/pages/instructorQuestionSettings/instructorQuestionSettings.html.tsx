@@ -8,6 +8,7 @@ import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -153,9 +154,7 @@ export function InstructorQuestionSettings({
                 ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
-                This is a unique identifier for the question, e.g. "addNumbers". Use only letters,
-                numbers, dashes, and underscores, with no spaces. You may use forward slashes to
-                separate directories.
+                ${renderHtml(<QuestionShortNameDescription />)}
               </small>
             </div>
             <div class="mb-3">
