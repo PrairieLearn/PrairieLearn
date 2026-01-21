@@ -1,6 +1,7 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { formatInterval } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { AssessmentModuleHeadingHtml } from '../../components/AssessmentModuleHeading.js';
@@ -9,10 +10,12 @@ import { IssueBadgeHtml } from '../../components/IssueBadge.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SyncProblemButtonHtml } from '../../components/SyncProblemButton.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { type AssessmentRow, type AssessmentStatsRow } from '../../models/assessment.js';
 
 import { type StatsUpdateData } from './instructorAssessments.types.js';
@@ -268,6 +271,9 @@ function CreateAssessmentModal({
     id: 'createAssessmentModal',
     title: 'Create assessment',
     formMethod: 'POST',
+    // TODO: if/when this page is converted to React, use `validateShortName`
+    // from `../../lib/short-name.js` with react-hook-form to provide more specific
+    // validation feedback (e.g., "cannot start with a slash").
     body: html`
       <div class="mb-3">
         <label class="form-label" for="title">Title</label>
@@ -291,12 +297,11 @@ function CreateAssessmentModal({
           id="aid"
           name="aid"
           required
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           aria-describedby="aid_help"
         />
         <small id="aid_help" class="form-text text-muted">
-          A short unique identifier for this assessment, such as "exam1-functions" or
-          "hw2-derivatives". Use only letters, numbers, dashes, and underscores, with no spaces.
+          ${renderHtml(<AssessmentShortNameDescription />)}
         </small>
       </div>
       <div class="mb-3">
