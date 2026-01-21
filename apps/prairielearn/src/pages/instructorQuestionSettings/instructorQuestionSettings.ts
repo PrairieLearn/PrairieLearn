@@ -173,7 +173,10 @@ router.post(
 
       const shortNameValidation = validateShortName(body.qid, res.locals.question.qid ?? undefined);
       if (!shortNameValidation.valid) {
-        throw new error.HttpStatusError(400, `Invalid QID: ${shortNameValidation.serverMessage}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
+        );
       }
 
       const paths = getPaths(undefined, res.locals);

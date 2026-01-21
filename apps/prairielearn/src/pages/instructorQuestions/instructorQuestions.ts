@@ -227,7 +227,10 @@ router.post(
       }
       const shortNameValidation = validateShortName(req.body.qid);
       if (!shortNameValidation.valid) {
-        throw new error.HttpStatusError(400, `Invalid QID: ${shortNameValidation.serverMessage}`);
+        throw new error.HttpStatusError(
+          400,
+          `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
+        );
       }
       const usesTemplate = ['example', 'course'].includes(req.body.start_from);
       if (usesTemplate && !req.body.template_qid) {

@@ -24,14 +24,15 @@ describe('validateShortName', () => {
       { name: 'dots in both segments', value: 'folder.v1/question.v2' },
     ];
 
-    it.each(validCases)('accepts $name: "$value"', ({ value }) => {
+    it.each(validCases)('accepts $name', ({ value }) => {
       expect(validateShortName(value).valid).toBe(true);
       expect(SHORT_NAME_REGEX.test(value)).toBe(true);
     });
   });
 
-  describe('invalid short names - leading/trailing slashes', () => {
+  describe('invalid short names', () => {
     const invalidSlashCases = [
+      { name: 'empty string', value: '' },
       { name: 'leading slash', value: '/question' },
       { name: 'trailing slash', value: 'question/' },
       { name: 'both leading and trailing slashes', value: '/question/' },
@@ -40,42 +41,11 @@ describe('validateShortName', () => {
       { name: 'only a slash', value: '/' },
       { name: 'multiple leading slashes', value: '//question' },
       { name: 'multiple trailing slashes', value: 'question//' },
-    ];
-
-    it.each(invalidSlashCases)('rejects $name: "$value"', ({ value }) => {
-      expect(validateShortName(value).valid).toBe(false);
-      expect(SHORT_NAME_REGEX.test(value)).toBe(false);
-    });
-  });
-
-  describe('invalid short names - empty components', () => {
-    const emptyComponentCases = [
       { name: 'double slash in middle', value: 'folder//question' },
-      { name: 'empty string', value: '' },
-    ];
-
-    it.each(emptyComponentCases)('rejects $name: "$value"', ({ value }) => {
-      expect(validateShortName(value).valid).toBe(false);
-      expect(SHORT_NAME_REGEX.test(value)).toBe(false);
-    });
-  });
-
-  describe('invalid short names - leading dots', () => {
-    const leadingDotCases = [
       { name: 'leading dot', value: '.hidden' },
       { name: 'leading dot in subdirectory', value: 'folder/.hidden' },
       { name: 'leading dot in first directory', value: '.folder/question' },
       { name: 'leading dot in middle directory', value: 'a/.b/c' },
-    ];
-
-    it.each(leadingDotCases)('rejects $name: "$value"', ({ value }) => {
-      expect(validateShortName(value).valid).toBe(false);
-      expect(SHORT_NAME_REGEX.test(value)).toBe(false);
-    });
-  });
-
-  describe('invalid short names - disallowed characters', () => {
-    const disallowedCharCases = [
       { name: 'space', value: 'my question' },
       { name: 'at sign', value: 'question@1' },
       { name: 'hash', value: 'question#1' },
@@ -86,59 +56,63 @@ describe('validateShortName', () => {
       { name: 'backslash', value: 'folder\\question' },
     ];
 
-    it.each(disallowedCharCases)('rejects $name: "$value"', ({ value }) => {
+    it.each(invalidSlashCases)('rejects $name', ({ value }) => {
       expect(validateShortName(value).valid).toBe(false);
       expect(SHORT_NAME_REGEX.test(value)).toBe(false);
     });
   });
 
-  it('returns specific error for leading slash', () => {
-    expect(validateShortName('/question')).toEqual({
-      valid: false,
-      message: 'Cannot start with a slash',
-      serverMessage: 'cannot start with a slash',
-    });
-  });
+  describe('error messages', () => {
+    const errorCases = [
+      {
+        name: 'leading slash',
+        value: '/question',
+        message: 'Cannot start with a slash',
+        lowercaseMessage: 'cannot start with a slash',
+      },
+      {
+        name: 'trailing slash',
+        value: 'question/',
+        message: 'Cannot end with a slash',
+        lowercaseMessage: 'cannot end with a slash',
+      },
+      {
+        name: 'double slashes',
+        value: 'folder//question',
+        message: 'Cannot contain two consecutive slashes',
+        lowercaseMessage: 'cannot contain two consecutive slashes',
+      },
+      {
+        name: 'leading dot',
+        value: '.hidden',
+        message: 'Path segments cannot start with a dot',
+        lowercaseMessage: 'path segments cannot start with a dot',
+      },
+      {
+        name: 'leading dot in subdirectory',
+        value: 'folder/.hidden',
+        message: 'Path segments cannot start with a dot',
+        lowercaseMessage: 'path segments cannot start with a dot',
+      },
+      {
+        // Leading slash check comes first when both are present
+        name: 'both leading and trailing slashes (leading takes priority)',
+        value: '/question/',
+        message: 'Cannot start with a slash',
+        lowercaseMessage: 'cannot start with a slash',
+      },
+    ];
 
-  it('returns specific error for trailing slash', () => {
-    expect(validateShortName('question/')).toEqual({
-      valid: false,
-      message: 'Cannot end with a slash',
-      serverMessage: 'cannot end with a slash',
-    });
-  });
-
-  it('returns specific error for double slashes', () => {
-    expect(validateShortName('folder//question')).toEqual({
-      valid: false,
-      message: 'Cannot contain two consecutive slashes',
-      serverMessage: 'cannot contain two consecutive slashes',
-    });
-  });
-
-  it('returns specific error for leading dot', () => {
-    expect(validateShortName('.hidden')).toEqual({
-      valid: false,
-      message: 'Path segments cannot start with a dot',
-      serverMessage: 'path segments cannot start with a dot',
-    });
-  });
-
-  it('returns specific error for leading dot in subdirectory', () => {
-    expect(validateShortName('folder/.hidden')).toEqual({
-      valid: false,
-      message: 'Path segments cannot start with a dot',
-      serverMessage: 'path segments cannot start with a dot',
-    });
-  });
-
-  it('returns leading slash error for both leading and trailing', () => {
-    // Leading slash check comes first
-    expect(validateShortName('/question/')).toEqual({
-      valid: false,
-      message: 'Cannot start with a slash',
-      serverMessage: 'cannot start with a slash',
-    });
+    it.each(errorCases)(
+      'returns correct error for $name',
+      ({ value, message, lowercaseMessage }) => {
+        expect(validateShortName(value)).toEqual({
+          valid: false,
+          message,
+          lowercaseMessage,
+        });
+      },
+    );
   });
 
   describe('existingShortName parameter', () => {
@@ -154,7 +128,7 @@ describe('validateShortName', () => {
       expect(validateShortName('/invalid', 'question1')).toEqual({
         valid: false,
         message: 'Cannot start with a slash',
-        serverMessage: 'cannot start with a slash',
+        lowercaseMessage: 'cannot start with a slash',
       });
     });
   });

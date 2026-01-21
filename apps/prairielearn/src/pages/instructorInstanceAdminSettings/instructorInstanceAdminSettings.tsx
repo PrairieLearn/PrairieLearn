@@ -195,7 +195,7 @@ router.post(
 
       const shortNameValidation = validateShortName(short_name);
       if (!shortNameValidation.valid) {
-        throw new error.HttpStatusError(400, `Short name ${shortNameValidation.serverMessage}`);
+        throw new error.HttpStatusError(400, `Short name ${shortNameValidation.lowercaseMessage}`);
       }
 
       const existingNames = await sqldb.queryRows(
@@ -327,7 +327,7 @@ router.post(
       if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name: ${shortNameValidation.serverMessage}`,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 

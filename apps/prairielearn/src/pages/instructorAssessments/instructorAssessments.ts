@@ -197,7 +197,7 @@ router.post(
       }
       const shortNameValidation = validateShortName(req.body.aid);
       if (!shortNameValidation.valid) {
-        throw new HttpStatusError(400, `Invalid AID: ${shortNameValidation.serverMessage}`);
+        throw new HttpStatusError(400, `Invalid AID: ${shortNameValidation.lowercaseMessage}`);
       }
       if (!req.body.type) {
         throw new HttpStatusError(400, 'type is required');

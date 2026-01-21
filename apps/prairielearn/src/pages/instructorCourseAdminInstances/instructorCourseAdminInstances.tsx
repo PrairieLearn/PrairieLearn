@@ -145,7 +145,7 @@ router.post(
       if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name: ${shortNameValidation.serverMessage}`,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 

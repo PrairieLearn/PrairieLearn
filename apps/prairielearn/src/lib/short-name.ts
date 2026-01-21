@@ -26,17 +26,17 @@ interface ShortNameValidationFailure {
   /** "Cannot start with a slash" - for client display */
   message: string;
   /** "cannot start with a slash" - for server to prepend entity name */
-  serverMessage: string;
+  lowercaseMessage: string;
 }
 
 export type ShortNameValidationResult = ShortNameValidationSuccess | ShortNameValidationFailure;
 
-function validationError(message: string): ShortNameValidationFailure {
+function buildValidationError(message: string): ShortNameValidationFailure {
   // Client message starts with capital, server message starts with lowercase
   return {
     valid: false,
     message,
-    serverMessage: message.charAt(0).toLowerCase() + message.slice(1),
+    lowercaseMessage: message.charAt(0).toLowerCase() + message.slice(1),
   };
 }
 
@@ -58,21 +58,21 @@ export function validateShortName(
 
   // Check specific failure cases in order
   if (shortName.startsWith('/')) {
-    return validationError('Cannot start with a slash');
+    return buildValidationError('Cannot start with a slash');
   }
   if (shortName.endsWith('/')) {
-    return validationError('Cannot end with a slash');
+    return buildValidationError('Cannot end with a slash');
   }
   if (shortName.includes('//')) {
-    return validationError('Cannot contain two consecutive slashes');
+    return buildValidationError('Cannot contain two consecutive slashes');
   }
   if (shortName.startsWith('.') || shortName.includes('/.')) {
-    return validationError('Path segments cannot start with a dot');
+    return buildValidationError('Path segments cannot start with a dot');
   }
 
   // Use regex for general validation
   if (!SHORT_NAME_REGEX.test(shortName)) {
-    return validationError(
+    return buildValidationError(
       'Must use only letters, numbers, dashes, underscores, dots, and forward slashes',
     );
   }
