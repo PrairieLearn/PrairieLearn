@@ -9,7 +9,6 @@ import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import { markdownToHtml } from '@prairielearn/markdown';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
@@ -246,21 +245,12 @@ export async function aiGrade({
         submitted_answers: submission.submitted_answer,
       };
       for (const rubric_item of rubric_items) {
-        rubric_item.description = markdownToHtml(
-          mustache.render(rubric_item.description, mustacheParams),
-          {
-            inline: true,
-          },
-        );
+        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
         rubric_item.explanation = rubric_item.explanation
-          ? markdownToHtml(mustache.render(rubric_item.explanation, mustacheParams), {
-              inline: true,
-            })
+          ? mustache.render(rubric_item.explanation, mustacheParams)
           : null;
         rubric_item.grader_note = rubric_item.grader_note
-          ? markdownToHtml(mustache.render(rubric_item.grader_note, mustacheParams), {
-              inline: true,
-            })
+          ? mustache.render(rubric_item.grader_note, mustacheParams)
           : null;
       }
 
