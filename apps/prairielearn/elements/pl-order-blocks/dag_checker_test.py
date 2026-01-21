@@ -197,13 +197,11 @@ problem_6_valid: Multigraph = {
     "4": [["2"], ["1"]],
 }
 
-problem_7_final = ["4", "5"]
+problem_7_final = ["2", "3"]
 problem_7_valid: Multigraph = {
-    "1": [["3"], []],
-    "2": [["3"], []],
-    "3": [],
-    "4": [["2"], ["1"]],
-    "5": [["2"], ["1"]],
+    "1": [],
+    "2": ["1"],
+    "3": ["1"],
 }
 
 
@@ -228,7 +226,9 @@ def test_solve_multigraph() -> None:
             == grade_multigraph(solution, problem_6_valid, problem_6_final)[0]
         )
 
+    # test multiple final tags
     problem_7_solutions = solve_multigraph(problem_7_valid, problem_7_final)
+    assert len(problem_7_solutions) == 2
     for solution in problem_7_solutions:
         assert (
             len(solution)
