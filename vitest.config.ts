@@ -142,6 +142,10 @@ export const sharedConfig = defineConfig({
         // because .gitignore rules are evaluated relative to the root.
         const relativePath = path.relative(process.cwd(), filePath).replaceAll('\\', '/'); // Windows compatibility
 
+        // Directories are also watched by Chokidar, and when the watched dir
+        // is root, path.relative will return an empty string, causing an error
+        // if passed as an argument to the ignores function, so this case
+        // should be short-circuited.
         if (!relativePath) {
           return false;
         }
