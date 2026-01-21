@@ -20,6 +20,7 @@ import {
   type Question,
   QuestionSchema,
   SprocInstanceQuestionsNextAllowedGradeSchema,
+  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -163,6 +164,19 @@ export async function insertSubmission({
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
       await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+
+      if ((variant.max_manual_points ?? 0) > 0) {
+        await sqldb.callRow(
+          'assessment_instances_grade',
+          [
+            variant.assessment_instance_id,
+            auth_user_id,
+            credit,
+            true, // only_log_if_score_updated
+          ],
+          SprocAssessmentInstancesGradeSchema,
+        );
+      }
     }
 
     return { submission_id, variant };

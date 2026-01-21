@@ -17,14 +17,17 @@ DECLARE
     log_update boolean;
     use_credit integer;
     points DOUBLE PRECISION;
+    pending_points DOUBLE PRECISION;
     score_perc DOUBLE PRECISION;
+    score_perc_pending DOUBLE PRECISION;
     total_points DOUBLE PRECISION;
+    total_pending_manual_points DOUBLE PRECISION;
     max_points DOUBLE PRECISION;
     max_bonus_points DOUBLE PRECISION;
     current_score_perc DOUBLE PRECISION;
     instance_questions_used_for_grade BIGINT[];
 BEGIN
-    SELECT ai.points, ai.score_perc INTO old_values
+    SELECT ai.points, ai.score_perc, ai.score_perc_pending INTO old_values
     FROM assessment_instances AS ai
     WHERE id = assessment_instance_id;
 
@@ -53,13 +56,63 @@ BEGIN
         t_points_by_zone AS (SELECT * FROM assessment_instances_points(assessment_instance_id)),
         t_used_for_grade AS (SELECT unnest(iq_ids) AS iq_ids FROM t_points_by_zone),
         v_used_for_grade AS (SELECT array_agg(iq_ids) AS iq_ids FROM t_used_for_grade),
-        v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone)
+        t_max_used_for_grade AS (
+            SELECT
+                tpz.zid,
+                unnest(tpz.max_iq_ids) AS iq_id
+            FROM t_points_by_zone AS tpz
+        ),
+        t_pending_by_zone AS (
+            SELECT
+                tpz.zid,
+                CASE
+                    WHEN z.max_points IS NULL THEN
+                        sum(
+                                CASE
+                                    WHEN
+                                        COALESCE(aq.max_manual_points, 0) > 0
+                                    AND iq.requires_manual_grading
+                                THEN COALESCE(aq.max_manual_points, 0)
+                                ELSE 0
+                            END
+                        )
+                    ELSE
+                        LEAST(
+                            sum(
+                                CASE
+                                    WHEN
+                                        COALESCE(aq.max_manual_points, 0) > 0
+                                        AND iq.requires_manual_grading
+                                    THEN COALESCE(aq.max_manual_points, 0)
+                                    ELSE 0
+                                END
+                            ),
+                            z.max_points
+                        )
+                END AS pending_points
+            FROM
+                t_points_by_zone AS tpz
+                JOIN zones AS z ON (z.id = tpz.zid)
+                LEFT JOIN t_max_used_for_grade AS used_iq_id ON (used_iq_id.zid = tpz.zid)
+                LEFT JOIN instance_questions AS iq ON (iq.id = used_iq_id.iq_id)
+                LEFT JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
+            GROUP BY
+                tpz.zid,
+                z.max_points
+        ),
+        v_total_points AS (SELECT sum(t_points_by_zone.points) AS total_points FROM t_points_by_zone),
+        v_total_pending_manual_points AS (
+            SELECT sum(t_pending_by_zone.pending_points) AS total_pending_manual_points
+            FROM t_pending_by_zone
+        )
     SELECT
-        v_total_points.total_points, v_used_for_grade.iq_ids
+        v_total_points.total_points,
+        v_total_pending_manual_points.total_pending_manual_points,
+        v_used_for_grade.iq_ids
     INTO
-        total_points, instance_questions_used_for_grade
+        total_points, total_pending_manual_points, instance_questions_used_for_grade
     FROM
-        v_total_points, v_used_for_grade;
+        v_total_points, v_total_pending_manual_points, v_used_for_grade;
 
 
     -- #########################################################################
@@ -90,8 +143,24 @@ BEGIN
         score_perc := greatest(score_perc, current_score_perc);
     END IF;
 
+    -- #########################################################################
+    -- pending manual points and score_perc_pending
+
+    pending_points := coalesce(total_pending_manual_points, 0);
+    score_perc_pending := CASE
+        WHEN max_points IS NULL OR max_points <= 0 THEN 0
+        ELSE
+            LEAST(
+                100,
+                GREATEST(
+                    0,
+                    pending_points / max_points * 100
+                )
+            )
+        END;
+
     -- pack everything into new_values
-    SELECT points, score_perc INTO new_values;
+    SELECT points, score_perc, score_perc_pending INTO new_values;
 
     -- #########################################################################
     -- Update instance_questions (which questions were used for grading)
@@ -109,6 +178,7 @@ BEGIN
     SET
         points = new_values.points,
         score_perc = new_values.score_perc,
+        score_perc_pending = new_values.score_perc_pending,
         modified_at = now()
     WHERE ai.id = assessment_instance_id
     RETURNING ai.*
@@ -128,10 +198,10 @@ BEGIN
 
     IF log_update THEN
         INSERT INTO assessment_score_logs
-            (assessment_instance_id, auth_user_id, max_points, points, score_perc)
+            (assessment_instance_id, auth_user_id, max_points, points, score_perc, score_perc_pending)
         VALUES
             (new_assessment_instance.id, authn_user_id,
-            new_assessment_instance.max_points, new_values.points, new_values.score_perc);
+            new_assessment_instance.max_points, new_values.points, new_values.score_perc, new_values.score_perc_pending);
     END IF;
 
     new_points := new_values.points;
