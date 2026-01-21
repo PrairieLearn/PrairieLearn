@@ -1,0 +1,17 @@
+{
+  "uuid": "1c0d6e4c-1b7f-4cc4-a00f-8a3f0b1c7f5d",
+  "type": "Homework",
+  "title": "Homework score_perc_pending mixed",
+  "set": "Homework",
+  "number": "97",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [
+        { "id": "addNumbers", "points": 1, "maxPoints": 30 },
+        { "id": "manualGrade/shortAnswer", "points": 1, "maxPoints": 20 },
+        { "id": "manualGrade/codeUpload", "points": 1, "maxPoints": 50 }
+      ]
+    }
+  ]
+}
