@@ -25,8 +25,8 @@ SELECT
           )
           ORDER BY
             ci.id DESC,
-            a.order_by,
-            a.id
+            a.order_by ASC,
+            a.id ASC
         ),
         '[]'::jsonb
       )
