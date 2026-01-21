@@ -247,6 +247,7 @@
 {{/submission}}
 
 {{#answer}}
+{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     <code>{{a_tru}}</code>
@@ -309,4 +310,5 @@
 {{#multiline}}
 </span>
 {{/multiline}}
+{{#inline}}</span>{{/inline}}
 {{/answer}}
