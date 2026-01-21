@@ -183,11 +183,12 @@ export function getUniqueNames({
 }
 
 export async function getOrigHash(path: string) {
-  const fileExists = await fs.pathExists(path);
-  if (!fileExists) {
-    return null;
+  try {
+    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+  } catch (err) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
   }
-  return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
 }
 
 /**
