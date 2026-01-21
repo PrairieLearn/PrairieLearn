@@ -1,10 +1,8 @@
 import crypto from 'node:crypto';
 import { readFileSync } from 'node:fs';
-import path from 'node:path';
-
 import { slash } from '@vitest/utils/helpers';
 import ignore from 'ignore';
-import { resolve } from 'pathe';
+import { relative, resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -140,10 +138,10 @@ export const sharedConfig = defineConfig({
       ignored: (filePath: string) => {
         // Absolute paths need to be converted to relative paths,
         // because .gitignore rules are evaluated relative to the root.
-        const relativePath = path.relative(process.cwd(), filePath).replaceAll('\\', '/'); // Windows compatibility
+        const relativePath = relative(process.cwd(), filePath);
 
         // Directories are also watched by Chokidar, and when the watched dir
-        // is root, path.relative will return an empty string, causing an error
+        // is root, relative() will return an empty string, causing an error
         // if passed as an argument to the ignores function, so this case
         // should be short-circuited.
         if (!relativePath) {
