@@ -15908,6 +15908,7 @@ __metadata:
     get-stream: "npm:^9.0.1"
     globby: "npm:^16.1.0"
     htmlhint: "npm:^1.8.0"
+    ignore: "npm:^7.0.5"
     linkinator: "npm:^7.5.3"
     markdownlint-cli: "npm:^0.47.0"
     node-gyp: "npm:^12.1.0"
