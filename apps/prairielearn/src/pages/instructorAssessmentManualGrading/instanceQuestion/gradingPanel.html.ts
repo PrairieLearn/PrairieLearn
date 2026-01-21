@@ -1,6 +1,9 @@
 import assert from 'assert';
 
+import mustache from 'mustache';
+
 import { html } from '@prairielearn/html';
+import { markdownToHtml } from '@prairielearn/markdown';
 import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../../../ee/lib/ai-grading/types.js';
@@ -89,6 +92,14 @@ export function GradingPanel({
     : [emptyGroup];
 
   const graderGuidelines = resLocals.rubric_data?.rubric.grader_guidelines;
+  const mustacheParams = {
+    correct_answers: resLocals.submission.true_answer ?? {},
+    params: resLocals.submission.params ?? {},
+    submitted_answers: resLocals.submission.submitted_answer,
+  };
+  const graderGuidelinesRendered = graderGuidelines
+    ? markdownToHtml(mustache.render(graderGuidelines, mustacheParams), { inline: true })
+    : null;
 
   return html`
     <form
@@ -204,11 +215,11 @@ export function GradingPanel({
               </li>
             `
           : ''}
-        ${graderGuidelines
+        ${graderGuidelinesRendered
           ? html`
               <li class="list-group-item">
                 <div class="mb-1">Guidelines:</div>
-                <p class="my-3" style="white-space: pre-line;">${graderGuidelines}</p>
+                <p class="my-3" style="white-space: pre-line;">${graderGuidelinesRendered}</p>
               </li>
             `
           : ''}

@@ -1,6 +1,10 @@
 import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 
+import { SHORT_NAME_PATTERN } from '../lib/short-name.js';
+
+import { QuestionShortNameDescription } from './ShortNameDescriptions.js';
+
 interface SelectableCardProps {
   id: string;
   title: string;
@@ -219,13 +223,14 @@ export function CreateQuestionModalContents({
           className="form-control"
           id="qid"
           name="qid"
-          pattern="[\-A-Za-z0-9_\/]+"
           aria-describedby="qid_help"
+          // TODO: use `validateShortName` with react-hook-form to provide more specific
+          //validation feedback (e.g., "cannot start with a slash").
+          pattern={SHORT_NAME_PATTERN}
           required
         />
         <small id="qid_help" className="form-text text-muted">
-          A short unique identifier for this question, such as "add-vectors" or "find-derivative".
-          Use only letters, numbers, dashes, and underscores, with no spaces.
+          <QuestionShortNameDescription />
         </small>
       </div>
 

@@ -36,6 +36,7 @@ import { applyKeyOrder } from '../../lib/json.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { startTestQuestion } from '../../lib/question-testing.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { generateCsrfToken } from '../../middlewares/csrfToken.js';
 import { selectCoursesWithEditAccess } from '../../models/course.js';
@@ -170,10 +171,11 @@ router.post(
         })
         .parse(req.body);
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(body.qid)) {
+      const shortNameValidation = validateShortName(body.qid, res.locals.question.qid ?? undefined);
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid QID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
+          `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 

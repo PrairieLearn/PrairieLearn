@@ -7,6 +7,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { type Result, withBrand } from '@prairielearn/utils';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
@@ -30,7 +31,6 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { type Result, withBrand } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
