@@ -320,12 +320,12 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
       if (!req.body.ciid) {
-        throw new error.HttpStatusError(400, `Invalid CIID (was falsy): ${req.body.ciid}`);
+        throw new error.HttpStatusError(400, `Invalid short name (was falsy): ${req.body.ciid}`);
       }
       if (!/^[-A-Za-z0-9_/]+$/.test(req.body.ciid)) {
         throw new error.HttpStatusError(
           400,
-          `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.ciid}`,
+          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.ciid}`,
         );
       }
 
@@ -414,7 +414,7 @@ router.post(
       } catch {
         throw new error.HttpStatusError(
           400,
-          `Invalid CIID (could not be normalized): ${req.body.ciid}`,
+          `Invalid short name (could not be normalized): ${req.body.ciid}`,
         );
       }
       const editor = new MultiEditor(
