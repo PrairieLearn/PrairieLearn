@@ -9,6 +9,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import {
   PotentialEnrollmentStatus,
@@ -38,7 +39,6 @@ import {
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
-import { assertNever } from '../lib/types.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
