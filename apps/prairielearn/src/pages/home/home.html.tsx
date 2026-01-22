@@ -33,6 +33,8 @@ export const StudentHomePageCourseSchema = z.object({
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
+  sort_start_date: z.coerce.date().nullable(),
+  sort_end_date: z.coerce.date().nullable(),
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 

@@ -109,8 +109,19 @@ router.get(
       );
     });
 
-    // Modern publishing courses show above legacy courses in the list
-    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses];
+    // Combine and sort all student courses by start date (most recent first)
+    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses].sort((a, b) => {
+      // Sort by start date descending, then end date descending, then id descending
+      const aStart = a.sort_start_date?.getTime() ?? 0;
+      const bStart = b.sort_start_date?.getTime() ?? 0;
+      if (aStart !== bStart) return bStart - aStart;
+
+      const aEnd = a.sort_end_date?.getTime() ?? 0;
+      const bEnd = b.sort_end_date?.getTime() ?? 0;
+      if (aEnd !== bEnd) return bEnd - aEnd;
+
+      return Number(b.course_instance.id) - Number(a.course_instance.id);
+    });
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
