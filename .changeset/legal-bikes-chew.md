@@ -2,4 +2,4 @@
 '@prairielearn/ui': minor
 ---
 
-Add ComboBox UI component
+Add `<ComboBox>` and `<TagPicker>` components
