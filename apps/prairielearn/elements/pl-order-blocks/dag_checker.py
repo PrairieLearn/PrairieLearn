@@ -407,6 +407,11 @@ def collapse_multigraph(
 
     Yields:
         - yields a "fully collapsed" DAG once a DAG has been found.
+
+    NOTE: This isn't the most performant implementation becuase it is not
+    memoizing the returned position from dfs_until in already traversed graphs.
+    Work is being redone, however, most graphs will have very few nodes and the
+    tradeoff for the extra code complexity does not seem worth it at this time.
     """
     for final in final_tags:
         collapsing_graphs: list[Multigraph] = [multigraph]
