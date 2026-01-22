@@ -1,6 +1,6 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
 import { IssueBadgeHtml } from '../../../src/components/IssueBadge.js';

@@ -15,8 +15,10 @@ import {
   CourseInstanceSelfEnrollmentForm,
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
+import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { getCourseEditErrorUrl, getCourseInstanceSettingsUrl } from '../../../lib/client/url.js';
+import { validateShortName } from '../../../lib/short-name.js';
 
 interface CreateFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
@@ -97,8 +99,7 @@ export function CreateCourseInstanceModal({
     },
   });
 
-  const onFormSubmit = async (data: CreateFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: CreateFormValues) => {
     void createMutation.mutate(data);
   };
 
@@ -126,7 +127,7 @@ export function CreateCourseInstanceModal({
             )}
 
             <div className="mb-3">
-              <label className="form-label" for="create-long-name">
+              <label className="form-label" htmlFor="create-long-name">
                 Long name
               </label>
               <input
@@ -153,7 +154,7 @@ export function CreateCourseInstanceModal({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" for="create-short-name">
+              <label className="form-label" htmlFor="create-short-name">
                 Short name
               </label>
               <input
@@ -165,16 +166,14 @@ export function CreateCourseInstanceModal({
                 aria-errormessage={errors.short_name ? 'create-short-name-error' : undefined}
                 {...register('short_name', {
                   required: 'Short name is required',
-                  pattern: {
-                    value: /^[-A-Za-z0-9_/]+$/,
-                    message: 'Use only letters, numbers, dashes, and underscores, with no spaces',
+                  validate: (value) => {
+                    const result = validateShortName(value);
+                    return result.valid || result.message;
                   },
                 })}
               />
               <small id="create-short-name-help" className="form-text text-muted">
-                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                and headers where a short description is required. Use only letters, numbers,
-                dashes, and underscores, with no spaces.
+                <CourseInstanceShortNameDescription />
               </small>
               {errors.short_name && (
                 <div className="invalid-feedback" id="create-short-name-error">
