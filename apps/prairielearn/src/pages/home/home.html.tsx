@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { Hydrate } from '@prairielearn/react/server';
+import { DateFromISOString } from '@prairielearn/zod';
 
 import {
   RawStudentCourseInstanceSchema,
@@ -33,8 +34,8 @@ export const StudentHomePageCourseSchema = z.object({
   course_short_name: RawStudentCourseSchema.shape.short_name,
   course_title: RawStudentCourseSchema.shape.title,
   enrollment: StudentEnrollmentSchema,
-  sort_start_date: z.coerce.date().nullable(),
-  sort_end_date: z.coerce.date().nullable(),
+  start_date: DateFromISOString.nullable(),
+  end_date: DateFromISOString.nullable(),
 });
 export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 

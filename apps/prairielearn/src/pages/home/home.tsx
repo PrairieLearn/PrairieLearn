@@ -33,6 +33,29 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
+interface StudentCourseForSorting {
+  start_date: Date | null;
+  end_date: Date | null;
+  course_instance: { id: string };
+}
+
+/**
+ * Sort student courses by start date descending, then end date descending,
+ * then course instance id descending. Null dates are treated as 0 (epoch),
+ * so they sort to the end.
+ */
+export function sortStudentCourses(a: StudentCourseForSorting, b: StudentCourseForSorting): number {
+  const aStart = a.start_date?.getTime() ?? 0;
+  const bStart = b.start_date?.getTime() ?? 0;
+  if (aStart !== bStart) return bStart - aStart;
+
+  const aEnd = a.end_date?.getTime() ?? 0;
+  const bEnd = b.end_date?.getTime() ?? 0;
+  if (aEnd !== bEnd) return bEnd - aEnd;
+
+  return Number(b.course_instance.id) - Number(a.course_instance.id);
+}
+
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -110,18 +133,9 @@ router.get(
     });
 
     // Combine and sort all student courses by start date (most recent first)
-    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses].sort((a, b) => {
-      // Sort by start date descending, then end date descending, then id descending
-      const aStart = a.sort_start_date?.getTime() ?? 0;
-      const bStart = b.sort_start_date?.getTime() ?? 0;
-      if (aStart !== bStart) return bStart - aStart;
-
-      const aEnd = a.sort_end_date?.getTime() ?? 0;
-      const bEnd = b.sort_end_date?.getTime() ?? 0;
-      if (aEnd !== bEnd) return bEnd - aEnd;
-
-      return Number(b.course_instance.id) - Number(a.course_instance.id);
-    });
+    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses].sort(
+      sortStudentCourses,
+    );
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,

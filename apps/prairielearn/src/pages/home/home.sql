@@ -170,8 +170,8 @@ SELECT
   c.title AS course_title,
   to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment,
-  d.start_date AS sort_start_date,
-  d.end_date AS sort_end_date
+  d.start_date,
+  d.end_date,
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)
@@ -215,8 +215,8 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment,
   to_jsonb(cie) AS latest_publishing_extension,
-  ci.publishing_start_date AS sort_start_date,
-  ci.publishing_end_date AS sort_end_date
+  ci.publishing_start_date AS start_date,
+  ci.publishing_end_date AS end_date
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)
