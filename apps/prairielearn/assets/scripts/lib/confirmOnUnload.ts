@@ -1,30 +1,31 @@
-function getQuestionFormData(form: HTMLFormElement, updateDataset = false): string {
+function skippedFieldsFromForm(form: HTMLFormElement): Set<string> {
+  return new Set([
+    '__csrf_token',
+    '__variant_id',
+    ...Array.from(form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]'))
+      .map((input) => input.name)
+      .filter(Boolean),
+  ]);
+}
+
+function getQuestionFormData(form: HTMLFormElement): string {
   // Cast FormData since TS does not support this parameter,
   // see https://github.com/microsoft/TypeScript/issues/30584
   const formData = new URLSearchParams(new FormData(form) as any);
-  const skippedFields = new Set(['__csrf_token', '__variant_id']);
-  form.querySelectorAll<HTMLInputElement>('[data-skip-unload-check]').forEach((input) => {
-    if (input.name) skippedFields.add(input.name);
-  });
-  skippedFields.forEach((field) => formData.delete(field));
+  skippedFieldsFromForm(form).forEach((field) => formData.delete(field));
   formData.sort(); // Ensure consistent ordering for comparison
-  if (updateDataset) {
-    form.dataset.formDataSkippedFields = JSON.stringify(Array.from(skippedFields));
-    form.dataset.originalFormData = formData.toString();
-  }
   return formData.toString();
 }
 
 export function saveQuestionFormData(form: HTMLFormElement | null) {
-  if (!form) return;
-  getQuestionFormData(form, true);
+  if (form) form.dataset.originalFormData = getQuestionFormData(form);
 }
 
 function updateQuestionFormData(form: HTMLFormElement, input: HTMLInputElement) {
   // If the original form data is not set, the initial update has not occurred yet, so rely on that to retrieve the value.
   if (form.dataset.originalFormData === undefined) return;
   // If this input is marked to be skipped, do not update the form data.
-  const skippedFields = new Set(JSON.parse(form.dataset.formDataSkippedFields || '[]') as string[]);
+  const skippedFields = skippedFieldsFromForm(form);
   if (skippedFields.has(input.name)) return;
 
   const updatedFormData = new URLSearchParams(form.dataset.originalFormData);
