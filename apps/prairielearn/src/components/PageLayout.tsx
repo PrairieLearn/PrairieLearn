@@ -131,7 +131,8 @@ function LegacyPublishingBannerComponent({
       className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
       role="alert"
     >
-      This course instance is using legacy access rules.{' '}
+      This course instance is using legacy access rules, so various enrollment features are
+      disabled.{' '}
       <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
         Migrate to modern publishing
       </a>
