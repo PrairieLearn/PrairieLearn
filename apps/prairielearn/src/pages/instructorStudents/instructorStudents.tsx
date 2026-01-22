@@ -152,36 +152,41 @@ router.post(
         });
 
         if (existingEnrollment) {
-          if (existingEnrollment.status === 'joined') {
-            job.info(`${uid}: Skipped (already enrolled)`);
-            counts.alreadyEnrolled++;
-            continue;
-          }
-          if (existingEnrollment.status === 'invited') {
-            job.info(`${uid}: Skipped (already invited)`);
-            counts.alreadyInvited++;
-            continue;
-          }
-          if (existingEnrollment.status === 'removed') {
-            job.info(`${uid}: Skipped (removed)`);
-            counts.alreadyRemoved++;
-            continue;
-          }
-          if (existingEnrollment.status === 'blocked') {
-            job.info(`${uid}: Skipped (blocked)`);
-            counts.alreadyBlocked++;
-            continue;
-          }
-          if (
-            existingEnrollment.status !== 'left' &&
-            existingEnrollment.status !== 'rejected' &&
-            // TODO: we'll need to decide what to do about `lti13_pending` enrollments
-            // once we have them. For now, we include this so we can use TypeScript
-            // to catch any unhandled statuses.
-            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-            existingEnrollment.status !== 'lti13_pending'
-          ) {
-            assertNever(existingEnrollment.status);
+          switch (existingEnrollment.status) {
+            case 'joined': {
+              job.info(`${uid}: Skipped (already enrolled)`);
+              counts.alreadyEnrolled++;
+              continue;
+            }
+            case 'invited': {
+              job.info(`${uid}: Skipped (already invited)`);
+              counts.alreadyInvited++;
+              continue;
+            }
+            case 'removed': {
+              job.info(`${uid}: Skipped (removed)`);
+              counts.alreadyRemoved++;
+              continue;
+            }
+            case 'blocked': {
+              job.info(`${uid}: Skipped (blocked)`);
+              counts.alreadyBlocked++;
+              continue;
+            }
+            case 'lti13_pending': {
+              // We don't currently have any `lti13_pending` enrollments, so we'll just
+              // ignore this for now. We should have this better once we support LTI 1.3
+              // roster syncing.
+              continue;
+            }
+            case 'left':
+            case 'rejected': {
+              // We can re-invite these users below.
+              break;
+            }
+            default: {
+              assertNever(existingEnrollment.status);
+            }
           }
         }
 
