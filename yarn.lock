@@ -3929,7 +3929,7 @@ __metadata:
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -3982,7 +3982,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4062,7 +4062,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4294,7 +4294,7 @@ __metadata:
     commander: "npm:^14.0.2"
     diff: "npm:^8.0.3"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     postgres-array: "npm:^3.0.4"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
@@ -4547,7 +4547,7 @@ __metadata:
     jsdom: "npm:^27.4.0"
     json-stringify-safe: "npm:^5.0.1"
     klaw: "npm:^4.1.0"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     loopbench: "npm:^2.0.0"
     lru-cache: "npm:^11.2.4"
     marked: "npm:^17.0.1"
@@ -4736,7 +4736,7 @@ __metadata:
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
@@ -4836,7 +4836,7 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     fast-glob: "npm:^3.3.3"
     ioredis: "npm:^5.9.1"
-    lodash: "npm:^4.17.21"
+    lodash: "npm:^4.17.23"
     minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.11"
@@ -13538,9 +13538,9 @@ __metadata:
   linkType: hard
 
 "lodash-es@npm:^4.17.21":
-  version: 4.17.21
-  resolution: "lodash-es@npm:4.17.21"
-  checksum: 10c0/fb407355f7e6cd523a9383e76e6b455321f0f153a6c9625e21a8827d10c54c2a2341bd2ae8d034358b60e07325e1330c14c224ff582d04612a46a4f0479ff2f2
+  version: 4.17.23
+  resolution: "lodash-es@npm:4.17.23"
+  checksum: 10c0/3150fb6660c14c7a6b5f23bd11597d884b140c0e862a17fdb415aaa5ef7741523182904a6b7929f04e5f60a11edb5a79499eb448734381c99ffb3c4734beeddd
   languageName: node
   linkType: hard
 
@@ -13593,10 +13593,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.5":
-  version: 4.17.21
-  resolution: "lodash@npm:4.17.21"
-  checksum: 10c0/d8cbea072bb08655bb4c989da418994b073a608dffa608b09ac04b43a791b12aeae7cd7ad919aa4c925f33b48490b5cfe6c1f71d827956071dae2e7bb3a6b74c
+"lodash@npm:^4.11.2, lodash@npm:^4.17.15, lodash@npm:^4.17.21, lodash@npm:^4.17.23, lodash@npm:^4.17.5":
+  version: 4.17.23
+  resolution: "lodash@npm:4.17.23"
+  checksum: 10c0/1264a90469f5bb95d4739c43eb6277d15b6d9e186df4ac68c3620443160fc669e2f14c11e7d8b2ccf078b81d06147c01a8ccced9aab9f9f63d50dcf8cace6bf6
   languageName: node
   linkType: hard
 
@@ -17949,15 +17949,15 @@ __metadata:
   linkType: hard
 
 "tar@npm:^7.5.2, tar@npm:^7.5.5":
-  version: 7.5.5
-  resolution: "tar@npm:7.5.5"
+  version: 7.5.6
+  resolution: "tar@npm:7.5.6"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10c0/dcc79a5a4b6502070c5a46c4481fce382b8fb16f723ddb90b96f3bbce646e70e014a4a4137d95b6fd6afac3b3b72853abb99b2d2bde5a731c73b256c5b703fde
+  checksum: 10c0/08af3807035957650ad5f2a300c49ca4fe0566ac0ea5a23741a5b5103c6da42891a9eeaed39bc1fbcf21c5cac4dc846828a004727fb08b9d946322d3144d1fd2
   languageName: node
   linkType: hard
 
