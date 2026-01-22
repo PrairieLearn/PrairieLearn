@@ -6,8 +6,8 @@ export function QueryErrors({ queries }: { queries: UseMutationResult<any, any, 
     if (!query.isError) return null;
 
     return (
-      // eslint-disable-next-line @eslint-react/no-array-index-key
       <Alert
+        // eslint-disable-next-line @eslint-react/no-array-index-key
         key={index}
         variant="danger"
         className="mb-3"
