@@ -460,9 +460,9 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
-  // We intentionally don't allow instructors to re-invite removed enrollments.
+  // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
   // They can only transition them directly back to `joined`.
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'blocked']);
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -522,7 +522,7 @@ async function inviteNewEnrollment({
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
  *
- * Transitions users in the 'blocked', 'rejected', or 'left' status to 'invited'.
+ * Transitions users in the 'rejected' or 'left' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,

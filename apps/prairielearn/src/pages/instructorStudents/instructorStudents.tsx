@@ -5,6 +5,7 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -122,8 +123,9 @@ router.post(
         success: 0,
         instructor: 0,
         alreadyEnrolled: 0,
-        alreadyBlocked: 0,
         alreadyInvited: 0,
+        alreadyRemoved: 0,
+        alreadyBlocked: 0,
       };
 
       for (const uid of body.uids) {
@@ -160,10 +162,26 @@ router.post(
             counts.alreadyInvited++;
             continue;
           }
+          if (existingEnrollment.status === 'removed') {
+            job.info(`${uid}: Skipped (removed)`);
+            counts.alreadyRemoved++;
+            continue;
+          }
           if (existingEnrollment.status === 'blocked') {
             job.info(`${uid}: Skipped (blocked)`);
             counts.alreadyBlocked++;
             continue;
+          }
+          if (
+            existingEnrollment.status !== 'left' &&
+            existingEnrollment.status !== 'rejected' &&
+            // TODO: we'll need to decide what to do about `lti13_pending` enrollments
+            // once we have them. For now, we include this so we can use TypeScript
+            // to catch any unhandled statuses.
+            // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+            existingEnrollment.status !== 'lti13_pending'
+          ) {
+            assertNever(existingEnrollment.status);
           }
         }
 
@@ -185,6 +203,9 @@ router.post(
       }
       if (counts.alreadyInvited > 0) {
         job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+      }
+      if (counts.alreadyRemoved > 0) {
+        job.info(`  Skipped (removed): ${counts.alreadyRemoved}`);
       }
       if (counts.alreadyBlocked > 0) {
         job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
