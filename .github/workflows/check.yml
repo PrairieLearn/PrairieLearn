@@ -229,20 +229,3 @@ jobs:
 
       - name: Check for duplicate Node dependencies
         run: yarn dedupe --check
-
-  all-checks:
-    name: All checks passed
-    if: ${{ !cancelled() }}
-    needs: [check-js, check-python, check-other, dedupe]
-    runs-on: ubuntu-latest
-    steps:
-      - name: Verify all jobs passed
-        run: |
-          if [[ "${{ needs.check-js.result }}" != "success" ]] || \
-             [[ "${{ needs.check-python.result }}" != "success" ]] || \
-             [[ "${{ needs.check-other.result }}" != "success" ]] || \
-             [[ "${{ needs.dedupe.result }}" != "success" ]]; then
-            echo "One or more jobs failed"
-            exit 1
-          fi
-          echo "All checks passed!"
