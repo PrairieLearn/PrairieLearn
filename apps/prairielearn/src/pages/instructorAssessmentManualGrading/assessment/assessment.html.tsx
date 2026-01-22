@@ -99,39 +99,39 @@ export function ManualGradingAssessment({
 
                 // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
                 dangerouslySetInnerHTML={{
-                  __html: `
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
-                  name="export-ai-grading-statistics"
-                  aria-label="Export AI grading statistics"
-                  onclick="$('#export-ai-grading-statistics').submit();"
-                >
-                  <i class="bi bi-download" aria-hidden="true"></i>
-                  Export AI grading statistics
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
-                  name="ai-grade-all-questions"
-                  aria-label="AI grade all questions"
-                  onclick="$('#ai-grade-all').submit();"
-                >
-                  <i class="bi bi-stars" aria-hidden="true"></i>
-                  AI grade all questions
-                </button>
-                <button
-                  type="button"
-                  class="btn btn-sm btn-light grading-tag-button"
-                  name="delete-ai-grading-data"
-                  aria-label="Delete all AI grading data"
-                  data-bs-toggle="tooltip"
-                  data-bs-title="Delete all AI grading results for this assessment's questions"
-                  onclick="$('#delete-ai-grading-data').submit();"
-                >
-                  Delete AI grading data
-                </button>
-                `,
+                  __html: html`
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="export-ai-grading-statistics"
+                      aria-label="Export AI grading statistics"
+                      onclick="$('#export-ai-grading-statistics').submit();"
+                    >
+                      <i class="bi bi-download" aria-hidden="true"></i>
+                      Export AI grading statistics
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="ai-grade-all-questions"
+                      aria-label="AI grade all questions"
+                      onclick="$('#ai-grade-all').submit();"
+                    >
+                      <i class="bi bi-stars" aria-hidden="true"></i>
+                      AI grade all questions
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="delete-ai-grading-data"
+                      aria-label="Delete all AI grading data"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Delete all AI grading results for this assessment's questions"
+                      onclick="$('#delete-ai-grading-data').submit();"
+                    >
+                      Delete AI grading data
+                    </button>
+                  `.toString(),
                 }}
               />
             )}
