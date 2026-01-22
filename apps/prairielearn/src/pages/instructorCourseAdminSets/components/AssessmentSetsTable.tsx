@@ -292,10 +292,10 @@ export function AssessmentSetsPage({
     });
   };
 
-  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow, mode: 'create' | 'edit') => {
-    if (mode === 'create') {
+  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow) => {
+    if (editModalState.data?.mode === 'create') {
       setAssessmentSetsState((prevAssessmentSets) => [...prevAssessmentSets, assessmentSet]);
-    } else {
+    } else if (editModalState.data?.mode === 'edit') {
       setAssessmentSetsState((prevAssessmentSets) =>
         prevAssessmentSets.map((d) =>
           d.trackingId === assessmentSet.trackingId ? assessmentSet : d,

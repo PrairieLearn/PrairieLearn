@@ -22,7 +22,7 @@ export function EditAssessmentSetsModal({
   data: EditAssessmentSetModalData | null;
   onHide: () => void;
   onExited: () => void;
-  onSave: (assessmentSet: InstructorCourseAdminSetFormRow, mode: 'create' | 'edit') => void;
+  onSave: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
   existingNames: Set<string>;
 }) {
   const [assessmentSet, setAssessmentSet] = useState<InstructorCourseAdminSetFormRow | null>(null);
@@ -39,8 +39,8 @@ export function EditAssessmentSetsModal({
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!assessmentSet || !data) return;
-    onSave(assessmentSet, data.mode);
+    if (!assessmentSet) return;
+    onSave(assessmentSet);
   }
 
   return (
