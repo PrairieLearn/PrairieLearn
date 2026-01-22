@@ -108,6 +108,11 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 ## Example implementations
 
 - [element/orderBlocks]
+- [element/orderBlocksOrdered]
+- [element/orderBlocksCode]
+- [element/orderBlocksDag]
+- [element/orderBlocksAlphabetized]
+- [element/orderBlocksInline]
 - [element/orderBlocksOptional]
 - [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
@@ -119,4 +124,9 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 [demo/autograder/python/orderblocksrandomparams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksRandomParams
 [demo/proofblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
+[element/orderblocksalphabetized]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksAlphabetized
+[element/orderblockscode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksCode
+[element/orderblocksdag]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksDag
+[element/orderblocksinline]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksInline
 [element/orderblocksoptional]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOptional
+[element/orderblocksordered]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOrdered
