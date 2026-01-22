@@ -483,7 +483,7 @@ export async function insertAiGradingJob({
  * @param params.model_id
  * @param params.prompt
  * @param params.gradingResponseWithRotationIssue - The initial AI grading response, wherein the LLM detected non-upright images.
- * @param params.rotationCorrections - For each image, the amount of degrees clockwise it was rotated and the response of the rotation correction LLM call.
+ * @param params.rotationCorrections - For each image, the amount of degrees counterclockwise it was rotated and the response of the rotation correction LLM call.
  * @param params.gradingResponseWithRotationCorrection - The final AI grading response after rotation correction.
  * @param params.course_id
  * @param params.course_instance_id
@@ -654,7 +654,10 @@ async function rotateBase64Image(
 ): Promise<string> {
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
   const imageBuffer = Buffer.from(base64Data, 'base64');
+
+  // The sharp rotate method uses clockwise rotation, so we convert.
   const clockwiseRotation = (360 - rotation) % 360;
+  
   const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
   return rotatedImageBuffer.toString('base64');
 }
