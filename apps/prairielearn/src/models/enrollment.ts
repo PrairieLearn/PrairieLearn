@@ -460,8 +460,9 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
-  // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left', 'removed', 'blocked']);
+  // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
+  // They can only transition them directly back to `joined`.
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -521,7 +522,7 @@ async function inviteNewEnrollment({
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
  *
- * Transitions users in the 'blocked', 'rejected', 'left', or 'removed' status to 'invited'.
+ * Transitions users in the 'rejected' or 'left' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,
@@ -586,56 +587,61 @@ export async function setEnrollmentStatus({
   authzData: AuthzData;
   requiredRole: CourseInstanceRole[];
 }): Promise<Enrollment> {
-  const transitionInformation: {
-    equivalentStatuses?: EnumEnrollmentStatus[];
-    previousStatus: EnumEnrollmentStatus;
-    actionDetail: SupportedActionsForTable<'enrollments'>;
-    permittedRoles: CourseInstanceRole[];
-  } = run(() => {
-    switch (status) {
-      case 'joined':
-        return {
-          previousStatus: 'blocked',
-          actionDetail: 'unblocked',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      case 'left':
-        return {
-          // If a student tries to leave a course but has already been removed by
-          // an instructor, we will treat this as a no-op.
-          equivalentStatuses: ['removed'],
-          previousStatus: 'joined',
-          actionDetail: 'left',
-          permittedRoles: ['Student'],
-        };
-      case 'removed':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'removed',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      case 'rejected':
-        return {
-          previousStatus: 'invited',
-          actionDetail: 'invitation_rejected',
-          permittedRoles: ['Student'],
-        };
-      case 'blocked':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'blocked',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      default:
-        assertNever(status);
-    }
-  });
-
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
     if (lockedEnrollment.user_id) {
       await selectAndLockUser(lockedEnrollment.user_id);
     }
+
+    interface EnrollmentStatusTransitionInformation {
+      equivalentStatuses?: EnumEnrollmentStatus[];
+      previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
+      actionDetail: SupportedActionsForTable<'enrollments'>;
+      permittedRoles: CourseInstanceRole[];
+    }
+
+    const transitionInformation = run((): EnrollmentStatusTransitionInformation => {
+      switch (status) {
+        case 'joined':
+          return {
+            previousStatus: ['blocked', 'removed'],
+            // TODO: when we add support for re-enrolling via manual and LTI sync,
+            // we'll need to differentiate those action details here.
+            actionDetail:
+              lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
+            permittedRoles: ['Student Data Editor'],
+          };
+        case 'left':
+          return {
+            // If a student tries to leave a course but has already been removed by
+            // an instructor, we will treat this as a no-op.
+            equivalentStatuses: ['removed'],
+            previousStatus: 'joined',
+            actionDetail: 'left',
+            permittedRoles: ['Student'],
+          };
+        case 'removed':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'removed',
+            permittedRoles: ['Student Data Editor'],
+          };
+        case 'rejected':
+          return {
+            previousStatus: 'invited',
+            actionDetail: 'invitation_rejected',
+            permittedRoles: ['Student'],
+          };
+        case 'blocked':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'blocked',
+            permittedRoles: ['Student Data Editor'],
+          };
+        default:
+          assertNever(status);
+      }
+    });
 
     if (
       lockedEnrollment.status === status ||

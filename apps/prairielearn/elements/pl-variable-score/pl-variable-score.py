@@ -45,7 +45,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     if score >= 1:
         html = (
             '<span class="badge text-bg-success">'
-            + '<i class="fa fa-check" aria-hidden="true"></i>'
+            + '<i class="fas fa-check" aria-hidden="true"></i>'
             + f" correct: {math.floor(score * 100)}%"
             + ((" (" + feedback + ")") if feedback else "")
             + "</span>"
@@ -53,7 +53,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     elif score > 0:
         html = (
             '<span class="badge text-bg-warning">'
-            + '<i class="fa fa-circle-o" aria-hidden="true"></i>'
+            + '<i class="far fa-circle" aria-hidden="true"></i>'
             + f" partially correct: {math.floor(score * 100)}%"
             + ((" (" + feedback + ")") if feedback else "")
             + "</span>"
@@ -61,7 +61,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     else:
         html = (
             '<span class="badge text-bg-danger">'
-            + '<i class="fa fa-times" aria-hidden="true"></i>'
+            + '<i class="fas fa-times" aria-hidden="true"></i>'
             + f" incorrect: {math.floor(score * 100)}%"
             + ((" (" + feedback + ")") if feedback else "")
             + "</span>"
