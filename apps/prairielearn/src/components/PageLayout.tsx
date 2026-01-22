@@ -107,6 +107,38 @@ function SyncErrorsAndWarningsForContext({
   }
 }
 
+function LegacyPublishingBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (!navContext.page) return null;
+  if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
+  if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
+
+  const { course_instance: courseInstance, urlPrefix } = resLocals;
+
+  if (!courseInstance || !urlPrefix) return null;
+
+  // Only show banner if using legacy publishing
+  if (courseInstance.modern_publishing) return null;
+
+  return (
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
+      This course instance is using legacy access rules.{' '}
+      <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
+        Migrate to modern publishing
+      </a>
+    </div>
+  );
+}
+
 function UnpublishedBannerComponent({
   navContext,
   resLocals,
@@ -351,6 +383,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <LegacyPublishingBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}
