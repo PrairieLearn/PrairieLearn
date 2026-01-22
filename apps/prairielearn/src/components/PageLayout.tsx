@@ -119,12 +119,10 @@ function LegacyPublishingBannerComponent({
   if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
   if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
 
-  const { course_instance: courseInstance, urlPrefix } = resLocals;
-
-  if (!courseInstance || !urlPrefix) return null;
+  const { course_instance: courseInstance } = resLocals;
 
   // Only show banner if using legacy publishing
-  if (courseInstance.modern_publishing) return null;
+  if (!courseInstance || courseInstance.modern_publishing) return null;
 
   return (
     <div
