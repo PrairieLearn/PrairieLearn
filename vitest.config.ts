@@ -1,5 +1,6 @@
 import crypto from 'node:crypto';
-import { readFileSync } from 'node:fs';
+import { existsSync, readFileSync } from 'node:fs';
+
 import { slash } from '@vitest/utils/helpers';
 import ignore from 'ignore';
 import { relative, resolve } from 'pathe';
@@ -22,7 +23,10 @@ const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 // Loads and parses the gitignore file using the ignore package,
 // which already handles directories, nested paths and edge cases
 // using the same rules Git uses.
-const gitignore = ignore().add(readFileSync('.gitignore', 'utf8'));
+const gitignore = ignore();
+if (existsSync('.gitignore')) {
+  gitignore.add(readFileSync('.gitignore', 'utf8'));
+}
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
 // This is a rough heuristic to try to balance the runtime of each shard.
