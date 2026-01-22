@@ -3,15 +3,19 @@ import superjson from 'superjson';
 
 import type { ManualGradingAssessmentQuestionRouter } from '../trpc.js';
 
-export const client = createTRPCClient<ManualGradingAssessmentQuestionRouter>({
-  links: [
-    httpLink({
-      // TODO: there might be a better way to do this?
-      url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',
-      headers: {
-        'X-TRPC': 'true',
-      },
-      transformer: superjson,
-    }),
-  ],
-});
+export type ManualGradingTrpcClient = ReturnType<typeof createManualGradingTrpcClient>;
+
+export function createManualGradingTrpcClient(csrfToken: string) {
+  return createTRPCClient<ManualGradingAssessmentQuestionRouter>({
+    links: [
+      httpLink({
+        url: typeof window === 'undefined' ? '' : window.location.pathname + '/trpc',
+        headers: {
+          'X-TRPC': 'true',
+          'X-CSRF-Token': csrfToken,
+        },
+        transformer: superjson,
+      }),
+    ],
+  });
+}

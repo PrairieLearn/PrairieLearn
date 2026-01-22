@@ -5,6 +5,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -21,6 +22,7 @@ import {
   StaffInstanceQuestionGroupSchema,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
+import { config } from '../../../lib/config.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import * as manualGrading from '../../../lib/manualGrading.js';
@@ -116,6 +118,15 @@ router.get(
     const hasCourseInstancePermissionEdit = authz_data.has_course_instance_permission_edit ?? false;
     const search = getUrl(req).search;
 
+    // Generate a prefix-based CSRF token for tRPC requests
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
@@ -146,6 +157,7 @@ router.get(
                 courseInstance={course_instance}
                 urlPrefix={urlPrefix}
                 csrfToken={__csrf_token}
+                trpcCsrfToken={trpcCsrfToken}
                 assessment={assessment}
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}

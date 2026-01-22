@@ -22,6 +22,7 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
+import { type ManualGradingTrpcClient, createManualGradingTrpcClient } from './utils/trpc.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 export interface AssessmentQuestionManualGradingProps {
@@ -29,6 +30,7 @@ export interface AssessmentQuestionManualGradingProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  trpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -51,8 +53,10 @@ export interface AssessmentQuestionManualGradingProps {
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode'
->;
+  'search' | 'isDevMode' | 'trpcCsrfToken'
+> & {
+  trpcClient: ManualGradingTrpcClient;
+};
 
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
@@ -61,6 +65,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  trpcClient,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -82,7 +87,7 @@ function AssessmentQuestionManualGradingInner({
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
-  const mutations = useManualGradingActions();
+  const mutations = useManualGradingActions(trpcClient);
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
   return (
@@ -139,6 +144,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        trpcClient={trpcClient}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}
@@ -180,13 +186,15 @@ function AssessmentQuestionManualGradingInner({
 export function AssessmentQuestionManualGrading({
   search,
   isDevMode,
+  trpcCsrfToken,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createManualGradingTrpcClient(trpcCsrfToken));
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <AssessmentQuestionManualGradingInner {...innerProps} />
+        <AssessmentQuestionManualGradingInner trpcClient={trpcClient} {...innerProps} />
       </QueryClientProviderDebug>
     </NuqsAdapter>
   );

@@ -2,9 +2,9 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 
-import { client } from './trpc.js';
+import type { ManualGradingTrpcClient } from './trpc.js';
 
-export function useManualGradingActions() {
+export function useManualGradingActions(client: ManualGradingTrpcClient) {
   const queryClient = useQueryClient();
 
   const deleteAiGradingJobsMutation = useMutation<{ num_deleted: number }, Error, undefined>({

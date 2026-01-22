@@ -51,7 +51,7 @@ import {
 import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import { client } from '../utils/trpc.js';
+import type { ManualGradingTrpcClient } from '../utils/trpc.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
@@ -72,6 +72,7 @@ export interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  trpcClient: ManualGradingTrpcClient;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -141,6 +142,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  trpcClient,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -231,7 +233,7 @@ export function AssessmentQuestionTable({
     isError: isInstanceQuestionsError,
   } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions'],
-    queryFn: async () => await client.instances.query(),
+    queryFn: async () => await trpcClient.instances.query(),
     staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
