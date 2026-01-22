@@ -171,7 +171,7 @@ SELECT
   to_jsonb(ci) AS course_instance,
   to_jsonb(e) AS enrollment,
   d.start_date,
-  d.end_date,
+  d.end_date
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)
