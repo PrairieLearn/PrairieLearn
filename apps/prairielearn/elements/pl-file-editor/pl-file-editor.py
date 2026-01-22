@@ -148,7 +148,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
-        text_display = "" if element.text is None else str(element.text)
+        text_display = "" if element.text is None else str(element.text).strip()
 
     html_params["original_file_contents"] = base64.b64encode(
         text_display.encode("UTF-8")
