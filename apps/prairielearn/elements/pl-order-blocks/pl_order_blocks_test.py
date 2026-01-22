@@ -1,6 +1,12 @@
+import importlib
+import random
+
 import lxml.html
 import pytest
 from order_blocks_options_parsing import OrderBlocksOptions
+
+pl_order_blocks = importlib.import_module("pl-order-blocks")
+shuffle_distractor_groups = pl_order_blocks.shuffle_distractor_groups
 
 
 def build_tag(tag_name: str, options: dict, inner_html: str = "") -> str:
@@ -367,3 +373,34 @@ def test_multiple_final_tag_failure(
     order_blocks_options = OrderBlocksOptions(html_element)
     with pytest.raises(ValueError, match=error):
         order_blocks_options.validate()
+
+
+def test_shuffle_distractor_groups() -> None:
+    """Tests that shuffle_distractor_groups groups distractors with correct blocks
+    while preserving the relative order of correct blocks.
+    """
+    random.seed(42)
+
+    blocks = [
+        {"tag": "first", "distractor_for": None, "inner_html": "First"},
+        {"tag": "second", "distractor_for": None, "inner_html": "Second"},
+        {"tag": "d1", "distractor_for": "second", "inner_html": "Distractor 1"},
+        {"tag": "d2", "distractor_for": "second", "inner_html": "Distractor 2"},
+        {"tag": "third", "distractor_for": None, "inner_html": "Third"},
+    ]
+
+    result = pl_order_blocks.shuffle_distractor_groups(blocks)
+
+    # Correct blocks should maintain their relative order
+    correct_block_tags = [b["tag"] for b in result if b.get("distractor_for") is None]
+    assert correct_block_tags == ["first", "second", "third"]
+
+    # First block (no distractors) should remain first
+    assert result[0]["tag"] == "first"
+
+    # Second block and its distractors should be grouped together (positions 1-3)
+    second_group_tags = {b["tag"] for b in result[1:4]}
+    assert second_group_tags == {"second", "d1", "d2"}
+
+    # Third block should be last
+    assert result[4]["tag"] == "third"
