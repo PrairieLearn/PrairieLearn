@@ -60,7 +60,7 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
-        pageTitle: 'Assessment Sets',
+        pageTitle: 'Assessment sets',
         navContext: {
           type: 'instructor',
           page: 'course_admin',

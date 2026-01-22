@@ -62,7 +62,7 @@ test.describe('Assessment sets editor', () => {
 
   test('can create assessment sets and persist changes after save', async ({ page }) => {
     await page.goto(`/pl/course/${courseId}/course_admin/sets`);
-    await expect(page).toHaveTitle(/Assessment Sets/);
+    await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     await page.getByRole('button', { name: 'Edit assessment sets' }).click();
@@ -133,7 +133,7 @@ test.describe('Assessment sets editor', () => {
 
   test('can edit an existing assessment set', async ({ page }) => {
     await page.goto(`/pl/course/${courseId}/course_admin/sets`);
-    await expect(page).toHaveTitle(/Assessment Sets/);
+    await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     // Enter edit mode
@@ -197,7 +197,7 @@ test.describe('Assessment sets editor', () => {
 
   test('can delete an assessment set', async ({ page }) => {
     await page.goto(`/pl/course/${courseId}/course_admin/sets`);
-    await expect(page).toHaveTitle(/Assessment Sets/);
+    await expect(page).toHaveTitle(/Assessment sets/);
     await page.waitForSelector('.js-hydrated-component');
 
     // Enter edit mode
