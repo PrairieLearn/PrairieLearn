@@ -12,7 +12,10 @@ import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
-import type { QuestionAlternativeJson, ZoneQuestionJson } from '../../../schemas/index.js';
+import type {
+  QuestionAlternativeForm,
+  ZoneQuestionForm,
+} from '../instructorAssessmentQuestions.shared.js';
 
 import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
 
@@ -95,8 +98,8 @@ export function AssessmentQuestion({
   sortableListeners,
 }: {
   id?: string;
-  alternative?: QuestionAlternativeJson;
-  alternativeGroup: ZoneQuestionJson;
+  alternative?: QuestionAlternativeForm;
+  alternativeGroup: ZoneQuestionForm;
   AssessmentState: AssessmentState;
   zoneNumber: number;
   alternativeGroupNumber: number;
@@ -108,8 +111,8 @@ export function AssessmentQuestion({
     alternativeGroupNumber,
     alternativeNumber,
   }: {
-    question: ZoneQuestionJson | QuestionAlternativeJson;
-    alternativeGroup?: ZoneQuestionJson;
+    question: ZoneQuestionForm | QuestionAlternativeForm;
+    alternativeGroup?: ZoneQuestionForm;
     zoneNumber: number;
     alternativeGroupNumber: number;
     alternativeNumber?: number;

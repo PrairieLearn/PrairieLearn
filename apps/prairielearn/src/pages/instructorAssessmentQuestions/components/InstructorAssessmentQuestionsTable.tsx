@@ -1,7 +1,6 @@
 import {
   DndContext,
   type DragEndEvent,
-  type DragOverEvent,
   type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
@@ -12,18 +11,26 @@ import {
 import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
 import { useMemo, useRef, useState } from 'react';
 
+import { useModalState } from '@prairielearn/ui';
+
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
+import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import {
+  addTrackingIds,
+  createQuestionWithTrackingId,
+  stripTrackingIds,
+  useAssessmentEditor,
+} from '../hooks/useAssessmentEditor.js';
 import type {
-  QuestionAlternativeJson,
-  ZoneAssessmentJson,
-  ZoneQuestionJson,
-} from '../../../schemas/infoAssessment.js';
-import { useAssessmentEditor } from '../hooks/useAssessmentEditor.js';
+  QuestionAlternativeForm,
+  ZoneAssessmentForm,
+  ZoneQuestionForm,
+} from '../instructorAssessmentQuestions.shared.js';
 
-import { EditQuestionModal, type EditQuestionModalState } from './EditQuestionModal.js';
-import { EditZoneModal, type EditZoneModalState } from './EditZoneModal.js';
+import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
+import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 import { Zone } from './Zone.js';
@@ -39,14 +46,6 @@ export interface AssessmentState {
   assessmentType: EnumAssessmentType;
 }
 
-/**
- * Gets a stable ID for a question/alternative group that doesn't change when moved.
- * Uses the question's actual id, or first alternative's id for alt groups.
- */
-export function getStableQuestionId(question: ZoneQuestionJson, fallbackIndex: number): string {
-  return question.id ?? question.alternatives?.[0]?.id ?? `temp-${fallbackIndex}`;
-}
-
 function EditModeButtons({
   csrfToken,
   origHash,
@@ -58,7 +57,7 @@ function EditModeButtons({
 }: {
   csrfToken: string;
   origHash: string;
-  zones: ZoneAssessmentJson[];
+  zones: ZoneAssessmentForm[];
   editMode: boolean;
   setEditMode: (editMode: boolean) => void;
   saveButtonDisabled: boolean;
@@ -78,12 +77,15 @@ function EditModeButtons({
     </button>
   );
 
+  // Strip trackingIds before saving - they are only used for drag-and-drop identity
+  const zonesForSave = stripTrackingIds(zones);
+
   return (
     <form method="POST">
       <input type="hidden" name="__action" value="save_questions" />
       <input type="hidden" name="__csrf_token" value={csrfToken} />
       <input type="hidden" name="orig_hash" value={origHash} />
-      <input type="hidden" name="zones" value={JSON.stringify(zones)} />
+      <input type="hidden" name="zones" value={JSON.stringify(zonesForSave)} />
       {saveButtonDisabledReason ? (
         <span title={saveButtonDisabledReason} style={{ cursor: 'not-allowed' }}>
           {saveButton}
@@ -199,8 +201,8 @@ function mapQuestions(
  * to autoPoints/maxAutoPoints format (clearing points/maxPoints).
  */
 function normalizeQuestionPoints(
-  question: ZoneQuestionJson | QuestionAlternativeJson,
-): ZoneQuestionJson | QuestionAlternativeJson {
+  question: ZoneQuestionForm | QuestionAlternativeForm,
+): ZoneQuestionForm | QuestionAlternativeForm {
   const normalized = { ...question };
 
   const hasManualPoints = normalized.manualPoints !== undefined;
@@ -247,7 +249,7 @@ export function InstructorAssessmentQuestionsTable({
 }) {
   // Initialize editor state from question rows
   const initialState = {
-    zones: mapQuestions(course, questionRows),
+    zones: addTrackingIds(mapQuestions(course, questionRows)),
     questionMap: Object.fromEntries(questionRows.map((r) => [questionDisplayName(course, r), r])),
   };
 
@@ -263,12 +265,8 @@ export function InstructorAssessmentQuestionsTable({
     questionIndex: number;
     alternativeIndex?: number;
   } | null>(null);
-  const [editQuestionModalState, setEditQuestionModalState] = useState<EditQuestionModalState>({
-    type: 'closed',
-  });
-  const [editZoneModalState, setEditZoneModalState] = useState<EditZoneModalState>({
-    type: 'closed',
-  });
+  const editQuestionModal = useModalState<EditQuestionModalData>(null);
+  const editZoneModal = useModalState<EditZoneModalData>(null);
 
   // dnd-kit sensors for drag and drop
   const sensors = useSensors(
@@ -279,38 +277,31 @@ export function InstructorAssessmentQuestionsTable({
   // Track the active dragging item
   const [activeId, setActiveId] = useState<string | null>(null);
 
-  // Create sortable IDs per zone using stable question IDs (not positional)
+  // Create sortable IDs per zone using trackingIds (stable IDs assigned when initializing)
   const sortableIdsByZone = useMemo(() => {
-    let globalIndex = 0;
-    return zones.map((zone) =>
-      zone.questions.map((question) => getStableQuestionId(question, globalIndex++)),
-    );
+    return zones.map((zone) => zone.questions.map((question) => question.trackingId));
   }, [zones]);
 
-  // Map from stable question ID to its current position {zoneIndex, questionIndex}
+  // Map from trackingId to its current position {zoneIndex, questionIndex}
   // This is recomputed when zones change and used by drag handlers
   const positionByStableId = useMemo(() => {
     const map: Record<string, { zoneIndex: number; questionIndex: number }> = {};
-    let globalIndex = 0;
     zones.forEach((zone, zoneIndex) => {
       zone.questions.forEach((question, questionIndex) => {
-        const stableId = getStableQuestionId(question, globalIndex++);
-        map[stableId] = { zoneIndex, questionIndex };
+        map[question.trackingId] = { zoneIndex, questionIndex };
       });
     });
     return map;
   }, [zones]);
 
-  // Pre-calculate all question numbers as a map: stableId -> questionNumber
+  // Pre-calculate all question numbers as a map: trackingId -> questionNumber
   // This ensures numbers are stable regardless of render order or drag state
   const questionNumberMap = useMemo(() => {
     const map: Record<string, number> = {};
     let questionNumber = 1;
-    let globalIndex = 0;
     zones.forEach((zone) => {
       zone.questions.forEach((question) => {
-        const stableId = getStableQuestionId(question, globalIndex++);
-        map[stableId] = questionNumber;
+        map[question.trackingId] = questionNumber;
         questionNumber++;
       });
     });
@@ -331,13 +322,13 @@ export function InstructorAssessmentQuestionsTable({
     alternativeGroupNumber,
     alternativeNumber,
   }: {
-    question: ZoneQuestionJson | QuestionAlternativeJson;
-    alternativeGroup?: ZoneQuestionJson;
+    question: ZoneQuestionForm | QuestionAlternativeForm;
+    alternativeGroup?: ZoneQuestionForm;
     zoneNumber: number;
     alternativeGroupNumber: number;
     alternativeNumber?: number;
   }) => {
-    setEditQuestionModalState({
+    editQuestionModal.showWithData({
       type: 'edit',
       question,
       alternativeGroup,
@@ -350,9 +341,9 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleAddQuestion = (zoneNumber: number) => {
-    setEditQuestionModalState({
+    editQuestionModal.showWithData({
       type: 'create',
-      question: { id: '' } as ZoneQuestionJson,
+      question: { id: '', trackingId: '' } as ZoneQuestionForm,
       mappedQids: zones.flatMap((zone) => zone.questions.map((q) => q.id ?? '')),
     });
     setSelectedQuestionPosition({
@@ -362,19 +353,19 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleUpdateQuestion = (
-    updatedQuestion: ZoneQuestionJson | QuestionAlternativeJson,
+    updatedQuestion: ZoneQuestionForm | QuestionAlternativeForm,
     newQuestionData?: StaffAssessmentQuestionRow,
   ) => {
     if (!updatedQuestion.id) return;
     if (!selectedQuestionPosition) return;
-    if (editQuestionModalState.type === 'closed') return;
+    if (!editQuestionModal.data) return;
 
     const { zoneIndex, questionIndex, alternativeIndex } = selectedQuestionPosition;
 
     // Normalize point fields
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
-    if (editQuestionModalState.type === 'create') {
+    if (editQuestionModal.data.type === 'create') {
       // Prepare question data for the map if provided
       let preparedQuestionData: StaffAssessmentQuestionRow | undefined;
       if (newQuestionData) {
@@ -397,7 +388,7 @@ export function InstructorAssessmentQuestionsTable({
       dispatch({
         type: 'ADD_QUESTION',
         zoneIndex,
-        question: normalizedQuestion as ZoneQuestionJson,
+        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionForm),
         questionData: preparedQuestionData,
       });
     } else {
@@ -440,7 +431,7 @@ export function InstructorAssessmentQuestionsTable({
       });
     }
 
-    setEditQuestionModalState({ type: 'closed' });
+    editQuestionModal.hide();
   };
 
   const handleDeleteQuestion = (
@@ -459,12 +450,12 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleAddZone = () => {
-    setEditZoneModalState({ type: 'create' });
+    editZoneModal.showWithData({ type: 'create' });
   };
 
   const handleEditZone = (zoneNumber: number) => {
     const zone = zones[zoneNumber - 1];
-    setEditZoneModalState({
+    editZoneModal.showWithData({
       type: 'edit',
       zone,
       zoneIndex: zoneNumber - 1,
@@ -478,7 +469,7 @@ export function InstructorAssessmentQuestionsTable({
     });
   };
 
-  const handleSaveZone = (zone: Partial<ZoneAssessmentJson>, zoneIndex?: number) => {
+  const handleSaveZone = (zone: Partial<ZoneAssessmentForm>, zoneIndex?: number) => {
     if (zoneIndex === undefined) {
       // Adding a new zone
       dispatch({
@@ -486,7 +477,7 @@ export function InstructorAssessmentQuestionsTable({
         zone: {
           ...zone,
           questions: zone.questions ?? [],
-        } as ZoneAssessmentJson,
+        } as ZoneAssessmentForm,
       });
     } else {
       // Updating an existing zone
@@ -496,26 +487,29 @@ export function InstructorAssessmentQuestionsTable({
         zone,
       });
     }
-    setEditZoneModalState({ type: 'closed' });
+    editZoneModal.hide();
   };
 
   const handleDragStart = ({ active }: DragStartEvent) => {
     setActiveId(String(active.id));
   };
 
-  const handleDragOver = ({ active, over }: DragOverEvent) => {
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    setActiveId(null);
+
     if (!over) return;
 
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
 
-    // Look up the active item's current position by its stable ID
+    // Look up the active item's position by its stable ID
     const fromPosition = positionByStableId[activeIdStr];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fromPosition) return;
 
     const { zoneIndex: fromZoneIndex, questionIndex: fromQuestionIndex } = fromPosition;
 
-    // Check if dragging over a zone droppable (e.g., "zone-0-droppable")
+    // Check if dropped on a zone droppable (e.g., "zone-0-droppable")
     const droppableMatch = overIdStr.match(/^zone-(\d+)-droppable$/);
     if (droppableMatch) {
       const targetZoneIndex = Number.parseInt(droppableMatch[1]);
@@ -531,8 +525,9 @@ export function InstructorAssessmentQuestionsTable({
       return;
     }
 
-    // Dragging over another sortable item - look up its position by stable ID
+    // Dropped on another sortable item - look up its position by stable ID
     const toPosition = positionByStableId[overIdStr];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!toPosition) return;
 
     const { zoneIndex: toZoneIndex, questionIndex: toQuestionIndex } = toPosition;
@@ -546,13 +541,6 @@ export function InstructorAssessmentQuestionsTable({
         toQuestionIndex,
       });
     }
-  };
-
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveId(null);
-
-    // All reordering happens in handleDragOver, so we just need to clean up here
-    if (!over || active.id === over.id) return;
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
@@ -595,7 +583,6 @@ export function InstructorAssessmentQuestionsTable({
           collisionDetection={pointerWithin}
           autoScroll={false}
           onDragStart={handleDragStart}
-          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <div className="table-responsive">
@@ -681,21 +668,14 @@ export function InstructorAssessmentQuestionsTable({
       ) : (
         <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
       )}
-      {editMode && editQuestionModalState.type !== 'closed' ? (
+      {editMode && (
         <EditQuestionModal
-          editQuestionModalState={editQuestionModalState}
+          {...editQuestionModal}
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
-          onHide={() => setEditQuestionModalState({ type: 'closed' })}
         />
-      ) : null}
-      {editMode && editZoneModalState.type !== 'closed' ? (
-        <EditZoneModal
-          editZoneModalState={editZoneModalState}
-          handleSaveZone={handleSaveZone}
-          onHide={() => setEditZoneModalState({ type: 'closed' })}
-        />
-      ) : null}
+      )}
+      {editMode && <EditZoneModal {...editZoneModal} handleSaveZone={handleSaveZone} />}
     </>
   );
 }

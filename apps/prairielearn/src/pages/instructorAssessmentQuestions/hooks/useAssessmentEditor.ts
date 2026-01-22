@@ -1,6 +1,69 @@
 import { useReducer } from 'react';
 
+import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type {
+  QuestionAlternativeForm,
+  ZoneAssessmentForm,
+  ZoneQuestionForm,
+} from '../instructorAssessmentQuestions.shared.js';
 import type { EditorAction, EditorState } from '../types.js';
+
+/**
+ * Adds trackingId to each question and alternative in the zones.
+ * Used when initializing editor state from saved data.
+ */
+export function addTrackingIds(zones: ZoneAssessmentJson[]): ZoneAssessmentForm[] {
+  return zones.map((zone) => ({
+    ...zone,
+    questions: zone.questions.map((question) => ({
+      ...question,
+      trackingId: crypto.randomUUID(),
+      alternatives: question.alternatives?.map((alt) => ({
+        ...alt,
+        trackingId: crypto.randomUUID(),
+      })),
+    })),
+  }));
+}
+
+/**
+ * Strips trackingId from each question and alternative in the zones.
+ * Used when serializing for save.
+ */
+export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJson[] {
+  return zones.map((zone) => {
+    const { questions, ...zoneRest } = zone;
+    return {
+      ...zoneRest,
+      questions: questions.map((question: ZoneQuestionForm) => {
+        const { trackingId: _trackingId, alternatives, ...questionRest } = question;
+        return {
+          ...questionRest,
+          alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {
+            const { trackingId: _altTrackingId, ...altRest } = alt;
+            return altRest;
+          }),
+        };
+      }),
+    };
+  });
+}
+
+/**
+ * Creates a new question with a trackingId.
+ */
+export function createQuestionWithTrackingId(
+  question: Omit<ZoneQuestionForm, 'trackingId'>,
+): ZoneQuestionForm {
+  return {
+    ...question,
+    trackingId: crypto.randomUUID(),
+    alternatives: question.alternatives?.map((alt) => ({
+      ...alt,
+      trackingId: 'trackingId' in alt ? alt.trackingId : crypto.randomUUID(),
+    })),
+  };
+}
 
 /**
  * Reducer for managing assessment editor state.
@@ -139,14 +202,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       }
       fromZone.questions.splice(fromQuestionIndex, 1);
 
-      // When moving within the same zone, adjust target index since removal shifts indices
-      const adjustedToIndex =
-        fromZoneIndex === toZoneIndex && fromQuestionIndex < toQuestionIndex
-          ? toQuestionIndex - 1
-          : toQuestionIndex;
-
-      // Insert at destination
-      toZone.questions.splice(adjustedToIndex, 0, movedQuestion);
+      // Insert at destination - the item takes the position of what we dropped on
+      toZone.questions.splice(toQuestionIndex, 0, movedQuestion);
 
       return {
         ...state,

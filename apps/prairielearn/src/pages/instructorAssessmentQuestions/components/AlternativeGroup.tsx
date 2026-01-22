@@ -4,7 +4,7 @@ import { type CSSProperties, Fragment } from 'react';
 import { run } from '@prairielearn/run';
 
 import { AlternativeGroupHeader } from '../../../components/AssessmentQuestions.js';
-import type { ZoneQuestionJson } from '../../../schemas/index.js';
+import type { ZoneQuestionForm } from '../instructorAssessmentQuestions.shared.js';
 import type { HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
@@ -21,7 +21,7 @@ export function AlternativeGroup({
   questionNumberMap,
   sortableId,
 }: {
-  alternativeGroup: ZoneQuestionJson;
+  alternativeGroup: ZoneQuestionForm;
   alternativeGroupNumber: number;
   zoneNumber: number;
   AssessmentState: AssessmentState;

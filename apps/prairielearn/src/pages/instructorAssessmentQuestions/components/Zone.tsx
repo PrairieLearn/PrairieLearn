@@ -2,7 +2,7 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable';
 
 import { ZoneHeader } from '../../../components/AssessmentQuestions.js';
-import type { ZoneAssessmentJson } from '../../../schemas/index.js';
+import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
 import type { HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
 import { AlternativeGroup } from './AlternativeGroup.js';
@@ -22,7 +22,7 @@ export function Zone({
   sortableIds,
   activeId,
 }: {
-  zone: ZoneAssessmentJson;
+  zone: ZoneAssessmentForm;
   zoneNumber: number;
   AssessmentState: AssessmentState;
   handleAddQuestion: (zoneNumber: number) => void;
@@ -86,11 +86,21 @@ export function Zone({
         <tr
           ref={setNodeRef}
           data-testid={droppableId}
-          className={zone.questions.length === 0 ? (isOver ? 'bg-primary-subtle' : 'bg-warning-subtle') : undefined}
+          className={
+            zone.questions.length === 0
+              ? isOver
+                ? 'bg-primary-subtle'
+                : 'bg-warning-subtle'
+              : undefined
+          }
           style={{
             height: zone.questions.length === 0 ? undefined : isOver ? 40 : 20,
             backgroundColor:
-              zone.questions.length === 0 ? undefined : isOver ? 'rgba(0, 123, 255, 0.1)' : undefined,
+              zone.questions.length === 0
+                ? undefined
+                : isOver
+                  ? 'rgba(0, 123, 255, 0.1)'
+                  : undefined,
             transition: 'all 0.2s ease',
           }}
         >

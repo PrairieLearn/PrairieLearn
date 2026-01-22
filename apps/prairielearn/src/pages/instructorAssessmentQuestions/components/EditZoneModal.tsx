@@ -1,12 +1,12 @@
+import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
 
-export type EditZoneModalState =
-  | { type: 'closed' }
+export type EditZoneModalData =
   | { type: 'create' }
-  | { type: 'edit'; zone: ZoneAssessmentJson; zoneIndex: number };
+  | { type: 'edit'; zone: ZoneAssessmentForm; zoneIndex: number };
 
 interface ZoneFormData {
   title: string;
@@ -25,17 +25,32 @@ function validatePositiveInteger(value: number | undefined, fieldName: string) {
 }
 
 export function EditZoneModal({
-  editZoneModalState,
+  show,
+  data,
   onHide,
+  onExited,
   handleSaveZone,
 }: {
-  editZoneModalState: EditZoneModalState;
+  show: boolean;
+  data: EditZoneModalData | null;
   onHide: () => void;
-  handleSaveZone: (zone: Partial<ZoneAssessmentJson>, zoneIndex?: number) => void;
+  onExited: () => void;
+  handleSaveZone: (zone: Partial<ZoneAssessmentForm>, zoneIndex?: number) => void;
 }) {
-  const { type } = editZoneModalState;
-  const existingZone = type === 'edit' ? editZoneModalState.zone : undefined;
-  const zoneIndex = type === 'edit' ? editZoneModalState.zoneIndex : undefined;
+  const type = data?.type ?? null;
+  const existingZone = data?.type === 'edit' ? data.zone : undefined;
+  const zoneIndex = data?.type === 'edit' ? data.zoneIndex : undefined;
+
+  // Compute form values from data - useForm with `values` will auto-update
+  const formValues = useMemo<ZoneFormData>(
+    () => ({
+      title: existingZone?.title ?? '',
+      maxPoints: existingZone?.maxPoints ?? undefined,
+      numberChoose: existingZone?.numberChoose ?? undefined,
+      bestQuestions: existingZone?.bestQuestions ?? undefined,
+    }),
+    [existingZone],
+  );
 
   const {
     register,
@@ -44,28 +59,21 @@ export function EditZoneModal({
   } = useForm<ZoneFormData>({
     mode: 'onSubmit',
     reValidateMode: 'onChange',
-    defaultValues: {
-      title: existingZone?.title ?? '',
-      maxPoints: existingZone?.maxPoints ?? undefined,
-      numberChoose: existingZone?.numberChoose ?? undefined,
-      bestQuestions: existingZone?.bestQuestions ?? undefined,
-    },
+    values: formValues,
   });
 
-  if (type === 'closed') return null;
-
   return (
-    <Modal show={true} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>{type === 'create' ? 'Add zone' : 'Edit zone'}</Modal.Title>
       </Modal.Header>
       <form
-        onSubmit={handleSubmit((data) => {
-          const zone: Partial<ZoneAssessmentJson> = {
-            title: data.title || undefined,
-            maxPoints: data.maxPoints,
-            numberChoose: data.numberChoose,
-            bestQuestions: data.bestQuestions,
+        onSubmit={handleSubmit((formData) => {
+          const zone: Partial<ZoneAssessmentForm> = {
+            title: formData.title || undefined,
+            maxPoints: formData.maxPoints,
+            numberChoose: formData.numberChoose,
+            bestQuestions: formData.bestQuestions,
             questions: type === 'create' ? [] : existingZone?.questions,
           };
           handleSaveZone(zone, zoneIndex);

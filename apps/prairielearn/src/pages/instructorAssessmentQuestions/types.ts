@@ -1,15 +1,17 @@
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+
 import type {
-  QuestionAlternativeJson,
-  ZoneAssessmentJson,
-  ZoneQuestionJson,
-} from '../../schemas/infoAssessment.js';
+  QuestionAlternativeForm,
+  ZoneAssessmentForm,
+  ZoneQuestionForm,
+} from './instructorAssessmentQuestions.shared.js';
 
 /**
  * The core editor state containing zones and question metadata.
+ * Uses form types with trackingId for stable drag-and-drop identity.
  */
 export interface EditorState {
-  zones: ZoneAssessmentJson[];
+  zones: ZoneAssessmentForm[];
   questionMap: Record<string, StaffAssessmentQuestionRow>;
 }
 
@@ -17,8 +19,8 @@ export interface EditorState {
  * Handler for editing a question or alternative in the assessment editor.
  */
 export type HandleEditQuestion = (params: {
-  question: ZoneQuestionJson | QuestionAlternativeJson;
-  alternativeGroup?: ZoneQuestionJson;
+  question: ZoneQuestionForm | QuestionAlternativeForm;
+  alternativeGroup?: ZoneQuestionForm;
   zoneNumber: number;
   alternativeGroupNumber: number;
   alternativeNumber?: number;
@@ -42,14 +44,14 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneIndex: number;
-      question: ZoneQuestionJson;
+      question: ZoneQuestionForm;
       questionData?: StaffAssessmentQuestionRow;
     }
   | {
       type: 'UPDATE_QUESTION';
       zoneIndex: number;
       questionIndex: number;
-      question: ZoneQuestionJson | QuestionAlternativeJson;
+      question: Partial<ZoneQuestionForm> | Partial<QuestionAlternativeForm>;
       alternativeIndex?: number;
     }
   | {
@@ -68,12 +70,12 @@ export type EditorAction =
     }
   | {
       type: 'ADD_ZONE';
-      zone: ZoneAssessmentJson;
+      zone: ZoneAssessmentForm;
     }
   | {
       type: 'UPDATE_ZONE';
       zoneIndex: number;
-      zone: Partial<ZoneAssessmentJson>;
+      zone: Partial<ZoneAssessmentForm>;
     }
   | {
       type: 'DELETE_ZONE';
