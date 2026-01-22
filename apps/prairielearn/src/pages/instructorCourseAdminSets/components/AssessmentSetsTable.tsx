@@ -311,10 +311,6 @@ export function AssessmentSetsPage({
     );
   };
 
-  const handleShowUsage = (assessmentSet: InstructorCourseAdminSetFormRow) => {
-    usageModalState.showWithData(assessmentSet);
-  };
-
   return (
     <>
       <div className="card mb-4">
@@ -374,7 +370,7 @@ export function AssessmentSetsPage({
             handleEdit={handleEdit}
             handleDelete={handleDelete}
             handleCreate={handleCreate}
-            handleShowUsage={handleShowUsage}
+            handleShowUsage={usageModalState.showWithData}
           />
         </div>
       </div>
