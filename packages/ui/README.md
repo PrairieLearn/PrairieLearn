@@ -112,6 +112,7 @@ Accessible combobox components built on [React Aria](https://react-spectrum.adob
 
 ```tsx
 import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
+import { useState } from 'react';
 
 const items: ComboBoxItem[] = [
   { id: '1', label: 'Apple' },
@@ -119,9 +120,11 @@ const items: ComboBoxItem[] = [
 ];
 
 // Single selection
+const [selected, setSelected] = useState<string | null>(null);
 <ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />
 
 // Multi-selection with tags
+const [selectedIds, setSelectedIds] = useState<string[]>([]);
 <TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />
 ```
 
