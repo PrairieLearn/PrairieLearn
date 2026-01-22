@@ -53,8 +53,8 @@ describe('generatePrefixCsrfToken', () => {
 
     const tokenData = getCheckedSignedTokenData(token, SECRET_KEY);
     assert.equal(tokenData.type, 'prefix');
-    assert.equal(tokenData.url, '/api/trpc');
-    assert.equal(tokenData.authn_user_id, '123');
+    assert.equal(tokenData.url, TEST_DATA.url);
+    assert.equal(tokenData.authn_user_id, TEST_DATA.authn_user_id);
   });
 });
 
@@ -68,6 +68,11 @@ describe('checkSignedTokenPrefix', () => {
   it('validates token when request URL starts with prefix', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
+    // We allow the route itself, both with and without a trailing slash.
+    assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test' }, SECRET_KEY));
+    assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/' }, SECRET_KEY));
+
+    // We allow deeply nested routes as well.
     assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/nested' }, SECRET_KEY));
     assert.isTrue(
       checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/nested/method' }, SECRET_KEY),
@@ -77,12 +82,11 @@ describe('checkSignedTokenPrefix', () => {
   it('rejects token when request URL does not start with prefix', () => {
     const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
-    assert.isFalse(
-      checkSignedTokenPrefix(token, { url: '/test2', authn_user_id: '123' }, SECRET_KEY),
-    );
-    assert.isFalse(
-      checkSignedTokenPrefix(token, { url: '/different/path', authn_user_id: '123' }, SECRET_KEY),
-    );
+    assert.isFalse(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/other/path' }, SECRET_KEY));
+
+    // We'll forbid paths that match the prefix only partially. In other words,
+    // we'll treat the prefix as if it implicitly ends with a trailing slash.
+    assert.isFalse(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/testy' }, SECRET_KEY));
   });
 
   it('rejects token when user ID does not match', () => {
@@ -95,65 +99,28 @@ describe('checkSignedTokenPrefix', () => {
 
   it('rejects non-prefix tokens', () => {
     // Generate a regular token (not a prefix token)
-    const regularToken = generateSignedToken(
-      { url: '/api/trpc', authn_user_id: '123' },
-      SECRET_KEY,
-    );
+    const regularToken = generateSignedToken(TEST_DATA, SECRET_KEY);
 
     // Should fail because it doesn't have type: 'prefix'
-    assert.isFalse(
-      checkSignedTokenPrefix(
-        regularToken,
-        { url: '/api/trpc/method', authn_user_id: '123' },
-        SECRET_KEY,
-      ),
-    );
+    assert.isFalse(checkSignedTokenPrefix(regularToken, TEST_DATA, SECRET_KEY));
   });
 
   it('rejects tampered tokens', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
     // Tamper with the token
     const tamperedToken = token.slice(0, -5) + 'XXXXX';
-
-    assert.isFalse(
-      checkSignedTokenPrefix(
-        tamperedToken,
-        { url: '/api/trpc/method', authn_user_id: '123' },
-        SECRET_KEY,
-      ),
-    );
+    assert.isFalse(checkSignedTokenPrefix(tamperedToken, TEST_DATA, SECRET_KEY));
   });
 
   it('rejects tokens with wrong secret key', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
-    assert.isFalse(
-      checkSignedTokenPrefix(
-        token,
-        { url: '/api/trpc/method', authn_user_id: '123' },
-        'wrong-secret',
-      ),
-    );
+    assert.isFalse(checkSignedTokenPrefix(token, TEST_DATA, 'wrong-secret'));
   });
 
   it('rejects invalid token formats', () => {
     assert.isFalse(checkSignedTokenPrefix('invalid', TEST_DATA, SECRET_KEY));
     assert.isFalse(checkSignedTokenPrefix('', TEST_DATA, SECRET_KEY));
-  });
-
-  it('prevents prefix confusion attack (token for /api should not work for /api-admin)', () => {
-    const token = generatePrefixCsrfToken({ url: '/api', authn_user_id: '123' }, SECRET_KEY);
-
-    // Should work for /api/something
-    assert.isTrue(
-      checkSignedTokenPrefix(token, { url: '/api/something', authn_user_id: '123' }, SECRET_KEY),
-    );
-
-    // Should also work for /api-admin (startsWith matches!) - this is expected behavior
-    // The token generator should include trailing slash if needed to prevent this
-    assert.isTrue(
-      checkSignedTokenPrefix(token, { url: '/api-admin', authn_user_id: '123' }, SECRET_KEY),
-    );
   });
 });

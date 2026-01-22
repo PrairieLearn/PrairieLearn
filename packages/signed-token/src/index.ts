@@ -171,10 +171,15 @@ export function checkSignedTokenPrefix(
     return false;
   }
 
-  // Verify the request URL starts with the token's prefix URL
-  if (!requestData.url.startsWith(tokenData.url)) {
+  // Verify the request URL starts with the token's prefix URL.
+  // We treat the prefix as implicitly ending with a trailing slash, so
+  // `/test` matches `/test`, `/test/`, and `/test/nested`, but NOT `/testy`.
+  const prefixUrl = tokenData.url;
+  const requestUrl = requestData.url;
+  const normalizedPrefix = prefixUrl.endsWith('/') ? prefixUrl : prefixUrl + '/';
+  if (requestUrl !== prefixUrl && !requestUrl.startsWith(normalizedPrefix)) {
     debug(
-      `checkSignedTokenPrefix(): FAIL - URL prefix mismatch: ${requestData.url} does not start with ${tokenData.url}`,
+      `checkSignedTokenPrefix(): FAIL - URL prefix mismatch: ${requestUrl} does not start with ${prefixUrl}`,
     );
     return false;
   }
