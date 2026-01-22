@@ -4822,10 +4822,12 @@ __metadata:
     "@types/debug": "npm:^4.1.12"
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
+    "@vitest/coverage-v8": "npm:^4.0.17"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
     lodash: "npm:^4.17.23"
     typescript: "npm:^5.9.3"
+    vitest: "npm:^4.0.17"
   languageName: unknown
   linkType: soft
 

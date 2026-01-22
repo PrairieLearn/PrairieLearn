@@ -148,19 +148,6 @@ router.post(
         res.redirect(req.originalUrl);
         break;
       }
-      case 'unblock_student': {
-        if (enrollment.status !== 'blocked') {
-          throw new HttpStatusError(400, 'Enrollment is not blocked');
-        }
-        await setEnrollmentStatus({
-          enrollment,
-          status: 'joined',
-          authzData,
-          requiredRole: ['Student Data Editor'],
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
       case 'cancel_invitation': {
         if (!['invited', 'rejected'].includes(enrollment.status)) {
           throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
@@ -174,10 +161,28 @@ router.post(
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
+      // TODO: `unblock_student` is retained for backward compatibility with clients.
+      // We can safely remove this in a future release once this has been in
+      // production for a while.
+      case 'reenroll_student':
+      case 'unblock_student': {
+        if (enrollment.status !== 'removed' && enrollment.status !== 'blocked') {
+          throw new HttpStatusError(400, 'Enrollment is not removed or blocked');
+        }
+        await setEnrollmentStatus({
+          enrollment,
+          status: 'joined',
+          authzData,
+          requiredRole: ['Student Data Editor'],
+        });
+        res.redirect(req.originalUrl);
+        break;
+      }
       case 'invite_student': {
-        // TODO: remove the `removed` status in https://github.com/PrairieLearn/PrairieLearn/pull/13803.
-        if (!['rejected', 'left', 'removed'].includes(enrollment.status)) {
-          throw new HttpStatusError(400, 'Enrollment is not rejected, left, or removed');
+        // We intentionally don't allow instructors to re-invite removed enrollments.
+        // They can only transition them directly back to `joined`.
+        if (!['rejected', 'left'].includes(enrollment.status)) {
+          throw new HttpStatusError(400, 'Enrollment is not rejected or left');
         }
 
         const pendingUid = await run(async () => {
