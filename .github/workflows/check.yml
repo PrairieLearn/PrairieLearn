@@ -111,11 +111,6 @@ jobs:
           && !contains(github.event.pull_request.head.ref, 'changeset-release')
           && github.event.pull_request.user.login != 'dependabot[bot]' }}
         run: yarn changeset status --since origin/${{ github.base_ref || 'master' }}
-      # This step runs at the end, since it is common for it to fail in
-      # dependabot PRs, but we still want all other tests above to run
-      # in those cases.
-      - name: Check for duplicate Node dependencies
-        run: yarn dedupe --check
 
   check-python:
     name: Python
@@ -216,3 +211,38 @@ jobs:
         run: make lint-sql
       - name: Run the SQL migrations linter
         run: make lint-sql-migrations
+
+  dedupe:
+    name: Dedupe
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v6
+
+      - name: Set up Node
+        uses: actions/setup-node@v6
+        with:
+          node-version: '24'
+          cache: 'yarn'
+
+      - name: Install Node dependencies
+        run: yarn install --immutable --inline-builds
+
+      - name: Check for duplicate Node dependencies
+        run: yarn dedupe --check
+
+  all-checks:
+    name: All checks passed
+    if: ${{ !cancelled() }}
+    needs: [check-js, check-python, check-other, dedupe]
+    runs-on: ubuntu-latest
+    steps:
+      - name: Verify all jobs passed
+        run: |
+          if [[ "${{ needs.check-js.result }}" != "success" ]] || \
+             [[ "${{ needs.check-python.result }}" != "success" ]] || \
+             [[ "${{ needs.check-other.result }}" != "success" ]] || \
+             [[ "${{ needs.dedupe.result }}" != "success" ]]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All checks passed!"
