@@ -5,13 +5,13 @@ import asyncHandler from 'express-async-handler';
 
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 
 import { config } from '../../lib/config.js';
 import { type FileTransfer, FileTransferSchema } from '../../lib/db-types.js';
 import { CourseInstanceCopyEditor, type Editor, QuestionCopyEditor } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
 import { HttpRedirect } from '../../lib/redirect.js';
-import { assertNever } from '../../lib/types.js';
 import {
   selectCourseInstanceByShortName,
   selectCourseInstanceByUuid,

@@ -25,6 +25,7 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { getCanonicalHost } from '../../lib/url.js';
 
@@ -153,12 +154,16 @@ router.post(
       }
 
       if (!req.body.aid) {
-        throw new error.HttpStatusError(400, `Invalid short name (was falsy): ${req.body.aid}`);
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
+      const shortNameValidation = validateShortName(
+        req.body.aid,
+        res.locals.assessment.tid ?? undefined,
+      );
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 

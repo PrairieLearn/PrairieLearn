@@ -30,6 +30,7 @@ import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
@@ -190,11 +191,9 @@ router.post(
         throw new error.HttpStatusError(400, 'Long name is required');
       }
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
-        throw new error.HttpStatusError(
-          400,
-          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
-        );
+      const shortNameValidation = validateShortName(short_name);
+      if (!shortNameValidation.valid) {
+        throw new error.HttpStatusError(400, `Short name ${shortNameValidation.lowercaseMessage}`);
       }
 
       const existingNames = await sqldb.queryRows(
@@ -320,12 +319,13 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
       if (!req.body.ciid) {
-        throw new error.HttpStatusError(400, `Invalid short name (was falsy): ${req.body.ciid}`);
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.ciid)) {
+      const shortNameValidation = validateShortName(req.body.ciid, courseInstance.short_name);
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.ciid}`,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 

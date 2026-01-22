@@ -18,7 +18,7 @@
   "dependencies": {
     "base64url": "^3.0.1",
     "debug": "^4.4.3",
-    "lodash": "^4.17.21"
+    "lodash": "^4.17.23"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

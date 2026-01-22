@@ -8,6 +8,7 @@ import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
+import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
 import { TopicBadgeHtml } from '../../components/TopicBadge.js';
@@ -23,6 +24,7 @@ import {
 } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 import { encodePath } from '../../lib/uri-util.js';
 import { type CourseWithPermissions } from '../../models/course.js';
 
@@ -135,14 +137,24 @@ export function InstructorQuestionSettings({
                 id="qid"
                 name="qid"
                 value="${resLocals.question.qid}"
-                pattern="[\\-A-Za-z0-9_\\/]+"
+                pattern="${
+                  // TODO: if/when this page is converted to React, use `validateShortName`
+                  // from `../../lib/short-name.js` with react-hook-form to provide more specific
+                  // validation feedback (e.g., "cannot start with a slash").
+                  SHORT_NAME_PATTERN
+                }|${
+                  // NOTE: this will not be compatible with browsers, as it was only
+                  // just added to modern browsers as of January 2025. If/when this
+                  // page is converted to React, we should use a custom validation
+                  // function instead of the `pattern` attribute to enforce this.
+                  // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
+                  RegExp.escape(resLocals.question.qid)
+                }"
                 data-other-values="${qids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
-                This is a unique identifier for the question, e.g. "addNumbers". Use only letters,
-                numbers, dashes, and underscores, with no spaces. You may use forward slashes to
-                separate directories.
+                ${renderHtml(<QuestionShortNameDescription />)}
               </small>
             </div>
             <div class="mb-3">
