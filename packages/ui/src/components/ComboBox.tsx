@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type Key, type ReactNode, useEffect, useMemo, useState } from 'react';
+import { type Key, type ReactNode, useMemo, useState } from 'react';
 import { useFilter } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
@@ -82,21 +82,15 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
 
   const { contains } = useFilter({ sensitivity: 'base' });
   const [isOpen, setIsOpen] = useState(false);
+  const [filterText, setFilterText] = useState('');
 
   const selectedItem = useMemo(
     () => items.find((item) => item.id === props.value) ?? null,
     [items, props.value],
   );
 
-  const [inputValue, setInputValue] = useState(
-    () => items.find((item) => item.id === props.value)?.label ?? '',
-  );
-
-  useEffect(() => {
-    if (!isOpen) {
-      setInputValue(selectedItem?.label ?? '');
-    }
-  }, [selectedItem, isOpen]);
+  // Input value is derived: show filter text when open, selected label when closed
+  const inputValue = isOpen ? filterText : (selectedItem?.label ?? '');
 
   const filteredItems = useMemo(() => {
     if (!inputValue.trim()) return items;
@@ -110,11 +104,12 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
     const stringKey = typeof key === 'string' ? key : null;
     const newSelectedItem = stringKey ? items.find((item) => item.id === stringKey) : null;
     props.onChange(stringKey);
-    setInputValue(newSelectedItem?.label ?? '');
+    // Set filter text to new label for immediate display before props update
+    setFilterText(newSelectedItem?.label ?? '');
   };
 
   const handleInputChange = (value: string) => {
-    setInputValue(value);
+    setFilterText(value);
     if (value === '' && props.value !== null) {
       props.onChange(null);
     }
@@ -122,9 +117,9 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
 
   const handleOpenChange = (open: boolean, trigger?: 'focus' | 'input' | 'manual') => {
     setIsOpen(open);
-    // Restore selected item label when closing or when opening via focus
-    if (selectedItem && (!open || trigger === 'focus')) {
-      setInputValue(selectedItem.label);
+    // Initialize filter text to selected label when opening via focus
+    if (open && trigger === 'focus') {
+      setFilterText(selectedItem?.label ?? '');
     }
   };
 
@@ -299,7 +294,10 @@ export function TagPicker<T = void>(props: TagPickerProps<T>) {
           style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
         >
           {selectedItems.length > 0 && (
-            <TagGroup aria-label="Selected items" onRemove={!disabled ? handleRemoveTag : undefined}>
+            <TagGroup
+              aria-label="Selected items"
+              onRemove={!disabled ? handleRemoveTag : undefined}
+            >
               <TagList>
                 {selectedItems.map((item) => (
                   <Tag
