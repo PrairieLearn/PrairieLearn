@@ -161,7 +161,7 @@ router.post(
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
-      // TODO: `unblock_students` is retained for backward compatibility with client.
+      // TODO: `unblock_student` is retained for backward compatibility with client.
       // We can safely remove this in a future release once this has been in
       // production for a while.
       case 'reenroll_student':
