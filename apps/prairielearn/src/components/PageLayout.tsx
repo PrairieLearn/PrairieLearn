@@ -131,11 +131,14 @@ function LegacyPublishingBannerComponent({
       className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
       role="alert"
     >
-      This course instance is using legacy access rules, so various enrollment features are
-      disabled.{' '}
-      <a href={`${urlPrefix}/instance_admin/publishing`} className="alert-link">
-        Migrate to modern publishing
-      </a>
+      You are using access rules to control who can access the course instance.{' '}
+      <a
+        href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess"
+        className="alert-link"
+      >
+        Migrate to publishing
+      </a>{' '}
+      to unlock additional enrollment management features.
     </div>
   );
 }
