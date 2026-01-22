@@ -593,12 +593,14 @@ export async function setEnrollmentStatus({
       await selectAndLockUser(lockedEnrollment.user_id);
     }
 
-    const transitionInformation: {
+    interface EnrollmentStatusTransitionInformation {
       equivalentStatuses?: EnumEnrollmentStatus[];
       previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
       actionDetail: SupportedActionsForTable<'enrollments'>;
       permittedRoles: CourseInstanceRole[];
-    } = run(() => {
+    }
+
+    const transitionInformation = run((): EnrollmentStatusTransitionInformation => {
       switch (status) {
         case 'joined':
           return {
