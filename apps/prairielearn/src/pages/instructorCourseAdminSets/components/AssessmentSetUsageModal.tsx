@@ -3,21 +3,30 @@ import { Modal } from 'react-bootstrap';
 
 import type {
   AssessmentForSet,
-  InstructorCourseAdminSetRow,
+  InstructorCourseAdminSetFormRow,
 } from '../instructorCourseAdminSets.shared.js';
 
+export type AssessmentSetUsageModalData = InstructorCourseAdminSetFormRow;
+
 interface AssessmentSetUsageModalProps {
-  assessmentSet: InstructorCourseAdminSetRow | null;
+  show: boolean;
+  data: AssessmentSetUsageModalData | null;
   onHide: () => void;
+  onExited: () => void;
 }
 
-export function AssessmentSetUsageModal({ assessmentSet, onHide }: AssessmentSetUsageModalProps) {
+export function AssessmentSetUsageModal({
+  show,
+  data,
+  onHide,
+  onExited,
+}: AssessmentSetUsageModalProps) {
   // Group assessments by course instance
   const groupedAssessments = useMemo(() => {
-    if (!assessmentSet) return [];
+    if (!data) return [];
 
     const groups = new Map<string, AssessmentForSet[]>();
-    for (const assessment of assessmentSet.assessments) {
+    for (const assessment of data.assessments) {
       const key = assessment.course_instance_id;
       if (!groups.has(key)) {
         groups.set(key, []);
@@ -27,15 +36,15 @@ export function AssessmentSetUsageModal({ assessmentSet, onHide }: AssessmentSet
 
     // Convert to array (already sorted by ci.id DESC from SQL)
     return Array.from(groups.entries());
-  }, [assessmentSet]);
+  }, [data]);
 
   return (
-    <Modal show={assessmentSet !== null} size="lg" onHide={onHide}>
+    <Modal show={show} size="lg" onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
-        <Modal.Title>Assessments using "{assessmentSet?.name}"</Modal.Title>
+        <Modal.Title>Assessments using "{data?.name}"</Modal.Title>
       </Modal.Header>
       <Modal.Body>
-        {assessmentSet?.assessments.length === 0 ? (
+        {data?.assessments.length === 0 ? (
           <p className="text-muted mb-0">No assessments use this assessment set.</p>
         ) : (
           <div className="d-flex flex-column">

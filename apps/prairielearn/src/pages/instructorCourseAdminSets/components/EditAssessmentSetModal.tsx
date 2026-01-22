@@ -5,57 +5,54 @@ import { ColorSwatch } from '../../../components/ColorSwatch.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
 import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
 
-export type EditAssessmentSetsModalState =
-  | { type: 'closed' }
-  | { type: 'create'; assessmentSet: InstructorCourseAdminSetFormRow }
-  | { type: 'edit'; assessmentSet: InstructorCourseAdminSetFormRow };
+export interface EditAssessmentSetModalData {
+  mode: 'create' | 'edit';
+  assessmentSet: InstructorCourseAdminSetFormRow;
+}
 
 export function EditAssessmentSetsModal({
-  state,
-  onClose,
+  show,
+  data,
+  onHide,
+  onExited,
   onSave,
   existingNames,
 }: {
-  state: EditAssessmentSetsModalState;
-  onClose: () => void;
-  onSave: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
+  show: boolean;
+  data: EditAssessmentSetModalData | null;
+  onHide: () => void;
+  onExited: () => void;
+  onSave: (assessmentSet: InstructorCourseAdminSetFormRow, mode: 'create' | 'edit') => void;
   existingNames: Set<string>;
 }) {
-  const assessmentSetToEdit =
-    state.type === 'create'
-      ? state.assessmentSet
-      : state.type === 'edit'
-        ? state.assessmentSet
-        : null;
-  const [assessmentSet, setAssessmentSet] = useState<InstructorCourseAdminSetFormRow | null>(
-    assessmentSetToEdit,
-  );
+  const [assessmentSet, setAssessmentSet] = useState<InstructorCourseAdminSetFormRow | null>(null);
 
   function handleModalEntering() {
-    if (!assessmentSetToEdit) return;
-    setAssessmentSet(assessmentSetToEdit);
+    if (!data) return;
+    setAssessmentSet(data.assessmentSet);
   }
 
   function handleModalExited() {
     setAssessmentSet(null);
+    onExited();
   }
 
   function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    if (!assessmentSet) return;
-    onSave(assessmentSet);
+    if (!assessmentSet || !data) return;
+    onSave(assessmentSet, data.mode);
   }
 
   return (
     <Modal
-      show={state.type !== 'closed'}
-      onHide={onClose}
+      show={show}
+      onHide={onHide}
       onEntering={handleModalEntering}
       onExited={handleModalExited}
     >
       <Modal.Header closeButton>
         <Modal.Title>
-          {state.type === 'create' ? 'Add assessment set' : 'Edit assessment set'}
+          {data?.mode === 'create' ? 'Add assessment set' : 'Edit assessment set'}
         </Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit}>
@@ -95,9 +92,7 @@ export function EditAssessmentSetsModal({
                   id="name"
                   value={assessmentSet.name}
                   aria-describedby={
-                    state.type !== 'closed' &&
-                    assessmentSet.name &&
-                    existingNames.has(assessmentSet.name)
+                    show && assessmentSet.name && existingNames.has(assessmentSet.name)
                       ? 'name-warning'
                       : undefined
                   }
@@ -109,18 +104,16 @@ export function EditAssessmentSetsModal({
                     })
                   }
                 />
-                {state.type !== 'closed' &&
-                  assessmentSet.name &&
-                  existingNames.has(assessmentSet.name) && (
-                    <div
-                      id="name-warning"
-                      className="alert alert-warning mt-2 mb-0 py-2"
-                      role="alert"
-                    >
-                      <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This
-                      assessment set has the same name as another set.
-                    </div>
-                  )}
+                {show && assessmentSet.name && existingNames.has(assessmentSet.name) && (
+                  <div
+                    id="name-warning"
+                    className="alert alert-warning mt-2 mb-0 py-2"
+                    role="alert"
+                  >
+                    <i className="fa fa-exclamation-triangle" aria-hidden="true" /> This assessment
+                    set has the same name as another set.
+                  </div>
+                )}
               </div>
               <div className="mb-3">
                 <label className="form-label" htmlFor="heading">
@@ -169,7 +162,7 @@ export function EditAssessmentSetsModal({
           ) : null}
         </Modal.Body>
         <Modal.Footer>
-          <button className="btn btn-secondary" type="button" onClick={onClose}>
+          <button className="btn btn-secondary" type="button" onClick={onHide}>
             Cancel
           </button>
           <button className="btn btn-primary" type="submit">

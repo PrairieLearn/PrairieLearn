@@ -18,16 +18,19 @@ import {
 import { CSS } from '@dnd-kit/utilities';
 import { type AriaRole, useMemo, useState } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
 import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
 
-import { AssessmentSetUsageModal } from './AssessmentSetUsageModal.js';
 import {
+  AssessmentSetUsageModal,
+  type AssessmentSetUsageModalData,
+} from './AssessmentSetUsageModal.js';
+import {
+  type EditAssessmentSetModalData,
   EditAssessmentSetsModal,
-  type EditAssessmentSetsModalState,
 } from './EditAssessmentSetModal.js';
 
 const emptyAssessmentSet = {
@@ -247,8 +250,8 @@ export function AssessmentSetsPage({
   const [editMode, setEditMode] = useState(false);
   const [assessmentSetsState, setAssessmentSetsState] =
     useState<InstructorCourseAdminSetFormRow[]>(assessmentSets);
-  const [modalState, setModalState] = useState<EditAssessmentSetsModalState>({ type: 'closed' });
-  const [usageModalSet, setUsageModalSet] = useState<InstructorCourseAdminSetFormRow | null>(null);
+  const editModalState = useModalState<EditAssessmentSetModalData>();
+  const usageModalState = useModalState<AssessmentSetUsageModalData>();
 
   const duplicateNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
@@ -262,15 +265,15 @@ export function AssessmentSetsPage({
 
   // Names of other assessment sets (excluding the one currently being edited)
   const existingNames = useMemo(() => {
-    const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.trackingId : null;
+    const editingId = editModalState.data?.assessmentSet.trackingId ?? null;
     return new Set(
       assessmentSetsState.filter((set) => set.trackingId !== editingId).map((set) => set.name),
     );
-  }, [assessmentSetsState, modalState]);
+  }, [assessmentSetsState, editModalState.data]);
 
   const handleCreate = () => {
-    setModalState({
-      type: 'create',
+    editModalState.showWithData({
+      mode: 'create',
       assessmentSet: {
         ...emptyAssessmentSet,
         trackingId: crypto.randomUUID(),
@@ -280,8 +283,8 @@ export function AssessmentSetsPage({
   };
 
   const handleEdit = (index: number) => {
-    setModalState({
-      type: 'edit',
+    editModalState.showWithData({
+      mode: 'edit',
       assessmentSet: {
         ...assessmentSetsState[index],
         implicit: false,
@@ -289,17 +292,17 @@ export function AssessmentSetsPage({
     });
   };
 
-  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow) => {
-    if (modalState.type === 'create') {
+  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow, mode: 'create' | 'edit') => {
+    if (mode === 'create') {
       setAssessmentSetsState((prevAssessmentSets) => [...prevAssessmentSets, assessmentSet]);
-    } else if (modalState.type === 'edit') {
+    } else {
       setAssessmentSetsState((prevAssessmentSets) =>
         prevAssessmentSets.map((d) =>
           d.trackingId === assessmentSet.trackingId ? assessmentSet : d,
         ),
       );
     }
-    setModalState({ type: 'closed' });
+    editModalState.hide();
   };
 
   const handleDelete = (deleteId: string) => {
@@ -309,7 +312,7 @@ export function AssessmentSetsPage({
   };
 
   const handleShowUsage = (assessmentSet: InstructorCourseAdminSetFormRow) => {
-    setUsageModalSet(assessmentSet);
+    usageModalState.showWithData(assessmentSet);
   };
 
   return (
@@ -377,16 +380,12 @@ export function AssessmentSetsPage({
       </div>
 
       <EditAssessmentSetsModal
+        {...editModalState}
         existingNames={existingNames}
-        state={modalState}
-        onClose={() => setModalState({ type: 'closed' })}
         onSave={handleSave}
       />
 
-      <AssessmentSetUsageModal
-        assessmentSet={usageModalSet}
-        onHide={() => setUsageModalSet(null)}
-      />
+      <AssessmentSetUsageModal {...usageModalState} />
     </>
   );
 }
