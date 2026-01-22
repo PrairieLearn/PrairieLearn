@@ -3,12 +3,12 @@ import { Modal } from 'react-bootstrap';
 
 import { ColorSwatch } from '../../../components/ColorSwatch.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
-import type { InstructorCourseAdminSetRow } from '../instructorCourseAdminSets.shared.js';
+import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
 
 export type EditAssessmentSetsModalState =
   | { type: 'closed' }
-  | { type: 'create'; assessmentSet: InstructorCourseAdminSetRow }
-  | { type: 'edit'; assessmentSet: InstructorCourseAdminSetRow };
+  | { type: 'create'; assessmentSet: InstructorCourseAdminSetFormRow }
+  | { type: 'edit'; assessmentSet: InstructorCourseAdminSetFormRow };
 
 export function EditAssessmentSetsModal({
   state,
@@ -18,7 +18,7 @@ export function EditAssessmentSetsModal({
 }: {
   state: EditAssessmentSetsModalState;
   onClose: () => void;
-  onSave: (assessmentSet: InstructorCourseAdminSetRow) => void;
+  onSave: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
   existingNames: Set<string>;
 }) {
   const assessmentSetToEdit =
@@ -27,7 +27,7 @@ export function EditAssessmentSetsModal({
       : state.type === 'edit'
         ? state.assessmentSet
         : null;
-  const [assessmentSet, setAssessmentSet] = useState<InstructorCourseAdminSetRow | null>(
+  const [assessmentSet, setAssessmentSet] = useState<InstructorCourseAdminSetFormRow | null>(
     assessmentSetToEdit,
   );
 
@@ -77,10 +77,10 @@ export function EditAssessmentSetsModal({
                   id="abbreviation"
                   value={assessmentSet.abbreviation}
                   required
-                  onChange={(e) =>
+                  onChange={({ currentTarget }) =>
                     setAssessmentSet({
                       ...assessmentSet,
-                      abbreviation: (e.target as HTMLInputElement).value,
+                      abbreviation: currentTarget.value,
                     })
                   }
                 />
@@ -102,10 +102,10 @@ export function EditAssessmentSetsModal({
                       : undefined
                   }
                   required
-                  onChange={(e) =>
+                  onChange={({ currentTarget }) =>
                     setAssessmentSet({
                       ...assessmentSet,
-                      name: (e.target as HTMLInputElement).value,
+                      name: currentTarget.value,
                     })
                   }
                 />
@@ -131,10 +131,10 @@ export function EditAssessmentSetsModal({
                   className="form-control"
                   id="heading"
                   value={assessmentSet.heading}
-                  onChange={(e) =>
+                  onChange={({ currentTarget }) =>
                     setAssessmentSet({
                       ...assessmentSet,
-                      heading: (e.target as HTMLInputElement).value,
+                      heading: currentTarget.value,
                     })
                   }
                 />

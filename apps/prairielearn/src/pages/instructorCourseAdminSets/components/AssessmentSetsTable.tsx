@@ -22,7 +22,7 @@ import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
-import type { InstructorCourseAdminSetRow } from '../instructorCourseAdminSets.shared.js';
+import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
 
 import { AssessmentSetUsageModal } from './AssessmentSetUsageModal.js';
 import {
@@ -51,7 +51,7 @@ function AssessmentSetRow({
   onDelete,
   onShowUsage,
 }: {
-  assessmentSet: InstructorCourseAdminSetRow;
+  assessmentSet: InstructorCourseAdminSetFormRow;
   editMode: boolean;
   allowEdit: boolean;
   onEdit: () => void;
@@ -59,7 +59,7 @@ function AssessmentSetRow({
   onShowUsage: () => void;
 }) {
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
-    id: assessmentSet.id,
+    id: assessmentSet.trackingId,
   });
 
   const style = {
@@ -70,7 +70,7 @@ function AssessmentSetRow({
   };
 
   return (
-    <tr key={assessmentSet.id} ref={setNodeRef} style={style}>
+    <tr key={assessmentSet.trackingId} ref={setNodeRef} style={style}>
       {editMode && allowEdit && (
         <td className="align-middle">
           <div className="d-flex align-items-center">
@@ -98,7 +98,7 @@ function AssessmentSetRow({
                 trigger="click"
                 tooltip={{
                   body: `This assessment set cannot be deleted because it is referenced by ${assessmentSet.assessments.length} assessment${assessmentSet.assessments.length === 1 ? '' : 's'}.`,
-                  props: { id: `delete-tooltip-${assessmentSet.id}` },
+                  props: { id: `delete-tooltip-${assessmentSet.trackingId}` },
                 }}
                 rootClose
               >
@@ -154,23 +154,23 @@ function AssessmentSetsTable({
   handleCreate,
   handleShowUsage,
 }: {
-  assessmentSetsState: InstructorCourseAdminSetRow[];
+  assessmentSetsState: InstructorCourseAdminSetFormRow[];
   setAssessmentSetsState: (
-    setter: (items: InstructorCourseAdminSetRow[]) => InstructorCourseAdminSetRow[],
+    setter: (items: InstructorCourseAdminSetFormRow[]) => InstructorCourseAdminSetFormRow[],
   ) => void;
   editMode: boolean;
   allowEdit: boolean;
   handleEdit: (index: number) => void;
   handleDelete: (id: string) => void;
   handleCreate: () => void;
-  handleShowUsage: (assessmentSet: InstructorCourseAdminSetRow) => void;
+  handleShowUsage: (assessmentSet: InstructorCourseAdminSetFormRow) => void;
 }) {
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
 
-  const ids = useMemo(() => assessmentSetsState.map((s) => s.id), [assessmentSetsState]);
+  const ids = useMemo(() => assessmentSetsState.map((s) => s.trackingId), [assessmentSetsState]);
 
   return (
     <DndContext
@@ -181,8 +181,8 @@ function AssessmentSetsTable({
         if (!over || active.id === over.id) return;
 
         setAssessmentSetsState((items) => {
-          const oldIndex = items.findIndex((item) => item.id === active.id);
-          const newIndex = items.findIndex((item) => item.id === over.id);
+          const oldIndex = items.findIndex((item) => item.trackingId === active.id);
+          const newIndex = items.findIndex((item) => item.trackingId === over.id);
           if (oldIndex === -1 || newIndex === -1) return items;
           return arrayMove(items, oldIndex, newIndex);
         });
@@ -207,12 +207,12 @@ function AssessmentSetsTable({
           <tbody>
             {assessmentSetsState.map((assessmentSet, index) => (
               <AssessmentSetRow
-                key={assessmentSet.id}
+                key={assessmentSet.trackingId}
                 assessmentSet={assessmentSet}
                 editMode={editMode}
                 allowEdit={allowEdit}
                 onEdit={() => handleEdit(index)}
-                onDelete={() => handleDelete(assessmentSet.id)}
+                onDelete={() => handleDelete(assessmentSet.trackingId)}
                 onShowUsage={() => handleShowUsage(assessmentSet)}
               />
             ))}
@@ -239,16 +239,16 @@ export function AssessmentSetsPage({
   origHash,
   csrfToken,
 }: {
-  assessmentSets: InstructorCourseAdminSetRow[];
+  assessmentSets: InstructorCourseAdminSetFormRow[];
   allowEdit: boolean;
   origHash: string | null;
   csrfToken: string;
 }) {
   const [editMode, setEditMode] = useState(false);
   const [assessmentSetsState, setAssessmentSetsState] =
-    useState<InstructorCourseAdminSetRow[]>(assessmentSets);
+    useState<InstructorCourseAdminSetFormRow[]>(assessmentSets);
   const [modalState, setModalState] = useState<EditAssessmentSetsModalState>({ type: 'closed' });
-  const [usageModalSet, setUsageModalSet] = useState<InstructorCourseAdminSetRow | null>(null);
+  const [usageModalSet, setUsageModalSet] = useState<InstructorCourseAdminSetFormRow | null>(null);
 
   const duplicateNames = useMemo(() => {
     const nameCounts = new Map<string, number>();
@@ -262,11 +262,9 @@ export function AssessmentSetsPage({
 
   // Names of other assessment sets (excluding the one currently being edited)
   const existingNames = useMemo(() => {
-    const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.id : null;
+    const editingId = modalState.type !== 'closed' ? modalState.assessmentSet.trackingId : null;
     return new Set(
-      assessmentSetsState
-        .filter((set: InstructorCourseAdminSetRow) => set.id !== editingId)
-        .map((set: InstructorCourseAdminSetRow) => set.name),
+      assessmentSetsState.filter((set) => set.trackingId !== editingId).map((set) => set.name),
     );
   }, [assessmentSetsState, modalState]);
 
@@ -274,8 +272,8 @@ export function AssessmentSetsPage({
     setModalState({
       type: 'create',
       assessmentSet: {
-        ...(emptyAssessmentSet as InstructorCourseAdminSetRow),
-        id: crypto.randomUUID(),
+        ...emptyAssessmentSet,
+        trackingId: crypto.randomUUID(),
         color: ColorJsonSchema.options[Math.floor(Math.random() * ColorJsonSchema.options.length)],
       },
     });
@@ -291,16 +289,13 @@ export function AssessmentSetsPage({
     });
   };
 
-  const handleSave = (assessmentSet: InstructorCourseAdminSetRow) => {
+  const handleSave = (assessmentSet: InstructorCourseAdminSetFormRow) => {
     if (modalState.type === 'create') {
-      setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) => [
-        ...prevAssessmentSets,
-        assessmentSet,
-      ]);
+      setAssessmentSetsState((prevAssessmentSets) => [...prevAssessmentSets, assessmentSet]);
     } else if (modalState.type === 'edit') {
-      setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) =>
-        prevAssessmentSets.map((d: InstructorCourseAdminSetRow) =>
-          d.id === assessmentSet.id ? assessmentSet : d,
+      setAssessmentSetsState((prevAssessmentSets) =>
+        prevAssessmentSets.map((d) =>
+          d.trackingId === assessmentSet.trackingId ? assessmentSet : d,
         ),
       );
     }
@@ -308,12 +303,12 @@ export function AssessmentSetsPage({
   };
 
   const handleDelete = (deleteId: string) => {
-    setAssessmentSetsState((prevAssessmentSets: InstructorCourseAdminSetRow[]) =>
-      prevAssessmentSets.filter((d: InstructorCourseAdminSetRow) => d.id !== deleteId),
+    setAssessmentSetsState((prevAssessmentSets) =>
+      prevAssessmentSets.filter((d) => d.trackingId !== deleteId),
     );
   };
 
-  const handleShowUsage = (assessmentSet: InstructorCourseAdminSetRow) => {
+  const handleShowUsage = (assessmentSet: InstructorCourseAdminSetFormRow) => {
     setUsageModalSet(assessmentSet);
   };
 
@@ -355,9 +350,7 @@ export function AssessmentSetsPage({
                   </button>
                 </form>
               )
-            ) : (
-              ''
-            )}
+            ) : null}
           </div>
         </div>
 

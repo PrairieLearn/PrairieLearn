@@ -1740,6 +1740,80 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
+export class AssessmentSetRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string;
+  private courseId: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string;
+      courseId: string;
+    },
+  ) {
+    super({
+      ...params,
+      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+    this.courseId = params.courseId;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentSetRenameEditor: write()');
+
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_assessment_set,
+      { assessment_set_name: this.oldName, course_id: this.courseId },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+
+    if (assessments.length === 0) return null;
+
+    const pathsToAdd: string[] = [];
+
+    for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_directory,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json',
+      );
+      pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson: any = await fs.readJson(infoPath);
+
+      debug(`Replace assessment set name in ${infoPath}`);
+      infoJson.set = this.newName;
+
+      debug(`Write ${infoPath}`);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+    }
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
+    };
+  }
+}
+
 export class QuestionCopyEditor extends Editor {
   private from_course: Course;
   private from_course_label: string;

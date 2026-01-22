@@ -16,8 +16,17 @@ export const AssessmentForSetSchema = z.object({
 });
 export type AssessmentForSet = z.infer<typeof AssessmentForSetSchema>;
 
+// Database type
 export const InstructorCourseAdminSetRowSchema = RawStaffAssessmentSetSchema.extend({
   assessments: z.array(AssessmentForSetSchema),
 });
 
-export type InstructorCourseAdminSetRow = z.infer<typeof InstructorCourseAdminSetRowSchema>;
+// Internal form state
+export const InstructorCourseAdminSetFormRowSchema = InstructorCourseAdminSetRowSchema.omit({
+  id: true,
+}).extend({
+  trackingId: z.string(),
+  id: IdSchema.nullable(),
+});
+
+export type InstructorCourseAdminSetFormRow = z.infer<typeof InstructorCourseAdminSetFormRowSchema>;

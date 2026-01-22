@@ -8,18 +8,27 @@ import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { AssessmentSetSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, getOriginalHash, propertyValueWithDefault } from '../../lib/editors.js';
+import {
+  AssessmentSetRenameEditor,
+  FileModifyEditor,
+  MultiEditor,
+  getOriginalHash,
+  propertyValueWithDefault,
+} from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
-import { InstructorCourseAdminSetRowSchema } from './instructorCourseAdminSets.shared.js';
+import {
+  InstructorCourseAdminSetFormRowSchema,
+  InstructorCourseAdminSetRowSchema,
+} from './instructorCourseAdminSets.shared.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -37,6 +46,11 @@ router.get(
       { course_id: pageContext.course.id },
       InstructorCourseAdminSetRowSchema,
     );
+
+    const assessmentSetFormState = assessmentSets.map((set) => ({
+      ...set,
+      trackingId: crypto.randomUUID(),
+    }));
 
     const origHash = await getOriginalHash(path.join(pageContext.course.path, 'infoCourse.json'));
 
@@ -58,7 +72,7 @@ router.get(
         content: (
           <Hydrate>
             <AssessmentSetsPage
-              assessmentSets={assessmentSets}
+              assessmentSets={assessmentSetFormState}
               allowEdit={allowEdit}
               origHash={origHash}
               csrfToken={pageContext.__csrf_token}
@@ -100,20 +114,9 @@ router.post(
         .object({
           __action: z.literal('save_assessment_sets'),
           orig_hash: z.string(),
-          assessment_sets: z.string().transform((s) =>
-            z
-              .array(
-                AssessmentSetSchema.pick({
-                  name: true,
-                  color: true,
-                  heading: true,
-                  abbreviation: true,
-                  json_comment: true,
-                  implicit: true,
-                }),
-              )
-              .parse(JSON.parse(s)),
-          ),
+          assessment_sets: z
+            .string()
+            .transform((s) => z.array(InstructorCourseAdminSetFormRowSchema).parse(JSON.parse(s))),
         })
         .parse(req.body);
 
@@ -141,7 +144,32 @@ router.post(
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInfo));
 
-      const editor = new FileModifyEditor({
+      const currentSets = await sqldb.queryRows(
+        sql.select_assessment_sets,
+        { course_id: pageContext.course.id },
+        InstructorCourseAdminSetRowSchema,
+      );
+
+      // Build map of id -> old name (for non-implicit sets only)
+      const oldNameById = new Map<string, string>();
+      for (const set of currentSets) {
+        if (!set.implicit) {
+          oldNameById.set(set.id, set.name);
+        }
+      }
+
+      // Detect renames: sets where id exists in DB and name changed
+      const renames: { oldName: string; newName: string }[] = [];
+      for (const newSet of body.assessment_sets) {
+        if (newSet.implicit) continue;
+        if (newSet.id == null) continue;
+        const oldName = oldNameById.get(newSet.id);
+        if (oldName && oldName !== newSet.name) {
+          renames.push({ oldName, newName: newSet.name });
+        }
+      }
+
+      const fileModifyEditor = new FileModifyEditor({
         locals: res.locals,
         container: {
           rootPath: paths.rootPath,
@@ -151,6 +179,26 @@ router.post(
         editContents: b64EncodeUnicode(formattedJson),
         origHash,
       });
+
+      const editor = run(() => {
+        if (renames.length === 0) {
+          return fileModifyEditor;
+        }
+
+        return new MultiEditor({ locals: res.locals, description: 'Update assessment sets' }, [
+          ...renames.map(
+            (r) =>
+              new AssessmentSetRenameEditor({
+                locals: res.locals,
+                oldName: r.oldName,
+                newName: r.newName,
+                courseId: pageContext.course.id,
+              }),
+          ),
+          fileModifyEditor,
+        ]);
+      });
+
       const serverJob = await editor.prepareServerJob();
       try {
         await editor.executeWithServerJob(serverJob);
