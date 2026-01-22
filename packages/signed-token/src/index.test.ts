@@ -9,28 +9,26 @@ import {
 } from './index.js';
 
 const SECRET_KEY = 'test-secret-key';
+const TEST_DATA = { url: '/test', authn_user_id: '123' };
 
 describe('generateSignedToken', () => {
   it('generates a token that can be validated', () => {
-    const data = { url: '/test', authn_user_id: '123' };
-    const token = generateSignedToken(data, SECRET_KEY);
+    const token = generateSignedToken(TEST_DATA, SECRET_KEY);
 
     assert.isString(token);
-    assert.isTrue(checkSignedToken(token, data, SECRET_KEY));
+    assert.isTrue(checkSignedToken(token, TEST_DATA, SECRET_KEY));
   });
 
   it('fails validation with wrong data', () => {
-    const data = { url: '/test', authn_user_id: '123' };
-    const token = generateSignedToken(data, SECRET_KEY);
+    const token = generateSignedToken(TEST_DATA, SECRET_KEY);
 
     assert.isFalse(checkSignedToken(token, { url: '/other', authn_user_id: '123' }, SECRET_KEY));
   });
 
   it('fails validation with wrong secret key', () => {
-    const data = { url: '/test', authn_user_id: '123' };
-    const token = generateSignedToken(data, SECRET_KEY);
+    const token = generateSignedToken(TEST_DATA, SECRET_KEY);
 
-    assert.isFalse(checkSignedToken(token, data, 'wrong-secret'));
+    assert.isFalse(checkSignedToken(token, TEST_DATA, 'wrong-secret'));
   });
 });
 
@@ -42,18 +40,16 @@ describe('getCheckedSignedTokenData', () => {
   });
 
   it('returns token data for valid tokens', () => {
-    const data = { url: '/test', authn_user_id: '123' };
-    const token = generateSignedToken(data, SECRET_KEY);
+    const token = generateSignedToken(TEST_DATA, SECRET_KEY);
 
     const result = getCheckedSignedTokenData(token, SECRET_KEY);
-    assert.deepEqual(result, data);
+    assert.deepEqual(result, TEST_DATA);
   });
 });
 
 describe('generatePrefixCsrfToken', () => {
   it('generates a token with type prefix', () => {
-    const data = { url: '/api/trpc', authn_user_id: '123' };
-    const token = generatePrefixCsrfToken(data, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
     const tokenData = getCheckedSignedTokenData(token, SECRET_KEY);
     assert.equal(tokenData.type, 'prefix');
@@ -64,33 +60,25 @@ describe('generatePrefixCsrfToken', () => {
 
 describe('checkSignedTokenPrefix', () => {
   it('validates token when request URL matches prefix exactly', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
-    assert.isTrue(
-      checkSignedTokenPrefix(token, { url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY),
-    );
+    assert.isTrue(checkSignedTokenPrefix(token, TEST_DATA, SECRET_KEY));
   });
 
   it('validates token when request URL starts with prefix', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
+    assert.isTrue(checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/nested' }, SECRET_KEY));
     assert.isTrue(
-      checkSignedTokenPrefix(token, { url: '/api/trpc/getUser', authn_user_id: '123' }, SECRET_KEY),
-    );
-    assert.isTrue(
-      checkSignedTokenPrefix(
-        token,
-        { url: '/api/trpc/nested/method', authn_user_id: '123' },
-        SECRET_KEY,
-      ),
+      checkSignedTokenPrefix(token, { ...TEST_DATA, url: '/test/nested/method' }, SECRET_KEY),
     );
   });
 
   it('rejects token when request URL does not start with prefix', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
     assert.isFalse(
-      checkSignedTokenPrefix(token, { url: '/api/other', authn_user_id: '123' }, SECRET_KEY),
+      checkSignedTokenPrefix(token, { url: '/test2', authn_user_id: '123' }, SECRET_KEY),
     );
     assert.isFalse(
       checkSignedTokenPrefix(token, { url: '/different/path', authn_user_id: '123' }, SECRET_KEY),
@@ -98,10 +86,10 @@ describe('checkSignedTokenPrefix', () => {
   });
 
   it('rejects token when user ID does not match', () => {
-    const token = generatePrefixCsrfToken({ url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY);
+    const token = generatePrefixCsrfToken(TEST_DATA, SECRET_KEY);
 
     assert.isFalse(
-      checkSignedTokenPrefix(token, { url: '/api/trpc/method', authn_user_id: '456' }, SECRET_KEY),
+      checkSignedTokenPrefix(token, { ...TEST_DATA, authn_user_id: '456' }, SECRET_KEY),
     );
   });
 
@@ -150,12 +138,8 @@ describe('checkSignedTokenPrefix', () => {
   });
 
   it('rejects invalid token formats', () => {
-    assert.isFalse(
-      checkSignedTokenPrefix('invalid', { url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY),
-    );
-    assert.isFalse(
-      checkSignedTokenPrefix('', { url: '/api/trpc', authn_user_id: '123' }, SECRET_KEY),
-    );
+    assert.isFalse(checkSignedTokenPrefix('invalid', TEST_DATA, SECRET_KEY));
+    assert.isFalse(checkSignedTokenPrefix('', TEST_DATA, SECRET_KEY));
   });
 
   it('prevents prefix confusion attack (token for /api should not work for /api-admin)', () => {
