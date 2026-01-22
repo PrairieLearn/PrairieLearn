@@ -7,8 +7,8 @@ import {
   generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
-import sharp from 'sharp';
 import mustache from 'mustache';
+import sharp from 'sharp';
 import { z } from 'zod';
 
 import {
@@ -20,6 +20,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
@@ -37,10 +38,9 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
-import { assertNever } from '../../../lib/types.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
-import { type ClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
+import { type CounterClockwiseRotationDegrees, RotationCorrectionOutputSchema } from './types.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
@@ -507,7 +507,7 @@ export async function insertAiGradingJobWithRotationCorrection({
   rotationCorrections: Record<
     string,
     {
-      degreesRotatedClockwise: ClockwiseRotationDegrees;
+      degreesRotated: CounterClockwiseRotationDegrees;
       response: GenerateObjectResult<any>;
     }
   >;
@@ -531,14 +531,12 @@ export async function insertAiGradingJobWithRotationCorrection({
       usage: gradingResponseWithRotationCorrection.usage,
     });
 
-  const rotationCorrectionDegrees: Record<string, ClockwiseRotationDegrees> = {};
-  for (const [filename, { degreesRotatedClockwise, response }] of Object.entries(
-    rotationCorrections,
-  )) {
+  const rotationCorrectionDegrees: Record<string, CounterClockwiseRotationDegrees> = {};
+  for (const [filename, { degreesRotated, response }] of Object.entries(rotationCorrections)) {
     prompt_tokens += response.usage.inputTokens ?? 0;
     completion_tokens += response.usage.outputTokens ?? 0;
     cost += calculateResponseCost({ model: model_id, usage: response.usage });
-    rotationCorrectionDegrees[filename] = degreesRotatedClockwise;
+    rotationCorrectionDegrees[filename] = degreesRotated;
   }
 
   await execute(sql.insert_ai_grading_job, {
@@ -644,12 +642,19 @@ export async function setAiGradingMode(assessment_question_id: string, ai_gradin
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
 }
 
+/**
+ * Rotates a base64-encoded image by the specified counterclockwise rotation.
+ *
+ * @param base64Image - The base64-encoded image to rotate.
+ * @param rotation - The amount of counterclockwise rotation to apply (in degrees).
+ */
 async function rotateBase64Image(
   base64Image: string,
-  clockwiseRotation: ClockwiseRotationDegrees,
+  rotation: CounterClockwiseRotationDegrees,
 ): Promise<string> {
   const base64Data = base64Image.replace(/^data:image\/\w+;base64,/, '');
   const imageBuffer = Buffer.from(base64Data, 'base64');
+  const clockwiseRotation = (360 - rotation) % 360;
   const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
   return rotatedImageBuffer.toString('base64');
 }
@@ -658,7 +663,7 @@ async function rotateBase64Image(
  * Reorients a base64-encoded image to be upright using an LLM.
  * Designed specifically for images of handwritten student submissions.
  *
- * The function rotates the image 0, 90, 180, and 270 degrees, then
+ * The function rotates the image 0, 90, 180, and 270 degrees counterclockwise, then
  * prompts the LLM to select which of the four images is closest to being upright.
  *
  * @param params
@@ -673,7 +678,7 @@ async function correctImageOrientation({
   model: LanguageModel;
 }): Promise<{
   correctedImage: string;
-  degreesRotatedClockwise: ClockwiseRotationDegrees;
+  degreesRotated: CounterClockwiseRotationDegrees;
   response: GenerateObjectResult<any>;
 }> {
   const rotated90 = await rotateBase64Image(image, 90);
@@ -693,7 +698,7 @@ async function correctImageOrientation({
 
   const images = [image, rotated90, rotated180, rotated270];
 
-  const rotationCorrectionDegrees: ClockwiseRotationDegrees[] = [0, 90, 180, 270];
+  const rotationCorrectionDegrees: CounterClockwiseRotationDegrees[] = [0, 90, 180, 270];
 
   for (let i = 1; i <= 4; i++) {
     prompt.push({
@@ -726,7 +731,7 @@ async function correctImageOrientation({
 
   return {
     correctedImage: images[index],
-    degreesRotatedClockwise: rotationCorrectionDegrees[index],
+    degreesRotated: rotationCorrectionDegrees[index],
     response,
   };
 }
@@ -766,13 +771,13 @@ export async function correctImagesOrientation({
   const rotationCorrections: Record<
     string,
     {
-      degreesRotatedClockwise: ClockwiseRotationDegrees;
+      degreesRotated: CounterClockwiseRotationDegrees;
       response: GenerateObjectResult<any>;
     }
   > = {};
 
   for (const [filename, image] of Object.entries(submittedImages)) {
-    const { correctedImage, degreesRotatedClockwise, response } = await correctImageOrientation({
+    const { correctedImage, degreesRotated, response } = await correctImageOrientation({
       image,
       model,
     });
@@ -786,7 +791,7 @@ export async function correctImagesOrientation({
     }
 
     rotationCorrections[filename] = {
-      degreesRotatedClockwise,
+      degreesRotated,
       response,
     };
   }

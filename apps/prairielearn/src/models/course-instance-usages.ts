@@ -27,7 +27,7 @@ import type { GenerateObjectResult, LanguageModelUsage } from 'ai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import type { ClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
+import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
 import { calculateResponseCost } from '../lib/ai-util.js';
 import type { Config, config } from '../lib/config.js';
 
@@ -137,7 +137,7 @@ export async function updateCourseInstanceUsagesForAiGradingResponses({
   rotationCorrections?: Record<
     string,
     {
-      degreesRotatedClockwise: ClockwiseRotationDegrees;
+      degreesRotated: CounterClockwiseRotationDegrees;
       response: GenerateObjectResult<any>;
     }
   >;

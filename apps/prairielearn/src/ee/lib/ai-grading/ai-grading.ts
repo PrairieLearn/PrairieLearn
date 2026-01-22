@@ -35,8 +35,7 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
-import { assertNever } from '../../../lib/types.js';
-import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
+import { updateCourseInstanceUsagesForAiGradingResponses } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
 
@@ -57,7 +56,7 @@ import {
 import {
   type AIGradingLog,
   type AIGradingLogger,
-  type ClockwiseRotationDegrees,
+  type CounterClockwiseRotationDegrees,
   HandwritingOrientationsOutputSchema,
 } from './types.js';
 
@@ -268,7 +267,7 @@ export async function aiGrade({
           : null;
       }
 
-      const input = await generatePrompt({
+      let input = await generatePrompt({
         questionPrompt,
         questionAnswer,
         submission_text,
@@ -416,6 +415,8 @@ export async function aiGrade({
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,
             grader_guidelines: rubric?.grader_guidelines ?? null,
+            params: variant.params ?? {},
+            true_answer: variant.true_answer ?? {},
             model_id,
           });
 
@@ -447,7 +448,7 @@ export async function aiGrade({
               rotationCorrections: Record<
                 string,
                 {
-                  degreesRotatedClockwise: ClockwiseRotationDegrees;
+                  degreesRotated: CounterClockwiseRotationDegrees;
                   response: GenerateObjectResult<any>;
                 }
               >;
@@ -671,6 +672,8 @@ export async function aiGrade({
             submitted_answer: rotatedSubmittedAnswer,
             rubric_items,
             grader_guidelines: rubric?.grader_guidelines ?? null,
+            params: variant.params ?? {},
+            true_answer: variant.true_answer ?? {},
             model_id,
           });
 
@@ -701,7 +704,7 @@ export async function aiGrade({
               rotationCorrections: Record<
                 string,
                 {
-                  degreesRotatedClockwise: ClockwiseRotationDegrees;
+                  degreesRotated: CounterClockwiseRotationDegrees;
                   response: GenerateObjectResult<any>;
                 }
               >;
