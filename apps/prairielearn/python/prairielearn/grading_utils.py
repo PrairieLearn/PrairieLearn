@@ -15,6 +15,7 @@ from numpy.typing import ArrayLike
 from typing_extensions import assert_never
 
 from prairielearn.question_utils import QuestionData
+from prairielearn.timeout_utils import ThreadingTimeout, TimeoutState
 
 
 # This is a deprecated alias that will be removed in the future -- use the lowercase version instead.
@@ -170,6 +171,8 @@ def grade_answer_parameterized(
     name: str,
     grade_function: Callable[[Any], tuple[bool | float, str | None]],
     weight: int = 1,
+    timeout: float | None = None,
+    timeout_format_error: str | None = None,
 ) -> None:
     """
     Grade the answer for the input `name` using the provided `grade_function`.
@@ -199,10 +202,29 @@ def grade_answer_parameterized(
         ...     "submitted_answers": {"my_string_input": "bar"},
         ...     "partial_scores": {},
         ...     "answers_names": {},
+        ...     "format_errors": {},
         ... }
         >>> grade_answer_parameterized(data, "my_string_input", grading_function, weight=2)
         >>> data["partial_scores"]
         {"my_string_input": {"score": 0.5, "weight": 2, "feedback": "Almost there!"}}
+
+        >>> # Example with timeout
+        >>> def slow_grading_function(submitted_answer):
+        ...     import time
+        ...     time.sleep(10)  # This will timeout
+        ...     return True, None
+        >>> data = {
+        ...     "submitted_answers": {"my_input": "test"},
+        ...     "partial_scores": {},
+        ...     "answers_names": {},
+        ...     "format_errors": {},
+        ... }
+        >>> grade_answer_parameterized(
+        ...     data, "my_input", slow_grading_function, timeout=1.0,
+        ...     timeout_format_error="Your answer took too long to grade."
+        ... )
+        >>> data["format_errors"]["my_input"]
+        "Your answer took too long to grade."
     """
     # Create the data dictionary at first
     data["partial_scores"][name] = {"score": 0.0, "weight": weight}
@@ -214,8 +236,28 @@ def grade_answer_parameterized(
 
     submitted_answer = data["submitted_answers"][name]
 
-    # Run passed-in grading function
-    result, feedback_content = grade_function(submitted_answer)
+    # Execute the grading function, with optional timeout
+    timed_out = False
+    result: bool | float = False
+    feedback_content: str | None = None
+
+    if timeout is not None:
+        with ThreadingTimeout(timeout) as ctx:
+            result, feedback_content = grade_function(submitted_answer)
+        timed_out = ctx.state == TimeoutState.TIMED_OUT
+    else:
+        result, feedback_content = grade_function(submitted_answer)
+
+    # Check if timeout occurred
+    if timed_out:
+        # Set format error instead of grading
+        error_message = (
+            timeout_format_error
+            if timeout_format_error is not None
+            else "Grading timed out - your answer may be too complex."
+        )
+        data["format_errors"][name] = error_message
+        return
 
     # Try converting partial score
     if isinstance(result, bool):

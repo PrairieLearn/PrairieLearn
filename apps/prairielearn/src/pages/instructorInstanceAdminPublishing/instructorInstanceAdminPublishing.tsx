@@ -9,7 +9,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';

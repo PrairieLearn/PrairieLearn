@@ -1,37 +1,42 @@
 import type { Column } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useMemo, useState } from 'preact/compat';
+import { type JSX, useMemo, useState } from 'react';
 import Dropdown from 'react-bootstrap/Dropdown';
 
-function computeSelected<T extends readonly any[]>(
-  allStatusValues: T,
+function computeSelected<TValue extends string>(
+  allStatusValues: TValue[] | readonly TValue[],
   mode: 'include' | 'exclude',
-  selected: Set<T[number]>,
-) {
+  selected: Set<TValue>,
+): Set<TValue> {
   if (mode === 'include') {
     return selected;
   }
   return new Set(allStatusValues.filter((s) => !selected.has(s)));
 }
 
-function defaultRenderValueLabel<T>({ value }: { value: T }) {
-  return <span className="text-nowrap">{String(value)}</span>;
+function defaultRenderValueLabel({ value }: { value: string }) {
+  return <span className="text-nowrap">{value}</span>;
 }
+
 /**
  * A component that allows the user to filter a categorical column.
  * The filter mode always defaults to "include".
  *
+ * The filter options (`allColumnValues`) are strings (or string subtypes like
+ * enums). The column's `filterFn` is responsible for mapping these string
+ * values to the actual column data (e.g., mapping "Unassigned" to `null`).
+ *
  * @param params
  * @param params.column - The TanStack Table column object
- * @param params.allColumnValues - The values to filter by
+ * @param params.allColumnValues - The string values to display as filter options
  * @param params.renderValueLabel - A function that renders the label for a value
  */
-export function CategoricalColumnFilter<TData, TValue>({
+export function CategoricalColumnFilter<TData, TValue extends string = string>({
   column,
   allColumnValues,
   renderValueLabel = defaultRenderValueLabel,
 }: {
-  column: Column<TData, TValue>;
+  column: Column<TData, unknown>;
   allColumnValues: TValue[] | readonly TValue[];
   renderValueLabel?: (props: { value: TValue; isSelected: boolean }) => JSX.Element;
 }) {
@@ -94,7 +99,7 @@ export function CategoricalColumnFilter<TData, TValue>({
                 // Use `visibility` instead of conditional rendering to avoid layout shift.
                 invisible: selected.size === 0 && mode === 'include',
               })}
-              onClick={() => apply('include', new Set())}
+              onClick={() => apply('include', new Set<TValue>())}
             >
               Clear
             </button>
@@ -106,11 +111,11 @@ export function CategoricalColumnFilter<TData, TValue>({
               className="btn-check"
               name={`filter-${columnId}-options`}
               id={`filter-${columnId}-include`}
-              autocomplete="off"
+              autoComplete="off"
               checked={mode === 'include'}
               onChange={() => apply('include', selected)}
             />
-            <label className="btn btn-outline-primary" for={`filter-${columnId}-include`}>
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-include`}>
               <span className="text-nowrap">
                 {mode === 'include' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
                 Include
@@ -122,11 +127,11 @@ export function CategoricalColumnFilter<TData, TValue>({
               className="btn-check"
               name={`filter-${columnId}-options`}
               id={`filter-${columnId}-exclude`}
-              autocomplete="off"
+              autoComplete="off"
               checked={mode === 'exclude'}
               onChange={() => apply('exclude', selected)}
             />
-            <label className="btn btn-outline-primary" for={`filter-${columnId}-exclude`}>
+            <label className="btn btn-outline-primary" htmlFor={`filter-${columnId}-exclude`}>
               <span className="text-nowrap">
                 {mode === 'exclude' && <i className="bi bi-check-lg me-1" aria-hidden="true" />}
                 Exclude
@@ -137,11 +142,13 @@ export function CategoricalColumnFilter<TData, TValue>({
 
         <div
           className="list-group list-group-flush"
-          style={{
-            // This is needed to prevent the last item's background from covering
-            // the dropdown's border radius.
-            '--bs-list-group-bg': 'transparent',
-          }}
+          style={
+            {
+              // This is needed to prevent the last item's background from covering
+              // the dropdown's border radius.
+              '--bs-list-group-bg': 'transparent',
+            } as React.CSSProperties
+          }
         >
           {allColumnValues.map((value) => {
             const isSelected = selected.has(value);
@@ -155,7 +162,7 @@ export function CategoricalColumnFilter<TData, TValue>({
                     id={`${columnId}-${value}`}
                     onChange={() => toggleSelected(value)}
                   />
-                  <label className="form-check-label fw-normal" for={`${columnId}-${value}`}>
+                  <label className="form-check-label fw-normal" htmlFor={`${columnId}-${value}`}>
                     {renderValueLabel({
                       value,
                       isSelected,

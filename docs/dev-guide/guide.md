@@ -662,6 +662,8 @@ To lint the code, use `make lint`. This is also run by the CI tests.
 
 To automatically fix lint and formatting errors, run `make format`.
 
+To format all changed files (staged + unstaged + untracked) compared to HEAD, run `make format-changed`. This is faster than formatting the entire codebase.
+
 ## Question-rendering control flow
 
 - The core files involved in question rendering are [lib/question-render.ts](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.ts), [lib/question-render.sql](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/lib/question-render.sql), and [components/QuestionContainer.tsx](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/src/components/QuestionContainer.tsx).

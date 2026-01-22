@@ -1,16 +1,19 @@
 {
   "name": "@prairielearn/migrations",
-  "version": "4.0.4",
+  "version": "5.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/migrations"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "./dist/index.js",
   "scripts": {
-    "build": "tsc && tscp",
-    "dev": "tsc --watch --preserveWatchOutput & tscp --watch",
+    "build": "tsgo && tscp",
+    "dev": "tsgo --watch --preserveWatchOutput & tscp --watch",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -25,7 +28,8 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
-    "@types/node": "^22.19.5",
+    "@types/node": "^24.10.9",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.21.0",

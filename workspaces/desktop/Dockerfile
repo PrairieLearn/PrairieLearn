@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-ARG CACHEBUST=2025-12-15-14-21-51
+ARG CACHEBUST=2026-01-15-14-21-34
 
 ENV DEBIAN_FRONTEND=noninteractive
 COPY pre-install.sh /pre-install.sh

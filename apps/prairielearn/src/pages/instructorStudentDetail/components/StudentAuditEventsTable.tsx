@@ -23,6 +23,8 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     unblocked: 'Unblocked from course, now enrolled',
     // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
     invitation_deleted: 'Invitation cancelled',
+    left: 'Student left course',
+    // TODO: Change to 'Student removed from course' after batched migration of existing enrollments
     removed: 'Student left course',
   };
 

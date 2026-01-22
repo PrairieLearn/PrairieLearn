@@ -67,7 +67,7 @@ def solve_dag(
 
 def solve_multigraph(
     depends_multi_graph: Multigraph,
-    final_tags: list[str],
+    final_blocks: list[str],
 ) -> list[list[str]]:
     """Solve the given problem
 
@@ -80,7 +80,7 @@ def solve_multigraph(
     """
     graphs = [
         dag_to_nx(graph, {})
-        for graph in collapse_multigraph(depends_multi_graph, final_tags)
+        for graph in collapse_multigraph(depends_multi_graph, final_blocks)
     ]
     sort = [list(nx.topological_sort(graph)) for graph in graphs]
     return sort
@@ -218,10 +218,10 @@ def grade_dag(
 def grade_multigraph(
     submission: list[str],
     multigraph: Multigraph,
-    final_tags: list[str],
+    final_blocks: list[str],
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
-    collapsed_dags = list(collapse_multigraph(multigraph, final_tags))
+    collapsed_dags = list(collapse_multigraph(multigraph, final_blocks))
     graphs = [dag_to_nx(graph, {}) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
@@ -382,7 +382,7 @@ def dfs_until(
 
 def collapse_multigraph(
     multigraph: Multigraph,
-    final_tags: list[str],
+    final_blocks: list[str],
 ) -> Generator[Dag]:
     """
     This algorithm takes a directed multigraph structure where multiple edges
@@ -413,7 +413,7 @@ def collapse_multigraph(
     Work is being redone, however, most graphs will have very few nodes and the
     tradeoff for the extra code complexity does not seem worth it at this time.
     """
-    for final in final_tags:
+    for final in final_blocks:
         collapsing_graphs: list[Multigraph] = [multigraph]
         while collapsing_graphs:
             graph = collapsing_graphs.pop(0)

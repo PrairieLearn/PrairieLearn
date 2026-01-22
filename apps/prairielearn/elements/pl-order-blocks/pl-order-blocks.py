@@ -93,12 +93,12 @@ def extract_multigraph(
     answers_list: list[OrderBlocksAnswerData],
 ) -> tuple[Multigraph, list[str]]:
     depends_graph = {}
-    final_tags = []
+    final_blocks = []
     for ans in answers_list:
         depends_graph.update({ans["tag"]: ans["depends"]})
         if ans["final"]:
-            final_tags.append(ans["tag"])
-    return depends_graph, final_tags
+            final_blocks.append(ans["tag"])
+    return depends_graph, final_blocks
 
 
 def solve_problem(
@@ -120,8 +120,8 @@ def solve_problem(
             solution = solve_dag(depends_graph, group_belonging)
             return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
         if has_optional_blocks:
-            depends_graph, final_tags = extract_multigraph(answers_list)
-            solution = solve_multigraph(depends_graph, final_tags)[0]
+            depends_graph, final_blocks = extract_multigraph(answers_list)
+            solution = solve_multigraph(depends_graph, final_blocks)[0]
             answers_list = list(filter(lambda x: x["tag"] in solution, answers_list))
             return sorted(answers_list, key=lambda x: solution.index(x["tag"]))
     else:
@@ -622,9 +622,9 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             )
         elif grading_method is GradingMethodType.DAG:
             if order_blocks_options.has_optional_blocks:
-                depends_multigraph, final_tags = extract_multigraph(true_answer_list)
+                depends_multigraph, final_blocks = extract_multigraph(true_answer_list)
                 num_initial_correct, true_answer_length, depends_graph = (
-                    grade_multigraph(submission, depends_multigraph, final_tags)
+                    grade_multigraph(submission, depends_multigraph, final_blocks)
                 )
             else:
                 depends_graph, group_belonging = extract_dag(true_answer_list)

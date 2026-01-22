@@ -4,6 +4,7 @@ import * as async from 'async';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import { assertNever } from '@prairielearn/utils';
 
 import { type OpenAIModelId, formatPrompt, logResponseUsage } from '../../../lib/ai.js';
 import { config } from '../../../lib/config.js';
@@ -15,7 +16,6 @@ import type {
 } from '../../../lib/db-types.js';
 import { buildQuestionUrls } from '../../../lib/question-render.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
-import { assertNever } from '../../../lib/types.js';
 import * as questionServers from '../../../question-servers/index.js';
 import {
   generateSubmissionMessage,
