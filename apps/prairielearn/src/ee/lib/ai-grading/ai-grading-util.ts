@@ -657,7 +657,7 @@ async function rotateBase64Image(
 
   // The sharp rotate method uses clockwise rotation, so we convert.
   const clockwiseRotation = (360 - rotation) % 360;
-  
+
   const rotatedImageBuffer = await sharp(imageBuffer).rotate(clockwiseRotation).toBuffer();
   return rotatedImageBuffer.toString('base64');
 }
