@@ -148,19 +148,6 @@ router.post(
         res.redirect(req.originalUrl);
         break;
       }
-      case 'unblock_student': {
-        if (enrollment.status !== 'blocked') {
-          throw new HttpStatusError(400, 'Enrollment is not blocked');
-        }
-        await setEnrollmentStatus({
-          enrollment,
-          status: 'joined',
-          authzData,
-          requiredRole: ['Student Data Editor'],
-        });
-        res.redirect(req.originalUrl);
-        break;
-      }
       case 'cancel_invitation': {
         if (!['invited', 'rejected'].includes(enrollment.status)) {
           throw new HttpStatusError(400, 'Enrollment is not invited or rejected');
@@ -174,9 +161,13 @@ router.post(
         res.redirect(`/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`);
         break;
       }
-      case 'reenroll_student': {
-        if (enrollment.status !== 'removed') {
-          throw new HttpStatusError(400, 'Enrollment is not removed');
+      // TODO: `unblock_students` is retained for backward compatibility with client.
+      // We can safely remove this in a future release once this has been in
+      // production for a while.
+      case 'reenroll_student':
+      case 'unblock_student': {
+        if (enrollment.status !== 'removed' && enrollment.status !== 'blocked') {
+          throw new HttpStatusError(400, 'Enrollment is not removed or blocked');
         }
         await setEnrollmentStatus({
           enrollment,

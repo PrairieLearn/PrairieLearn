@@ -77,19 +77,6 @@ export function OverviewCard({
                   </button>
                 </form>
               )}
-              {enrollment.status === 'blocked' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="unblock_student" />
-                  <button
-                    type="submit"
-                    className="btn btn-sm btn-outline-success d-flex flex-row align-items-center gap-1"
-                  >
-                    <i className="fas fa-user-check" aria-hidden="true" />
-                    <span>Remove block</span>
-                  </button>
-                </form>
-              )}
               {(enrollment.status === 'invited' || enrollment.status === 'rejected') && (
                 <button
                   type="button"
@@ -127,7 +114,7 @@ export function OverviewCard({
                   </button>
                 </form>
               )}
-              {enrollment.status === 'removed' && (
+              {(enrollment.status === 'removed' || enrollment.status === 'blocked') && (
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="reenroll_student" />
