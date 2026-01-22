@@ -58,6 +58,9 @@ export type SupportedTableActionCombination =
       tableName: 'enrollments';
       actionDetail?:
         | 'implicit_joined'
+        // NOTE: while we no longer write `explicit_joined` events, they exist
+        // in production, so we must keep supporting them here. We could consider
+        // migrating them to another type in the future.
         | 'explicit_joined'
         | 'invited'
         | 'invitation_accepted'
@@ -67,6 +70,7 @@ export type SupportedTableActionCombination =
         | 'invitation_deleted'
         | 'left'
         | 'removed'
+        | 'reenrolled_by_instructor'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<

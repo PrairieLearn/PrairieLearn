@@ -76,7 +76,9 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="impact"
                     checked={checks.impact}
-                    onChange={(e) => setChecks((c) => ({ ...c, impact: e.currentTarget.checked }))}
+                    onChange={({ currentTarget }) => {
+                      setChecks((c) => ({ ...c, impact: currentTarget.checked }));
+                    }}
                   />
                   <label className="form-check-label" htmlFor="impact">
                     I understand that <strong>{enrolledCount}</strong> enrolled{' '}
@@ -90,9 +92,9 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="irreversible"
                     checked={checks.irreversible}
-                    onChange={(e) =>
-                      setChecks((c) => ({ ...c, irreversible: e.currentTarget.checked }))
-                    }
+                    onChange={({ currentTarget }) => {
+                      setChecks((c) => ({ ...c, irreversible: currentTarget.checked }));
+                    }}
                   />
                   <label className="form-check-label" htmlFor="irreversible">
                     I understand that once deleted, this course instance cannot be restored through
@@ -105,8 +107,8 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="recovery"
                     checked={checks.recovery}
-                    onChange={(e) =>
-                      setChecks((c) => ({ ...c, recovery: e.currentTarget.checked }))
+                    onChange={({ currentTarget }) =>
+                      setChecks((c) => ({ ...c, recovery: currentTarget.checked }))
                     }
                   />
                   <label className="form-check-label" htmlFor="recovery">
