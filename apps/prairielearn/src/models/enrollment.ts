@@ -609,7 +609,7 @@ export async function setEnrollmentStatus({
             // we'll need to differentiate those action details here.
             actionDetail:
               lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
-            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+            permittedRoles: ['Student Data Editor'],
           };
         case 'left':
           return {
@@ -624,7 +624,7 @@ export async function setEnrollmentStatus({
           return {
             previousStatus: 'joined',
             actionDetail: 'removed',
-            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+            permittedRoles: ['Student Data Editor'],
           };
         case 'rejected':
           return {
@@ -636,7 +636,7 @@ export async function setEnrollmentStatus({
           return {
             previousStatus: 'joined',
             actionDetail: 'blocked',
-            permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
+            permittedRoles: ['Student Data Editor'],
           };
         default:
           assertNever(status);
