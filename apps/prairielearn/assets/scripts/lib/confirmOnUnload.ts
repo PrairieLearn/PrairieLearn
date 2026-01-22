@@ -24,14 +24,16 @@ export function saveQuestionFormData(form: HTMLFormElement | null) {
 function updateQuestionFormData(form: HTMLFormElement, input: HTMLInputElement) {
   // If the original form data is not set, the initial update has not occurred yet, so rely on that to retrieve the value.
   if (form.dataset.originalFormData === undefined) return;
-  // If this input is marked to be skipped, do not update the form data.
-  const skippedFields = skippedFieldsFromForm(form);
-  if (skippedFields.has(input.name)) return;
 
+  const skippedFields = skippedFieldsFromForm(form);
   const updatedFormData = new URLSearchParams(form.dataset.originalFormData);
+
   // Update only the relevant input value. Assumes that the input's name is unique in the form.
-  updatedFormData.delete(input.name);
-  updatedFormData.append(input.name, input.value);
+  // If this input is marked to be skipped, do not update the form data.
+  if (!skippedFields.has(input.name)) {
+    updatedFormData.delete(input.name);
+    updatedFormData.append(input.name, input.value);
+  }
 
   // The deferred initialization may have added new fields to the form, so
   // ensure those are included as well to ensure no problems on unload. Add any
