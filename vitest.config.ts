@@ -1,9 +1,10 @@
 import crypto from 'node:crypto';
 import { existsSync, readFileSync } from 'node:fs';
+import { fileURLToPath } from 'node:url';
 
 import { slash } from '@vitest/utils/helpers';
 import ignore from 'ignore';
-import { relative, resolve } from 'pathe';
+import { dirname, relative, resolve } from 'pathe';
 import { defineConfig, mergeConfig } from 'vitest/config';
 import { BaseSequencer, type TestSpecification } from 'vitest/node';
 
@@ -20,12 +21,15 @@ const SLOW_TESTS_SHARDS: Record<number, string[]> = {
 
 const SLOW_TESTS = Object.values(SLOW_TESTS_SHARDS).flat();
 
+// Save repository root, for running in any directory
+const repoRoot = dirname(fileURLToPath(import.meta.url));
+
 // Loads and parses the gitignore file using the ignore package,
 // which already handles directories, nested paths and edge cases
 // using the same rules Git uses.
 const gitignore = ignore();
 if (existsSync('.gitignore')) {
-  gitignore.add(readFileSync('.gitignore', 'utf8'));
+  gitignore.add(readFileSync(resolve(repoRoot, '.gitignore'), 'utf8'));
 }
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
@@ -142,7 +146,7 @@ export const sharedConfig = defineConfig({
       ignored: (filePath: string) => {
         // Absolute paths need to be converted to relative paths,
         // because .gitignore rules are evaluated relative to the root.
-        const relativePath = relative(process.cwd(), filePath);
+        const relativePath = relative(repoRoot, filePath);
 
         // Directories are also watched by Chokidar, and when the watched dir
         // is root, relative() will return an empty string, causing an error
