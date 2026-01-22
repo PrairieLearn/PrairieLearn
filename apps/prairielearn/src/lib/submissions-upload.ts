@@ -7,6 +7,7 @@ import { formatErrorStack } from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { truncate } from '@prairielearn/sanitize';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
@@ -21,13 +22,12 @@ import { createCsvParser } from './csv.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
-  type Group,
-  IdSchema,
   RubricItemSchema,
+  type Team,
 } from './db-types.js';
-import { createOrAddToGroup, deleteAllGroups } from './groups.js';
 import { type InstanceQuestionScoreInput, updateInstanceQuestionScore } from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
+import { createOrAddToTeam, deleteAllTeams } from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -63,7 +63,7 @@ const IndividualSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
   UID: z.string(),
 });
 
-const GroupSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
+const TeamSubmissionCsvRowSchema = BaseSubmissionCsvRowSchema.extend({
   'Group name': z.string(),
   Usernames: z.preprocess((val) => {
     if (val === '' || val == null) return [];
@@ -103,19 +103,19 @@ export async function uploadSubmissions(
   const { assessment_label, course_id } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
+    type: 'upload_submissions',
+    description: 'Upload submissions CSV for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance.id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_submissions',
-    description: 'Upload submissions CSV for ' + assessment_label,
   });
 
   const ensureAndEnrollUser = memoize(async (uid: string) => {
     const user = await selectOrInsertUserByUid(uid);
     await ensureUncheckedEnrollment({
-      userId: user.user_id,
+      userId: user.id,
       courseInstance: course_instance,
       actionDetail: 'implicit_joined',
       authzData: dangerousFullSystemAuthz(),
@@ -140,14 +140,14 @@ export async function uploadSubmissions(
     await deleteAllAssessmentInstancesForAssessment(assessment.id, authn_user_id);
 
     job.info('Deleting all existing groups');
-    await deleteAllGroups(assessment.id, authn_user_id);
+    await deleteAllTeams(assessment.id, authn_user_id);
 
     job.info('Uploading submissions CSV for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
 
-    const getOrInsertGroup = makeDedupedInserter<Group>();
+    const getOrInsertTeam = makeDedupedInserter<Team>();
     const getOrInsertAssessmentInstance = makeDedupedInserter<string>();
     const getOrInsertInstanceQuestion = makeDedupedInserter<string>();
     const getOrInsertVariant = makeDedupedInserter<string>();
@@ -173,28 +173,28 @@ export async function uploadSubmissions(
       maxRecordSize: 1 << 21, // 2MB (should be plenty for a single line)
     });
 
-    // Detect if this is a group work CSV by checking the first row
-    let isGroupWork: boolean | null = null;
+    // Detect if this is a team work CSV by checking the first row
+    let isTeamWork: boolean | null = null;
 
     for await (const { info, record } of csvParser) {
       job.verbose(`Processing CSV line ${info.lines}`);
 
       try {
         // Auto-detect CSV type on first data row
-        if (isGroupWork === null) {
-          isGroupWork = 'Group name' in record && !('UID' in record);
+        if (isTeamWork === null) {
+          isTeamWork = 'Group name' in record && !('UID' in record);
 
-          if (isGroupWork && !assessment.group_work) {
+          if (isTeamWork && !assessment.team_work) {
             throw new Error(
               'Group work CSV detected, but assessment does not have group work enabled',
             );
-          } else if (!isGroupWork && assessment.group_work) {
+          } else if (!isTeamWork && assessment.team_work) {
             throw new Error('Individual work CSV detected, but assessment has group work enabled');
           }
         }
 
-        const row = isGroupWork
-          ? GroupSubmissionCsvRowSchema.parse(record)
+        const row = isTeamWork
+          ? TeamSubmissionCsvRowSchema.parse(record)
           : IndividualSubmissionCsvRowSchema.parse(record);
 
         if ('Usernames' in row && row.Usernames.length === 0) {
@@ -208,17 +208,17 @@ export async function uploadSubmissions(
         const entity = await run(async () => {
           if ('UID' in row) {
             const user = await ensureAndEnrollUser(row.UID);
-            return { type: 'user' as const, user_id: user.user_id };
+            return { type: 'user' as const, user_id: user.id };
           } else {
-            // Create users for all group members concurrently
+            // Create users for all team members concurrently
             const users = await Promise.all(row.Usernames.map((uid) => ensureAndEnrollUser(uid)));
 
-            const group = await getOrInsertGroup([row['Group name']], async () => {
-              // Use createOrAddToGroup which handles both creating new groups and adding to existing ones
-              return await createOrAddToGroup({
+            const team = await getOrInsertTeam([row['Group name']], async () => {
+              // Use createOrAddToTeam which handles both creating new teams and adding to existing ones
+              return await createOrAddToTeam({
                 course_instance,
                 assessment,
-                group_name: row['Group name'],
+                team_name: row['Group name'],
                 uids: row.Usernames,
                 authn_user_id,
                 // This function only runs in dev mode, so we can safely ignore permission checks.
@@ -226,12 +226,12 @@ export async function uploadSubmissions(
               });
             });
 
-            return { type: 'group' as const, group_id: group.id, users };
+            return { type: 'team' as const, team_id: team.id, users };
           }
         });
 
-        // Insert assessment instance (for user or group)
-        const entityKey = entity.type === 'user' ? entity.user_id : entity.group_id;
+        // Insert assessment instance (for user or team)
+        const entityKey = entity.type === 'user' ? entity.user_id : entity.team_id;
         const assessment_instance_id = await getOrInsertAssessmentInstance(
           [entityKey, row['Assessment instance'].toString()],
           async () =>
@@ -240,7 +240,7 @@ export async function uploadSubmissions(
               {
                 assessment_id: assessment.id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                team_id: entity.type === 'team' ? entity.team_id : null,
                 instance_number: row['Assessment instance'],
               },
               IdSchema,
@@ -271,11 +271,11 @@ export async function uploadSubmissions(
                 course_instance_id: course_instance.id,
                 instance_question_id,
                 question_id: question.id,
-                // For group work, arbitrarily use the first user's ID as the authn_user_id.
+                // For team work, arbitrarily use the first user's ID as the authn_user_id.
                 // This value doesn't really matter, especially in dev mode.
-                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].user_id,
+                authn_user_id: entity.type === 'user' ? entity.user_id : entity.users[0].id,
                 user_id: entity.type === 'user' ? entity.user_id : null,
-                group_id: entity.type === 'group' ? entity.group_id : null,
+                team_id: entity.type === 'team' ? entity.team_id : null,
                 seed: row.Seed,
                 // Despite the fact that these values could change over the course of multiple
                 // submissions, we'll just use the first set of values we encounter. This

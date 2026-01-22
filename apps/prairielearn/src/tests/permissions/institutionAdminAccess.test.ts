@@ -59,7 +59,7 @@ async function insertUser(user: AuthUser) {
 
   if (user.isAdministrator) {
     await execute('INSERT INTO administrators (user_id) VALUES ($user_id);', {
-      user_id: newUser.user_id,
+      user_id: newUser.id,
     });
   }
 }
@@ -135,7 +135,7 @@ describe('institution administrators', () => {
     assert(user);
     await ensureInstitutionAdministrator({
       institution_id: '1',
-      user_id: user.user_id,
+      user_id: user.id,
       authn_user_id: '1',
     });
   });

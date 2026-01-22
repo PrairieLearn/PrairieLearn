@@ -31,6 +31,14 @@ export function getStudentEnrollmentUrl(courseInstanceId: string, enrollmentId: 
   return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/enrollment/${enrollmentId}`;
 }
 
+export function getCourseInstanceStudentsUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/students`;
+}
+
+export function getCourseInstancePublishingUrl(courseInstanceId: string): string {
+  return `/pl/course_instance/${courseInstanceId}/instructor/instance_admin/publishing`;
+}
+
 export function getSelfEnrollmentLinkUrl({
   courseInstanceId,
   enrollmentCode,

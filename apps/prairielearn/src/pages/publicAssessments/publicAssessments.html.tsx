@@ -1,7 +1,7 @@
-import { Fragment } from 'preact';
+import { Fragment } from 'react';
 import z from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { AssessmentModuleHeading } from '../../components/AssessmentModuleHeading.js';
 import { AssessmentSetHeading } from '../../components/AssessmentSetHeading.js';
@@ -40,42 +40,45 @@ export function PublicAssessments({
   course,
   courseInstanceCopyTargets,
   questionsForCopy,
+  isAdministrator,
 }: {
   rows: SafeAssessmentRow[];
   courseInstance: PublicCourseInstance;
   course: PublicCourse;
   courseInstanceCopyTargets: SafeCopyTarget[] | null;
   questionsForCopy: SafeQuestionForCopy[];
+  isAdministrator: boolean;
 }) {
   return (
-    <div class="card mb-4">
-      <div class="card-header bg-primary text-white d-flex align-items-center">
+    <div className="card mb-4">
+      <div className="card-header bg-primary text-white d-flex align-items-center">
         <h1>Assessments</h1>
-        <div class="ms-auto d-flex flex-row gap-1">
-          <div class="btn-group">
+        <div className="ms-auto d-flex flex-row gap-1">
+          <div className="btn-group">
             <Hydrate>
               <CopyCourseInstanceModal
                 course={course}
                 courseInstance={courseInstance}
                 courseInstanceCopyTargets={courseInstanceCopyTargets}
                 questionsForCopy={questionsForCopy}
+                isAdministrator={isAdministrator}
               />
             </Hydrate>
           </div>
         </div>
       </div>
 
-      <div class="table-responsive">
-        <table class="table table-sm table-hover">
+      <div className="table-responsive">
+        <table className="table table-sm table-hover">
           <thead>
             <tr>
-              <th style="width: 1%">
-                <span class="visually-hidden">Label</span>
+              <th style={{ width: '1%' }}>
+                <span className="visually-hidden">Label</span>
               </th>
               <th>
-                <span class="visually-hidden">Title</span>
+                <span className="visually-hidden">Title</span>
               </th>
-              <th>AID</th>
+              <th>Short name</th>
             </tr>
           </thead>
           <tbody>
@@ -93,17 +96,17 @@ export function PublicAssessments({
                   </tr>
                 )}
                 <tr id={`row-${row.id}`}>
-                  <td class="align-middle" style="width: 1%">
-                    <span class={`badge color-${row.assessment_set.color}`}>{row.label}</span>
+                  <td className="align-middle" style={{ width: '1%' }}>
+                    <span className={`badge color-${row.assessment_set.color}`}>{row.label}</span>
                   </td>
-                  <td class="align-middle">
+                  <td className="align-middle">
                     <a
                       href={`/pl/public/course_instance/${courseInstance.id}/assessment/${row.id}/questions`}
                     >
                       {row.title}
                     </a>
                   </td>
-                  <td class="align-middle">{row.tid}</td>
+                  <td className="align-middle">{row.tid}</td>
                 </tr>
               </Fragment>
             ))}

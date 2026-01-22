@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
@@ -457,18 +458,6 @@ export const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
   /**
-   * In some markets, such as China, the title of all pages needs to be a
-   * specific string in order to comply with local regulations. If this option
-   * is set, it will be used verbatim as the `<title>` of all pages.
-   */
-  titleOverride: z.string().nullable().default(null),
-  /**
-   * Similarly, China also requires us to include a registration number and link
-   * to a specific page on the homepage footer.
-   */
-  homepageFooterText: z.string().nullable().default(null),
-  homepageFooterTextHref: z.string().nullable().default(null),
-  /**
    * HTML that will be displayed in a banner at the top of every page. Useful for
    * announcing maintenance windows, etc.
    */
@@ -590,11 +579,6 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
-  /**
-   * A list of Python venvs in which to search for Python executables.
-   * Will be resolved relative to the repository root.
-   */
-  pythonVenvSearchPaths: z.string().array().default(['.venv']),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
@@ -602,6 +586,7 @@ export const ConfigSchema = z.object({
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
+      'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
@@ -618,6 +603,7 @@ export const ConfigSchema = z.object({
       // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
+      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, output: 3 },
       'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
@@ -641,6 +627,9 @@ export const config = loader.config;
  */
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
+    makeEnvConfigSource<typeof ConfigSchema>({
+      serverPort: 'CONDUCTOR_PORT',
+    }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

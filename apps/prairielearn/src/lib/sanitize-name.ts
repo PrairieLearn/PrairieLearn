@@ -1,3 +1,5 @@
+import type { Assessment, AssessmentSet, Course, CourseInstance, Question } from './db-types.js';
+
 /**
  * Replace special characters in string with underscores.
  *
@@ -15,8 +17,9 @@ export function sanitizeString(s: string): string {
  * @param course.short_name - The short name of the course.
  * @returns The sanitized prefix string.
  */
-export function courseFilenamePrefix(course: { short_name: string }): string {
-  const prefix = sanitizeString(course.short_name) + '_';
+export function courseFilenamePrefix(course: Pick<Course, 'short_name'>): string {
+  // In practice, course.short_name should never be null.
+  const prefix = sanitizeString(course.short_name!) + '_';
   return prefix;
 }
 
@@ -30,12 +33,11 @@ export function courseFilenamePrefix(course: { short_name: string }): string {
  * @returns The sanitized prefix string.
  */
 export function courseInstanceFilenamePrefix(
-  course_instance: {
-    short_name: string;
-  },
-  course: { short_name: string },
+  course_instance: Pick<CourseInstance, 'short_name'>,
+  course: Pick<Course, 'short_name'>,
 ): string {
-  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name) + '_';
+  // In practice, course_instance.short_name should never be null.
+  const prefix = courseFilenamePrefix(course) + sanitizeString(course_instance.short_name!) + '_';
   return prefix;
 }
 
@@ -53,18 +55,10 @@ export function courseInstanceFilenamePrefix(
  * @returns The sanitized prefix string.
  */
 export function assessmentFilenamePrefix(
-  assessment: {
-    number: string;
-  },
-  assessment_set: {
-    abbreviation: string;
-  },
-  course_instance: {
-    short_name: string;
-  },
-  course: {
-    short_name: string;
-  },
+  assessment: Pick<Assessment, 'number'>,
+  assessment_set: Pick<AssessmentSet, 'abbreviation'>,
+  course_instance: Pick<CourseInstance, 'short_name'>,
+  course: Pick<Course, 'short_name'>,
 ): string {
   const prefix =
     courseInstanceFilenamePrefix(course_instance, course) +
@@ -84,13 +78,10 @@ export function assessmentFilenamePrefix(
  * @returns The sanitized prefix string.
  */
 export function questionFilenamePrefix(
-  question: {
-    qid: string;
-  },
-  course: {
-    short_name: string;
-  },
-) {
-  const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid) + '_';
+  question: Pick<Question, 'qid'>,
+  course: Pick<Course, 'short_name'>,
+): string {
+  // In practice, question.qid should never be null
+  const prefix = courseFilenamePrefix(course) + sanitizeString(question.qid!) + '_';
   return prefix;
 }

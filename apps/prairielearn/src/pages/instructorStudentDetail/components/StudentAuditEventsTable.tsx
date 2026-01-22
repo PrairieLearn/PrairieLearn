@@ -23,6 +23,8 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     unblocked: 'Unblocked from course, now enrolled',
     // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
     invitation_deleted: 'Invitation cancelled',
+    left: 'Student left course',
+    // TODO: Change to 'Student removed from course' after batched migration of existing enrollments
     removed: 'Student left course',
   };
 
@@ -37,10 +39,10 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
   if (events.length === 0) {
     return (
       <>
-        <div class="card-body">
-          <div class="text-muted">No enrollment events found.</div>
+        <div className="card-body">
+          <div className="text-muted">No enrollment events found.</div>
         </div>
-        <div class="card-footer text-muted small">
+        <div className="card-footer text-muted small">
           Missing events? Enrollment events were not logged before October 2025.
         </div>
       </>
@@ -49,7 +51,7 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
 
   return (
     <>
-      <table class="table table-sm table-hover" aria-label="Student Audit Events">
+      <table className="table table-sm table-hover" aria-label="Student Audit Events">
         <thead>
           <tr>
             <th>Date</th>
@@ -59,15 +61,15 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
         <tbody>
           {events.map((e) => (
             <tr key={e.id}>
-              <td class="align-middle">
+              <td className="align-middle">
                 <FriendlyDate date={e.date} />
               </td>
-              <td class="align-middle">{renderEnrollmentEventText(e)}</td>
+              <td className="align-middle">{renderEnrollmentEventText(e)}</td>
             </tr>
           ))}
         </tbody>
       </table>
-      <div class="card-footer text-muted small">
+      <div className="card-footer text-muted small">
         Missing events? Enrollment events were not logged before October 2025.
       </div>
     </>

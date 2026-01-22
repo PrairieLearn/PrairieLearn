@@ -7,7 +7,6 @@ export const SettingsFormBodySchema = z.object({
   long_name: z.string(),
   display_timezone: z.string(),
   group_assessments_by: z.enum(['Set', 'Module']),
-  show_in_enroll_page: BooleanFromCheckboxSchema,
   self_enrollment_enabled: BooleanFromCheckboxSchema,
   self_enrollment_use_enrollment_code: BooleanFromCheckboxSchema,
   self_enrollment_restrict_to_institution: BooleanFromCheckboxSchema,

@@ -5,19 +5,19 @@ export function QuestionNavSideGroup({
   prevInstanceQuestionId,
   nextInstanceQuestionId,
   sequenceLocked,
-  prevGroupRolePermissions,
-  nextGroupRolePermissions,
+  prevTeamRolePermissions,
+  nextTeamRolePermissions,
   advanceScorePerc,
-  userGroupRoles,
+  userTeamRoles,
 }: {
   urlPrefix: string;
   prevInstanceQuestionId: string;
   nextInstanceQuestionId: string;
   sequenceLocked: boolean | null;
-  prevGroupRolePermissions: { can_view?: boolean } | null;
-  nextGroupRolePermissions: { can_view?: boolean } | null;
+  prevTeamRolePermissions: { can_view?: boolean } | null;
+  nextTeamRolePermissions: { can_view?: boolean } | null;
   advanceScorePerc: number | null;
-  userGroupRoles: string | null;
+  userTeamRoles: string | null;
 }) {
   return html`
     <div class="text-center mb-2">
@@ -25,17 +25,17 @@ export function QuestionNavSideGroup({
         instanceQuestionId: prevInstanceQuestionId,
         urlPrefix,
         whichButton: 'previous',
-        groupRolePermissions: prevGroupRolePermissions,
-        userGroupRoles,
+        teamRolePermissions: prevTeamRolePermissions,
+        userTeamRoles,
       })}
       ${QuestionNavSideButton({
         instanceQuestionId: nextInstanceQuestionId,
         sequenceLocked,
         urlPrefix,
         whichButton: 'next',
-        groupRolePermissions: nextGroupRolePermissions,
+        teamRolePermissions: nextTeamRolePermissions,
         advanceScorePerc,
-        userGroupRoles,
+        userTeamRoles,
       })}
     </div>
   `;
@@ -46,17 +46,17 @@ export function QuestionNavSideButton({
   sequenceLocked,
   urlPrefix,
   whichButton,
-  groupRolePermissions,
+  teamRolePermissions,
   advanceScorePerc,
-  userGroupRoles,
+  userTeamRoles,
 }: {
   instanceQuestionId: string | null;
   sequenceLocked?: boolean | null;
-  groupRolePermissions: { can_view?: boolean } | null;
+  teamRolePermissions: { can_view?: boolean } | null;
   whichButton: 'next' | 'previous';
   urlPrefix: string;
   advanceScorePerc?: number | null;
-  userGroupRoles: string | null;
+  userTeamRoles: string | null;
 }) {
   const { buttonId, buttonLabel } =
     whichButton === 'next'
@@ -72,8 +72,8 @@ export function QuestionNavSideButton({
     `;
   }
 
-  if (groupRolePermissions?.can_view === false) {
-    disabledExplanation = html`Your current group role (${userGroupRoles}) restricts access to the
+  if (teamRolePermissions?.can_view === false) {
+    disabledExplanation = html`Your current group role (${userTeamRoles}) restricts access to the
     ${buttonLabel.toLowerCase()}.`;
   } else if (sequenceLocked) {
     disabledExplanation = html`You must score at least <b>${advanceScorePerc}%</b> on a submission

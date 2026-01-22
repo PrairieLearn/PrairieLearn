@@ -22,6 +22,7 @@ import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question
 import { extractPageContext } from '../../../lib/client/page-context.js';
 import type { Course } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
+import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
@@ -93,7 +94,7 @@ const deleteAiGradingJobsMutation = t.procedure
 
     const iqs = await deleteAiGradingJobs({
       assessment_question_ids: [opts.ctx.assessment_question.id],
-      authn_user_id: opts.ctx.authn_user.user_id,
+      authn_user_id: opts.ctx.authn_user.id,
     });
 
     return { num_deleted: iqs.length };
@@ -120,7 +121,7 @@ const aiGroupInstanceQuestionsMutation = t.procedure
       closed_instance_questions_only: z.boolean(),
     }),
   )
-  .output(z.object({ job_sequence_id: z.string() }))
+  .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
     if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
       throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
@@ -133,8 +134,8 @@ const aiGroupInstanceQuestionsMutation = t.procedure
       course_instance_id: opts.ctx.course_instance.id,
       assessment_question: opts.ctx.assessment_question,
       urlPrefix: '...',
-      authn_user_id: opts.ctx.authn_user.user_id,
-      user_id: opts.ctx.user.user_id,
+      authn_user_id: opts.ctx.authn_user.id,
+      user_id: opts.ctx.user.id,
       closed_instance_questions_only: opts.input.closed_instance_questions_only,
       ungrouped_instance_questions_only: opts.input.selection === 'ungrouped',
       instance_question_ids: run(() => {
@@ -142,7 +143,8 @@ const aiGroupInstanceQuestionsMutation = t.procedure
         return opts.input.selection;
       }),
     });
-    return { job_sequence_id };
+    const job_sequence_token = generateJobSequenceToken(job_sequence_id);
+    return { job_sequence_id, job_sequence_token };
   });
 
 const aiGradeInstanceQuestionMutation = t.procedure
@@ -152,7 +154,7 @@ const aiGradeInstanceQuestionMutation = t.procedure
       model_id: z.enum(AI_GRADING_MODEL_IDS as [AiGradingModelId, ...AiGradingModelId[]]),
     }),
   )
-  .output(z.object({ job_sequence_id: z.string() }))
+  .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
     if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
       throw new HttpStatusError(403, 'Access denied (feature not available)');
@@ -178,8 +180,8 @@ const aiGradeInstanceQuestionMutation = t.procedure
       assessment: opts.ctx.assessment,
       assessment_question: opts.ctx.assessment_question,
       urlPrefix: opts.ctx.pageContext.urlPrefix,
-      authn_user_id: opts.ctx.authn_user.user_id,
-      user_id: opts.ctx.user.user_id,
+      authn_user_id: opts.ctx.authn_user.id,
+      user_id: opts.ctx.user.id,
       model_id: opts.input.model_id,
       mode: run(() => {
         if (Array.isArray(opts.input.selection)) return 'selected';
@@ -190,7 +192,8 @@ const aiGradeInstanceQuestionMutation = t.procedure
         return opts.input.selection;
       }),
     });
-    return { job_sequence_id };
+    const job_sequence_token = generateJobSequenceToken(job_sequence_id);
+    return { job_sequence_id, job_sequence_token };
   });
 
 const setAssignedGraderMutation = t.procedure
@@ -205,7 +208,7 @@ const setAssignedGraderMutation = t.procedure
         requiredRole: ['Student Data Editor'],
         authzData: opts.ctx.pageContext.authz_data,
       });
-      if (!courseStaff.some((staff) => idsEqual(staff.user_id, assigned_grader))) {
+      if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
           code: 'BAD_REQUEST',
           message: 'Assigned grader does not have Student Data Editor permission',

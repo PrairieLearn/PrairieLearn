@@ -1,7 +1,8 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 
 import {
   AssessmentAccessRulesSchema,
@@ -13,7 +14,7 @@ const sql = loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     const accessRules = await queryRows(
       sql.assessment_access_rules,
       { assessment_id: res.locals.assessment.id },

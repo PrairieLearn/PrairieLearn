@@ -2,6 +2,7 @@ import _ from 'lodash';
 import { z } from 'zod';
 
 import { html, unsafeHtml } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -12,14 +13,13 @@ import {
   AssessmentQuestionSchema,
   CourseInstanceSchema,
   CourseSchema,
-  IdSchema,
   QuestionSchema,
   TagSchema,
   TopicSchema,
   ZoneSchema,
 } from '../../lib/db-types.js';
 import { formatFloat } from '../../lib/format.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { STAT_DESCRIPTIONS } from '../shared/assessmentStatDescriptions.js';
 
 export const AssessmentQuestionStatsRowSchema = AssessmentQuestionSchema.extend({
@@ -49,7 +49,7 @@ export function InstructorAssessmentQuestionStatistics({
   questionStatsCsvFilename: string;
   statsLastUpdated: string;
   rows: AssessmentQuestionStatsRow[];
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
 }) {
   const histminiOptions = { width: 60, height: 20, ymax: 1 };
 

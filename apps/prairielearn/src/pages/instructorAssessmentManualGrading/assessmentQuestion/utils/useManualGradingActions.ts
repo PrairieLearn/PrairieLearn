@@ -1,13 +1,10 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 
-import { run } from '@prairielearn/run';
-
 import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
-import { getCourseInstanceJobSequenceUrl } from '../../../../lib/client/url.js';
 
 import { client } from './trpc.js';
 
-export function useManualGradingActions({ courseInstanceId }: { courseInstanceId: string }) {
+export function useManualGradingActions() {
   const queryClient = useQueryClient();
 
   const deleteAiGradingJobsMutation = useMutation<{ num_deleted: number }, Error, undefined>({
@@ -31,49 +28,24 @@ export function useManualGradingActions({ courseInstanceId }: { courseInstanceId
   });
 
   const groupSubmissionMutation = useMutation<
-    { job_sequence_id: string },
+    { job_sequence_id: string; job_sequence_token: string },
     Error,
     {
-      action:
-        | 'batch_action'
-        | 'ai_instance_question_group_assessment_all'
-        | 'ai_instance_question_group_assessment_ungrouped';
+      selection: 'all' | 'ungrouped' | string[];
       closedSubmissionsOnly: boolean;
-      numOpenInstances: number;
-      instanceQuestionIds?: string[];
     }
   >({
-    mutationFn: async ({
-      action,
-      closedSubmissionsOnly,
-      numOpenInstances,
-      instanceQuestionIds,
-    }) => {
+    mutationFn: async ({ selection, closedSubmissionsOnly }) => {
       const res = await client.aiGroupInstanceQuestions.mutate({
-        selection: run(() => {
-          if (action === 'batch_action') {
-            // TODO: we can make the calls to this function more type-safe.
-            return instanceQuestionIds ?? [];
-          }
-          if (action === 'ai_instance_question_group_assessment_all') {
-            return 'all';
-          }
-          return 'ungrouped';
-        }),
-        closed_instance_questions_only: numOpenInstances > 0 ? closedSubmissionsOnly : false,
+        selection,
+        closed_instance_questions_only: closedSubmissionsOnly,
       });
-      return { job_sequence_id: res.job_sequence_id };
-    },
-    onSuccess: (data) => {
-      window.location.href = getCourseInstanceJobSequenceUrl(
-        courseInstanceId,
-        data.job_sequence_id,
-      );
+      return { job_sequence_id: res.job_sequence_id, job_sequence_token: res.job_sequence_token };
     },
   });
 
   const gradeSubmissionsMutation = useMutation<
-    { job_sequence_id: string },
+    { job_sequence_id: string; job_sequence_token: string },
     Error,
     { selection: 'all' | 'human_graded' | string[]; model_id: AiGradingModelId }
   >({
@@ -82,13 +54,7 @@ export function useManualGradingActions({ courseInstanceId }: { courseInstanceId
         selection,
         model_id,
       });
-      return { job_sequence_id: res.job_sequence_id };
-    },
-    onSuccess: (data) => {
-      window.location.href = getCourseInstanceJobSequenceUrl(
-        courseInstanceId,
-        data.job_sequence_id,
-      );
+      return { job_sequence_id: res.job_sequence_id, job_sequence_token: res.job_sequence_token };
     },
   });
 
@@ -99,6 +65,9 @@ export function useManualGradingActions({ courseInstanceId }: { courseInstanceId
   >({
     mutationFn: async ({ assigned_grader, instance_question_ids }) => {
       await client.setAssignedGrader.mutate({ assigned_grader, instance_question_ids });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['instance-questions'] });
     },
   });
 
@@ -112,6 +81,9 @@ export function useManualGradingActions({ courseInstanceId }: { courseInstanceId
         requires_manual_grading,
         instance_question_ids,
       });
+    },
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ['instance-questions'] });
     },
   });
 

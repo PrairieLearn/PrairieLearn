@@ -1,5 +1,32 @@
 # @prairielearn/named-locks
 
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/postgres@5.0.0
+
+## 3.0.28
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/postgres@4.5.2
+
+## 3.0.27
+
+### Patch Changes
+
+- 70a8029: Upgrade all JavaScript dependencies
+- Updated dependencies [70a8029]
+  - @prairielearn/postgres@4.5.1
+
 ## 3.0.26
 
 ### Patch Changes
