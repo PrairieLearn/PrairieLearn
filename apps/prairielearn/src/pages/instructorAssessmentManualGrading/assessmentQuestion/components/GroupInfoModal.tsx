@@ -1,7 +1,8 @@
 import { useCallback, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { assertNever } from '../../../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
+
 import type { useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 const defaultClosedSubmissionsOnly = true;

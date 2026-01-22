@@ -1,5 +1,6 @@
+import { assertNever } from '@prairielearn/utils';
+
 import type { Course, CourseInstance, Enrollment, User } from './db-types.js';
-import { assertNever } from './types.js';
 
 export type EnrollmentIneligibilityReason =
   | 'blocked'

@@ -230,6 +230,22 @@ class TestSympy:
             )
             assert result == expected
 
+    @pytest.mark.parametrize(
+        ("a_sub", "variables", "expected"),
+        [
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/11709 for additional details.
+            ("2e+3", None, 2 * sympy.E + 3),
+            ("2e-3", None, 2 * sympy.E - 3),
+            ("2E+3", ["E"], 2 * sympy.Symbol("E") + 3),
+            ("2E-3", ["E"], 2 * sympy.Symbol("E") - 3),
+        ],
+    )
+    def test_scientific_notation_with_sign_as_euler(
+        self, a_sub: str, variables: list[str] | None, expected: sympy.Expr
+    ) -> None:
+        result = psu.convert_string_to_sympy(a_sub, variables, allow_complex=True)
+        assert result == expected
+
     def test_string_conversion_complex_conflict(self) -> None:
         """
         Check for no issues in the case where complex is not

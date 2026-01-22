@@ -97,14 +97,11 @@ export async function generatePrompt({
         },
         {
           role: 'user',
-          content: markdownToHtml(
-            mustache.render(grader_guidelines, {
-              submitted_answers: submitted_answer,
-              correct_answers: true_answer,
-              params,
-            }),
-            { inline: true },
-          ),
+          content: mustache.render(grader_guidelines, {
+            submitted_answers: submitted_answer,
+            correct_answers: true_answer,
+            params,
+          }),
         },
       ] satisfies ModelMessage[])
     : [];
