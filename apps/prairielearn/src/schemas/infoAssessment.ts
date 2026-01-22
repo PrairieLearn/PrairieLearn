@@ -241,7 +241,6 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
     )
     .optional(),
 });
-
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
 
 export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
@@ -299,6 +298,7 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
 });
 
 export type ZoneQuestionJson = z.infer<typeof ZoneQuestionJsonSchema>;
+export type ZoneQuestionJsonInput = z.input<typeof ZoneQuestionJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -356,6 +356,8 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional()
     .default([]),
 });
+
+export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
 
 export const AssessmentJsonSchema = z
   .object({

@@ -1,9 +1,5 @@
 import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
-import type {
-  StaffAlternativeGroup,
-  StaffAssessmentQuestion,
-} from '../lib/client/safe-db-types.js';
-import type { AlternativeGroup, AssessmentQuestion } from '../lib/db-types.js';
+import type { ZoneAssessmentJson, ZoneQuestionJson } from '../schemas/infoAssessment.js';
 
 export function AssessmentQuestionHeaders({
   question,
@@ -52,20 +48,107 @@ export function AssessmentQuestionHeaders({
   );
 }
 
-export function AssessmentQuestionNumber({
-  alternativeGroup,
-  alternativeGroupSize,
-  assessmentQuestion,
+export function ZoneHeader({
+  zone,
+  zoneNumber,
+  nTableCols,
+  editMode,
+  handleAddQuestion,
+  handleEditZone,
+  handleDeleteZone,
 }: {
-  alternativeGroup: AlternativeGroup | StaffAlternativeGroup;
+  zone: ZoneAssessmentJson;
+  zoneNumber: number;
+  nTableCols: number;
+  editMode?: boolean;
+  handleAddQuestion?: (zoneNumber: number) => void;
+  handleEditZone?: (zoneNumber: number) => void;
+  handleDeleteZone?: (zoneNumber: number) => void;
+}) {
+  return (
+    <tr>
+      <th colSpan={nTableCols + 1}>
+        <div className="d-flex justify-content-between align-items-center">
+          <div>
+            Zone {zoneNumber}. {zone.title}{' '}
+            {zone.numberChoose == null
+              ? '(Choose all questions)'
+              : zone.numberChoose === 1
+                ? '(Choose 1 question)'
+                : `(Choose ${zone.numberChoose} questions)`}
+            {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
+            {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+          </div>
+          {editMode && (
+            <div className="d-flex gap-2">
+              <button
+                className="btn btn-sm btn-outline-secondary border-0"
+                type="button"
+                title="Edit zone"
+                onClick={() => handleEditZone?.(zoneNumber)}
+              >
+                <i className="fa fa-edit" aria-hidden="true" />
+              </button>
+              <button
+                className="btn btn-sm btn-outline-secondary border-0"
+                type="button"
+                title="Delete zone"
+                onClick={() => handleDeleteZone?.(zoneNumber)}
+              >
+                <i className="fa fa-trash text-danger" aria-hidden="true" />
+              </button>
+              <button
+                className="btn btn-sm btn-primary"
+                type="button"
+                onClick={() => handleAddQuestion?.(zoneNumber)}
+              >
+                <i className="fa fa-add" aria-hidden="true" /> Add question
+              </button>
+            </div>
+          )}
+        </div>
+      </th>
+    </tr>
+  );
+}
+
+export function AlternativeGroupHeader({
+  alternativeGroup,
+  alternativeGroupNumber,
+  nTableCols,
+}: {
+  alternativeGroup: ZoneQuestionJson;
+  alternativeGroupNumber: number;
+  nTableCols: number;
+}) {
+  return (
+    <tr>
+      <td colSpan={nTableCols}>
+        {alternativeGroupNumber}.{' '}
+        {alternativeGroup.numberChoose == null
+          ? 'Choose all questions from:'
+          : alternativeGroup.numberChoose === 1
+            ? 'Choose 1 question from:'
+            : `Choose ${alternativeGroup.numberChoose} questions from:`}
+      </td>
+    </tr>
+  );
+}
+
+export function AssessmentQuestionNumber({
+  alternativeGroupSize,
+  alternativeGroupNumber,
+  numberInAlternativeGroup,
+}: {
   alternativeGroupSize: number;
-  assessmentQuestion: AssessmentQuestion | StaffAssessmentQuestion;
+  alternativeGroupNumber: number;
+  numberInAlternativeGroup: number | null;
 }) {
   return alternativeGroupSize === 1 ? (
-    `${alternativeGroup.number}. `
+    `${alternativeGroupNumber}. `
   ) : (
     <span className="ms-3">
-      {alternativeGroup.number}.{assessmentQuestion.number_in_alternative_group}.{' '}
+      {alternativeGroupNumber}.{numberInAlternativeGroup}.{' '}
     </span>
   );
 }
