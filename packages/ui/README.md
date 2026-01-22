@@ -121,11 +121,11 @@ const items: ComboBoxItem[] = [
 
 // Single selection
 const [selected, setSelected] = useState<string | null>(null);
-<ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />
+<ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />;
 
 // Multi-selection with tags
 const [selectedIds, setSelectedIds] = useState<string[]>([]);
-<TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />
+<TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />;
 ```
 
 Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
