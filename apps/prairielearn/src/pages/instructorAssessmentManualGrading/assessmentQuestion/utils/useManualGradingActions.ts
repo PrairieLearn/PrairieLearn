@@ -318,6 +318,6 @@ export function useManualGradingActions({
     deleteAiGroupingsMutation,
     groupSubmissionMutation,
     setAiGradingModeMutation,
-    setAiGradingModelMutation
+    setAiGradingModelMutation,
   };
 }
