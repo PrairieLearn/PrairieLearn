@@ -115,9 +115,7 @@ function LegacyPublishingBannerComponent({
   resLocals: UntypedResLocals;
 }) {
   if (navContext.type !== 'instructor') return null;
-  if (!navContext.page) return null;
-  if (!['instance_admin', 'assessment'].includes(navContext.page)) return null;
-  if (navContext.page === 'instance_admin' && navContext.subPage === 'publishing') return null;
+  if (navContext.page !== 'instance_admin' || navContext.subPage !== 'students') return null;
 
   const { course_instance: courseInstance } = resLocals;
 
