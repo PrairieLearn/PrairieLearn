@@ -214,18 +214,17 @@ export function ComboBox<T = void>({
             {(item) => (
               <ListBoxItem
                 id={item.id}
-                className={({ isFocused }) =>
-                  clsx('dropdown-item d-flex align-items-center gap-2', isFocused && 'active')
+                className={({ isFocused, isSelected }) =>
+                  clsx(
+                    'dropdown-item d-flex align-items-center gap-2',
+                    isFocused && 'active',
+                    isSelected && 'fw-semibold',
+                  )
                 }
                 style={{ cursor: 'pointer' }}
                 textValue={item.label}
               >
-                {({ isSelected }) => (
-                  <>
-                    <span className="flex-grow-1">{renderItem(item)}</span>
-                    {isSelected && <i className="bi bi-check ms-auto" aria-hidden="true" />}
-                  </>
-                )}
+                <span className="flex-grow-1">{renderItem(item)}</span>
               </ListBoxItem>
             )}
           </ListBox>
