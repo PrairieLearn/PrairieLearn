@@ -144,19 +144,36 @@ async function submitGradeForm(
   });
 }
 
-async function loadInstances(assessmentQuestionUrl: string) {
-  const client = createTRPCClient<ManualGradingAssessmentQuestionRouter>({
+async function createTrpcClient(assessmentQuestionUrl: string) {
+  // Fetch the page to get the CSRF token from hydration data
+  const pageResponse = await fetch(assessmentQuestionUrl);
+  const pageHtml = await pageResponse.text();
+  const $ = cheerio.load(pageHtml);
+
+  // Extract trpcCsrfToken from the hydration data
+  const dataScript = $(
+    'script[data-component-props][data-component="AssessmentQuestionManualGrading"]',
+  );
+  const propsJson = dataScript.text();
+  const props = superjson.parse<{ trpcCsrfToken: string }>(propsJson);
+  const trpcCsrfToken = props.trpcCsrfToken;
+
+  return createTRPCClient<ManualGradingAssessmentQuestionRouter>({
     links: [
       httpLink({
         url: assessmentQuestionUrl + '/trpc',
         headers: {
           'X-TRPC': 'true',
+          'X-CSRF-Token': trpcCsrfToken,
         },
         transformer: superjson,
       }),
     ],
   });
+}
 
+async function loadInstances(assessmentQuestionUrl: string) {
+  const client = await createTrpcClient(assessmentQuestionUrl);
   return await client.instances.query();
 }
 
@@ -635,19 +652,10 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
     describe('Assigning grading to staff members', () => {
       test.sequential('tag question to specific grader', async () => {
         setUser(defaultUser);
-        const manualGradingAQPage = await (await fetch(manualGradingAssessmentQuestionUrl)).text();
-        const $manualGradingAQPage = cheerio.load(manualGradingAQPage);
-        const token = $manualGradingAQPage('#test_csrf_token').text() || '';
-
-        await fetch(manualGradingAssessmentQuestionUrl, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            __action: 'batch_action',
-            __csrf_token: token,
-            batch_action_data: { assigned_grader: mockStaff[0].id },
-            instance_question_id: iqId.toString(),
-          }),
+        const client = await createTrpcClient(manualGradingAssessmentQuestionUrl);
+        await client.setAssignedGrader.mutate({
+          assigned_grader: mockStaff[0].id!,
+          instance_question_ids: [iqId.toString()],
         });
       });
 
