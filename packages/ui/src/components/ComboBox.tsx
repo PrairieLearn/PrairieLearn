@@ -3,6 +3,7 @@ import { type Key, type ReactNode, useMemo, useState } from 'react';
 import { useFilter } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
+  type ComboBoxProps as AriaComboBoxProps,
   Button,
   FieldError,
   Group,
@@ -17,44 +18,68 @@ import {
   Text,
 } from 'react-aria-components';
 
+/** An item in the ComboBox or TagPicker dropdown. */
 export interface ComboBoxItem<T = void> {
   id: string;
   label: string;
+  /** Custom data passed to renderItem. */
   data?: T;
+  /** Text used for filtering (defaults to label). */
   searchableText?: string;
 }
 
-export interface ComboBoxProps<T = void> {
+type ManagedAriaProps =
+  | 'children'
+  | 'items'
+  | 'selectedKey'
+  | 'defaultSelectedKey'
+  | 'onSelectionChange'
+  | 'inputValue'
+  | 'defaultInputValue'
+  | 'onInputChange'
+  | 'onOpenChange'
+  | 'menuTrigger'
+  | 'allowsEmptyCollection'
+  | 'isDisabled'
+  | 'isInvalid';
+
+export interface ComboBoxProps<T = void> extends Omit<
+  AriaComboBoxProps<ComboBoxItem<T>>,
+  ManagedAriaProps
+> {
   items: ComboBoxItem<T>[];
   value: string | null;
   onChange: (value: string | null) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Name for hidden form input. */
   name?: string;
+  /** ID for the input element. */
   id?: string;
   label?: string;
   description?: string;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
-  'aria-label'?: string;
-  'aria-labelledby'?: string;
 }
 
-export interface TagPickerProps<T = void> {
+export interface TagPickerProps<T = void> extends Omit<
+  AriaComboBoxProps<ComboBoxItem<T>>,
+  ManagedAriaProps
+> {
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
   placeholder?: string;
   disabled?: boolean;
+  /** Name for hidden form inputs. */
   name?: string;
+  /** ID for the input element. */
   id?: string;
   label?: string;
   description?: string;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
   renderTag?: (item: ComboBoxItem<T>) => ReactNode;
-  'aria-label'?: string;
-  'aria-labelledby'?: string;
 }
 
 function defaultRenderItem<T>(item: ComboBoxItem<T>) {
@@ -65,28 +90,30 @@ function defaultRenderTag<T>(item: ComboBoxItem<T>) {
   return <span className="badge bg-secondary">{item.label}</span>;
 }
 
-export function ComboBox<T = void>(props: ComboBoxProps<T>) {
-  const {
-    items,
-    placeholder = 'Select...',
-    disabled = false,
-    name,
-    id,
-    label,
-    description,
-    errorMessage,
-    renderItem = defaultRenderItem,
-    'aria-label': ariaLabel,
-    'aria-labelledby': ariaLabelledby,
-  } = props;
-
+/**
+ * Single-selection combobox with filtering.
+ */
+export function ComboBox<T = void>({
+  items,
+  value,
+  onChange,
+  placeholder = 'Select...',
+  disabled = false,
+  name,
+  id,
+  label,
+  description,
+  errorMessage,
+  renderItem = defaultRenderItem,
+  ...props
+}: ComboBoxProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
   const [isOpen, setIsOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
 
   const selectedItem = useMemo(
-    () => items.find((item) => item.id === props.value) ?? null,
-    [items, props.value],
+    () => items.find((item) => item.id === value) ?? null,
+    [items, value],
   );
 
   // Input value is derived: show filter text when open, selected label when closed
@@ -103,15 +130,15 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
   const handleSelectionChange = (key: Key | null) => {
     const stringKey = typeof key === 'string' ? key : null;
     const newSelectedItem = stringKey ? items.find((item) => item.id === stringKey) : null;
-    props.onChange(stringKey);
+    onChange(stringKey);
     // Set filter text to new label for immediate display before props update
     setFilterText(newSelectedItem?.label ?? '');
   };
 
-  const handleInputChange = (value: string) => {
-    setFilterText(value);
-    if (value === '' && props.value !== null) {
-      props.onChange(null);
+  const handleInputChange = (inputVal: string) => {
+    setFilterText(inputVal);
+    if (inputVal === '' && value !== null) {
+      onChange(null);
     }
   };
 
@@ -125,15 +152,14 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
 
   return (
     <div className="position-relative">
-      {name && <input name={name} type="hidden" value={props.value ?? ''} />}
+      {name && <input name={name} type="hidden" value={value ?? ''} />}
 
       <AriaComboBox
-        selectedKey={props.value}
+        {...props}
+        selectedKey={value}
         inputValue={inputValue}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledby}
         menuTrigger="focus"
         allowsEmptyCollection
         onSelectionChange={handleSelectionChange}
@@ -209,29 +235,31 @@ export function ComboBox<T = void>(props: ComboBoxProps<T>) {
   );
 }
 
-export function TagPicker<T = void>(props: TagPickerProps<T>) {
-  const {
-    items,
-    placeholder = 'Select...',
-    disabled = false,
-    name,
-    id,
-    label,
-    description,
-    errorMessage,
-    renderItem = defaultRenderItem,
-    renderTag = defaultRenderTag,
-    'aria-label': ariaLabel,
-    'aria-labelledby': ariaLabelledby,
-  } = props;
-
+/**
+ * Multi-selection combobox with removable tags.
+ */
+export function TagPicker<T = void>({
+  items,
+  value,
+  onChange,
+  placeholder = 'Select...',
+  disabled = false,
+  name,
+  id,
+  label,
+  description,
+  errorMessage,
+  renderItem = defaultRenderItem,
+  renderTag = defaultRenderTag,
+  ...props
+}: TagPickerProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
   const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
 
   const selectedItems = useMemo(
-    () => items.filter((item) => props.value.includes(item.id)),
-    [items, props.value],
+    () => items.filter((item) => value.includes(item.id)),
+    [items, value],
   );
 
   const filteredItems = useMemo(() => {
@@ -243,17 +271,17 @@ export function TagPicker<T = void>(props: TagPickerProps<T>) {
   }, [items, inputValue, contains]);
 
   const handleRemoveTag = (keys: Set<Key>) => {
-    const newValue = props.value.filter((v) => !keys.has(v));
-    props.onChange(newValue);
+    const newValue = value.filter((v) => !keys.has(v));
+    onChange(newValue);
   };
 
   const handleSelect = (key: Key | null) => {
     const itemId = typeof key === 'string' ? key : null;
     if (!itemId) return;
-    if (props.value.includes(itemId)) {
-      props.onChange(props.value.filter((v) => v !== itemId));
+    if (value.includes(itemId)) {
+      onChange(value.filter((v) => v !== itemId));
     } else {
-      props.onChange([...props.value, itemId]);
+      onChange([...value, itemId]);
     }
     setInputValue('');
   };
@@ -270,11 +298,10 @@ export function TagPicker<T = void>(props: TagPickerProps<T>) {
         ))}
 
       <AriaComboBox
+        {...props}
         inputValue={inputValue}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
-        aria-label={ariaLabel}
-        aria-labelledby={ariaLabelledby}
         menuTrigger="focus"
         selectedKey={null}
         allowsEmptyCollection
@@ -359,7 +386,7 @@ export function TagPicker<T = void>(props: TagPickerProps<T>) {
             )}
           >
             {(item) => {
-              const isSelected = props.value.includes(item.id);
+              const isSelected = value.includes(item.id);
               return (
                 <ListBoxItem
                   id={item.id}
