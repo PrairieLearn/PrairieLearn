@@ -11,7 +11,6 @@ import memoize from 'p-memoize';
 import { z } from 'zod';
 
 import { Cache } from '@prairielearn/cache';
-import { markdownToHtml } from '@prairielearn/markdown';
 import {
   callRow,
   execute,
