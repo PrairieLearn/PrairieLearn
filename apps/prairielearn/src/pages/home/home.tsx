@@ -23,11 +23,7 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
-import {
-  Home,
-  InstructorHomePageCourseSchema,
-  StudentHomePageCourseWithExtensionSchema,
-} from './home.html.js';
+import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -71,7 +67,7 @@ router.get(
         include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
         req_date: res.locals.req_date,
       },
-      StudentHomePageCourseWithExtensionSchema,
+      StudentHomePageCourseSchema,
     );
 
     const studentCourses = allStudentCourses.filter((entry) => {

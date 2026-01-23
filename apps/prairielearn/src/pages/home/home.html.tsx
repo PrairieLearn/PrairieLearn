@@ -36,15 +36,9 @@ export const StudentHomePageCourseSchema = z.object({
   enrollment: StudentEnrollmentSchema,
   start_date: DateFromISOString.nullable(),
   end_date: DateFromISOString.nullable(),
-});
-export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
-
-export const StudentHomePageCourseWithExtensionSchema = StudentHomePageCourseSchema.extend({
   latest_publishing_extension: CourseInstancePublishingExtensionSchema.nullable(),
 });
-export type StudentHomePageCourseWithExtension = z.infer<
-  typeof StudentHomePageCourseWithExtensionSchema
->;
+export type StudentHomePageCourse = z.infer<typeof StudentHomePageCourseSchema>;
 
 export function Home({
   canAddCourses,
@@ -59,7 +53,7 @@ export function Home({
   canAddCourses: boolean;
   csrfToken: string;
   instructorCourses: InstructorHomePageCourse[];
-  studentCourses: StudentHomePageCourseWithExtension[];
+  studentCourses: StudentHomePageCourse[];
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;
