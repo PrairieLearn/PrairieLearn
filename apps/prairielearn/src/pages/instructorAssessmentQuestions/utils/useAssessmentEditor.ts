@@ -1,89 +1,18 @@
 import { useReducer } from 'react';
 
-import type { ZoneAssessmentJson, ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
-  TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionForm,
 } from '../instructorAssessmentQuestions.shared.js';
 import type { EditorAction, EditorState } from '../types.js';
 
-/**
- * Creates a new TrackingId (branded UUID).
- */
-function createTrackingId(): TrackingId {
-  return crypto.randomUUID() as TrackingId;
-}
-
-/**
- * Adds trackingId to zones, questions, and alternatives.
- * Used when initializing editor state from saved data.
- */
-export function addTrackingIds(zones: ZoneAssessmentJson[]): ZoneAssessmentForm[] {
-  return zones.map((zone) => ({
-    ...zone,
-    trackingId: createTrackingId(),
-    questions: zone.questions.map((question) => ({
-      ...question,
-      trackingId: createTrackingId(),
-      alternatives: question.alternatives?.map((alt) => ({
-        ...alt,
-        trackingId: createTrackingId(),
-      })),
-    })),
-  }));
-}
-
-/**
- * Strips trackingId from zones, questions, and alternatives.
- * Used when serializing for save.
- */
-export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJson[] {
-  return zones.map((zone) => {
-    const { trackingId: _zoneTrackingId, questions, ...zoneRest } = zone;
-    return {
-      ...zoneRest,
-      questions: questions.map((question: ZoneQuestionForm) => {
-        const { trackingId: _trackingId, alternatives, ...questionRest } = question;
-        return {
-          ...questionRest,
-          alternatives: alternatives?.map((alt: QuestionAlternativeForm) => {
-            const { trackingId: _altTrackingId, ...altRest } = alt;
-            return altRest;
-          }),
-        };
-      }),
-    };
-  });
-}
-
-/**
- * Creates a new zone with a trackingId.
- */
-export function createZoneWithTrackingId(
-  zone: Omit<ZoneAssessmentForm, 'trackingId'>,
-): ZoneAssessmentForm {
-  return {
-    ...zone,
-    trackingId: createTrackingId(),
-  };
-}
-
-/**
- * Creates a new question with a trackingId.
- * New trackingIds are always generated (this is for new questions, not existing ones).
- */
-export function createQuestionWithTrackingId(question: ZoneQuestionJson): ZoneQuestionForm {
-  return {
-    ...question,
-    trackingId: createTrackingId(),
-    alternatives: question.alternatives?.map((alt) => ({
-      ...alt,
-      trackingId: createTrackingId(),
-    })),
-  };
-}
+export {
+  addTrackingIds,
+  createQuestionWithTrackingId,
+  createZoneWithTrackingId,
+  stripTrackingIds,
+} from './dataTransform.js';
 
 /**
  * Finds a zone by its trackingId.
@@ -138,7 +67,6 @@ function findAlternativeByTrackingId(
 /**
  * Reducer for managing assessment editor state.
  * All operations use trackingIds for stable identity instead of position indices.
- * UNDO/REDO are stubbed for a future PR with history tracking.
  */
 function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
@@ -456,7 +384,6 @@ export function useAssessmentEditor(initialState: EditorState) {
     questionMetadata: state.questionMetadata,
     collapsedGroups: state.collapsedGroups,
     collapsedZones: state.collapsedZones,
-    // Stubbed - always false until history tracking is added in future PR
     canUndo: false,
     canRedo: false,
     dispatch,

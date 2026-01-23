@@ -18,16 +18,13 @@ import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
+import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionForm,
 } from '../instructorAssessmentQuestions.shared.js';
-import {
-  buildHierarchicalAssessment,
-  normalizeQuestionPoints,
-  questionDisplayName,
-} from '../utils/questions.js';
+import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
@@ -108,6 +105,7 @@ function EditModeButtons({
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
+  jsonZones,
   urlPrefix,
   assessment,
   assessmentSetName,
@@ -119,6 +117,7 @@ export function InstructorAssessmentQuestionsTable({
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
+  jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentSetName: string;
   urlPrefix: string;
@@ -128,8 +127,8 @@ export function InstructorAssessmentQuestionsTable({
   origHash: string;
   editorEnabled: boolean;
 }) {
-  // Initialize editor state from question rows
-  const initialZones = addTrackingIds(buildHierarchicalAssessment(course, questionRows));
+  // Initialize editor state from JSON zones
+  const initialZones = addTrackingIds(jsonZones);
 
   // Initially collapse alternative groups with multiple alternatives (not in edit mode)
   const initialCollapsedGroups = new Set<string>();

@@ -10,11 +10,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
-import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
-import { formatJsonWithPrettier } from '../lib/prettier.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { filterZones } from '../pages/instructorAssessmentQuestions/instructorAssessmentQuestions.js';
-import * as courseDB from '../sync/course-db.js';
 
 import { fetchCheerio } from './helperClient.js';
 import { updateCourseRepository } from './helperCourse.js';
@@ -109,26 +105,6 @@ describe('Editing assessment questions', () => {
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
     );
     assert.equal(questionsPageResponse.status, 200);
-  });
-
-  test.sequential('verify filterZones function with all example course assessments', async () => {
-    const courseData = await courseDB.loadFullCourse(null, EXAMPLE_COURSE_PATH);
-
-    for (const courseInstanceData of Object.values(courseData.courseInstances)) {
-      for (const assessmentInfo of Object.values(courseInstanceData.assessments)) {
-        const assessment = assessmentInfo.data;
-        if (!assessment) {
-          continue;
-        }
-        const zones = assessment.zones;
-
-        const filteredZones = filterZones(zones, assessment);
-        const formattedZones = await formatJsonWithPrettier(JSON.stringify(filteredZones));
-        const formattedAssessmentZones = await formatJsonWithPrettier(JSON.stringify(zones));
-
-        assert.deepEqual(formattedZones, formattedAssessmentZones);
-      }
-    }
   });
 
   test.sequential('verify saving without changes should not modify the json', async () => {
