@@ -15,7 +15,6 @@ import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
-import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import {
   addTrackingIds,
@@ -34,17 +33,6 @@ import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 import { Zone } from './Zone.js';
-
-export interface AssessmentState {
-  nTableCols: number;
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
-  editMode: boolean;
-  urlPrefix: string;
-  hasCoursePermissionPreview: boolean;
-  canEdit: boolean;
-  showAdvanceScorePercCol: boolean;
-  assessmentType: EnumAssessmentType;
-}
 
 function EditModeButtons({
   csrfToken,

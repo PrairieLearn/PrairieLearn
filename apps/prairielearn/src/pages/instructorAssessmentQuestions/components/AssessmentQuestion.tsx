@@ -16,8 +16,7 @@ import type {
   QuestionAlternativeForm,
   ZoneQuestionForm,
 } from '../instructorAssessmentQuestions.shared.js';
-
-import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
+import type { AssessmentState } from '../types.js';
 
 function Title({
   questionRow,

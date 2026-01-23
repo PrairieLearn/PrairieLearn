@@ -3,10 +3,9 @@ import { SortableContext, verticalListSortingStrategy } from '@dnd-kit/sortable'
 
 import { ZoneHeader } from '../../../components/AssessmentQuestions.js';
 import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
-import type { HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
+import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
 import { AlternativeGroup } from './AlternativeGroup.js';
-import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
 
 export function Zone({
   zone,

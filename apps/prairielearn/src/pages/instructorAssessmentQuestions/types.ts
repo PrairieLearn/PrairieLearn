@@ -1,10 +1,25 @@
 import type { StaffAssessmentQuestionRow } from '../../lib/assessment-question.js';
+import type { EnumAssessmentType } from '../../lib/db-types.js';
 
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionForm,
 } from './instructorAssessmentQuestions.shared.js';
+
+/**
+ * Shared state passed down through the assessment questions table component tree.
+ */
+export interface AssessmentState {
+  nTableCols: number;
+  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  editMode: boolean;
+  urlPrefix: string;
+  hasCoursePermissionPreview: boolean;
+  canEdit: boolean;
+  showAdvanceScorePercCol: boolean;
+  assessmentType: EnumAssessmentType;
+}
 
 /**
  * The core editor state containing zones and question metadata.

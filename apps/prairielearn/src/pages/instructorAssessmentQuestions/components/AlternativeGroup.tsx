@@ -5,10 +5,9 @@ import { run } from '@prairielearn/run';
 
 import { AlternativeGroupHeader } from '../../../components/AssessmentQuestions.js';
 import type { ZoneQuestionForm } from '../instructorAssessmentQuestions.shared.js';
-import type { HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
+import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
-import type { AssessmentState } from './InstructorAssessmentQuestionsTable.js';
 
 export function AlternativeGroup({
   alternativeGroup,
