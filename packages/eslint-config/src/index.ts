@@ -95,13 +95,21 @@ export function prairielearn(
     disable = {},
   } = options;
 
+  const jsFiles = ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'];
+
   const configs: TSESLint.FlatConfig.ConfigArray = [
-    // Base typescript-eslint configs (always included)
-    ...tseslint.configs.stylistic,
-    ...tseslint.configs.strict,
+    // Base typescript-eslint configs (scoped to JS/TS files)
+    ...tseslint.config({
+      extends: [...tseslint.configs.stylistic, ...tseslint.configs.strict],
+      files: jsFiles,
+    }),
     // Base configs (always included)
     ...baseConfig(),
-    ...typescriptConfig(),
+    // TypeScript config (scoped to JS/TS files)
+    {
+      files: jsFiles,
+      ...typescriptConfig(),
+    },
     ...importsConfig(),
     ...stylisticConfig(),
   ];
