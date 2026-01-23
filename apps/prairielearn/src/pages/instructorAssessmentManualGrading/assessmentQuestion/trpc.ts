@@ -3,7 +3,6 @@ import type { CreateExpressContextOptions } from '@trpc/server/adapters/express'
 import superjson from 'superjson';
 import { z } from 'zod';
 
-import { HttpStatusError } from '@prairielearn/error';
 import { run } from '@prairielearn/run';
 
 import {
@@ -43,7 +42,6 @@ export function createContext({ res }: CreateExpressContextOptions) {
     assessment: pageContext.assessment,
     question: pageContext.question,
     assessment_question: pageContext.assessment_question,
-    locals: res.locals,
     pageContext,
   };
 }
@@ -54,13 +52,47 @@ export const t = initTRPC.context<TRPCContext>().create({
   transformer: superjson,
 });
 
+/**
+ * Middleware that checks if the user has course instance edit permission.
+ * Required for all mutations that modify data.
+ */
+const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
+  if (!opts.ctx.pageContext.authz_data.has_course_instance_permission_edit) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (must be a student data editor)',
+    });
+  }
+  return opts.next();
+});
+
+/**
+ * Middleware that checks if the AI grading feature is enabled.
+ */
+const requireAiGradingFeature = t.middleware(async (opts) => {
+  const enabled = await features.enabled('ai-grading', {
+    institution_id: opts.ctx.course.institution_id,
+    course_id: opts.ctx.course.id,
+    course_instance_id: opts.ctx.course_instance.id,
+    user_id: opts.ctx.authn_user.id,
+  });
+
+  if (!enabled) {
+    throw new TRPCError({
+      code: 'FORBIDDEN',
+      message: 'Access denied (feature not available)',
+    });
+  }
+  return opts.next();
+});
+
 const instancesQuery = t.procedure
   .output(z.array(InstanceQuestionRowWithAIGradingStatsSchema))
   .query(async (opts) => {
     if (!opts.ctx.pageContext.authz_data.has_course_instance_permission_view) {
       throw new TRPCError({
-        message: 'Access denied (must be a student data viewer)',
         code: 'FORBIDDEN',
+        message: 'Access denied (must be a student data viewer)',
       });
     }
 
@@ -76,22 +108,18 @@ const instancesQuery = t.procedure
   });
 
 const setAiGradingModeMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
   .input(z.object({ enabled: z.boolean() }))
   .mutation(async (opts) => {
-    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
-      throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
-    }
-
     await setAiGradingMode(opts.ctx.assessment_question.id, opts.input.enabled);
   });
 
 const deleteAiGradingJobsMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
   .output(z.object({ num_deleted: z.number() }))
   .mutation(async (opts) => {
-    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
-      throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
-    }
-
     const iqs = await deleteAiGradingJobs({
       assessment_question_ids: [opts.ctx.assessment_question.id],
       authn_user_id: opts.ctx.authn_user.id,
@@ -101,12 +129,10 @@ const deleteAiGradingJobsMutation = t.procedure
   });
 
 const deleteAiInstanceQuestionGroupingsMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
   .output(z.object({ num_deleted: z.number() }))
   .mutation(async (opts) => {
-    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
-      throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
-    }
-
     const num_deleted = await deleteAiInstanceQuestionGroups({
       assessment_question_id: opts.ctx.assessment_question.id,
     });
@@ -115,6 +141,8 @@ const deleteAiInstanceQuestionGroupingsMutation = t.procedure
   });
 
 const aiGroupInstanceQuestionsMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
   .input(
     z.object({
       selection: z.union([z.literal('all'), z.literal('ungrouped'), z.string().array()]),
@@ -123,17 +151,14 @@ const aiGroupInstanceQuestionsMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
-    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
-      throw new TRPCError({ message: 'Access denied (feature not available)', code: 'FORBIDDEN' });
-    }
-
     const job_sequence_id = await aiInstanceQuestionGrouping({
       question: opts.ctx.question,
-      // TODO: what to do about this?
+      // Type cast needed: pageContext.course is a branded StaffCourse type but aiInstanceQuestionGrouping
+      // expects the db Course type. They're structurally compatible.
       course: opts.ctx.course as unknown as Course,
       course_instance_id: opts.ctx.course_instance.id,
       assessment_question: opts.ctx.assessment_question,
-      urlPrefix: '...',
+      urlPrefix: opts.ctx.pageContext.urlPrefix,
       authn_user_id: opts.ctx.authn_user.id,
       user_id: opts.ctx.user.id,
       closed_instance_questions_only: opts.input.closed_instance_questions_only,
@@ -148,6 +173,8 @@ const aiGroupInstanceQuestionsMutation = t.procedure
   });
 
 const aiGradeInstanceQuestionMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
+  .use(requireAiGradingFeature)
   .input(
     z.object({
       selection: z.union([z.literal('all'), z.literal('human_graded'), z.string().array()]),
@@ -156,25 +183,24 @@ const aiGradeInstanceQuestionMutation = t.procedure
   )
   .output(z.object({ job_sequence_id: z.string(), job_sequence_token: z.string() }))
   .mutation(async (opts) => {
-    if (!(await features.enabledFromLocals('ai-grading', opts.ctx.locals))) {
-      throw new HttpStatusError(403, 'Access denied (feature not available)');
-    }
-
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
-      opts.ctx.locals,
-    );
+    const aiGradingModelSelectionEnabled = await features.enabled('ai-grading-model-selection', {
+      institution_id: opts.ctx.course.institution_id,
+      course_id: opts.ctx.course.id,
+      course_instance_id: opts.ctx.course_instance.id,
+      user_id: opts.ctx.authn_user.id,
+    });
 
     if (!aiGradingModelSelectionEnabled && opts.input.model_id !== DEFAULT_AI_GRADING_MODEL) {
-      throw new HttpStatusError(
-        403,
-        `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
-      );
+      throw new TRPCError({
+        code: 'FORBIDDEN',
+        message: `AI grading model selection not available. Must use default model: ${DEFAULT_AI_GRADING_MODEL}`,
+      });
     }
 
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
-      // TODO: what to do about this?
+      // Type cast needed: pageContext.course is a branded StaffCourse type but aiGrade
+      // expects the db Course type. They're structurally compatible.
       course: opts.ctx.course as unknown as Course,
       course_instance: opts.ctx.course_instance,
       assessment: opts.ctx.assessment,
@@ -197,6 +223,7 @@ const aiGradeInstanceQuestionMutation = t.procedure
   });
 
 const setAssignedGraderMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({ assigned_grader: z.string().nullable(), instance_question_ids: z.string().array() }),
   )
@@ -227,6 +254,7 @@ const setAssignedGraderMutation = t.procedure
   });
 
 const setRequiresManualGradingMutation = t.procedure
+  .use(requireCourseInstancePermissionEdit)
   .input(
     z.object({
       requires_manual_grading: z.boolean(),

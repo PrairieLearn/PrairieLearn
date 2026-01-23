@@ -235,7 +235,6 @@ router.use(
   trpcExpress.createExpressMiddleware({
     router: manualGradingAssessmentQuestionRouter,
     createContext,
-    // TODO: needs `onError` handler?
   }),
 );
 
