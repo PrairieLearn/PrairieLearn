@@ -9,6 +9,7 @@ import {
 import { Redis } from 'ioredis';
 import * as parse5 from 'parse5';
 
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -16,6 +17,7 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -258,7 +260,19 @@ const rateLimiter = new RedisRateLimiter({
       throw new Error('nonVolatileRedisUrl must be set in config');
     }
 
-    return new Redis(config.nonVolatileRedisUrl);
+    const redis = new Redis(config.nonVolatileRedisUrl);
+    redis.on('error', (err) => {
+      logger.error('AI question generation Redis error', err);
+
+      // This error could happen during a specific request, but we shouldn't
+      // associate it with that request - we just happened to try to set up
+      // Redis during a given request. We'll use a fresh scope to capture this.
+      Sentry.withScope((scope) => {
+        scope.clear();
+        Sentry.captureException(err);
+      });
+    });
+    return redis;
   },
   keyPrefix: () => config.cacheKeyPrefix + 'ai-question-generation-usage:',
   intervalSeconds: 3600,
