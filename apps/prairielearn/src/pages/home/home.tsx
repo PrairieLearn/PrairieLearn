@@ -32,29 +32,6 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
 
-interface StudentCourseForSorting {
-  start_date: Date | null;
-  end_date: Date | null;
-  course_instance: { id: string };
-}
-
-/**
- * Sort student courses by start date descending, then end date descending,
- * then course instance id descending. Null dates are treated as 0 (epoch),
- * so they sort to the end.
- */
-export function sortStudentCourses(a: StudentCourseForSorting, b: StudentCourseForSorting): number {
-  const aStart = a.start_date?.getTime() ?? 0;
-  const bStart = b.start_date?.getTime() ?? 0;
-  if (aStart !== bStart) return bStart - aStart;
-
-  const aEnd = a.end_date?.getTime() ?? 0;
-  const bEnd = b.end_date?.getTime() ?? 0;
-  if (aEnd !== bEnd) return bEnd - aEnd;
-
-  return Number(b.course_instance.id) - Number(a.course_instance.id);
-}
-
 router.get(
   '/',
   asyncHandler(async (req, res) => {
@@ -99,38 +76,36 @@ router.get(
 
     // Filter modern publishing courses by access dates (legacy courses are already
     // filtered by check_course_instance_access in SQL)
-    const studentCourses = allStudentCourses
-      .filter((entry) => {
-        // Legacy courses are already filtered by check_course_instance_access in SQL
-        if (!entry.course_instance.modern_publishing) {
-          return true;
+    const studentCourses = allStudentCourses.filter((entry) => {
+      // Legacy courses are already filtered by check_course_instance_access in SQL
+      if (!entry.course_instance.modern_publishing) {
+        return true;
+      }
+
+      // For modern publishing courses, check access dates
+      const startDate = entry.course_instance.publishing_start_date;
+      const endDate = run(() => {
+        if (entry.course_instance.publishing_end_date == null) {
+          return null;
         }
 
-        // For modern publishing courses, check access dates
-        const startDate = entry.course_instance.publishing_start_date;
-        const endDate = run(() => {
-          if (entry.course_instance.publishing_end_date == null) {
-            return null;
-          }
+        if (
+          entry.latest_publishing_extension == null ||
+          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+        ) {
+          return entry.course_instance.publishing_end_date;
+        }
 
-          if (
-            entry.latest_publishing_extension == null ||
-            entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
-          ) {
-            return entry.course_instance.publishing_end_date;
-          }
+        return entry.latest_publishing_extension.end_date;
+      });
 
-          return entry.latest_publishing_extension.end_date;
-        });
-
-        return (
-          startDate !== null &&
-          endDate !== null &&
-          startDate < res.locals.req_date &&
-          res.locals.req_date < endDate
-        );
-      })
-      .sort(sortStudentCourses);
+      return (
+        startDate !== null &&
+        endDate !== null &&
+        startDate < res.locals.req_date &&
+        res.locals.req_date < endDate
+      );
+    });
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,
