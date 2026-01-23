@@ -15,91 +15,6 @@ import {
 import { AlternativeGroup } from './AlternativeGroup.js';
 
 /**
- * A row that serves as a drop target during drag operations.
- */
-function DropZoneRow({
-  setNodeRef,
-  droppableId,
-  isOver,
-  isEmpty,
-  nTableCols,
-}: {
-  setNodeRef: (node: HTMLElement | null) => void;
-  droppableId: string;
-  isOver: boolean;
-  isEmpty: boolean;
-  nTableCols: number;
-}) {
-  function getRowClassName(): string | undefined {
-    if (!isEmpty) return undefined;
-    return isOver ? 'bg-primary-subtle' : 'bg-warning-subtle';
-  }
-
-  function getRowStyle(): React.CSSProperties {
-    if (isEmpty) {
-      return { transition: 'all 0.2s ease' };
-    }
-    return {
-      height: isOver ? 40 : 20,
-      backgroundColor: isOver ? 'rgba(0, 123, 255, 0.1)' : undefined,
-      transition: 'all 0.2s ease',
-    };
-  }
-
-  function getCellStyle(): React.CSSProperties {
-    if (isEmpty) {
-      return {
-        border: isOver ? '2px dashed #007bff' : 'none',
-        textAlign: 'center',
-      };
-    }
-    return {
-      border: isOver ? '2px dashed #007bff' : 'none',
-      textAlign: 'center',
-      color: isOver ? undefined : 'transparent',
-      fontSize: '0.85em',
-    };
-  }
-
-  function renderContent(): React.ReactNode {
-    if (isEmpty) {
-      if (isOver) {
-        return (
-          <span className="text-primary">
-            <i className="fa fa-plus-circle me-2" aria-hidden="true" />
-            Drop here to add to this zone
-          </span>
-        );
-      }
-      return (
-        <>
-          <i className="fa fa-exclamation-triangle text-warning me-2" aria-hidden="true" />
-          Drop questions here or delete this zone before saving.
-        </>
-      );
-    }
-    return isOver ? 'Drop here' : null;
-  }
-
-  return (
-    <tr
-      ref={setNodeRef}
-      data-testid={droppableId}
-      className={getRowClassName()}
-      style={getRowStyle()}
-    >
-      <td
-        colSpan={nTableCols}
-        className={isEmpty ? 'text-center py-3' : undefined}
-        style={getCellStyle()}
-      >
-        {renderContent()}
-      </td>
-    </tr>
-  );
-}
-
-/**
  * A specific zone / section of an assessment.
  *
  * Renders a list of questions via AlternativeGroup.
@@ -115,8 +30,6 @@ export function AssessmentZone({
   handleEditZone,
   handleDeleteZone,
   startingQuestionNumber,
-  activeId,
-  activeSourceZoneTrackingId,
   collapsedGroups,
   collapsedZones,
   dispatch,
@@ -131,9 +44,6 @@ export function AssessmentZone({
   handleEditZone: (zoneTrackingId: string) => void;
   handleDeleteZone: (zoneTrackingId: string) => void;
   startingQuestionNumber: number;
-  activeId: string | null;
-  /** The trackingId of the zone containing the item being dragged, if any */
-  activeSourceZoneTrackingId?: string;
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   dispatch: Dispatch<EditorAction>;
@@ -145,11 +55,10 @@ export function AssessmentZone({
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_ZONE_COLLAPSE', trackingId: zone.trackingId });
 
-  // Create a droppable zone for dropping questions into this zone
-  // Use zone index for droppable ID to maintain compatibility with drag handler
-  const droppableId = `zone-${zoneNumber - 1}-droppable`;
-  const { setNodeRef, isOver } = useDroppable({
-    id: droppableId,
+  // For empty zones, create a droppable for the warning row using the zone's trackingId
+  const { setNodeRef: emptyDropRef, isOver: isOverEmpty } = useDroppable({
+    id: zone.trackingId,
+    disabled: zone.questions.length > 0, // Only active when zone is empty
   });
 
   // Make the zone itself sortable for reordering zones
@@ -210,27 +119,33 @@ export function AssessmentZone({
               dispatch={dispatch}
             />
           ))}
-          {/* Empty zone warning - visible when zone has no questions and NOT dragging */}
-          {editMode && zone.questions.length === 0 && !activeId && (
-            <tr className="bg-warning-subtle">
+          {/* Empty zone warning - now also serves as a droppable target */}
+          {editMode && zone.questions.length === 0 && (
+            <tr
+              ref={emptyDropRef}
+              className={isOverEmpty ? 'bg-primary-subtle' : 'bg-warning-subtle'}
+              style={{ transition: 'all 0.2s ease' }}
+            >
               <td colSpan={nTableCols} className="text-center py-3">
-                <i className="fa fa-exclamation-triangle text-warning me-2" aria-hidden="true" />
-                This zone has no questions. Add questions or delete this zone before saving.
+                {isOverEmpty ? (
+                  <span className="text-primary">
+                    <i className="fa fa-plus-circle me-2" aria-hidden="true" />
+                    Drop here to add to this zone
+                  </span>
+                ) : (
+                  <>
+                    <i
+                      className="fa fa-exclamation-triangle text-warning me-2"
+                      aria-hidden="true"
+                    />
+                    This zone has no questions. Add questions or delete this zone before saving.
+                  </>
+                )}
               </td>
             </tr>
           )}
-          {/* Drop zone - only show when dragging from a different zone */}
-          {editMode && activeId && activeSourceZoneTrackingId !== zone.trackingId && (
-            <DropZoneRow
-              setNodeRef={setNodeRef}
-              droppableId={droppableId}
-              isOver={isOver}
-              isEmpty={zone.questions.length === 0}
-              nTableCols={nTableCols}
-            />
-          )}
           {/* Add question row - full width at the end of the zone */}
-          {editMode && !activeId && (
+          {editMode && (
             <tr>
               <td colSpan={nTableCols} className="py-2">
                 <button

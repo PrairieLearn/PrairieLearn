@@ -1,7 +1,6 @@
 import {
   DndContext,
   type DragEndEvent,
-  type DragStartEvent,
   KeyboardSensor,
   PointerSensor,
   pointerWithin,
@@ -175,9 +174,6 @@ export function InstructorAssessmentQuestionsTable({
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
     useSensor(KeyboardSensor, { coordinateGetter: sortableKeyboardCoordinates }),
   );
-
-  // Track the active dragging item
-  const [activeId, setActiveId] = useState<string | null>(null);
 
   // Map from trackingId to its current position {zoneIndex, questionIndex}
   // This is recomputed when zones change and used by drag handlers
@@ -376,13 +372,7 @@ export function InstructorAssessmentQuestionsTable({
     editZoneModal.hide();
   };
 
-  const handleDragStart = ({ active }: DragStartEvent) => {
-    setActiveId(String(active.id));
-  };
-
   const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    setActiveId(null);
-
     if (!over) return;
 
     const activeIdStr = String(active.id);
@@ -429,11 +419,9 @@ export function InstructorAssessmentQuestionsTable({
 
     const fromZone = zones[fromPosition.zoneIndex];
 
-    // Check if dropped on a zone droppable (e.g., "zone-0-droppable")
-    const droppableMatch = overIdStr.match(/^zone-(\d+)-droppable$/);
-    if (droppableMatch) {
-      const targetZoneIndex = Number.parseInt(droppableMatch[1]);
-      const targetZone = zones[targetZoneIndex];
+    // Check if dropped on a zone (zone header or empty zone warning)
+    const targetZone = zones.find((z) => z.trackingId === overIdStr);
+    if (targetZone) {
       if (fromZone.trackingId !== targetZone.trackingId) {
         dispatch({
           type: 'REORDER_QUESTION',
@@ -521,7 +509,6 @@ export function InstructorAssessmentQuestionsTable({
           sensors={sensors}
           collisionDetection={pointerWithin}
           autoScroll={false}
-          onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
           <SortableContext
@@ -583,14 +570,6 @@ export function InstructorAssessmentQuestionsTable({
                         handleEditZone={handleEditZone}
                         handleDeleteZone={handleDeleteZone}
                         startingQuestionNumber={zoneStartNumbers[index]}
-                        activeId={activeId}
-                        activeSourceZoneTrackingId={
-                          // activeId could be a zone trackingId (not in positionByStableId)
-                          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-                          activeId && positionByStableId[activeId]
-                            ? zones[positionByStableId[activeId].zoneIndex]?.trackingId
-                            : undefined
-                        }
                         collapsedGroups={collapsedGroups}
                         collapsedZones={collapsedZones}
                         dispatch={dispatch}
