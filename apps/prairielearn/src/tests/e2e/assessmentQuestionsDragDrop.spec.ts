@@ -57,7 +57,7 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
   await expect(page.locator('[aria-label="Drag to reorder"]').first()).toBeVisible();
 }
 
-test.describe('Assessment questions cross-zone drag and drop', () => {
+test.describe.serial('Assessment questions cross-zone drag and drop', () => {
   test.beforeAll(async ({ testCoursePath }) => {
     await syncCourse(testCoursePath);
     await features.enable('assessment-questions-editor');
