@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
@@ -15,7 +16,6 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
-import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
@@ -218,7 +218,7 @@ router.post(
         });
         if (
           !enrollment ||
-          !['removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
+          !['left', 'removed', 'rejected', 'invited', 'joined'].includes(enrollment.status)
         ) {
           flash('error', 'Failed to accept invitation');
           break;
@@ -263,14 +263,14 @@ router.post(
           authzData,
         });
 
-        if (!enrollment || !['joined', 'removed'].includes(enrollment.status)) {
+        if (!enrollment || !['joined', 'left', 'removed'].includes(enrollment.status)) {
           flash('error', 'Failed to unenroll');
           break;
         }
 
         await setEnrollmentStatus({
           enrollment,
-          status: 'removed',
+          status: 'left',
           authzData,
           requiredRole: ['Student'],
         });

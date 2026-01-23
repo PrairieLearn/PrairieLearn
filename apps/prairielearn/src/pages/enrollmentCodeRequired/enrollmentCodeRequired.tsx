@@ -44,7 +44,7 @@ router.get(
 
     const needsToSelfEnroll =
       existingEnrollment == null ||
-      !['joined', 'invited', 'removed'].includes(existingEnrollment.status);
+      !['joined', 'invited', 'left', 'removed'].includes(existingEnrollment.status);
 
     const institutionRestrictionSatisfied =
       res.locals.authn_user.institution_id === res.locals.course.institution_id ||
@@ -84,7 +84,7 @@ router.get(
     // Check if the user is enrolled, but is in a status where they cannot rejoin the course.
     if (
       existingEnrollment != null &&
-      !['joined', 'invited', 'rejected', 'removed'].includes(existingEnrollment.status)
+      !['joined', 'invited', 'rejected', 'left', 'removed'].includes(existingEnrollment.status)
     ) {
       res.status(403).send(EnrollmentPage({ resLocals: res.locals, type: 'blocked' }));
       return;
@@ -92,14 +92,14 @@ router.get(
 
     const userBypassesEnrollmentCodeRequirement =
       existingEnrollment != null &&
-      ['joined', 'invited', 'removed'].includes(existingEnrollment.status);
+      ['joined', 'invited', 'left', 'removed'].includes(existingEnrollment.status);
 
     if (
       // No enrollment code required
       !courseInstance.self_enrollment_use_enrollment_code ||
       // Enrollment code is correct
       code?.toUpperCase() === enrollmentCode.toUpperCase() ||
-      // Existing joined, invited, or removed enrollments can transition immediately.
+      // Existing joined, invited, left, or removed enrollments can transition immediately.
       // Rejected enrollments are treated as if they had no status.
       userBypassesEnrollmentCodeRequirement
     ) {

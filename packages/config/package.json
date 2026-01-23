@@ -1,11 +1,14 @@
 {
   "name": "@prairielearn/config",
-  "version": "3.2.1",
+  "version": "4.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/config"
+  },
+  "engines": {
+    "node": ">=24.0.0"
   },
   "main": "dist/index.js",
   "scripts": {
@@ -18,14 +21,14 @@
     "@aws-sdk/client-secrets-manager": "^3.969.0",
     "@prairielearn/aws-imds": "workspace:^",
     "fs-extra": "^11.3.3",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/lodash": "^4.17.23",
-    "@types/node": "^22.19.6",
+    "@types/node": "^24.10.9",
     "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "tmp-promise": "^3.0.3",

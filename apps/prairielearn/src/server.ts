@@ -52,6 +52,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -77,7 +78,6 @@ import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
-import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';

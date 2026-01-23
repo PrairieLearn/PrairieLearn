@@ -35,6 +35,87 @@ export const GroupRoleJsonSchema = z
 export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
 export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
 
+export const TeamRoleJsonSchema = z
+  .object({
+    name: z.string().describe("The team role's name (e.g., Manager, Recorder)."),
+    minMembers: z
+      .number()
+      .describe('The minimum number of users that should be in this role.')
+      .optional()
+      .default(0),
+    maxMembers: z
+      .number()
+      .describe('The maximum number of users that should be in this role.')
+      .optional(),
+  })
+  .describe('A custom role for use in team assessments.');
+
+export type TeamRoleJson = z.infer<typeof TeamRoleJsonSchema>;
+
+export const TeamStudentPermissionsJsonSchema = z
+  .object({
+    canCreateTeam: z
+      .boolean()
+      .describe('Whether students can create teams.')
+      .optional()
+      .default(false),
+    canJoinTeam: z.boolean().describe('Whether students can join teams.').optional().default(false),
+    canLeaveTeam: z
+      .boolean()
+      .describe('Whether students can leave teams.')
+      .optional()
+      .default(false),
+    canNameTeam: z
+      .boolean()
+      .describe('Whether students can choose a team name when creating a team.')
+      .optional()
+      .default(true),
+  })
+  .describe('Student permissions for team management.');
+
+export type TeamStudentPermissionsJson = z.infer<typeof TeamStudentPermissionsJsonSchema>;
+
+export const TeamRolePermissionsJsonSchema = z
+  .object({
+    canAssignRoles: uniqueArray(z.string())
+      .describe('Role names that can assign other users to roles.')
+      .optional()
+      .default([]),
+    canView: uniqueArray(z.string())
+      .describe('Role names that can view questions.')
+      .optional()
+      .default([]),
+    canSubmit: uniqueArray(z.string())
+      .describe('Role names that can submit questions.')
+      .optional()
+      .default([]),
+  })
+  .describe('Role-based permissions for team assessments.');
+
+export type TeamRolePermissionsJson = z.infer<typeof TeamRolePermissionsJsonSchema>;
+
+export const TeamsJsonSchema = z
+  .object({
+    enabled: z
+      .boolean()
+      .describe('Whether teams are enabled for this assessment.')
+      .optional()
+      .default(true),
+    minMembers: z.number().describe('Minimum number of students in a team.').optional(),
+    maxMembers: z.number().describe('Maximum number of students in a team.').optional(),
+    roles: z
+      .array(TeamRoleJsonSchema)
+      .describe('Array of custom user roles in a team.')
+      .optional()
+      .default([]),
+    studentPermissions: TeamStudentPermissionsJsonSchema.optional().default({}),
+    rolePermissions: TeamRolePermissionsJsonSchema.optional().default({}),
+  })
+  .strict()
+  .describe('Configuration for team-based assessments.');
+
+export type TeamsJson = z.infer<typeof TeamsJsonSchema>;
+
 export const AssessmentAccessRuleJsonSchema = z
   .object({
     comment: CommentJsonSchema.optional(),
@@ -205,13 +286,13 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .optional(),
   canSubmit: uniqueArray(z.string())
     .describe(
-      'A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.',
+      'A list of team role names that can submit the question. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
   canView: uniqueArray(z.string())
     .describe(
-      'A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.',
+      'A list of team role names that can view the question. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
@@ -264,13 +345,13 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional(),
   canSubmit: uniqueArray(z.string())
     .describe(
-      'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+      'A list of team role names that can submit questions in this zone. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
   canView: uniqueArray(z.string())
     .describe(
-      'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+      'A list of team role names that can view questions in this zone. Only applicable for team assessments.',
     )
     .optional()
     .default([]),
@@ -371,50 +452,59 @@ export const AssessmentJsonSchema = z
       .optional(),
     groupWork: z
       .boolean()
-      .describe('Whether the assessment will support group work.')
+      .describe(
+        'Whether the assessment will support group work. DEPRECATED -- prefer using teams instead.',
+      )
       .optional()
       .default(false),
-    groupMaxSize: z.number().describe('Maximum number of students in a group.').optional(),
-    groupMinSize: z.number().describe('Minimum number of students in a group.').optional(),
+    groupMaxSize: z
+      .number()
+      .describe('Maximum number of students in a group. DEPRECATED -- prefer using teams instead.')
+      .optional(),
+    groupMinSize: z
+      .number()
+      .describe('Minimum number of students in a group. DEPRECATED -- prefer using teams instead.')
+      .optional(),
     groupRoles: z
       .array(GroupRoleJsonSchema)
-      .describe('Array of custom user roles in a group.')
+      .describe('Array of custom user roles in a group. DEPRECATED -- prefer using teams instead.')
       .optional()
       .default([]),
     canSubmit: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can submit questions in this zone. Only applicable for group assessments.',
+        'A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.',
       )
       .optional()
       .default([]),
     canView: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can view questions in this zone. Only applicable for group assessments.',
+        'A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.',
       )
       .optional()
       .default([]),
     studentGroupCreate: z
       .boolean()
-      .describe('Whether students can create groups.')
+      .describe('Whether students can create groups. DEPRECATED -- prefer using teams instead.')
       .optional()
       .default(false),
     studentGroupChooseName: z
       .boolean()
       .describe(
-        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.',
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using teams instead.',
       )
       .optional()
       .default(true),
     studentGroupJoin: z
       .boolean()
-      .describe('Whether students can join groups.')
+      .describe('Whether students can join groups. DEPRECATED -- prefer using teams instead.')
       .optional()
       .default(false),
     studentGroupLeave: z
       .boolean()
-      .describe('Whether students can leave groups.')
+      .describe('Whether students can leave groups. DEPRECATED -- prefer using teams instead.')
       .optional()
       .default(false),
+    teams: TeamsJsonSchema.optional(),
     advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
     gradeRateMinutes: z
       .number()

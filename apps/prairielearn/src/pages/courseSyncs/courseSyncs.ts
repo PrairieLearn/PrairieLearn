@@ -111,6 +111,12 @@ router.post(
     }
 
     if (req.body.__action === 'pull') {
+      if (config.devMode) {
+        throw new HttpStatusError(
+          400,
+          'Pulling from a remote repository is not supported in development mode.',
+        );
+      }
       const { jobSequenceId } = await pullAndUpdateCourse({
         course: res.locals.course,
         userId: res.locals.user.id,

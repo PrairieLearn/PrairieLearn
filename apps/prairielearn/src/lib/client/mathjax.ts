@@ -52,9 +52,27 @@ const {
       // This PR was merged but won't be released until MathJax v4:
       // https://github.com/mathjax/MathJax-src/pull/859
       fontCache: 'local',
+
+      // Because of the functionality inherited from MathJax v3, instructors
+      // expect Math expressions not to line-break. MathJax v4 changed the
+      // default behavior to allow line breaks. We explicitly disable line
+      // breaks to maintain the previous behavior. This is especially important
+      // for elements like pl-drawing where line breaks can cause rendering
+      // issues, since pl-drawing relies on MathJax returning a single SVG
+      // element.
+      // See: https://docs.mathjax.org/en/latest/output/linebreaks.html#in-line-breaking
+      linebreaks: { inline: false },
     },
     loader: {
       load: ['input/tex', 'ui/menu', outputComponent],
+      paths: {
+        // MathJax will retrieve the font from CDN by default, but we want it to
+        // use our locally installed copy. This is particularly important for
+        // CBTF environments, which restrict network access.
+        'mathjax-newcm': document
+          .querySelector('meta[name="mathjax-fonts-path"]')
+          ?.getAttribute('content'),
+      },
     },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {

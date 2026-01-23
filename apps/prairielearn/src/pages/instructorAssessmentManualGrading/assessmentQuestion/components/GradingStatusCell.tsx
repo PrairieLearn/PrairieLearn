@@ -1,7 +1,7 @@
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import { JobItemStatus } from '../../../../lib/serverJobProgressSocket.shared.js';
-import { assertNever } from '../../../../lib/types.js';
 
 export function GradingStatusCell({
   aiGradingMode,

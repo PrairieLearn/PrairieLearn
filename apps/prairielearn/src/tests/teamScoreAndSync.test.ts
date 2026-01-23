@@ -8,7 +8,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -39,7 +38,7 @@ describe('assessment instance team synchronization test', function () {
     Object.assign(config, storedConfig);
   });
 
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
