@@ -459,7 +459,7 @@ async function _inviteExistingEnrollment({
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: ('Student Data Editor' | 'System')[];
-  actionDetail?: 'invited' | 'invited_from_sync';
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
@@ -498,7 +498,7 @@ async function inviteNewEnrollment({
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
   requiredRole: ('Student Data Editor' | 'System')[];
-  actionDetail?: 'invited' | 'invited_from_sync';
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -539,7 +539,7 @@ export async function inviteStudentByUid({
   requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
-  actionDetail?: 'invited' | 'invited_from_sync';
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({

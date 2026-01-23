@@ -129,7 +129,7 @@ async function processInvitations({
    * If false, re-invites blocked students. This is useful for `sync_students`.
    */
   skipBlocked: boolean;
-  actionDetail?: 'invited' | 'invited_from_sync';
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<void> {
   for (const uid of uids) {
     try {
@@ -298,7 +298,7 @@ router.post(
             job,
             counts: syncCounts,
             skipBlocked: false, // sync_students can re-invite blocked students
-            actionDetail: 'invited_from_sync',
+            actionDetail: 'invited_by_manual_sync',
           });
         }
 
@@ -325,7 +325,7 @@ router.post(
 
               await deleteEnrollment({
                 enrollment,
-                actionDetail: 'invitation_deleted_from_sync',
+                actionDetail: 'invitation_deleted_by_manual_sync',
                 authzData,
                 requiredRole: ['Student Data Editor'],
               });
