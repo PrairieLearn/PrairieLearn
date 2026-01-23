@@ -1,5 +1,6 @@
 import clsx from 'clsx';
-import { Fragment, type KeyboardEvent, useRef, useState } from 'react';
+import { Fragment } from 'react';
+import { VisuallyHidden, useFocusRing } from 'react-aria';
 import { FieldError, Input, TextField } from 'react-aria-components';
 
 export function formatOtpValue(raw: string, maxLength: number): string {
@@ -39,51 +40,19 @@ export function OtpInput({
   name,
   onBlur,
 }: OtpInputProps) {
-  const [focused, setFocused] = useState(false);
-  const [cursorPosition, setCursorPosition] = useState(0);
-  const inputRef = useRef<HTMLInputElement>(null);
-  const length = groupPattern.reduce((sum, size) => sum + size, 0);
+  if (groupPattern.length === 0 || groupPattern.some((n) => n <= 0)) {
+    throw new Error('OtpInput: groupPattern must be a non-empty array of positive integers');
+  }
 
-  const focusedIndex = focused ? Math.min(Math.max(cursorPosition, 0), length - 1) : -1;
+  const { isFocusVisible, focusProps } = useFocusRing();
+  const length = groupPattern.reduce((sum, size) => sum + size, 0);
 
   const handleChange = (newValue: string) => {
     const formatted = formatOtpValue(newValue, length);
     onChange(formatted);
-    setCursorPosition(formatted.length);
     if (formatted.length === length) {
       onComplete?.(formatted);
     }
-  };
-
-  const handleBoxClick = (index: number) => {
-    if (disabled) return;
-    inputRef.current?.focus();
-    const pos = Math.min(index, value.length);
-    setCursorPosition(pos);
-    requestAnimationFrame(() => {
-      inputRef.current?.setSelectionRange(pos, pos);
-    });
-  };
-
-  const handleKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
-    let newPos = cursorPosition;
-    if (e.key === 'ArrowLeft') {
-      newPos = Math.max(0, cursorPosition - 1);
-    } else if (e.key === 'ArrowRight') {
-      newPos = Math.min(length - 1, cursorPosition + 1);
-    } else if (e.key === 'Home') {
-      newPos = 0;
-    } else if (e.key === 'End') {
-      newPos = length - 1;
-    } else {
-      return;
-    }
-    e.preventDefault();
-    setCursorPosition(newPos);
-    inputRef.current?.setSelectionRange(
-      Math.min(value.length, newPos),
-      Math.min(value.length, newPos),
-    );
   };
 
   // Build group start indices for stable keys
@@ -97,15 +66,15 @@ export function OtpInput({
   return (
     <TextField
       aria-label={ariaLabel}
-      className={clsx('position-relative d-inline-block', className)}
-      style={{ cursor: 'text' }}
+      className={clsx('d-inline-block', className)}
       isDisabled={disabled}
       isInvalid={isInvalid}
       name={name}
       value={value}
       onChange={handleChange}
     >
-      <div className="d-inline-flex align-items-center gap-1">
+      {/* Using a label element provides native click-to-focus behavior */}
+      <label className="d-inline-flex align-items-center gap-1" style={{ cursor: 'text' }}>
         {groupPattern.map((groupSize, groupIndex) => {
           const start = groupStarts[groupIndex];
           return (
@@ -119,19 +88,18 @@ export function OtpInput({
                 {Array.from({ length: groupSize }, (_, i) => {
                   const boxIndex = start + i;
                   const char = value[boxIndex] ?? '';
-                  const isFocused = boxIndex === focusedIndex;
+                  const showCursor = isFocusVisible && boxIndex === value.length;
                   return (
                     <div
                       key={boxIndex}
                       className={clsx(
                         'pl-ui-otp-box',
-                        isFocused && 'focused',
+                        showCursor && 'focused focus-visible',
                         isInvalid && 'is-invalid',
                       )}
                       aria-hidden="true"
-                      onClick={() => handleBoxClick(boxIndex)}
                     >
-                      {char || (isFocused ? <div className="pl-ui-otp-caret" /> : null)}
+                      {char || (showCursor ? <div className="pl-ui-otp-caret" /> : null)}
                     </div>
                   );
                 })}
@@ -139,30 +107,19 @@ export function OtpInput({
             </Fragment>
           );
         })}
-      </div>
-      <Input
-        ref={inputRef}
-        autoCapitalize="characters"
-        autoComplete="one-time-code"
-        autoCorrect="off"
-        // eslint-disable-next-line jsx-a11y-x/no-autofocus -- autoFocus is intentionally supported for modal use cases
-        autoFocus={autoFocus}
-        className="position-absolute opacity-0"
-        style={{ pointerEvents: 'none', width: 1, height: 1 }}
-        inputMode="text"
-        onBlur={() => {
-          setFocused(false);
-          onBlur?.();
-        }}
-        onFocus={() => {
-          setFocused(true);
-          setCursorPosition(inputRef.current?.selectionStart ?? value.length);
-        }}
-        onKeyDown={handleKeyDown}
-        onSelect={(e: { target: EventTarget | null }) =>
-          setCursorPosition((e.target as HTMLInputElement).selectionStart ?? 0)
-        }
-      />
+        <VisuallyHidden>
+          <Input
+            autoCapitalize="characters"
+            autoComplete="one-time-code"
+            autoCorrect="off"
+            // eslint-disable-next-line jsx-a11y-x/no-autofocus -- autoFocus is intentionally supported for modal use cases
+            autoFocus={autoFocus}
+            inputMode="text"
+            onBlur={onBlur}
+            {...focusProps}
+          />
+        </VisuallyHidden>
+      </label>
       <FieldError className="form-text text-danger">{errorMessage}</FieldError>
     </TextField>
   );
