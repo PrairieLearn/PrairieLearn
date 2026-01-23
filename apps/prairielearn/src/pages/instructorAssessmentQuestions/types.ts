@@ -27,7 +27,7 @@ export interface AssessmentState {
 export function getTableColumnCount(
   state: Pick<AssessmentState, 'editMode' | 'showAdvanceScorePercCol'>,
 ): number {
-  const baseCols = state.showAdvanceScorePercCol ? 11 : 10;
+  const baseCols = state.showAdvanceScorePercCol ? 10 : 9;
   return baseCols + (state.editMode ? 3 : 0);
 }
 

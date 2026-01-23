@@ -1,8 +1,7 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import type { CSSProperties } from 'react';
 
-import { OverlayTrigger } from '@prairielearn/ui';
-
+import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type {
   QuestionAlternativeJson,
@@ -122,7 +121,6 @@ export function AlternativeGroupHeader({
   alternativeGroupNumber,
   nTableCols,
   questionMetadata,
-  urlPrefix,
   isCollapsed,
   onToggle,
   editMode,
@@ -135,7 +133,6 @@ export function AlternativeGroupHeader({
   alternativeGroupNumber: number;
   nTableCols: number;
   questionMetadata?: Record<string, StaffAssessmentQuestionRow>;
-  urlPrefix?: string;
   isCollapsed?: boolean;
   onToggle?: () => void;
   editMode?: boolean;
@@ -149,53 +146,24 @@ export function AlternativeGroupHeader({
     alternativeGroup.alternatives ?? (alternativeGroup.id ? [{ id: alternativeGroup.id }] : []);
   const alternativeCount = alternatives.length;
 
-  // Build list of questions with title and URL for the popover
-  const questionList = alternatives
-    .map((alt) => {
-      const qid = alt.id;
-      const metadata = questionMetadata?.[qid];
-      if (!metadata) return null;
-      return {
-        qid,
-        title: metadata.question.title,
-        url: urlPrefix ? `${urlPrefix}/question/${metadata.question.id}/preview` : null,
-      };
-    })
-    .filter((q): q is NonNullable<typeof q> => q !== null);
+  // Check if all alternatives share the same topic
+  const sharedTopic = (() => {
+    if (!questionMetadata || alternatives.length === 0) return null;
 
-  const popoverContent = (
-    <ul className="list-unstyled mb-0" style={{ whiteSpace: 'nowrap' }}>
-      {questionList.map((question, index) => (
-        <li key={question.qid}>
-          {alternativeGroupNumber}.{index + 1}.{' '}
-          {question.url ? <a href={question.url}>{question.title}</a> : question.title}
-        </li>
-      ))}
-    </ul>
-  );
+    const topics = alternatives
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      .map((alt) => questionMetadata[alt.id]?.topic)
+      // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+      .filter((t): t is NonNullable<typeof t> => t != null);
 
-  const theseLink = (
-    <OverlayTrigger
-      placement="bottom"
-      trigger={['hover', 'focus']}
-      popover={{
-        props: {
-          id: `alt-group-${alternativeGroupNumber}-popover`,
-          style: { maxWidth: 'none' },
-        },
-        header: 'Alternative questions',
-        body: popoverContent,
-      }}
-    >
-      <button
-        className="btn btn-link p-0 align-baseline text-decoration-underline"
-        type="button"
-        onClick={(e) => e.stopPropagation()}
-      >
-        these {alternativeCount}
-      </button>
-    </OverlayTrigger>
-  );
+    // All alternatives must have topic metadata and share the same topic name
+    if (topics.length !== alternatives.length) return null;
+    const firstTopic = topics[0];
+    if (topics.every((t) => t.name === firstTopic.name)) {
+      return firstTopic;
+    }
+    return null;
+  })();
 
   return (
     <tr
@@ -226,24 +194,39 @@ export function AlternativeGroupHeader({
           ) : null}
         </td>
       )}
-      <td colSpan={editMode ? nTableCols - 1 : nTableCols}>
-        {onToggle && (
-          <i
-            className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} me-2`}
-            aria-hidden="true"
-          />
-        )}
-        <span className="badge color-gray1 me-2">{alternativeGroupNumber}.</span>
-        {alternativeGroup.numberChoose == null ? (
-          <>All questions from {theseLink}:</>
-        ) : alternativeGroup.numberChoose === 1 ? (
-          <>1 question from {theseLink}:</>
-        ) : (
-          <>
-            {alternativeGroup.numberChoose} questions from {theseLink}:
-          </>
-        )}
+      {/* In edit mode: span edit+delete+title columns (3). In non-edit mode: just title column (1) */}
+      <td colSpan={editMode ? 3 : 1}>
+        <div className="ms-2">
+          <span className="badge color-gray1 me-2">{alternativeGroupNumber}.</span>
+          {alternativeGroup.numberChoose == null ? (
+            <>All questions from these {alternativeCount}:</>
+          ) : alternativeGroup.numberChoose === 1 ? (
+            <>1 question from these {alternativeCount}:</>
+          ) : (
+            <>
+              {alternativeGroup.numberChoose} questions from these {alternativeCount}:
+            </>
+          )}
+        </div>
+        <div className="small text-muted">
+          {onToggle && (
+            <i
+              className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} ms-2 me-2`}
+              aria-hidden="true"
+            />
+          )}
+          {alternatives.slice(0, 2).map((alt, i) => (
+            <span key={alt.id}>
+              {i > 0 && ', '}
+              <code className="text-muted">{alt.id}</code>
+            </span>
+          ))}
+          {alternatives.length > 2 && <span>, …</span>}
+        </div>
       </td>
+      <td>{sharedTopic && <TopicBadge topic={sharedTopic} />}</td>
+      {/* Span remaining columns: nTableCols - drag(1 if edit) - content(3 if edit, 1 if not) - topic(1) */}
+      <td colSpan={editMode ? nTableCols - 5 : nTableCols - 2} />
     </tr>
   );
 }

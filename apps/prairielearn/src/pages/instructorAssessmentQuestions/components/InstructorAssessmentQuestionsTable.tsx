@@ -534,7 +534,6 @@ export function InstructorAssessmentQuestionsTable({
                     <th>
                       <span className="visually-hidden">Name</span>
                     </th>
-                    <th>QID</th>
                     <th>Topic</th>
                     <th>Tags</th>
                     <th>Auto Points</th>

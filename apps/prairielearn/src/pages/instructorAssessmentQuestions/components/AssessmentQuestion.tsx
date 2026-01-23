@@ -1,9 +1,7 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import clsx from 'clsx';
-import { type CSSProperties, useState } from 'react';
+import { type CSSProperties } from 'react';
 import { Dropdown } from 'react-bootstrap';
-
-import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentQuestionNumber } from '../../../components/AssessmentQuestions.js';
 import { HistMini } from '../../../components/HistMini.js';
@@ -44,6 +42,7 @@ function QuestionTitle({
           alternativeGroupSize={questionRow.alternative_group_size}
           alternativeGroupNumber={questionNumber}
           numberInAlternativeGroup={alternativeNumber}
+          className={questionRow.alternative_group_size > 1 ? 'ms-3' : 'ms-2'}
         />
         <a href={`${urlPrefix}/question/${question.id}/`}>{question.title}</a>
       </>
@@ -55,6 +54,7 @@ function QuestionTitle({
         alternativeGroupSize={questionRow.alternative_group_size}
         alternativeGroupNumber={questionNumber}
         numberInAlternativeGroup={alternativeNumber}
+        className={questionRow.alternative_group_size > 1 ? 'ms-3' : 'ms-2'}
       />
       {question.title}
     </>
@@ -78,7 +78,7 @@ function MaxPointsText({
   if (autoPoints || !maxManualPoints) {
     if (assessmentType === 'Exam') {
       const pointsArray = Array.isArray(autoPoints) ? autoPoints : [autoPoints ?? maxManualPoints];
-      return pointsArray.map((p) => (p ?? 0) - (maxManualPoints ?? 0)).join(',');
+      return pointsArray.map((p) => (p ?? 0) - (maxManualPoints ?? 0)).join(', ');
     }
     if (assessmentType === 'Homework') {
       const initPointsValue = Array.isArray(autoPoints) ? autoPoints[0] : autoPoints;
@@ -129,7 +129,6 @@ export function AssessmentQuestion({
 }) {
   const question = alternative ?? alternativeGroup;
   const questionId = alternative?.id ?? id;
-  const [copied, setCopied] = useState(false);
   const {
     questionMetadata,
     editMode,
@@ -200,46 +199,31 @@ export function AssessmentQuestion({
         </button>
       </td>
     ),
-    <td key="title">
-      <QuestionTitle
-        questionRow={questionData}
-        hasCoursePermissionPreview={hasCoursePermissionPreview}
-        urlPrefix={urlPrefix}
-        questionNumber={questionNumber}
-        alternativeNumber={alternativeIndex !== undefined ? alternativeIndex + 1 : 1}
-      />
-      <IssueBadge
-        urlPrefix={urlPrefix}
-        count={questionData.open_issue_count}
-        issueQid={questionData.question.qid}
-      />
-    </td>,
-    <td key="sync-status">
-      {questionData.question.sync_errors ? (
-        <SyncProblemButton output={questionData.question.sync_errors} type="error" />
-      ) : questionData.question.sync_warnings ? (
-        <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
-      ) : null}
-      <code>{questionId}</code>
-      <OverlayTrigger
-        tooltip={{
-          body: copied ? 'Copied!' : 'Copy',
-          props: { id: `qid-copy-tooltip-${questionId}` },
-        }}
-      >
-        <button
-          type="button"
-          className="btn btn-sm btn-link p-0 ms-1"
-          aria-label="Copy QID"
-          onClick={async () => {
-            await navigator.clipboard.writeText(questionId);
-            setCopied(true);
-            setTimeout(() => setCopied(false), 1500);
-          }}
-        >
-          <i className="bi bi-copy" />
-        </button>
-      </OverlayTrigger>
+    <td key="title" style={{ whiteSpace: 'nowrap' }}>
+      <div>
+        <QuestionTitle
+          questionRow={questionData}
+          hasCoursePermissionPreview={hasCoursePermissionPreview}
+          urlPrefix={urlPrefix}
+          questionNumber={questionNumber}
+          alternativeNumber={alternativeIndex !== undefined ? alternativeIndex + 1 : 1}
+        />
+        <IssueBadge
+          urlPrefix={urlPrefix}
+          count={questionData.open_issue_count}
+          issueQid={questionData.question.qid}
+        />
+      </div>
+      <div className="small text-muted">
+        <div className={clsx(questionData.alternative_group_size > 1 && 'ms-3')}>
+          {questionData.question.sync_errors ? (
+            <SyncProblemButton output={questionData.question.sync_errors} type="error" />
+          ) : questionData.question.sync_warnings ? (
+            <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
+          ) : null}
+          <code>{questionId}</code>
+        </div>
+      </div>
     </td>,
     <td key="topic">
       <TopicBadge topic={questionData.topic} />

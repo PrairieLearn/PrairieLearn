@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
@@ -51,15 +53,17 @@ export function AssessmentQuestionNumber({
   alternativeGroupSize,
   alternativeGroupNumber,
   numberInAlternativeGroup,
+  className,
 }: {
   alternativeGroupSize: number;
   alternativeGroupNumber: number;
   numberInAlternativeGroup: number | null;
+  className?: string;
 }) {
   return alternativeGroupSize === 1 ? (
-    <span className="badge color-gray1 ms-4 me-2">{alternativeGroupNumber}. </span>
+    <span className={clsx('badge color-gray1 me-2', className)}>{alternativeGroupNumber}. </span>
   ) : (
-    <span className="badge color-gray1 ms-2 me-2">
+    <span className={clsx('badge color-gray1 me-2', className)}>
       {alternativeGroupNumber}.{numberInAlternativeGroup}.{' '}
     </span>
   );

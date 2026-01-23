@@ -68,7 +68,6 @@ export function AlternativeGroup({
           alternativeGroupNumber={questionNumber}
           nTableCols={getTableColumnCount(assessmentState)}
           questionMetadata={assessmentState.questionMetadata}
-          urlPrefix={assessmentState.urlPrefix}
           isCollapsed={isCollapsed}
           editMode={assessmentState.editMode}
           sortableRef={setNodeRef}
