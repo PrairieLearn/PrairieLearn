@@ -4601,7 +4601,6 @@ __metadata:
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.9.1"
-    is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^6.0.0"
     jju: "npm:^1.4.0"
     jose: "npm:^6.1.3"
