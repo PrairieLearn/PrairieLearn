@@ -268,9 +268,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.id,
-      });
+      const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
       const approxPromptCost = approximatePromptCost({
         model: QUESTION_GENERATION_OPENAI_MODEL,
@@ -308,7 +306,6 @@ router.post(
       await addCompletionCostToIntervalUsage({
         userId: res.locals.authn_user.id,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {

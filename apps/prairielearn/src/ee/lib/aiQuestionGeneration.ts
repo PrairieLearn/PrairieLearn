@@ -6,9 +6,9 @@ import {
   type LanguageModelUsage,
   generateText,
 } from 'ai';
+import { Redis } from 'ioredis';
 import * as parse5 from 'parse5';
 
-import { Cache } from '@prairielearn/cache';
 import {
   execute,
   loadSqlEquiv,
@@ -30,8 +30,13 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import {
+  type Issue,
+  QuestionGenerationContextEmbeddingSchema,
+  type User,
+} from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
+import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
@@ -245,21 +250,19 @@ function extractFromResponse(
   return out;
 }
 
-/**
- * Returns the AI question generation cache used for rate limiting.
- */
-let aiQuestionGenerationCache: Cache | undefined;
-export async function getAiQuestionGenerationCache() {
-  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
-  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
-  aiQuestionGenerationCache = new Cache();
-  await aiQuestionGenerationCache.init({
-    type: config.nonVolatileCacheType,
-    keyPrefix: config.cacheKeyPrefix,
-    redisUrl: config.nonVolatileRedisUrl,
-  });
-  return aiQuestionGenerationCache;
-}
+const rateLimiter = new RedisRateLimiter({
+  redis: () => {
+    if (!config.nonVolatileRedisUrl) {
+      // Redis is a hard requirement for AI question generation. We don't attempt
+      // to operate without it.
+      throw new Error('nonVolatileRedisUrl must be set in config');
+    }
+
+    return new Redis(config.nonVolatileRedisUrl);
+  },
+  keyPrefix: () => config.cacheKeyPrefix + 'ai-question-generation-usage:',
+  intervalSeconds: 3600,
+});
 
 /**
  * Approximate the cost of the prompt, in US dollars.
@@ -286,22 +289,17 @@ export function approximatePromptCost({
 }
 
 /**
- * Retrieve the Redis key for a user's current AI question generation interval usage
+ * Retrieve the Redis key for a user's AI question generation interval usage.
  */
-function getIntervalUsageKey(userId: number) {
-  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
-  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+function getIntervalUsageKey(user: User) {
+  return `ai-question-generation:user:${user.id}`;
 }
-
-// 1 hour in milliseconds
-const intervalLengthMs = 3600 * 1000;
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
-  const cache = await getAiQuestionGenerationCache();
-  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
+export async function getIntervalUsage(user: User) {
+  return rateLimiter.getIntervalUsage(getIntervalUsageKey(user));
 }
 
 /**
@@ -310,23 +308,15 @@ export async function getIntervalUsage({ userId }: { userId: number }) {
 export async function addCompletionCostToIntervalUsage({
   userId,
   usage,
-  intervalCost,
 }: {
   userId: number;
   usage: LanguageModelUsage | undefined;
-  intervalCost: number;
 }) {
-  const cache = await getAiQuestionGenerationCache();
-
   const completionCost = calculateResponseCost({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
-
-  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
-
-  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(userId), completionCost);
 }
 
 /**
