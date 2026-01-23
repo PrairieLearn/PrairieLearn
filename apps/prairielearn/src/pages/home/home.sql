@@ -174,6 +174,8 @@ WITH
       c.title AS course_title,
       ci.id AS course_instance_id,
       ci.modern_publishing,
+      ci.publishing_start_date,
+      ci.publishing_end_date,
       to_jsonb(ci) AS course_instance,
       to_jsonb(e) AS enrollment,
       u.uid,
@@ -237,8 +239,8 @@ WITH
       be.course_instance,
       be.enrollment,
       to_jsonb(cie) AS latest_publishing_extension,
-      (be.course_instance ->> 'publishing_start_date')::timestamptz AS start_date,
-      (be.course_instance ->> 'publishing_end_date')::timestamptz AS end_date,
+      be.publishing_start_date AS start_date,
+      be.publishing_end_date AS end_date,
       be.course_instance_id
     FROM
       base_enrollments AS be
