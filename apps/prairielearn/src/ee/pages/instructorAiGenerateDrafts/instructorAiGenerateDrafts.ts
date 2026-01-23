@@ -136,7 +136,7 @@ router.post(
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.id,
+        user: res.locals.authn_user,
         usage: result.usage,
       });
 

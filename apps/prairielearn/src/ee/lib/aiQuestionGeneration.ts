@@ -306,17 +306,17 @@ export async function getIntervalUsage(user: User) {
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  userId,
+  user,
   usage,
 }: {
-  userId: number;
+  user: User;
   usage: LanguageModelUsage | undefined;
 }) {
   const completionCost = calculateResponseCost({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
-  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(userId), completionCost);
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(user), completionCost);
 }
 
 /**
