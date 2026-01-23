@@ -159,15 +159,16 @@ export async function generatePrompt({
     },
   );
 
+  // test different version of this to see if it works
   if (questionAnswer.trim()) {
     input.push(
       {
         role: systemRoleAfterUserMessage,
-        content: 'The instructor has provided the following answer for this question:',
+        content: 'The instructor has provided the following reference solution for this question:',
       },
       {
         role: 'user',
-        content: questionAnswer.trim(),
+        content: '<reference-answer>\n' + questionAnswer.trim() + '\n</reference-answer>',
       },
     );
   }
