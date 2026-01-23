@@ -74,13 +74,9 @@ router.get(
       StudentHomePageCourseWithExtensionSchema,
     );
 
-    // Filter modern publishing courses by access dates (legacy courses are already
-    // filtered by check_course_instance_access in SQL)
     const studentCourses = allStudentCourses.filter((entry) => {
       // Legacy courses are already filtered by check_course_instance_access in SQL
-      if (!entry.course_instance.modern_publishing) {
-        return true;
-      }
+      if (!entry.course_instance.modern_publishing) return true;
 
       // For modern publishing courses, check access dates
       const startDate = entry.course_instance.publishing_start_date;
