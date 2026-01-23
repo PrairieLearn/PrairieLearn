@@ -57,7 +57,7 @@ export function AlternativeGroup({
     transition,
     background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
     position: isDragging ? ('relative' as const) : undefined,
-    zIndex: isDragging ? 1 : undefined,
+    zIndex: isDragging ? 2 : undefined,
   };
 
   return (

@@ -87,7 +87,14 @@ export function ZoneHeader({
   return (
     <tr
       ref={sortableRef}
-      style={{ ...sortableStyle, cursor: onToggle ? 'pointer' : undefined }}
+      style={{
+        ...sortableStyle,
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'var(--bs-secondary-bg)',
+        zIndex: 10,
+        cursor: onToggle ? 'pointer' : undefined,
+      }}
       className={onToggle ? 'user-select-none' : undefined}
       onClick={onToggle}
       {...sortableAttributes}
@@ -114,7 +121,6 @@ export function ZoneHeader({
         </th>
       )}
       {editMode && (
-        // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events
         <th className="align-content-center" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn btn-sm btn-outline-secondary border-0"
@@ -127,7 +133,6 @@ export function ZoneHeader({
         </th>
       )}
       {editMode && (
-        // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions, jsx-a11y-x/click-events-have-key-events
         <th className="align-content-center" onClick={(e) => e.stopPropagation()}>
           <button
             className="btn btn-sm btn-outline-secondary border-0"

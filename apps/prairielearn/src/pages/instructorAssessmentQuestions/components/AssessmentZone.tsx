@@ -81,7 +81,7 @@ export function AssessmentZone({
     transition: sortableTransition,
     background: isSortableDragging ? 'rgba(0,0,0,0.04)' : undefined,
     position: isSortableDragging ? ('relative' as const) : undefined,
-    zIndex: isSortableDragging ? 1 : undefined,
+    zIndex: isSortableDragging ? 2 : undefined,
   };
 
   return (
