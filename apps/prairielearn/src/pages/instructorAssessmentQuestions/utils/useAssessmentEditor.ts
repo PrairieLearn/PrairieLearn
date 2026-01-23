@@ -1,12 +1,20 @@
 import { useReducer } from 'react';
 
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type { ZoneAssessmentJson, ZoneQuestionJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
+  TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionForm,
 } from '../instructorAssessmentQuestions.shared.js';
 import type { EditorAction, EditorState } from '../types.js';
+
+/**
+ * Creates a new TrackingId (branded UUID).
+ */
+function createTrackingId(): TrackingId {
+  return crypto.randomUUID() as TrackingId;
+}
 
 /**
  * Adds trackingId to zones, questions, and alternatives.
@@ -15,13 +23,13 @@ import type { EditorAction, EditorState } from '../types.js';
 export function addTrackingIds(zones: ZoneAssessmentJson[]): ZoneAssessmentForm[] {
   return zones.map((zone) => ({
     ...zone,
-    trackingId: crypto.randomUUID(),
+    trackingId: createTrackingId(),
     questions: zone.questions.map((question) => ({
       ...question,
-      trackingId: crypto.randomUUID(),
+      trackingId: createTrackingId(),
       alternatives: question.alternatives?.map((alt) => ({
         ...alt,
-        trackingId: crypto.randomUUID(),
+        trackingId: createTrackingId(),
       })),
     })),
   }));
@@ -58,22 +66,21 @@ export function createZoneWithTrackingId(
 ): ZoneAssessmentForm {
   return {
     ...zone,
-    trackingId: crypto.randomUUID(),
+    trackingId: createTrackingId(),
   };
 }
 
 /**
  * Creates a new question with a trackingId.
+ * New trackingIds are always generated (this is for new questions, not existing ones).
  */
-export function createQuestionWithTrackingId(
-  question: Omit<ZoneQuestionForm, 'trackingId'>,
-): ZoneQuestionForm {
+export function createQuestionWithTrackingId(question: ZoneQuestionJson): ZoneQuestionForm {
   return {
     ...question,
-    trackingId: crypto.randomUUID(),
+    trackingId: createTrackingId(),
     alternatives: question.alternatives?.map((alt) => ({
       ...alt,
-      trackingId: 'trackingId' in alt ? alt.trackingId : crypto.randomUUID(),
+      trackingId: createTrackingId(),
     })),
   };
 }
@@ -98,7 +105,12 @@ function findZoneByTrackingId(
 function findQuestionByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
-): { question: ZoneQuestionForm; questionIndex: number; zone: ZoneAssessmentForm; zoneIndex: number } | null {
+): {
+  question: ZoneQuestionForm;
+  questionIndex: number;
+  zone: ZoneAssessmentForm;
+  zoneIndex: number;
+} | null {
   for (let zoneIndex = 0; zoneIndex < zones.length; zoneIndex++) {
     const zone = zones[zoneIndex];
     const questionIndex = zone.questions.findIndex((q) => q.trackingId === trackingId);
@@ -136,8 +148,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       const zoneResult = findZoneByTrackingId(newZones, zoneTrackingId);
       if (!zoneResult) {
-        console.error(`ADD_QUESTION: Zone with trackingId ${zoneTrackingId} not found`);
-        return state;
+        throw new Error(`ADD_QUESTION: Zone with trackingId ${zoneTrackingId} not found`);
       }
 
       zoneResult.zone.questions.push(question);
@@ -147,6 +158,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         : state.questionMetadata;
 
       return {
+        ...state,
         zones: newZones,
         questionMetadata: newQuestionMetadata,
       };
@@ -158,18 +170,21 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       const questionResult = findQuestionByTrackingId(newZones, questionTrackingId);
       if (!questionResult) {
-        console.error(`UPDATE_QUESTION: Question with trackingId ${questionTrackingId} not found`);
-        return state;
+        throw new Error(
+          `UPDATE_QUESTION: Question with trackingId ${questionTrackingId} not found`,
+        );
       }
 
       if (alternativeTrackingId !== undefined) {
         // Updating an alternative within an alternative group
-        const altResult = findAlternativeByTrackingId(questionResult.question, alternativeTrackingId);
+        const altResult = findAlternativeByTrackingId(
+          questionResult.question,
+          alternativeTrackingId,
+        );
         if (!altResult) {
-          console.error(
+          throw new Error(
             `UPDATE_QUESTION: Alternative with trackingId ${alternativeTrackingId} not found in question ${questionTrackingId}`,
           );
-          return state;
         }
         questionResult.question.alternatives![altResult.index] = {
           ...altResult.alternative,
@@ -195,8 +210,9 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       const questionResult = findQuestionByTrackingId(newZones, questionTrackingId);
       if (!questionResult) {
-        console.error(`DELETE_QUESTION: Question with trackingId ${questionTrackingId} not found`);
-        return state;
+        throw new Error(
+          `DELETE_QUESTION: Question with trackingId ${questionTrackingId} not found`,
+        );
       }
 
       let newQuestionMetadata = { ...state.questionMetadata };
@@ -206,12 +222,14 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       if (alternativeTrackingId !== undefined) {
         // Deleting an alternative from an alternative group
-        const altResult = findAlternativeByTrackingId(questionResult.question, alternativeTrackingId);
+        const altResult = findAlternativeByTrackingId(
+          questionResult.question,
+          alternativeTrackingId,
+        );
         if (!altResult) {
-          console.error(
+          throw new Error(
             `DELETE_QUESTION: Alternative with trackingId ${alternativeTrackingId} not found in question ${questionTrackingId}`,
           );
-          return state;
         }
 
         questionResult.question.alternatives!.splice(altResult.index, 1);
@@ -219,7 +237,8 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
         // If only one alternative remains, convert back to a regular question
         if (questionResult.question.alternatives!.length === 1) {
           const remainingAlternative = questionResult.question.alternatives![0];
-          const { alternatives: _alternatives, ...groupWithoutAlternatives } = questionResult.question;
+          const { alternatives: _alternatives, ...groupWithoutAlternatives } =
+            questionResult.question;
           questionResult.zone.questions[questionResult.questionIndex] = {
             ...groupWithoutAlternatives,
             ...remainingAlternative,
@@ -243,6 +262,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       }
 
       return {
+        ...state,
         zones: newZones,
         questionMetadata: newQuestionMetadata,
       };
@@ -255,15 +275,15 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       // Find the question being moved
       const fromResult = findQuestionByTrackingId(newZones, questionTrackingId);
       if (!fromResult) {
-        console.error(`REORDER_QUESTION: Question with trackingId ${questionTrackingId} not found`);
-        return state;
+        throw new Error(
+          `REORDER_QUESTION: Question with trackingId ${questionTrackingId} not found`,
+        );
       }
 
       // Find the destination zone
       const toZoneResult = findZoneByTrackingId(newZones, toZoneTrackingId);
       if (!toZoneResult) {
-        console.error(`REORDER_QUESTION: Zone with trackingId ${toZoneTrackingId} not found`);
-        return state;
+        throw new Error(`REORDER_QUESTION: Zone with trackingId ${toZoneTrackingId} not found`);
       }
 
       // Remove question from source
@@ -277,7 +297,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       } else {
         // Insert before the specified question
         const beforeResult = findQuestionByTrackingId(newZones, beforeQuestionTrackingId);
-        if (!beforeResult || beforeResult.zone.trackingId !== toZoneTrackingId) {
+        if (beforeResult?.zone.trackingId !== toZoneTrackingId) {
           // If not found or in wrong zone, append at end
           insertIndex = toZoneResult.zone.questions.length;
         } else {
@@ -307,8 +327,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       const zoneResult = findZoneByTrackingId(newZones, zoneTrackingId);
       if (!zoneResult) {
-        console.error(`UPDATE_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
-        return state;
+        throw new Error(`UPDATE_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
       }
 
       newZones[zoneResult.index] = {
@@ -328,11 +347,47 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
 
       const zoneResult = findZoneByTrackingId(newZones, zoneTrackingId);
       if (!zoneResult) {
-        console.error(`DELETE_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
-        return state;
+        throw new Error(`DELETE_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
       }
 
       newZones.splice(zoneResult.index, 1);
+
+      return {
+        ...state,
+        zones: newZones,
+      };
+    }
+
+    case 'REORDER_ZONE': {
+      const { zoneTrackingId, beforeZoneTrackingId } = action;
+      const newZones = structuredClone(state.zones);
+
+      // Find the zone being moved
+      const fromResult = findZoneByTrackingId(newZones, zoneTrackingId);
+      if (!fromResult) {
+        throw new Error(`REORDER_ZONE: Zone with trackingId ${zoneTrackingId} not found`);
+      }
+
+      // Remove zone from current position
+      const [movedZone] = newZones.splice(fromResult.index, 1);
+
+      // Find insertion point
+      let insertIndex: number;
+      if (beforeZoneTrackingId === null) {
+        // Append at end
+        insertIndex = newZones.length;
+      } else {
+        // Insert before the specified zone
+        const beforeResult = findZoneByTrackingId(newZones, beforeZoneTrackingId);
+        if (!beforeResult) {
+          // If not found, append at end
+          insertIndex = newZones.length;
+        } else {
+          insertIndex = beforeResult.index;
+        }
+      }
+
+      newZones.splice(insertIndex, 0, movedZone);
 
       return {
         ...state,
@@ -348,6 +403,34 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
           ...state.questionMetadata,
           [questionId]: questionData,
         },
+      };
+    }
+
+    case 'TOGGLE_GROUP_COLLAPSE': {
+      const { trackingId } = action;
+      const newCollapsedGroups = new Set(state.collapsedGroups);
+      if (newCollapsedGroups.has(trackingId)) {
+        newCollapsedGroups.delete(trackingId);
+      } else {
+        newCollapsedGroups.add(trackingId);
+      }
+      return {
+        ...state,
+        collapsedGroups: newCollapsedGroups,
+      };
+    }
+
+    case 'TOGGLE_ZONE_COLLAPSE': {
+      const { trackingId } = action;
+      const newCollapsedZones = new Set(state.collapsedZones);
+      if (newCollapsedZones.has(trackingId)) {
+        newCollapsedZones.delete(trackingId);
+      } else {
+        newCollapsedZones.add(trackingId);
+      }
+      return {
+        ...state,
+        collapsedZones: newCollapsedZones,
       };
     }
 
@@ -371,6 +454,8 @@ export function useAssessmentEditor(initialState: EditorState) {
   return {
     zones: state.zones,
     questionMetadata: state.questionMetadata,
+    collapsedGroups: state.collapsedGroups,
+    collapsedZones: state.collapsedZones,
     // Stubbed - always false until history tracking is added in future PR
     canUndo: false,
     canRedo: false,

@@ -11,7 +11,6 @@ import type {
  * Shared state passed down through the assessment questions table component tree.
  */
 export interface AssessmentState {
-  nTableCols: number;
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
   urlPrefix: string;
@@ -22,12 +21,27 @@ export interface AssessmentState {
 }
 
 /**
+ * Computes the number of table columns based on UI state.
+ * This is derived from editMode and showAdvanceScorePercCol to avoid synchronization issues.
+ */
+export function getTableColumnCount(
+  state: Pick<AssessmentState, 'editMode' | 'showAdvanceScorePercCol'>,
+): number {
+  const baseCols = state.showAdvanceScorePercCol ? 11 : 10;
+  return baseCols + (state.editMode ? 3 : 0);
+}
+
+/**
  * The core editor state containing zones and question metadata.
  * Uses form types with trackingId for stable drag-and-drop identity.
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
   questionMetadata: Record<string, StaffAssessmentQuestionRow>;
+  /** Tracks which alternative groups are collapsed by their trackingId */
+  collapsedGroups: Set<string>;
+  /** Tracks which zones are collapsed by their trackingId */
+  collapsedZones: Set<string>;
 }
 
 /**
@@ -97,9 +111,23 @@ export type EditorAction =
       zoneTrackingId: string;
     }
   | {
+      type: 'REORDER_ZONE';
+      zoneTrackingId: string;
+      /** Zone to insert before, or null to append at end */
+      beforeZoneTrackingId: string | null;
+    }
+  | {
       type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       questionData: StaffAssessmentQuestionRow;
+    }
+  | {
+      type: 'TOGGLE_GROUP_COLLAPSE';
+      trackingId: string;
+    }
+  | {
+      type: 'TOGGLE_ZONE_COLLAPSE';
+      trackingId: string;
     }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }

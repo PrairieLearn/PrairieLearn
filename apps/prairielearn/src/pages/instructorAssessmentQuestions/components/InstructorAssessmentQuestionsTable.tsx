@@ -8,32 +8,40 @@ import {
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
-import { sortableKeyboardCoordinates } from '@dnd-kit/sortable';
+import {
+  SortableContext,
+  sortableKeyboardCoordinates,
+  verticalListSortingStrategy,
+} from '@dnd-kit/sortable';
 import { useMemo, useRef, useState } from 'react';
 
 import { useModalState } from '@prairielearn/ui';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
-import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
+import type {
+  QuestionAlternativeForm,
+  ZoneAssessmentForm,
+  ZoneQuestionForm,
+} from '../instructorAssessmentQuestions.shared.js';
+import {
+  buildHierarchicalAssessment,
+  normalizeQuestionPoints,
+  questionDisplayName,
+} from '../utils/questions.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
   stripTrackingIds,
   useAssessmentEditor,
-} from '../hooks/useAssessmentEditor.js';
-import type {
-  QuestionAlternativeForm,
-  ZoneAssessmentForm,
-  ZoneQuestionForm,
-} from '../instructorAssessmentQuestions.shared.js';
+} from '../utils/useAssessmentEditor.js';
 
+import { AssessmentZone } from './AssessmentZone.js';
 import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
 import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
-import { Zone } from './Zone.js';
 
 function EditModeButtons({
   csrfToken,
@@ -93,129 +101,11 @@ function EditModeButtons({
   );
 }
 
-function questionDisplayName(course: StaffCourse, question: StaffAssessmentQuestionRow) {
-  if (!question.question.qid) throw new Error('Question QID is required');
-  if (course.id === question.question.course_id) {
-    return question.question.qid;
-  }
-  return `@${question.course.sharing_name}/${question.question.qid}`;
-}
-
 /**
- * Maps questions to a `zone` tree that matches the JSON structure.
+ * The full table and form, and handles state management and modals.
+ *
+ * Renders assessment zones with AssessmentZone.
  */
-function mapQuestions(
-  course: StaffCourse,
-  rows: StaffAssessmentQuestionRow[],
-): ZoneAssessmentJson[] {
-  const zones: ZoneAssessmentJson[] = [];
-  const zoneAlternativeGroupCounts: Record<number, number> = {};
-
-  for (const row of rows) {
-    if (row.zone.number == null) throw new Error('Zone number required');
-
-    zones[row.zone.number - 1] ??= {
-      title: row.zone.title ?? undefined,
-      comment: row.zone.json_comment ?? undefined,
-      maxPoints: row.zone.max_points ?? undefined,
-      numberChoose: row.zone.number_choose ?? undefined,
-      bestQuestions: row.zone.best_questions ?? undefined,
-      questions: [],
-      advanceScorePerc: row.zone.advance_score_perc ?? undefined,
-      gradeRateMinutes: row.zone.json_grade_rate_minutes ?? undefined,
-      canView: row.zone.json_can_view ?? [],
-      canSubmit: row.zone.json_can_submit ?? [],
-    };
-
-    if (row.alternative_group.number == null) throw new Error('Alternative group number required');
-
-    const zoneNumber = row.zone.number;
-    zoneAlternativeGroupCounts[zoneNumber] ??= -1;
-
-    // If this is a new alternative group in this zone, increment the count
-    if (row.start_new_alternative_group) {
-      zoneAlternativeGroupCounts[zoneNumber]++;
-    }
-
-    // Use the count as the position within the zone
-    const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
-    if (!zones[zoneNumber - 1].questions[positionInZone]) {
-      zones[zoneNumber - 1].questions[positionInZone] ??= {
-        id: row.alternative_group.id ? questionDisplayName(course, row) : undefined,
-        comment: row.alternative_group.json_comment ?? undefined,
-        advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
-        canView: row.alternative_group.json_can_view ?? [],
-        canSubmit: row.alternative_group.json_can_submit ?? [],
-        gradeRateMinutes: row.alternative_group.json_grade_rate_minutes ?? undefined,
-        numberChoose: row.alternative_group.number_choose ?? 1,
-        triesPerVariant: row.alternative_group.json_tries_per_variant ?? 1,
-        points: row.alternative_group.json_points ?? undefined,
-        autoPoints: row.alternative_group.json_auto_points ?? undefined,
-        maxPoints: row.alternative_group.json_max_points ?? undefined,
-        maxAutoPoints: row.alternative_group.json_max_auto_points ?? undefined,
-        manualPoints: row.alternative_group.json_manual_points ?? undefined,
-        forceMaxPoints: row.alternative_group.json_force_max_points ?? undefined,
-      };
-    }
-
-    if (row.alternative_group.json_has_alternatives) {
-      if (row.assessment_question.number_in_alternative_group == null) {
-        throw new Error('Assessment question number is required');
-      }
-
-      zones[zoneNumber - 1].questions[positionInZone].alternatives ??= [];
-      zones[zoneNumber - 1].questions[positionInZone].alternatives![
-        row.assessment_question.number_in_alternative_group - 1
-      ] = {
-        comment: row.assessment_question.json_comment ?? undefined,
-        id: questionDisplayName(course, row),
-        forceMaxPoints: row.assessment_question.json_force_max_points ?? undefined,
-        triesPerVariant: row.assessment_question.json_tries_per_variant ?? undefined,
-        advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
-        gradeRateMinutes: row.assessment_question.grade_rate_minutes ?? undefined,
-        allowRealTimeGrading: row.assessment_question.json_allow_real_time_grading ?? undefined,
-        points: row.assessment_question.json_points ?? undefined,
-        autoPoints: row.assessment_question.json_auto_points ?? undefined,
-        maxPoints: row.assessment_question.json_max_points ?? undefined,
-        maxAutoPoints: row.assessment_question.json_max_auto_points ?? undefined,
-        manualPoints: row.assessment_question.json_manual_points ?? undefined,
-      };
-    } else {
-      zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
-    }
-  }
-  return zones;
-}
-
-/**
- * Normalizes point fields based on whether manualPoints is set.
- * When manualPoints is defined or both points/autoPoints exist, we convert
- * to autoPoints/maxAutoPoints format (clearing points/maxPoints).
- */
-function normalizeQuestionPoints(
-  question: ZoneQuestionForm | QuestionAlternativeForm,
-): ZoneQuestionForm | QuestionAlternativeForm {
-  const normalized = { ...question };
-
-  const hasManualPoints = normalized.manualPoints !== undefined;
-  const hasBothPointTypes = normalized.points !== undefined && normalized.autoPoints !== undefined;
-
-  if (hasManualPoints || hasBothPointTypes) {
-    // Convert points to autoPoints if needed
-    if (normalized.points !== undefined) {
-      normalized.autoPoints = normalized.points;
-      normalized.points = undefined;
-    }
-    // Convert maxPoints to maxAutoPoints if needed
-    if (normalized.maxPoints !== undefined) {
-      normalized.maxAutoPoints = normalized.maxPoints;
-      normalized.maxPoints = undefined;
-    }
-  }
-
-  return normalized;
-}
-
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
@@ -240,23 +130,43 @@ export function InstructorAssessmentQuestionsTable({
   editorEnabled: boolean;
 }) {
   // Initialize editor state from question rows
+  const initialZones = addTrackingIds(buildHierarchicalAssessment(course, questionRows));
+
+  // Initially collapse alternative groups with multiple alternatives (not in edit mode)
+  const initialCollapsedGroups = new Set<string>();
+  for (const zone of initialZones) {
+    for (const question of zone.questions) {
+      if ((question.alternatives?.length ?? 0) > 1) {
+        initialCollapsedGroups.add(question.trackingId);
+      }
+    }
+  }
+
   const initialState = {
-    zones: addTrackingIds(mapQuestions(course, questionRows)),
-    questionMetadata: Object.fromEntries(questionRows.map((r) => [questionDisplayName(course, r), r])),
+    zones: initialZones,
+    questionMetadata: Object.fromEntries(
+      questionRows.map((r) => [questionDisplayName(course, r), r]),
+    ),
+    collapsedGroups: initialCollapsedGroups,
+    collapsedZones: new Set<string>(), // Zones start expanded
   };
 
-  const { zones, questionMetadata, dispatch } = useAssessmentEditor(initialState);
+  const { zones, questionMetadata, collapsedGroups, collapsedZones, dispatch } =
+    useAssessmentEditor(initialState);
   const initialZonesRef = useRef(JSON.stringify(initialState.zones));
 
   // UI-only state
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  const [selectedQuestionTrackingIds, setSelectedQuestionTrackingIds] = useState<{
-    zoneTrackingId: string;
-    questionTrackingId: string;
-    alternativeTrackingId?: string;
-  } | null>(null);
+  // Discriminated union: only store what's needed for each operation
+  // - edit: questionTrackingId (and optionally alternativeTrackingId) - zone is found via findQuestionByTrackingId
+  // - create: zoneTrackingId - we need to know which zone to add the question to
+  const [selectedQuestionIds, setSelectedQuestionIds] = useState<
+    | { type: 'edit'; questionTrackingId: string; alternativeTrackingId?: string }
+    | { type: 'create'; zoneTrackingId: string }
+    | null
+  >(null);
   const editQuestionModal = useModalState<EditQuestionModalData>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
 
@@ -281,18 +191,15 @@ export function InstructorAssessmentQuestionsTable({
     return map;
   }, [zones]);
 
-  // Pre-calculate all question numbers as a map: trackingId -> questionNumber
-  // This ensures numbers are stable regardless of render order or drag state
-  const questionNumberMap = useMemo(() => {
-    const map: Record<string, number> = {};
-    let questionNumber = 1;
+  // Pre-calculate the starting question number for each zone
+  const zoneStartNumbers = useMemo(() => {
+    const starts: number[] = [];
+    let count = 0;
     zones.forEach((zone) => {
-      zone.questions.forEach((question) => {
-        map[question.trackingId] = questionNumber;
-        questionNumber++;
-      });
+      starts.push(count + 1);
+      count += zone.questions.length;
     });
-    return map;
+    return starts;
   }, [zones]);
 
   const handleResetButtonClick = (assessmentQuestionId: string) => {
@@ -313,17 +220,13 @@ export function InstructorAssessmentQuestionsTable({
     questionTrackingId: string;
     alternativeTrackingId?: string;
   }) => {
-    // Find the zone that contains this question
-    const zone = zones.find((z) => z.questions.some((q) => q.trackingId === questionTrackingId));
-    if (!zone) return;
-
     editQuestionModal.showWithData({
       type: 'edit',
       question,
       alternativeGroup,
     });
-    setSelectedQuestionTrackingIds({
-      zoneTrackingId: zone.trackingId,
+    setSelectedQuestionIds({
+      type: 'edit',
       questionTrackingId,
       alternativeTrackingId,
     });
@@ -335,9 +238,9 @@ export function InstructorAssessmentQuestionsTable({
       question: { id: '', trackingId: '' } as ZoneQuestionForm,
       mappedQids: zones.flatMap((zone) => zone.questions.map((q) => q.id ?? '')),
     });
-    setSelectedQuestionTrackingIds({
+    setSelectedQuestionIds({
+      type: 'create',
       zoneTrackingId,
-      questionTrackingId: '', // Will be assigned when question is created
     });
   };
 
@@ -346,15 +249,12 @@ export function InstructorAssessmentQuestionsTable({
     newQuestionData?: StaffAssessmentQuestionRow,
   ) => {
     if (!updatedQuestion.id) return;
-    if (!selectedQuestionTrackingIds) return;
-    if (!editQuestionModal.data) return;
-
-    const { zoneTrackingId, questionTrackingId, alternativeTrackingId } = selectedQuestionTrackingIds;
+    if (!selectedQuestionIds) return;
 
     // Normalize point fields
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
-    if (editQuestionModal.data.type === 'create') {
+    if (selectedQuestionIds.type === 'create') {
       // Prepare question data for the map if provided
       let preparedQuestionData: StaffAssessmentQuestionRow | undefined;
       if (newQuestionData) {
@@ -376,7 +276,7 @@ export function InstructorAssessmentQuestionsTable({
 
       dispatch({
         type: 'ADD_QUESTION',
-        zoneTrackingId,
+        zoneTrackingId: selectedQuestionIds.zoneTrackingId,
         question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionForm),
         questionData: preparedQuestionData,
       });
@@ -412,9 +312,9 @@ export function InstructorAssessmentQuestionsTable({
 
       dispatch({
         type: 'UPDATE_QUESTION',
-        questionTrackingId,
+        questionTrackingId: selectedQuestionIds.questionTrackingId,
         question: questionWithNormalizedPoints,
-        alternativeTrackingId,
+        alternativeTrackingId: selectedQuestionIds.alternativeTrackingId,
       });
     }
 
@@ -487,8 +387,39 @@ export function InstructorAssessmentQuestionsTable({
 
     const activeIdStr = String(active.id);
     const overIdStr = String(over.id);
+    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
 
-    // The active ID is a question trackingId
+    // Handle zone reordering
+    if (activeType === 'zone') {
+      const fromZoneIndex = zones.findIndex((z) => z.trackingId === activeIdStr);
+      if (fromZoneIndex === -1) return;
+
+      // Find the target zone index
+      const toZoneIndex = zones.findIndex((z) => z.trackingId === overIdStr);
+      if (toZoneIndex === -1 || fromZoneIndex === toZoneIndex) return;
+
+      // Determine insertion point based on drag direction
+      const isDraggingDown = fromZoneIndex < toZoneIndex;
+      let beforeZoneTrackingId: string | null;
+
+      if (isDraggingDown) {
+        // When dragging down, insert after the target (use next zone's trackingId or null)
+        const nextIndex = toZoneIndex + 1;
+        beforeZoneTrackingId = nextIndex < zones.length ? zones[nextIndex].trackingId : null;
+      } else {
+        // When dragging up, insert before the target
+        beforeZoneTrackingId = zones[toZoneIndex].trackingId;
+      }
+
+      dispatch({
+        type: 'REORDER_ZONE',
+        zoneTrackingId: activeIdStr,
+        beforeZoneTrackingId,
+      });
+      return;
+    }
+
+    // Handle question reordering
     const questionTrackingId = activeIdStr;
 
     // Look up the active item's position to determine its current zone
@@ -520,15 +451,35 @@ export function InstructorAssessmentQuestionsTable({
     if (!toPosition) return;
 
     const toZone = zones[toPosition.zoneIndex];
-    const targetQuestion = toZone.questions[toPosition.questionIndex];
 
     // Only dispatch if actually moving to a different position
-    if (fromZone.trackingId !== toZone.trackingId || fromPosition.questionIndex !== toPosition.questionIndex) {
+    if (
+      fromZone.trackingId !== toZone.trackingId ||
+      fromPosition.questionIndex !== toPosition.questionIndex
+    ) {
+      // When dragging DOWN within the same zone, we need to insert AFTER the target
+      // because indices shift after the source is removed. Use the question after
+      // the target as beforeQuestionTrackingId, or null to append at end.
+      const isDraggingDownInSameZone =
+        fromZone.trackingId === toZone.trackingId &&
+        fromPosition.questionIndex < toPosition.questionIndex;
+
+      let beforeQuestionTrackingId: string | null;
+      if (isDraggingDownInSameZone) {
+        // Insert after the target: use the next question, or null if at end
+        const nextIndex = toPosition.questionIndex + 1;
+        beforeQuestionTrackingId =
+          nextIndex < toZone.questions.length ? toZone.questions[nextIndex].trackingId : null;
+      } else {
+        // Insert before the target
+        beforeQuestionTrackingId = toZone.questions[toPosition.questionIndex].trackingId;
+      }
+
       dispatch({
         type: 'REORDER_QUESTION',
         questionTrackingId,
         toZoneTrackingId: toZone.trackingId,
-        beforeQuestionTrackingId: targetQuestion.trackingId,
+        beforeQuestionTrackingId,
       });
     }
   };
@@ -537,8 +488,6 @@ export function InstructorAssessmentQuestionsTable({
   const showAdvanceScorePercCol = questionRows.some(
     (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
-  const baseCols = showAdvanceScorePercCol ? 11 : 10;
-  const nTableCols = baseCols + (editMode ? 3 : 0);
 
   return (
     <>
@@ -575,69 +524,83 @@ export function InstructorAssessmentQuestionsTable({
           onDragStart={handleDragStart}
           onDragEnd={handleDragEnd}
         >
-          <div className="table-responsive">
-            <table className="table table-sm table-hover" aria-label="Assessment questions">
-              <thead>
-                <tr>
-                  {editMode && (
-                    <>
-                      <th style={{ width: '1%' }}>
-                        <span className="visually-hidden">Drag</span>
-                      </th>
-                      <th>
-                        <span className="visually-hidden">Edit</span>
-                      </th>
-                      <th>
-                        <span className="visually-hidden">Delete</span>
-                      </th>
-                    </>
-                  )}
-                  <th>
-                    <span className="visually-hidden">Name</span>
-                  </th>
-                  <th>QID</th>
-                  <th>Topic</th>
-                  <th>Tags</th>
-                  <th>Auto Points</th>
-                  <th>Manual Points</th>
-                  {showAdvanceScorePercCol && <th>Advance Score</th>}
-                  <th>Mean score</th>
-                  <th>Num. Submissions Histogram</th>
-                  <th>Other Assessments</th>
-                  {!editMode && <th className="text-end">Actions</th>}
-                </tr>
-              </thead>
-              <tbody>
-                {zones.map((zone, index) => {
-                  return (
-                    <Zone
-                      key={`zone-${index + 1}-${zone.title || 'untitled'}`}
-                      zone={zone}
-                      zoneNumber={index + 1}
-                      AssessmentState={{
-                        nTableCols,
-                        questionMetadata,
-                        editMode,
-                        urlPrefix,
-                        hasCoursePermissionPreview,
-                        canEdit,
-                        showAdvanceScorePercCol,
-                        assessmentType,
-                      }}
-                      handleAddQuestion={handleAddQuestion}
-                      handleEditQuestion={handleEditQuestion}
-                      handleDeleteQuestion={handleDeleteQuestion}
-                      handleResetButtonClick={handleResetButtonClick}
-                      handleEditZone={handleEditZone}
-                      handleDeleteZone={handleDeleteZone}
-                      questionNumberMap={questionNumberMap}
-                      activeId={activeId}
-                    />
-                  );
-                })}
-              </tbody>
-            </table>
-          </div>
+          <SortableContext
+            items={zones.map((z) => z.trackingId)}
+            strategy={verticalListSortingStrategy}
+          >
+            <div className="table-responsive">
+              <table className="table table-sm table-hover" aria-label="Assessment questions">
+                <thead>
+                  <tr>
+                    {editMode && (
+                      <>
+                        <th style={{ width: '1%' }}>
+                          <span className="visually-hidden">Drag</span>
+                        </th>
+                        <th>
+                          <span className="visually-hidden">Edit</span>
+                        </th>
+                        <th>
+                          <span className="visually-hidden">Delete</span>
+                        </th>
+                      </>
+                    )}
+                    <th>
+                      <span className="visually-hidden">Name</span>
+                    </th>
+                    <th>QID</th>
+                    <th>Topic</th>
+                    <th>Tags</th>
+                    <th>Auto Points</th>
+                    <th>Manual Points</th>
+                    {showAdvanceScorePercCol && <th>Advance Score</th>}
+                    <th>Mean score</th>
+                    <th>Num. Submissions Histogram</th>
+                    <th>Other Assessments</th>
+                    {!editMode && <th className="text-end">Actions</th>}
+                  </tr>
+                </thead>
+                <tbody>
+                  {zones.map((zone, index) => {
+                    return (
+                      <AssessmentZone
+                        key={zone.trackingId}
+                        zone={zone}
+                        zoneNumber={index + 1}
+                        AssessmentState={{
+                          questionMetadata,
+                          editMode,
+                          urlPrefix,
+                          hasCoursePermissionPreview,
+                          canEdit,
+                          showAdvanceScorePercCol,
+                          assessmentType,
+                        }}
+                        handleAddQuestion={handleAddQuestion}
+                        handleEditQuestion={handleEditQuestion}
+                        handleDeleteQuestion={handleDeleteQuestion}
+                        handleResetButtonClick={handleResetButtonClick}
+                        handleEditZone={handleEditZone}
+                        handleDeleteZone={handleDeleteZone}
+                        startingQuestionNumber={zoneStartNumbers[index]}
+                        activeId={activeId}
+                        activeSourceZoneTrackingId={
+                          // activeId could be a zone trackingId (not in positionByStableId)
+                          // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                          activeId && positionByStableId[activeId]
+                            ? zones[positionByStableId[activeId].zoneIndex]?.trackingId
+                            : undefined
+                        }
+                        collapsedGroups={collapsedGroups}
+                        collapsedZones={collapsedZones}
+                        dispatch={dispatch}
+                      />
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          </SortableContext>
         </DndContext>
         {editMode && (
           <div className="card-footer">

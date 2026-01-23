@@ -246,21 +246,29 @@ export function EditQuestionModal({
                       if (mappedQids.includes(qid)) {
                         return 'QID already exists in the assessment';
                       }
-                      const params = new URLSearchParams({ qid });
-                      const res = await fetch(
-                        `${window.location.pathname}/question.json?${params.toString()}`,
-                        {
-                          method: 'GET',
-                        },
-                      );
-                      if (!res.ok) {
-                        throw new Error('Failed to fetch question data');
+                      try {
+                        const params = new URLSearchParams({ qid });
+                        const res = await fetch(
+                          `${window.location.pathname}/question.json?${params.toString()}`,
+                          {
+                            method: 'GET',
+                            headers: {
+                              Accept: 'application/json',
+                            },
+                          },
+                        );
+                        if (!res.ok) {
+                          const data = await res.json();
+                          return data.error ?? 'Failed to fetch question data';
+                        }
+                        const questionData = await res.json();
+                        if (questionData === null) {
+                          return 'Question not found';
+                        }
+                        newQuestionDataRef.current = questionData;
+                      } catch {
+                        return 'Unable to validate question. Please check your network connection.';
                       }
-                      const questionData = await res.json();
-                      if (questionData === null) {
-                        return 'Question not found';
-                      }
-                      newQuestionDataRef.current = questionData;
                     }
                   },
                 })}

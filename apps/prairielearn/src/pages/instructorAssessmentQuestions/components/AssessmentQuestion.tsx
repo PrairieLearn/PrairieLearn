@@ -3,10 +3,10 @@ import clsx from 'clsx';
 import { type CSSProperties } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
-import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { AssessmentQuestionNumber } from '../../../components/AssessmentQuestions.js';
 import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadge } from '../../../components/IssueBadge.js';
+import { OtherAssessmentsBadges } from '../../../components/OtherAssessmentsBadges.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
@@ -82,6 +82,8 @@ function MaxPointsText({
 
 /**
  * An individual question row.
+ *
+ * Can be for a question, or an alternative question.
  */
 export function AssessmentQuestion({
   id,
@@ -249,20 +251,10 @@ export function AssessmentQuestion({
       )}
     </td>,
     <td key="other-assessments">
-      {questionData.other_assessments?.map((assessment) => {
-        return (
-          <div key={`${assessment.assessment_id}`} className="d-inline-block me-1">
-            <AssessmentBadge
-              urlPrefix={urlPrefix}
-              assessment={{
-                assessment_id: assessment.assessment_id,
-                color: assessment.assessment_set_color,
-                label: `${assessment.assessment_set_abbreviation}${assessment.assessment_number}`,
-              }}
-            />
-          </div>
-        );
-      })}
+      <OtherAssessmentsBadges
+        assessments={questionData.other_assessments ?? []}
+        urlPrefix={urlPrefix}
+      />
     </td>,
     !editMode && (
       <td key="actions" className="text-end">

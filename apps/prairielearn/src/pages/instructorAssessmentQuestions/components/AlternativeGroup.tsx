@@ -1,37 +1,53 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { type CSSProperties } from 'react';
+import type { CSSProperties, Dispatch } from 'react';
 
 import { run } from '@prairielearn/run';
 
 import { AlternativeGroupHeader } from '../../../components/AssessmentQuestions.js';
 import type { ZoneQuestionForm } from '../instructorAssessmentQuestions.shared.js';
-import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
+import {
+  type AssessmentState,
+  type EditorAction,
+  type HandleDeleteQuestion,
+  type HandleEditQuestion,
+  getTableColumnCount,
+} from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
 
+/**
+ * Renders both individual question, and alternative questions.
+ * Rendered by the AssessmentZone component.
+ */
 export function AlternativeGroup({
   alternativeGroup,
   AssessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
-  questionNumberMap,
+  questionNumber,
   sortableId,
+  collapsedGroups,
+  dispatch,
 }: {
   alternativeGroup: ZoneQuestionForm;
   AssessmentState: AssessmentState;
   handleEditQuestion: HandleEditQuestion;
   handleDeleteQuestion: HandleDeleteQuestion;
   handleResetButtonClick: (questionId: string) => void;
-  questionNumberMap: Record<string, number>;
+  questionNumber: number;
   sortableId: string;
+  collapsedGroups: Set<string>;
+  dispatch: Dispatch<EditorAction>;
 }) {
   const hasAlternatives = (alternativeGroup.alternatives?.length ?? 0) > 1;
+  const isCollapsed = collapsedGroups.has(alternativeGroup.trackingId);
+  const toggleCollapse = () =>
+    dispatch({ type: 'TOGGLE_GROUP_COLLAPSE', trackingId: alternativeGroup.trackingId });
 
-  // Look up the question number from the pre-computed map
-  const questionNumber = questionNumberMap[sortableId] ?? 0;
   const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
     id: sortableId,
+    data: { type: 'question' },
   });
 
   const sortableStyle: CSSProperties = {
@@ -50,53 +66,58 @@ export function AlternativeGroup({
         <AlternativeGroupHeader
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={questionNumber}
-          nTableCols={AssessmentState.nTableCols}
+          nTableCols={getTableColumnCount(AssessmentState)}
+          questionMetadata={AssessmentState.questionMetadata}
+          urlPrefix={AssessmentState.urlPrefix}
+          isCollapsed={isCollapsed}
+          editMode={AssessmentState.editMode}
+          sortableRef={setNodeRef}
+          sortableStyle={sortableStyle}
+          sortableAttributes={attributes}
+          sortableListeners={listeners}
+          onToggle={toggleCollapse}
         />
       )}
-      {run(() => {
-        if (!hasAlternatives) {
-          return (
-            <AssessmentQuestion
-              id={alternativeGroup.id}
-              alternativeGroup={alternativeGroup}
-              AssessmentState={AssessmentState}
-              handleEditQuestion={handleEditQuestion}
-              handleDeleteQuestion={handleDeleteQuestion}
-              handleResetButtonClick={handleResetButtonClick}
-              questionNumber={questionNumber}
-              sortableRef={setNodeRef}
-              sortableStyle={sortableStyle}
-              sortableAttributes={attributes}
-              sortableListeners={listeners}
-            />
-          );
-        }
+      {(!isCollapsed || !hasAlternatives) &&
+        run(() => {
+          if (!hasAlternatives) {
+            return (
+              <AssessmentQuestion
+                id={alternativeGroup.id}
+                alternativeGroup={alternativeGroup}
+                AssessmentState={AssessmentState}
+                handleEditQuestion={handleEditQuestion}
+                handleDeleteQuestion={handleDeleteQuestion}
+                handleResetButtonClick={handleResetButtonClick}
+                questionNumber={questionNumber}
+                sortableRef={setNodeRef}
+                sortableStyle={sortableStyle}
+                sortableAttributes={attributes}
+                sortableListeners={listeners}
+              />
+            );
+          }
 
-        return alternativeGroup.alternatives?.map((alternative, alternativeIndex) => {
-          // Only apply sortable props to the first alternative in the group
-          const isFirstAlternative = alternativeIndex === 0;
-          return (
-            <AssessmentQuestion
-              key={alternative.trackingId}
-              alternative={alternative}
-              alternativeGroup={alternativeGroup}
-              alternativeIndex={alternativeIndex}
-              AssessmentState={AssessmentState}
-              handleEditQuestion={handleEditQuestion}
-              handleDeleteQuestion={handleDeleteQuestion}
-              handleResetButtonClick={handleResetButtonClick}
-              questionNumber={questionNumber}
-              alternativeGroupAutoPoints={
-                alternativeGroup.points ?? alternativeGroup.autoPoints ?? null
-              }
-              sortableRef={isFirstAlternative ? setNodeRef : undefined}
-              sortableStyle={isFirstAlternative ? sortableStyle : undefined}
-              sortableAttributes={isFirstAlternative ? attributes : undefined}
-              sortableListeners={isFirstAlternative ? listeners : undefined}
-            />
-          );
-        });
-      })}
+          // Sortable props are on AlternativeGroupHeader, not on individual questions
+          return alternativeGroup.alternatives?.map((alternative, alternativeIndex) => {
+            return (
+              <AssessmentQuestion
+                key={alternative.trackingId}
+                alternative={alternative}
+                alternativeGroup={alternativeGroup}
+                alternativeIndex={alternativeIndex}
+                AssessmentState={AssessmentState}
+                handleEditQuestion={handleEditQuestion}
+                handleDeleteQuestion={handleDeleteQuestion}
+                handleResetButtonClick={handleResetButtonClick}
+                questionNumber={questionNumber}
+                alternativeGroupAutoPoints={
+                  alternativeGroup.points ?? alternativeGroup.autoPoints ?? null
+                }
+              />
+            );
+          });
+        })}
     </>
   );
 }
