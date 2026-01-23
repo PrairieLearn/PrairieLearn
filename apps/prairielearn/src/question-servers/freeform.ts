@@ -3,8 +3,7 @@ import * as path from 'node:path';
 
 import * as async from 'async';
 import debugfn from 'debug';
-import { difference, isEqual, mapValues, omit, union } from 'es-toolkit';
-import { isEmpty } from 'es-toolkit/compat';
+import { difference, isEmptyObject, isEqual, mapValues, omit, union } from 'es-toolkit';
 import fs from 'fs-extra';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
@@ -1451,7 +1450,7 @@ export async function render(
       const headerHtmls = [
         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
         // The import map must come before any scripts that use imports
-        !isEmpty(importMap.imports)
+        !isEmptyObject(importMap.imports)
           ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
           : '',
         // It's important that any library-style scripts come first
