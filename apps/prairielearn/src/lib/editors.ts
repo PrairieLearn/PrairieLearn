@@ -39,7 +39,7 @@ import {
   type Question,
   type User,
 } from './db-types.js';
-import { getNamesForCopy } from './editorUtil.shared.js';
+import { getNamesForCopy, getUniqueNames } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
 import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
@@ -98,120 +98,6 @@ async function cleanAndResetRepository(
     cwd: course.path,
     env,
   });
-}
-
-export function getUniqueNames({
-  shortNames,
-  longNames,
-  shortName = 'New',
-  longName = 'New',
-}: {
-  shortNames: string[];
-  longNames: string[];
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the shortName was 'New'
-   * Long name is matched case-sensitively
-   */
-  shortName?: string;
-  /**
-   * Defaults to 'New' because this function previously only handled the case where the longName was 'New'
-   * Short name is always matched case-insensitively, as it is generally used to construct file paths
-   */
-  longName?: string;
-}): { shortName: string; longName: string } {
-  function getNumberShortName(oldShortNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-
-    const shortNameCompare = shortName.toLowerCase();
-
-    oldShortNames.forEach((oldShortName) => {
-      // shortName is a copy of oldShortName if:
-      // it matches (case-sensitively), or
-      // if oldShortName matches {shortName}_{number from 0-9}
-
-      const oldShortNameCompare = oldShortName.toLowerCase();
-      const found =
-        shortNameCompare === oldShortNameCompare ||
-        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  function getNumberLongName(oldLongNames: string[]): number {
-    let numberOfMostRecentCopy = 1;
-    // longName is a copy of oldLongName if:
-    // it matches exactly, or
-    // if oldLongName matches {longName} ({number from 0-9})
-
-    oldLongNames.forEach((oldLongName) => {
-      if (typeof oldLongName !== 'string') return;
-      const found =
-        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
-      if (found) {
-        const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
-        if (foundNumber >= numberOfMostRecentCopy) {
-          numberOfMostRecentCopy = foundNumber + 1;
-        }
-      }
-    });
-    return numberOfMostRecentCopy;
-  }
-
-  const numberShortName = getNumberShortName(shortNames);
-  const numberLongName = getNumberLongName(longNames);
-  const number = Math.max(numberShortName, numberLongName);
-
-  if (number === 1 && shortName !== 'New' && longName !== 'New') {
-    // If there are no existing copies, and the shortName/longName aren't the default ones, no number is needed at the end of the names
-    return {
-      shortName,
-      longName,
-    };
-  } else {
-    // If there are existing copies, a number is needed at the end of the names
-    return {
-      shortName: `${shortName}_${number}`,
-      longName: `${longName} (${number})`,
-    };
-  }
-}
-
-/**
- * Returns the new value if it differs from the default value. Otherwise, returns undefined.
- * This is helpful for setting JSON properties that we only want to write to if they are different
- * than the default value.
- *
- * `defaultValue` may be either a value to compare directly with `===`, or a function
- * that accepts a value and returns a boolean to indicate if it should be considered
- * a default value.
- *
- */
-export function propertyValueWithDefault(existingValue: any, newValue: any, defaultValue: any) {
-  const isExistingDefault =
-    typeof defaultValue === 'function'
-      ? defaultValue(existingValue)
-      : existingValue === defaultValue;
-  const isNewDefault =
-    typeof defaultValue === 'function' ? defaultValue(newValue) : newValue === defaultValue;
-
-  if (existingValue === undefined) {
-    if (!isNewDefault) {
-      return newValue;
-    }
-    return undefined;
-  } else {
-    if (!isExistingDefault && isNewDefault) {
-      return undefined;
-    } else {
-      return newValue;
-    }
-  }
 }
 
 interface BaseEditorOptions<ResLocals = object> {

@@ -1,4 +1,4 @@
-import { propertyValueWithDefault } from '../../../lib/editors.js';
+import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,

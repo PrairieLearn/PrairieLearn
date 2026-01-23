@@ -1,6 +1,6 @@
 import { assert, describe, it } from 'vitest';
 
-import { getUniqueNames, propertyValueWithDefault } from './editors.js';
+import { getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
 
 describe('editors', () => {
   describe('getNamesForAdd', () => {
