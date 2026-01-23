@@ -21,7 +21,7 @@ import { AssessmentQuestion } from './AssessmentQuestion.js';
  */
 export function AlternativeGroup({
   alternativeGroup,
-  AssessmentState,
+  assessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
@@ -31,7 +31,7 @@ export function AlternativeGroup({
   dispatch,
 }: {
   alternativeGroup: ZoneQuestionForm;
-  AssessmentState: AssessmentState;
+  assessmentState: AssessmentState;
   handleEditQuestion: HandleEditQuestion;
   handleDeleteQuestion: HandleDeleteQuestion;
   handleResetButtonClick: (questionId: string) => void;
@@ -66,11 +66,11 @@ export function AlternativeGroup({
         <AlternativeGroupHeader
           alternativeGroup={alternativeGroup}
           alternativeGroupNumber={questionNumber}
-          nTableCols={getTableColumnCount(AssessmentState)}
-          questionMetadata={AssessmentState.questionMetadata}
-          urlPrefix={AssessmentState.urlPrefix}
+          nTableCols={getTableColumnCount(assessmentState)}
+          questionMetadata={assessmentState.questionMetadata}
+          urlPrefix={assessmentState.urlPrefix}
           isCollapsed={isCollapsed}
-          editMode={AssessmentState.editMode}
+          editMode={assessmentState.editMode}
           sortableRef={setNodeRef}
           sortableStyle={sortableStyle}
           sortableAttributes={attributes}
@@ -85,7 +85,7 @@ export function AlternativeGroup({
               <AssessmentQuestion
                 id={alternativeGroup.id}
                 alternativeGroup={alternativeGroup}
-                AssessmentState={AssessmentState}
+                assessmentState={assessmentState}
                 handleEditQuestion={handleEditQuestion}
                 handleDeleteQuestion={handleDeleteQuestion}
                 handleResetButtonClick={handleResetButtonClick}
@@ -106,7 +106,7 @@ export function AlternativeGroup({
                 alternative={alternative}
                 alternativeGroup={alternativeGroup}
                 alternativeIndex={alternativeIndex}
-                AssessmentState={AssessmentState}
+                assessmentState={assessmentState}
                 handleEditQuestion={handleEditQuestion}
                 handleDeleteQuestion={handleDeleteQuestion}
                 handleResetButtonClick={handleResetButtonClick}

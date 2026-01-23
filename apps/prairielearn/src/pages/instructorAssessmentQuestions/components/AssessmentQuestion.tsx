@@ -90,7 +90,7 @@ export function AssessmentQuestion({
   alternative,
   alternativeGroup,
   alternativeIndex,
-  AssessmentState,
+  assessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
@@ -104,7 +104,7 @@ export function AssessmentQuestion({
   id?: string;
   alternative?: QuestionAlternativeForm;
   alternativeGroup: ZoneQuestionForm;
-  AssessmentState: AssessmentState;
+  assessmentState: AssessmentState;
   /** Index of the alternative within the alternative group (0-based), if this is an alternative */
   alternativeIndex?: number;
   handleEditQuestion: HandleEditQuestion;
@@ -127,7 +127,7 @@ export function AssessmentQuestion({
     canEdit,
     showAdvanceScorePercCol,
     assessmentType,
-  } = AssessmentState;
+  } = assessmentState;
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const questionData = questionMetadata[questionId];

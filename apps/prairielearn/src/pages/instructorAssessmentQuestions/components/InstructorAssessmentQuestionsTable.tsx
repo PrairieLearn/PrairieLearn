@@ -554,7 +554,7 @@ export function InstructorAssessmentQuestionsTable({
                         key={zone.trackingId}
                         zone={zone}
                         zoneNumber={index + 1}
-                        AssessmentState={{
+                        assessmentState={{
                           questionMetadata,
                           editMode,
                           urlPrefix,

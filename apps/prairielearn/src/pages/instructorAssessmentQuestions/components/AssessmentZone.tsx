@@ -22,7 +22,7 @@ import { AlternativeGroup } from './AlternativeGroup.js';
 export function AssessmentZone({
   zone,
   zoneNumber,
-  AssessmentState,
+  assessmentState,
   handleAddQuestion,
   handleEditQuestion,
   handleDeleteQuestion,
@@ -36,7 +36,7 @@ export function AssessmentZone({
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
-  AssessmentState: AssessmentState;
+  assessmentState: AssessmentState;
   handleAddQuestion: (zoneTrackingId: string) => void;
   handleEditQuestion: HandleEditQuestion;
   handleDeleteQuestion: HandleDeleteQuestion;
@@ -48,8 +48,8 @@ export function AssessmentZone({
   collapsedZones: Set<string>;
   dispatch: Dispatch<EditorAction>;
 }) {
-  const { editMode } = AssessmentState;
-  const nTableCols = getTableColumnCount(AssessmentState);
+  const { editMode } = assessmentState;
+  const nTableCols = getTableColumnCount(assessmentState);
 
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const toggleCollapse = () =>
@@ -109,7 +109,7 @@ export function AssessmentZone({
             <AlternativeGroup
               key={alternativeGroup.trackingId}
               alternativeGroup={alternativeGroup}
-              AssessmentState={AssessmentState}
+              assessmentState={assessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
