@@ -87,10 +87,10 @@ function getPermission(
   );
 }
 
-async function getSyncedAssessmentData(tid: string) {
+async function getSyncedAssessmentData(short_name: string) {
   return await sqldb.queryRow(
     sql.get_data_for_assessment,
-    { tid },
+    { tid: short_name },
     z.object({
       assessment: AssessmentSchema,
       zones: z.array(ZoneSchema),
@@ -101,16 +101,16 @@ async function getSyncedAssessmentData(tid: string) {
   );
 }
 
-async function findSyncedAssessment(tid: string) {
+async function findSyncedAssessment(short_name: string) {
   const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
-  const syncedAssessment = syncedAssessments.find((a) => a.tid === tid);
+  const syncedAssessment = syncedAssessments.find((a) => a.tid === short_name);
   assert.isOk(syncedAssessment);
   return syncedAssessment;
 }
 
-async function findSyncedUndeletedAssessment(tid: string) {
+async function findSyncedUndeletedAssessment(short_name: string) {
   const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
-  return syncedAssessments.find((a) => a.tid === tid && a.deleted_at == null);
+  return syncedAssessments.find((a) => a.tid === short_name && a.deleted_at == null);
 }
 
 describe('Assessment syncing', () => {

@@ -6,7 +6,7 @@ import { execute, queryRow } from '@prairielearn/postgres';
 import { ensureInstitutionAdministrator } from '../../ee/models/institution-administrator.js';
 import { config } from '../../lib/config.js';
 import { type Assessment, type CourseInstance, UserSchema } from '../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectAssessmentByShortName } from '../../models/assessment.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -80,9 +80,9 @@ describe('institution administrators', () => {
       course: await selectCourseById('1'),
       shortName: 'Sp15',
     });
-    assessment = await selectAssessmentByTid({
+    assessment = await selectAssessmentByShortName({
       course_instance_id: courseInstance.id,
-      tid: 'hw1-automaticTestSuite',
+      short_name: 'hw1-automaticTestSuite',
     });
   });
 

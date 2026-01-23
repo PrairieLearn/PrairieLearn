@@ -635,58 +635,64 @@ export async function diffChunks({
   // Next: course instances and their assessments.
   await async.each(
     Object.entries(courseData.courseInstances),
-    async ([ciid, courseInstanceInfo]) => {
+    async ([courseInstanceName, courseInstanceInfo]) => {
       const hasClientFilesCourseInstanceDirectory = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
+        path.join(coursePath, 'courseInstances', courseInstanceName, 'clientFilesCourseInstance'),
       );
 
-      const existingCourseInstanceId = existingCourseInstanceIdByName.get(ciid) ?? null;
-      const activeCourseInstanceId = activeCiIdByName.get(ciid) ?? null;
+      const existingCourseInstanceId =
+        existingCourseInstanceIdByName.get(courseInstanceName) ?? null;
+      const activeCourseInstanceId = activeCiIdByName.get(courseInstanceName) ?? null;
       const courseInstanceIdMismatch =
         !!activeCourseInstanceId && activeCourseInstanceId !== existingCourseInstanceId;
       const existingCourseInstanceChunk =
-        existingCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
+        existingCourseChunks.courseInstances.get(courseInstanceName)?.clientFilesCourseInstance;
 
       const changedCourseInstanceChunk =
-        changedCourseChunks.courseInstances.get(ciid)?.clientFilesCourseInstance;
+        changedCourseChunks.courseInstances.get(courseInstanceName)?.clientFilesCourseInstance;
       if (
         hasClientFilesCourseInstanceDirectory &&
         (!existingCourseInstanceChunk || changedCourseInstanceChunk || courseInstanceIdMismatch)
       ) {
         updatedChunks.push({
           type: 'clientFilesCourseInstance',
-          courseInstanceName: ciid,
+          courseInstanceName,
         });
       }
 
-      await async.each(Object.keys(courseInstanceInfo.assessments), async (tid) => {
+      await async.each(Object.keys(courseInstanceInfo.assessments), async (assessmentName) => {
         const hasClientFilesAssessmentDirectory = await fs.pathExists(
           path.join(
             coursePath,
             'courseInstances',
-            ciid,
+            courseInstanceName,
             'assessments',
-            tid,
+            assessmentName,
             'clientFilesAssessment',
           ),
         );
         const existingAssessmentId =
-          existingAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
-        const activeAssessmentId = activeAssessmentIdByCourseInstance.get(ciid)?.get(tid) ?? null;
+          existingAssessmentIdByCourseInstance.get(courseInstanceName)?.get(assessmentName) ?? null;
+        const activeAssessmentId =
+          activeAssessmentIdByCourseInstance.get(courseInstanceName)?.get(assessmentName) ?? null;
         const assessmentIdMismatch =
           !!activeAssessmentId && activeAssessmentId !== existingAssessmentId;
         const hasExistingAssessment =
-          existingCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
+          existingCourseChunks.courseInstances
+            .get(courseInstanceName)
+            ?.assessments.has(assessmentName) ?? false;
         const hasChangedAssessment =
-          changedCourseChunks.courseInstances.get(ciid)?.assessments.has(tid) ?? false;
+          changedCourseChunks.courseInstances
+            .get(courseInstanceName)
+            ?.assessments.has(assessmentName) ?? false;
         if (
           hasClientFilesAssessmentDirectory &&
           (!hasExistingAssessment || hasChangedAssessment || assessmentIdMismatch)
         ) {
           updatedChunks.push({
             type: 'clientFilesAssessment',
-            courseInstanceName: ciid,
-            assessmentName: tid,
+            courseInstanceName,
+            assessmentName,
           });
         }
       });
@@ -695,37 +701,38 @@ export async function diffChunks({
 
   // Check for any deleted course instances or their assessments.
   await Promise.all(
-    existingCourseChunks.courseInstances.map(async (ciid, courseInstanceInfo) => {
-      const courseInstanceExists = ciid in courseData.courseInstances;
+    existingCourseChunks.courseInstances.map(async (courseInstanceName, courseInstanceInfo) => {
+      const courseInstanceExists = courseInstanceName in courseData.courseInstances;
       const clientFilesCourseInstanceExists = await fs.pathExists(
-        path.join(coursePath, 'courseInstances', ciid, 'clientFilesCourseInstance'),
+        path.join(coursePath, 'courseInstances', courseInstanceName, 'clientFilesCourseInstance'),
       );
       if (!courseInstanceExists || !clientFilesCourseInstanceExists) {
         deletedChunks.push({
           type: 'clientFilesCourseInstance',
-          courseInstanceName: ciid,
+          courseInstanceName,
         });
       }
 
       await Promise.all(
-        [...courseInstanceInfo.assessments].map(async (tid) => {
+        [...courseInstanceInfo.assessments].map(async (assessmentName) => {
           const assessmentExists =
-            courseInstanceExists && tid in courseData.courseInstances[ciid].assessments;
+            courseInstanceExists &&
+            assessmentName in courseData.courseInstances[courseInstanceName].assessments;
           const clientFilesAssessmentExists = await fs.pathExists(
             path.join(
               coursePath,
               'courseInstances',
-              ciid,
+              courseInstanceName,
               'assessments',
-              tid,
+              assessmentName,
               'clientFilesAssessment',
             ),
           );
           if (!assessmentExists || !clientFilesAssessmentExists) {
             deletedChunks.push({
               type: 'clientFilesAssessment',
-              courseInstanceName: ciid,
-              assessmentName: tid,
+              courseInstanceName,
+              assessmentName,
             });
           }
         }),

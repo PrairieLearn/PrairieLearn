@@ -18,8 +18,8 @@ export function getDetailsForFile(filePath: string): FileDetails {
     pathComponents[0] === 'courseInstances' &&
     pathComponents.at(-1) === 'infoCourseInstance.json'
   ) {
-    const ciid = pathComponents.slice(1, -1).join(path.posix.sep);
-    return { type: FileType.CourseInstance, ciid };
+    const courseInstanceShortName = pathComponents.slice(1, -1).join(path.posix.sep);
+    return { type: FileType.CourseInstance, courseInstanceShortName };
   } else if (
     pathComponents.length >= 3 &&
     pathComponents[0] === 'questions' &&
@@ -34,9 +34,9 @@ export function getDetailsForFile(filePath: string): FileDetails {
     pathComponents.at(-1) === 'infoAssessment.json'
   ) {
     const assessment_index = pathComponents.slice(2, -2).indexOf('assessments') + 2;
-    const ciid = pathComponents.slice(1, assessment_index).join(path.posix.sep);
-    const aid = pathComponents.slice(assessment_index + 1, -1).join(path.posix.sep);
-    return { type: FileType.Assessment, ciid, aid };
+    const courseInstanceShortName = pathComponents.slice(1, assessment_index).join(path.posix.sep);
+    const assessmentShortName = pathComponents.slice(assessment_index + 1, -1).join(path.posix.sep);
+    return { type: FileType.Assessment, courseInstanceShortName, assessmentShortName };
   } else {
     return { type: FileType.File };
   }
@@ -66,12 +66,12 @@ export async function getFileMetadataForPath(
       break;
     case FileType.CourseInstance:
       query = sql.select_file_metadata_for_course_instance;
-      queryParams.ciid = details.ciid;
+      queryParams.ciid = details.courseInstanceShortName;
       break;
     case FileType.Assessment:
       query = sql.select_file_metadata_for_assessment;
-      queryParams.ciid = details.ciid;
-      queryParams.aid = details.aid;
+      queryParams.ciid = details.courseInstanceShortName;
+      queryParams.aid = details.assessmentShortName;
       break;
     default:
       return { syncErrors: null, syncWarnings: null, uuid: null, type: FileType.File };

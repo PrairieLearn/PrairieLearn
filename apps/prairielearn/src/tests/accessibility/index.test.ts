@@ -417,8 +417,8 @@ describe('accessibility', () => {
     );
 
     const assessment_id = await sqldb.queryRow(
-      'SELECT id FROM assessments WHERE tid = $tid',
-      { tid: 'hw1-automaticTestSuite' },
+      'SELECT id FROM assessments WHERE tid = $short_name',
+      { short_name: 'hw1-automaticTestSuite' },
       IdSchema,
     );
 

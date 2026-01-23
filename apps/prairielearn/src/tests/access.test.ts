@@ -15,7 +15,7 @@ import {
   UserSchema,
   type Variant,
 } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 
@@ -157,9 +157,9 @@ describe('Access control', { timeout: 20000 }, function () {
 
   describe('5. database', function () {
     it('should contain E1', async () => {
-      const assessment = await selectAssessmentByTid({
+      const assessment = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam1-automaticTestSuite',
+        short_name: 'exam1-automaticTestSuite',
       });
       assessment_id = assessment.id;
     });

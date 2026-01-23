@@ -23,13 +23,13 @@ export interface QuestionInfo {
 
 export interface CourseInstanceInfo {
   type: FileType.CourseInstance;
-  ciid: string;
+  courseInstanceShortName: string;
 }
 
 export interface AssessmentInfo {
   type: FileType.Assessment;
-  ciid: string;
-  aid: string;
+  courseInstanceShortName: string;
+  assessmentShortName: string;
 }
 
 interface File {

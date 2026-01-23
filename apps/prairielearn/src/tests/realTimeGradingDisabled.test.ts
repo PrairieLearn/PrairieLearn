@@ -2,7 +2,7 @@ import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { config } from '../lib/config.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -17,9 +17,9 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
     beforeAll(async function () {
-      const { id: assessmentId } = await selectAssessmentByTid({
+      const { id: assessmentId } = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam8-disableRealTimeGrading',
+        short_name: 'exam8-disableRealTimeGrading',
       });
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;
@@ -95,9 +95,9 @@ describe('Real-time grading control tests', { timeout: 60_000 }, function () {
     context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
 
     beforeAll(async function () {
-      const { id: assessmentId } = await selectAssessmentByTid({
+      const { id: assessmentId } = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam17-mixedRealTimeGrading',
+        short_name: 'exam17-mixedRealTimeGrading',
       });
       context.assessmentId = assessmentId;
       context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

@@ -191,8 +191,8 @@ describe('Variant access', () => {
     });
     question = await selectQuestionByQid({ course_id: '1', qid: 'variantAccess' });
     assessment = await queryRow(
-      'SELECT * FROM assessments WHERE tid = $tid',
-      { tid: 'hw11-variantAccess' },
+      'SELECT * FROM assessments WHERE tid = $short_name',
+      { short_name: 'hw11-variantAccess' },
       AssessmentSchema,
     );
   });

@@ -644,7 +644,7 @@ export function AssessmentQuestionTable({
           context={{
             course_short_name: course.short_name,
             course_instance_short_name: courseInstance.short_name,
-            assessment_tid: assessment.tid!,
+            assessment_short_name: assessment.tid!,
             question_qid: questionQid,
           }}
         />

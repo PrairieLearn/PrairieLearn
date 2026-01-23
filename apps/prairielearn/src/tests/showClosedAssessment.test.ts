@@ -5,7 +5,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
@@ -31,9 +31,9 @@ describe('Exam assessment with showCloseAssessment access rule', { timeout: 60_0
 
   beforeAll(async function () {
     await helperServer.before()();
-    const { id: assessmentId } = await selectAssessmentByTid({
+    const { id: assessmentId } = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'exam8-disableRealTimeGrading',
+      short_name: 'exam8-disableRealTimeGrading',
     });
     context.assessmentId = assessmentId;
     context.assessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.assessmentId}/`;

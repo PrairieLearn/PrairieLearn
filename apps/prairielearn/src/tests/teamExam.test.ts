@@ -8,7 +8,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert } from './helperClient.js';
@@ -96,9 +96,9 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
       "should load the group tab for the first assessment's instructor URL",
       async function () {
         // Get exam assessment URL using ids from database
-        const assessment = await selectAssessmentByTid({
+        const assessment = await selectAssessmentByShortName({
           course_instance_id: '1',
-          tid: GROUP_EXAM_1_TID,
+          short_name: GROUP_EXAM_1_TID,
         });
         const instructorAssessmentsUrlTeamTab =
           courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
@@ -113,9 +113,9 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
       "should load the group tab for the second assessment's instructor URL",
       async function () {
         // Get exam assessment URLs using ids from database
-        const assessment = await selectAssessmentByTid({
+        const assessment = await selectAssessmentByShortName({
           course_instance_id: '1',
-          tid: GROUP_EXAM_2_TID,
+          short_name: GROUP_EXAM_2_TID,
         });
         const instructorAssessmentsUrlTeamTab =
           courseInstanceUrl + '/instructor/assessment/' + assessment.id + '/groups';
@@ -129,9 +129,9 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
 
   describe('team config correctness', function () {
     test.sequential('first assessment team config in database is correct', async function () {
-      const assessment = await selectAssessmentByTid({
+      const assessment = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: GROUP_EXAM_1_TID,
+        short_name: GROUP_EXAM_1_TID,
       });
 
       const teamConfigResult = await queryRow(
@@ -146,9 +146,9 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
     });
 
     test.sequential('second assessment team config in database is correct', async function () {
-      const assessment = await selectAssessmentByTid({
+      const assessment = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: GROUP_EXAM_2_TID,
+        short_name: GROUP_EXAM_2_TID,
       });
 
       const teamConfigResult = await queryRow(
@@ -166,9 +166,9 @@ describe('Team based exam assessments', { timeout: 20_000 }, function () {
   describe('exam team creation, joining, and starting', function () {
     it('allows team creation, joining, and starting', async function () {
       // Get exam assessment URL using id from database
-      const assessment = await selectAssessmentByTid({
+      const assessment = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: GROUP_EXAM_1_TID,
+        short_name: GROUP_EXAM_1_TID,
       });
       const assessmentUrl = courseInstanceUrl + '/assessment/' + assessment.id;
 
@@ -315,9 +315,9 @@ describe('cross team exam access', { timeout: 20_000 }, function () {
 
   it("prevents unauthorized users from accessing other teams' assessment instances", async function () {
     // Get exam assessment URL using id from database
-    const assessment = await selectAssessmentByTid({
+    const assessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: GROUP_EXAM_1_TID,
+      short_name: GROUP_EXAM_1_TID,
     });
     const assessmentUrl = courseInstanceUrl + '/assessment/' + assessment.id;
 
@@ -414,15 +414,15 @@ describe('cross exam assessment access', { timeout: 20_000 }, function () {
 
   it("prevents unauthorized users from accessing other teams' assessment instances", async function () {
     // Get exam assessment URL using ids from database
-    const firstAssessment = await selectAssessmentByTid({
+    const firstAssessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: GROUP_EXAM_1_TID,
+      short_name: GROUP_EXAM_1_TID,
     });
     const firstAssessmentUrl = courseInstanceUrl + '/assessment/' + firstAssessment.id;
 
-    const secondAssessment = await selectAssessmentByTid({
+    const secondAssessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: GROUP_EXAM_2_TID,
+      short_name: GROUP_EXAM_2_TID,
     });
     const secondAssessmentUrl = courseInstanceUrl + '/assessment/' + secondAssessment.id;
 

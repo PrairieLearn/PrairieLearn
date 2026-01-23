@@ -739,7 +739,7 @@ describe('Question Sharing', function () {
       async () => {
         const sharedAssessmentId = await sqldb.queryRow(
           sql.select_assessment,
-          { tid: 'test', course_instance_id: sharingCourseInstanceId },
+          { short_name: 'test', course_instance_id: sharingCourseInstanceId },
           IdSchema,
         );
         const sharedAssessmentUrl = `${baseUrl}/public/course_instance/${sharingCourseInstanceId}/assessment/${sharedAssessmentId}/questions`;

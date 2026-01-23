@@ -197,8 +197,8 @@ export function checkInvalidSharedAssessments(
   const invalidSharedAssessments = new Set<string>();
   for (const courseInstanceKey in courseData.courseInstances) {
     const courseInstance = courseData.courseInstances[courseInstanceKey];
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
+    for (const assessmentShortName in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[assessmentShortName];
       if (!assessment.data?.shareSourcePublicly) {
         continue;
       }
@@ -209,7 +209,7 @@ export function checkInvalidSharedAssessments(
           }
           const infoJson = courseData.questions[question.id];
           if (!infoJson.data?.sharePublicly && !infoJson.data?.shareSourcePublicly) {
-            invalidSharedAssessments.add(tid);
+            invalidSharedAssessments.add(assessmentShortName);
           }
         }
       }
@@ -235,8 +235,8 @@ export function checkInvalidSharedCourseInstances(
     const courseInstance = courseData.courseInstances[courseInstanceKey];
     if (!courseInstance.courseInstance.data?.shareSourcePublicly) continue;
 
-    for (const tid in courseInstance.assessments) {
-      const assessment = courseInstance.assessments[tid];
+    for (const assessmentShortName in courseInstance.assessments) {
+      const assessment = courseInstance.assessments[assessmentShortName];
       if (!assessment.data?.shareSourcePublicly) {
         invalidSharedCourseInstances.add(courseInstance.courseInstance.data.longName);
       }

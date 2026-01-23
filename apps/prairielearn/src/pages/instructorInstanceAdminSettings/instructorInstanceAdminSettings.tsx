@@ -320,10 +320,10 @@ router.post(
       if (!(await fs.pathExists(infoCourseInstancePath))) {
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
-      if (!req.body.ciid) {
+      if (!req.body.short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
       }
-      const shortNameValidation = validateShortName(req.body.ciid, courseInstance.short_name);
+      const shortNameValidation = validateShortName(req.body.short_name, courseInstance.short_name);
       if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
@@ -410,13 +410,13 @@ router.post(
 
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceInfo));
 
-      let ciid_new;
+      let shortName;
       try {
-        ciid_new = path.normalize(req.body.ciid);
+        shortName = path.normalize(req.body.short_name);
       } catch {
         throw new error.HttpStatusError(
           400,
-          `Invalid short name (could not be normalized): ${req.body.ciid}`,
+          `Invalid short name (could not be normalized): ${req.body.short_name}`,
         );
       }
       const editor = new MultiEditor(
@@ -437,7 +437,7 @@ router.post(
           }),
           new CourseInstanceRenameEditor({
             locals: res.locals,
-            ciid_new,
+            shortName,
           }),
         ],
       );

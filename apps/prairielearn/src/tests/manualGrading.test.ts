@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
 import { InstanceQuestionSchema } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import {
   insertCourseInstancePermissions,
   insertCoursePermissionsByUserUid,
@@ -422,9 +422,9 @@ describe('Manual Grading', { timeout: 80_000 }, function () {
   afterAll(helperServer.after);
 
   beforeAll(async () => {
-    const assessment = await selectAssessmentByTid({
+    const assessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'hw9-internalExternalManual',
+      short_name: 'hw9-internalExternalManual',
     });
     manualGradingAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/manual_grading`;
     instancesAssessmentUrl = `${baseUrl}/course_instance/1/instructor/assessment/${assessment.id}/instances`;

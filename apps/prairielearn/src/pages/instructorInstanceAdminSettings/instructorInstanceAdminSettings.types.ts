@@ -3,7 +3,7 @@ import z from 'zod';
 import { BooleanFromCheckboxSchema } from '@prairielearn/zod';
 
 export const SettingsFormBodySchema = z.object({
-  ciid: z.string(),
+  short_name: z.string(),
   long_name: z.string(),
   display_timezone: z.string(),
   group_assessments_by: z.enum(['Set', 'Module']),

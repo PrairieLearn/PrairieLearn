@@ -73,7 +73,7 @@ export function AssessmentSwitcher({
               ${IssueBadgeHtml({
                 count: row.open_issue_count,
                 urlPrefix: `/pl/course_instance/${courseInstanceId}/instructor`,
-                issueAid: row.tid,
+                issueAssessmentShortName: row.tid,
               })}
             </div>
             <div class="d-flex overflow-hidden align-items-center ${isActive ? '' : 'text-muted'}">

@@ -256,9 +256,10 @@ export function RubricSettings({
       })),
     };
 
-    const { course_short_name, course_instance_short_name, assessment_tid, question_qid } = context;
+    const { course_short_name, course_instance_short_name, assessment_short_name, question_qid } =
+      context;
     const exportFileName =
-      `${course_short_name}__${course_instance_short_name}__${assessment_tid}__${question_qid}__rubric_settings`.replaceAll(
+      `${course_short_name}__${course_instance_short_name}__${assessment_short_name}__${question_qid}__rubric_settings`.replaceAll(
         /[^a-zA-Z0-9_-]/g,
         '_',
       ) + '.json';

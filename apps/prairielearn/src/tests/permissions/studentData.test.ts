@@ -9,7 +9,7 @@ import {
   SprocUsersSelectOrInsertSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { selectAssessmentByTid } from '../../models/assessment.js';
+import { selectAssessmentByShortName } from '../../models/assessment.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import {
   insertCourseInstancePermissions,
@@ -31,15 +31,15 @@ describe('student data access', { timeout: 60_000 }, function () {
 
   beforeAll(async function () {
     await helperServer.before()();
-    const { id: homeworkAssessmentId } = await selectAssessmentByTid({
+    const { id: homeworkAssessmentId } = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
+      short_name: 'hw1-automaticTestSuite',
     });
     context.homeworkAssessmentId = homeworkAssessmentId;
     context.homeworkAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.homeworkAssessmentId}/`;
-    const { id: examAssessmentId } = await selectAssessmentByTid({
+    const { id: examAssessmentId } = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'exam1-automaticTestSuite',
+      short_name: 'exam1-automaticTestSuite',
     });
     context.examAssessmentId = examAssessmentId;
     context.examAssessmentUrl = `${context.courseInstanceBaseUrl}/assessment/${context.examAssessmentId}/`;

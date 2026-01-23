@@ -135,7 +135,7 @@ export function InstructorAssessments({
                             ${IssueBadgeHtml({
                               count: row.open_issue_count,
                               urlPrefix,
-                              issueAid: row.tid,
+                              issueAssessmentShortName: row.tid,
                             })}
                           </td>
 
@@ -290,17 +290,17 @@ function CreateAssessmentModal({
         </small>
       </div>
       <div class="mb-3">
-        <label class="form-label" for="aid">Short name</label>
+        <label class="form-label" for="short_name">Short name</label>
         <input
           type="text"
           class="form-control"
-          id="aid"
-          name="aid"
+          id="short_name"
+          name="short_name"
           required
           pattern="${SHORT_NAME_PATTERN}"
-          aria-describedby="aid_help"
+          aria-describedby="short_name_help"
         />
-        <small id="aid_help" class="form-text text-muted">
+        <small id="short_name_help" class="form-text text-muted">
           ${renderHtml(<AssessmentShortNameDescription />)}
         </small>
       </div>

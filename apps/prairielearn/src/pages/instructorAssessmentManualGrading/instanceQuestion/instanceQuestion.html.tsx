@@ -189,7 +189,7 @@ export function InstanceQuestion({
             context={{
               course_short_name: resLocals.course.short_name,
               course_instance_short_name: resLocals.course_instance.short_name,
-              assessment_tid: resLocals.assessment.tid,
+              assessment_short_name: resLocals.assessment.tid,
               question_qid: resLocals.question.qid,
               variant_params: resLocals.variant.params,
               variant_true_answer: resLocals.variant.true_answer,

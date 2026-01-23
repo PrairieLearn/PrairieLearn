@@ -49,7 +49,7 @@ describe('Creating an assessment', () => {
           __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
           orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Title',
-          aid: 'HW2',
+          short_name: 'HW2',
           type: 'Homework',
           set: 'Practice Quiz',
         }),
@@ -66,7 +66,7 @@ describe('Creating an assessment', () => {
   test.sequential('verify the assessment has the correct info', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir(),
-      'HW2', // Verify that the aid was used as the assessment folder's name
+      'HW2', // Verify that the short name was used as the assessment folder's name
       'infoAssessment.json',
     );
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
@@ -93,7 +93,7 @@ describe('Creating an assessment', () => {
           __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
           orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Title 3',
-          aid: 'HW3',
+          short_name: 'HW3',
           type: 'Homework',
           set: 'Practice Quiz',
           module: 'Module2',
@@ -111,7 +111,7 @@ describe('Creating an assessment', () => {
   test.sequential('verify the assessment has the correct info, including the module', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir(),
-      'HW3', // Verify that the aid was used as the assessment folder's name
+      'HW3', // Verify that the short name was used as the assessment folder's name
       'infoAssessment.json',
     );
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
@@ -121,7 +121,7 @@ describe('Creating an assessment', () => {
     assert.equal(assessmentInfo.module, 'Module2');
   });
 
-  test.sequential('create new assessment with duplicate aid, title', async () => {
+  test.sequential('create new assessment with duplicate short name, title', async () => {
     // Fetch the assessments page for the course instance
     const assessmentsPageResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
@@ -129,7 +129,7 @@ describe('Creating an assessment', () => {
 
     assert.equal(assessmentsPageResponse.status, 200);
 
-    // Create the new assessment with a duplicate aid and title
+    // Create the new assessment with a duplicate short name and title
     const assessmentCreationResponse = await fetchCheerio(
       `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
       {
@@ -139,7 +139,7 @@ describe('Creating an assessment', () => {
           __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
           orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
           title: 'Test Title', // Same title as the first assessment
-          aid: 'HW2', // Same aid as the first assessment
+          short_name: 'HW2', // Same short name as the first assessment
           type: 'Homework',
           set: 'Practice Quiz',
         }),
@@ -153,10 +153,10 @@ describe('Creating an assessment', () => {
     );
   });
 
-  test.sequential('verify that the title and aid had 2 appended to them', async () => {
+  test.sequential('verify that the title and short name had 2 appended to them', async () => {
     const assessmentLiveInfoPath = path.join(
       assessmentLiveDir(),
-      'HW2_2', // Verify that the aid was used as the assessment folder's name
+      'HW2_2', // Verify that the short name was used as the assessment folder's name
       'infoAssessment.json',
     );
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
@@ -194,7 +194,7 @@ describe('Creating an assessment', () => {
   });
 
   test.sequential(
-    'should not be able to create an assessment with aid not contained in the root directory',
+    'should not be able to create an assessment with short name not contained in the root directory',
     async () => {
       // Fetch the assessments page for the course instance
       const assessmentsPageResponse = await fetchCheerio(
@@ -203,7 +203,7 @@ describe('Creating an assessment', () => {
 
       assert.equal(assessmentsPageResponse.status, 200);
 
-      // Create a new assessment with aid that is not contained in the root directory
+      // Create a new assessment with short name that is not contained in the root directory
       const assessmentCreationResponse = await fetchCheerio(
         `${siteUrl}/pl/course_instance/1/instructor/instance_admin/assessments`,
         {
@@ -213,7 +213,7 @@ describe('Creating an assessment', () => {
             __csrf_token: assessmentsPageResponse.$('input[name=__csrf_token]').val() as string,
             orig_hash: assessmentsPageResponse.$('input[name=orig_hash]').val() as string,
             title: 'Test Assessment',
-            aid: '../test-assessment',
+            short_name: '../test-assessment',
             type: 'Homework',
             set: 'Practice Quiz',
           }),

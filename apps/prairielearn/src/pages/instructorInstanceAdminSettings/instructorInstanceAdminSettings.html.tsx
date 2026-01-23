@@ -63,7 +63,7 @@ export function InstructorInstanceAdminSettings({
   const shortNames = new Set(names.map((name) => name.short_name));
 
   const defaultValues: SettingsFormValues = {
-    ciid: courseInstance.short_name,
+    short_name: courseInstance.short_name,
     long_name: courseInstance.long_name ?? '',
     display_timezone: courseInstance.display_timezone,
     group_assessments_by: courseInstance.assessments_group_by,
@@ -116,25 +116,25 @@ export function InstructorInstanceAdminSettings({
             <input type="hidden" name="__csrf_token" value={csrfToken} />
             <input type="hidden" name="orig_hash" value={origHash} />
             <div className="mb-3">
-              <label className="form-label" htmlFor="ciid">
+              <label className="form-label" htmlFor="short_name">
                 Short name
               </label>
               <input
                 type="text"
-                className={clsx('form-control font-monospace', errors.ciid && 'is-invalid')}
-                id="ciid"
-                aria-invalid={errors.ciid ? 'true' : 'false'}
+                className={clsx('form-control font-monospace', errors.short_name && 'is-invalid')}
+                id="short_name"
+                aria-invalid={errors.short_name ? 'true' : 'false'}
                 disabled={!canEdit}
                 required
-                {...register('ciid', {
+                {...register('short_name', {
                   required: 'Short name is required',
                   validate: {
                     shortName: (value) => {
-                      const result = validateShortName(value, defaultValues.ciid);
+                      const result = validateShortName(value, defaultValues.short_name);
                       return result.valid || result.message;
                     },
                     duplicate: (value) => {
-                      if (shortNames.has(value) && value !== defaultValues.ciid) {
+                      if (shortNames.has(value) && value !== defaultValues.short_name) {
                         return 'This ID is already in use';
                       }
                       return true;
@@ -142,7 +142,9 @@ export function InstructorInstanceAdminSettings({
                   },
                 })}
               />
-              {errors.ciid && <div className="invalid-feedback">{errors.ciid.message}</div>}
+              {errors.short_name && (
+                <div className="invalid-feedback">{errors.short_name.message}</div>
+              )}
               <small className="form-text text-muted">
                 <CourseInstanceShortNameDescription />
               </small>

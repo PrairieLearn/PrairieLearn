@@ -12,7 +12,7 @@ import {
   InstanceQuestionSchema,
   QuestionSchema,
 } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -27,7 +27,7 @@ export interface TestExamQuestion {
 
 interface TestExam {
   maxPoints: number;
-  tid: string;
+  short_name: string;
   title: string;
   questions: TestExamQuestion[];
   keyedQuestions: Record<string, TestExamQuestion>;
@@ -46,7 +46,7 @@ const exam1AutomaticTestSuiteQuestions: TestExamQuestion[] = [
 export const exams: Record<string, TestExam> = {
   'exam1-automaticTestSuite': {
     maxPoints: 94,
-    tid: 'exam1-automaticTestSuite',
+    short_name: 'exam1-automaticTestSuite',
     title: 'Exam for automatic test suite',
     questions: exam1AutomaticTestSuiteQuestions,
     keyedQuestions: _.keyBy(exam1AutomaticTestSuiteQuestions, 'qid'),
@@ -95,9 +95,9 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
 
   describe('startExam-3. the database', function () {
     it('should contain E1', async function () {
-      const { id: assessmentId } = await selectAssessmentByTid({
+      const { id: assessmentId } = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam1-automaticTestSuite',
+        short_name: 'exam1-automaticTestSuite',
       });
       locals.assessment_id = assessmentId;
     });

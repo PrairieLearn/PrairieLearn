@@ -328,24 +328,32 @@ export function writeErrorsAndWarningsForCourseData(
     const questionPath = path.posix.join('questions', qid, 'info.json');
     writeErrorsAndWarningsForInfoFileIfNeeded(questionPath, question, writeLine);
   });
-  Object.entries(courseData.courseInstances).forEach(([ciid, courseInstanceData]) => {
-    const courseInstancePath = path.posix.join('courseInstances', ciid, 'infoCourseInstance.json');
-    writeErrorsAndWarningsForInfoFileIfNeeded(
-      courseInstancePath,
-      courseInstanceData.courseInstance,
-      writeLine,
-    );
-    Object.entries(courseInstanceData.assessments).forEach(([aid, assessment]) => {
-      const assessmentPath = path.posix.join(
+  Object.entries(courseData.courseInstances).forEach(
+    ([courseInstanceShortName, courseInstanceData]) => {
+      const courseInstancePath = path.posix.join(
         'courseInstances',
-        ciid,
-        'assessments',
-        aid,
-        'infoAssessment.json',
+        courseInstanceShortName,
+        'infoCourseInstance.json',
       );
-      writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
-    });
-  });
+      writeErrorsAndWarningsForInfoFileIfNeeded(
+        courseInstancePath,
+        courseInstanceData.courseInstance,
+        writeLine,
+      );
+      Object.entries(courseInstanceData.assessments).forEach(
+        ([assessmentShortName, assessment]) => {
+          const assessmentPath = path.posix.join(
+            'courseInstances',
+            courseInstanceShortName,
+            'assessments',
+            assessmentShortName,
+            'infoAssessment.json',
+          );
+          writeErrorsAndWarningsForInfoFileIfNeeded(assessmentPath, assessment, writeLine);
+        },
+      );
+    },
+  );
 }
 
 export function courseDataHasErrors(courseData: CourseData): boolean {

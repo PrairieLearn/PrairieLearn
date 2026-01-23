@@ -155,11 +155,11 @@ router.post(
         throw new error.HttpStatusError(400, 'infoAssessment.json does not exist');
       }
 
-      if (!req.body.aid) {
+      if (!req.body.short_name) {
         throw new error.HttpStatusError(400, 'Short name is required');
       }
       const shortNameValidation = validateShortName(
-        req.body.aid,
+        req.body.short_name,
         res.locals.assessment.tid ?? undefined,
       );
       if (!shortNameValidation.valid) {
@@ -217,11 +217,11 @@ router.post(
 
       const tid_new = run(() => {
         try {
-          return path.normalize(req.body.aid);
+          return path.normalize(req.body.short_name);
         } catch {
           throw new error.HttpStatusError(
             400,
-            `Invalid short name (could not be normalized): ${req.body.aid}`,
+            `Invalid short name (could not be normalized): ${req.body.short_name}`,
           );
         }
       });
@@ -244,7 +244,7 @@ router.post(
             editContents: b64EncodeUnicode(formattedJson),
             origHash: req.body.orig_hash,
           }),
-          new AssessmentRenameEditor({ locals: res.locals, tid_new }),
+          new AssessmentRenameEditor({ locals: res.locals, shortName: tid_new }),
         ],
       );
       const serverJob = await editor.prepareServerJob();

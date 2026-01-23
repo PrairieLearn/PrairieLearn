@@ -12,7 +12,7 @@ import {
   InstanceQuestionSchema,
   QuestionSchema,
 } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 
 import * as helperQuestion from './helperQuestion.js';
 import * as helperServer from './helperServer.js';
@@ -180,9 +180,9 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
 
     describe('the database', function () {
       it('should contain HW4', async () => {
-        const { id: assessmentId } = await selectAssessmentByTid({
+        const { id: assessmentId } = await selectAssessmentByShortName({
           course_instance_id: '1',
-          tid: 'hw4-perzonegrading',
+          short_name: 'hw4-perzonegrading',
         });
         locals.assessment_id = assessmentId;
       });

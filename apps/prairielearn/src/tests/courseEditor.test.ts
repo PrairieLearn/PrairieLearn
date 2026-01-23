@@ -201,7 +201,7 @@ const testEditData: EditData[] = [
     info: 'courseInstances/Fa18/assessments/New_1/infoAssessment.json',
     data: {
       title: 'New',
-      aid: 'New',
+      short_name: 'New',
       type: 'Homework',
       set: 'Homework',
     },

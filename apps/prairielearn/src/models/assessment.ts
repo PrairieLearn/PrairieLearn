@@ -29,16 +29,16 @@ export async function selectOptionalAssessmentById(
   return await queryOptionalRow(sql.select_assessment_by_id, { assessment_id }, AssessmentSchema);
 }
 
-export async function selectAssessmentByTid({
+export async function selectAssessmentByShortName({
   course_instance_id,
-  tid,
+  short_name,
 }: {
   course_instance_id: string;
-  tid: string;
+  short_name: string;
 }) {
   return await queryRow(
     sql.select_assessment_by_tid,
-    { course_instance_id, tid },
+    { course_instance_id, tid: short_name },
     AssessmentSchema,
   );
 }

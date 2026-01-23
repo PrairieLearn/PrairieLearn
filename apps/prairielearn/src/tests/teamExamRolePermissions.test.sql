@@ -4,7 +4,7 @@ SELECT
 FROM
   assessments AS a
 WHERE
-  a.tid = $assessment_tid;
+  a.tid = $assessment_short_name;
 
 -- BLOCK select_assessment_team_roles
 SELECT

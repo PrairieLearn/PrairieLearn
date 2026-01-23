@@ -184,9 +184,9 @@ export async function syncDiskToSqlWithLock(
       await async.eachLimit(
         Object.entries(courseData.courseInstances),
         3,
-        async ([ciid, courseInstanceData]) => {
-          const courseInstanceId = courseInstanceIds[ciid];
-          await timed(`Synced assessments for ${ciid}`, () =>
+        async ([courseInstanceShortName, courseInstanceData]) => {
+          const courseInstanceId = courseInstanceIds[courseInstanceShortName];
+          await timed(`Synced assessments for ${courseInstanceShortName}`, () =>
             syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
           );
         },

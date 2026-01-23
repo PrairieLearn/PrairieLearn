@@ -691,13 +691,13 @@ export class AssessmentDeleteEditor extends Editor {
 }
 
 export class AssessmentRenameEditor extends Editor {
-  private tid_new: string;
+  private shortName: string;
   private course_instance: CourseInstance;
   private assessment: Assessment;
 
   constructor(
     params: BaseEditorOptions<{ course_instance: CourseInstance; assessment: Assessment }> & {
-      tid_new: string;
+      shortName: string;
     },
   ) {
     const { course_instance, assessment } = params.locals;
@@ -707,7 +707,7 @@ export class AssessmentRenameEditor extends Editor {
       description: `${course_instance.short_name}: Rename assessment ${assessment.tid}`,
     });
 
-    this.tid_new = params.tid_new;
+    this.shortName = params.shortName;
     this.course_instance = course_instance;
     this.assessment = assessment;
   }
@@ -724,7 +724,7 @@ export class AssessmentRenameEditor extends Editor {
       'assessments',
     );
     const oldPath = path.normalize(path.join(assessmentsPath, this.assessment.tid));
-    const newPath = path.normalize(path.join(assessmentsPath, this.tid_new));
+    const newPath = path.normalize(path.join(assessmentsPath, this.shortName));
 
     // Skip editing if the paths are the same.
     if (oldPath === newPath) return null;
@@ -751,7 +751,7 @@ export class AssessmentRenameEditor extends Editor {
 
     return {
       pathsToAdd: [oldPath, newPath],
-      commitMessage: `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.tid_new}`,
+      commitMessage: `${this.course_instance.short_name}: rename assessment ${this.assessment.tid} to ${this.shortName}`,
     };
   }
 }
@@ -760,7 +760,7 @@ export class AssessmentAddEditor extends Editor {
   private course_instance: CourseInstance;
 
   public readonly uuid: string;
-  private aid: string;
+  private shortName: string;
   private title: string;
   private type: 'Homework' | 'Exam';
   private set: string;
@@ -768,7 +768,7 @@ export class AssessmentAddEditor extends Editor {
 
   constructor(
     params: BaseEditorOptions<{ course_instance: CourseInstance }> & {
-      aid: string;
+      shortName: string;
       title: string;
       type: 'Homework' | 'Exam';
       set: string;
@@ -786,7 +786,7 @@ export class AssessmentAddEditor extends Editor {
 
     this.uuid = crypto.randomUUID();
 
-    this.aid = params.aid;
+    this.shortName = params.shortName;
     this.title = params.title;
     this.type = params.type;
     this.set = params.set;
@@ -823,7 +823,7 @@ export class AssessmentAddEditor extends Editor {
     const { shortName: tid, longName: assessmentTitle } = getUniqueNames({
       shortNames: oldNamesShort,
       longNames: oldNamesLong,
-      shortName: this.aid,
+      shortName: this.shortName,
       longName: this.title,
     });
 
@@ -1149,23 +1149,23 @@ export class CourseInstanceDeleteEditor extends Editor {
 }
 
 export class CourseInstanceRenameEditor extends Editor {
-  private ciid_new: string;
+  private shortName: string;
   private course_instance: CourseInstance;
 
   constructor(
-    params: BaseEditorOptions<{ course_instance: CourseInstance }> & { ciid_new: string },
+    params: BaseEditorOptions<{ course_instance: CourseInstance }> & { shortName: string },
   ) {
     const {
       locals: { course_instance },
-      ciid_new,
+      shortName,
     } = params;
 
     super({
       ...params,
-      description: `Rename course instance ${course_instance.short_name} to ${ciid_new}`,
+      description: `Rename course instance ${course_instance.short_name} to ${shortName}`,
     });
 
-    this.ciid_new = ciid_new;
+    this.shortName = shortName;
     this.course_instance = course_instance;
   }
 
@@ -1175,7 +1175,7 @@ export class CourseInstanceRenameEditor extends Editor {
     debug('CourseInstanceRenameEditor: write()');
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
     const oldPath = path.join(courseInstancesPath, this.course_instance.short_name);
-    const newPath = path.join(courseInstancesPath, this.ciid_new);
+    const newPath = path.join(courseInstancesPath, this.shortName);
 
     // Skip editing if the paths are the same.
     if (oldPath === newPath) return null;
@@ -1205,7 +1205,7 @@ export class CourseInstanceRenameEditor extends Editor {
 
     return {
       pathsToAdd: [oldPath, newPath],
-      commitMessage: `rename course instance ${this.course_instance.short_name} to ${this.ciid_new}`,
+      commitMessage: `rename course instance ${this.course_instance.short_name} to ${this.shortName}`,
     };
   }
 }

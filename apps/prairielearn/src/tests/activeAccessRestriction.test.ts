@@ -7,7 +7,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import { selectUserByUid } from '../models/user.js';
@@ -40,13 +40,13 @@ describe(
 
     beforeAll(async function () {
       await helperServer.before()();
-      const { id: examId } = await selectAssessmentByTid({
+      const { id: examId } = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam11-activeAccessRestriction',
+        short_name: 'exam11-activeAccessRestriction',
       });
-      const { id: hwId } = await selectAssessmentByTid({
+      const { id: hwId } = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'hw8-activeAccessRestriction',
+        short_name: 'hw8-activeAccessRestriction',
       });
       context.courseInstanceBaseUrl = `${context.baseUrl}/course_instance/1`;
       context.assessmentListUrl = `${context.courseInstanceBaseUrl}/assessments`;

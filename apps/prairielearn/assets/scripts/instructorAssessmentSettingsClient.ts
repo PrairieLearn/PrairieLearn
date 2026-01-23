@@ -5,8 +5,8 @@ import { onDocumentReady } from '@prairielearn/browser-utils';
 import { saveButtonEnabling } from './lib/saveButtonEnabling.js';
 
 onDocumentReady(function () {
-  const tidField = document.querySelector<HTMLInputElement>('input[name="aid"]')!;
-  const otherTids = tidField.dataset.otherValues?.split(',') ?? [];
+  const shortNameField = document.querySelector<HTMLInputElement>('input[name="short_name"]')!;
+  const otherShortNames = shortNameField.dataset.otherValues?.split(',') ?? [];
   const assessmentSettingsForm = document.querySelector<HTMLFormElement>(
     'form[name="edit-assessment-settings-form"]',
   );
@@ -15,18 +15,18 @@ onDocumentReady(function () {
   const honorCodeInput = document.querySelector<HTMLTextAreaElement>('#honor_code_group');
 
   function validateId() {
-    const newValue = tidField.value;
+    const newValue = shortNameField.value;
 
-    if (otherTids.includes(newValue) && newValue !== tidField.defaultValue) {
-      tidField.setCustomValidity('This ID is already in use');
+    if (otherShortNames.includes(newValue) && newValue !== shortNameField.defaultValue) {
+      shortNameField.setCustomValidity('This short name is already in use');
     } else {
-      tidField.setCustomValidity('');
+      shortNameField.setCustomValidity('');
     }
 
-    tidField.reportValidity();
+    shortNameField.reportValidity();
   }
-  tidField.addEventListener('input', validateId);
-  tidField.addEventListener('change', validateId);
+  shortNameField.addEventListener('input', validateId);
+  shortNameField.addEventListener('change', validateId);
 
   if (!assessmentSettingsForm || !saveButton) return;
   saveButtonEnabling(assessmentSettingsForm, saveButton);

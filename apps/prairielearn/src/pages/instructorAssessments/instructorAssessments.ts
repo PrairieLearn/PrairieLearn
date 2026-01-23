@@ -131,7 +131,7 @@ router.get(
           'Number',
           'Assessment',
           'Title',
-          'AID',
+          'Short Name',
           'NStudents',
           'Mean',
           'Std',
@@ -192,12 +192,15 @@ router.post(
       if (!req.body.title) {
         throw new HttpStatusError(400, 'title is required');
       }
-      if (!req.body.aid) {
-        throw new HttpStatusError(400, 'AID is required');
+      if (!req.body.short_name) {
+        throw new HttpStatusError(400, 'Short name is required');
       }
-      const shortNameValidation = validateShortName(req.body.aid);
+      const shortNameValidation = validateShortName(req.body.short_name);
       if (!shortNameValidation.valid) {
-        throw new HttpStatusError(400, `Invalid AID: ${shortNameValidation.lowercaseMessage}`);
+        throw new HttpStatusError(
+          400,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
+        );
       }
       if (!req.body.type) {
         throw new HttpStatusError(400, 'type is required');
@@ -209,7 +212,7 @@ router.post(
       const editor = new AssessmentAddEditor({
         locals: res.locals,
         title: req.body.title,
-        aid: req.body.aid,
+        shortName: req.body.short_name,
         type: req.body.type,
         set: req.body.set,
         module: req.body.module,

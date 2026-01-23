@@ -53,28 +53,28 @@ describe('uri-util', () => {
   });
 
   describe('encodeSearchString', () => {
-    it('encodes alphanumeric and slashes in qid/aid', () => {
-      const params = { qid: 'abc123/def456', aid: 'A1/B2/C3' };
+    it('encodes alphanumeric and slashes in qid/assessmentShortName', () => {
+      const params = { qid: 'abc123/def456', assessmentShortName: 'A1/B2/C3' };
       const result = encodeSearchString(params);
-      assert.equal(decodeURIComponent(result), 'qid:abc123/def456 aid:A1/B2/C3');
+      assert.equal(decodeURIComponent(result), 'qid:abc123/def456 assessmentShortName:A1/B2/C3');
     });
 
-    it('encodes qid/aid with quotes', () => {
-      const params = { qid: 'abc"def', aid: 'A1"B2' };
+    it('encodes qid/assessmentShortName with quotes', () => {
+      const params = { qid: 'abc"def', assessmentShortName: 'A1"B2' };
       const result = encodeSearchString(params);
-      assert.equal(decodeURIComponent(result), 'qid:abc\\"def aid:A1\\"B2');
+      assert.equal(decodeURIComponent(result), 'qid:abc\\"def assessmentShortName:A1\\"B2');
     });
 
-    it('encodes qid/aid with spaces', () => {
-      const params = { qid: 'abc def', aid: 'A1 B2' };
+    it('encodes qid/assessmentShortName with spaces', () => {
+      const params = { qid: 'abc def', assessmentShortName: 'A1 B2' };
       const result = encodeSearchString(params);
-      assert.equal(decodeURIComponent(result), 'qid:"abc def" aid:"A1 B2"');
+      assert.equal(decodeURIComponent(result), 'qid:"abc def" assessmentShortName:"A1 B2"');
     });
 
-    it('encodes qid/aid with commas', () => {
-      const params = { qid: 'abc,def', aid: 'A1,B2' };
+    it('encodes qid/assessmentShortName with commas', () => {
+      const params = { qid: 'abc,def', assessmentShortName: 'A1,B2' };
       const result = encodeSearchString(params);
-      assert.equal(decodeURIComponent(result), 'qid:"abc,def" aid:"A1,B2"');
+      assert.equal(decodeURIComponent(result), 'qid:"abc,def" assessmentShortName:"A1,B2"');
     });
   });
 });

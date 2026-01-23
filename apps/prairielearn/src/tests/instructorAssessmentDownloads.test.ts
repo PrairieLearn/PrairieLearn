@@ -12,7 +12,7 @@ import { config } from '../lib/config.js';
 import { type Assessment, type User, type Variant, VariantSchema } from '../lib/db-types.js';
 import type { ResLocalsForPage } from '../lib/res-locals.js';
 import { selectAssessmentSetById } from '../models/assessment-set.js';
-import { selectAssessmentById, selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentById, selectAssessmentByShortName } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -373,9 +373,9 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
     };
 
     beforeAll(async function () {
-      const assessment = await selectAssessmentByTid({
+      const assessment = await selectAssessmentByShortName({
         course_instance_id: '1',
-        tid: 'exam14-groupWork',
+        short_name: 'exam14-groupWork',
       });
       ctx.assessment_id = assessment.id;
       ctx.siteUrl = 'http://localhost:' + config.serverPort;

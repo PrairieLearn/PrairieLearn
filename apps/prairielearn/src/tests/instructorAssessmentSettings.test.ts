@@ -73,7 +73,7 @@ describe('Editing assessment settings', () => {
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
-          aid: 'HW2',
+          short_name: 'HW2',
         }),
       },
     );
@@ -111,7 +111,7 @@ describe('Editing assessment settings', () => {
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
-          aid: 'nestedPath/HW2',
+          short_name: 'nestedPath/HW2',
         }),
       },
     );
@@ -120,7 +120,7 @@ describe('Editing assessment settings', () => {
     assert.equal(response.url, `${siteUrl}/pl/course_instance/1/instructor/assessment/1/settings`);
   });
 
-  test.sequential('verify changing aid did not leave empty directories', async () => {
+  test.sequential('verify changing short name did not leave empty directories', async () => {
     const assessmentDir = path.join(assessmentLiveDir(), 'HW2');
     assert.notOk(await fs.pathExists(assessmentDir));
   });
@@ -144,7 +144,7 @@ describe('Editing assessment settings', () => {
           set: 'Practice Quiz',
           number: '1',
           module: 'Module2',
-          aid: 'HW2',
+          short_name: 'HW2',
         }),
       },
     );
@@ -213,7 +213,7 @@ describe('Editing assessment settings', () => {
             set: 'Homework',
             number: '1',
             module: 'Module1',
-            aid: 'HW1',
+            short_name: 'HW1',
           }),
         },
       );
@@ -242,7 +242,7 @@ describe('Editing assessment settings', () => {
             set: 'Homework',
             number: '1',
             module: 'Module1',
-            aid: 'HW1',
+            short_name: 'HW1',
           }),
         },
       );
@@ -270,7 +270,7 @@ describe('Editing assessment settings', () => {
           set: assessmentInfo.set,
           number: assessmentInfo.number,
           module: assessmentInfo.module,
-          aid: 'HW2',
+          short_name: 'HW2',
         }),
       },
     );
@@ -311,7 +311,7 @@ describe('Editing assessment settings', () => {
             set: 'Homework',
             number: '1',
             module: 'Module1',
-            aid: 'HW1',
+            short_name: 'HW1',
           }),
         },
       );
@@ -339,7 +339,7 @@ describe('Editing assessment settings', () => {
           set: 'Homework',
           number: '1',
           module: 'Module1',
-          aid: 'A1',
+          short_name: 'A1',
         }),
       },
     );
@@ -374,7 +374,7 @@ describe('Editing assessment settings', () => {
             set: 'Homework',
             number: '1',
             module: 'Module1',
-            aid: '../A2',
+            short_name: '../A2',
           }),
         },
       );

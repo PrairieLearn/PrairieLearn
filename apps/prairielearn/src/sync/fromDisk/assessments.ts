@@ -443,18 +443,18 @@ export async function sync(
     // to exams to be able to efficiently add warning information for missing UUIDs.
     const examUuids = new Set<string>();
     const uuidAssessmentMap = new Map<string, string[]>();
-    Object.entries(assessments).forEach(([tid, assessment]) => {
+    Object.entries(assessments).forEach(([assessmentShortName, assessment]) => {
       if (!assessment.data) return;
       assessment.data.allowAccess.forEach((allowAccess) => {
         const { examUuid } = allowAccess;
         if (examUuid) {
           examUuids.add(examUuid);
-          let tids = uuidAssessmentMap.get(examUuid);
-          if (!tids) {
-            tids = [];
-            uuidAssessmentMap.set(examUuid, tids);
+          let shortNames = uuidAssessmentMap.get(examUuid);
+          if (!shortNames) {
+            shortNames = [];
+            uuidAssessmentMap.set(examUuid, shortNames);
           }
-          tids.push(tid);
+          shortNames.push(assessmentShortName);
         }
       });
     });
@@ -466,9 +466,9 @@ export async function sync(
     );
     uuidsRes.forEach(({ uuid, uuid_exists }) => {
       if (!uuid_exists) {
-        uuidAssessmentMap.get(uuid)?.forEach((tid) => {
+        uuidAssessmentMap.get(uuid)?.forEach((assessmentShortName) => {
           infofile.addWarning(
-            assessments[tid],
+            assessments[assessmentShortName],
             `examUuid "${uuid}" not found. Ensure you copied the correct UUID from PrairieTest.`,
           );
         });
@@ -476,9 +476,9 @@ export async function sync(
     });
   }
 
-  const assessmentParams = Object.entries(assessments).map(([tid, assessment]) => {
+  const assessmentParams = Object.entries(assessments).map(([assessmentShortName, assessment]) => {
     return JSON.stringify([
-      tid,
+      assessmentShortName,
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
@@ -501,10 +501,10 @@ export async function validateAssessmentSharedQuestions(
   // A set of all imported question IDs.
   const importedQids = new Set<string>();
 
-  // A mapping from assessment "TIDs" to a list of questions they import.
+  // A mapping from assessment short names to a list of questions they import.
   const assessmentImportedQids = new Map<string, string[]>();
 
-  Object.entries(assessments).forEach(([tid, assessment]) => {
+  Object.entries(assessments).forEach(([assessmentShortName, assessment]) => {
     if (!assessment.data) return;
     assessment.data.zones.forEach((zone) => {
       zone.questions.forEach((question) => {
@@ -516,10 +516,10 @@ export async function validateAssessmentSharedQuestions(
           if (!qid.startsWith('@')) return;
 
           importedQids.add(qid);
-          let qids = assessmentImportedQids.get(tid);
+          let qids = assessmentImportedQids.get(assessmentShortName);
           if (!qids) {
             qids = [];
-            assessmentImportedQids.set(tid, qids);
+            assessmentImportedQids.set(assessmentShortName, qids);
           }
           qids.push(qid);
         });
@@ -542,10 +542,10 @@ export async function validateAssessmentSharedQuestions(
       course_id: courseId,
     });
     if (!(questionSharingEnabled || consumePublicQuestionsEnabled) && config.checkSharingOnSync) {
-      for (const [tid, qids] of assessmentImportedQids.entries()) {
+      for (const [assessmentShortName, qids] of assessmentImportedQids.entries()) {
         if (qids.length > 0) {
           infofile.addError(
-            assessments[tid],
+            assessments[assessmentShortName],
             "You have attempted to import a question with '@', but question sharing is not enabled for your course.",
           );
         }
@@ -567,11 +567,11 @@ export async function validateAssessmentSharedQuestions(
     }
     const missingQids = new Set(Array.from(importedQids).filter((qid) => !(qid in questionIds)));
     if (config.checkSharingOnSync) {
-      for (const [tid, qids] of assessmentImportedQids.entries()) {
+      for (const [assessmentShortName, qids] of assessmentImportedQids.entries()) {
         const assessmentMissingQids = qids.filter((qid) => missingQids.has(qid));
         if (assessmentMissingQids.length > 0) {
           infofile.addError(
-            assessments[tid],
+            assessments[assessmentShortName],
             `For each of the following, either the course you are referencing does not exist, or the question does not exist within that course: ${[
               ...assessmentMissingQids,
             ].join(', ')}`,

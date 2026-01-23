@@ -3,7 +3,7 @@ import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import { config } from '../lib/config.js';
 import type { Assessment } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 
 import * as helperExam from './helperExam.js';
 import * as helperServer from './helperServer.js';
@@ -24,9 +24,9 @@ describe('Client files endpoints', () => {
 
   let assessment: Assessment;
   beforeAll(async () => {
-    assessment = await selectAssessmentByTid({
+    assessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
+      short_name: 'hw1-automaticTestSuite',
     });
   });
 

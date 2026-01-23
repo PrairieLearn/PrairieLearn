@@ -18,7 +18,7 @@ describe('editor library', () => {
       'courseInstances/testinstance/infoCourseInstance.json',
     ) as CourseInstanceInfo;
     assert.equal(details.type, 'courseInstance');
-    assert.equal(details.ciid, 'testinstance');
+    assert.equal(details.courseInstanceShortName, 'testinstance');
   });
 
   it('gets details for question info', () => {
@@ -32,7 +32,7 @@ describe('editor library', () => {
       'courseInstances/testinstance/assessments/testassessment/infoAssessment.json',
     ) as AssessmentInfo;
     assert.equal(details.type, 'assessment');
-    assert.equal(details.ciid, 'testinstance');
-    assert.equal(details.aid, 'testassessment');
+    assert.equal(details.courseInstanceShortName, 'testinstance');
+    assert.equal(details.assessmentShortName, 'testassessment');
   });
 });

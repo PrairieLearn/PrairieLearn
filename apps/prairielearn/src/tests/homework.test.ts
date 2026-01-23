@@ -16,7 +16,7 @@ import {
   SubmissionSchema,
   type Variant,
 } from '../lib/db-types.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 
 import * as helperAttachFiles from './helperAttachFiles.js';
 import * as helperQuestion from './helperQuestion.js';
@@ -274,9 +274,9 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
 
     describe('the database', function () {
       it('should contain HW1', async () => {
-        const { id: assessmentId } = await selectAssessmentByTid({
+        const { id: assessmentId } = await selectAssessmentByShortName({
           course_instance_id: '1',
-          tid: 'hw1-automaticTestSuite',
+          short_name: 'hw1-automaticTestSuite',
         });
         locals.assessment_id = assessmentId;
       });

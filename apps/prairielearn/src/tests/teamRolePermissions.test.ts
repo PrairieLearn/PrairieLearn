@@ -21,7 +21,7 @@ const courseInstanceUrl = baseUrl + '/course_instance/1';
 
 const storedConfig: any = {};
 
-const TEAM_WORK_ASSESSMENT_TID = 'hw5-templateGroupWork';
+const TEAM_WORK_ASSESSMENT_SHORT_NAME = 'hw5-templateGroupWork';
 const QUESTION_ID_1 = 'demo/demoNewton-page1';
 const QUESTION_ID_2 = 'demo/demoNewton-page2';
 const QUESTION_ID_3 = 'addNumbers';
@@ -153,7 +153,7 @@ async function prepareTeam() {
   // Get exam assessment URL using ids from database
   const assessmentId = await queryRow(
     sql.select_assessment,
-    { assessment_tid: TEAM_WORK_ASSESSMENT_TID },
+    { assessment_short_name: TEAM_WORK_ASSESSMENT_SHORT_NAME },
     IdSchema,
   );
   const assessmentUrl = courseInstanceUrl + '/assessment/' + assessmentId;

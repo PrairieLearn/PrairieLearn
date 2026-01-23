@@ -6,7 +6,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../lib/config.js';
 import { type Assessment, type AssessmentQuestion } from '../lib/db-types.js';
 import { selectAssessmentQuestionByQuestionId } from '../models/assessment-question.js';
-import { selectAssessmentByTid } from '../models/assessment.js';
+import { selectAssessmentByShortName } from '../models/assessment.js';
 import { selectQuestionByQid } from '../models/question.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
@@ -35,9 +35,9 @@ describe('Instructor force-breaking variants on homework', () => {
   beforeAll(async () => {
     await helperServer.before()();
 
-    assessment = await selectAssessmentByTid({
+    assessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'hw1-automaticTestSuite',
+      short_name: 'hw1-automaticTestSuite',
     });
     assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
 
@@ -189,9 +189,9 @@ describe('Instructor force-breaking variants on exam', () => {
   beforeAll(async () => {
     await helperServer.before()();
 
-    assessment = await selectAssessmentByTid({
+    assessment = await selectAssessmentByShortName({
       course_instance_id: '1',
-      tid: 'exam15-breakVariants',
+      short_name: 'exam15-breakVariants',
     });
     assessmentStudentUrl = `${siteUrl}/pl/course_instance/1/assessment/${assessment.id}`;
 

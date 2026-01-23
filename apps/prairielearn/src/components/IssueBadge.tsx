@@ -8,7 +8,7 @@ export function IssueBadge({
   count,
   suppressLink,
   issueQid,
-  issueAid,
+  issueAssessmentShortName,
   urlPrefix,
   className,
 }: {
@@ -19,13 +19,13 @@ export function IssueBadge({
       suppressLink: true;
       urlPrefix?: undefined;
       issueQid?: undefined;
-      issueAid?: undefined;
+      issueAssessmentShortName?: undefined;
     }
   | {
       suppressLink?: false;
       urlPrefix: string;
       issueQid?: string | null;
-      issueAid?: string | null;
+      issueAssessmentShortName?: string | null;
     }
 )) {
   // Convert explicitly to a number because some unvalidated queries still return a string (via bigint)
@@ -37,7 +37,11 @@ export function IssueBadge({
     );
   }
 
-  const query = encodeSearchString({ is: 'open', qid: issueQid, assessment: issueAid });
+  const query = encodeSearchString({
+    is: 'open',
+    qid: issueQid,
+    assessment: issueAssessmentShortName,
+  });
 
   return (
     <a
@@ -54,7 +58,7 @@ export function IssueBadgeHtml({
   count,
   suppressLink,
   issueQid,
-  issueAid,
+  issueAssessmentShortName,
   urlPrefix,
   className,
 }: {
@@ -65,13 +69,13 @@ export function IssueBadgeHtml({
       suppressLink: true;
       urlPrefix?: undefined;
       issueQid?: undefined;
-      issueAid?: undefined;
+      issueAssessmentShortName?: undefined;
     }
   | {
       suppressLink?: false;
       urlPrefix: string;
       issueQid?: string | null;
-      issueAid?: string | null;
+      issueAssessmentShortName?: string | null;
     }
 )) {
   if (suppressLink) {
@@ -86,7 +90,7 @@ export function IssueBadgeHtml({
       className={className}
       urlPrefix={urlPrefix}
       issueQid={issueQid}
-      issueAid={issueAid}
+      issueAssessmentShortName={issueAssessmentShortName}
     />,
   );
 }
