@@ -26,7 +26,6 @@ import {
 import {
   Home,
   InstructorHomePageCourseSchema,
-  StudentHomePageCourseSchema,
   StudentHomePageCourseWithExtensionSchema,
 } from './home.html.js';
 
@@ -79,63 +78,59 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    // Query parameters for student courses
-    const studentCourseParams = {
-      // Use the authenticated user, not the authorized user.
-      user_id: res.locals.authn_user.id,
-      pending_uid: res.locals.authn_user.uid,
-      // This is a somewhat ugly escape hatch specifically for load testing. In
-      // general, we don't want to clutter the home page with example course
-      // enrollments, but for load testing we want to enroll a large number of
-      // users in the example course and then have them find the example course
-      // on the home page. So, you'd make a request like this:
-      // `/pl?include_example_course_enrollments=true`
-      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-    };
-
-    // Run both legacy and modern publishing queries
-    const [legacyStudentCourses, allModernStudentCourses] = await Promise.all([
-      queryRows(
-        sql.select_student_courses_legacy_access,
-        { ...studentCourseParams, req_date: res.locals.req_date },
-        StudentHomePageCourseSchema,
-      ),
-      queryRows(
-        sql.select_student_courses_modern_publishing,
-        studentCourseParams,
-        StudentHomePageCourseWithExtensionSchema,
-      ),
-    ]);
-
-    const modernStudentCourses = allModernStudentCourses.filter((entry) => {
-      const startDate = entry.course_instance.publishing_start_date;
-      const endDate = run(() => {
-        if (entry.course_instance.publishing_end_date == null) {
-          return null;
-        }
-
-        if (
-          entry.latest_publishing_extension == null ||
-          entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
-        ) {
-          return entry.course_instance.publishing_end_date;
-        }
-
-        return entry.latest_publishing_extension.end_date;
-      });
-
-      return (
-        startDate !== null &&
-        endDate !== null &&
-        startDate < res.locals.req_date &&
-        res.locals.req_date < endDate
-      );
-    });
-
-    // Combine and sort all student courses by start date (most recent first)
-    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses].sort(
-      sortStudentCourses,
+    // Query all student courses (both legacy and modern publishing) in a single query
+    const allStudentCourses = await queryRows(
+      sql.select_student_courses,
+      {
+        // Use the authenticated user, not the authorized user.
+        user_id: res.locals.authn_user.id,
+        pending_uid: res.locals.authn_user.uid,
+        // This is a somewhat ugly escape hatch specifically for load testing. In
+        // general, we don't want to clutter the home page with example course
+        // enrollments, but for load testing we want to enroll a large number of
+        // users in the example course and then have them find the example course
+        // on the home page. So, you'd make a request like this:
+        // `/pl?include_example_course_enrollments=true`
+        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+        req_date: res.locals.req_date,
+      },
+      StudentHomePageCourseWithExtensionSchema,
     );
+
+    // Filter modern publishing courses by access dates (legacy courses are already
+    // filtered by check_course_instance_access in SQL)
+    const studentCourses = allStudentCourses
+      .filter((entry) => {
+        // Legacy courses are already filtered by check_course_instance_access in SQL
+        if (!entry.course_instance.modern_publishing) {
+          return true;
+        }
+
+        // For modern publishing courses, check access dates
+        const startDate = entry.course_instance.publishing_start_date;
+        const endDate = run(() => {
+          if (entry.course_instance.publishing_end_date == null) {
+            return null;
+          }
+
+          if (
+            entry.latest_publishing_extension == null ||
+            entry.course_instance.publishing_end_date > entry.latest_publishing_extension.end_date
+          ) {
+            return entry.course_instance.publishing_end_date;
+          }
+
+          return entry.latest_publishing_extension.end_date;
+        });
+
+        return (
+          startDate !== null &&
+          endDate !== null &&
+          startDate < res.locals.req_date &&
+          res.locals.req_date < endDate
+        );
+      })
+      .sort(sortStudentCourses);
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,

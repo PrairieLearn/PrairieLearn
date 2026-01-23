@@ -59,7 +59,7 @@ export function Home({
   canAddCourses: boolean;
   csrfToken: string;
   instructorCourses: InstructorHomePageCourse[];
-  studentCourses: StudentHomePageCourse[];
+  studentCourses: StudentHomePageCourseWithExtension[];
   adminInstitutions: StaffInstitution[];
   urlPrefix: string;
   isDevMode: boolean;

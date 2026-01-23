@@ -164,100 +164,116 @@ ORDER BY
   title,
   id;
 
--- BLOCK select_student_courses_legacy_access
-SELECT
-  c.short_name AS course_short_name,
-  c.title AS course_title,
-  to_jsonb(ci) AS course_instance,
-  to_jsonb(e) AS enrollment,
-  d.start_date,
-  d.end_date
-FROM
-  enrollments AS e
-  LEFT JOIN users AS u ON (u.id = e.user_id)
-  JOIN course_instances AS ci ON (
-    ci.id = e.course_instance_id
-    AND ci.deleted_at IS NULL
-    AND check_course_instance_access (ci.id, u.uid, u.institution_id, $req_date)
-    -- We only consider courses using the legacy access system in this query.
-    AND ci.modern_publishing IS FALSE
-  )
-  JOIN courses AS c ON (
-    c.id = ci.course_id
-    AND c.deleted_at IS NULL
-    AND (
-      c.example_course IS FALSE
-      OR $include_example_course_enrollments
-    )
-    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
-  ),
-  LATERAL (
+-- BLOCK select_student_courses
+WITH
+  -- Base query: all enrollments for this user with course/course_instance data
+  base_enrollments AS (
     SELECT
-      min(ar.start_date) AS start_date,
-      max(ar.end_date) AS end_date
+      e.id AS enrollment_id,
+      c.short_name AS course_short_name,
+      c.title AS course_title,
+      ci.id AS course_instance_id,
+      ci.modern_publishing,
+      to_jsonb(ci) AS course_instance,
+      to_jsonb(e) AS enrollment,
+      u.uid,
+      u.institution_id
     FROM
-      course_instance_access_rules AS ar
-    WHERE
-      ar.course_instance_id = ci.id
-  ) AS d
-WHERE
-  e.user_id = $user_id
-  OR e.pending_uid = $pending_uid
-ORDER BY
-  d.start_date DESC NULLS LAST,
-  d.end_date DESC NULLS LAST,
-  ci.id DESC;
-
--- BLOCK select_student_courses_modern_publishing
-SELECT
-  c.short_name AS course_short_name,
-  c.title AS course_title,
-  to_jsonb(ci) AS course_instance,
-  to_jsonb(e) AS enrollment,
-  to_jsonb(cie) AS latest_publishing_extension,
-  ci.publishing_start_date AS start_date,
-  ci.publishing_end_date AS end_date
-FROM
-  enrollments AS e
-  LEFT JOIN users AS u ON (u.id = e.user_id)
-  JOIN course_instances AS ci ON (
-    ci.id = e.course_instance_id
-    AND ci.deleted_at IS NULL
-    -- We only consider courses using the modern publishing system in this query.
-    AND ci.modern_publishing IS TRUE
-  )
-  JOIN courses AS c ON (
-    c.id = ci.course_id
-    AND c.deleted_at IS NULL
-    AND (
-      c.example_course IS FALSE
-      OR $include_example_course_enrollments
-    )
-    AND users_is_instructor_in_course (u.id, c.id) IS FALSE
-  )
-  LEFT JOIN LATERAL (
-    SELECT
-      cie.*
-    FROM
-      course_instance_publishing_extension_enrollments AS ciee
-      JOIN course_instance_publishing_extensions AS cie ON (
-        cie.id = ciee.course_instance_publishing_extension_id
+      enrollments AS e
+      LEFT JOIN users AS u ON (u.id = e.user_id)
+      JOIN course_instances AS ci ON (
+        ci.id = e.course_instance_id
+        AND ci.deleted_at IS NULL
+      )
+      JOIN courses AS c ON (
+        c.id = ci.course_id
+        AND c.deleted_at IS NULL
+        AND (
+          c.example_course IS FALSE
+          OR $include_example_course_enrollments
+        )
+        AND users_is_instructor_in_course (u.id, c.id) IS FALSE
       )
     WHERE
-      ciee.enrollment_id = e.id
-    ORDER BY
-      cie.end_date DESC NULLS LAST,
-      cie.id DESC
-    LIMIT
-      1
-  ) AS cie ON TRUE
-WHERE
-  e.user_id = $user_id
-  OR e.pending_uid = $pending_uid
+      e.user_id = $user_id
+      OR e.pending_uid = $pending_uid
+  ),
+  -- Legacy courses: use access rules for dates and check_course_instance_access for filtering
+  legacy_courses AS (
+    SELECT
+      be.course_short_name,
+      be.course_title,
+      be.course_instance,
+      be.enrollment,
+      NULL::jsonb AS latest_publishing_extension,
+      d.start_date,
+      d.end_date,
+      be.course_instance_id
+    FROM
+      base_enrollments AS be,
+      LATERAL (
+        SELECT
+          min(ar.start_date) AS start_date,
+          max(ar.end_date) AS end_date
+        FROM
+          course_instance_access_rules AS ar
+        WHERE
+          ar.course_instance_id = be.course_instance_id
+      ) AS d
+    WHERE
+      be.modern_publishing IS FALSE
+      AND check_course_instance_access (
+        be.course_instance_id,
+        be.uid,
+        be.institution_id,
+        $req_date
+      )
+  ),
+  -- Modern courses: use publishing dates directly and fetch extension data
+  modern_courses AS (
+    SELECT
+      be.course_short_name,
+      be.course_title,
+      be.course_instance,
+      be.enrollment,
+      to_jsonb(cie) AS latest_publishing_extension,
+      (be.course_instance ->> 'publishing_start_date')::timestamptz AS start_date,
+      (be.course_instance ->> 'publishing_end_date')::timestamptz AS end_date,
+      be.course_instance_id
+    FROM
+      base_enrollments AS be
+      LEFT JOIN LATERAL (
+        SELECT
+          cie.*
+        FROM
+          course_instance_publishing_extension_enrollments AS ciee
+          JOIN course_instance_publishing_extensions AS cie ON (
+            cie.id = ciee.course_instance_publishing_extension_id
+          )
+        WHERE
+          ciee.enrollment_id = be.enrollment_id
+        ORDER BY
+          cie.end_date DESC NULLS LAST,
+          cie.id DESC
+        LIMIT
+          1
+      ) AS cie ON TRUE
+    WHERE
+      be.modern_publishing IS TRUE
+  )
+SELECT
+  *
+FROM
+  legacy_courses
+UNION ALL
+SELECT
+  *
+FROM
+  modern_courses
 ORDER BY
-  ci.publishing_start_date DESC NULLS LAST,
-  ci.publishing_end_date DESC NULLS LAST,
-  ci.id DESC;
+  start_date DESC NULLS LAST,
+  end_date DESC NULLS LAST,
+  course_instance_id DESC;
 
 -- BLOCK select_admin_institutions
 -- Note that we only consider institutions where the user is explicitly
