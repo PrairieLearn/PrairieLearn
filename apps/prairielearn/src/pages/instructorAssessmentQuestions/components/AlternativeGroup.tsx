@@ -1,5 +1,5 @@
 import { useSortable } from '@dnd-kit/sortable';
-import { type CSSProperties, Fragment } from 'react';
+import { type CSSProperties } from 'react';
 
 import { run } from '@prairielearn/run';
 
@@ -11,8 +11,6 @@ import { AssessmentQuestion } from './AssessmentQuestion.js';
 
 export function AlternativeGroup({
   alternativeGroup,
-  alternativeGroupNumber,
-  zoneNumber,
   AssessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
@@ -21,8 +19,6 @@ export function AlternativeGroup({
   sortableId,
 }: {
   alternativeGroup: ZoneQuestionForm;
-  alternativeGroupNumber: number;
-  zoneNumber: number;
   AssessmentState: AssessmentState;
   handleEditQuestion: HandleEditQuestion;
   handleDeleteQuestion: HandleDeleteQuestion;
@@ -38,10 +34,9 @@ export function AlternativeGroup({
     id: sortableId,
   });
 
-  // For table rows, only apply Y translation to prevent squishing
-  // The scaleX/scaleY can cause issues with table layout
   const sortableStyle: CSSProperties = {
     opacity: isDragging ? 0.6 : 1,
+    // For table rows, only apply Y translation to prevent squishing
     transform: transform ? `translateY(${transform.y}px)` : undefined,
     transition,
     background: isDragging ? 'rgba(0,0,0,0.04)' : undefined,
@@ -50,7 +45,7 @@ export function AlternativeGroup({
   };
 
   return (
-    <Fragment>
+    <>
       {hasAlternatives && (
         <AlternativeGroupHeader
           alternativeGroup={alternativeGroup}
@@ -64,8 +59,6 @@ export function AlternativeGroup({
             <AssessmentQuestion
               id={alternativeGroup.id}
               alternativeGroup={alternativeGroup}
-              zoneNumber={zoneNumber}
-              alternativeGroupNumber={alternativeGroupNumber}
               AssessmentState={AssessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
@@ -79,17 +72,15 @@ export function AlternativeGroup({
           );
         }
 
-        return alternativeGroup.alternatives?.map((alternative, alternativeNumber) => {
+        return alternativeGroup.alternatives?.map((alternative, alternativeIndex) => {
           // Only apply sortable props to the first alternative in the group
-          const isFirstAlternative = alternativeNumber === 0;
+          const isFirstAlternative = alternativeIndex === 0;
           return (
             <AssessmentQuestion
-              key={alternative.id}
+              key={alternative.trackingId}
               alternative={alternative}
               alternativeGroup={alternativeGroup}
-              zoneNumber={zoneNumber}
-              alternativeGroupNumber={alternativeGroupNumber}
-              alternativeNumber={alternativeNumber}
+              alternativeIndex={alternativeIndex}
               AssessmentState={AssessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
@@ -106,6 +97,6 @@ export function AlternativeGroup({
           );
         });
       })}
-    </Fragment>
+    </>
   );
 }

@@ -12,7 +12,7 @@ import type {
  */
 export interface AssessmentState {
   nTableCols: number;
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
   editMode: boolean;
   urlPrefix: string;
   hasCoursePermissionPreview: boolean;
@@ -27,7 +27,7 @@ export interface AssessmentState {
  */
 export interface EditorState {
   zones: ZoneAssessmentForm[];
-  questionMap: Record<string, StaffAssessmentQuestionRow>;
+  questionMetadata: Record<string, StaffAssessmentQuestionRow>;
 }
 
 /**
@@ -36,52 +36,52 @@ export interface EditorState {
 export type HandleEditQuestion = (params: {
   question: ZoneQuestionForm | QuestionAlternativeForm;
   alternativeGroup?: ZoneQuestionForm;
-  zoneNumber: number;
-  alternativeGroupNumber: number;
-  alternativeNumber?: number;
+  questionTrackingId: string;
+  /** Only set when editing an alternative within an alternative group */
+  alternativeTrackingId?: string;
 }) => void;
 
 /**
  * Handler for deleting a question or alternative from the assessment.
  */
 export type HandleDeleteQuestion = (
-  zoneNumber: number,
-  alternativeGroupNumber: number,
+  questionTrackingId: string,
   questionId: string,
-  numberInAlternativeGroup?: number,
+  alternativeTrackingId?: string,
 ) => void;
 
 /**
  * All possible actions that can modify the editor state.
+ * All actions use trackingIds for stable identity instead of position indices.
  * UNDO and REDO are stubbed for a future PR.
  */
 export type EditorAction =
   | {
       type: 'ADD_QUESTION';
-      zoneIndex: number;
+      zoneTrackingId: string;
       question: ZoneQuestionForm;
       questionData?: StaffAssessmentQuestionRow;
     }
   | {
       type: 'UPDATE_QUESTION';
-      zoneIndex: number;
-      questionIndex: number;
+      questionTrackingId: string;
       question: Partial<ZoneQuestionForm> | Partial<QuestionAlternativeForm>;
-      alternativeIndex?: number;
+      /** Only set when updating an alternative within an alternative group */
+      alternativeTrackingId?: string;
     }
   | {
       type: 'DELETE_QUESTION';
-      zoneIndex: number;
-      questionIndex: number;
+      questionTrackingId: string;
       questionId: string;
-      alternativeIndex?: number;
+      /** Only set when deleting an alternative from an alternative group */
+      alternativeTrackingId?: string;
     }
   | {
       type: 'REORDER_QUESTION';
-      fromZoneIndex: number;
-      fromQuestionIndex: number;
-      toZoneIndex: number;
-      toQuestionIndex: number;
+      questionTrackingId: string;
+      toZoneTrackingId: string;
+      /** trackingId of the question to insert before, or null to append at end */
+      beforeQuestionTrackingId: string | null;
     }
   | {
       type: 'ADD_ZONE';
@@ -89,15 +89,15 @@ export type EditorAction =
     }
   | {
       type: 'UPDATE_ZONE';
-      zoneIndex: number;
+      zoneTrackingId: string;
       zone: Partial<ZoneAssessmentForm>;
     }
   | {
       type: 'DELETE_ZONE';
-      zoneIndex: number;
+      zoneTrackingId: string;
     }
   | {
-      type: 'UPDATE_QUESTION_MAP';
+      type: 'UPDATE_QUESTION_METADATA';
       questionId: string;
       questionData: StaffAssessmentQuestionRow;
     }

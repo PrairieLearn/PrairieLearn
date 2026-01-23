@@ -80,33 +80,31 @@ export function EditQuestionModal({
   const manualPointsDisplayValue = question?.manualPoints ?? alternativeGroup?.manualPoints ?? null;
   const newQuestionDataRef = useRef<StaffAssessmentQuestionRow | undefined>(undefined);
 
-  // Determine which property was originally set for points (points vs autoPoints)
-  // Check own values first, then inherited values
+  // Determine which property was originally set (points vs autoPoints)
   const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
-    if (question?.points !== undefined) return 'points';
-    if (question?.autoPoints !== undefined) return 'autoPoints';
+    if (question?.points != null) return 'points';
+    if (question?.autoPoints != null) return 'autoPoints';
     if (alternativeGroup) {
-      if (alternativeGroup.points !== undefined) {
+      if (alternativeGroup.points != null) {
         return 'points';
       }
-      if (alternativeGroup.autoPoints !== undefined) {
+      if (alternativeGroup.autoPoints != null) {
         return 'autoPoints';
       }
     }
     return 'autoPoints';
   }, [question, alternativeGroup]);
 
+  // Determine which property was originally set (maxPoints vs maxAutoPoints)
   const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
-    // Check own question first
-    if (question?.maxAutoPoints !== undefined) return 'maxAutoPoints';
-    if (question?.maxPoints !== undefined) return 'maxPoints';
+    if (question?.maxAutoPoints != null) return 'maxAutoPoints';
+    if (question?.maxPoints != null) return 'maxPoints';
 
-    // Check inherited from alternative group
     if (alternativeGroup) {
-      if (alternativeGroup.maxAutoPoints !== undefined) {
+      if (alternativeGroup.maxAutoPoints != null) {
         return 'maxAutoPoints';
       }
-      if (alternativeGroup.maxPoints !== undefined) {
+      if (alternativeGroup.maxPoints != null) {
         return 'maxPoints';
       }
     }
@@ -156,7 +154,6 @@ export function EditQuestionModal({
     alternativeGroup,
   ]);
 
-  // Compute form values from data - useForm with `values` will auto-update
   const formValues = useMemo<ZoneQuestionForm | QuestionAlternativeForm>(
     () => question ?? ({ trackingId: '' } as ZoneQuestionForm),
     [question],
@@ -257,7 +254,7 @@ export function EditQuestionModal({
                         },
                       );
                       if (!res.ok) {
-                        throw new Error('Failed to save question');
+                        throw new Error('Failed to fetch question data');
                       }
                       const questionData = await res.json();
                       if (questionData === null) {

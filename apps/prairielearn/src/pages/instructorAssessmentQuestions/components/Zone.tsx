@@ -18,59 +18,55 @@ export function Zone({
   handleEditZone,
   handleDeleteZone,
   questionNumberMap,
-  sortableIds,
   activeId,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
   AssessmentState: AssessmentState;
-  handleAddQuestion: (zoneNumber: number) => void;
+  handleAddQuestion: (zoneTrackingId: string) => void;
   handleEditQuestion: HandleEditQuestion;
   handleDeleteQuestion: HandleDeleteQuestion;
   handleResetButtonClick: (questionId: string) => void;
-  handleEditZone: (zoneNumber: number) => void;
-  handleDeleteZone: (zoneNumber: number) => void;
+  handleEditZone: (zoneTrackingId: string) => void;
+  handleDeleteZone: (zoneTrackingId: string) => void;
   questionNumberMap: Record<string, number>;
-  sortableIds: string[];
   activeId: string | null;
 }) {
   const { nTableCols, editMode } = AssessmentState;
 
   // Create a droppable zone for dropping questions into this zone
+  // Use zone index for droppable ID to maintain compatibility with drag handler
   const droppableId = `zone-${zoneNumber - 1}-droppable`;
   const { setNodeRef, isOver } = useDroppable({
     id: droppableId,
   });
 
   return (
-    <SortableContext items={sortableIds} strategy={verticalListSortingStrategy}>
+    <SortableContext
+      items={zone.questions.map((q) => q.trackingId)}
+      strategy={verticalListSortingStrategy}
+    >
       <ZoneHeader
         zone={zone}
         zoneNumber={zoneNumber}
         nTableCols={nTableCols}
         editMode={editMode}
-        handleAddQuestion={handleAddQuestion}
-        handleEditZone={handleEditZone}
-        handleDeleteZone={handleDeleteZone}
+        handleAddQuestion={() => handleAddQuestion(zone.trackingId)}
+        handleEditZone={() => handleEditZone(zone.trackingId)}
+        handleDeleteZone={() => handleDeleteZone(zone.trackingId)}
       />
-      {zone.questions.map((alternativeGroup, index) => {
-        // Use the stable sortable ID from the pre-computed array
-        const stableId = sortableIds[index];
-        return (
-          <AlternativeGroup
-            key={stableId}
-            alternativeGroup={alternativeGroup}
-            alternativeGroupNumber={index + 1}
-            AssessmentState={AssessmentState}
-            zoneNumber={zoneNumber}
-            handleEditQuestion={handleEditQuestion}
-            handleDeleteQuestion={handleDeleteQuestion}
-            handleResetButtonClick={handleResetButtonClick}
-            questionNumberMap={questionNumberMap}
-            sortableId={stableId}
-          />
-        );
-      })}
+      {zone.questions.map((alternativeGroup) => (
+        <AlternativeGroup
+          key={alternativeGroup.trackingId}
+          alternativeGroup={alternativeGroup}
+          AssessmentState={AssessmentState}
+          handleEditQuestion={handleEditQuestion}
+          handleDeleteQuestion={handleDeleteQuestion}
+          handleResetButtonClick={handleResetButtonClick}
+          questionNumberMap={questionNumberMap}
+          sortableId={alternativeGroup.trackingId}
+        />
+      ))}
       {/* Empty zone warning - visible when zone has no questions and NOT dragging */}
       {editMode && zone.questions.length === 0 && !activeId && (
         <tr className="bg-warning-subtle">

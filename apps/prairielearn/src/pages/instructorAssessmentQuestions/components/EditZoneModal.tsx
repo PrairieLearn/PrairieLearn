@@ -6,7 +6,7 @@ import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared
 
 export type EditZoneModalData =
   | { type: 'create' }
-  | { type: 'edit'; zone: ZoneAssessmentForm; zoneIndex: number };
+  | { type: 'edit'; zone: ZoneAssessmentForm; zoneTrackingId: string };
 
 interface ZoneFormData {
   title: string;
@@ -35,11 +35,11 @@ export function EditZoneModal({
   data: EditZoneModalData | null;
   onHide: () => void;
   onExited: () => void;
-  handleSaveZone: (zone: Partial<ZoneAssessmentForm>, zoneIndex?: number) => void;
+  handleSaveZone: (zone: Partial<ZoneAssessmentForm>, zoneTrackingId?: string) => void;
 }) {
   const type = data?.type ?? null;
   const existingZone = data?.type === 'edit' ? data.zone : undefined;
-  const zoneIndex = data?.type === 'edit' ? data.zoneIndex : undefined;
+  const zoneTrackingId = data?.type === 'edit' ? data.zoneTrackingId : undefined;
 
   // Compute form values from data - useForm with `values` will auto-update
   const formValues = useMemo<ZoneFormData>(
@@ -76,7 +76,7 @@ export function EditZoneModal({
             bestQuestions: formData.bestQuestions,
             questions: type === 'create' ? [] : existingZone?.questions,
           };
-          handleSaveZone(zone, zoneIndex);
+          handleSaveZone(zone, zoneTrackingId);
         })}
       >
         <Modal.Body>

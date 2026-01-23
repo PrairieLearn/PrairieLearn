@@ -24,9 +24,10 @@ export const ZoneQuestionFormSchema = ZoneQuestionJsonSchema.omit({ alternatives
 export type ZoneQuestionForm = z.infer<typeof ZoneQuestionFormSchema>;
 
 /**
- * Form version of ZoneAssessmentJson - updates questions type.
+ * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
 export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
-  questions: z.array(ZoneQuestionFormSchema).min(1),
+  trackingId: z.string(),
+  questions: z.array(ZoneQuestionFormSchema),
 });
 export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;

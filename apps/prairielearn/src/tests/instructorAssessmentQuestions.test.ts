@@ -13,11 +13,11 @@ import { features } from '../lib/features/index.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { formatJsonWithPrettier } from '../lib/prettier.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
-import { updateCourseRepo } from '../models/update-course-repo.js';
 import { filterZones } from '../pages/instructorAssessmentQuestions/instructorAssessmentQuestions.js';
 import * as courseDB from '../sync/course-db.js';
 
 import { fetchCheerio } from './helperClient.js';
+import { updateCourseRepository } from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import { getOrCreateUser, withUser } from './utils/auth.js';
 
@@ -76,7 +76,7 @@ describe('Editing assessment questions', () => {
 
     await helperServer.before(courseLiveDir)();
 
-    await updateCourseRepo(courseOriginDir);
+    await updateCourseRepository({ courseId: '1', repository: courseOriginDir });
 
     // Check if feature was already enabled before enabling it
     wasFeatureEnabled = await features.enabled('assessment-questions-editor');
