@@ -3,7 +3,6 @@ import type { CSSProperties, Dispatch } from 'react';
 
 import { run } from '@prairielearn/run';
 
-import { AlternativeGroupHeader } from '../../../components/AssessmentQuestions.js';
 import type { ZoneQuestionForm } from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
@@ -14,6 +13,7 @@ import {
 } from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
+import { AlternativeGroupHeader } from './Headers.js';
 
 /**
  * Renders both individual question, and alternative questions.

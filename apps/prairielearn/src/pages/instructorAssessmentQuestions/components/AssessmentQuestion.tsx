@@ -1,7 +1,9 @@
 import type { DraggableAttributes, DraggableSyntheticListeners } from '@dnd-kit/core';
 import clsx from 'clsx';
-import { type CSSProperties } from 'react';
+import { type CSSProperties, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
+
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentQuestionNumber } from '../../../components/AssessmentQuestions.js';
 import { HistMini } from '../../../components/HistMini.js';
@@ -35,7 +37,19 @@ function QuestionTitle({
   alternativeNumber: number | null;
 }) {
   const { question } = questionRow;
-  const title = (
+  if (hasCoursePermissionPreview) {
+    return (
+      <>
+        <AssessmentQuestionNumber
+          alternativeGroupSize={questionRow.alternative_group_size}
+          alternativeGroupNumber={questionNumber}
+          numberInAlternativeGroup={alternativeNumber}
+        />
+        <a href={`${urlPrefix}/question/${question.id}/`}>{question.title}</a>
+      </>
+    );
+  }
+  return (
     <>
       <AssessmentQuestionNumber
         alternativeGroupSize={questionRow.alternative_group_size}
@@ -45,10 +59,6 @@ function QuestionTitle({
       {question.title}
     </>
   );
-  if (hasCoursePermissionPreview) {
-    return <a href={`${urlPrefix}/question/${question.id}/`}>{title}</a>;
-  }
-  return title;
 }
 
 /**
@@ -119,6 +129,7 @@ export function AssessmentQuestion({
 }) {
   const question = alternative ?? alternativeGroup;
   const questionId = alternative?.id ?? id;
+  const [copied, setCopied] = useState(false);
   const {
     questionMetadata,
     editMode,
@@ -209,7 +220,26 @@ export function AssessmentQuestion({
       ) : questionData.question.sync_warnings ? (
         <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
       ) : null}
-      {questionId}
+      <code>{questionId}</code>
+      <OverlayTrigger
+        tooltip={{
+          body: copied ? 'Copied!' : 'Copy',
+          props: { id: `qid-copy-tooltip-${questionId}` },
+        }}
+      >
+        <button
+          type="button"
+          className="btn btn-sm btn-link p-0 ms-1"
+          aria-label="Copy QID"
+          onClick={async () => {
+            await navigator.clipboard.writeText(questionId);
+            setCopied(true);
+            setTimeout(() => setCopied(false), 1500);
+          }}
+        >
+          <i className="bi bi-copy" />
+        </button>
+      </OverlayTrigger>
     </td>,
     <td key="topic">
       <TopicBadge topic={questionData.topic} />

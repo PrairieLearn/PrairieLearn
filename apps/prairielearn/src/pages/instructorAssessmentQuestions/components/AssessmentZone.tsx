@@ -2,7 +2,6 @@ import { useDroppable } from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { CSSProperties, Dispatch } from 'react';
 
-import { ZoneHeader } from '../../../components/AssessmentQuestions.js';
 import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
@@ -13,6 +12,7 @@ import {
 } from '../types.js';
 
 import { AlternativeGroup } from './AlternativeGroup.js';
+import { ZoneHeader } from './Headers.js';
 
 /**
  * A specific zone / section of an assessment.
