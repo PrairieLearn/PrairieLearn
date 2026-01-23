@@ -1,4 +1,4 @@
-import { registerHydratedComponent } from '@prairielearn/preact/hydrated-component';
+import { registerHydratedComponent } from '@prairielearn/react/hydrated-component';
 
 import { AdministratorInstitutionSsoForm } from '../../../../src/ee/pages/administratorInstitutionSso/components/AdministratorInstitutionSsoForm.js';
 

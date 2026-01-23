@@ -1,6 +1,6 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import * as ejs from 'ejs';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -88,11 +88,18 @@ export function renderText(
   const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
 
   const context = {
-    clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
-    clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-    clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
+    client_files_course: assessmentUrlPrefix + '/clientFilesCourse',
+    client_files_course_instance: assessmentUrlPrefix + '/clientFilesCourseInstance',
+    client_files_assessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
-  return ejs.render(assessment.text, context);
+
+  // Convert all legacy EJS-style template variables to Mustache template variables.
+  const text = assessment.text
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ client_files_course }}')
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
+
+  return mustache.render(text, context);
 }
 
 /**

@@ -19,6 +19,7 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   QuestionSchema,
+  TeamConfigSchema,
   type TeamRole,
   TeamRoleSchema,
   ZoneSchema,
@@ -1165,7 +1166,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone question's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone question's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1200,7 +1201,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The zone's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The zone's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1235,7 +1236,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /The assessment's "canView" permission contains the non-existent group role name "Invalid"./,
+      /The assessment's "canView" permission contains non-existent role "Invalid"./,
     );
   });
 
@@ -1253,7 +1254,7 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /Could not find a role with minimum >= 1 and "canAssignRoles" set to "true"./,
+      /Could not find a role with minMembers >= 1 that can assign roles./,
     );
   });
 
@@ -1275,11 +1276,11 @@ describe('Assessment syncing', () => {
 
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Manager" contains an invalid minimum. \(Expected at most 4, found 10\)./,
+      /Role "Manager" contains an invalid minMembers. \(Expected at most 4, found 10\)./,
     );
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Reflector" contains an invalid maximum. \(Expected at most 4, found 10\)./,
+      /Role "Reflector" contains an invalid maxMembers. \(Expected at most 4, found 10\)./,
     );
   });
 
@@ -1298,7 +1299,39 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /Group role "Manager" has a minimum greater than the group's minimum size\./,
+      /Role "Manager" has a minMembers greater than the group's minMembers\./,
+    );
+  });
+
+  it('still validates when teams.minMembers is 0', async () => {
+    const courseData = util.getCourseData();
+    const teamAssessment = makeAssessment(courseData, 'Homework');
+    teamAssessment.teams = {
+      enabled: true,
+      minMembers: 0,
+      roles: [{ name: 'Manager', minMembers: 1 }],
+      studentPermissions: {
+        canCreateTeam: false,
+        canJoinTeam: false,
+        canLeaveTeam: false,
+        canNameTeam: true,
+      },
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: [],
+        canSubmit: [],
+      },
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsMinZero'] =
+      teamAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('teamsMinZero');
+    assert.isNotOk(syncedAssessment.sync_errors);
+    assert.isNotNull(syncedAssessment.sync_warnings);
+    assert.match(
+      syncedAssessment.sync_warnings,
+      /Role "Manager" has a minMembers greater than the team's minMembers\./,
     );
   });
 
@@ -1318,7 +1351,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /Group role "Manager" contains an invalid minimum\. \(Expected at most 0, found 1\)\./,
+      /Role "Manager" contains an invalid minMembers\. \(Expected at most 0, found 1\)\./,
     );
   });
 
@@ -3917,5 +3950,173 @@ describe('Assessment syncing', () => {
     assert.equal(syncedData.alternative_groups[1].json_tries_per_variant, 2);
     assert.equal(syncedData.assessment_questions[1].json_tries_per_variant, 3);
     assert.isNull(syncedData.assessment_questions[2].json_tries_per_variant);
+  });
+
+  it('records an error if both teams and legacy group properties are used', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.groupWork = true;
+    assessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 4,
+      roles: [{ name: 'Manager', minMembers: 1 }],
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager'],
+        canSubmit: ['Manager'],
+      },
+    };
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['conflictAssessment'] =
+      assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('conflictAssessment');
+    assert.isNotNull(syncedAssessment.sync_errors);
+    assert.match(
+      syncedAssessment.sync_errors,
+      /Cannot use both "teams" and legacy group properties/,
+    );
+  });
+
+  it('syncs teams configuration correctly', async () => {
+    const courseData = util.getCourseData();
+    const assessment = makeAssessment(courseData, 'Homework');
+    assessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 5,
+      roles: [
+        { name: 'Manager', minMembers: 1, maxMembers: 1 },
+        { name: 'Recorder', minMembers: 1, maxMembers: 1 },
+        { name: 'Contributor' },
+      ],
+      studentPermissions: {
+        canCreateTeam: true,
+        canJoinTeam: true,
+        canLeaveTeam: false,
+        canNameTeam: true,
+      },
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager', 'Recorder', 'Contributor'],
+        canSubmit: ['Recorder'],
+      },
+    };
+    assessment.zones?.push({
+      title: 'test zone',
+      questions: [{ id: util.QUESTION_ID, points: 5 }],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamsAssessment'] = assessment;
+
+    await util.writeAndSyncCourseData(courseData);
+    const syncedAssessment = await findSyncedAssessment('teamsAssessment');
+    assert.isNull(syncedAssessment.sync_errors);
+
+    // Verify team config was synced
+    const teamConfigs = await util.dumpTableWithSchema('team_configs', TeamConfigSchema);
+    const teamConfig = teamConfigs.find((tc) => tc.assessment_id === syncedAssessment.id);
+    assert.isOk(teamConfig);
+    assert.equal(teamConfig.minimum, 2);
+    assert.equal(teamConfig.maximum, 5);
+    assert.equal(teamConfig.student_authz_create, true);
+    assert.equal(teamConfig.student_authz_join, true);
+    assert.equal(teamConfig.student_authz_leave, false);
+    assert.equal(teamConfig.student_authz_choose_name, true);
+
+    // Verify team roles were synced
+    const teamRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    const assessmentRoles = teamRoles.filter((r) => r.assessment_id === syncedAssessment.id);
+    assert.equal(assessmentRoles.length, 3);
+
+    const managerRole = assessmentRoles.find((r) => r.role_name === 'Manager');
+    assert.isOk(managerRole);
+    assert.equal(managerRole.minimum, 1);
+    assert.equal(managerRole.maximum, 1);
+    assert.equal(managerRole.can_assign_roles, true);
+
+    const recorderRole = assessmentRoles.find((r) => r.role_name === 'Recorder');
+    assert.isOk(recorderRole);
+    assert.equal(recorderRole.can_assign_roles, false);
+  });
+
+  it('cascades teams.rolePermissions to zones and questions when not overridden', async () => {
+    const courseData = util.getCourseData();
+    const teamAssessment = makeAssessment(courseData, 'Homework');
+    teamAssessment.teams = {
+      enabled: true,
+      minMembers: 2,
+      maxMembers: 4,
+      roles: [{ name: 'Manager', minMembers: 1 }, { name: 'Recorder' }, { name: 'Contributor' }],
+      rolePermissions: {
+        canAssignRoles: ['Manager'],
+        canView: ['Manager', 'Recorder'], // Assessment-level default
+        canSubmit: ['Recorder'], // Assessment-level default
+      },
+    };
+    teamAssessment.zones?.push({
+      title: 'test zone',
+      // No canView/canSubmit specified - should inherit from assessment
+      questions: [
+        {
+          id: util.QUESTION_ID,
+          points: 5,
+          // No canView/canSubmit specified - should inherit from zone (which inherits from assessment)
+        },
+      ],
+    });
+    courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments['teamCascadeAssessment'] =
+      teamAssessment;
+
+    await util.writeAndSyncCourseData(courseData);
+
+    // Get synced data
+    const syncedData = await getSyncedAssessmentData('teamCascadeAssessment');
+    const assessmentQuestion = syncedData.assessment_questions[0];
+    assert.isDefined(assessmentQuestion);
+
+    // Check team roles were created
+    const syncedRoles = await util.dumpTableWithSchema('team_roles', TeamRoleSchema);
+    const manager = syncedRoles.find((role) => role.role_name === 'Manager');
+    const recorder = syncedRoles.find((role) => role.role_name === 'Recorder');
+    const contributor = syncedRoles.find((role) => role.role_name === 'Contributor');
+    assert.isDefined(manager);
+    assert.isDefined(recorder);
+    assert.isDefined(contributor);
+
+    // Check permissions cascaded correctly
+    const syncedPermissions = await util.dumpTableWithSchema(
+      'assessment_question_role_permissions',
+      AssessmentQuestionRolePermissionSchema,
+    );
+
+    const managerPermission = getPermission(syncedPermissions, manager, assessmentQuestion);
+    const recorderPermission = getPermission(syncedPermissions, recorder, assessmentQuestion);
+    const contributorPermission = getPermission(syncedPermissions, contributor, assessmentQuestion);
+
+    // Manager should have can_view=true (from rolePermissions.canView)
+    // but can_submit=false (not in rolePermissions.canSubmit)
+    assert.isDefined(managerPermission);
+    assert.isTrue(
+      managerPermission.can_view,
+      'Manager should inherit can_view from teams.rolePermissions',
+    );
+    assert.isFalse(managerPermission.can_submit, 'Manager should not have can_submit');
+
+    // Recorder should have both can_view=true and can_submit=true
+    assert.isDefined(recorderPermission);
+    assert.isTrue(
+      recorderPermission.can_view,
+      'Recorder should inherit can_view from teams.rolePermissions',
+    );
+    assert.isTrue(
+      recorderPermission.can_submit,
+      'Recorder should inherit can_submit from teams.rolePermissions',
+    );
+
+    // Contributor should have neither (not in canView or canSubmit)
+    assert.isDefined(contributorPermission);
+    assert.isFalse(contributorPermission.can_view, 'Contributor should not have can_view');
+    assert.isFalse(contributorPermission.can_submit, 'Contributor should not have can_submit');
   });
 });

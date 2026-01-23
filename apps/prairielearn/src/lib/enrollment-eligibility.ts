@@ -1,5 +1,6 @@
+import { assertNever } from '@prairielearn/utils';
+
 import type { Course, CourseInstance, Enrollment, User } from './db-types.js';
-import { assertNever } from './types.js';
 
 export type EnrollmentIneligibilityReason =
   | 'blocked'
@@ -32,14 +33,13 @@ export function getEligibilityErrorMessage(reason: EnrollmentIneligibilityReason
  * and all additional restrictions are disabled / not allowed (they can only be changed after publishing is enabled).
  * Thus, for course instances with `allowAccess`, this should always return `{ eligible: true }`.
  *
- * This function checks:
- * 1. If the user is blocked from the course
- * 2. If self-enrollment is enabled for the course instance
- * 3. If self-enrollment has expired
- * 4. If the institution restriction is satisfied (user's institution matches course's institution)
+ * This function checks (in order):
+ * 1. If the user is blocked from the course, they are not eligible.
+ * 2. If the user has an existing enrollment (joined or invited), they are eligible.
+ * 3. If self-enrollment is not enabled for the course instance, they are not eligible.
+ * 4. If self-enrollment has expired, they are not eligible.
+ * 5. If the institution restriction is not satisfied (user's institution does not match course's institution), they are not eligible.
  *
- * Note: This function does NOT check if the user is already enrolled. That check
- * should be done separately if needed.
  */
 export function checkEnrollmentEligibility({
   user,
@@ -55,6 +55,11 @@ export function checkEnrollmentEligibility({
   // Check if user is blocked
   if (existingEnrollment?.status === 'blocked') {
     return { eligible: false, reason: 'blocked' };
+  }
+
+  // If user has an existing enrollment (joined or invited), they are eligible.
+  if (existingEnrollment?.status === 'joined' || existingEnrollment?.status === 'invited') {
+    return { eligible: true };
   }
 
   // Check if self-enrollment is enabled

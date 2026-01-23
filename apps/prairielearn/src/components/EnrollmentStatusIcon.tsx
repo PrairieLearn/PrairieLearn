@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
-import { assertNever } from '../lib/types.js';
 
 interface EnrollmentStatusIconProps {
   status: EnumEnrollmentStatus;
@@ -17,6 +17,8 @@ function getIconClass(status: EnumEnrollmentStatus): string {
       return 'bi-envelope';
     case 'joined':
       return 'bi-person-check';
+    case 'left':
+      return 'bi-person-dash';
     case 'removed':
       return 'bi-person-dash';
     case 'rejected':
@@ -34,9 +36,10 @@ function getFriendlyStatus(status: EnumEnrollmentStatus): string {
       return 'Invited';
     case 'joined':
       return 'Joined';
-    case 'removed':
-      // TODO: See https://github.com/PrairieLearn/PrairieLearn/issues/13205 for a DB-level fix.
+    case 'left':
       return 'Left';
+    case 'removed':
+      return 'Removed';
     case 'rejected':
       return 'Rejected';
     case 'blocked':
@@ -52,6 +55,8 @@ function getBadgeClass(status: EnumEnrollmentStatus): string {
   switch (status) {
     case 'joined':
       return 'badge bg-success';
+    case 'left':
+      return 'badge bg-danger';
     case 'removed':
       return 'badge bg-danger';
     case 'rejected':

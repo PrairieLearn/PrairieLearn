@@ -41,15 +41,15 @@ export default asyncHandler(async (req, res, next) => {
     existingEnrollment,
   });
 
-  // If the user is not enrolled or has been rejected then they can enroll if self-enrollment is allowed.
+  // If the user is not enrolled, or is rejected/left/removed then they can enroll if self-enrollment is allowed.
   const canSelfEnroll =
     enrollmentEligibility.eligible &&
-    (existingEnrollment == null || ['rejected'].includes(existingEnrollment.status));
+    (existingEnrollment == null ||
+      ['rejected', 'left', 'removed'].includes(existingEnrollment.status));
 
-  // If the user is enrolled and is invited/joined/removed, then they have access regardless of the self-enrollment status.
+  // If the user is enrolled and is invited/joined, then they have access regardless of the self-enrollment status.
   const canAccessCourseInstance =
-    existingEnrollment != null &&
-    ['invited', 'joined', 'removed'].includes(existingEnrollment.status);
+    existingEnrollment != null && ['invited', 'joined'].includes(existingEnrollment.status);
 
   if (
     idsEqual(res.locals.user.id, res.locals.authn_user.id) &&

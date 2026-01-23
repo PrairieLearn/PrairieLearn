@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
@@ -322,7 +323,12 @@ export const ConfigSchema = z.object({
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
+  cacheKeyPrefix: z
+    .string()
+    .default('prairielearn-cache:')
+    .refine((s) => s.endsWith(':'), {
+      message: 'must end with a colon (:)',
+    }),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
@@ -626,6 +632,9 @@ export const config = loader.config;
  */
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
+    makeEnvConfigSource<typeof ConfigSchema>({
+      serverPort: 'CONDUCTOR_PORT',
+    }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

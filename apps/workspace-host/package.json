@@ -3,18 +3,21 @@
   "version": "1.0.0",
   "type": "module",
   "private": true,
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "scripts": {
-    "build": "tsc && tscp",
+    "build": "tsgo && tscp",
     "dev": "nodemon --exec \"yarn dev:no-watch\" --",
     "dev:no-watch": "tsx src/interface.js",
     "start": "node dist/interface.js",
     "test": "vitest run --coverage"
   },
   "dependencies": {
-    "@aws-sdk/client-ecr": "^3.966.0",
-    "@aws-sdk/client-s3": "^3.966.0",
-    "@aws-sdk/credential-providers": "^3.966.0",
-    "@aws-sdk/lib-storage": "^3.966.0",
+    "@aws-sdk/client-ecr": "^3.969.0",
+    "@aws-sdk/client-s3": "^3.969.0",
+    "@aws-sdk/credential-providers": "^3.969.0",
+    "@aws-sdk/lib-storage": "^3.969.0",
     "@prairielearn/aws": "workspace:^",
     "@prairielearn/cache": "workspace:^",
     "@prairielearn/config": "workspace:^",
@@ -43,7 +46,8 @@
   },
   "devDependencies": {
     "@types/minimist": "^1.2.5",
-    "@types/node": "^22.19.5",
+    "@types/node": "^24.10.9",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
     "@vitest/coverage-v8": "^4.0.17",
     "fast-glob": "^3.3.3",
     "nodemon": "^3.1.11",

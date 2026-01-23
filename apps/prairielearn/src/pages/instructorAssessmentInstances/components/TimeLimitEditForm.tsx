@@ -1,9 +1,8 @@
 import { Temporal } from '@js-temporal/polyfill';
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
-
-import { assertNever } from '../../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
 
 type TimeLimitAction =
   | 'set_total'
@@ -126,7 +125,7 @@ export function TimeLimitEditForm({
               checked={form.reopen_without_limit}
               onClick={() => updateFormState('reopen_without_limit', true)}
             />
-            <label className="form-check-label" for="reopen_without_limit">
+            <label className="form-check-label" htmlFor="reopen_without_limit">
               Re-open without time limit
             </label>
           </div>
@@ -140,7 +139,7 @@ export function TimeLimitEditForm({
               checked={!form.reopen_without_limit}
               onClick={() => updateFormState('reopen_without_limit', false)}
             />
-            <label className="form-check-label" for="reopen_with_limit">
+            <label className="form-check-label" htmlFor="reopen_with_limit">
               Re-open with time limit
             </label>
           </div>
@@ -234,7 +233,7 @@ export function TimeLimitEditForm({
               id="reopen_closed"
               onChange={(e) => updateFormState('reopen_closed', e.currentTarget.checked)}
             />
-            <label className="form-check-label" for="reopen_closed">
+            <label className="form-check-label" htmlFor="reopen_closed">
               Also re-open closed instances
             </label>
           </div>

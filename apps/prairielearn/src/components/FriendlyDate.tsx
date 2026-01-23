@@ -1,5 +1,5 @@
 import { type Temporal } from '@js-temporal/polyfill';
-import { type FC, createContext, useContext } from 'preact/compat';
+import { type FC, createContext, use } from 'react';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
@@ -20,7 +20,7 @@ export const FriendlyDate: FC<FriendlyDateProps> = ({
   options,
   fullOptions,
 }) => {
-  const timezoneContext = useContext(TimezoneContext);
+  const timezoneContext = use(TimezoneContext);
   timezone = timezone ?? timezoneContext;
 
   const friendlyString = formatDateFriendly(date, timezone, options);

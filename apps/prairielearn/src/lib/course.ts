@@ -2,6 +2,7 @@ import fs from 'fs-extra';
 
 import { HttpStatusError } from '@prairielearn/error';
 import * as namedLocks from '@prairielearn/named-locks';
+import { contains } from '@prairielearn/path-utils';
 import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -9,14 +10,14 @@ import {
   getCourseCommitHash,
   getLockNameForCoursePath,
   getOrUpdateCourseCommitHash,
-  selectCourseById,
   updateCourseCommitHash,
 } from '../models/course.js';
 import { syncDiskToSqlWithLock } from '../sync/syncFromDisk.js';
 
 import * as chunks from './chunks.js';
 import { config } from './config.js';
-import { type User, UserSchema } from './db-types.js';
+import { type Course, type User, UserSchema } from './db-types.js';
+import { REPOSITORY_ROOT_PATH } from './paths.js';
 import { type ServerJobResult, createServerJob } from './server-jobs.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -52,28 +53,20 @@ export async function getCourseOwners(course_id: string): Promise<User[]> {
 }
 
 export async function pullAndUpdateCourse({
-  courseId,
+  course,
   userId,
   authnUserId,
-  path,
-  branch,
-  repository,
-  commit_hash,
 }: {
-  courseId: string;
+  course: Course;
   userId: string | null;
   authnUserId: string | null;
-  path?: string | null;
-  branch?: string | null;
-  repository?: string | null;
-  commit_hash?: string | null;
 }): Promise<{ jobSequenceId: string; jobPromise: Promise<ServerJobResult> }> {
   const serverJob = await createServerJob({
     type: 'sync',
     description: 'Pull from remote git repository',
     userId,
     authnUserId,
-    courseId,
+    courseId: course.id,
   });
 
   const gitEnv = process.env;
@@ -82,19 +75,24 @@ export async function pullAndUpdateCourse({
   }
 
   const jobPromise = serverJob.execute(async (job) => {
-    if (path === undefined || branch === undefined || repository === undefined) {
-      const course_data = await selectCourseById(courseId);
-      path = course_data.path;
-      branch = course_data.branch;
-      repository = course_data.repository;
-      commit_hash = course_data.commit_hash;
-    }
+    const { path, branch, repository, commit_hash } = course;
+
     if (!path) {
       job.fail('Path is not set for this course. Exiting...');
       return;
     }
     if (!branch || !repository) {
       job.fail('Git repository or branch are not set for this course. Exiting...');
+      return;
+    }
+
+    // Safety check: refuse to perform git operations if the course is a
+    // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
+    // and `git reset` commands could delete or modify files with pending changes.
+    if (contains(REPOSITORY_ROOT_PATH, path)) {
+      job.fail(
+        'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
+      );
       return;
     }
 
@@ -130,7 +128,7 @@ export async function pullAndUpdateCourse({
           // path exists, update remote origin address, then 'git fetch' and reset to latest with 'git reset'
 
           startGitHash = await getOrUpdateCourseCommitHash({
-            id: courseId,
+            id: course.id,
             path,
             commit_hash,
           });
@@ -175,7 +173,7 @@ export async function pullAndUpdateCourse({
         const endGitHash = await getCourseCommitHash(path);
 
         job.info('Sync git repository to database');
-        const syncResult = await syncDiskToSqlWithLock(courseId, path, job);
+        const syncResult = await syncDiskToSqlWithLock(course.id, path, job);
         if (syncResult.status === 'sharing_error') {
           if (startGitHash) {
             await job.exec('git', ['reset', '--hard', startGitHash], gitOptions);
@@ -187,7 +185,7 @@ export async function pullAndUpdateCourse({
         if (config.chunksGenerator) {
           const chunkChanges = await chunks.updateChunksForCourse({
             coursePath: path,
-            courseId,
+            courseId: course.id,
             courseData: syncResult.courseData,
             oldHash: startGitHash,
             newHash: endGitHash,
@@ -195,7 +193,7 @@ export async function pullAndUpdateCourse({
           chunks.logChunkChangesToJob(chunkChanges, job);
         }
 
-        await updateCourseCommitHash({ id: courseId, path });
+        await updateCourseCommitHash({ id: course.id, path });
 
         if (syncResult.hadJsonErrors) {
           job.fail('One or more JSON files contained errors and were unable to be synced.');

@@ -1,6 +1,5 @@
 import clsx from 'clsx';
-
-import { useState } from '@prairielearn/preact-cjs/hooks';
+import { useState } from 'react';
 
 import { type PlanName, planGrantsMatchPlanFeatures } from '../../../lib/billing/plans-types.js';
 
@@ -179,7 +178,7 @@ export function InstructorInstanceAdminBillingForm({
           </span>
           <div
             className={clsx('progress flex-grow-1', { 'd-none': studentBillingEnabled })}
-            style="max-width: 100px"
+            style={{ maxWidth: '100px' }}
           >
             <div
               className={clsx('progress-bar', enrollmentLimitProgressBarColor)}
@@ -211,7 +210,7 @@ export function InstructorInstanceAdminBillingForm({
           id="studentBillingEnabled"
           onChange={(e) => setBasicPlanEnabled(e.currentTarget.checked)}
         />
-        <label className="form-check-label" for="studentBillingEnabled">
+        <label className="form-check-label" htmlFor="studentBillingEnabled">
           Enable student billing for enrollments
         </label>
         <p className="small text-muted">
@@ -239,7 +238,7 @@ export function InstructorInstanceAdminBillingForm({
           id="computeEnabled"
           onChange={(e) => setComputePlanEnabled(e.currentTarget.checked)}
         />
-        <label className="form-check-label" for="computeEnabled">
+        <label className="form-check-label" htmlFor="computeEnabled">
           External grading and workspaces
         </label>
         <p className="small text-muted">

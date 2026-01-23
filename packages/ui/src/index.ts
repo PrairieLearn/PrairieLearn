@@ -32,3 +32,10 @@ export {
 } from './components/nuqs.js';
 
 export { useModalState } from './hooks/use-modal-state.js';
+export {
+  ComboBox,
+  TagPicker,
+  type ComboBoxItem,
+  type ComboBoxProps,
+  type TagPickerProps,
+} from './components/ComboBox.js';

@@ -37,7 +37,7 @@ export function LegacyAccessRuleCard({
             <thead>
               <tr>
                 {showComments && (
-                  <th style="width: 1%">
+                  <th style={{ width: '1%' }}>
                     <span className="visually-hidden">Comments</span>
                   </th>
                 )}
