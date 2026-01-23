@@ -12,6 +12,16 @@ interface RedisRateLimiterOptions {
   intervalSeconds: number;
 }
 
+/**
+ * Implement a simple Redis-backed rate limiter that tracks usage over fixed time intervals.
+ *
+ * For a given key provided to `getIntervalUsage` and `addToIntervalUsage`, the actual key
+ * stored in redis will be the following:
+ *
+ * ```txt
+ * {keyPrefix}rate-limiter:interval:{intervalStart}:{key}
+ * ```
+ */
 export class RedisRateLimiter {
   constructor(private options: RedisRateLimiterOptions) {}
 
@@ -50,5 +60,10 @@ export class RedisRateLimiter {
       .incrbyfloat(prefixedKey, amount)
       .expire(prefixedKey, Math.ceil(ttl), 'NX')
       .exec();
+  }
+
+  async close() {
+    const redis = await this.getRedis();
+    await redis.quit().catch(() => {});
   }
 }
