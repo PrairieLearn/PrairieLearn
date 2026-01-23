@@ -21,7 +21,7 @@ export class RedisRateLimiter {
     const keyPrefix = this.options.keyPrefix();
     const intervalMs = this.options.intervalSeconds * 1000;
     const intervalStart = Date.now() - (Date.now() % intervalMs);
-    return `${keyPrefix}rate-limiter:${key}:interval:${intervalStart}`;
+    return `${keyPrefix}rate-limiter:interval:${intervalStart}:${key}`;
   }
 
   private parseNumber(value: string | null): number {
@@ -40,9 +40,15 @@ export class RedisRateLimiter {
   async addToIntervalUsage(key: string, amount: number) {
     const redis = await this.getRedis();
     const prefixedKey = this.getKey(key);
-    await redis.incrbyfloat(prefixedKey, amount);
 
+    // We accept the possibility of a small amount of clock skew here.
+    // We use `NX` to avoid overwriting an existing TTL if one is already set.
     const ttl = this.options.intervalSeconds - ((Date.now() / 1000) % this.options.intervalSeconds);
-    await redis.expire(prefixedKey, Math.ceil(ttl), 'NX');
+
+    await redis
+      .multi()
+      .incrbyfloat(prefixedKey, amount)
+      .expire(prefixedKey, Math.ceil(ttl), 'NX')
+      .exec();
   }
 }

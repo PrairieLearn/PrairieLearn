@@ -292,7 +292,7 @@ export function approximatePromptCost({
  * Retrieve the Redis key for a user's AI question generation interval usage.
  */
 function getIntervalUsageKey(user: User) {
-  return `ai-question-generation:user:${user.id}`;
+  return `user:${user.id}`;
 }
 
 /**
