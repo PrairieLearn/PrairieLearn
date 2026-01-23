@@ -96,6 +96,10 @@ export async function uploadInstanceQuestionScores(
     if (skippedCount !== 0) {
       job.warn(`${skippedCount} questions were skipped, with no score/feedback values to update`);
     }
+    if (errorCount > 0 && successCount === 0) {
+      // Mark the job as failed if there were no successful updates and at least one error
+      job.fail('No question scores were updated due to errors in the CSV file');
+    }
   });
 
   return serverJob.jobSequenceId;
@@ -163,6 +167,10 @@ export async function uploadAssessmentInstanceScores(
     } else {
       job.info(`Successfully updated scores for ${successCount} assessment instances`);
       job.error(`Error updating ${errorCount} assessment instances`);
+      if (successCount === 0) {
+        // Mark the job as failed if there were no successful updates and at least one error
+        job.fail('No assessment instance scores were updated due to errors in the CSV file');
+      }
     }
   });
 
