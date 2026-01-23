@@ -32,8 +32,11 @@ def test_timeout_exc():
 
 def test_sympy_timeout():
     x = symbols("x")
-    expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 5
-    expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 125
+    # Use exponents large enough that the computation will reliably take much
+    # longer than the timeout. Threading-based timeouts in Python can have
+    # inconsistent timing, so we want a large margin of safety.
+    expr1 = exp(sin(x)) * (1 + sin(x) ** 10) ** 50
+    expr2 = exp(sin(x)) * (1 + sin(x) ** 2) ** 500
     with ThreadingTimeout(0.1) as ctx:
         eq = Eq(expr1, expr2)
         simplify(eq.lhs - eq.rhs)  # type: ignore
