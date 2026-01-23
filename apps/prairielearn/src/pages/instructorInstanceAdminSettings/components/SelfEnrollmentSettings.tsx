@@ -222,12 +222,14 @@ export function SelfEnrollmentSettings({
 
       {!hasModernPublishing ? (
         <div className="alert alert-warning">
-          You are using access rules to control who can access the course instance. To change the
-          self-enrollment settings, you must first{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
-            migrate to publishing
-          </a>
-          .
+          You are using access rules to control who can access the course instance.{' '}
+          <a
+            href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess"
+            className="alert-link"
+          >
+            Migrate to publishing
+          </a>{' '}
+          to unlock additional enrollment management features.
         </div>
       ) : null}
 
