@@ -94,15 +94,6 @@ export interface AssessmentQuestionTableProps {
   };
 }
 
-function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
-  return (
-    <div className="d-flex justify-content-between align-items-center w-100">
-      <span>{text}</span>
-      <span className="badge bg-secondary ms-2">{numToGrade}</span>
-    </div>
-  );
-}
-
 function AiGradingOption({
   text,
   numToGrade,
@@ -114,7 +105,10 @@ function AiGradingOption({
 }) {
   return (
     <Dropdown.Item disabled={numToGrade === 0} onClick={onClick}>
-      <AiGradingOptionContent text={text} numToGrade={numToGrade} />
+      <div className="d-flex justify-content-between align-items-center w-100">
+        <span>{text}</span>
+        <span className="badge bg-secondary ms-2">{numToGrade}</span>
+      </div>
     </Dropdown.Item>
   );
 }
