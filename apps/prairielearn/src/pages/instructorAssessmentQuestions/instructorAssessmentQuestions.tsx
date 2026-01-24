@@ -26,10 +26,11 @@ import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
-import { type ZoneAssessmentJson, ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
+import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
 import { stripZoneDefaults } from './utils/dataTransform.js';
+import { buildHierarchicalAssessment } from './utils/questions.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -70,16 +71,15 @@ router.get(
     const assessmentPathExists = await fs.pathExists(assessmentPath);
 
     let origHash = '';
-    let jsonZones: ZoneAssessmentJson[] = [];
     if (assessmentPathExists) {
+      // TODO: Use helper once assessment sets PR lands
       const assessmentFileContents = await fs.readFile(assessmentPath, 'utf8');
       origHash = sha256(b64EncodeUnicode(assessmentFileContents)).toString();
-      const assessmentJson = JSON.parse(assessmentFileContents);
-      // Parse zones from the JSON file
-      jsonZones = (assessmentJson.zones ?? []).map((zone: unknown) =>
-        ZoneAssessmentJsonSchema.parse(zone),
-      );
     }
+
+    // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
+    // for doing operations.
+    const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
 
     const editorEnabled = await features.enabledFromLocals(
       'assessment-questions-editor',
