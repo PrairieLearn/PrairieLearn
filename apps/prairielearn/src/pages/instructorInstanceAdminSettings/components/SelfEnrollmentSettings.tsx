@@ -275,7 +275,7 @@ export function SelfEnrollmentSettings({
           Use enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, any link to to anything in the course instance will allow self-enrollment.
+          If not checked, any link to anything in the course instance will allow self-enrollment.
         </div>
       </div>
 
