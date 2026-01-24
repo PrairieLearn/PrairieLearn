@@ -273,7 +273,7 @@ describe('Editing assessment questions', () => {
     assert.equal(assessmentInfo.zones[0].questions[0].points, 20);
   });
 
-  test.sequential('change question points', async () => {
+  test.sequential('change question points again', async () => {
     const { csrfToken, origHash } = await getRequestData();
 
     const response = await fetch(

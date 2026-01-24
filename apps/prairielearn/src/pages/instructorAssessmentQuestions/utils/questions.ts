@@ -40,6 +40,7 @@ export function questionDisplayName(course: StaffCourse, question: StaffAssessme
   if (course.id === question.question.course_id) {
     return question.question.qid;
   }
+  if (!question.course.sharing_name) throw new Error('Sharing name is required');
   return `@${question.course.sharing_name}/${question.question.qid}`;
 }
 
