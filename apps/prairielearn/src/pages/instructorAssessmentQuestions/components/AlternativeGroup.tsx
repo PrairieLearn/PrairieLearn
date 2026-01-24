@@ -40,7 +40,10 @@ export function AlternativeGroup({
   collapsedGroups: Set<string>;
   dispatch: Dispatch<EditorAction>;
 }) {
-  const hasAlternatives = (alternativeGroup.alternatives?.length ?? 0) > 1;
+  // We treat a question with no primary ID as having alternatives, regardless of if we have them.
+  // This handles the case where we have no primary ID and no alternatives as well.
+  const hasAlternatives =
+    alternativeGroup.id == null || (alternativeGroup.alternatives?.length ?? 0) > 0;
   const isCollapsed = collapsedGroups.has(alternativeGroup.trackingId);
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_GROUP_COLLAPSE', trackingId: alternativeGroup.trackingId });
