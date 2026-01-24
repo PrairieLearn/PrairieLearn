@@ -138,10 +138,16 @@ router.get(
       throw new HttpStatusError(403, 'Access denied');
     }
 
+    const parsedQuery = z
+      .object({
+        qid: z.string(),
+      })
+      .parse(req.query);
+
     const assessmentQuestion = await sqldb.queryOptionalRow(
       sql.select_assessment_question,
       {
-        qid: req.query.qid,
+        qid: parsedQuery.qid,
         course_id: res.locals.course.id,
       },
       z.object({
