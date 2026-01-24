@@ -3,7 +3,7 @@ import { useMemo, useReducer } from 'react';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 import type { EditorAction, EditorState } from '../types.js';
 
@@ -35,7 +35,7 @@ function findQuestionByTrackingId(
   zones: ZoneAssessmentForm[],
   trackingId: string,
 ): {
-  question: ZoneQuestionForm;
+  question: ZoneQuestionBlockForm;
   questionIndex: number;
   zone: ZoneAssessmentForm;
   zoneIndex: number;
@@ -55,7 +55,7 @@ function findQuestionByTrackingId(
  * Returns the alternative and its index, or null if not found.
  */
 function findAlternativeByTrackingId(
-  question: ZoneQuestionForm,
+  question: ZoneQuestionBlockForm,
   trackingId: string,
 ): { alternative: QuestionAlternativeForm; index: number } | null {
   if (!question.alternatives) return null;

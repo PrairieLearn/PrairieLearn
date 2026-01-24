@@ -1,41 +1,41 @@
 import clsx from 'clsx';
-import { useMemo, useRef } from 'react';
+import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type {
   QuestionAlternativeForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 
 export type EditQuestionModalData =
   | {
       type: 'create';
-      question: ZoneQuestionForm | QuestionAlternativeForm;
-      alternativeGroup?: ZoneQuestionForm;
+      question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+      zoneQuestionBlock?: ZoneQuestionBlockForm;
       mappedQids: string[];
     }
   | {
       type: 'edit';
-      question: ZoneQuestionForm | QuestionAlternativeForm;
-      alternativeGroup?: ZoneQuestionForm;
+      question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+      zoneQuestionBlock?: ZoneQuestionBlockForm;
     };
 
 /**
  * Helper function to check if a value on an alternative question is inherited from the parent group.
  */
 function isInherited(
-  fieldName: keyof ZoneQuestionForm | keyof QuestionAlternativeForm,
+  fieldName: keyof ZoneQuestionBlockForm | keyof QuestionAlternativeForm,
   isAlternative: boolean,
-  question: ZoneQuestionForm | QuestionAlternativeForm,
-  alternativeGroup?: ZoneQuestionForm,
+  question: ZoneQuestionBlockForm | QuestionAlternativeForm,
+  zoneQuestionBlock?: ZoneQuestionBlockForm,
 ): boolean {
-  if (!isAlternative || !alternativeGroup) return false;
+  if (!isAlternative || !zoneQuestionBlock) return false;
   return (
     (!(fieldName in question) || question[fieldName as keyof typeof question] === undefined) &&
-    fieldName in alternativeGroup &&
-    alternativeGroup[fieldName as keyof typeof alternativeGroup] !== undefined
+    fieldName in zoneQuestionBlock &&
+    zoneQuestionBlock[fieldName as keyof typeof zoneQuestionBlock] !== undefined
   );
 }
 
@@ -66,82 +66,81 @@ export function EditQuestionModal({
   onHide: () => void;
   onExited: () => void;
   handleUpdateQuestion: (
-    updatedQuestion: ZoneQuestionForm | QuestionAlternativeForm,
+    updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     newQuestionDataRef?: StaffAssessmentQuestionRow,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
 }) {
   const type = data?.type ?? null;
   const question = data?.question ?? null;
-  const alternativeGroup = data?.alternativeGroup;
+  const zoneQuestionBlock = data?.zoneQuestionBlock;
   const mappedQids = data?.type === 'create' ? data.mappedQids : [];
-  const isAlternative = !!alternativeGroup;
+  const isAlternative = !!zoneQuestionBlock;
 
-  const manualPointsDisplayValue = question?.manualPoints ?? alternativeGroup?.manualPoints ?? null;
-  const newQuestionDataRef = useRef<StaffAssessmentQuestionRow | undefined>(undefined);
+  const manualPointsDisplayValue = question?.manualPoints ?? zoneQuestionBlock?.manualPoints ?? null;
 
   // Determine which property was originally set (points vs autoPoints)
   const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
     if (question?.points != null) return 'points';
     if (question?.autoPoints != null) return 'autoPoints';
-    if (alternativeGroup) {
-      if (alternativeGroup.points != null) {
+    if (zoneQuestionBlock) {
+      if (zoneQuestionBlock.points != null) {
         return 'points';
       }
-      if (alternativeGroup.autoPoints != null) {
+      if (zoneQuestionBlock.autoPoints != null) {
         return 'autoPoints';
       }
     }
     return 'autoPoints';
-  }, [question, alternativeGroup]);
+  }, [question, zoneQuestionBlock]);
 
   // Determine which property was originally set (maxPoints vs maxAutoPoints)
   const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
     if (question?.maxAutoPoints != null) return 'maxAutoPoints';
     if (question?.maxPoints != null) return 'maxPoints';
 
-    if (alternativeGroup) {
-      if (alternativeGroup.maxAutoPoints != null) {
+    if (zoneQuestionBlock) {
+      if (zoneQuestionBlock.maxAutoPoints != null) {
         return 'maxAutoPoints';
       }
-      if (alternativeGroup.maxPoints != null) {
+      if (zoneQuestionBlock.maxPoints != null) {
         return 'maxPoints';
       }
     }
     return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
-  }, [question, alternativeGroup, originalPointsProperty]);
+  }, [question, zoneQuestionBlock, originalPointsProperty]);
 
   const isPointsInherited = useMemo(
-    () => (question ? isInherited('points', isAlternative, question, alternativeGroup) : false),
-    [isAlternative, question, alternativeGroup],
+    () => (question ? isInherited('points', isAlternative, question, zoneQuestionBlock) : false),
+    [isAlternative, question, zoneQuestionBlock],
   );
   const isMaxPointsInherited = useMemo(
     () =>
       question
-        ? isInherited(originalMaxProperty, isAlternative, question, alternativeGroup)
+        ? isInherited(originalMaxProperty, isAlternative, question, zoneQuestionBlock)
         : false,
-    [originalMaxProperty, isAlternative, question, alternativeGroup],
+    [originalMaxProperty, isAlternative, question, zoneQuestionBlock],
   );
   const autoPointsDisplayValue = isPointsInherited
-    ? alternativeGroup?.[originalPointsProperty]
+    ? zoneQuestionBlock?.[originalPointsProperty]
     : (question?.[originalPointsProperty] ?? undefined);
 
   const maxAutoPointsDisplayValue = isMaxPointsInherited
-    ? alternativeGroup?.[originalMaxProperty]
+    ? zoneQuestionBlock?.[originalMaxProperty]
     : (question?.[originalMaxProperty] ?? null);
 
   // Track the original inherited values so we can detect if they were modified
   const originalInheritedValues = useMemo(() => {
     return {
       [originalPointsProperty]: isPointsInherited
-        ? alternativeGroup?.[originalPointsProperty]
+        ? zoneQuestionBlock?.[originalPointsProperty]
         : undefined,
       [originalMaxProperty]: isMaxPointsInherited
-        ? alternativeGroup?.[originalMaxProperty]
+        ? zoneQuestionBlock?.[originalMaxProperty]
         : undefined,
       manualPoints:
-        question && isInherited('manualPoints', isAlternative, question, alternativeGroup)
-          ? alternativeGroup?.manualPoints
+        question && isInherited('manualPoints', isAlternative, question, zoneQuestionBlock)
+          ? zoneQuestionBlock?.manualPoints
           : undefined,
     };
   }, [
@@ -151,39 +150,51 @@ export function EditQuestionModal({
     isMaxPointsInherited,
     isAlternative,
     question,
-    alternativeGroup,
+    zoneQuestionBlock,
   ]);
 
-  const formValues = useMemo<ZoneQuestionForm | QuestionAlternativeForm>(
-    () => question ?? ({ trackingId: '' } as ZoneQuestionForm),
+  const formValues = useMemo<ZoneQuestionBlockForm | QuestionAlternativeForm>(
+    () => question ?? ({ trackingId: '' } as ZoneQuestionBlockForm),
     [question],
   );
 
   const {
     register,
     handleSubmit,
-    formState: { errors },
-  } = useForm<ZoneQuestionForm | QuestionAlternativeForm>({
+    setError,
+    formState: { errors, isSubmitting },
+  } = useForm<ZoneQuestionBlockForm | QuestionAlternativeForm>({
     mode: 'onSubmit',
     reValidateMode: 'onChange',
     values: formValues,
   });
 
   return (
-    <Modal
-      show={show}
-      onHide={onHide}
-      onExited={() => {
-        newQuestionDataRef.current = undefined;
-        onExited();
-      }}
-    >
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>{type === 'create' ? 'Add question' : 'Edit question'}</Modal.Title>
       </Modal.Header>
       {question && (
         <form
-          onSubmit={handleSubmit((formData) => {
+          onSubmit={handleSubmit(async (formData) => {
+            // Fetch question data if QID changed
+            let questionData: StaffAssessmentQuestionRow | undefined;
+            if (formData.id !== question.id) {
+              const params = new URLSearchParams({ qid: formData.id! });
+              const res = await fetch(`${window.location.pathname}/question.json?${params}`);
+              if (!res.ok) {
+                const data = await res.json();
+                setError('id', { message: data.error ?? 'Failed to fetch question data' });
+                return;
+              }
+              const data = await res.json();
+              if (data === null) {
+                setError('id', { message: 'Question not found' });
+                return;
+              }
+              questionData = data;
+            }
+
             // Filter out inherited values that were not modified
             const filteredData = { ...formData };
 
@@ -224,8 +235,8 @@ export function EditQuestionModal({
             };
 
             handleUpdateQuestion(
-              dataWithTrackingId as ZoneQuestionForm | QuestionAlternativeForm,
-              newQuestionDataRef.current,
+              dataWithTrackingId as ZoneQuestionBlockForm | QuestionAlternativeForm,
+              questionData,
             );
           })}
         >
@@ -237,43 +248,25 @@ export function EditQuestionModal({
                 className={clsx('form-control', errors.id && 'is-invalid')}
                 id="qidInput"
                 disabled={type !== 'create'}
-                aria-invalid={errors.id ? 'true' : 'false'}
+                aria-invalid={!!errors.id}
+                aria-errormessage={errors.id ? 'qidError' : undefined}
+                aria-describedby="qidHelp"
                 {...register('id', {
                   required: 'QID is required',
-                  validate: async (qid) => {
+                  validate: (qid) => {
                     if (!qid) return 'QID is required';
-                    if (qid !== question.id) {
-                      if (mappedQids.includes(qid)) {
-                        return 'QID already exists in the assessment';
-                      }
-                      try {
-                        const params = new URLSearchParams({ qid });
-                        const res = await fetch(
-                          `${window.location.pathname}/question.json?${params.toString()}`,
-                          {
-                            method: 'GET',
-                            headers: {
-                              Accept: 'application/json',
-                            },
-                          },
-                        );
-                        if (!res.ok) {
-                          const data = await res.json();
-                          return data.error ?? 'Failed to fetch question data';
-                        }
-                        const questionData = await res.json();
-                        if (questionData === null) {
-                          return 'Question not found';
-                        }
-                        newQuestionDataRef.current = questionData;
-                      } catch {
-                        return 'Unable to validate question. Please check your network connection.';
-                      }
+                    if (qid !== question.id && mappedQids.includes(qid)) {
+                      return 'QID already exists in the assessment';
                     }
+                    return true;
                   },
                 })}
               />
-              {errors.id && <div className="invalid-feedback">{errors.id.message}</div>}
+              {errors.id && (
+                <div id="qidError" className="invalid-feedback">
+                  {errors.id.message}
+                </div>
+              )}
               <small id="qidHelp" className="form-text text-muted">
                 The unique identifier for the question.
               </small>
@@ -284,10 +277,14 @@ export function EditQuestionModal({
                   <label htmlFor="autoPointsInput">Auto Points</label>
                   <input
                     type="number"
-                    className={clsx('form-control', errors.autoPoints && 'is-invalid')}
+                    className={clsx('form-control', errors[originalPointsProperty] && 'is-invalid')}
                     id="autoPointsInput"
                     step="any"
-                    aria-invalid={errors.autoPoints ? 'true' : 'false'}
+                    aria-invalid={!!errors[originalPointsProperty]}
+                    aria-errormessage={
+                      errors[originalPointsProperty] ? 'autoPointsError' : undefined
+                    }
+                    aria-describedby="autoPointsHelp"
                     {...register(originalPointsProperty, {
                       value: autoPointsDisplayValue ?? undefined,
                       setValueAs: (value) => {
@@ -302,7 +299,9 @@ export function EditQuestionModal({
                     })}
                   />
                   {errors[originalPointsProperty] && (
-                    <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                    <div id="autoPointsError" className="invalid-feedback">
+                      {errors[originalPointsProperty].message}
+                    </div>
                   )}
                   <small id="autoPointsHelp" className="form-text text-muted">
                     The amount of points each attempt at the question is worth.
@@ -310,7 +309,7 @@ export function EditQuestionModal({
                       originalPointsProperty,
                       isAlternative,
                       question,
-                      alternativeGroup,
+                      zoneQuestionBlock,
                     ) ? (
                       <>
                         {' '}
@@ -325,6 +324,7 @@ export function EditQuestionModal({
                     type="number"
                     className="form-control"
                     id="maxAutoPointsInput"
+                    aria-describedby="maxPointsHelp"
                     {...register(originalMaxProperty, {
                       value: maxAutoPointsDisplayValue ?? undefined,
                       setValueAs: (value) => {
@@ -335,7 +335,7 @@ export function EditQuestionModal({
                   />
                   <small id="maxPointsHelp" className="form-text text-muted">
                     The maximum number of points that can be awarded for the question.
-                    {isInherited(originalMaxProperty, isAlternative, question, alternativeGroup) ? (
+                    {isInherited(originalMaxProperty, isAlternative, question, zoneQuestionBlock) ? (
                       <>
                         {' '}
                         <em>(Inherited from alternative group)</em>
@@ -348,7 +348,9 @@ export function EditQuestionModal({
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}
-                    aria-invalid={errors.manualPoints ? 'true' : 'false'}
+                    aria-invalid={!!errors.manualPoints}
+                    aria-errormessage={errors.manualPoints ? 'manualPointsError' : undefined}
+                    aria-describedby="manualPointsHelp"
                     id="manualPointsInput"
                     {...register('manualPoints', {
                       value: manualPointsDisplayValue ?? undefined,
@@ -364,11 +366,13 @@ export function EditQuestionModal({
                     })}
                   />
                   {errors.manualPoints && (
-                    <div className="invalid-feedback">{errors.manualPoints.message}</div>
+                    <div id="manualPointsError" className="invalid-feedback">
+                      {errors.manualPoints.message}
+                    </div>
                   )}
                   <small id="manualPointsHelp" className="form-text text-muted">
                     The amount of points possible from manual grading.
-                    {isInherited('manualPoints', isAlternative, question, alternativeGroup) ? (
+                    {isInherited('manualPoints', isAlternative, question, zoneQuestionBlock) ? (
                       <>
                         {' '}
                         <em>(Inherited from alternative group)</em>
@@ -381,7 +385,9 @@ export function EditQuestionModal({
                   <input
                     type="number"
                     className={clsx('form-control', errors.triesPerVariant && 'is-invalid')}
-                    aria-invalid={errors.triesPerVariant ? 'true' : 'false'}
+                    aria-invalid={!!errors.triesPerVariant}
+                    aria-errormessage={errors.triesPerVariant ? 'triesPerVariantError' : undefined}
+                    aria-describedby="triesPerVariantHelp"
                     id="triesPerVariantInput"
                     {...register('triesPerVariant', {
                       value: Number(question.triesPerVariant ?? 1),
@@ -402,7 +408,9 @@ export function EditQuestionModal({
                     })}
                   />
                   {errors.triesPerVariant && (
-                    <div className="invalid-feedback">{errors.triesPerVariant.message}</div>
+                    <div id="triesPerVariantError" className="invalid-feedback">
+                      {errors.triesPerVariant.message}
+                    </div>
                   )}
                   <small id="triesPerVariantHelp" className="form-text text-muted">
                     This is the number of attempts a student has to answer the question before
@@ -420,7 +428,11 @@ export function EditQuestionModal({
                       'form-control points-list',
                       errors[originalPointsProperty] && 'is-invalid',
                     )}
-                    aria-invalid={errors[originalPointsProperty] ? 'true' : 'false'}
+                    aria-invalid={!!errors[originalPointsProperty]}
+                    aria-errormessage={
+                      errors[originalPointsProperty] ? 'pointsListError' : undefined
+                    }
+                    aria-describedby="autoPointsHelp"
                     id="autoPointsInput"
                     {...register(originalPointsProperty, {
                       value: autoPointsDisplayValue,
@@ -449,7 +461,9 @@ export function EditQuestionModal({
                     })}
                   />
                   {errors[originalPointsProperty] && (
-                    <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+                    <div id="pointsListError" className="invalid-feedback">
+                      {errors[originalPointsProperty].message}
+                    </div>
                   )}
                   <small id="autoPointsHelp" className="form-text text-muted">
                     This is a list of points that each attempt at the question is worth. Enter
@@ -458,7 +472,7 @@ export function EditQuestionModal({
                       originalPointsProperty,
                       isAlternative,
                       question,
-                      alternativeGroup,
+                      zoneQuestionBlock,
                     ) ? (
                       <>
                         {' '}
@@ -472,7 +486,9 @@ export function EditQuestionModal({
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}
-                    aria-invalid={errors.manualPoints ? 'true' : 'false'}
+                    aria-invalid={!!errors.manualPoints}
+                    aria-errormessage={errors.manualPoints ? 'manualPointsError' : undefined}
+                    aria-describedby="manualPointsHelp"
                     id="manualPointsInput"
                     {...register('manualPoints', {
                       value: manualPointsDisplayValue ?? undefined,
@@ -492,11 +508,13 @@ export function EditQuestionModal({
                     })}
                   />
                   {errors.manualPoints && (
-                    <div className="invalid-feedback">{errors.manualPoints.message}</div>
+                    <div id="manualPointsError" className="invalid-feedback">
+                      {errors.manualPoints.message}
+                    </div>
                   )}
                   <small id="manualPointsHelp" className="form-text text-muted">
                     The amount of points possible from manual grading.
-                    {isInherited('manualPoints', isAlternative, question, alternativeGroup) ? (
+                    {isInherited('manualPoints', isAlternative, question, zoneQuestionBlock) ? (
                       <>
                         {' '}
                         <em>(Inherited from alternative group)</em>
@@ -508,11 +526,22 @@ export function EditQuestionModal({
             )}
           </Modal.Body>
           <Modal.Footer>
-            <button type="button" className="btn btn-secondary" onClick={onHide}>
+            <button
+              type="button"
+              className="btn btn-secondary"
+              disabled={isSubmitting}
+              onClick={onHide}
+            >
               Close
             </button>
-            <button type="submit" className="btn btn-primary">
-              {type === 'create' ? 'Add question' : 'Update question'}
+            <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+              {isSubmitting
+                ? type === 'create'
+                  ? 'Adding...'
+                  : 'Updating...'
+                : type === 'create'
+                  ? 'Add question'
+                  : 'Update question'}
             </button>
           </Modal.Footer>
         </form>

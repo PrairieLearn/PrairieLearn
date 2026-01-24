@@ -2,13 +2,13 @@ import { propertyValueWithDefault } from '../../../lib/editorUtil.shared.js';
 import type {
   QuestionAlternativeJson,
   ZoneAssessmentJson,
-  ZoneQuestionJson,
+  ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   TrackingId,
   ZoneAssessmentForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 
 /**
@@ -48,7 +48,7 @@ export function stripTrackingIds(zones: ZoneAssessmentForm[]): ZoneAssessmentJso
     const { trackingId: _zoneTrackingId, questions, ...zoneRest } = zone;
     return {
       ...zoneRest,
-      questions: questions.map((question: ZoneQuestionForm) => {
+      questions: questions.map((question: ZoneQuestionBlockForm) => {
         const { trackingId: _trackingId, alternatives, ...questionRest } = question;
         return {
           ...questionRest,
@@ -79,7 +79,9 @@ export function createZoneWithTrackingId(
  * Creates a new question with a trackingId.
  * New trackingIds are always generated (this is for new questions, not existing ones).
  */
-export function createQuestionWithTrackingId(question: ZoneQuestionJson): ZoneQuestionForm {
+export function createQuestionWithTrackingId(
+  question: ZoneQuestionBlockJson,
+): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
     ...question,
@@ -88,7 +90,7 @@ export function createQuestionWithTrackingId(question: ZoneQuestionJson): ZoneQu
       ...alt,
       trackingId: createTrackingId(),
     })),
-  } as ZoneQuestionForm;
+  } as ZoneQuestionBlockForm;
 }
 
 /** Removes keys with undefined values from an object. */
@@ -122,7 +124,7 @@ function filterAlternative(alternative: QuestionAlternativeJson): Record<string,
 }
 
 /** Filters a question to remove default values. Only outputs known schema fields. */
-function filterQuestion(question: ZoneQuestionJson): Record<string, unknown> {
+function filterQuestion(question: ZoneQuestionBlockJson): Record<string, unknown> {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({

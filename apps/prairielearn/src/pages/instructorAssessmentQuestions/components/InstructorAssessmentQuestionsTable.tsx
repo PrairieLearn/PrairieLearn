@@ -22,7 +22,7 @@ import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
@@ -221,19 +221,19 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleEditQuestion = ({
     question,
-    alternativeGroup,
+    zoneQuestionBlock,
     questionTrackingId,
     alternativeTrackingId,
   }: {
-    question: ZoneQuestionForm | QuestionAlternativeForm;
-    alternativeGroup?: ZoneQuestionForm;
+    question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+    zoneQuestionBlock?: ZoneQuestionBlockForm;
     questionTrackingId: string;
     alternativeTrackingId?: string;
   }) => {
     editQuestionModal.showWithData({
       type: 'edit',
       question,
-      alternativeGroup,
+      zoneQuestionBlock,
     });
     setSelectedQuestionIds({
       type: 'edit',
@@ -245,7 +245,7 @@ export function InstructorAssessmentQuestionsTable({
   const handleAddQuestion = (zoneTrackingId: string) => {
     editQuestionModal.showWithData({
       type: 'create',
-      question: { id: '', trackingId: '' } as ZoneQuestionForm,
+      question: { id: '', trackingId: '' } as ZoneQuestionBlockForm,
       mappedQids: zones.flatMap((zone) => zone.questions.map((q) => q.id ?? '')),
     });
     setSelectedQuestionIds({
@@ -255,7 +255,7 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleUpdateQuestion = (
-    updatedQuestion: ZoneQuestionForm | QuestionAlternativeForm,
+    updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     newQuestionData?: StaffAssessmentQuestionRow,
   ) => {
     if (!updatedQuestion.id) return;
@@ -287,7 +287,7 @@ export function InstructorAssessmentQuestionsTable({
       dispatch({
         type: 'ADD_QUESTION',
         zoneTrackingId: selectedQuestionIds.zoneTrackingId,
-        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionForm),
+        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
         questionData: preparedQuestionData,
       });
     } else {

@@ -1,7 +1,12 @@
-import { useDroppable } from '@dnd-kit/core';
+import {
+  type DraggableAttributes,
+  type DraggableSyntheticListeners,
+  useDroppable,
+} from '@dnd-kit/core';
 import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-kit/sortable';
 import type { CSSProperties, Dispatch } from 'react';
 
+import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
@@ -11,13 +16,12 @@ import {
   getTableColumnCount,
 } from '../types.js';
 
-import { AlternativeGroup } from './AlternativeGroup.js';
-import { ZoneHeader } from './Headers.js';
+import { ZoneQuestionBlock } from './ZoneQuestionBlock.js';
 
 /**
  * A specific zone / section of an assessment.
  *
- * Renders a list of questions via AlternativeGroup.
+ * Renders a list of questions via ZoneQuestionBlock.
  */
 export function AssessmentZone({
   zone,
@@ -89,7 +93,7 @@ export function AssessmentZone({
       items={zone.questions.map((q) => q.trackingId)}
       strategy={verticalListSortingStrategy}
     >
-      <ZoneHeader
+      <AssessmentZoneHeader
         zone={zone}
         zoneNumber={zoneNumber}
         nTableCols={nTableCols}
@@ -105,16 +109,16 @@ export function AssessmentZone({
       />
       {!isCollapsed && (
         <>
-          {zone.questions.map((alternativeGroup, index) => (
-            <AlternativeGroup
-              key={alternativeGroup.trackingId}
-              alternativeGroup={alternativeGroup}
+          {zone.questions.map((zoneQuestionBlock, index) => (
+            <ZoneQuestionBlock
+              key={zoneQuestionBlock.trackingId}
+              zoneQuestionBlock={zoneQuestionBlock}
               assessmentState={assessmentState}
               handleEditQuestion={handleEditQuestion}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
               questionNumber={startingQuestionNumber + index}
-              sortableId={alternativeGroup.trackingId}
+              sortableId={zoneQuestionBlock.trackingId}
               collapsedGroups={collapsedGroups}
               dispatch={dispatch}
             />
@@ -162,5 +166,107 @@ export function AssessmentZone({
         </>
       )}
     </SortableContext>
+  );
+}
+
+function AssessmentZoneHeader({
+  zone,
+  zoneNumber,
+  nTableCols,
+  editMode,
+  handleEditZone,
+  handleDeleteZone,
+  isCollapsed,
+  onToggle,
+  sortableRef,
+  sortableStyle,
+  sortableAttributes,
+  sortableListeners,
+}: {
+  zone: ZoneAssessmentJson;
+  zoneNumber: number;
+  nTableCols: number;
+  editMode: boolean;
+  handleEditZone: (zoneNumber: number) => void;
+  handleDeleteZone: (zoneNumber: number) => void;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  sortableRef: (node: HTMLElement | null) => void;
+  sortableStyle: CSSProperties;
+  sortableAttributes: DraggableAttributes;
+  sortableListeners: DraggableSyntheticListeners;
+}) {
+  return (
+    <tr
+      ref={sortableRef}
+      style={{
+        ...sortableStyle,
+        position: 'sticky',
+        top: 0,
+        backgroundColor: 'var(--bs-secondary-bg)',
+        zIndex: 10,
+        cursor: 'pointer',
+      }}
+      className="user-select-none"
+      onClick={onToggle}
+    >
+      {editMode && (
+        <th className="align-content-center">
+          {sortableListeners ? (
+            // Accessible roles are provided via sortableAttributes
+            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
+            <span
+              {...sortableListeners}
+              {...sortableAttributes}
+              style={{ cursor: 'grab', touchAction: 'none' }}
+              aria-label="Drag to reorder zone"
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.stopPropagation();
+                }
+              }}
+            >
+              <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
+            </span>
+          ) : null}
+        </th>
+      )}
+      {editMode && (
+        <th className="align-content-center" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="btn btn-sm btn-outline-secondary border-0"
+            type="button"
+            title="Edit zone"
+            onClick={() => handleEditZone(zoneNumber)}
+          >
+            <i className="fa fa-edit" aria-hidden="true" />
+          </button>
+        </th>
+      )}
+      {editMode && (
+        <th className="align-content-center" onClick={(e) => e.stopPropagation()}>
+          <button
+            className="btn btn-sm btn-outline-secondary border-0"
+            type="button"
+            title="Delete zone"
+            onClick={() => handleDeleteZone(zoneNumber)}
+          >
+            <i className="fa fa-trash text-danger" aria-hidden="true" />
+          </button>
+        </th>
+      )}
+      <th colSpan={nTableCols - (editMode ? 3 : 0)}>
+        <i className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} me-2`} aria-hidden="true" />
+        Zone {zoneNumber}. {zone.title}{' '}
+        {zone.numberChoose == null
+          ? '(All questions)'
+          : zone.numberChoose === 1
+            ? '(1 question)'
+            : `(${zone.numberChoose} questions)`}
+        {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
+        {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+      </th>
+    </tr>
   );
 }

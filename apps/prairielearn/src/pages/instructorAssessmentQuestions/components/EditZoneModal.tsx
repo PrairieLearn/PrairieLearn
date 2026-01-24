@@ -82,7 +82,13 @@ export function EditZoneModal({
         <Modal.Body>
           <div className="mb-3">
             <label htmlFor="titleInput">Title</label>
-            <input type="text" className="form-control" id="titleInput" {...register('title')} />
+            <input
+              type="text"
+              className="form-control"
+              id="titleInput"
+              aria-describedby="titleHelp"
+              {...register('title')}
+            />
             <small id="titleHelp" className="form-text text-muted">
               The title of the zone (optional).
             </small>
@@ -94,6 +100,7 @@ export function EditZoneModal({
               type="number"
               className="form-control"
               id="maxPointsInput"
+              aria-describedby="maxPointsHelp"
               {...register('maxPoints', {
                 setValueAs: (value: string) => {
                   if (value === '') return undefined;
@@ -112,6 +119,9 @@ export function EditZoneModal({
               type="number"
               className={`form-control ${errors.numberChoose ? 'is-invalid' : ''}`}
               id="numberChooseInput"
+              aria-invalid={!!errors.numberChoose}
+              aria-errormessage={errors.numberChoose ? 'numberChooseError' : undefined}
+              aria-describedby="numberChooseHelp"
               {...register('numberChoose', {
                 setValueAs: (value: string) => {
                   if (value === '') return undefined;
@@ -121,7 +131,9 @@ export function EditZoneModal({
               })}
             />
             {errors.numberChoose && (
-              <div className="invalid-feedback">{errors.numberChoose.message}</div>
+              <div id="numberChooseError" className="invalid-feedback">
+                {errors.numberChoose.message}
+              </div>
             )}
             <small id="numberChooseHelp" className="form-text text-muted">
               Number of questions to choose from this zone (leave empty for all).
@@ -134,6 +146,9 @@ export function EditZoneModal({
               type="number"
               className={`form-control ${errors.bestQuestions ? 'is-invalid' : ''}`}
               id="bestQuestionsInput"
+              aria-invalid={!!errors.bestQuestions}
+              aria-errormessage={errors.bestQuestions ? 'bestQuestionsError' : undefined}
+              aria-describedby="bestQuestionsHelp"
               {...register('bestQuestions', {
                 setValueAs: (value: string) => {
                   if (value === '') return undefined;
@@ -143,7 +158,9 @@ export function EditZoneModal({
               })}
             />
             {errors.bestQuestions && (
-              <div className="invalid-feedback">{errors.bestQuestions.message}</div>
+              <div id="bestQuestionsError" className="invalid-feedback">
+                {errors.bestQuestions.message}
+              </div>
             )}
             <small id="bestQuestionsHelp" className="form-text text-muted">
               Only count points from the best N questions (optional).

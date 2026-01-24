@@ -12,7 +12,7 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type {
   QuestionAlternativeForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
@@ -47,45 +47,58 @@ function MaxPointsText({
   return '—';
 }
 
+interface AssessmentQuestionBaseProps {
+  handleEditQuestion: HandleEditQuestion;
+  handleDeleteQuestion: HandleDeleteQuestion;
+  handleResetButtonClick: (questionId: string) => void;
+  questionNumber: number;
+  zoneQuestionBlock: ZoneQuestionBlockForm;
+  assessmentState: AssessmentState;
+}
+
+interface AssessmentQuestionAlternativeRow extends AssessmentQuestionBaseProps {
+  alternative: QuestionAlternativeForm;
+  alternativeIndex: number;
+  zoneQuestionBlockAutoPoints: number | number[] | null;
+
+  sortableRef?: never;
+  sortableStyle?: never;
+  sortableAttributes?: never;
+  sortableListeners?: never;
+}
+
+interface AssessmentQuestionIndividualRow extends AssessmentQuestionBaseProps {
+  alternative?: never;
+  alternativeIndex?: never;
+  zoneQuestionBlockAutoPoints?: never;
+
+  sortableRef: (node: HTMLElement | null) => void;
+  sortableStyle: CSSProperties;
+  sortableAttributes: DraggableAttributes;
+  sortableListeners: DraggableSyntheticListeners;
+}
 /**
  * An individual question row.
  *
  * Can be for a question, or an alternative question.
  */
 export function AssessmentQuestion({
-  id,
   alternative,
-  alternativeGroup,
+  zoneQuestionBlock,
   alternativeIndex,
   assessmentState,
   handleEditQuestion,
   handleDeleteQuestion,
   handleResetButtonClick,
   questionNumber,
-  alternativeGroupAutoPoints,
+  zoneQuestionBlockAutoPoints,
   sortableRef,
   sortableStyle,
   sortableAttributes,
   sortableListeners,
-}: {
-  id?: string;
-  alternative?: QuestionAlternativeForm;
-  alternativeGroup: ZoneQuestionForm;
-  assessmentState: AssessmentState;
-  /** Index of the alternative within the alternative group (0-based), if this is an alternative */
-  alternativeIndex?: number;
-  handleEditQuestion: HandleEditQuestion;
-  handleDeleteQuestion: HandleDeleteQuestion;
-  handleResetButtonClick: (questionId: string) => void;
-  questionNumber: number;
-  alternativeGroupAutoPoints?: number | number[] | null;
-  sortableRef?: (node: HTMLElement | null) => void;
-  sortableStyle?: CSSProperties;
-  sortableAttributes?: DraggableAttributes;
-  sortableListeners?: DraggableSyntheticListeners;
-}) {
-  const question = alternative ?? alternativeGroup;
-  const questionId = alternative?.id ?? id;
+}: AssessmentQuestionIndividualRow | AssessmentQuestionAlternativeRow) {
+  const question = alternative ?? zoneQuestionBlock;
+  const questionId = question.id;
   const {
     questionMetadata,
     editMode,
@@ -107,8 +120,8 @@ export function AssessmentQuestion({
     maxAutoPoints =
       question.maxPoints ??
       question.maxAutoPoints ??
-      alternativeGroup.maxPoints ??
-      alternativeGroup.maxAutoPoints ??
+      zoneQuestionBlock.maxPoints ??
+      zoneQuestionBlock.maxAutoPoints ??
       null;
   }
 
@@ -136,8 +149,8 @@ export function AssessmentQuestion({
           onClick={() => {
             handleEditQuestion({
               question,
-              alternativeGroup: alternative ? alternativeGroup : undefined,
-              questionTrackingId: alternativeGroup.trackingId,
+              zoneQuestionBlock: alternative ? zoneQuestionBlock : undefined,
+              questionTrackingId: zoneQuestionBlock.trackingId,
               alternativeTrackingId: alternative?.trackingId,
             });
           }}
@@ -153,7 +166,7 @@ export function AssessmentQuestion({
           type="button"
           title="Delete question"
           onClick={() =>
-            handleDeleteQuestion(alternativeGroup.trackingId, questionId, alternative?.trackingId)
+            handleDeleteQuestion(zoneQuestionBlock.trackingId, questionId, alternative?.trackingId)
           }
         >
           <i className="fa fa-trash text-danger" aria-hidden="true" />
@@ -206,13 +219,13 @@ export function AssessmentQuestion({
     </td>,
     <td key="max-points">
       <MaxPointsText
-        maxAutoPoints={maxAutoPoints ?? alternativeGroup.maxAutoPoints ?? null}
-        maxManualPoints={question.manualPoints ?? alternativeGroup.manualPoints ?? null}
-        autoPoints={question.points ?? question.autoPoints ?? alternativeGroupAutoPoints ?? null}
+        maxAutoPoints={maxAutoPoints ?? zoneQuestionBlock.maxAutoPoints ?? null}
+        maxManualPoints={question.manualPoints ?? zoneQuestionBlock.manualPoints ?? null}
+        autoPoints={question.points ?? question.autoPoints ?? zoneQuestionBlockAutoPoints ?? null}
         assessmentType={assessmentType}
       />
     </td>,
-    <td key="manual-points">{question.manualPoints ?? alternativeGroup.manualPoints ?? '—'}</td>,
+    <td key="manual-points">{question.manualPoints ?? zoneQuestionBlock.manualPoints ?? '—'}</td>,
     showAdvanceScorePercCol ? (
       <td
         key="advance-score-perc"

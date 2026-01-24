@@ -4,7 +4,7 @@ import type { EnumAssessmentType } from '../../lib/db-types.js';
 import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from './instructorAssessmentQuestions.shared.js';
 
 /**
@@ -48,10 +48,10 @@ export interface EditorState {
  * Handler for editing a question or alternative in the assessment editor.
  */
 export type HandleEditQuestion = (params: {
-  question: ZoneQuestionForm | QuestionAlternativeForm;
-  alternativeGroup?: ZoneQuestionForm;
+  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  zoneQuestionBlock?: ZoneQuestionBlockForm;
   questionTrackingId: string;
-  /** Only set when editing an alternative within an alternative group */
+  /** Only set when editing an alternative within a zone question block */
   alternativeTrackingId?: string;
 }) => void;
 
@@ -73,13 +73,13 @@ export type EditorAction =
   | {
       type: 'ADD_QUESTION';
       zoneTrackingId: string;
-      question: ZoneQuestionForm;
+      question: ZoneQuestionBlockForm;
       questionData?: StaffAssessmentQuestionRow;
     }
   | {
       type: 'UPDATE_QUESTION';
       questionTrackingId: string;
-      question: Partial<ZoneQuestionForm> | Partial<QuestionAlternativeForm>;
+      question: Partial<ZoneQuestionBlockForm> | Partial<QuestionAlternativeForm>;
       /** Only set when updating an alternative within an alternative group */
       alternativeTrackingId?: string;
     }

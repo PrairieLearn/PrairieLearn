@@ -3,7 +3,7 @@ import { z } from 'zod';
 import {
   QuestionAlternativeJsonSchema,
   ZoneAssessmentJsonSchema,
-  ZoneQuestionJsonSchema,
+  ZoneQuestionBlockJsonSchema,
 } from '../../schemas/infoAssessment.js';
 
 /**
@@ -22,19 +22,21 @@ export const QuestionAlternativeFormSchema = QuestionAlternativeJsonSchema.exten
 export type QuestionAlternativeForm = z.infer<typeof QuestionAlternativeFormSchema>;
 
 /**
- * Form version of ZoneQuestionJson - adds trackingId, updates alternatives type.
+ * Form version of ZoneQuestionBlockJson - adds trackingId, updates alternatives type.
  */
-export const ZoneQuestionFormSchema = ZoneQuestionJsonSchema.omit({ alternatives: true }).extend({
+export const ZoneQuestionBlockFormSchema = ZoneQuestionBlockJsonSchema.omit({
+  alternatives: true,
+}).extend({
   trackingId: TrackingIdSchema,
   alternatives: z.array(QuestionAlternativeFormSchema).min(1).optional(),
 });
-export type ZoneQuestionForm = z.infer<typeof ZoneQuestionFormSchema>;
+export type ZoneQuestionBlockForm = z.infer<typeof ZoneQuestionBlockFormSchema>;
 
 /**
  * Form version of ZoneAssessmentJson - adds trackingId, updates questions type.
  */
 export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ questions: true }).extend({
   trackingId: TrackingIdSchema,
-  questions: z.array(ZoneQuestionFormSchema),
+  questions: z.array(ZoneQuestionBlockFormSchema),
 });
 export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;

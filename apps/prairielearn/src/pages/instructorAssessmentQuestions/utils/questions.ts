@@ -3,7 +3,7 @@ import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
   QuestionAlternativeForm,
-  ZoneQuestionForm,
+  ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
 
 /**
@@ -11,7 +11,7 @@ import type {
  * When manualPoints is defined or both points/autoPoints exist, we convert
  * to autoPoints/maxAutoPoints format (clearing points/maxPoints).
  */
-export function normalizeQuestionPoints<T extends ZoneQuestionForm | QuestionAlternativeForm>(
+export function normalizeQuestionPoints<T extends ZoneQuestionBlockForm | QuestionAlternativeForm>(
   question: T,
 ): T {
   const normalized = { ...question };
@@ -45,6 +45,9 @@ export function questionDisplayName(course: StaffCourse, question: StaffAssessme
 
 /**
  * Maps questions to a `zone` tree that matches the JSON structure.
+ *
+ * It assumes that question rows are sorted according to their final JSON structure
+ * (e.g. via `selectAssessmentQuestions`).
  */
 export function buildHierarchicalAssessment(
   course: StaffCourse,

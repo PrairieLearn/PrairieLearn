@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
-import type { ZoneQuestionForm } from '../instructorAssessmentQuestions.shared.js';
+import type { ZoneQuestionBlockForm } from '../instructorAssessmentQuestions.shared.js';
 
 import {
   buildHierarchicalAssessment,
@@ -18,7 +18,7 @@ describe('normalizeQuestionPoints', () => {
       points: 10,
       maxPoints: 20,
       manualPoints: 5,
-    } as ZoneQuestionForm;
+    } as ZoneQuestionBlockForm;
 
     const result = normalizeQuestionPoints(question);
 
@@ -34,7 +34,7 @@ describe('normalizeQuestionPoints', () => {
       id: 'q1',
       points: 10,
       maxPoints: 20,
-    } as ZoneQuestionForm;
+    } as ZoneQuestionBlockForm;
 
     const result = normalizeQuestionPoints(question);
 
