@@ -47,6 +47,9 @@ function EditModeButtons({
   setEditMode,
   saveButtonDisabled,
   saveButtonDisabledReason,
+  isAllExpanded,
+  onToggleExpandCollapse,
+  onCancel,
 }: {
   csrfToken: string;
   origHash: string;
@@ -55,12 +58,28 @@ function EditModeButtons({
   setEditMode: (editMode: boolean) => void;
   saveButtonDisabled: boolean;
   saveButtonDisabledReason?: string;
+  isAllExpanded: boolean;
+  onToggleExpandCollapse: () => void;
+  onCancel: () => void;
 }) {
   if (!editMode) {
     return (
-      <button className="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
-        <i className="fa fa-edit" aria-hidden="true" /> Edit questions
-      </button>
+      <div className="d-flex gap-2">
+        <button className="btn btn-sm btn-light" type="button" onClick={onToggleExpandCollapse}>
+          {isAllExpanded ? (
+            <>
+              <i className="bi bi-chevron-contract" aria-hidden="true" /> Collapse all
+            </>
+          ) : (
+            <>
+              <i className="bi bi-chevron-expand" aria-hidden="true" /> Expand all
+            </>
+          )}
+        </button>
+        <button className="btn btn-sm btn-light" type="button" onClick={() => setEditMode(true)}>
+          <i className="fa fa-edit" aria-hidden="true" /> Edit questions
+        </button>
+      </div>
     );
   }
 
@@ -86,11 +105,7 @@ function EditModeButtons({
       ) : (
         saveButton
       )}
-      <button
-        className="btn btn-sm btn-light"
-        type="button"
-        onClick={() => window.location.reload()}
-      >
+      <button className="btn btn-sm btn-light" type="button" onClick={onCancel}>
         Cancel
       </button>
     </form>
@@ -500,6 +515,18 @@ export function InstructorAssessmentQuestionsTable({
                     ? 'Cannot save: one or more zones have no questions'
                     : undefined
                 }
+                isAllExpanded={collapsedZones.size === 0 && collapsedGroups.size === 0}
+                onToggleExpandCollapse={() => {
+                  if (collapsedZones.size === 0 && collapsedGroups.size === 0) {
+                    dispatch({ type: 'COLLAPSE_ALL' });
+                  } else {
+                    dispatch({ type: 'EXPAND_ALL' });
+                  }
+                }}
+                onCancel={() => {
+                  dispatch({ type: 'RESET' });
+                  setEditMode(false);
+                }}
               />
             ) : null}
           </div>

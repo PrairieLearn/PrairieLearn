@@ -129,6 +129,9 @@ export type EditorAction =
       type: 'TOGGLE_ZONE_COLLAPSE';
       trackingId: string;
     }
+  | { type: 'EXPAND_ALL' }
+  | { type: 'COLLAPSE_ALL' }
+  | { type: 'RESET' }
   // Stubbed for future PR - will implement history tracking
   | { type: 'UNDO' }
   | { type: 'REDO' };

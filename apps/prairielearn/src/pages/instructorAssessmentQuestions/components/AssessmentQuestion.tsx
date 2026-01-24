@@ -3,14 +3,12 @@ import clsx from 'clsx';
 import { type CSSProperties } from 'react';
 import { Dropdown } from 'react-bootstrap';
 
-import { AssessmentQuestionNumber } from '../../../components/AssessmentQuestions.js';
 import { HistMini } from '../../../components/HistMini.js';
 import { IssueBadge } from '../../../components/IssueBadge.js';
 import { OtherAssessmentsBadges } from '../../../components/OtherAssessmentsBadges.js';
 import { SyncProblemButton } from '../../../components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../components/TagBadge.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
-import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { EnumAssessmentType } from '../../../lib/db-types.js';
 import type {
   QuestionAlternativeForm,
@@ -18,48 +16,7 @@ import type {
 } from '../instructorAssessmentQuestions.shared.js';
 import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
-/**
- * The title for an individual question.
- */
-function QuestionTitle({
-  questionRow,
-  hasCoursePermissionPreview,
-  urlPrefix,
-  questionNumber,
-  alternativeNumber,
-}: {
-  questionRow: StaffAssessmentQuestionRow;
-  hasCoursePermissionPreview: boolean;
-  urlPrefix: string;
-  questionNumber: number;
-  alternativeNumber: number | null;
-}) {
-  const { question } = questionRow;
-  if (hasCoursePermissionPreview) {
-    return (
-      <>
-        <AssessmentQuestionNumber
-          alternativeGroupSize={questionRow.alternative_group_size}
-          alternativeGroupNumber={questionNumber}
-          numberInAlternativeGroup={alternativeNumber}
-          className={questionRow.alternative_group_size > 1 ? 'ms-3' : 'ms-2'}
-        />
-        <a href={`${urlPrefix}/question/${question.id}/`}>{question.title}</a>
-      </>
-    );
-  }
-  return (
-    <>
-      <AssessmentQuestionNumber
-        alternativeGroupSize={questionRow.alternative_group_size}
-        alternativeGroupNumber={questionNumber}
-        numberInAlternativeGroup={alternativeNumber}
-        className={questionRow.alternative_group_size > 1 ? 'ms-3' : 'ms-2'}
-      />
-      {question.title}
-    </>
-  );
-}
+import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
 
 /**
  * Renders text for the points on a question.
@@ -200,30 +157,42 @@ export function AssessmentQuestion({
       </td>
     ),
     <td key="title" style={{ whiteSpace: 'nowrap' }}>
-      <div>
-        <QuestionTitle
-          questionRow={questionData}
-          hasCoursePermissionPreview={hasCoursePermissionPreview}
-          urlPrefix={urlPrefix}
-          questionNumber={questionNumber}
-          alternativeNumber={alternativeIndex !== undefined ? alternativeIndex + 1 : 1}
-        />
-        <IssueBadge
-          urlPrefix={urlPrefix}
-          count={questionData.open_issue_count}
-          issueQid={questionData.question.qid}
-        />
-      </div>
-      <div className="small text-muted">
-        <div className={clsx(questionData.alternative_group_size > 1 && 'ms-3')}>
-          {questionData.question.sync_errors ? (
-            <SyncProblemButton output={questionData.question.sync_errors} type="error" />
-          ) : questionData.question.sync_warnings ? (
-            <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
-          ) : null}
-          <code>{questionId}</code>
-        </div>
-      </div>
+      <QuestionNumberTitleCell
+        questionNumber={questionNumber}
+        alternativeNumber={
+          questionData.alternative_group_size > 1
+            ? alternativeIndex !== undefined
+              ? alternativeIndex + 1
+              : 1
+            : null
+        }
+        titleContent={
+          hasCoursePermissionPreview ? (
+            <a href={`${urlPrefix}/question/${questionData.question.id}/`}>
+              {questionData.question.title}
+            </a>
+          ) : (
+            questionData.question.title
+          )
+        }
+        qidContent={
+          <>
+            {questionData.question.sync_errors ? (
+              <SyncProblemButton output={questionData.question.sync_errors} type="error" />
+            ) : questionData.question.sync_warnings ? (
+              <SyncProblemButton output={questionData.question.sync_warnings} type="warning" />
+            ) : null}
+            <code>{questionId}</code>
+          </>
+        }
+        issueBadge={
+          <IssueBadge
+            urlPrefix={urlPrefix}
+            count={questionData.open_issue_count}
+            issueQid={questionData.question.qid}
+          />
+        }
+      />
     </td>,
     <td key="topic">
       <TopicBadge topic={questionData.topic} />

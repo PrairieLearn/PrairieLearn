@@ -1,5 +1,3 @@
-import clsx from 'clsx';
-
 import type { StaffAssessmentQuestionRow } from '../lib/assessment-question.js';
 
 export function AssessmentQuestionHeaders({
@@ -49,22 +47,22 @@ export function AssessmentQuestionHeaders({
   );
 }
 
+/**
+ * Renders the question number badge for public assessment questions.
+ */
 export function AssessmentQuestionNumber({
   alternativeGroupSize,
   alternativeGroupNumber,
   numberInAlternativeGroup,
-  className,
 }: {
   alternativeGroupSize: number;
   alternativeGroupNumber: number;
   numberInAlternativeGroup: number | null;
-  className?: string;
 }) {
-  return alternativeGroupSize === 1 ? (
-    <span className={clsx('badge color-gray1 me-2', className)}>{alternativeGroupNumber}. </span>
-  ) : (
-    <span className={clsx('badge color-gray1 me-2', className)}>
-      {alternativeGroupNumber}.{numberInAlternativeGroup}.{' '}
-    </span>
-  );
+  const numberText =
+    alternativeGroupSize === 1
+      ? `${alternativeGroupNumber}.`
+      : `${alternativeGroupNumber}.${numberInAlternativeGroup}.`;
+
+  return <span className="badge color-gray1 me-2">{numberText} </span>;
 }

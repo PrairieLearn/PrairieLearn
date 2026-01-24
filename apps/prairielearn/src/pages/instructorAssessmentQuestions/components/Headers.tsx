@@ -9,6 +9,8 @@ import type {
   ZoneQuestionJson,
 } from '../../../schemas/infoAssessment.js';
 
+import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
+
 export function ZoneHeader({
   zone,
   zoneNumber,
@@ -194,38 +196,44 @@ export function AlternativeGroupHeader({
           ) : null}
         </td>
       )}
-      {/* In edit mode: span edit+delete+title columns (3). In non-edit mode: just title column (1) */}
-      <td colSpan={editMode ? 3 : 1}>
-        <div className="ms-2">
-          <span className="badge color-gray1 me-2">{alternativeGroupNumber}.</span>
-          {alternativeGroup.numberChoose == null ? (
-            <>All questions from these {alternativeCount}:</>
-          ) : alternativeGroup.numberChoose === 1 ? (
-            <>1 question from these {alternativeCount}:</>
-          ) : (
+      {editMode && <td />}
+      {editMode && <td />}
+      <td>
+        <QuestionNumberTitleCell
+          questionNumber={alternativeGroupNumber}
+          alternativeNumber={null}
+          titleContent={
+            alternativeGroup.numberChoose == null ? (
+              <>All questions from these {alternativeCount}:</>
+            ) : alternativeGroup.numberChoose === 1 ? (
+              <>1 question from these {alternativeCount}:</>
+            ) : (
+              <>
+                {alternativeGroup.numberChoose} questions from these {alternativeCount}:
+              </>
+            )
+          }
+          qidContent={
             <>
-              {alternativeGroup.numberChoose} questions from these {alternativeCount}:
+              {onToggle && (
+                <i
+                  className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} me-2`}
+                  aria-hidden="true"
+                />
+              )}
+              {alternatives.slice(0, 2).map((alt, i) => (
+                <span key={alt.id} className="small text-muted">
+                  {i > 0 && ', '}
+                  <code className="text-muted">{alt.id}</code>
+                </span>
+              ))}
+              {alternatives.length > 2 && <span className="small text-muted">, ...</span>}
             </>
-          )}
-        </div>
-        <div className="small text-muted">
-          {onToggle && (
-            <i
-              className={`fa fa-chevron-${isCollapsed ? 'right' : 'down'} ms-2 me-2`}
-              aria-hidden="true"
-            />
-          )}
-          {alternatives.slice(0, 2).map((alt, i) => (
-            <span key={alt.id}>
-              {i > 0 && ', '}
-              <code className="text-muted">{alt.id}</code>
-            </span>
-          ))}
-          {alternatives.length > 2 && <span>, …</span>}
-        </div>
+          }
+        />
       </td>
       <td>{sharedTopic && <TopicBadge topic={sharedTopic} />}</td>
-      {/* Span remaining columns: nTableCols - drag(1 if edit) - content(3 if edit, 1 if not) - topic(1) */}
+      {/* Span remaining columns: nTableCols - drag(1) - edit(1) - delete(1) - title(1) - topic(1) in edit mode */}
       <td colSpan={editMode ? nTableCols - 5 : nTableCols - 2} />
     </tr>
   );

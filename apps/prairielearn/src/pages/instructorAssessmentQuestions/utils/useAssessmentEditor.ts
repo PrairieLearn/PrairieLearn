@@ -1,4 +1,4 @@
-import { useReducer } from 'react';
+import { useMemo, useReducer } from 'react';
 
 import type {
   QuestionAlternativeForm,
@@ -65,10 +65,12 @@ function findAlternativeByTrackingId(
 }
 
 /**
- * Reducer for managing assessment editor state.
+ * Creates a reducer for managing assessment editor state.
+ * The initialState is captured in closure for the RESET action.
  * All operations use trackingIds for stable identity instead of position indices.
  */
-function editorReducer(state: EditorState, action: EditorAction): EditorState {
+function createEditorReducer(initialState: EditorState) {
+  return function editorReducer(state: EditorState, action: EditorAction): EditorState {
   switch (action.type) {
     case 'ADD_QUESTION': {
       const { zoneTrackingId, question, questionData } = action;
@@ -362,6 +364,30 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
       };
     }
 
+    case 'EXPAND_ALL': {
+      return {
+        ...state,
+        collapsedGroups: new Set<string>(),
+        collapsedZones: new Set<string>(),
+      };
+    }
+
+    case 'COLLAPSE_ALL': {
+      const zoneTrackingIds = state.zones.map((z) => z.trackingId);
+      const groupTrackingIds = state.zones.flatMap((z) =>
+        z.questions.filter((q) => (q.alternatives?.length ?? 0) > 1).map((q) => q.trackingId),
+      );
+      return {
+        ...state,
+        collapsedZones: new Set<string>(zoneTrackingIds),
+        collapsedGroups: new Set<string>(groupTrackingIds),
+      };
+    }
+
+    case 'RESET': {
+      return initialState;
+    }
+
     case 'UNDO':
     case 'REDO':
       // TODO: Implement in future PR with history tracking
@@ -370,6 +396,7 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
     default:
       return state;
   }
+  };
 }
 
 /**
@@ -377,7 +404,10 @@ function editorReducer(state: EditorState, action: EditorAction): EditorState {
  * Provides clean dispatch-based state updates and stubs for future undo/redo.
  */
 export function useAssessmentEditor(initialState: EditorState) {
-  const [state, dispatch] = useReducer(editorReducer, initialState);
+  // Memoize the reducer so it captures the initial state for RESET
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  const reducer = useMemo(() => createEditorReducer(initialState), []);
+  const [state, dispatch] = useReducer(reducer, initialState);
 
   return {
     zones: state.zones,
