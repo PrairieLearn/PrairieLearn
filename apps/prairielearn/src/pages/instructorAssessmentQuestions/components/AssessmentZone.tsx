@@ -220,6 +220,9 @@ function AssessmentZoneHeader({
               aria-label="Drag to reorder zone"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
+                // Call dnd-kit's keyboard handler first to preserve KeyboardSensor behavior
+                sortableListeners.onKeyDown(e);
+                // Stop this from collapsing the section
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
                 }

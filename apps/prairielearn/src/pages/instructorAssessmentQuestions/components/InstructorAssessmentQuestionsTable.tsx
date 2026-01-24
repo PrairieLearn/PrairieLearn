@@ -247,7 +247,7 @@ export function InstructorAssessmentQuestionsTable({
     editQuestionModal.showWithData({
       type: 'create',
       question: { id: '', trackingId: '' } as ZoneQuestionBlockForm,
-      mappedQids: zones.flatMap((zone) => zone.questions.map((q) => q.id ?? '')),
+      existingQids: Object.keys(questionMetadata),
     });
     setSelectedQuestionIds({
       type: 'create',
@@ -495,7 +495,7 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   // If at least one question has a nonzero unlock score, display the Advance Score column
-  const showAdvanceScorePercCol = questionRows.some(
+  const showAdvanceScorePercCol = Object.values(questionMetadata).some(
     (q) => q.assessment_question.effective_advance_score_perc !== 0,
   );
 

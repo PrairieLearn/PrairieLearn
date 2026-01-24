@@ -14,7 +14,7 @@ export type EditQuestionModalData =
       type: 'create';
       question: ZoneQuestionBlockForm | QuestionAlternativeForm;
       zoneQuestionBlock?: ZoneQuestionBlockForm;
-      mappedQids: string[];
+      existingQids: string[];
     }
   | {
       type: 'edit';
@@ -74,7 +74,7 @@ export function EditQuestionModal({
   const type = data?.type ?? null;
   const question = data?.question ?? null;
   const zoneQuestionBlock = data?.zoneQuestionBlock;
-  const mappedQids = data?.type === 'create' ? data.mappedQids : [];
+  const existingQids = data?.type === 'create' ? data.existingQids : [];
   const isAlternative = !!zoneQuestionBlock;
 
   const manualPointsDisplayValue =
@@ -256,7 +256,7 @@ export function EditQuestionModal({
                   required: 'QID is required',
                   validate: (qid) => {
                     if (!qid) return 'QID is required';
-                    if (qid !== question.id && mappedQids.includes(qid)) {
+                    if (qid !== question.id && existingQids.includes(qid)) {
                       return 'QID already exists in the assessment';
                     }
                     return true;
