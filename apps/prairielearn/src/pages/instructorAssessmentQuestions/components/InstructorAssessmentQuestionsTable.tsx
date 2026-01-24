@@ -1,6 +1,7 @@
 import {
   DndContext,
   type DragEndEvent,
+  type DragOverEvent,
   KeyboardSensor,
   PointerSensor,
   pointerWithin,
@@ -423,65 +424,71 @@ export function InstructorAssessmentQuestionsTable({
       return;
     }
 
-    // Handle question reordering
-    const questionTrackingId = activeIdStr;
+    // Within-zone question reordering
+    const fromPosition = positionByStableId[activeIdStr];
+    const toPosition = positionByStableId[overIdStr];
+    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+    if (!fromPosition || !toPosition) return;
 
-    // Look up the active item's position to determine its current zone
+    const fromZone = zones[fromPosition.zoneIndex];
+    const toZone = zones[toPosition.zoneIndex];
+
+    if (fromZone.trackingId !== toZone.trackingId) return;
+    if (fromPosition.questionIndex === toPosition.questionIndex) return;
+
+    // When dragging DOWN, insert AFTER the target (use next question's trackingId or null)
+    const isDraggingDown = fromPosition.questionIndex < toPosition.questionIndex;
+    const beforeQuestionTrackingId = isDraggingDown
+      ? (toZone.questions[toPosition.questionIndex + 1]?.trackingId ?? null)
+      : toZone.questions[toPosition.questionIndex].trackingId;
+
+    dispatch({
+      type: 'REORDER_QUESTION',
+      questionTrackingId: activeIdStr,
+      toZoneTrackingId: toZone.trackingId,
+      beforeQuestionTrackingId,
+    });
+  };
+
+  // Move questions between zones during drag for smooth cross-zone reordering animation
+  const handleDragOver = ({ active, over }: DragOverEvent) => {
+    if (!over) return;
+
+    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
+    if (activeType !== 'question') return;
+
+    const activeIdStr = String(active.id);
+    const overIdStr = String(over.id);
+
     const fromPosition = positionByStableId[activeIdStr];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fromPosition) return;
 
     const fromZone = zones[fromPosition.zoneIndex];
 
-    // Check if dropped on a zone (zone header or empty zone warning)
-    const targetZone = zones.find((z) => z.trackingId === overIdStr);
-    if (targetZone) {
-      if (fromZone.trackingId !== targetZone.trackingId) {
-        dispatch({
-          type: 'REORDER_QUESTION',
-          questionTrackingId,
-          toZoneTrackingId: targetZone.trackingId,
-          beforeQuestionTrackingId: null, // Append at end
-        });
-      }
+    // Empty zone's droppable
+    const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
+    if (targetZone && fromZone.trackingId !== targetZone.trackingId) {
+      dispatch({
+        type: 'REORDER_QUESTION',
+        questionTrackingId: activeIdStr,
+        toZoneTrackingId: targetZone.trackingId,
+        beforeQuestionTrackingId: null,
+      });
       return;
     }
 
-    // Dropped on another sortable item - look up its position by stable ID
+    // Question in a different zone
     const toPosition = positionByStableId[overIdStr];
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!toPosition) return;
-
     const toZone = zones[toPosition.zoneIndex];
-
-    // Only dispatch if actually moving to a different position
-    if (
-      fromZone.trackingId !== toZone.trackingId ||
-      fromPosition.questionIndex !== toPosition.questionIndex
-    ) {
-      // When dragging DOWN within the same zone, we need to insert AFTER the target
-      // because indices shift after the source is removed. Use the question after
-      // the target as beforeQuestionTrackingId, or null to append at end.
-      const isDraggingDownInSameZone =
-        fromZone.trackingId === toZone.trackingId &&
-        fromPosition.questionIndex < toPosition.questionIndex;
-
-      let beforeQuestionTrackingId: string | null;
-      if (isDraggingDownInSameZone) {
-        // Insert after the target: use the next question, or null if at end
-        const nextIndex = toPosition.questionIndex + 1;
-        beforeQuestionTrackingId =
-          nextIndex < toZone.questions.length ? toZone.questions[nextIndex].trackingId : null;
-      } else {
-        // Insert before the target
-        beforeQuestionTrackingId = toZone.questions[toPosition.questionIndex].trackingId;
-      }
-
+    if (fromZone.trackingId !== toZone.trackingId) {
       dispatch({
         type: 'REORDER_QUESTION',
-        questionTrackingId,
+        questionTrackingId: activeIdStr,
         toZoneTrackingId: toZone.trackingId,
-        beforeQuestionTrackingId,
+        beforeQuestionTrackingId: toZone.questions[toPosition.questionIndex].trackingId,
       });
     }
   };
@@ -535,6 +542,7 @@ export function InstructorAssessmentQuestionsTable({
           sensors={sensors}
           collisionDetection={pointerWithin}
           autoScroll={false}
+          onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
           <SortableContext

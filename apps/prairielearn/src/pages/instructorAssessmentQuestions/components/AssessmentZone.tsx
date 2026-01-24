@@ -58,10 +58,8 @@ export function AssessmentZone({
   const isCollapsed = collapsedZones.has(zone.trackingId);
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_ZONE_COLLAPSE', trackingId: zone.trackingId });
-
-  // For empty zones, create a droppable for the warning row using the zone's trackingId
   const { setNodeRef: emptyDropRef, isOver: isOverEmpty } = useDroppable({
-    id: zone.trackingId,
+    id: `${zone.trackingId}-empty-drop`,
     disabled: zone.questions.length > 0, // Only active when zone is empty
   });
 
