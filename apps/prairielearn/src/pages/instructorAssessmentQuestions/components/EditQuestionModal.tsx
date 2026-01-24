@@ -77,7 +77,8 @@ export function EditQuestionModal({
   const mappedQids = data?.type === 'create' ? data.mappedQids : [];
   const isAlternative = !!zoneQuestionBlock;
 
-  const manualPointsDisplayValue = question?.manualPoints ?? zoneQuestionBlock?.manualPoints ?? null;
+  const manualPointsDisplayValue =
+    question?.manualPoints ?? zoneQuestionBlock?.manualPoints ?? null;
 
   // Determine which property was originally set (points vs autoPoints)
   const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
@@ -274,7 +275,7 @@ export function EditQuestionModal({
             {assessmentType === 'Homework' ? (
               <>
                 <div className="mb-3">
-                  <label htmlFor="autoPointsInput">Auto Points</label>
+                  <label htmlFor="autoPointsInput">Auto points</label>
                   <input
                     type="number"
                     className={clsx('form-control', errors[originalPointsProperty] && 'is-invalid')}
@@ -292,7 +293,7 @@ export function EditQuestionModal({
                         return Number(value);
                       },
                       validate: (value, { manualPoints }) => {
-                        if (!manualPoints && value === undefined) {
+                        if (manualPoints === undefined && value === undefined) {
                           return 'At least one of auto points or manual points must be set.';
                         }
                       },
@@ -319,7 +320,7 @@ export function EditQuestionModal({
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="maxAutoPointsInput">Max Auto Points</label>
+                  <label htmlFor="maxAutoPointsInput">Max auto points</label>
                   <input
                     type="number"
                     className="form-control"
@@ -335,7 +336,12 @@ export function EditQuestionModal({
                   />
                   <small id="maxPointsHelp" className="form-text text-muted">
                     The maximum number of points that can be awarded for the question.
-                    {isInherited(originalMaxProperty, isAlternative, question, zoneQuestionBlock) ? (
+                    {isInherited(
+                      originalMaxProperty,
+                      isAlternative,
+                      question,
+                      zoneQuestionBlock,
+                    ) ? (
                       <>
                         {' '}
                         <em>(Inherited from alternative group)</em>
@@ -344,7 +350,7 @@ export function EditQuestionModal({
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="manualPointsInput">Manual Points</label>
+                  <label htmlFor="manualPointsInput">Manual points</label>
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}
@@ -359,7 +365,11 @@ export function EditQuestionModal({
                         return Number(value);
                       },
                       validate: (value, { autoPoints, points }) => {
-                        if (!points && !autoPoints && value === undefined) {
+                        if (
+                          points === undefined &&
+                          autoPoints === undefined &&
+                          value === undefined
+                        ) {
                           return 'At least one of auto points or manual points must be set.';
                         }
                       },
@@ -421,7 +431,7 @@ export function EditQuestionModal({
             ) : (
               <>
                 <div className="mb-3">
-                  <label htmlFor="autoPoints">Points List</label>
+                  <label htmlFor="autoPoints">Points list</label>
                   <input
                     type="text"
                     className={clsx(
@@ -482,7 +492,7 @@ export function EditQuestionModal({
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="manualPoints">Manual Points</label>
+                  <label htmlFor="manualPoints">Manual points</label>
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}

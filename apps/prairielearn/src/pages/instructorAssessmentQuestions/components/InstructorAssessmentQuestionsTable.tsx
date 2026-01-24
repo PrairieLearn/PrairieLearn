@@ -317,8 +317,9 @@ export function InstructorAssessmentQuestionsTable({
       // Apply point normalization for the update
       const questionWithNormalizedPoints = {
         ...normalizedQuestion,
-        points: normalizedQuestion.manualPoints ? undefined : normalizedQuestion.points,
-        maxPoints: normalizedQuestion.manualPoints ? undefined : normalizedQuestion.maxPoints,
+        points: normalizedQuestion.manualPoints != null ? undefined : normalizedQuestion.points,
+        maxPoints:
+          normalizedQuestion.manualPoints != null ? undefined : normalizedQuestion.maxPoints,
       };
 
       dispatch({

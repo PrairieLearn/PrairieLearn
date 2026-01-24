@@ -1,3 +1,4 @@
+import clsx from 'clsx';
 import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
@@ -117,7 +118,7 @@ export function EditZoneModal({
             <label htmlFor="numberChooseInput">Number to choose</label>
             <input
               type="number"
-              className={`form-control ${errors.numberChoose ? 'is-invalid' : ''}`}
+              className={clsx('form-control', errors.numberChoose && 'is-invalid')}
               id="numberChooseInput"
               aria-invalid={!!errors.numberChoose}
               aria-errormessage={errors.numberChoose ? 'numberChooseError' : undefined}
@@ -144,7 +145,7 @@ export function EditZoneModal({
             <label htmlFor="bestQuestionsInput">Best questions</label>
             <input
               type="number"
-              className={`form-control ${errors.bestQuestions ? 'is-invalid' : ''}`}
+              className={clsx('form-control', errors.bestQuestions && 'is-invalid')}
               id="bestQuestionsInput"
               aria-invalid={!!errors.bestQuestions}
               aria-errormessage={errors.bestQuestions ? 'bestQuestionsError' : undefined}

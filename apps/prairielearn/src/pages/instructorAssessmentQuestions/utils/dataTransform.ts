@@ -102,7 +102,7 @@ function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
 const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
 
 /** Filters an alternative to remove default values. Only outputs known schema fields. */
-function filterAlternative(alternative: QuestionAlternativeJson): Record<string, unknown> {
+function stripQuestionAlternative(alternative: QuestionAlternativeJson): Record<string, unknown> {
   return omitUndefined({
     id: alternative.id,
     points: propertyValueWithDefault(undefined, alternative.points, 0),
@@ -124,13 +124,15 @@ function filterAlternative(alternative: QuestionAlternativeJson): Record<string,
 }
 
 /** Filters a question to remove default values. Only outputs known schema fields. */
-function filterQuestion(question: ZoneQuestionBlockJson): Record<string, unknown> {
+function stripQuestionBlock(question: ZoneQuestionBlockJson): Record<string, unknown> {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({
     // Alternative group vs single question handling
     id: isAlternativeGroup ? undefined : question.id,
-    alternatives: isAlternativeGroup ? question.alternatives!.map(filterAlternative) : undefined,
+    alternatives: isAlternativeGroup
+      ? question.alternatives!.map(stripQuestionAlternative)
+      : undefined,
     numberChoose: isAlternativeGroup
       ? propertyValueWithDefault(undefined, question.numberChoose, 1)
       : undefined,
@@ -168,7 +170,7 @@ export function stripZoneDefaults(zones: ZoneAssessmentJson[]): ZoneAssessmentJs
       allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, null),
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
-      questions: zone.questions.map(filterQuestion),
+      questions: zone.questions.map(stripQuestionBlock),
     }) as ZoneAssessmentJson;
   });
 }
