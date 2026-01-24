@@ -51,15 +51,15 @@ export function ZoneHeader({
       }}
       className={onToggle ? 'user-select-none' : undefined}
       onClick={onToggle}
-      {...sortableAttributes}
     >
       {editMode && (
         <th className="align-content-center">
           {sortableListeners ? (
+            // Accessible roles are provided via sortableAttributes
+            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
             <span
               {...sortableListeners}
-              role="button"
-              tabIndex={0}
+              {...sortableAttributes}
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag to reorder zone"
               onClick={(e) => e.stopPropagation()}
@@ -173,15 +173,15 @@ export function AlternativeGroupHeader({
       style={{ ...sortableStyle, cursor: onToggle ? 'pointer' : undefined }}
       className={onToggle ? 'user-select-none' : undefined}
       onClick={onToggle}
-      {...sortableAttributes}
     >
       {editMode && (
         <td className="align-content-center">
           {sortableListeners ? (
+            // Accessible roles are provided via sortableAttributes
+            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
             <span
               {...sortableListeners}
-              role="button"
-              tabIndex={0}
+              {...sortableAttributes}
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag to reorder"
               onClick={(e) => e.stopPropagation()}

@@ -95,6 +95,8 @@ export function AssessmentQuestion({
     showAdvanceScorePercCol,
     assessmentType,
   } = assessmentState;
+
+  // This should never happen
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const questionData = questionMetadata[questionId];
@@ -104,13 +106,14 @@ export function AssessmentQuestion({
   if (questionData == null) {
     const tableColumnCount = 9 + (editMode ? 3 : 0) + (showAdvanceScorePercCol ? 1 : 0);
     return (
-      <tr ref={sortableRef} style={sortableStyle} {...sortableAttributes} className="table-warning">
+      <tr ref={sortableRef} style={sortableStyle} className="table-warning">
         {editMode && (
           <>
             <td className="align-content-center">
               {sortableListeners ? (
                 <span
                   {...sortableListeners}
+                  {...sortableAttributes}
                   style={{ cursor: 'grab', touchAction: 'none' }}
                   aria-label="Drag to reorder"
                 >
@@ -166,6 +169,7 @@ export function AssessmentQuestion({
         {sortableListeners ? (
           <span
             {...sortableListeners}
+            {...sortableAttributes}
             style={{ cursor: 'grab', touchAction: 'none' }}
             aria-label="Drag to reorder"
           >
@@ -321,7 +325,7 @@ export function AssessmentQuestion({
   ];
 
   return (
-    <tr ref={sortableRef} style={sortableStyle} {...sortableAttributes}>
+    <tr ref={sortableRef} style={sortableStyle}>
       {questionColumns}
     </tr>
   );
