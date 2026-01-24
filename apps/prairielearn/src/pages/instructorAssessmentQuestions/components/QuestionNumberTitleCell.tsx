@@ -9,8 +9,8 @@ interface QuestionNumberTitleCellProps {
   titleContent: ReactNode;
   /** QID code + sync buttons */
   qidContent: ReactNode;
-  /** Optional issue badge after title */
-  issueBadge?: ReactNode;
+  /** Optional badges/icons after title (e.g., issue badge, comment icon) */
+  badges?: ReactNode;
 }
 
 /**
@@ -22,7 +22,7 @@ export function QuestionNumberTitleCell({
   alternativeNumber,
   titleContent,
   qidContent,
-  issueBadge,
+  badges,
 }: QuestionNumberTitleCellProps) {
   const numberText =
     alternativeNumber != null ? `${questionNumber}.${alternativeNumber}.` : `${questionNumber}.`;
@@ -40,7 +40,7 @@ export function QuestionNumberTitleCell({
       <div>
         <div>
           {titleContent}
-          {issueBadge}
+          {badges}
         </div>
         <div>{qidContent}</div>
       </div>

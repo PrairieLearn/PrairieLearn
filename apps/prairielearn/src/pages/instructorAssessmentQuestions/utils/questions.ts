@@ -87,7 +87,6 @@ export function buildHierarchicalAssessment(
     const positionInZone = zoneAlternativeGroupCounts[zoneNumber];
     if (!zones[zoneNumber - 1].questions[positionInZone]) {
       zones[zoneNumber - 1].questions[positionInZone] ??= {
-        id: row.alternative_group.id ? questionDisplayName(course, row) : undefined,
         comment: row.alternative_group.json_comment ?? undefined,
         advanceScorePerc: row.alternative_group.advance_score_perc ?? undefined,
         canView: row.alternative_group.json_can_view ?? [],
@@ -118,7 +117,7 @@ export function buildHierarchicalAssessment(
         forceMaxPoints: row.assessment_question.json_force_max_points ?? undefined,
         triesPerVariant: row.assessment_question.json_tries_per_variant ?? undefined,
         advanceScorePerc: row.assessment_question.advance_score_perc ?? undefined,
-        gradeRateMinutes: row.assessment_question.grade_rate_minutes ?? undefined,
+        gradeRateMinutes: row.assessment_question.json_grade_rate_minutes ?? undefined,
         allowRealTimeGrading: row.assessment_question.json_allow_real_time_grading ?? undefined,
         points: row.assessment_question.json_points ?? undefined,
         autoPoints: row.assessment_question.json_auto_points ?? undefined,
@@ -127,6 +126,7 @@ export function buildHierarchicalAssessment(
         manualPoints: row.assessment_question.json_manual_points ?? undefined,
       };
     } else {
+      // Set the top level question ID if there are no alternatives
       zones[zoneNumber - 1].questions[positionInZone].id = questionDisplayName(course, row);
     }
   }

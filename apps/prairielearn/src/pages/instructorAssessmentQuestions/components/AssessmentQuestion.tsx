@@ -16,6 +16,7 @@ import type {
 } from '../instructorAssessmentQuestions.shared.js';
 import type { AssessmentState, HandleDeleteQuestion, HandleEditQuestion } from '../types.js';
 
+import { CommentIcon } from './CommentIcon.js';
 import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
 
 /**
@@ -202,12 +203,15 @@ export function AssessmentQuestion({
             <code>{questionId}</code>
           </>
         }
-        issueBadge={
-          <IssueBadge
-            urlPrefix={urlPrefix}
-            count={questionData.open_issue_count}
-            issueQid={questionData.question.qid}
-          />
+        badges={
+          <>
+            <IssueBadge
+              urlPrefix={urlPrefix}
+              count={questionData.open_issue_count}
+              issueQid={questionData.question.qid}
+            />
+            <CommentIcon comment={question.comment} />
+          </>
         }
       />
     </td>,

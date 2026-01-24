@@ -20,6 +20,7 @@ import {
 } from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
+import { CommentIcon } from './CommentIcon.js';
 import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
 
 /**
@@ -231,6 +232,7 @@ export function ZoneQuestionBlockHeader({
                 </span>
               ))}
               {alternatives.length > 2 && <span className="small text-muted">, ...</span>}
+              <CommentIcon comment={zoneQuestionBlock.comment} />
             </>
           }
         />

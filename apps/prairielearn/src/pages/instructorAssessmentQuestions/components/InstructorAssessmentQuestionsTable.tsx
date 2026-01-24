@@ -550,7 +550,7 @@ export function InstructorAssessmentQuestionsTable({
             items={zones.map((z) => z.trackingId)}
             strategy={verticalListSortingStrategy}
           >
-            <div style={{ overflow: 'visible' }}>
+            <div style={{ overflowX: 'auto' }}>
               <table className="table table-sm table-hover" aria-label="Assessment questions">
                 <thead>
                   <tr>

@@ -16,6 +16,7 @@ import {
   getTableColumnCount,
 } from '../types.js';
 
+import { CommentIcon } from './CommentIcon.js';
 import { ZoneQuestionBlock } from './ZoneQuestionBlock.js';
 
 /**
@@ -267,6 +268,7 @@ function AssessmentZoneHeader({
             : `(${zone.numberChoose} questions)`}
         {zone.maxPoints != null ? ` (maximum ${zone.maxPoints} points)` : ''}
         {zone.bestQuestions != null ? ` (best ${zone.bestQuestions} questions)` : ''}
+        <CommentIcon comment={zone.comment} />
       </th>
     </tr>
   );
