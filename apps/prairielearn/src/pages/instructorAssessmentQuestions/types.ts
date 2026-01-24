@@ -8,6 +8,17 @@ import type {
 } from './instructorAssessmentQuestions.shared.js';
 
 /**
+ * Simplified question data for the question picker modal.
+ * Only includes fields needed for display and selection.
+ */
+export interface CourseQuestionForPicker {
+  qid: string;
+  title: string;
+  topic: { id: string; name: string; color: string };
+  tags: { id: string; name: string; color: string }[] | null;
+}
+
+/**
  * Shared state passed down through the assessment questions table component tree.
  */
 export interface AssessmentState {

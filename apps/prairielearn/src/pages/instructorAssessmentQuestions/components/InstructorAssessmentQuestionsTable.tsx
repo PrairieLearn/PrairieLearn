@@ -25,6 +25,7 @@ import type {
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
+import type { CourseQuestionForPicker } from '../types.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
@@ -38,6 +39,7 @@ import { AssessmentZone } from './AssessmentZone.js';
 import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
 import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
+import { QuestionPickerModal } from './QuestionPickerModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
 
 function EditModeButtons({
@@ -121,6 +123,7 @@ function EditModeButtons({
 export function InstructorAssessmentQuestionsTable({
   course,
   questionRows,
+  courseQuestions,
   jsonZones,
   urlPrefix,
   assessment,
@@ -133,6 +136,7 @@ export function InstructorAssessmentQuestionsTable({
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
+  courseQuestions: CourseQuestionForPicker[];
   jsonZones: ZoneAssessmentJson[];
   assessment: StaffAssessment;
   assessmentSetName: string;
@@ -183,6 +187,13 @@ export function InstructorAssessmentQuestionsTable({
   >(null);
   const editQuestionModal = useModalState<EditQuestionModalData>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
+  const questionPickerModal = useModalState<{ zoneTrackingId: string }>(null);
+
+  // Questions already in the assessment are those with metadata
+  const questionsInAssessment = useMemo(
+    () => new Set(Object.keys(questionMetadata)),
+    [questionMetadata],
+  );
 
   // dnd-kit sensors for drag and drop
   const sensors = useSensors(
@@ -244,9 +255,17 @@ export function InstructorAssessmentQuestionsTable({
   };
 
   const handleAddQuestion = (zoneTrackingId: string) => {
+    questionPickerModal.showWithData({ zoneTrackingId });
+  };
+
+  const handleQuestionPicked = (qid: string) => {
+    if (!questionPickerModal.data) return;
+    const zoneTrackingId = questionPickerModal.data.zoneTrackingId;
+
+    // Open the edit modal with the selected question's QID pre-filled
     editQuestionModal.showWithData({
       type: 'create',
-      question: { id: '', trackingId: '' } as ZoneQuestionBlockForm,
+      question: { id: qid, trackingId: '' } as ZoneQuestionBlockForm,
       existingQids: Object.keys(questionMetadata),
     });
     setSelectedQuestionIds({
@@ -641,6 +660,14 @@ export function InstructorAssessmentQuestionsTable({
         />
       )}
       {editMode && <EditZoneModal {...editZoneModal} handleSaveZone={handleSaveZone} />}
+      {editMode && (
+        <QuestionPickerModal
+          {...questionPickerModal}
+          courseQuestions={courseQuestions}
+          questionsInAssessment={questionsInAssessment}
+          onQuestionSelected={handleQuestionPicked}
+        />
+      )}
     </>
   );
 }

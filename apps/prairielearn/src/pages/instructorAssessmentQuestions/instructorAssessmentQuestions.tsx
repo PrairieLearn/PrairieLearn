@@ -25,10 +25,12 @@ import { FileModifyEditor } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { selectQuestionsForCourse } from '../../models/questions.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import type { CourseQuestionForPicker } from './types.js';
 import { stripZoneDefaults } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
@@ -55,9 +57,12 @@ const SaveQuestionsSchema = z.object({
 router.get(
   '/',
   asyncHandler(async (req, res) => {
-    const questionRows = await selectAssessmentQuestions({
-      assessment_id: res.locals.assessment.id,
-    });
+    const [questionRows, courseQuestions] = await Promise.all([
+      selectAssessmentQuestions({
+        assessment_id: res.locals.assessment.id,
+      }),
+      selectQuestionsForCourse(res.locals.course.id, [res.locals.course_instance.id]),
+    ]);
 
     const assessmentPath = path.join(
       res.locals.course.path,
@@ -80,6 +85,15 @@ router.get(
     // We use the database instead of the contents on disk as we want to consider the database as the 'source of truth'
     // for doing operations.
     const jsonZones = buildHierarchicalAssessment(res.locals.course, questionRows);
+
+    // Transform course questions to the simpler type needed for the picker
+    const courseQuestionsForPicker: CourseQuestionForPicker[] = courseQuestions.map((q) => ({
+      qid: q.qid,
+      title: q.title,
+      topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },
+      tags:
+        q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
+    }));
 
     const editorEnabled = await features.enabledFromLocals(
       'assessment-questions-editor',
@@ -113,6 +127,7 @@ router.get(
             <InstructorAssessmentQuestionsTable
               course={pageContext.course}
               questionRows={questionRows}
+              courseQuestions={courseQuestionsForPicker}
               jsonZones={jsonZones}
               urlPrefix={pageContext.urlPrefix}
               assessment={pageContext.assessment}
