@@ -47,10 +47,9 @@ export function ZoneQuestionBlock({
   collapsedGroups: Set<string>;
   dispatch: Dispatch<EditorAction>;
 }) {
-  // We treat a question with no primary ID as having alternatives, regardless of if we have them.
-  // This handles the case where we have no primary ID and no alternatives as well.
-  const hasAlternatives =
-    zoneQuestionBlock.id == null || (zoneQuestionBlock.alternatives?.length ?? 0) > 0;
+  // A question can either have alternatives, or an id,
+  // but not both.
+  const hasAlternatives = zoneQuestionBlock.id == null;
   const isCollapsed = collapsedGroups.has(zoneQuestionBlock.trackingId);
   const toggleCollapse = () =>
     dispatch({ type: 'TOGGLE_GROUP_COLLAPSE', trackingId: zoneQuestionBlock.trackingId });

@@ -101,76 +101,73 @@ function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
 /** Helper to check if a value is an empty array (for canSubmit/canView defaults). */
 const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
 
-/** Filters an alternative to remove default values. Only outputs known schema fields. */
-function stripQuestionAlternative(alternative: QuestionAlternativeJson): Record<string, unknown> {
+/** Strips a question alternative to remove default values. */
+function stripQuestionAlternative(alternative: QuestionAlternativeJson) {
+  // We cannot do any stripping here.
+  // If we strip, some of the fields will be inherited from the question itself.
+  // Thus, we should always write the value we got to prevent stripping,
+  // because in the future, if the question values change, we don't want to inherit them.
   return omitUndefined({
     id: alternative.id,
-    points: propertyValueWithDefault(undefined, alternative.points, 0),
-    autoPoints: propertyValueWithDefault(undefined, alternative.autoPoints, 0),
-    maxPoints: propertyValueWithDefault(undefined, alternative.maxPoints, 0),
-    maxAutoPoints: propertyValueWithDefault(undefined, alternative.maxAutoPoints, 0),
-    manualPoints: propertyValueWithDefault(undefined, alternative.manualPoints, 0),
-    triesPerVariant: propertyValueWithDefault(undefined, alternative.triesPerVariant, 1),
-    advanceScorePerc: propertyValueWithDefault(undefined, alternative.advanceScorePerc, null),
-    gradeRateMinutes: propertyValueWithDefault(undefined, alternative.gradeRateMinutes, null),
-    allowRealTimeGrading: propertyValueWithDefault(
-      undefined,
-      alternative.allowRealTimeGrading,
-      null,
-    ),
-    forceMaxPoints: propertyValueWithDefault(undefined, alternative.forceMaxPoints, null),
-    comment: propertyValueWithDefault(undefined, alternative.comment, null),
+    points: alternative.points,
+    autoPoints: alternative.autoPoints,
+    maxPoints: alternative.maxPoints,
+    maxAutoPoints: alternative.maxAutoPoints,
+    manualPoints: alternative.manualPoints,
+    triesPerVariant: alternative.triesPerVariant,
+    advanceScorePerc: alternative.advanceScorePerc,
+    gradeRateMinutes: alternative.gradeRateMinutes,
+    forceMaxPoints: alternative.forceMaxPoints,
+    allowRealTimeGrading: alternative.allowRealTimeGrading,
+    comment: alternative.comment,
   });
 }
 
-/** Filters a question to remove default values. Only outputs known schema fields. */
-function stripQuestionBlock(question: ZoneQuestionBlockJson): Record<string, unknown> {
+/** Strips a question to remove default values. */
+function stripQuestionBlock(question: ZoneQuestionBlockJson) {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({
-    // Alternative group vs single question handling
     id: isAlternativeGroup ? undefined : question.id,
     alternatives: isAlternativeGroup
       ? question.alternatives!.map(stripQuestionAlternative)
       : undefined,
-    numberChoose: isAlternativeGroup
-      ? propertyValueWithDefault(undefined, question.numberChoose, 1)
-      : undefined,
-    // Common fields for all questions
-    comment: propertyValueWithDefault(undefined, question.comment, null),
-    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, null),
-    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, null),
+    numberChoose: question.numberChoose,
+    comment: question.comment,
+
+    // These defaults will be inherited by question alternatives, unless they override them.
+    // These should mirror the defaults from assessment syncing.
+    allowRealTimeGrading: propertyValueWithDefault(undefined, question.allowRealTimeGrading, true),
+    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
+    forceMaxPoints: propertyValueWithDefault(undefined, question.forceMaxPoints, false),
+
     canSubmit: propertyValueWithDefault(undefined, question.canSubmit, isEmptyArray),
     canView: propertyValueWithDefault(undefined, question.canView, isEmptyArray),
-    points: propertyValueWithDefault(undefined, question.points, 0),
-    autoPoints: propertyValueWithDefault(undefined, question.autoPoints, 0),
-    maxPoints: propertyValueWithDefault(undefined, question.maxPoints, null),
-    maxAutoPoints: propertyValueWithDefault(undefined, question.maxAutoPoints, 0),
-    manualPoints: propertyValueWithDefault(undefined, question.manualPoints, 0),
-    triesPerVariant: propertyValueWithDefault(undefined, question.triesPerVariant, 1),
-    advanceScorePerc: propertyValueWithDefault(undefined, question.advanceScorePerc, null),
-    gradeRateMinutes: propertyValueWithDefault(undefined, question.gradeRateMinutes, null),
+    points: question.points,
+    autoPoints: question.autoPoints,
+    maxPoints: question.maxPoints,
+    maxAutoPoints: question.maxAutoPoints,
+    manualPoints: question.manualPoints,
+    advanceScorePerc: question.advanceScorePerc,
+    gradeRateMinutes: question.gradeRateMinutes,
   });
 }
 
-/**
- * Strips default values from zones before saving to JSON.
- * Only outputs fields defined in the schema (unknown fields are NOT preserved).
- */
+/** Strips default values from zones before saving to JSON */
 export function stripZoneDefaults(zones: ZoneAssessmentJson[]): ZoneAssessmentJson[] {
   return zones.map((zone) => {
     return omitUndefined({
-      title: propertyValueWithDefault(undefined, zone.title, null),
-      maxPoints: propertyValueWithDefault(undefined, zone.maxPoints, null),
-      numberChoose: propertyValueWithDefault(undefined, zone.numberChoose, null),
-      bestQuestions: propertyValueWithDefault(undefined, zone.bestQuestions, null),
-      advanceScorePerc: propertyValueWithDefault(undefined, zone.advanceScorePerc, null),
-      gradeRateMinutes: propertyValueWithDefault(undefined, zone.gradeRateMinutes, null),
-      comment: propertyValueWithDefault(undefined, zone.comment, null),
-      allowRealTimeGrading: propertyValueWithDefault(undefined, zone.allowRealTimeGrading, null),
+      title: zone.title,
+      maxPoints: zone.maxPoints,
+      numberChoose: zone.numberChoose,
+      bestQuestions: zone.bestQuestions,
+      advanceScorePerc: zone.advanceScorePerc,
+      gradeRateMinutes: zone.gradeRateMinutes,
+      allowRealTimeGrading: zone.allowRealTimeGrading,
+      comment: zone.comment,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
       questions: zone.questions.map(stripQuestionBlock),
-    }) as ZoneAssessmentJson;
+    });
   });
 }
