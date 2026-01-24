@@ -6,10 +6,10 @@ import {
   type LanguageModelUsage,
   generateText,
 } from 'ai';
-import memoize from 'p-memoize';
+import { Redis } from 'ioredis';
 import * as parse5 from 'parse5';
 
-import { Cache } from '@prairielearn/cache';
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -17,6 +17,7 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
@@ -37,6 +38,7 @@ import {
   type User,
 } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
+import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
@@ -250,18 +252,30 @@ function extractFromResponse(
   return out;
 }
 
-/**
- * Returns the cache used for AI question generation rate limiting.
- */
-const getAiQuestionGenerationCache = memoize(async () => {
-  // This function is memoized to ensure that only one Cache instance is created.
-  const aiQuestionGenerationCache = new Cache();
-  await aiQuestionGenerationCache.init({
-    type: config.nonVolatileCacheType,
-    keyPrefix: config.cacheKeyPrefix,
-    redisUrl: config.nonVolatileRedisUrl,
-  });
-  return aiQuestionGenerationCache;
+const rateLimiter = new RedisRateLimiter({
+  redis: () => {
+    if (!config.nonVolatileRedisUrl) {
+      // Redis is a hard requirement for AI question generation. We don't attempt
+      // to operate without it.
+      throw new Error('nonVolatileRedisUrl must be set in config');
+    }
+
+    const redis = new Redis(config.nonVolatileRedisUrl);
+    redis.on('error', (err) => {
+      logger.error('AI question generation Redis error', err);
+
+      // This error could happen during a specific request, but we shouldn't
+      // associate it with that request - we just happened to try to set up
+      // Redis during a given request. We'll use a fresh scope to capture this.
+      Sentry.withScope((scope) => {
+        scope.clear();
+        Sentry.captureException(err);
+      });
+    });
+    return redis;
+  },
+  keyPrefix: () => config.cacheKeyPrefix + 'ai-question-generation-usage:',
+  intervalSeconds: 3600,
 });
 
 /**
@@ -288,47 +302,35 @@ export function approximatePromptCost({
   return approxInputTokenCost + approxOutputTokenCost;
 }
 
-const AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS = 3600 * 1000; // 1 hour
-
 /**
- * Retrieve the Redis key for a user's current AI question generation interval usage
+ * Retrieve the Redis key for a user's AI question generation interval usage.
  */
-function getIntervalUsageKey(authnUser: User) {
-  const intervalStart = Date.now() - (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
-  return `ai-question-generation-usage:user:${authnUser.id}:interval:${intervalStart}`;
+function getIntervalUsageKey(user: User) {
+  return `user:${user.id}`;
 }
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ authnUser }: { authnUser: User }) {
-  const cache = await getAiQuestionGenerationCache();
-  return (await cache.get<number>(getIntervalUsageKey(authnUser))) ?? 0;
+export async function getIntervalUsage(user: User) {
+  return rateLimiter.getIntervalUsage(getIntervalUsageKey(user));
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  authnUser,
+  user,
   usage,
 }: {
-  authnUser: User;
+  user: User;
   usage: LanguageModelUsage | undefined;
 }) {
-  const cache = await getAiQuestionGenerationCache();
-  const key = getIntervalUsageKey(authnUser);
-  const responseCost = calculateResponseCost({ model: QUESTION_GENERATION_OPENAI_MODEL, usage });
-
-  if (!(await cache.get(key))) {
-    const timeRemainingInInterval =
-      AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS -
-      (Date.now() % AI_QUESTION_GENERATION_RATE_LIMIT_INTERVAL_MS);
-
-    cache.set(key, responseCost, timeRemainingInInterval);
-  } else {
-    cache.incrementByFloat(key, responseCost);
-  }
+  const completionCost = calculateResponseCost({
+    model: QUESTION_GENERATION_OPENAI_MODEL,
+    usage,
+  });
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(user), completionCost);
 }
 
 /**
