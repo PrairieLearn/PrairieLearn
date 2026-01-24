@@ -136,7 +136,7 @@ function AssessmentQuestionManualGradingInner({
         </nav>
         {aiGradingEnabled && (
           <div className="d-flex flex-wrap gap-2 justify-content-end">
-            {aiGradingMode && (
+            {aiGradingMode && hasCourseInstancePermissionEdit && (
               <Dropdown>
                 <Dropdown.Toggle
                   variant="light"
