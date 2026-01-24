@@ -178,9 +178,7 @@ export async function aiGrade({
 
   serverJob.executeInBackground(async (job) => {
     let rateLimitExceeded =
-      (await getIntervalUsage({
-        courseInstance: course_instance,
-      })) > config.aiGradingRateLimitDollars;
+      (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
 
     // If the rate limit has already been exceeded, log it and exit early.
     if (rateLimitExceeded) {
@@ -232,9 +230,7 @@ export async function aiGrade({
         return false;
       }
 
-      const intervalCost = await getIntervalUsage({
-        courseInstance: course_instance,
-      });
+      const intervalCost = await getIntervalUsage(course_instance);
 
       if (intervalCost > config.aiGradingRateLimitDollars) {
         logger.error(
