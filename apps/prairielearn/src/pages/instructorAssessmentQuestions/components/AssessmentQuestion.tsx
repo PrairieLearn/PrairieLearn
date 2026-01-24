@@ -130,6 +130,7 @@ export function AssessmentQuestion({
         <button
           className="btn btn-sm btn-outline-secondary border-0"
           type="button"
+          title="Edit question"
           onClick={() => {
             handleEditQuestion({
               question,
@@ -148,6 +149,7 @@ export function AssessmentQuestion({
         <button
           className="btn btn-sm btn-outline-secondary border-0"
           type="button"
+          title="Delete question"
           onClick={() =>
             handleDeleteQuestion(alternativeGroup.trackingId, questionId, alternative?.trackingId)
           }
