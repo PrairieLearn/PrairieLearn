@@ -133,6 +133,11 @@ router.get(
 router.get(
   '/question.json',
   asyncHandler(async (req, res) => {
+    // TODO: Is this needed?
+    if (!res.locals.authz_data.has_course_permission_preview) {
+      throw new HttpStatusError(403, 'Access denied');
+    }
+
     const assessmentQuestion = await sqldb.queryOptionalRow(
       sql.select_assessment_question,
       {
