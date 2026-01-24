@@ -96,60 +96,9 @@ export function AssessmentQuestion({
     assessmentType,
   } = assessmentState;
 
-  // This should never happen
   if (questionId == null) throw new Error('Either ID or question is required');
 
   const questionData = questionMetadata[questionId];
-
-  // If metadata is missing, show a warning row
-  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-  if (questionData == null) {
-    const tableColumnCount = 9 + (editMode ? 3 : 0) + (showAdvanceScorePercCol ? 1 : 0);
-    return (
-      <tr ref={sortableRef} style={sortableStyle} className="table-warning">
-        {editMode && (
-          <>
-            <td className="align-content-center">
-              {sortableListeners ? (
-                <span
-                  {...sortableListeners}
-                  {...sortableAttributes}
-                  style={{ cursor: 'grab', touchAction: 'none' }}
-                  aria-label="Drag to reorder"
-                >
-                  <i className="fa fa-grip-vertical text-muted" aria-hidden="true" />
-                </span>
-              ) : null}
-            </td>
-            <td />
-            <td className="align-content-center">
-              <button
-                className="btn btn-sm btn-outline-secondary border-0"
-                type="button"
-                title="Delete question"
-                onClick={() =>
-                  handleDeleteQuestion(
-                    alternativeGroup.trackingId,
-                    questionId,
-                    alternative?.trackingId,
-                  )
-                }
-              >
-                <i className="fa fa-trash text-danger" aria-hidden="true" />
-              </button>
-            </td>
-          </>
-        )}
-        <td colSpan={tableColumnCount - (editMode ? 3 : 0)}>
-          <i className="fa fa-exclamation-triangle text-warning me-2" aria-hidden="true" />
-          <strong>Inaccessible question:</strong> <code>{questionId}</code>
-          <span className="text-muted ms-2">
-            (This question may not be shared with this course yet)
-          </span>
-        </td>
-      </tr>
-    );
-  }
 
   let maxAutoPoints: number | number[] | null = null;
   if (assessmentType === 'Exam') {

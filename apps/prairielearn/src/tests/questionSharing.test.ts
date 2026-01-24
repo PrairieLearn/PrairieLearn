@@ -237,13 +237,9 @@ describe('Question Sharing', function () {
     test.sequential(
       'Fail to access shared question, because permission has not yet been granted',
       async () => {
-        // Since permissions aren't yet granted, the shared question shows up with a warning
+        // Since permissions aren't yet granted, the shared question doesn't show up on the assessment page
         const res = await accessSharedQuestionAssessment(consumingCourseInstanceId);
-        const pageText = await res.text();
-        // The question ID should be visible in the warning message
-        assert(pageText.includes(SHARING_QUESTION_QID));
-        // But it should be marked as inaccessible
-        assert(pageText.includes('Inaccessible question'));
+        assert(!(await res.text()).includes(SHARING_QUESTION_QID));
 
         // Question can be accessed through the owning course
         const questionId = await sqldb.queryRow(
