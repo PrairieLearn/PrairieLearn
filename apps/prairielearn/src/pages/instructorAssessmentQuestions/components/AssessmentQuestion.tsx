@@ -32,7 +32,7 @@ function MaxPointsText({
   autoPoints: number | number[] | null;
   assessmentType: EnumAssessmentType;
 }) {
-  if (autoPoints || !maxManualPoints) {
+  if (autoPoints != null || maxManualPoints != null) {
     if (assessmentType === 'Exam') {
       const pointsArray = Array.isArray(autoPoints) ? autoPoints : [autoPoints ?? maxManualPoints];
       return pointsArray.map((p) => (p ?? 0) - (maxManualPoints ?? 0)).join(', ');
