@@ -3,9 +3,9 @@ import clsx from 'clsx';
 import { useMemo, useRef, useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import type { CourseQuestionForPicker } from '../types.js';
+import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
-import { FilterDropdown, type FilterItem } from './FilterDropdown.js';
+import type { CourseQuestionForPicker } from '../types.js';
 
 export interface QuestionPickerModalProps {
   show: boolean;
@@ -14,6 +14,8 @@ export interface QuestionPickerModalProps {
   onQuestionSelected: (qid: string) => void;
   courseQuestions: CourseQuestionForPicker[];
   questionsInAssessment: Set<string>;
+  /** The QID of the currently selected question (when editing/changing a question) */
+  currentQid?: string | null;
 }
 
 /**
@@ -27,6 +29,7 @@ export function QuestionPickerModal({
   onQuestionSelected,
   courseQuestions,
   questionsInAssessment,
+  currentQid,
 }: QuestionPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
@@ -91,12 +94,12 @@ export function QuestionPickerModal({
 
   const handleSelect = (question: CourseQuestionForPicker) => {
     const qid = question.qid;
-    if (questionsInAssessment.has(qid)) {
+    // Allow selecting the current question (when changing selection) but not other already-added questions
+    if (questionsInAssessment.has(qid) && qid !== currentQid) {
       return; // Don't allow selecting already-added questions
     }
     onQuestionSelected(qid);
     resetFilters();
-    onHide();
   };
 
   const resetFilters = () => {
@@ -175,7 +178,8 @@ export function QuestionPickerModal({
               {virtualRows.map((virtualRow) => {
                 const question = sortedQuestions[virtualRow.index];
                 const qid = question.qid;
-                const isAlreadyAdded = questionsInAssessment.has(qid);
+                const isCurrentSelection = qid === currentQid;
+                const isAlreadyAdded = questionsInAssessment.has(qid) && !isCurrentSelection;
 
                 return (
                   <div
@@ -207,6 +211,9 @@ export function QuestionPickerModal({
                     <div className="flex-grow-1 min-width-0">
                       <div className="d-flex align-items-center gap-2">
                         <code className="text-nowrap">{qid}</code>
+                        {isCurrentSelection && (
+                          <span className="badge bg-primary">Current selection</span>
+                        )}
                         {isAlreadyAdded && (
                           <span className="badge bg-secondary">Already added</span>
                         )}

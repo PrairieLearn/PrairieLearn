@@ -60,6 +60,8 @@ export function EditQuestionModal({
   onExited,
   handleUpdateQuestion,
   assessmentType,
+  onPickQuestion,
+  onAddAndPickAnother,
 }: {
   show: boolean;
   data: EditQuestionModalData | null;
@@ -70,6 +72,8 @@ export function EditQuestionModal({
     newQuestionDataRef?: StaffAssessmentQuestionRow,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
+  onPickQuestion?: () => void;
+  onAddAndPickAnother?: () => void;
 }) {
   const type = data?.type ?? null;
   const question = data?.question ?? null;
@@ -178,9 +182,9 @@ export function EditQuestionModal({
       {question && (
         <form
           onSubmit={handleSubmit(async (formData) => {
-            // Fetch question data if QID changed
+            // Fetch question data if creating a new question or if QID changed
             let questionData: StaffAssessmentQuestionRow | undefined;
-            if (formData.id !== question.id) {
+            if (type === 'create' || formData.id !== question.id) {
               const params = new URLSearchParams({ qid: formData.id! });
               const res = await fetch(`${window.location.pathname}/question.json?${params}`);
               if (!res.ok) {
@@ -244,30 +248,41 @@ export function EditQuestionModal({
           <Modal.Body>
             <div className="mb-3">
               <label htmlFor="qidInput">QID</label>
-              <input
-                type="text"
-                className={clsx('form-control', errors.id && 'is-invalid')}
-                id="qidInput"
-                disabled={type !== 'create'}
-                aria-invalid={!!errors.id}
-                aria-errormessage={errors.id ? 'qidError' : undefined}
-                aria-describedby="qidHelp"
-                {...register('id', {
-                  required: 'QID is required',
-                  validate: (qid) => {
-                    if (!qid) return 'QID is required';
-                    if (qid !== question.id && existingQids.includes(qid)) {
-                      return 'QID already exists in the assessment';
-                    }
-                    return true;
-                  },
-                })}
-              />
-              {errors.id && (
-                <div id="qidError" className="invalid-feedback">
-                  {errors.id.message}
-                </div>
-              )}
+              <div className="input-group">
+                <input
+                  type="text"
+                  className={clsx('form-control', errors.id && 'is-invalid')}
+                  id="qidInput"
+                  aria-invalid={!!errors.id}
+                  aria-errormessage={errors.id ? 'qidError' : undefined}
+                  aria-describedby="qidHelp"
+                  readOnly
+                  {...register('id', {
+                    required: 'QID is required',
+                    validate: (qid) => {
+                      if (!qid) return 'QID is required';
+                      if (qid !== question.id && existingQids.includes(qid)) {
+                        return 'QID already exists in the assessment';
+                      }
+                      return true;
+                    },
+                  })}
+                />
+                {onPickQuestion && (
+                  <button
+                    type="button"
+                    className="btn btn-outline-secondary"
+                    onClick={onPickQuestion}
+                  >
+                    Pick
+                  </button>
+                )}
+                {errors.id && (
+                  <div id="qidError" className="invalid-feedback">
+                    {errors.id.message}
+                  </div>
+                )}
+              </div>
               <small id="qidHelp" className="form-text text-muted">
                 The unique identifier for the question.
               </small>
@@ -544,6 +559,78 @@ export function EditQuestionModal({
             >
               Close
             </button>
+            {type === 'create' && onAddAndPickAnother && (
+              <button
+                type="button"
+                className="btn btn-outline-primary"
+                disabled={isSubmitting}
+                onClick={handleSubmit(async (formData) => {
+                  // Always fetch question data for new questions
+                  const params = new URLSearchParams({ qid: formData.id! });
+                  const res = await fetch(`${window.location.pathname}/question.json?${params}`);
+                  if (!res.ok) {
+                    const data = await res.json();
+                    setError('id', { message: data.error ?? 'Failed to fetch question data' });
+                    return;
+                  }
+                  const data = await res.json();
+                  if (data === null) {
+                    setError('id', { message: 'Question not found' });
+                    return;
+                  }
+                  const questionData: StaffAssessmentQuestionRow = data;
+
+                  // Filter out inherited values that were not modified
+                  const filteredData = { ...formData };
+
+                  // Check if auto/points field was inherited and unchanged
+                  if (
+                    originalInheritedValues[originalPointsProperty] !== undefined &&
+                    valuesAreEqual(
+                      filteredData[originalPointsProperty],
+                      originalInheritedValues[originalPointsProperty],
+                    )
+                  ) {
+                    delete filteredData[originalPointsProperty];
+                  }
+
+                  // Check if max points field was inherited and unchanged
+                  if (
+                    originalInheritedValues[originalMaxProperty] !== undefined &&
+                    valuesAreEqual(
+                      filteredData[originalMaxProperty],
+                      originalInheritedValues[originalMaxProperty],
+                    )
+                  ) {
+                    delete filteredData[originalMaxProperty];
+                  }
+
+                  // Check if manual points was inherited and unchanged
+                  if (
+                    originalInheritedValues.manualPoints !== undefined &&
+                    valuesAreEqual(filteredData.manualPoints, originalInheritedValues.manualPoints)
+                  ) {
+                    delete filteredData.manualPoints;
+                  }
+
+                  // Preserve the trackingId from the original question
+                  const dataWithTrackingId = {
+                    ...filteredData,
+                    trackingId: question.trackingId,
+                  };
+
+                  handleUpdateQuestion(
+                    dataWithTrackingId as ZoneQuestionBlockForm | QuestionAlternativeForm,
+                    questionData,
+                  );
+
+                  // After adding, open picker for next question
+                  onAddAndPickAnother();
+                })}
+              >
+                {isSubmitting ? 'Adding...' : 'Add & pick another'}
+              </button>
+            )}
             <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
               {isSubmitting
                 ? type === 'create'

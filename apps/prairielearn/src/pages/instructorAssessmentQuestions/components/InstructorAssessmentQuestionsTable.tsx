@@ -36,11 +36,45 @@ import {
 } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
-import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
+import { EditQuestionModal } from './EditQuestionModal.js';
 import { EditZoneModal, type EditZoneModalData } from './EditZoneModal.js';
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { QuestionPickerModal } from './QuestionPickerModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
+
+/**
+ * Consolidated state for the question picker and edit modal flow.
+ * This replaces the previously scattered state pieces (selectedQuestionIds,
+ * editQuestionModal, questionPickerModal, pickerContext).
+ */
+interface EditingStateCreate {
+  status: 'editing';
+  mode: 'create';
+  zoneTrackingId: string;
+  question: ZoneQuestionBlockForm;
+  existingQids: string[];
+}
+
+interface EditingStateEdit {
+  status: 'editing';
+  mode: 'edit';
+  questionTrackingId: string;
+  alternativeTrackingId?: string;
+  question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+  zoneQuestionBlock?: ZoneQuestionBlockForm;
+}
+
+type EditingState = EditingStateCreate | EditingStateEdit;
+
+type QuestionEditState =
+  | { status: 'idle' }
+  | {
+      status: 'picking';
+      zoneTrackingId: string;
+      /** If returning to edit modal after picking, preserve that context */
+      returnToEdit?: EditingState;
+    }
+  | EditingState;
 
 function EditModeButtons({
   csrfToken,
@@ -177,17 +211,70 @@ export function InstructorAssessmentQuestionsTable({
   const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
   const [showResetModal, setShowResetModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
-  // Discriminated union: only store what's needed for each operation
-  // - edit: questionTrackingId (and optionally alternativeTrackingId) - zone is found via findQuestionByTrackingId
-  // - create: zoneTrackingId - we need to know which zone to add the question to
-  const [selectedQuestionIds, setSelectedQuestionIds] = useState<
-    | { type: 'edit'; questionTrackingId: string; alternativeTrackingId?: string }
-    | { type: 'create'; zoneTrackingId: string }
-    | null
-  >(null);
-  const editQuestionModal = useModalState<EditQuestionModalData>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
-  const questionPickerModal = useModalState<{ zoneTrackingId: string }>(null);
+
+  // Consolidated state for question picker and edit modal flow
+  const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
+    status: 'idle',
+  });
+
+  // Derived modal visibility
+  const showPicker = questionEditState.status === 'picking';
+  const showEditModal = questionEditState.status === 'editing';
+
+  // Helper functions for state transitions
+  const openPickerForNew = (zoneTrackingId: string) => {
+    setQuestionEditState({ status: 'picking', zoneTrackingId });
+  };
+
+  const openPickerToChangeQid = () => {
+    if (questionEditState.status !== 'editing') return;
+    const zoneTrackingId =
+      questionEditState.mode === 'create'
+        ? questionEditState.zoneTrackingId
+        : (zones.find((z) =>
+            z.questions.some((q) => q.trackingId === questionEditState.questionTrackingId),
+          )?.trackingId ?? '');
+    setQuestionEditState({
+      status: 'picking',
+      zoneTrackingId,
+      returnToEdit: questionEditState,
+    });
+  };
+
+  const openEditForExisting = ({
+    question,
+    zoneQuestionBlock,
+    questionTrackingId,
+    alternativeTrackingId,
+  }: {
+    question: ZoneQuestionBlockForm | QuestionAlternativeForm;
+    zoneQuestionBlock?: ZoneQuestionBlockForm;
+    questionTrackingId: string;
+    alternativeTrackingId?: string;
+  }) => {
+    setQuestionEditState({
+      status: 'editing',
+      mode: 'edit',
+      questionTrackingId,
+      alternativeTrackingId,
+      question,
+      zoneQuestionBlock,
+    });
+  };
+
+  const closeQuestionEditState = () => {
+    setQuestionEditState({ status: 'idle' });
+  };
+
+  const handlePickerCancel = () => {
+    if (questionEditState.status === 'picking' && questionEditState.returnToEdit) {
+      // Return to the edit modal without changing the QID
+      setQuestionEditState(questionEditState.returnToEdit);
+    } else {
+      closeQuestionEditState();
+    }
+  };
 
   // Questions already in the assessment are those with metadata
   const questionsInAssessment = useMemo(
@@ -231,47 +318,46 @@ export function InstructorAssessmentQuestionsTable({
 
   const assessmentType = assessment.type!;
 
-  const handleEditQuestion = ({
-    question,
-    zoneQuestionBlock,
-    questionTrackingId,
-    alternativeTrackingId,
-  }: {
-    question: ZoneQuestionBlockForm | QuestionAlternativeForm;
-    zoneQuestionBlock?: ZoneQuestionBlockForm;
-    questionTrackingId: string;
-    alternativeTrackingId?: string;
-  }) => {
-    editQuestionModal.showWithData({
-      type: 'edit',
-      question,
-      zoneQuestionBlock,
-    });
-    setSelectedQuestionIds({
-      type: 'edit',
-      questionTrackingId,
-      alternativeTrackingId,
-    });
-  };
-
   const handleAddQuestion = (zoneTrackingId: string) => {
-    questionPickerModal.showWithData({ zoneTrackingId });
+    openPickerForNew(zoneTrackingId);
   };
 
   const handleQuestionPicked = (qid: string) => {
-    if (!questionPickerModal.data) return;
-    const zoneTrackingId = questionPickerModal.data.zoneTrackingId;
+    if (questionEditState.status !== 'picking') return;
 
-    // Open the edit modal with the selected question's QID pre-filled
-    editQuestionModal.showWithData({
-      type: 'create',
-      question: { id: qid, trackingId: '' } as ZoneQuestionBlockForm,
-      existingQids: Object.keys(questionMetadata),
-    });
-    setSelectedQuestionIds({
-      type: 'create',
-      zoneTrackingId,
-    });
+    if (questionEditState.returnToEdit) {
+      // Return to edit modal with new QID while preserving other form values
+      const returnState = questionEditState.returnToEdit;
+      // Type discrimination needed for TypeScript to narrow the union type
+      if (returnState.mode === 'create') {
+        setQuestionEditState({
+          ...returnState,
+          question: { ...returnState.question, id: qid },
+        });
+      } else {
+        setQuestionEditState({
+          ...returnState,
+          question: { ...returnState.question, id: qid },
+        });
+      }
+    } else {
+      // Open edit modal for new question
+      setQuestionEditState({
+        status: 'editing',
+        mode: 'create',
+        zoneTrackingId: questionEditState.zoneTrackingId,
+        question: { id: qid, trackingId: '' } as ZoneQuestionBlockForm,
+        existingQids: Object.keys(questionMetadata),
+      });
+    }
+  };
+
+  // Handler for "Add & pick another" button - adds question and reopens picker for same zone
+  const handleAddAndPickAnother = () => {
+    if (questionEditState.status !== 'editing' || questionEditState.mode !== 'create') return;
+    const zoneTrackingId = questionEditState.zoneTrackingId;
+    // Will transition to picker after handleUpdateQuestion processes the save
+    setQuestionEditState({ status: 'picking', zoneTrackingId });
   };
 
   const handleUpdateQuestion = (
@@ -279,12 +365,12 @@ export function InstructorAssessmentQuestionsTable({
     newQuestionData?: StaffAssessmentQuestionRow,
   ) => {
     if (!updatedQuestion.id) return;
-    if (!selectedQuestionIds) return;
+    if (questionEditState.status !== 'editing') return;
 
     // Normalize point fields
     const normalizedQuestion = normalizeQuestionPoints(updatedQuestion);
 
-    if (selectedQuestionIds.type === 'create') {
+    if (questionEditState.mode === 'create') {
       // Prepare question data for the map if provided
       let preparedQuestionData: StaffAssessmentQuestionRow | undefined;
       if (newQuestionData) {
@@ -306,7 +392,7 @@ export function InstructorAssessmentQuestionsTable({
 
       dispatch({
         type: 'ADD_QUESTION',
-        zoneTrackingId: selectedQuestionIds.zoneTrackingId,
+        zoneTrackingId: questionEditState.zoneTrackingId,
         question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
         questionData: preparedQuestionData,
       });
@@ -343,13 +429,13 @@ export function InstructorAssessmentQuestionsTable({
 
       dispatch({
         type: 'UPDATE_QUESTION',
-        questionTrackingId: selectedQuestionIds.questionTrackingId,
+        questionTrackingId: questionEditState.questionTrackingId,
         question: questionWithNormalizedPoints,
-        alternativeTrackingId: selectedQuestionIds.alternativeTrackingId,
+        alternativeTrackingId: questionEditState.alternativeTrackingId,
       });
     }
 
-    editQuestionModal.hide();
+    closeQuestionEditState();
   };
 
   const handleDeleteQuestion = (
@@ -617,7 +703,7 @@ export function InstructorAssessmentQuestionsTable({
                           assessmentType,
                         }}
                         handleAddQuestion={handleAddQuestion}
-                        handleEditQuestion={handleEditQuestion}
+                        handleEditQuestion={openEditForExisting}
                         handleDeleteQuestion={handleDeleteQuestion}
                         handleResetButtonClick={handleResetButtonClick}
                         handleEditZone={handleEditZone}
@@ -654,17 +740,43 @@ export function InstructorAssessmentQuestionsTable({
       )}
       {editMode && (
         <EditQuestionModal
-          {...editQuestionModal}
+          show={showEditModal}
+          data={
+            questionEditState.status === 'editing'
+              ? questionEditState.mode === 'create'
+                ? {
+                    type: 'create' as const,
+                    question: questionEditState.question,
+                    existingQids: questionEditState.existingQids,
+                  }
+                : {
+                    type: 'edit' as const,
+                    question: questionEditState.question,
+                    zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+                  }
+              : null
+          }
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
+          onHide={closeQuestionEditState}
+          onExited={() => {}}
+          onPickQuestion={openPickerToChangeQid}
+          onAddAndPickAnother={handleAddAndPickAnother}
         />
       )}
       {editMode && <EditZoneModal {...editZoneModal} handleSaveZone={handleSaveZone} />}
       {editMode && (
         <QuestionPickerModal
-          {...questionPickerModal}
+          show={showPicker}
           courseQuestions={courseQuestions}
           questionsInAssessment={questionsInAssessment}
+          currentQid={
+            questionEditState.status === 'picking'
+              ? (questionEditState.returnToEdit?.question.id ?? null)
+              : null
+          }
+          onHide={handlePickerCancel}
+          onExited={() => {}}
           onQuestionSelected={handleQuestionPicked}
         />
       )}
