@@ -10,6 +10,8 @@ import {
   Separator,
 } from 'react-aria-components';
 
+// This interface isn't very generic.
+// TODO: When this component is more widely used, improve this.
 export interface FilterItem {
   id: string;
   name: string;
@@ -24,8 +26,8 @@ export interface FilterDropdownProps {
   renderItem?: (item: FilterItem, isSelected: boolean) => ReactNode;
   disabled?: boolean;
   'aria-label'?: string;
-  /** Maximum number of items visible before scrolling (default: 20) */
-  maxVisibleItems?: number;
+  /** Maximum height of the dropdown in pixels (default: 612) */
+  maxHeight?: number;
 }
 
 function defaultRenderItem(item: FilterItem, _isSelected: boolean) {
@@ -40,8 +42,6 @@ function defaultRenderItem(item: FilterItem, _isSelected: boolean) {
  * A multi-select filter dropdown component using react-aria-components.
  * Displays a button trigger with selection count badge and a dropdown with checkboxes.
  */
-const ITEM_HEIGHT = 38;
-
 export function FilterDropdown({
   label,
   items,
@@ -50,7 +50,7 @@ export function FilterDropdown({
   renderItem = defaultRenderItem,
   disabled = false,
   'aria-label': ariaLabel,
-  maxVisibleItems = 20,
+  maxHeight,
 }: FilterDropdownProps) {
   const selectedCount = selectedIds.size;
 
@@ -88,18 +88,13 @@ export function FilterDropdown({
         )}
       </Button>
       <Popover
-        className="dropdown-menu show py-0"
+        className="dropdown-menu show py-0 d-flex flex-column"
         offset={4}
         placement="bottom start"
+        maxHeight={maxHeight}
         style={{ width: '250px' }}
       >
-        <div
-          className="pt-2"
-          style={{
-            maxHeight: `${Math.min(sortedItems.length, maxVisibleItems) * ITEM_HEIGHT + 8}px`,
-            overflowY: sortedItems.length > maxVisibleItems ? 'auto' : undefined,
-          }}
-        >
+        <div className="pt-2 flex-grow-1 overflow-auto" style={{ minHeight: 0 }}>
           <ListBox
             aria-label={ariaLabel ?? `Filter by ${label}`}
             className="list-unstyled m-0"
@@ -139,8 +134,8 @@ export function FilterDropdown({
         </div>
         {selectedCount > 0 && (
           <>
-            <Separator className="dropdown-divider" />
-            <div className="px-3 py-2">
+            <Separator className="dropdown-divider pb-0" />
+            <div className="px-3 py-1">
               <button
                 type="button"
                 className="btn btn-sm btn-link p-0 text-decoration-none"

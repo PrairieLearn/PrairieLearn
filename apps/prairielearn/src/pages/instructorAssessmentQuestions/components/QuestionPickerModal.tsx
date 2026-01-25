@@ -139,12 +139,16 @@ export function QuestionPickerModal({
               label="Topic"
               items={topics}
               selectedIds={selectedTopics}
+              // 20 items, about 28px tall, plus space for clear
+              maxHeight={20 * 28 + 50}
               onChange={setSelectedTopics}
             />
             <FilterDropdown
               label="Tags"
               items={tags}
               selectedIds={selectedTags}
+              // 20 items, about 28px tall, plus space for clear
+              maxHeight={20 * 28 + 50}
               onChange={setSelectedTags}
             />
             {(selectedTopics.size > 0 || selectedTags.size > 0) && (
