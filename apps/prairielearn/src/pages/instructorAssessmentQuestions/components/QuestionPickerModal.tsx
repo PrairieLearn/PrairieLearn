@@ -34,6 +34,7 @@ export function QuestionPickerModal({
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedTopics, setSelectedTopics] = useState<Set<string>>(() => new Set());
   const [selectedTags, setSelectedTags] = useState<Set<string>>(() => new Set());
+  const [expandedTagsQids, setExpandedTagsQids] = useState<Set<string>>(() => new Set());
 
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -84,12 +85,13 @@ export function QuestionPickerModal({
     [filteredQuestions],
   );
 
-  // Virtual scrolling setup
+  // Virtual scrolling setup with dynamic measurement for variable height rows
   const rowVirtualizer = useVirtualizer({
     count: sortedQuestions.length,
     getScrollElement: () => parentRef.current,
     estimateSize: () => 56,
     overscan: 10,
+    getItemKey: (index) => sortedQuestions[index].qid,
   });
 
   const handleSelect = (question: CourseQuestionForPicker) => {
@@ -106,6 +108,7 @@ export function QuestionPickerModal({
     setSearchQuery('');
     setSelectedTopics(new Set());
     setSelectedTags(new Set());
+    setExpandedTagsQids(new Set());
   };
 
   const handleExited = () => {
@@ -184,10 +187,12 @@ export function QuestionPickerModal({
                 return (
                   <div
                     key={virtualRow.key}
+                    ref={rowVirtualizer.measureElement}
+                    data-index={virtualRow.index}
                     role="button"
                     tabIndex={isAlreadyAdded ? -1 : 0}
                     className={clsx(
-                      'd-flex align-items-center gap-2 px-3 py-2 border-bottom',
+                      'd-flex align-items-start gap-2 px-3 py-2 border-bottom',
                       isAlreadyAdded ? 'bg-light text-muted' : 'cursor-pointer question-picker-row',
                     )}
                     style={{
@@ -195,7 +200,6 @@ export function QuestionPickerModal({
                       top: 0,
                       left: 0,
                       width: '100%',
-                      height: `${virtualRow.size}px`,
                       transform: `translateY(${virtualRow.start}px)`,
                       cursor: isAlreadyAdded ? 'not-allowed' : 'pointer',
                     }}
@@ -227,16 +231,44 @@ export function QuestionPickerModal({
                       <span className={`badge color-${question.topic.color}`}>
                         {question.topic.name}
                       </span>
-                      {question.tags?.slice(0, 3).map((tag) => (
+                      {(expandedTagsQids.has(qid)
+                        ? question.tags
+                        : question.tags?.slice(0, 3)
+                      )?.map((tag) => (
                         <span key={tag.id} className={`badge color-${tag.color}`}>
                           {tag.name}
                         </span>
                       ))}
-                      {(question.tags?.length ?? 0) > 3 && (
-                        <span className="badge bg-secondary">
-                          +{(question.tags?.length ?? 0) - 3}
-                        </span>
-                      )}
+                      {(question.tags?.length ?? 0) > 3 &&
+                        (expandedTagsQids.has(qid) ? (
+                          <button
+                            type="button"
+                            className="badge bg-secondary border-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedTagsQids((prev) => {
+                                const next = new Set(prev);
+                                next.delete(qid);
+                                return next;
+                              });
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            Show less
+                          </button>
+                        ) : (
+                          <button
+                            type="button"
+                            className="badge bg-secondary border-0"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setExpandedTagsQids((prev) => new Set(prev).add(qid));
+                            }}
+                            onKeyDown={(e) => e.stopPropagation()}
+                          >
+                            +{(question.tags?.length ?? 0) - 3}
+                          </button>
+                        ))}
                     </div>
                   </div>
                 );
