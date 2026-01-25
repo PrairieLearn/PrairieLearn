@@ -134,7 +134,7 @@ export function FilterDropdown({
         </div>
         {selectedCount > 0 && (
           <>
-            <Separator className="dropdown-divider pb-0" />
+            <Separator className="dropdown-divider mb-0" />
             <div className="px-3 py-1">
               <button
                 type="button"
