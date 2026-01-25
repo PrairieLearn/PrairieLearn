@@ -65,10 +65,6 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
-      res.locals,
-    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -168,7 +164,6 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
