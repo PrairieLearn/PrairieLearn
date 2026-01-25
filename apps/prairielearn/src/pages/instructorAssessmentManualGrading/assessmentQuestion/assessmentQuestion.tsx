@@ -287,6 +287,10 @@ router.post(
         throw new error.HttpStatusError(403, 'Access denied (feature not available)');
       }
 
+      if (!AI_GRADING_MODEL_IDS.includes(req.body.value)) {
+        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
+      }
+
       await setAiGradingModel(res.locals.assessment_question.id, req.body.value);
       res.sendStatus(204);
     } else if (req.body.__action === 'batch_action') {
