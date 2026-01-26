@@ -98,7 +98,7 @@ export function RubricSettings({
   const [startingPoints, setStartingPoints] = useState<number>(
     rubricData?.rubric.starting_points ?? 0,
   );
-  const [minPoints, setMinPoints] = useState<number>(rubricData?.rubric.min_points ?? 0);
+  const [minPoints, setMinPoints] = useState<number | null>(rubricData?.rubric.min_points ?? 0);
   const [maxExtraPoints, setMaxExtraPoints] = useState<number>(
     rubricData?.rubric.max_extra_points ?? 0,
   );
@@ -153,7 +153,7 @@ export function RubricSettings({
         )} left to reach maximum.`,
       );
     }
-    if (totalNegative > minPoints) {
+    if (totalNegative > (minPoints ?? 0)) {
       warnings.push(`Minimum grade from rubric item penalties is ${totalNegative} points.`);
     }
     return warnings;
@@ -250,7 +250,7 @@ export function RubricSettings({
     }
     const rubricData: ExportedRubricData = {
       max_extra_points: maxExtraPoints,
-      min_points: minPoints,
+      min_points: minPoints ?? 0,
       replace_auto_points: replaceAutoPoints,
       starting_points: startingPoints,
       max_points: assessmentQuestion.max_points,
@@ -524,7 +524,7 @@ export function RubricSettings({
       <input type="hidden" name="modified_at" value={modifiedAt?.toISOString() ?? ''} />
       <input type="hidden" name="starting_points" value={startingPoints} />
       <input type="hidden" name="max_extra_points" value={maxExtraPoints} />
-      <input type="hidden" name="min_points" value={minPoints} />
+      <input type="hidden" name="min_points" value={minPoints ?? ''} />
       <div className="card-header collapsible-card-header d-flex align-items-center">
         <h2>Rubric settings</h2>
         <button
@@ -676,7 +676,7 @@ export function RubricSettings({
                     <input
                       className="form-control"
                       type="number"
-                      value={minPoints}
+                      value={minPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
                       onInput={(e: any) => setMinPoints(Number(e.target.value))}
                     />
