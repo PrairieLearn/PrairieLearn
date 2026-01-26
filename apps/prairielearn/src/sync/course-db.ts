@@ -432,11 +432,19 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // fail to parse, we'll take the hit and reparse with jju to generate
     // a better error report for users.
     const json = JSON.parse(contents);
-    if (!json.uuid) {
-      return infofile.makeError('UUID is missing');
-    }
-    if (!UUID_REGEX.test(json.uuid)) {
-      return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+
+    // The UUID is required in all files except infoCourse.json. Since this file
+    // used to require a UUID, we allow it to be parsed without a warning. In
+    // the future, once we're confident that most courses have removed the UUID
+    // from infoCourse.json, we can add a warning for unnecessary UUIDs in that
+    // file. Also, see https://github.com/PrairieLearn/PrairieLearn/issues/13709
+    if (filePath !== 'infoCourse.json') {
+      if (!json.uuid) {
+        return infofile.makeError('UUID is missing');
+      }
+      if (!UUID_REGEX.test(json.uuid)) {
+        return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+      }
     }
 
     if (!schema) {
@@ -478,27 +486,30 @@ export async function loadInfoFile<T extends { uuid: string }>({
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
-    // The document was still valid JSON, but we may still be able to
-    // extract a UUID from the raw files contents with a regex.
-    const match = (contents || '').match(FILE_UUID_REGEX);
-    if (!match) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-    if (match.length > 1) {
-      infofile.addError(result, 'More than one UUID found in file');
-      return result;
+    if (filePath !== 'infoCourse.json') {
+      // The document was still valid JSON, but we may still be able to
+      // extract a UUID from the raw files contents with a regex.
+      const match = (contents || '').match(FILE_UUID_REGEX);
+      if (!match) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+      if (match.length > 1) {
+        infofile.addError(result, 'More than one UUID found in file');
+        return result;
+      }
+
+      // Extract and store UUID. Checking for a falsy value isn't technically
+      // required, but it keeps TypeScript happy.
+      const uuid = match[0].match(UUID_REGEX);
+      if (!uuid) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+
+      result.uuid = uuid[0];
     }
 
-    // Extract and store UUID. Checking for a falsy value isn't technically
-    // required, but it keeps TypeScript happy.
-    const uuid = match[0].match(UUID_REGEX);
-    if (!uuid) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-
-    result.uuid = uuid[0];
     return result;
   }
 }
@@ -664,7 +675,6 @@ export async function loadCourseInfo({
   }
 
   const course = {
-    uuid: info.uuid.toLowerCase(),
     path: coursePath,
     name: info.name,
     title: info.title,
