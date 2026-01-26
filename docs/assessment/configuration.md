@@ -52,7 +52,7 @@ See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for 
 
 ??? note "Legacy group properties"
 
-    The following legacy properties are still supported but deprecated in favor of the `groups` schema. See [Migrating from legacy group properties to the groups schema](#migrating-from-legacy-group-properties-to-the-groups-schema) for migration instructions.
+    The following legacy properties are still supported but will be eventually deprecated in favor of the `groups` schema.
 
     | Property                   | Type    | Description                                                                                                                     |
     | -------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------- |
