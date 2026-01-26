@@ -185,12 +185,13 @@ export async function randomTeams({
         job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
-        const studentsWithoutTeam = await queryRows(
-          sql.select_enrolled_students_without_team,
-          { assessment_id: assessment.id },
-          UserSchema,
+        const studentsWithoutTeam = shuffle(
+          await queryRows(
+            sql.select_enrolled_students_without_team,
+            { assessment_id: assessment.id },
+            UserSchema,
+          ),
         );
-        shuffle(studentsWithoutTeam);
         const numStudents = studentsWithoutTeam.length;
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
