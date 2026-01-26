@@ -1,16 +1,19 @@
 {
   "name": "@prairielearn/session",
-  "version": "3.0.25",
+  "version": "4.0.0",
   "type": "module",
   "repository": {
     "type": "git",
     "url": "https://github.com/PrairieLearn/PrairieLearn.git",
     "directory": "packages/session"
   },
+  "engines": {
+    "node": ">=24.0.0"
+  },
   "main": "dist/index.js",
   "scripts": {
-    "build": "tsc",
-    "dev": "tsc --watch --preserveWatchOutput",
+    "build": "tsgo",
+    "dev": "tsgo --watch --preserveWatchOutput",
     "test": "vitest run --coverage"
   },
   "dependencies": {
@@ -26,19 +29,20 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/cookie": "^0.6.0",
     "@types/cookie-signature": "^1.1.2",
-    "@types/node": "^22.19.3",
+    "@types/node": "^24.10.9",
     "@types/node-fetch": "^2.6.13",
     "@types/on-headers": "^1.0.4",
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
-    "@vitest/coverage-v8": "^4.0.16",
+    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
+    "@vitest/coverage-v8": "^4.0.17",
     "express": "^4.22.1",
     "fetch-cookie": "^3.2.0",
     "node-fetch": "^3.3.2",
-    "set-cookie-parser": "^2.7.2",
+    "set-cookie-parser": "^3.0.1",
     "source-map-support": "^0.5.21",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
-    "vitest": "^4.0.16"
+    "vitest": "^4.0.17"
   }
 }

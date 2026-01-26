@@ -1321,13 +1321,6 @@
       "type": ["string", "null"],
       "default": null
     },
-    "pythonVenvSearchPaths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [".venv"]
-    },
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
@@ -1443,6 +1436,10 @@
           "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }

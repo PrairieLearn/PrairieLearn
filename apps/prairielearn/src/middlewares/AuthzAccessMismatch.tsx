@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { partition } from 'es-toolkit';
 
 import { removeCookieClient, setCookieClient } from '../lib/client/cookie.js';
 import type { PageContextWithAuthzData } from '../lib/client/page-context.js';
@@ -191,7 +191,7 @@ export function AuthzAccessMismatch({
     };
   });
 
-  const [oneOfPermissions, allOtherPermissions] = _.partition(permissions, (permission) =>
+  const [oneOfPermissions, allOtherPermissions] = partition(permissions, (permission) =>
     (oneOfPermissionKeys as string[]).includes(permission.key),
   );
 

@@ -49,6 +49,9 @@ export function HomeCardsInner({
       <EnrollmentCodeForm
         style="modal"
         show={showJoinModal}
+        leadingContent={
+          <p>To join a course, enter the enrollment code provided by your instructor.</p>
+        }
         showInstructorHelp={hasInstructorCourses}
         onHide={() => setShowJoinModal(false)}
       />

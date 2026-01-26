@@ -1,4 +1,4 @@
-import { Fragment } from 'preact/jsx-runtime';
+import { Fragment } from 'react';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import { Scorebar } from '../../../components/Scorebar.js';
@@ -35,7 +35,7 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
     <table className="table table-sm table-hover" aria-label="Student Assessment Performance">
       <thead>
         <tr>
-          <th style="width: 1%">
+          <th style={{ width: '1%' }}>
             <span className="visually-hidden">Label</span>
           </th>
           <th>
@@ -50,11 +50,11 @@ export function StudentGradebookTable({ rows, urlPrefix }: StudentGradebookTable
         {Array.from(rowsBySet.entries()).map(([setHeading, setAssessments]) => (
           <Fragment key={setHeading}>
             <tr>
-              <th colspan={5}>{setHeading}</th>
+              <th colSpan={5}>{setHeading}</th>
             </tr>
             {setAssessments.map((row) => (
               <tr key={row.assessment.id}>
-                <td className="align-middle" style="width: 1%">
+                <td className="align-middle" style={{ width: '1%' }}>
                   <AssessmentBadge
                     urlPrefix={urlPrefix}
                     assessment={{

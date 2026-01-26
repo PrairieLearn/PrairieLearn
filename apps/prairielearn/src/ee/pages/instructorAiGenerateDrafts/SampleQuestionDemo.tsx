@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'preact/hooks';
+import { useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
@@ -11,6 +11,8 @@ import InputGroupText from 'react-bootstrap/InputGroupText';
 
 import { run } from '@prairielearn/run';
 
+import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
+
 import {
   type ExamplePromptWithId,
   type VariantOption,
@@ -18,13 +20,7 @@ import {
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({
-  prompt,
-  onMathjaxTypeset,
-}: {
-  prompt: ExamplePromptWithId;
-  onMathjaxTypeset: (elements?: Element[]) => Promise<void>;
-}) {
+export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
   const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
@@ -35,7 +31,7 @@ export function SampleQuestionDemo({
 
   const [grade, setGrade] = useState<number | null>(null);
 
-  const cardRef = useRef<HTMLElement | null>(null);
+  const cardRef = useRef<HTMLDivElement | null>(null);
 
   const handleSelectOption = (option: string) => {
     if (prompt.answerType === 'radio') {
@@ -72,9 +68,9 @@ export function SampleQuestionDemo({
   // When a new variant is loaded, typeset the MathJax content.
   useLayoutEffect(() => {
     if (cardRef.current) {
-      void onMathjaxTypeset([cardRef.current]);
+      void mathjaxTypeset([cardRef.current]);
     }
-  }, [variant.question, onMathjaxTypeset]);
+  }, [variant.question]);
 
   const handleGrade = () => {
     if (variant.answerType === 'number' && prompt.answerType === 'number') {
@@ -139,15 +135,15 @@ export function SampleQuestionDemo({
   };
 
   // The correct answer to the problem, displayed to the user
-  const answerText = run(() => {
+  const answerText = run((): string => {
     if (variant.answerType === 'checkbox' || variant.answerType === 'radio') {
       return variant.correctAnswer.map((option) => variantOptionToString(option)).join(', ');
     }
     if (variant.answerType === 'number') {
       // Round the answer to 4 decimal places
-      return Math.round(variant.correctAnswer * 1e4) / 1e4;
+      return String(Math.round(variant.correctAnswer * 1e4) / 1e4);
     }
-    return variant.correctAnswer;
+    return String(variant.correctAnswer);
   });
 
   const placeholder = run(() => {
@@ -261,7 +257,12 @@ function NumericOrStringInput({
 }) {
   return (
     <InputGroup className="mt-2">
-      <InputGroupText key={answerLabel} as="label" for="sample-question-response" id="answer-label">
+      <InputGroupText
+        key={answerLabel}
+        as="label"
+        htmlFor="sample-question-response"
+        id="answer-label"
+      >
         {answerLabel}
       </InputGroupText>
       <FormControl

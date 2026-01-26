@@ -4,7 +4,7 @@ import { html } from '@prairielearn/html';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { ExamModeNetworkSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AdministratorNetworksRowSchema = z.object({
   network: ExamModeNetworkSchema.shape.network,
@@ -16,7 +16,13 @@ export const AdministratorNetworksRowSchema = z.object({
 
 export type AdministratorNetworksRow = z.infer<typeof AdministratorNetworksRowSchema>;
 
-export function AdministratorNetworks({ resLocals }: { resLocals: UntypedResLocals }) {
+export function AdministratorNetworks({
+  resLocals,
+  networks,
+}: {
+  resLocals: ResLocalsForPage<'plain'>;
+  networks: AdministratorNetworksRow[];
+}) {
   return PageLayout({
     resLocals,
     pageTitle: 'Exam-mode networks',
@@ -46,7 +52,7 @@ export function AdministratorNetworks({ resLocals }: { resLocals: UntypedResLoca
             </thead>
 
             <tbody>
-              ${resLocals.networks.map(
+              ${networks.map(
                 (network: AdministratorNetworksRow) => html`
                   <tr>
                     <td>${network.network}</td>
