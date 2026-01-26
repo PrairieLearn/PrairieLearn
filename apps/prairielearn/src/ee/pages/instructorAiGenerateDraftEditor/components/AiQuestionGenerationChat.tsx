@@ -13,6 +13,7 @@ import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
+
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
