@@ -23,10 +23,10 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
+  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  type TeamsJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -1110,9 +1110,9 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
- * Converts legacy group properties to the new teams format for unified handling.
+ * Converts legacy group properties to the new groups format for unified handling.
  */
-export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson {
+export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
   const canAssignRoles = assessment.groupRoles
     .filter((role) => role.canAssignRoles)
     .map((role) => role.name);
@@ -1127,10 +1127,10 @@ export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJso
       maxMembers: role.maximum,
     })),
     studentPermissions: {
-      canCreateTeam: assessment.studentGroupCreate,
-      canJoinTeam: assessment.studentGroupJoin,
-      canLeaveTeam: assessment.studentGroupLeave,
-      canNameTeam: assessment.studentGroupChooseName,
+      canCreateGroup: assessment.studentGroupCreate,
+      canJoinGroup: assessment.studentGroupJoin,
+      canLeaveGroup: assessment.studentGroupLeave,
+      canNameGroup: assessment.studentGroupChooseName,
     },
     rolePermissions: {
       canAssignRoles,
@@ -1162,8 +1162,8 @@ function validateAssessment({
     );
   }
 
-  // Check for conflict between legacy group properties and new teams schema
-  if (assessment.teams != null) {
+  // Check for conflict between legacy group properties and new groups schema
+  if (assessment.groups != null) {
     const usedLegacyProps: string[] = [];
 
     // We need to use `rawAssessment` here to check if the user specified any
@@ -1189,7 +1189,7 @@ function validateAssessment({
     if (usedLegacyProps.length > 0) {
       const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
       errors.push(
-        `Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+        `Cannot use both "groups" and legacy group properties (${stringifiedProps}) in the same assessment.`,
       );
     }
   }
@@ -1420,24 +1420,22 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to teams format for unified validation
-  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
-  // Use 'team' for new schema, 'group' for legacy properties (for error messages)
-  const teamType = assessment.teams != null ? 'team' : 'group';
+  // Convert legacy group properties to groups format for unified validation
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
 
-  // Validate teams/groups if we have roles defined
-  if (teams.roles.length > 0) {
-    const rolePerms = teams.rolePermissions;
+  // Validate groups if we have roles defined
+  if (groups.roles.length > 0) {
+    const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
-    const hasAssigner = teams.roles.some(
+    const hasAssigner = groups.roles.some(
       (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
     );
     if (!hasAssigner) {
       errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    const validRoleNames = new Set(teams.roles.map((r) => r.name));
+    const validRoleNames = new Set(groups.roles.map((r) => r.name));
 
     rolePerms.canAssignRoles.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
@@ -1461,24 +1459,22 @@ function validateAssessment({
       }
     });
 
-    teams.roles.forEach((role) => {
-      if (teams.minMembers != null && role.minMembers > teams.minMembers) {
-        warnings.push(
-          `Role "${role.name}" has a minMembers greater than the ${teamType}'s minMembers.`,
-        );
+    groups.roles.forEach((role) => {
+      if (groups.minMembers != null && role.minMembers > groups.minMembers) {
+        warnings.push(`Role "${role.name}" has a minMembers greater than the group's minMembers.`);
       }
-      if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
+      if (groups.maxMembers != null && role.minMembers > groups.maxMembers) {
         errors.push(
-          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${teams.maxMembers}, found ${role.minMembers}).`,
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${groups.maxMembers}, found ${role.minMembers}).`,
         );
       }
       if (
         role.maxMembers != null &&
-        teams.maxMembers != null &&
-        role.maxMembers > teams.maxMembers
+        groups.maxMembers != null &&
+        role.maxMembers > groups.maxMembers
       ) {
         errors.push(
-          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${teams.maxMembers}, found ${role.maxMembers}).`,
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${groups.maxMembers}, found ${role.maxMembers}).`,
         );
       }
       if (role.maxMembers != null && role.minMembers > role.maxMembers) {
