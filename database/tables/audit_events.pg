@@ -11,7 +11,6 @@ columns
     course_instance_id: bigint
     date: timestamp with time zone default CURRENT_TIMESTAMP
     enrollment_id: bigint
-    group_id: bigint
     id: bigint not null default nextval('audit_events_id_seq'::regclass)
     institution_id: bigint
     new_row: jsonb
@@ -19,6 +18,7 @@ columns
     row_id: bigint not null
     subject_user_id: bigint
     table_name: text not null
+    team_id: bigint
 
 indexes
     audit_events_pkey: PRIMARY KEY (id) USING btree (id)
@@ -27,13 +27,13 @@ indexes
     audit_events_table_name_subject_user_id_course_instance_id_idx: USING btree (subject_user_id, table_name, course_instance_id) WHERE subject_user_id IS NOT NULL
 
 foreign-key constraints
-    audit_events_agent_authn_user_id_fkey: FOREIGN KEY (agent_authn_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events_agent_user_id_fkey: FOREIGN KEY (agent_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_agent_authn_user_id_fkey: FOREIGN KEY (agent_authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_agent_user_id_fkey: FOREIGN KEY (agent_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_assessment_id_fkey: FOREIGN KEY (assessment_id) REFERENCES assessments(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_assessment_question_id_fkey: FOREIGN KEY (assessment_question_id) REFERENCES assessment_questions(id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_enrollment_id_fkey: FOREIGN KEY (enrollment_id) REFERENCES enrollments(id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events_group_id_fkey: FOREIGN KEY (group_id) REFERENCES groups(id) ON UPDATE CASCADE ON DELETE SET NULL
     audit_events_institution_id_fkey: FOREIGN KEY (institution_id) REFERENCES institutions(id) ON UPDATE CASCADE ON DELETE SET NULL
-    audit_events_subject_user_id_fkey: FOREIGN KEY (subject_user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_subject_user_id_fkey: FOREIGN KEY (subject_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE SET NULL
+    audit_events_team_id_fkey: FOREIGN KEY (team_id) REFERENCES teams(id) ON UPDATE CASCADE ON DELETE SET NULL

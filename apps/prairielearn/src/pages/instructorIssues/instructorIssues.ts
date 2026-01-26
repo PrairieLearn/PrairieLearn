@@ -1,17 +1,18 @@
 import * as url from 'node:url';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import SearchString from 'search-string';
 import { z } from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import type { ResLocalsCourseInstanceAuthz } from '../../middlewares/authzCourseOrInstance.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 
 import { InstructorIssues, IssueRowSchema, PAGE_SIZE } from './instructorIssues.html.js';
@@ -121,7 +122,7 @@ async function updateIssueOpen(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const filterQuery = typeof req.query.q === 'string' ? req.query.q : 'is:open';
 
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
@@ -197,7 +198,8 @@ router.get(
         !row.course_instance_id ||
         (res.locals.course_instance &&
           idsEqual(res.locals.course_instance.id, row.course_instance_id) &&
-          res.locals.authz_data.has_course_instance_permission_view) ||
+          (res.locals.authz_data as ResLocalsCourseInstanceAuthz)
+            .has_course_instance_permission_view) ||
         ((!res.locals.course_instance ||
           !idsEqual(res.locals.course_instance.id, row.course_instance_id)) &&
           course_instances.some(
@@ -223,7 +225,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be a course editor)');
     }
@@ -233,7 +235,7 @@ router.post(
         req.body.issue_id,
         true, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close') {
@@ -241,7 +243,7 @@ router.post(
         req.body.issue_id,
         false, // open status
         res.locals.course.id,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else if (req.body.__action === 'close_matching') {
@@ -251,7 +253,7 @@ router.post(
         {
           issue_ids: issueIds,
           course_id: res.locals.course.id,
-          authn_user_id: res.locals.authn_user.user_id,
+          authn_user_id: res.locals.authn_user.id,
         },
         z.number(),
       );

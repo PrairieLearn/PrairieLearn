@@ -169,7 +169,7 @@ async function getDirectoryDiskUsage(dir: string): Promise<number | null> {
 
   for (const file of await getWorkspaceFiles(dir)) {
     try {
-      const stats = await fs.lstat(path.join(file.path, file.name));
+      const stats = await fs.lstat(path.join(file.parentPath, file.name));
       size += stats.size;
     } catch (err: any) {
       // This code is susceptible to TOCTOU issues, but we're ok with that.

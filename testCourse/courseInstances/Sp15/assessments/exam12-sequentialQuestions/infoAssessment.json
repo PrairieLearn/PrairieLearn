@@ -23,10 +23,7 @@
     },
     { "advanceScorePerc": 75, "questions": [{ "id": "partialCredit2", "points": 1 }] },
     { "questions": [{ "id": "partialCredit4_v2", "points": 1, "advanceScorePerc": 0 }] },
-    {
-      "advanceScorePerc": 35,
-      "questions": [{ "id": "addVectors", "points": 1, "advanceScorePerc": 30 }]
-    },
-    { "questions": [{ "id": "addNumbers", "points": 1 }] }
+    { "questions": [{ "id": "addNumbers", "points": 1, "advanceScorePerc": 30 }] },
+    { "questions": [{ "id": "internalGrade/addingNumbers", "points": 1 }] }
   ]
 }

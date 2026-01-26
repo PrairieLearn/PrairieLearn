@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import async from 'async';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -6,7 +8,12 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
-import { getLockNameForCoursePath, selectOrInsertCourseByPath } from '../models/course.js';
+import {
+  getGitDefaultBranch,
+  getGitRemoteUrl,
+  getLockNameForCoursePath,
+  selectOrInsertCourseByPath,
+} from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import { flushElementCache } from '../question-servers/freeform.js';
 
@@ -248,6 +255,15 @@ export async function syncOrCreateDiskToSql(
   courseDir: string,
   logger: ServerJobLogger,
 ): Promise<SyncResults> {
-  const course = await selectOrInsertCourseByPath(courseDir);
+  // This should only ever be used in dev mode or tests.
+  assert(config.devMode || process.env.NODE_ENV === 'test');
+
+  // This intentionally only updates the branch/repository when a course is
+  // created, not when it already exists. There's no particularly good reason
+  // for this, so it could be changed in the future if desired.
+  const course = await selectOrInsertCourseByPath(courseDir, {
+    branch: await getGitDefaultBranch(courseDir),
+    repository: await getGitRemoteUrl(courseDir),
+  });
   return await syncDiskToSql(course.id, courseDir, logger);
 }

@@ -1,6 +1,6 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlSafeString, html } from '@prairielearn/html';
-import { hydrateHtml } from '@prairielearn/preact/server';
+import { hydrateHtml } from '@prairielearn/react/server';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
 import { type CourseInstance } from '../lib/db-types.js';
@@ -194,6 +194,7 @@ export function QuestionsTable({
                     data-class="align-middle text-nowrap"
                     data-filter-control="select"
                     data-filter-control-placeholder="(All Images)"
+                    data-filter-data="func:externalGradingImageList"
                     data-visible="false"
                     data-switchable="true"
                   >
@@ -205,6 +206,7 @@ export function QuestionsTable({
                     data-class="align-middle text-nowrap"
                     data-filter-control="select"
                     data-filter-control-placeholder="(All Images)"
+                    data-filter-data="func:workspaceImageList"
                     data-visible="false"
                     data-switchable="true"
                   >

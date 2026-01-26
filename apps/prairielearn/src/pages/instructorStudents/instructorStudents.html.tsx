@@ -1,4 +1,4 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -13,8 +13,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
-import { Alert, Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
+import { useMemo, useState } from 'react';
+import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -33,9 +33,9 @@ import {
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
-import { type StaffEnrollment, StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
+  getCourseInstanceJobSequenceUrl,
   getSelfEnrollmentLinkUrl,
   getSelfEnrollmentSettingsUrl,
   getStudentCourseInstanceUrl,
@@ -44,7 +44,7 @@ import {
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 
-import { InviteStudentModal } from './components/InviteStudentModal.js';
+import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 // This default must be declared outside the component to ensure referential
@@ -74,7 +74,7 @@ function CopyEnrollmentLinkButton({
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const handleCopyLink = async (e: Event) => {
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const selfEnrollmentLink = run(() => {
       if (!courseInstance.self_enrollment_use_enrollment_code) {
@@ -87,7 +87,7 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCopyCode = async (e: Event) => {
+  const handleCopyCode = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const enrollmentCodeDashed =
       courseInstance.enrollment_code.slice(0, 3) +
@@ -118,7 +118,7 @@ function CopyEnrollmentLinkButton({
           show={copiedCode ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-            <i class="bi bi-key me-2" />
+            <i className="bi bi-key me-2" />
             Copy enrollment code
           </Dropdown.Item>
         </OverlayTrigger>
@@ -134,13 +134,13 @@ function CopyEnrollmentLinkButton({
           show={copiedLink ? true : undefined}
         >
           <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-            <i class="bi bi-link-45deg me-2" />
+            <i className="bi bi-link-45deg me-2" />
             Copy enrollment link
           </Dropdown.Item>
         </OverlayTrigger>
       )}
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i class="bi bi-gear me-2" />
+        <i className="bi bi-gear me-2" />
         Manage settings
       </Dropdown.Item>
     </DropdownButton>
@@ -152,9 +152,9 @@ interface StudentsCardProps {
   course: PageContext<'courseInstance', 'instructor'>['course'];
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
-  enrollmentManagementEnabled: boolean;
   students: StudentRow[];
   timezone: string;
+  selfEnrollLink: string;
 }
 
 type ColumnId =
@@ -168,13 +168,11 @@ function StudentsCard({
   authzData,
   course,
   courseInstance,
-  enrollmentManagementEnabled,
   students: initialStudents,
   timezone,
   csrfToken,
+  selfEnrollLink,
 }: StudentsCardProps) {
-  const queryClient = useQueryClient();
-
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
     'sort',
@@ -190,7 +188,6 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
-  const [lastInvitation, setLastInvitation] = useState<StaffEnrollment | null>(null);
 
   // The individual column filters are the source of truth, and this is derived from them.
   const columnFilters: { id: ColumnId; value: any }[] = useMemo(() => {
@@ -245,40 +242,37 @@ function StudentsCard({
   });
 
   const [showInvite, setShowInvite] = useState(false);
+  const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
 
-  const inviteMutation = useMutation({
-    mutationKey: ['invite-uid'],
-    mutationFn: async (uid: string): Promise<StaffEnrollment> => {
-      const body = new URLSearchParams({
-        __action: 'invite_by_uid',
-        __csrf_token: csrfToken,
-        uid,
-      });
-      const res = await fetch(window.location.href, {
-        method: 'POST',
-        body,
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-      const json = await res.json();
-      if (!res.ok) {
-        let message = 'Failed to invite';
-        try {
-          if (typeof json?.error === 'string') message = json.error;
-        } catch {
-          // ignore parse errors, and just use the default message
-        }
-        throw new Error(message);
-      }
-      return StaffEnrollmentSchema.parse(json.data);
-    },
-    onSuccess: async () => {
-      // Force a refetch of the enrollments query to ensure the new student is included
-      await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-      setShowInvite(false);
-    },
-  });
+  const handleCopyEnrollLink = async () => {
+    await copyToClipboard(selfEnrollLink);
+    setCopiedEnrollLink(true);
+    setTimeout(() => setCopiedEnrollLink(false), 2000);
+  };
+
+  const inviteStudents = async (uids: string[]): Promise<void> => {
+    const body = {
+      __action: 'invite_uids',
+      __csrf_token: csrfToken,
+      uids: uids.join(','),
+    };
+    const res = await fetch(window.location.href, {
+      method: 'POST',
+      body: JSON.stringify(body),
+      headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+    });
+    const json = await res.json();
+    if (!res.ok) {
+      throw new Error(json.error);
+    }
+    const { job_sequence_id } = z
+      .object({
+        job_sequence_id: z.string(),
+      })
+      .parse(json);
+
+    window.location.href = getCourseInstanceJobSequenceUrl(courseInstance.id, job_sequence_id);
+  };
 
   const columns = useMemo(
     () => [
@@ -307,7 +301,7 @@ function StudentsCard({
                 props: { id: 'students-name-tooltip' },
               }}
             >
-              <i class="bi bi-question-circle" />
+              <i className="bi bi-question-circle" />
             </OverlayTrigger>
           );
         },
@@ -336,7 +330,7 @@ function StudentsCard({
                 props: { id: 'students-email-tooltip' },
               }}
             >
-              <i class="bi bi-question-circle" />
+              <i className="bi bi-question-circle" />
             </OverlayTrigger>
           );
         },
@@ -399,40 +393,50 @@ function StudentsCard({
     },
   });
 
+  const emptyStateText = run(() => {
+    const baseMessage = "This course doesn't have any students yet.";
+    if (!courseInstance.modern_publishing) {
+      // self-enrollment is always enabled for legacy publishing
+      return `${baseMessage} Share the enrollment link to get started.`;
+    }
+
+    if (courseInstance.self_enrollment_enabled) {
+      return `${baseMessage} Share the enrollment link or invite them to get started.`;
+    }
+    return `${baseMessage} Invite them to get started.`;
+  });
+
   return (
     <>
-      {lastInvitation && (
-        <Alert variant="success" dismissible onClose={() => setLastInvitation(null)}>
-          {lastInvitation.pending_uid} was invited successfully.
-        </Alert>
-      )}
       <TanstackTableCard
         table={table}
         title="Students"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
         singularLabel="student"
         pluralLabel="students"
         downloadButtonOptions={{
           filenameBase: `${courseInstanceFilenamePrefix(courseInstance, course)}students`,
           mapRowToData: (row) => {
-            return {
-              uid: row.user?.uid ?? row.enrollment.pending_uid,
-              name: row.user?.name ?? null,
-              email: row.user?.email ?? null,
-              status: row.enrollment.status,
-              first_joined_at: row.enrollment.first_joined_at
-                ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
-                    includeTz: false,
-                  })
-                : null,
-            };
+            return [
+              { value: row.user?.uid ?? row.enrollment.pending_uid, name: 'uid' },
+              { value: row.user?.name ?? null, name: 'name' },
+              { value: row.user?.email ?? null, name: 'email' },
+              { value: row.enrollment.status, name: 'status' },
+              {
+                value: row.enrollment.first_joined_at
+                  ? formatDate(row.enrollment.first_joined_at, course.display_timezone, {
+                      includeTz: false,
+                    })
+                  : null,
+                name: 'first_joined_at',
+              },
+            ];
           },
           hasSelection: false,
         }}
         headerButtons={
           <>
-            {enrollmentManagementEnabled && courseInstance.modern_publishing && (
+            {courseInstance.modern_publishing && (
               <>
                 <Button
                   variant="light"
@@ -440,8 +444,8 @@ function StudentsCard({
                   disabled={!authzData.has_course_instance_permission_edit}
                   onClick={() => setShowInvite(true)}
                 >
-                  <i class="bi bi-person-plus me-2" aria-hidden="true" />
-                  Invite student
+                  <i className="bi bi-person-plus me-2" aria-hidden="true" />
+                  Invite students
                 </Button>
                 <CopyEnrollmentLinkButton courseInstance={courseInstance} />
               </>
@@ -468,12 +472,48 @@ function StudentsCard({
             ),
           },
           emptyState: (
-            <TanstackTableEmptyState iconName="bi-person-exclamation">
-              No students found. To enroll students in your course, you can provide them with a link
-              to enroll (recommended) or invite them. You can manage the self-enrollment settings on
-              the{' '}
-              <a href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>course instance settings</a>{' '}
-              page.
+            <TanstackTableEmptyState iconName="bi-person-plus">
+              <div className="d-flex flex-column align-items-center gap-3">
+                <div className="text-center">
+                  <h5 className="mb-2">No students enrolled</h5>
+                  <p className="text-muted mb-0" style={{ textWrap: 'balance' }}>
+                    {emptyStateText}
+                  </p>
+                </div>
+                {(courseInstance.modern_publishing || courseInstance.self_enrollment_enabled) && (
+                  <div className="d-flex gap-2">
+                    {courseInstance.self_enrollment_enabled && (
+                      <OverlayTrigger
+                        placement="top"
+                        tooltip={{
+                          body: 'Copied!',
+                          props: { id: 'empty-state-copy-link-tooltip' },
+                        }}
+                        show={copiedEnrollLink}
+                      >
+                        <Button variant="primary" onClick={handleCopyEnrollLink}>
+                          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
+                          Copy enrollment link
+                        </Button>
+                      </OverlayTrigger>
+                    )}
+                    {courseInstance.modern_publishing && (
+                      <Button
+                        variant={
+                          courseInstance.self_enrollment_enabled ? 'outline-primary' : 'primary'
+                        }
+                        onClick={() => setShowInvite(true)}
+                      >
+                        <i className="bi bi-person-plus me-2" aria-hidden="true" />
+                        Invite students
+                      </Button>
+                    )}
+                  </div>
+                )}
+                {courseInstance.self_enrollment_enabled && (
+                  <code className="bg-light text-muted px-3 py-2 rounded">{selfEnrollLink}</code>
+                )}
+              </div>
             </TanstackTableEmptyState>
           ),
           noResultsState: (
@@ -483,13 +523,11 @@ function StudentsCard({
           ),
         }}
       />
-      <InviteStudentModal
+      <InviteStudentsModal
         show={showInvite}
+        courseInstance={courseInstance}
         onHide={() => setShowInvite(false)}
-        onSubmit={async ({ uid }) => {
-          const enrollment = await inviteMutation.mutateAsync(uid);
-          setLastInvitation(enrollment);
-        }}
+        onSubmit={inviteStudents}
       />
     </>
   );
@@ -501,16 +539,17 @@ function StudentsCard({
 
 export const InstructorStudents = ({
   authzData,
+  selfEnrollLink,
   search,
   students,
   timezone,
   courseInstance,
   course,
-  enrollmentManagementEnabled,
   csrfToken,
   isDevMode,
 }: {
   authzData: PageContextWithAuthzData['authz_data'];
+  selfEnrollLink: string;
   search: string;
   isDevMode: boolean;
 } & StudentsCardProps) => {
@@ -521,9 +560,9 @@ export const InstructorStudents = ({
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
         <StudentsCard
           authzData={authzData}
+          selfEnrollLink={selfEnrollLink}
           course={course}
           courseInstance={courseInstance}
-          enrollmentManagementEnabled={enrollmentManagementEnabled}
           students={students}
           timezone={timezone}
           csrfToken={csrfToken}

@@ -2,10 +2,13 @@ import type express from 'express';
 import asyncHandler from 'express-async-handler';
 import type core from 'express-serve-static-core';
 
+import type { IsUnion, MergeUnion, Prettify } from '@prairielearn/utils';
+
 import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
 } from '../middlewares/authzCourseOrInstance.js';
+import type { ResLocalsDate } from '../middlewares/date.js';
 import type { ResLocalsAssessment } from '../middlewares/selectAndAuthzAssessment.js';
 import type { ResLocalsAssessmentInstance } from '../middlewares/selectAndAuthzAssessmentInstance.js';
 import type { ResLocalsAssessmentQuestion } from '../middlewares/selectAndAuthzAssessmentQuestion.js';
@@ -18,19 +21,25 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
+import type { Course, CourseInstance } from './db-types.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { MergeUnion, Prettify } from './types.js';
 
-export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig {
+export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
 }
 
 interface ResLocalsForPageLookup {
+  plain: ResLocals;
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
+  'public-course': ResLocals & { course: Course };
   'course-instance': ResLocals & ResLocalsCourseInstance;
+  'public-course-instance': ResLocals & {
+    course: Course;
+    course_instance: CourseInstance;
+  };
   'instructor-instance-question': ResLocals &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestionWithCourseInstance &
@@ -59,13 +68,16 @@ interface ResLocalsForPageLookup {
     ResLocalsAssessment &
     ResLocalsAssessmentQuestion &
     ResLocalsInstanceQuestionRender;
-  'assessment-instance': ResLocals & ResLocalsAssessment & ResLocalsAssessmentInstance;
+  'assessment-instance': ResLocals &
+    ResLocalsCourseInstance &
+    ResLocalsAssessment &
+    ResLocalsAssessmentInstance;
   assessment: ResLocals & ResLocalsCourseInstance & ResLocalsAssessment;
 }
 
-export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> = MergeUnion<
-  ResLocalsForPageLookup[T]
->;
+// Only apply MergeUnion when T is a union of page types; preserve unions for single types
+export type ResLocalsForPage<T extends keyof ResLocalsForPageLookup> =
+  true extends IsUnion<T> ? MergeUnion<ResLocalsForPageLookup[T]> : ResLocalsForPageLookup[T];
 
 export type PageType = keyof ResLocalsForPageLookup;
 
@@ -82,6 +94,7 @@ export type PageType = keyof ResLocalsForPageLookup;
  *
  * The page types include:
  *
+ * - `plain`: A basic page with authn data (e.g. admin, auth, home pages)
  * - `course`: A course page.
  * - `course-instance`: A course instance page.
  * - `instructor-instance-question`: An instructor instance question page.

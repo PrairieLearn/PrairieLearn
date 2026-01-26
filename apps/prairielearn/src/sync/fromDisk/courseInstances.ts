@@ -3,9 +3,9 @@ import { randomInt } from 'node:crypto';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
-import { IdSchema } from '../../lib/db-types.js';
 import { type CourseInstanceJson } from '../../schemas/index.js';
 import { type CourseData } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
@@ -60,13 +60,13 @@ function getParamsForCourseInstance(courseInstance: CourseInstanceJson | null | 
     long_name: courseInstance.longName,
     assessments_group_by: courseInstance.groupAssessmentsBy,
     display_timezone: courseInstance.timezone ?? null,
-    hide_in_enroll_page: courseInstance.hideInEnrollPage,
     comment: JSON.stringify(courseInstance.comment),
     modern_publishing: accessRules == null,
     publishing_start_date: courseInstance.publishing?.startDate ?? null,
     publishing_end_date: courseInstance.publishing?.endDate ?? null,
     self_enrollment_enabled: courseInstance.selfEnrollment.enabled,
     self_enrollment_enabled_before_date: courseInstance.selfEnrollment.beforeDate,
+    self_enrollment_restrict_to_institution: courseInstance.selfEnrollment.restrictToInstitution,
     self_enrollment_use_enrollment_code: courseInstance.selfEnrollment.useEnrollmentCode,
     share_source_publicly: courseInstance.shareSourcePublicly,
     access_rules: accessRules ?? [],

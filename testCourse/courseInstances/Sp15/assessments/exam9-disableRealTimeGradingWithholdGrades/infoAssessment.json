@@ -18,7 +18,6 @@
       "title": "Hard questions",
       "questions": [
         { "id": "addNumbers", "points": 5 },
-        { "id": "addVectors", "points": 11 },
         { "id": "fossilFuelsRadio", "points": 17 },
         { "id": "partialCredit1", "points": 19 },
         { "id": "partialCredit2", "points": 9 },

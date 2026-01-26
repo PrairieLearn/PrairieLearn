@@ -67,7 +67,7 @@ different PrairieLearn question. Given some limitations of the Canvas API, this 
 support question groups linked to question banks. If using question groups, the questions must be
 included in the Canvas quiz itself instead of in the bank only.
 
-The PrairieLearn assessment will be created with an AID based on the quiz title on Canvas. For each
+The PrairieLearn assessment will be created with a short name based on the quiz title on Canvas. For each
 question in the quiz, a new PrairieLearn question is created. Given that question titles are
 typically unreliable on Canvas, each question will be printed on the terminal, asking for a question
 title. This title will also be used as a basis to create the QID of the question. If a question

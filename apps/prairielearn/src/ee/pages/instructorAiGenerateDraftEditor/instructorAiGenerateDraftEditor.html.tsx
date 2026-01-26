@@ -1,14 +1,15 @@
 import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import { Hydrate } from '@prairielearn/preact/server';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -17,6 +18,7 @@ import {
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
@@ -44,13 +46,17 @@ export function InstructorAiGenerateDraftEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
+        <meta
+          name="mathjax-fonts-path"
+          content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+        />
         ${[
           HeadContents({ resLocals }),
           compiledScriptTag('question.ts'),
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
-        <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">
@@ -413,13 +419,10 @@ function FinalizeModal({ csrfToken }: { csrfToken: string }) {
           class="form-control"
           id="question-qid"
           name="qid"
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           required
         />
-        <div class="form-text text-muted">
-          A unique identifier that will be used to include this question in assessments, e.g.
-          <code>add-random-numbers</code>.
-        </div>
+        <div class="form-text text-muted">${renderHtml(<QuestionShortNameDescription />)}</div>
       </div>
     `,
     footer: html`

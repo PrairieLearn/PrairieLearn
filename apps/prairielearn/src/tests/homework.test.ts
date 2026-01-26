@@ -284,6 +284,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
 
     describe('GET ' + locals.assessmentsUrl, function () {
       it('should load successfully', async () => {
+        assert.isDefined(locals.assessmentsUrl);
         const res = await fetch(locals.assessmentsUrl);
         assert.equal(res.status, 200);
         page = await res.text();
@@ -307,6 +308,7 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
     describe('GET to assessment URL', function () {
       it('should load successfully', async () => {
         locals.preStartTime = Date.now();
+        assert.isDefined(locals.assessmentUrl);
         const res = await fetch(locals.assessmentUrl);
         locals.postStartTime = Date.now();
         assert.equal(res.status, 200);

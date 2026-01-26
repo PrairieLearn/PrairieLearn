@@ -2,7 +2,7 @@
 SELECT
   *
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id
   AND institution_id = $institution_id
@@ -16,7 +16,7 @@ WITH
       COALESCE(COUNT(e.id), 0)::integer AS enrollment_count
     FROM
       course_instances AS ci
-      JOIN pl_courses AS c ON (ci.course_id = c.id)
+      JOIN courses AS c ON (ci.course_id = c.id)
       LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
     WHERE
       ci.course_id = $course_id
@@ -51,7 +51,7 @@ ORDER BY
   ci.id DESC;
 
 -- BLOCK update_enrollment_limits
-UPDATE pl_courses AS c
+UPDATE courses AS c
 SET
   yearly_enrollment_limit = $yearly_enrollment_limit,
   course_instance_enrollment_limit = $course_instance_enrollment_limit

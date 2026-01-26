@@ -4,7 +4,7 @@ import prettierEstreePlugin from 'prettier/plugins/estree';
 import * as prettier from 'prettier/standalone';
 
 import { onDocumentReady } from '@prairielearn/browser-utils';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../src/lib/base64-util.js';
@@ -27,9 +27,9 @@ enum SaveErrorCode {
  */
 function InvalidJsonModalContent() {
   return (
-    <div class="alert alert-danger d-flex flex-column align-items-start mb-0">
-      <div class="d-flex flex-row align-items-start gap-2 mb-1">
-        <i class="bi bi-x-circle-fill fs-6" />
+    <div className="alert alert-danger d-flex flex-column align-items-start mb-0">
+      <div className="d-flex flex-row align-items-start gap-2 mb-1">
+        <i className="bi bi-x-circle-fill fs-6" />
         <strong>Invalid JSON</strong>
       </div>
       <div>
@@ -54,9 +54,9 @@ function UuidChangeModalContent({
 }) {
   return (
     <>
-      <div class="alert alert-warning d-flex flex-column mb-3">
-        <div class="d-flex flex-row align-items-start gap-2 mb-1">
-          <i class="bi bi-exclamation-triangle-fill fs-6" />
+      <div className="alert alert-warning d-flex flex-column mb-3">
+        <div className="d-flex flex-row align-items-start gap-2 mb-1">
+          <i className="bi bi-exclamation-triangle-fill fs-6" />
           <strong>UUID change</strong>
         </div>
         <div>

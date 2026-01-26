@@ -514,7 +514,9 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         data["partial_scores"][name] = {"score": 0, "weight": weight}
     elif result == "invalid":
         for i in range(len(correct_answers)):
+            # Note that we deliberately do NOT write `None` values to `data["raw_submitted_answers"]`.
+            # This mimics what a browser does when no value is selected: we simply get no value
+            # for that form field.
             expected_html_name = get_form_name(name, i)
-            data["raw_submitted_answers"][expected_html_name] = None
             data["format_errors"][expected_html_name] = "No answer was submitted."
         data["partial_scores"][name] = {"score": 0, "weight": weight}

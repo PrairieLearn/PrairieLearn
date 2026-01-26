@@ -1,14 +1,13 @@
 import assert from 'node:assert';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAssessmentSetById } from '../../models/assessment-set.js';
-import { selectAssessmentById, selectAssessmentIsPublic } from '../../models/assessment.js';
-import { selectCourseByCourseInstanceId } from '../../models/course.js';
+import { selectOptionalAssessmentById } from '../../models/assessment.js';
 
 import { PublicAssessmentQuestions } from './publicAssessmentQuestions.html.js';
 
@@ -16,25 +15,20 @@ const router = Router({ mergeParams: true });
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'public-course-instance'>(async (req, res) => {
     const assessment_id = req.params.assessment_id;
-    const course_instance_id = req.params.course_instance_id;
-    const isAssessmentPublic = await selectAssessmentIsPublic(assessment_id);
-    if (!isAssessmentPublic) {
+    const assessment = await selectOptionalAssessmentById(assessment_id);
+    if (
+      !assessment?.share_source_publicly ||
+      assessment.course_instance_id !== res.locals.course_instance.id
+    ) {
       throw new error.HttpStatusError(404, 'Not Found');
     }
-
-    const course = await selectCourseByCourseInstanceId(course_instance_id.toString());
-    res.locals.course = course;
-    const assessment = await selectAssessmentById(assessment_id);
-    res.locals.assessment = assessment;
 
     assert(assessment.assessment_set_id);
     const assessment_set = await selectAssessmentSetById(assessment.assessment_set_id);
 
-    const questions = await selectAssessmentQuestions({
-      assessment_id,
-    });
+    const questions = await selectAssessmentQuestions({ assessment_id });
 
     // Filter out non-public assessments
     for (const question of questions) {
@@ -49,8 +43,8 @@ router.get(
         resLocals: res.locals,
         assessment,
         assessment_set,
-        course,
-        course_instance_id,
+        course: res.locals.course,
+        course_instance_id: res.locals.course_instance.id,
         questions,
       }),
     );

@@ -1,8 +1,9 @@
 import { decodeData, onDocumentReady } from '@prairielearn/browser-utils';
 import { html, joinHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentBadgeHtml } from '../../../src/components/AssessmentBadge.js';
+import { IssueBadgeHtml } from '../../../src/components/IssueBadge.js';
 import { type QuestionsTableData } from '../../../src/components/QuestionsTable.types.js';
 import { SyncProblemButtonHtml } from '../../../src/components/SyncProblemButton.js';
 import { TagBadgeList } from '../../../src/components/TagBadge.js';
@@ -26,6 +27,8 @@ declare global {
     tagsList: () => any;
     sharingSetsList: () => any;
     versionList: () => any;
+    externalGradingImageList: () => any;
+    workspaceImageList: () => any;
     qidFormatter: (_qid: any, question: QuestionsPageData) => any;
     topicFormatter: (_topic: any, question: QuestionsPageData) => any;
     tagsFormatter: (_tags: any, question: QuestionsPageData) => any;
@@ -48,29 +51,60 @@ onDocumentReady(() => {
 
   window.topicList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    return Object.fromEntries(data.map(({ topic }) => [topic.name, topic.name]));
+    const topics = [...new Set(data.map(({ topic }) => topic.name))].sort((a, b) =>
+      a.localeCompare(b),
+    );
+    return Object.fromEntries(topics.map((name) => [name, name]));
   };
 
   window.tagsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    return Object.fromEntries(
-      data.flatMap((row) => row.tags ?? []).map(({ name }) => [name, name]),
+    const tags = [...new Set(data.flatMap((row) => row.tags ?? []).map(({ name }) => name))].sort(
+      (a, b) => a.localeCompare(b),
     );
+    return Object.fromEntries(tags.map((name) => [name, name]));
   };
 
   window.sharingSetsList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    const sharing_sets = Object.fromEntries(
-      data.flatMap((row) => row.sharing_sets ?? []).map(({ name }) => [name, name]),
-    );
-    sharing_sets.Public = 'Public';
-    sharing_sets['Public source'] = 'Public source';
-    return sharing_sets;
+    const sharingSetNames = [
+      ...new Set(
+        data
+          .flatMap((row) => row.sharing_sets ?? [])
+          .map(({ name }) => name)
+          .filter(Boolean) as string[],
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    return {
+      Public: 'Public',
+      'Public source': 'Public source',
+      ...Object.fromEntries(sharingSetNames.map((name) => [name, name])),
+    };
   };
 
   window.versionList = function () {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
     return Object.fromEntries(data.map(({ display_type }) => [display_type, display_type]));
+  };
+
+  window.externalGradingImageList = function () {
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    const images = [
+      ...new Set(
+        data
+          .map(({ external_grading_image }) => external_grading_image)
+          .filter(Boolean) as string[],
+      ),
+    ].sort((a, b) => a.localeCompare(b));
+    return Object.fromEntries(images.map((name) => [name, name]));
+  };
+
+  window.workspaceImageList = function () {
+    const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
+    const images = [
+      ...new Set(data.map(({ workspace_image }) => workspace_image).filter(Boolean) as string[]),
+    ].sort((a, b) => a.localeCompare(b));
+    return Object.fromEntries(images.map((name) => [name, name]));
   };
 
   window.qidFormatter = function (_qid: any, question: QuestionsPageData) {
@@ -94,17 +128,16 @@ onDocumentReady(() => {
 
     text += html`
       <a class="formatter-data" href="${urlPrefix}/question/${question.id}/preview">
-        ${prefix}${question.qid}
-      </a>
+        ${prefix}${question.qid}</a
+      >
     `.toString();
     if (question.open_issue_count > 0) {
-      text += html`<a
-        class="badge rounded-pill text-bg-danger ms-1"
-        href="${urlPrefix}/course_admin/issues?q=is%3Aopen+qid%3A${encodeURIComponent(
-          question.qid,
-        )}"
-        >${question.open_issue_count}</a
-      >`.toString();
+      text += IssueBadgeHtml({
+        count: question.open_issue_count,
+        className: 'ms-1',
+        issueQid: question.qid,
+        urlPrefix,
+      }).toString();
     }
     return text.toString();
   };
@@ -184,11 +217,16 @@ onDocumentReady(() => {
 
   const assessmentsByCourseInstanceList = function (ci_id: string) {
     const data = $('#questionsTable').bootstrapTable('getData') as QuestionsPageData[];
-    const assessments = data
-      .flatMap((row) => row.assessments ?? [])
-      .filter((row) => row.course_instance_id === ci_id);
+    const labels = [
+      ...new Set(
+        data
+          .flatMap((row) => row.assessments ?? [])
+          .filter((row) => row.course_instance_id === ci_id)
+          .map(({ label }) => label),
+      ),
+    ].sort((a, b) => a.localeCompare(b));
     return {
-      ...Object.fromEntries(assessments.map(({ label }) => [label, label])),
+      ...Object.fromEntries(labels.map((label) => [label, label])),
       '(None)': '(None)',
     };
   };

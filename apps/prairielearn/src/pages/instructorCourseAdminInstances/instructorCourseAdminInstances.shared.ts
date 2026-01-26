@@ -1,7 +1,8 @@
 import z from 'zod';
 
+import { DateFromISOString } from '@prairielearn/zod';
+
 import { RawStaffCourseInstanceSchema } from '../../lib/client/safe-db-types.js';
-import { DateFromISOString } from '../../lib/db-types.js';
 
 export const InstructorCourseAdminInstanceRowSchema = RawStaffCourseInstanceSchema.extend({
   formatted_start_date: z.string(),

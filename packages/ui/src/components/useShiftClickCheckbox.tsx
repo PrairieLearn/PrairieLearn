@@ -1,5 +1,5 @@
 import type { Row, Table } from '@tanstack/react-table';
-import { type MouseEvent, useCallback, useState } from 'preact/compat';
+import { type MouseEvent, useCallback, useState } from 'react';
 
 /**
  * A hook that provides shift-click range selection functionality for table checkboxes.

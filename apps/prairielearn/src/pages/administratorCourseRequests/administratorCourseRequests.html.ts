@@ -4,7 +4,7 @@ import { CourseRequestsTable } from '../../components/CourseRequestsTable.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { type CourseRequestRow } from '../../lib/course-request.js';
 import { type Institution } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export function AdministratorCourseRequests({
   rows,
@@ -15,7 +15,7 @@ export function AdministratorCourseRequests({
   rows: CourseRequestRow[];
   institutions: Institution[];
   coursesRoot: string;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,

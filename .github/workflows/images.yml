@@ -64,7 +64,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
 
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install

@@ -63,7 +63,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'institution-admin@example.com',
     });
-    institutionAdminId = institutionAdmin.user_id;
+    institutionAdminId = institutionAdmin.id;
     await ensureInstitutionAdministrator({
       institution_id: '1',
       user_id: institutionAdminId,
@@ -76,7 +76,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '100000000',
       email: 'instructor@example.com',
     });
-    instructorId = instructor.user_id;
+    instructorId = instructor.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'instructor@example.com',
@@ -90,7 +90,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: null,
       email: 'staff@example.com',
     });
-    staffId = staff.user_id;
+    staffId = staff.id;
     await insertCoursePermissionsByUserUid({
       course_id: '1',
       uid: 'staff@example.com',
@@ -104,7 +104,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       uin: '000000001',
       email: 'student@example.com',
     });
-    studentId = student.user_id;
+    studentId = student.id;
     courseInstance = await selectCourseInstanceById('1');
     await ensureUncheckedEnrollment({
       userId: studentId,
@@ -588,7 +588,7 @@ describe('effective user', { timeout: 60_000 }, function () {
       });
       await ensureUncheckedEnrollment({
         courseInstance,
-        userId: user.user_id,
+        userId: user.id,
         requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',

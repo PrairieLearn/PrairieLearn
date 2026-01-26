@@ -87,7 +87,7 @@ async function insertDocumentChunk(
     QuestionGenerationContextEmbeddingSchema,
   );
 
-  if (chunk && chunk.doc_text === doc.text) {
+  if (chunk?.doc_text === doc.text) {
     job.info(
       `Chunk for ${filepath} (${doc.chunkId || 'no chunk ID'}) already exists in the database. Skipping.`,
     );
@@ -115,6 +115,8 @@ export async function syncContextDocuments(embeddingModel: EmbeddingModel, authn
   const serverJob = await createServerJob({
     type: 'sync_question_generation_context',
     description: 'Generate embeddings for context documents',
+    userId: authnUserId,
+    authnUserId,
   });
 
   serverJob.executeInBackground(async (job) => {

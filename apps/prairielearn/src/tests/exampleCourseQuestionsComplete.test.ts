@@ -109,6 +109,10 @@ const validateHtml = async (html: string) => {
       // pygments with linenos="table" generates <tr> elements without a wrapping <tbody> tag
       'prefer-tbody': 'off',
 
+      // https://html-validate.org/rules/prefer-native-element.html
+      // pl-order-blocks uses role="listbox" for drag-and-drop selection which cannot use native <select>
+      'prefer-native-element': ['error', { exclude: ['listbox'] }],
+
       // False positive, since this attribute is controlled via JS. https://getbootstrap.com/docs/5.3/components/modal/#accessibility
       // https://html-validate.org/rules/hidden-focusable.html
       'hidden-focusable': 'off',

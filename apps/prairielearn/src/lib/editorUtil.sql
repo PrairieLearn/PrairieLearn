@@ -4,7 +4,7 @@ SELECT
   sync_warnings,
   NULL AS uuid
 FROM
-  pl_courses
+  courses
 WHERE
   id = $course_id;
 

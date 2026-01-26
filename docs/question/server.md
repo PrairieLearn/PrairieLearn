@@ -443,6 +443,7 @@ The `test()` function is called to test the question. This function can be used 
 
     1. You don't set `correct_answers` in the `generate` or `prepare` stage of your question. In this scenario, the elements you use don't know how to generate the correct set of inputs, and the responsibility shifts to the `test()` function in `server.py`.
     2. You are using elements that haven't implemented the `test()` function. All first-party elements have this function implemented, so this is only a concern if you use a custom course element.
+    3. You are using a custom `grade` function that modifies the grading behavior of the question. In this case, you need to ensure that the `test()` function generates appropriate inputs to test your custom grading logic.
 
 The `test()` function receives the output of `prepare()`, along with a `test_type` parameter. The `test_type` is either `correct`, `incorrect`, or `invalid`. Your function should generate `raw_submitted_answers` based on the inputs (e.g. `data["correct_answers"]`) and `test_type`. It should also update `score` and `feedback`.
 

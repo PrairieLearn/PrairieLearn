@@ -37,6 +37,7 @@ export function checkStudentAssessmentAccess(req: Request, res: Response): boole
     // are both used, as there's otherwise no way to totally block access.
     res.status(403).send(
       StudentAssessmentAccess({
+        // @ts-expect-error The types on checkStudentAssessmentAccess aren't perfect
         resLocals: res.locals,
         showClosedScore: res.locals.authz_result?.show_closed_assessment_score ?? true,
         showTimeLimitExpiredModal: req.query.timeLimitExpired === 'true',
@@ -72,7 +73,7 @@ export default asyncHandler(async (req, res, next) => {
     await deleteAssessmentInstance(
       res.locals.assessment.id,
       res.locals.assessment_instance.id,
-      res.locals.authn_user.user_id,
+      res.locals.authn_user.id,
     );
 
     flash('success', 'Your previous assessment instance was deleted.');

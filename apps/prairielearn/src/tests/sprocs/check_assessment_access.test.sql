@@ -2,7 +2,7 @@
 WITH
   setup_users AS (
     INSERT INTO
-      users (user_id, uid)
+      users (id, uid)
     VALUES
       (1000, 'student@example.com')
   ),
@@ -37,7 +37,7 @@ WITH
   ),
   setup_pl_course AS (
     INSERT INTO
-      pl_courses (id, display_timezone, path)
+      courses (id, display_timezone, path)
     VALUES
       (1, 'UC', '/path/to/course/1')
   ),

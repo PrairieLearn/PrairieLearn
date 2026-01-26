@@ -6,7 +6,6 @@ import { execa } from 'execa';
 import fs from 'fs-extra';
 import klaw from 'klaw';
 import fetch from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -19,6 +18,11 @@ import { features } from '../lib/features/index.js';
 import { generateCsrfToken } from '../middlewares/csrfToken.js';
 import { updateCourseSharingName } from '../models/course.js';
 
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 import * as syncUtil from './sync/util.js';
 
@@ -26,12 +30,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-// Set up temporary writeable directories for course content
-const baseDir = tmp.dirSync().name;
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseDevDir = path.join(baseDir, 'courseDev');
-const courseDir = courseLiveDir;
+let courseRepo: CourseRepoFixture;
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 const baseUrl = siteUrl + '/pl';
@@ -60,7 +59,7 @@ interface EditData {
   action?: string;
   files: Set<string>;
   info?: string;
-  data?: Record<string, string | number>;
+  data?: Record<string, string | number | boolean>;
   dynamicPostInfo?: (form: cheerio.Cheerio<any>) => {
     csrfToken: string | undefined;
     url: string | undefined;
@@ -271,6 +270,7 @@ const testEditData: EditData[] = [
       long_name: 'New',
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     files: new Set([
       'README.md',
@@ -307,6 +307,9 @@ const testEditData: EditData[] = [
       long_name: 'Fall 2018 (Copy 1)',
       start_date: '',
       end_date: '',
+      self_enrollment_enabled: true,
+      self_enrollment_use_enrollment_code: false,
+      course_instance_permission: 'Student Data Editor',
     },
     isJSON: true,
     info: 'courseInstances/Fa18_copy1/infoCourseInstance.json',
@@ -388,6 +391,7 @@ const publicCopyTestData: EditData[] = [
       course_instance_id: 2,
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -414,6 +418,7 @@ const publicCopyTestData: EditData[] = [
       course_instance_id: 2,
       start_date: '',
       end_date: '',
+      course_instance_permission: 'Student Data Editor',
     },
     info: 'questions/shared-publicly/info.json',
     files: new Set([
@@ -439,18 +444,12 @@ const publicCopyTestData: EditData[] = [
 
 describe('test course editor', { timeout: 20_000 }, function () {
   describe('not the example course', function () {
-    beforeAll(createCourseFiles);
-    afterAll(deleteCourseFiles);
-
-    beforeAll(helperServer.before(courseDir));
-    afterAll(helperServer.after);
-
     beforeAll(async () => {
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir,
-        course_repository: courseOriginDir,
-      });
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
+    afterAll(helperServer.after);
 
     describe('verify edits', function () {
       testEditData.forEach((element) => {
@@ -460,29 +459,19 @@ describe('test course editor', { timeout: 20_000 }, function () {
   });
 
   describe('Copy from another course', function () {
-    beforeAll(createCourseFiles);
-    afterAll(deleteCourseFiles);
-
-    beforeAll(helperServer.before(courseDir));
-    afterAll(helperServer.after);
-
     beforeAll(async () => {
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir,
-        course_repository: courseOriginDir,
-      });
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
       await features.enable('question-sharing');
       config.checkSharingOnSync = true;
-    });
-
-    afterAll(() => {
-      config.checkSharingOnSync = false;
-    });
-
-    beforeAll(createSharedCourse);
-
-    beforeAll(async () => {
+      await createSharedCourse();
       await updateCourseSharingName({ course_id: '2', sharing_name: 'test-course' });
+    });
+
+    afterAll(async () => {
+      config.checkSharingOnSync = false;
+      await helperServer.after();
     });
 
     describe('verify edits', function () {
@@ -615,62 +604,31 @@ function testEdit(params: EditData) {
   describe('validate', () => {
     it('should not have any sync warnings or errors', async () => {
       const rowCount = await sqldb.execute(sql.select_sync_warnings_and_errors, {
-        course_path: courseLiveDir,
+        course_path: courseRepo.courseLiveDir,
       });
       assert.equal(rowCount, 0);
     });
 
     it('should pull into dev directory', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
 
     it('should have correct contents', async () => {
-      const files = await getFiles({ baseDir: courseDevDir });
+      const files = await getFiles({ baseDir: courseRepo.courseDevDir });
       assert.sameMembers([...files], [...params.files]);
     });
 
     if (params.info) {
       const info = params.info;
       it('should have a uuid', async () => {
-        const contents = await fs.readFile(path.join(courseDevDir, info), 'utf-8');
+        const contents = await fs.readFile(path.join(courseRepo.courseDevDir, info), 'utf-8');
         const infoJson = JSON.parse(contents);
         assert.isString(infoJson.uuid);
       });
     }
-  });
-}
-
-async function createCourseFiles() {
-  await deleteCourseFiles();
-  // Ensure that the default branch is master, regardless of how git
-  // is configured on the host machine.
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-  await execa('git', ['add', '-A'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['push'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
   });
 }
 
@@ -721,10 +679,4 @@ async function createSharedCourse() {
     crypto.randomUUID();
 
   await syncUtil.writeAndSyncCourseData(sharingCourseData);
-}
-
-async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
 }

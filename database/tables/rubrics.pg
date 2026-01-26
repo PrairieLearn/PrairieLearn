@@ -1,6 +1,7 @@
 columns
     created_at: timestamp with time zone not null default CURRENT_TIMESTAMP
     deleted_at: timestamp with time zone
+    grader_guidelines: text
     id: bigint not null default nextval('rubrics_id_seq'::regclass)
     max_extra_points: double precision not null
     min_points: double precision not null

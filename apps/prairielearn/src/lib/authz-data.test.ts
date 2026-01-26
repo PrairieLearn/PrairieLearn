@@ -25,7 +25,6 @@ describe('calculateModernCourseInstanceStudentAccess', () => {
       deleted_at: null,
       enrollment_code: 'TEST123',
       enrollment_limit: null,
-      hide_in_enroll_page: null,
       json_comment: null,
       self_enrollment_enabled: true,
       self_enrollment_enabled_before_date: null,

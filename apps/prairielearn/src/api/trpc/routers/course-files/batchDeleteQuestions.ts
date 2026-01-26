@@ -1,8 +1,9 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema, QuestionSchema } from '../../../../lib/db-types.js';
+import { QuestionSchema } from '../../../../lib/db-types.js';
 import { QuestionDeleteEditor } from '../../../../lib/editors.js';
 import { selectCourseById } from '../../../../models/course.js';
 import { privateProcedure, selectUsers } from '../../trpc.js';

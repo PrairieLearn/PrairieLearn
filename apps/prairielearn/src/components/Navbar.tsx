@@ -860,7 +860,7 @@ function NavbarInstructor({
               ${ProgressCircle({
                 value: navbarCompleteGettingStartedTasksCount,
                 maxValue: navbarTotalGettingStartedTasksCount,
-                class: 'mx-1',
+                className: 'mx-1',
               })}
             </a>
           </li>
@@ -982,13 +982,13 @@ function NavbarInstructor({
 }
 
 function NavbarPublic({ resLocals }: { resLocals: UntypedResLocals }) {
-  const { course, urlPrefix } = resLocals;
+  const { course } = resLocals;
   return html`
     <li class="nav-item btn-group">
       <a
         class="nav-link"
         aria-label="Link to page showing all public questions for the course."
-        href="${urlPrefix}/questions"
+        href="/pl/public/course/${course?.id}/questions"
       >
         ${course?.short_name ?? ''}
       </a>

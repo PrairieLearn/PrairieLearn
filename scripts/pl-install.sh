@@ -24,9 +24,9 @@ dnf -y install \
     lsof \
     make \
     openssl \
-    postgresql16 \
-    postgresql16-server \
-    postgresql16-contrib \
+    postgresql17 \
+    postgresql17-server \
+    postgresql17-contrib \
     procps-ng \
     redis6 \
     tar \
@@ -45,18 +45,19 @@ cd /nvm
 git checkout "$(git describe --abbrev=0 --tags --match "v[0-9]*" "$(git rev-list --tags --max-count=1)")"
 source /nvm/nvm.sh
 export NVM_SYMLINK_CURRENT=true
-nvm install 22
+nvm install 24
 npm install yarn@latest -g
 for f in /nvm/current/bin/*; do ln -s $f "/usr/local/bin/$(basename $f)"; done
 
 echo "setting up postgres..."
 mkdir /var/postgres && chown postgres:postgres /var/postgres
+mkdir /var/run/postgresql && chown postgres:postgres /var/run/postgresql
 su postgres -c "initdb -D /var/postgres"
 
 echo "installing pgvector..."
-dnf -y install postgresql16-server-devel
+dnf -y install postgresql17-server-devel
 cd /tmp
-git clone --branch v0.7.0 https://github.com/pgvector/pgvector.git
+git clone --branch v0.8.1 https://github.com/pgvector/pgvector.git
 cd pgvector
 # This Docker image will be built in GitHub Actions but must run on a variety
 # of platforms, so we need to build it without machine-specific instructions.
@@ -65,7 +66,7 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-dnf -y remove postgresql16-server-devel
+dnf -y remove postgresql17-server-devel
 dnf -y autoremove
 
 echo "setting up uv + venv..."
@@ -73,8 +74,8 @@ cd /
 curl -LO https://astral.sh/uv/install.sh
 env UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh
 
-# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.10
-UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.10
+# /PrairieLearn/.venv/bin/python3 -> /usr/local/bin/python3 -> /usr/share/uv/python/*/bin/python3.13
+UV_PYTHON_BIN_DIR=/usr/local/bin uv python install python3.13
 
 # Clear various caches to minimize the final image size.
 dnf clean all

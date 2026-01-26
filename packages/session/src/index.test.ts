@@ -14,6 +14,8 @@ import { createSessionMiddleware } from './index.js';
 const TEST_SECRET = 'test-secret';
 
 function parseSetCookie(header: string) {
+  // TODO: The types for `set-cookie-parser` are outdated. See https://github.com/PrairieLearn/PrairieLearn/pull/13764.
+  // For now, we will rely on the "soft-deprecated" fields and not change how this works.
   return setCookie.parse(setCookie.splitCookiesString(header));
 }
 

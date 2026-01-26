@@ -173,7 +173,7 @@ def to_json(
         ValueError: If `np_encoding_version` or `df_encoding_version` is invalid.
     """
     if np_encoding_version not in {1, 2}:
-        raise ValueError(f"Invaild np_encoding {np_encoding_version}, must be 1 or 2.")
+        raise ValueError(f"Invalid np_encoding {np_encoding_version}, must be 1 or 2.")
 
     if np_encoding_version == 2 and isinstance(v, np.number):
         return {
@@ -182,7 +182,7 @@ def to_json(
             "_value": str(v),
         }
 
-    if np.isscalar(v) and np.iscomplexobj(v):  # pyright:ignore[reportArgumentType]
+    if np.isscalar(v) and np.iscomplexobj(v):
         return {"_type": "complex", "_value": {"real": v.real, "imag": v.imag}}  # pyright:ignore[reportAttributeAccessIssue]
     elif isinstance(v, np.ndarray):
         if np.isrealobj(v):
@@ -190,7 +190,7 @@ def to_json(
         elif np.iscomplexobj(v):
             return {
                 "_type": "complex_ndarray",
-                "_value": {"real": v.real.tolist(), "imag": v.imag.tolist()},
+                "_value": {"real": np.real(v).tolist(), "imag": np.imag(v).tolist()},
                 "_dtype": str(v.dtype),
             }
     elif isinstance(v, sympy.Expr):
@@ -953,7 +953,8 @@ def latex_from_2darray(
     if A.ndim != 2:
         raise ValueError("input should be a 2D numpy array")
     lines = (
-        np.array2string(A, formatter=formatter)
+        np
+        .array2string(A, formatter=formatter)
         .replace("[", "")
         .replace("]", "")
         .splitlines()

@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 
+import { pullAndUpdateCourse } from '../../lib/course.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getJobSequence } from '../../lib/server-jobs.js';
-import * as syncHelpers from '../shared/syncHelpers.js';
 
 import { EditError } from './editError.html.js';
 
@@ -13,14 +13,13 @@ const router = Router();
 
 router.get(
   '/:job_sequence_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     const job_sequence_id = req.params.job_sequence_id;
-    const course_id = res.locals.course?.id ?? null;
-    const jobSequence = await getJobSequence(job_sequence_id, course_id);
+    const jobSequence = await getJobSequence(job_sequence_id, res.locals.course.id);
 
     if (jobSequence.status === 'Running') {
       // All edits wait for the corresponding job sequence to finish before
@@ -52,14 +51,18 @@ router.get(
 
 router.post(
   '/:job_sequence_id',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_permission_edit) {
       throw new HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
     if (req.body.__action === 'pull') {
-      const job_sequence_id = await syncHelpers.pullAndUpdate(res.locals);
-      res.redirect(res.locals.urlPrefix + '/jobSequence/' + job_sequence_id);
+      const { jobSequenceId } = await pullAndUpdateCourse({
+        course: res.locals.course,
+        userId: res.locals.user.id,
+        authnUserId: res.locals.authz_data.authn_user.id,
+      });
+      res.redirect(res.locals.urlPrefix + '/jobSequence/' + jobSequenceId);
     } else {
       throw new HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

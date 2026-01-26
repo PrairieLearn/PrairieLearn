@@ -10,8 +10,8 @@ indexes
     course_permissions_course_id_idx: USING btree (course_id)
 
 foreign-key constraints
-    course_permissions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
-    course_permissions_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_permissions_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    course_permissions_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
 
 referenced by
     course_instance_permissions: FOREIGN KEY (course_permission_id) REFERENCES course_permissions(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -47,19 +47,35 @@ export let io: Server | undefined;
 let pub: Redis | undefined;
 let sub: Redis | undefined;
 
-export function init(server: http.Server) {
+export async function init(server: http.Server) {
   debug('init(): creating socket server');
   io = new Server(server);
   if (config.redisUrl) {
     // Use redis to mirror broadcasts via all servers.
     //
-    // We set `disableClientInfo: true` to work around this bug:
-    // https://github.com/redis/ioredis/issues/2037
-    pub = new Redis(config.redisUrl, { disableClientInfo: true });
-    sub = new Redis(config.redisUrl, { disableClientInfo: true });
+    // IMPORTANT: We use lazyConnect + explicit connect() to avoid a race condition:
+    //
+    // - By default, ioredis auto-connects when new Redis() is called, but throws
+    //   "Redis is already connecting/connected" if you then call connect()
+    // - With lazyConnect: true, connection is deferred until we call connect()
+    // - When ioredis connects, it goes through phases: connect → handshake (info,
+    //   client SETINFO) → ready
+    // - The redis-adapter calls subClient.subscribe() immediately in createAdapter(),
+    //   which can happen before the connection's ready check completes
+    // - If subscribe() runs during the handshake, the client enters subscriber mode
+    //   while handshake commands are still pending, causing Redis to reject them
+    // - connect() returns a Promise that resolves on the 'ready' event, so by
+    //   awaiting it before calling createAdapter(), we guarantee both connections
+    //   are fully ready before the adapter puts subClient into subscriber mode
+    //
+    // See: https://github.com/redis/ioredis/issues/2037
+    pub = new Redis(config.redisUrl, { lazyConnect: true });
+    sub = new Redis(config.redisUrl, { lazyConnect: true });
 
     attachEventListeners(pub, 'pub');
     attachEventListeners(sub, 'sub');
+
+    await Promise.all([pub.connect(), sub.connect()]);
 
     debug('init(): initializing redis socket adapter');
     io.adapter(createAdapter(pub, sub));

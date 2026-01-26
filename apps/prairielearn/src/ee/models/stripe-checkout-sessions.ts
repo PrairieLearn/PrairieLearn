@@ -10,7 +10,6 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function insertStripeCheckoutSessionForUserInCourseInstance({
   agent_user_id,
   stripe_object_id,
-  institution_id,
   course_instance_id,
   subject_user_id,
   data,
@@ -18,7 +17,6 @@ export async function insertStripeCheckoutSessionForUserInCourseInstance({
 }: {
   agent_user_id: string;
   stripe_object_id: string;
-  institution_id: string;
   course_instance_id: string;
   subject_user_id: string;
   data: any;
@@ -27,7 +25,6 @@ export async function insertStripeCheckoutSessionForUserInCourseInstance({
   await execute(sql.insert_stripe_checkout_session_for_user_in_course_instance, {
     agent_user_id,
     stripe_object_id,
-    institution_id,
     course_instance_id,
     subject_user_id,
     data,

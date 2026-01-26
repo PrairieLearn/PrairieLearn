@@ -1,8 +1,7 @@
 import type { ColumnSizingState, Header, Table } from '@tanstack/react-table';
-import type { RefObject } from 'preact';
-import { render } from 'preact/compat';
-import { useEffect, useRef, useState } from 'preact/hooks';
-import type { JSX } from 'preact/jsx-runtime';
+import { type JSX, type RefObject, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
+import { type Root, createRoot } from 'react-dom/client';
 
 import { TanstackTableHeaderCell } from './TanstackTableHeaderCell.js';
 
@@ -27,7 +26,7 @@ function HiddenMeasurementHeader<TData>({
         top: '-9999px',
       }}
     >
-      <table class="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
+      <table className="table table-hover mb-0" style={{ display: 'grid', tableLayout: 'fixed' }}>
         <thead style={{ display: 'grid' }}>
           <tr style={{ display: 'flex' }}>
             {columnsToMeasure.map((col) => {
@@ -64,25 +63,24 @@ function HiddenMeasurementHeader<TData>({
  */
 export function useAutoSizeColumns<TData>(
   table: Table<TData>,
-  tableRef: RefObject<HTMLDivElement>,
+  tableRef: RefObject<HTMLDivElement | null>,
   filters?: Record<string, (props: { header: Header<TData, unknown> }) => JSX.Element>,
 ): boolean {
-  const [hasMeasured, setHasMeasured] = useState(false);
   const measurementContainerRef = useRef<HTMLDivElement | null>(null);
+  const measurementRootRef = useRef<Root | null>(null);
+
+  // Compute columns that need measuring
+  const columnsToMeasure = useMemo(() => {
+    const allColumns = table.getAllLeafColumns();
+    return allColumns.filter((col) => col.columnDef.meta?.autoSize);
+  }, [table]);
+
+  // Initialize hasMeasured to true if there's nothing to measure
+  const [hasMeasured, setHasMeasured] = useState(() => columnsToMeasure.length === 0);
 
   // Perform measurement
   useEffect(() => {
-    if (hasMeasured || !tableRef.current) {
-      return;
-    }
-
-    const allColumns = table.getAllLeafColumns();
-
-    const columnsToMeasure = allColumns.filter((col) => col.columnDef.meta?.autoSize);
-
-    if (columnsToMeasure.length === 0) {
-      // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-      setHasMeasured(true);
+    if (hasMeasured || !tableRef.current || columnsToMeasure.length === 0) {
       return;
     }
 
@@ -98,17 +96,21 @@ export function useAutoSizeColumns<TData>(
         container = document.createElement('div');
         document.body.append(container);
         measurementContainerRef.current = container;
+        measurementRootRef.current = createRoot(container);
       }
 
-      // Render headers into hidden container
-      render(
-        <HiddenMeasurementHeader
-          table={table}
-          columnsToMeasure={columnsToMeasure}
-          filters={filters ?? {}}
-        />,
-        container,
-      );
+      // Render headers into hidden container. We need to use `flushSync` to ensure
+      // that it's rendered synchronously before we measure.
+      // eslint-disable-next-line @eslint-react/dom/no-flush-sync
+      flushSync(() => {
+        measurementRootRef.current?.render(
+          <HiddenMeasurementHeader
+            table={table}
+            columnsToMeasure={columnsToMeasure}
+            filters={filters ?? {}}
+          />,
+        );
+      });
 
       // Force layout calculation
       void container.offsetWidth;
@@ -136,8 +138,9 @@ export function useAutoSizeColumns<TData>(
         }
       }
 
-      // Clear container content by unmounting Preact components
-      render(null, container);
+      // Clear container content by unmounting React components
+      measurementRootRef.current?.unmount();
+      measurementRootRef.current = null;
 
       // Apply measurements
       if (Object.keys(newSizing).length > 0) {
@@ -150,14 +153,15 @@ export function useAutoSizeColumns<TData>(
     return () => {
       cancelAnimationFrame(rafId);
     };
-  }, [table, tableRef, filters, hasMeasured]);
+  }, [table, tableRef, filters, hasMeasured, columnsToMeasure]);
 
   // Clean up measurement container on unmount
   useEffect(() => {
     return () => {
+      measurementRootRef.current?.unmount();
+      measurementRootRef.current = null;
       const container = measurementContainerRef.current;
       if (container) {
-        render(null, container);
         container.remove();
         measurementContainerRef.current = null;
       }

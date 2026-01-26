@@ -17,5 +17,5 @@ indexes
     file_edits_ui_ci_dn_fn_deleted_at_null_idx: UNIQUE USING btree (user_id, course_id, dir_name, file_name) WHERE deleted_at IS NULL
 
 foreign-key constraints
-    file_edits_course_id_fkey: FOREIGN KEY (course_id) REFERENCES pl_courses(id) ON UPDATE CASCADE ON DELETE CASCADE
-    file_edits_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(user_id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_edits_course_id_fkey: FOREIGN KEY (course_id) REFERENCES courses(id) ON UPDATE CASCADE ON DELETE CASCADE
+    file_edits_user_id_fkey: FOREIGN KEY (user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE

@@ -2,12 +2,12 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { CommentPopover } from '../../components/CommentPopover.js';
+import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { JsonCommentSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentAccessRulesSchema = z.object({
   mode: z.string(),
@@ -31,7 +31,7 @@ export function InstructorAssessmentAccess({
   resLocals,
   accessRules,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   accessRules: AssessmentAccessRules[];
 }) {
   const showComments = accessRules.some((access_rule) => isRenderableComment(access_rule.comment));
@@ -81,7 +81,7 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    ${showComments ? html`<td>${CommentPopover(access_rule.comment)}</td>` : ''}
+                    ${showComments ? html`<td>${CommentPopoverHtml(access_rule.comment)}</td>` : ''}
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||

@@ -1,6 +1,11 @@
 {
   "name": "@prairielearn/tsconfig",
   "version": "0.0.0",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/PrairieLearn/PrairieLearn.git",
+    "directory": "packages/tsconfig"
+  },
   "private": true,
   "main": "tsconfig.json",
   "files": [

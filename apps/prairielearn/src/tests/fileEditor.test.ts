@@ -8,7 +8,6 @@ import { type Element } from 'domhandler';
 import { execa } from 'execa';
 import fs from 'fs-extra';
 import fetch, { FormData } from 'node-fetch';
-import * as tmp from 'tmp';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -19,6 +18,11 @@ import { JobSequenceSchema } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
 import { encodePath } from '../lib/uri-util.js';
 
+import {
+  type CourseRepoFixture,
+  createCourseRepoFixture,
+  updateCourseRepository,
+} from './helperCourse.js';
 import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -30,12 +34,7 @@ let elemList: cheerio.Cheerio<Element>;
 // Uses course within tests/testFileEditor
 const courseTemplateDir = path.join(import.meta.dirname, 'testFileEditor', 'courseTemplate');
 
-// Set up temporary writeable directories for course content
-const baseDir = tmp.dirSync().name;
-const courseOriginDir = path.join(baseDir, 'courseOrigin');
-const courseLiveDir = path.join(baseDir, 'courseLive');
-const courseDevDir = path.join(baseDir, 'courseDev');
-const courseDir = courseLiveDir;
+let courseRepo: CourseRepoFixture;
 
 const courseInstancePath = path.join('courseInstances', 'Fa18');
 const assessmentPath = path.join(courseInstancePath, 'assessments', 'HW1');
@@ -261,21 +260,11 @@ const verifyFileData = [
 describe('test file editor', { timeout: 20_000 }, function () {
   describe('not the test course', function () {
     beforeAll(async () => {
-      await createCourseFiles();
+      courseRepo = await createCourseRepoFixture(courseTemplateDir);
+      await helperServer.before(courseRepo.courseLiveDir)();
+      await updateCourseRepository({ courseId: '1', repository: courseRepo.courseOriginDir });
     });
-    afterAll(async () => {
-      await deleteCourseFiles();
-    });
-
-    beforeAll(helperServer.before(courseDir));
     afterAll(helperServer.after);
-
-    beforeAll(async () => {
-      await sqldb.execute(sql.update_course_repository, {
-        course_path: courseLiveDir,
-        course_repository: courseOriginDir,
-      });
-    });
 
     describe('the locals object', function () {
       it('should be cleared', function () {
@@ -378,43 +367,6 @@ function badGet(url: string, expected_status: number, should_parse: boolean) {
       });
     }
   });
-}
-
-async function createCourseFiles() {
-  await deleteCourseFiles();
-  // Ensure that the default branch is master, regardless of how git
-  // is configured on the host machine.
-  await execa('git', ['-c', 'init.defaultBranch=master', 'init', '--bare', courseOriginDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseLiveDir], {
-    cwd: '.',
-    env: process.env,
-  });
-  await fs.copy(courseTemplateDir, courseLiveDir, { overwrite: false });
-  await execa('git', ['add', '-A'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['commit', '-m', 'initial commit'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['push'], {
-    cwd: courseLiveDir,
-    env: process.env,
-  });
-  await execa('git', ['clone', courseOriginDir, courseDevDir], {
-    cwd: '.',
-    env: process.env,
-  });
-}
-
-async function deleteCourseFiles() {
-  await fs.remove(courseOriginDir);
-  await fs.remove(courseLiveDir);
-  await fs.remove(courseDevDir);
 }
 
 function editPost(
@@ -672,17 +624,17 @@ function doEdits(data: {
 function writeAndCommitFileInLive(fileName: string, fileContents: string) {
   describe(`commit a change to ${fileName} by exec`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseLiveDir, fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseLiveDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseLiveDir,
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseLiveDir,
+        cwd: courseRepo.courseLiveDir,
         env: process.env,
       });
     });
@@ -693,12 +645,15 @@ function pullAndVerifyFileInDev(fileName: string, fileContents: string) {
   describe(`pull in dev and verify contents of ${fileName}`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should match contents', function () {
-      assert.strictEqual(readFileSync(path.join(courseDevDir, fileName), 'utf-8'), fileContents);
+      assert.strictEqual(
+        readFileSync(path.join(courseRepo.courseDevDir, fileName), 'utf-8'),
+        fileContents,
+      );
     });
   });
 }
@@ -707,12 +662,12 @@ function pullAndVerifyFileNotInDev(fileName: string) {
   describe(`pull in dev and verify ${fileName} does not exist`, function () {
     it('should pull', async () => {
       await execa('git', ['pull'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should not exist', async () => {
-      assert.isFalse(await fs.pathExists(path.join(courseDevDir, fileName)));
+      assert.isFalse(await fs.pathExists(path.join(courseRepo.courseDevDir, fileName)));
     });
   });
 }
@@ -720,23 +675,23 @@ function pullAndVerifyFileNotInDev(fileName: string) {
 function writeAndPushFileInDev(fileName: string, fileContents: string) {
   describe(`write ${fileName} in courseDev and push to courseOrigin`, function () {
     it('should write', async () => {
-      await fs.writeFile(path.join(courseDevDir, fileName), fileContents);
+      await fs.writeFile(path.join(courseRepo.courseDevDir, fileName), fileContents);
     });
     it('should add', async () => {
       await execa('git', ['add', '-A'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should commit', async () => {
       await execa('git', ['commit', '-m', 'commit from writeFile'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });
     it('should push', async () => {
       await execa('git', ['push'], {
-        cwd: courseDevDir,
+        cwd: courseRepo.courseDevDir,
         env: process.env,
       });
     });

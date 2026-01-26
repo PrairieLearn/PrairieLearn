@@ -1,0 +1,128 @@
+import { useState } from 'react';
+import Accordion from 'react-bootstrap/Accordion';
+import AccordionBody from 'react-bootstrap/AccordionBody';
+import AccordionHeader from 'react-bootstrap/AccordionHeader';
+import AccordionItem from 'react-bootstrap/AccordionItem';
+import Button from 'react-bootstrap/Button';
+import Dropdown from 'react-bootstrap/Dropdown';
+import DropdownItem from 'react-bootstrap/DropdownItem';
+import DropdownMenu from 'react-bootstrap/DropdownMenu';
+import DropdownToggle from 'react-bootstrap/DropdownToggle';
+import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
+import Tooltip from 'react-bootstrap/Tooltip';
+
+import { SampleQuestionDemo } from './SampleQuestionDemo.js';
+import { examplePromptsArray } from './aiGeneratedQuestionSamples.js';
+
+export function SampleQuestions() {
+  const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
+
+  const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
+
+  const handleClickPrevious = () => {
+    setSelectedQuestionIndex((prevIndex) => Math.max(prevIndex - 1, 0));
+  };
+
+  const handleClickNext = () => {
+    setSelectedQuestionIndex((prevIndex) =>
+      Math.min(prevIndex + 1, examplePromptsArray.length - 1),
+    );
+  };
+
+  return (
+    <Accordion>
+      <AccordionItem eventKey="0">
+        <AccordionHeader>Example questions and prompts</AccordionHeader>
+        <AccordionBody>
+          <SampleQuestionSelector
+            selectedQuestionName={selectedQuestion.name}
+            selectedQuestionIndex={selectedQuestionIndex}
+            onSelectQuestionIndex={setSelectedQuestionIndex}
+            onClickPrevious={handleClickPrevious}
+            onClickNext={handleClickNext}
+          />
+          <SampleQuestionDemo key={selectedQuestion.id} prompt={selectedQuestion} />
+          <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
+        </AccordionBody>
+      </AccordionItem>
+    </Accordion>
+  );
+}
+
+SampleQuestions.displayName = 'SampleQuestions';
+
+function SampleQuestionSelector({
+  selectedQuestionName,
+  selectedQuestionIndex,
+  onSelectQuestionIndex,
+  onClickPrevious,
+  onClickNext,
+}: {
+  selectedQuestionName: string;
+  selectedQuestionIndex: number;
+  onSelectQuestionIndex: (index: number) => void;
+  onClickPrevious: () => void;
+  onClickNext: () => void;
+}) {
+  return (
+    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
+      <Dropdown
+        style={{ flex: 1 }}
+        onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
+      >
+        <DropdownToggle
+          as="button"
+          type="button"
+          style={{ width: '100%' }}
+          className="btn border d-flex justify-content-between align-items-center bg-white"
+        >
+          {selectedQuestionName}
+        </DropdownToggle>
+        <DropdownMenu>
+          {examplePromptsArray.map((prompt, index) => (
+            <DropdownItem
+              key={prompt.id}
+              active={index === selectedQuestionIndex}
+              eventKey={index.toString()}
+            >
+              {prompt.name}
+            </DropdownItem>
+          ))}
+        </DropdownMenu>
+      </Dropdown>
+      <div className="d-flex align-items-center gap-2">
+        <Button disabled={selectedQuestionIndex === 0} onClick={onClickPrevious}>
+          Previous
+        </Button>
+        <Button
+          disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
+          onClick={onClickNext}
+        >
+          Next
+        </Button>
+      </div>
+    </div>
+  );
+}
+
+function SampleQuestionPrompt({ prompt }: { prompt: string }) {
+  const handleUsePrompt = () => {
+    const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm');
+    if (promptTextarea) {
+      promptTextarea.value = prompt;
+    }
+  };
+
+  return (
+    <>
+      <p className="fw-bold mb-1 mt-3">Prompt</p>
+      <p>{prompt}</p>
+      <OverlayTrigger
+        placement="top"
+        overlay={<Tooltip>Copy this prompt to the prompt input</Tooltip>}
+      >
+        <Button onClick={handleUsePrompt}>Use prompt</Button>
+      </OverlayTrigger>
+    </>
+  );
+}

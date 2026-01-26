@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
+import { type WithRequiredKeys } from '@prairielearn/utils';
 
 import {
   type EnumPlanGrantType,
@@ -9,7 +10,6 @@ import {
   type PlanGrant,
   PlanGrantSchema,
 } from '../../../lib/db-types.js';
-import { type WithRequiredKeys } from '../../../lib/types.js';
 import {
   deleteCourseInstanceRequiredPlan,
   insertCourseInstanceRequiredPlan,

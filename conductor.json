@@ -1,0 +1,6 @@
+{
+  "scripts": {
+    "setup": "make deps",
+    "run": "make dev"
+  }
+}

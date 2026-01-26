@@ -9,6 +9,9 @@ WITH
     SET
       course_role = EXCLUDED.course_role
     WHERE
+      -- This query will only step up in permission. If a permission already
+      -- exists for this user and it has higher permissions than what we're
+      -- trying to insert, this will be a no-op.
       cp.course_role < EXCLUDED.course_role
     RETURNING
       cp.*
@@ -200,6 +203,9 @@ WITH
     SET
       course_instance_role = EXCLUDED.course_instance_role
     WHERE
+      -- This query will only step up in permission. If a permission already
+      -- exists for this user and it has higher permissions than what we're
+      -- trying to insert, this will be a no-op.
       cip.course_instance_role < EXCLUDED.course_instance_role
     RETURNING
       cip.*
@@ -345,21 +351,40 @@ SELECT
 FROM
   deleted_course_instance_permissions AS cip;
 
+-- BLOCK select_course_instance_permission_for_user
+SELECT
+  cip.course_instance_role
+FROM
+  course_instance_permissions AS cip
+  JOIN course_permissions AS cp ON cip.course_permission_id = cp.id
+WHERE
+  cip.course_instance_id = $course_instance_id
+  AND cp.user_id = $user_id;
+
+-- BLOCK select_course_permission_for_user
+SELECT
+  cp.course_role
+FROM
+  course_permissions AS cp
+WHERE
+  cp.course_id = $course_id
+  AND cp.user_id = $user_id;
+
 -- BLOCK user_is_instructor_in_any_course
 SELECT
   TRUE
 FROM
   users AS u
-  LEFT JOIN administrators AS adm ON adm.user_id = u.user_id
-  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.user_id)
+  LEFT JOIN administrators AS adm ON (adm.user_id = u.id)
+  LEFT JOIN course_permissions AS cp ON (cp.user_id = u.id)
   LEFT JOIN course_instance_permissions AS cip ON (cip.course_permission_id = cp.id)
-  LEFT JOIN pl_courses AS c ON (c.id = cp.course_id)
+  LEFT JOIN courses AS c ON (c.id = cp.course_id)
   LEFT JOIN course_instances AS ci ON (
     ci.id = cip.course_instance_id
     AND ci.course_id = c.id
   )
 WHERE
-  u.user_id = $user_id
+  u.id = $user_id
   AND (
     adm.id IS NOT NULL
     OR (

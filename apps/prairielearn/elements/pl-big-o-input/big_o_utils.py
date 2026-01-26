@@ -19,7 +19,7 @@ LOWER_ORDER_TERMS_FEEDBACK = (
     "Your answer is correct, but you have unnecessary lower order terms."
 )
 CONSTANT_FACTORS_FEEDBACK = (
-    "Your answer is correct but has unncessary constant factors."
+    "Your answer is correct but has unnecessary constant factors."
 )
 
 THETA_CONSTANT_FACTORS_FEEDBACK = (

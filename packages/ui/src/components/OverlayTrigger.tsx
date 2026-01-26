@@ -1,4 +1,4 @@
-import { useEffect, useRef } from 'preact/compat';
+import { useEffect, useRef } from 'react';
 import {
   // eslint-disable-next-line no-restricted-imports
   OverlayTrigger as BootstrapOverlayTrigger,

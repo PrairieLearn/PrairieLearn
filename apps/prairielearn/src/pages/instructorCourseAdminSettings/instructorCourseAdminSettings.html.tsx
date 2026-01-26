@@ -3,7 +3,7 @@ import { html } from '@prairielearn/html';
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type Timezone, formatTimezone } from '../../lib/timezone.shared.js';
 
 export function InstructorCourseAdminSettings({
@@ -16,7 +16,7 @@ export function InstructorCourseAdminSettings({
   origHash,
   courseGHLink,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
   aiQuestionGenerationEnabled: boolean;
   aiQuestionGenerationCourseToggleEnabled: boolean;
   coursePathExists: boolean;
@@ -175,8 +175,20 @@ export function InstructorCourseAdminSettings({
                 </button>
               </span>
               <small class="form-text text-muted">
-                The Github repository that can be used to sync course files.
+                The GitHub repository that can be used to sync course files.
               </small>
+            </div>
+            <div class="mb-3">
+              <label class="form-label" for="branch">Branch</label>
+              <input
+                type="text"
+                class="form-control"
+                id="branch"
+                name="branch"
+                value="${resLocals.course.branch}"
+                disabled
+              />
+              <small class="form-text text-muted">The git branch used for this course.</small>
             </div>
             <div class="form-check mb-3">
               <input
@@ -235,7 +247,7 @@ function CourseDirectoryMissingAlert({
   coursePathExists,
   courseInfoExists,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course'>;
   coursePathExists: boolean;
   courseInfoExists: boolean;
 }) {
@@ -257,7 +269,7 @@ function CourseDirectoryMissingAlert({
         <button
           name="__action"
           value="add_configuration"
-          class="btn btn-link btn-link-inline mt-n1 p-0 border-0 "
+          class="btn btn-link btn-link-inline mt-n1 p-0 border-0"
         >
           create this file
         </button>

@@ -18,9 +18,9 @@ $(function() {
         <div class="card-body">
             <span>
                 The error in position must be no greater than <strong>{{tol_translation}} units</strong> and error in orientation must be no greater than <strong>{{tol_rotation}} degrees</strong> in order for your answer to be marked correct. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
-                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             </span>
         </div>
     </div>
@@ -31,9 +31,9 @@ $(function() {
         <div class="card-body">
             <span>
                 The error in position is <strong>{{error_in_translation}} units</strong> and the error in orientation is <strong>{{error_in_rotation}} degrees</strong>. The error in orientation is the smallest angle through which the submitted orientation would have to rotate in order to be aligned with the correct orientation.
-                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+                {{#correct}}&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+                {{#partial}}&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+                {{#incorrect}}&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
             </span>
         </div>
     </div>
@@ -66,19 +66,19 @@ $(function() {
         {{/show_toggle}}
         {{#show_bodybuttons}}
         <div class="input-group input-group-sm me-2 mb-2" id="x-group-{{uuid}}">
-            <button id="x-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="x-minus-icon-{{uuid}}" class="fa fa-arrow-left" aria-hidden="true"></i></button>
+            <button id="x-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="x-minus-icon-{{uuid}}" class="fas fa-arrow-left" aria-hidden="true"></i></button>
             <span class="input-group-text">x</span>
-            <button id="x-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="x-plus-icon-{{uuid}}" class="fa fa-arrow-right" aria-hidden="true"></i></button>
+            <button id="x-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="x-plus-icon-{{uuid}}" class="fas fa-arrow-right" aria-hidden="true"></i></button>
         </div>
         <div class="input-group input-group-sm me-2 mb-2" id="y-group-{{uuid}}">
-            <button id="y-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="y-minus-icon-{{uuid}}" class="fa fa-arrow-left" aria-hidden="true"></i></button>
+            <button id="y-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="y-minus-icon-{{uuid}}" class="fas fa-arrow-left" aria-hidden="true"></i></button>
             <span class="input-group-text">y</span>
-            <button id="y-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="y-plus-icon-{{uuid}}" class="fa fa-arrow-right" aria-hidden="true"></i></button>
+            <button id="y-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="y-plus-icon-{{uuid}}" class="fas fa-arrow-right" aria-hidden="true"></i></button>
         </div>
         <div class="input-group input-group-sm me-2 mb-2" id="z-group-{{uuid}}">
-            <button id="z-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="z-minus-icon-{{uuid}}" class="fa fa-arrow-left" aria-hidden="true"></i></button>
+            <button id="z-minus-{{uuid}}" class="btn btn-secondary" type="button"><i id="z-minus-icon-{{uuid}}" class="fas fa-arrow-left" aria-hidden="true"></i></button>
             <span class="input-group-text">z</span>
-            <button id="z-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="z-plus-icon-{{uuid}}" class="fa fa-arrow-right" aria-hidden="true"></i></button>
+            <button id="z-plus-{{uuid}}" class="btn btn-secondary" type="button"><i id="z-plus-icon-{{uuid}}" class="fas fa-arrow-right" aria-hidden="true"></i></button>
         </div>
         {{/show_bodybuttons}}
         <div class="btn-group btn-group-sm me-2 mb-2" role="group">

@@ -133,7 +133,8 @@ def traverse_and_replace(
                 tail = new_elements.tail
                 new_elements.tail = None
                 instruction = (
-                    lxml.html.tostring(new_elements, encoding="unicode")
+                    lxml.html
+                    .tostring(new_elements, encoding="unicode")
                     .removeprefix("<?")
                     .removesuffix("?>")
                 )

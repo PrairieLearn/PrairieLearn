@@ -11,12 +11,12 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { calculateCourseInstanceRolePermissions } from '../lib/authz-data-lib.js';
 import {
   type Course,
   EnumCourseInstanceRoleSchema,
-  IdSchema,
   SubmissionSchema,
   type User,
   type Variant,
@@ -89,9 +89,9 @@ export async function selectVariantsByInstanceQuestion({
 /**
  * Returns whether the given user owns the given variant. There are two cases:
  *
- * - For group work, a user is considered to own a variant if they are in the
- *   group for the assessment instance that the variant is associated with.
- * - For non-group work, a user is considered to own a variant if they are the
+ * - For team work, a user is considered to own a variant if they are in the
+ *   team for the assessment instance that the variant is associated with.
+ * - For non-team work, a user is considered to own a variant if they are the
  *   user that created the variant, as tracked in `variants.user_id`.
  */
 export async function selectUserOwnsVariant({
@@ -190,7 +190,7 @@ export async function selectAndAuthzVariant(options: {
   // debugging?
   if ((variant_course.example_course || publicQuestionPreview) && !is_administrator) {
     const userOwnsVariant = await selectUserOwnsVariant({
-      user_id: user.user_id,
+      user_id: user.id,
       variant_id: variant.id,
     });
     if (!userOwnsVariant) {
@@ -226,13 +226,13 @@ export async function selectAndAuthzVariant(options: {
     ) {
       const authnUserPermissions = await callRow(
         'authz_course_instance',
-        [authn_user.user_id, variant.course_instance_id, new Date()],
+        [authn_user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 
       const userPermissions = await callRow(
         'authz_course_instance',
-        [user.user_id, variant.course_instance_id, new Date()],
+        [user.id, variant.course_instance_id, new Date()],
         z.object({ course_instance_role: EnumCourseInstanceRoleSchema }),
       );
 

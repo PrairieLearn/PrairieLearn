@@ -1,10 +1,11 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { IdSchema, WorkspaceHostSchema } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { WorkspaceHostSchema } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 const WorkspaceWithContextSchema = z.object({
   id: IdSchema,
@@ -33,7 +34,7 @@ export function AdministratorWorkspaces({
 }: {
   workspaceHostRows: WorkspaceHostRow[];
   workspaceLoadHostCapacity: number;
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'plain'>;
 }) {
   return PageLayout({
     resLocals,

@@ -29,6 +29,33 @@ export function makeFileConfigSource(path: string): ConfigSource {
   };
 }
 
+/**
+ * Extracts keys from T where string is assignable to the value type.
+ * This ensures we only map environment variables to fields that accept strings.
+ */
+type StringAssignableKeys<T> = {
+  [K in keyof T]: string extends T[K] ? K : never;
+}[keyof T];
+
+export function makeEnvConfigSource<Schema extends z.ZodTypeAny>(
+  mapping: Partial<Record<StringAssignableKeys<z.infer<Schema>>, string>>,
+): ConfigSource {
+  return {
+    load: async () => {
+      const config: Record<string, string> = {};
+
+      for (const [key, envVar] of Object.entries(mapping) as [string, string][]) {
+        const value = process.env[envVar];
+        if (value !== undefined) {
+          config[key] = value;
+        }
+      }
+
+      return config;
+    },
+  };
+}
+
 export function makeSecretsManagerConfigSource(tagKey: string): ConfigSource {
   return {
     load: async (existingConfig) => {
