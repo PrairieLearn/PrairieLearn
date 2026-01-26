@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { chunk, shuffle } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 
 import * as namedLocks from '@prairielearn/named-locks';
@@ -190,7 +190,6 @@ export async function randomTeams({
           { assessment_id: assessment.id },
           UserSchema,
         );
-        _.shuffle(studentsWithoutTeam);
         const numStudents = studentsWithoutTeam.length;
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
@@ -201,9 +200,9 @@ export async function randomTeams({
         let teamsCreated = 0,
           studentsInTeam = 0;
         await runInTransactionAsync(async () => {
-          // Create teams using the teams of maximum size where possible
-          const userTeams = _.chunk(
-            studentsWithoutTeam.map((user) => user.uid),
+          // Create random teams using the maximum size where possible
+          const userTeams = chunk(
+            shuffle(studentsWithoutTeam.map((user) => user.uid)),
             max_team_size,
           );
           // If the last team is too small, move students from larger teams to the last team

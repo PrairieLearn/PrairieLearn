@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { difference } from 'es-toolkit';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -39,8 +39,8 @@ describe('Cron', { timeout: 60_000 }, function () {
       const result = await sqldb.queryRows(sql.select_cron_jobs, CronJobSchema);
       const runJobs = result.map((row) => row.name);
       const cronJobs = cron.jobs.map((row) => row.name);
-      assert.lengthOf(_.difference(runJobs, cronJobs), 0);
-      assert.lengthOf(_.difference(cronJobs, runJobs), 0);
+      assert.lengthOf(difference(runJobs, cronJobs), 0);
+      assert.lengthOf(difference(cronJobs, runJobs), 0);
     });
 
     it('should all have successfully completed', async () => {

@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { keyBy } from 'es-toolkit';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import z from 'zod';
@@ -46,7 +46,7 @@ const questionsArray: TestQuestion[] = [
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 50 },
 ];
 
-const questions = _.keyBy(questionsArray, 'qid');
+const questions = keyBy(questionsArray, (question) => question.qid);
 
 const assessmentMaxPoints = 57;
 
