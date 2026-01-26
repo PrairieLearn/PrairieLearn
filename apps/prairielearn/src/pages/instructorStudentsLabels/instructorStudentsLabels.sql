@@ -31,17 +31,3 @@ GROUP BY
   sl.id
 ORDER BY
   sl.name ASC;
-
--- BLOCK select_enrollment_ids_for_label
-SELECT
-  sle.enrollment_id
-FROM
-  student_label_enrollments AS sle
-WHERE
-  sle.student_label_id = $student_label_id;
-
--- BLOCK bulk_remove_enrollments_from_label
-DELETE FROM student_label_enrollments
-WHERE
-  student_label_id = $student_label_id
-  AND enrollment_id = ANY ($enrollment_ids::bigint[]);

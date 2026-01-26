@@ -26,16 +26,6 @@ WHERE
   id = $id
   AND deleted_at IS NULL;
 
--- BLOCK update_student_label_name
-UPDATE student_labels
-SET
-  name = $name
-WHERE
-  id = $id
-  AND deleted_at IS NULL
-RETURNING
-  *;
-
 -- BLOCK update_student_label
 UPDATE student_labels
 SET
@@ -110,11 +100,21 @@ FROM
 WHERE
   sle.student_label_id = $student_label_id;
 
--- BLOCK bulk_remove_enrollments_from_student_label
-DELETE FROM student_label_enrollments
+-- BLOCK batch_add_enrollments_to_student_label
+INSERT INTO
+  student_label_enrollments (enrollment_id, student_label_id)
+SELECT
+  e.id,
+  sl.id
+FROM
+  unnest($enrollment_ids::bigint[]) AS input_id
+  JOIN enrollments AS e ON e.id = input_id
+  JOIN student_labels AS sl ON sl.id = $student_label_id
 WHERE
-  student_label_id = $student_label_id
-  AND enrollment_id = ANY ($enrollment_ids::bigint[]);
+  e.course_instance_id = sl.course_instance_id
+ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
+RETURNING
+  *;
 
 -- BLOCK batch_remove_enrollments_from_student_label_with_count
 WITH

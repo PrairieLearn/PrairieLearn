@@ -20,15 +20,14 @@ import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { readCourseInstanceJson, saveCourseInstanceJson } from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentLabel,
+  batchAddEnrollmentsToStudentLabel,
   batchRemoveEnrollmentsFromStudentLabel,
   selectStudentLabelsByCourseInstance,
   verifyLabelBelongsToCourseInstance,
@@ -178,20 +177,13 @@ router.post(
       // Verify the label belongs to this course instance
       await verifyLabelBelongsToCourseInstance(body.student_label_id, courseInstance.id);
 
-      // Add each enrollment to the label
-      let added = 0;
-      let alreadyInLabel = 0;
-      for (const enrollmentId of body.enrollment_ids) {
-        const result = await addEnrollmentToStudentLabel({
-          enrollment_id: enrollmentId,
-          student_label_id: body.student_label_id,
-        });
-        if (result) {
-          added++;
-        } else {
-          alreadyInLabel++;
-        }
-      }
+      // Add enrollments to the label
+      const addedEnrollments = await batchAddEnrollmentsToStudentLabel({
+        enrollment_ids: body.enrollment_ids,
+        student_label_id: body.student_label_id,
+      });
+      const added = addedEnrollments.length;
+      const alreadyInLabel = body.enrollment_ids.length - added;
 
       res.json({ success: true, added, alreadyInLabel });
     } else if (req.body.__action === 'create_label_and_add_students') {
@@ -213,8 +205,9 @@ router.post(
 
       // Read current JSON
       const content = await fs.readFile(courseInstanceJsonPath, 'utf8');
-      const courseInstanceJson = JSON.parse(content);
-      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
+      const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
+      const studentLabels: StudentLabelJson[] =
+        (courseInstanceJson.studentLabels as StudentLabelJson[] | undefined) ?? [];
 
       // Check if label name already exists
       if (studentLabels.some((l) => l.name === body.name)) {
@@ -229,31 +222,23 @@ router.post(
       // Compute origHash for optimistic concurrency
       const origHash = sha256(b64EncodeUnicode(content)).toString();
 
-      // Format and write using FileModifyEditor
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
-
-      const editor = new FileModifyEditor({
-        locals: {
-          authz_data: res.locals.authz_data,
-          course: res.locals.course,
-          user: res.locals.user,
-        },
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: courseInstanceJsonPath,
-        editContents: b64EncodeUnicode(formattedJson),
+      // Save using FileModifyEditor
+      const saveResult = await saveCourseInstanceJson({
+        courseInstanceJson,
+        courseInstanceJsonPath,
+        paths,
         origHash,
+        locals: {
+          authz_data: authzData,
+          course,
+          user: authzData.user,
+        },
       });
 
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      if (!saveResult.success) {
         res.status(500).json({
-          error: err instanceof Error ? err.message : 'Failed to save changes',
-          jobSequenceId: serverJob.jobSequenceId,
+          error: saveResult.error,
+          jobSequenceId: saveResult.jobSequenceId,
         });
         return;
       }
@@ -265,12 +250,10 @@ router.post(
         if (!newLabel) {
           throw new HttpStatusError(500, 'Label saved but not found in database');
         }
-        for (const enrollmentId of body.enrollment_ids) {
-          await addEnrollmentToStudentLabel({
-            enrollment_id: enrollmentId,
-            student_label_id: newLabel.id,
-          });
-        }
+        await batchAddEnrollmentsToStudentLabel({
+          enrollment_ids: body.enrollment_ids,
+          student_label_id: newLabel.id,
+        });
       }
 
       res.json({ success: true });

@@ -7,7 +7,6 @@ import {
   queryOptionalRow,
   queryRow,
   queryRows,
-  runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -24,6 +23,8 @@ const sql = loadSqlEquiv(import.meta.url);
 
 /**
  * Creates a new student label in the given course instance.
+ *
+ * This should ONLY be called for testing.
  */
 export async function createStudentLabel({
   course_instance_id,
@@ -59,19 +60,6 @@ export async function selectStudentLabelsByCourseInstance(
  */
 export async function selectStudentLabelById(id: string): Promise<StudentLabel> {
   return await queryRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
-}
-
-/**
- * Renames a student label.
- */
-export async function renameStudentLabel({
-  id,
-  name,
-}: {
-  id: string;
-  name: string;
-}): Promise<StudentLabel> {
-  return await queryRow(sql.update_student_label_name, { id, name }, StudentLabelSchema);
 }
 
 /**
@@ -128,6 +116,28 @@ export async function removeEnrollmentFromStudentLabel({
 }
 
 /**
+ * Adds multiple enrollments to a student label in a single operation.
+ * Only adds enrollments that are in the same course instance as the label.
+ * Returns the newly added enrollments (those not already in the label).
+ */
+export async function batchAddEnrollmentsToStudentLabel({
+  enrollment_ids,
+  student_label_id,
+}: {
+  enrollment_ids: string[];
+  student_label_id: string;
+}): Promise<StudentLabelEnrollment[]> {
+  if (enrollment_ids.length === 0) {
+    return [];
+  }
+  return await queryRows(
+    sql.batch_add_enrollments_to_student_label,
+    { enrollment_ids, student_label_id },
+    StudentLabelEnrollmentSchema,
+  );
+}
+
+/**
  * Removes multiple enrollments from a student label in a single operation.
  * Returns the count of enrollments actually removed.
  */
@@ -162,6 +172,19 @@ export async function selectEnrollmentsInStudentLabel(
 }
 
 /**
+ * Selects the IDs of all enrollments in a given student label.
+ */
+export async function selectEnrollmentIdsForStudentLabel(
+  student_label_id: string,
+): Promise<string[]> {
+  return await queryRows(
+    sql.select_enrollment_ids_for_student_label,
+    { student_label_id },
+    IdSchema,
+  );
+}
+
+/**
  * Selects all student labels that an enrollment belongs to.
  */
 export async function selectStudentLabelsForEnrollment(
@@ -188,110 +211,4 @@ export async function verifyLabelBelongsToCourseInstance(
     throw new HttpStatusError(403, 'Label does not belong to this course instance');
   }
   return label;
-}
-
-/**
- * Creates a student label with error handling for duplicate names.
- * Throws a user-friendly error if a label with the same name already exists.
- */
-export async function createStudentLabelWithErrorHandling({
-  course_instance_id,
-  name,
-}: {
-  course_instance_id: string;
-  name: string;
-}): Promise<StudentLabel> {
-  try {
-    return await createStudentLabel({ course_instance_id, name });
-  } catch (err: any) {
-    if (err.constraint === 'student_labels_course_instance_id_name_unique') {
-      throw new HttpStatusError(400, 'A label with this name already exists');
-    }
-    throw err;
-  }
-}
-
-/**
- * Creates a new student label and adds the specified enrollments to it.
- * Uses a transaction to ensure atomicity.
- * Returns the created label.
- */
-export async function createStudentLabelAndAddEnrollments({
-  course_instance_id,
-  name,
-  enrollment_ids,
-}: {
-  course_instance_id: string;
-  name: string;
-  enrollment_ids: string[];
-}): Promise<StudentLabel> {
-  return await runInTransactionAsync(async () => {
-    const label = await createStudentLabelWithErrorHandling({
-      course_instance_id,
-      name,
-    });
-
-    // Add all enrollments to the label
-    for (const enrollmentId of enrollment_ids) {
-      await addEnrollmentToStudentLabel({
-        enrollment_id: enrollmentId,
-        student_label_id: label.id,
-      });
-    }
-
-    return label;
-  });
-}
-
-/**
- * Updates a student label's name and membership.
- * Compares current enrollments with desired enrollments and adds/removes as needed.
- */
-export async function updateStudentLabelWithEnrollments({
-  id,
-  name,
-  enrollment_ids,
-}: {
-  id: string;
-  name: string;
-  enrollment_ids: string[];
-}): Promise<StudentLabel> {
-  return await runInTransactionAsync(async () => {
-    // Update the label name
-    const label = await renameStudentLabel({ id, name });
-
-    // Get current enrollment IDs
-    const currentEnrollmentIds = (
-      await queryRows(
-        sql.select_enrollment_ids_for_student_label,
-        { student_label_id: id },
-        z.object({ enrollment_id: IdSchema }),
-      )
-    ).map((row) => row.enrollment_id);
-
-    const currentSet = new Set(currentEnrollmentIds);
-    const desiredSet = new Set(enrollment_ids);
-
-    // Calculate enrollments to add and remove
-    const toAdd = enrollment_ids.filter((eid) => !currentSet.has(eid));
-    const toRemove = currentEnrollmentIds.filter((eid) => !desiredSet.has(eid));
-
-    // Add new enrollments
-    for (const enrollmentId of toAdd) {
-      await addEnrollmentToStudentLabel({
-        enrollment_id: enrollmentId,
-        student_label_id: id,
-      });
-    }
-
-    // Remove old enrollments
-    if (toRemove.length > 0) {
-      await execute(sql.bulk_remove_enrollments_from_student_label, {
-        student_label_id: id,
-        enrollment_ids: toRemove,
-      });
-    }
-
-    return label;
-  });
 }

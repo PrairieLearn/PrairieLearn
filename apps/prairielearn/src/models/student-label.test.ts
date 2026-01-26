@@ -12,11 +12,8 @@ import { getOrCreateUser } from '../tests/utils/auth.js';
 import {
   addEnrollmentToStudentLabel,
   createStudentLabel,
-  createStudentLabelAndAddEnrollments,
-  createStudentLabelWithErrorHandling,
   deleteStudentLabel,
   removeEnrollmentFromStudentLabel,
-  renameStudentLabel,
   selectEnrollmentsInStudentLabel,
   selectStudentLabelById,
   selectStudentLabelsByCourseInstance,
@@ -147,36 +144,6 @@ describe('Student Label Model', () => {
 
       try {
         await selectStudentLabelById(label.id);
-        assert.fail('Expected error to be thrown');
-      } catch (err) {
-        assert.isTrue(err instanceof Error);
-      }
-    });
-  });
-
-  describe('renameStudentLabel', () => {
-    it('renames an student label', async () => {
-      const label = await createStudentLabel({
-        course_instance_id: '1',
-        name: 'Old Name',
-      });
-
-      const renamedLabel = await renameStudentLabel({
-        id: label.id,
-        name: 'New Name',
-      });
-
-      assert.equal(renamedLabel.id, label.id);
-      assert.equal(renamedLabel.name, 'New Name');
-      assert.equal(renamedLabel.course_instance_id, label.course_instance_id);
-    });
-
-    it('throws error when renaming non-existent student label', async () => {
-      try {
-        await renameStudentLabel({
-          id: '999999',
-          name: 'New Name',
-        });
         assert.fail('Expected error to be thrown');
       } catch (err) {
         assert.isTrue(err instanceof Error);
@@ -604,104 +571,6 @@ describe('Student Label Model', () => {
         assert.equal(err.status, 403);
         assert.include(err.message, 'does not belong to this course instance');
       }
-    });
-  });
-
-  describe('createStudentLabelWithErrorHandling', () => {
-    it('creates a student label successfully', async () => {
-      const label = await createStudentLabelWithErrorHandling({
-        course_instance_id: '1',
-        name: 'Unique Label Name',
-      });
-
-      assert.isOk(label);
-      assert.equal(label.name, 'Unique Label Name');
-    });
-
-    it('throws user-friendly error for duplicate names', async () => {
-      await createStudentLabel({
-        course_instance_id: '1',
-        name: 'Duplicate Name',
-      });
-
-      try {
-        await createStudentLabelWithErrorHandling({
-          course_instance_id: '1',
-          name: 'Duplicate Name',
-        });
-        assert.fail('Expected error to be thrown');
-      } catch (err: any) {
-        assert.equal(err.status, 400);
-        assert.include(err.message, 'label with this name already exists');
-      }
-    });
-  });
-
-  describe('createStudentLabelAndAddEnrollments', () => {
-    it('creates a label and adds enrollments', async () => {
-      const user1 = await getOrCreateUser({
-        uid: 'create-enroll-1@example.com',
-        name: 'Create Enroll User 1',
-        uin: 'ceu1',
-        email: 'create-enroll-1@example.com',
-      });
-
-      const user2 = await getOrCreateUser({
-        uid: 'create-enroll-2@example.com',
-        name: 'Create Enroll User 2',
-        uin: 'ceu2',
-        email: 'create-enroll-2@example.com',
-      });
-
-      const enrollment1 = await queryRow(
-        `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-         VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
-         RETURNING *`,
-        {
-          user_id: user1.id,
-          course_instance_id: '1',
-          first_joined_at: new Date(),
-        },
-        EnrollmentSchema,
-      );
-
-      const enrollment2 = await queryRow(
-        `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-         VALUES ($user_id, $course_instance_id, 'joined', $first_joined_at)
-         RETURNING *`,
-        {
-          user_id: user2.id,
-          course_instance_id: '1',
-          first_joined_at: new Date(),
-        },
-        EnrollmentSchema,
-      );
-
-      const label = await createStudentLabelAndAddEnrollments({
-        course_instance_id: '1',
-        name: 'Label With Enrollments',
-        enrollment_ids: [enrollment1.id, enrollment2.id],
-      });
-
-      assert.equal(label.name, 'Label With Enrollments');
-
-      const enrollments = await selectEnrollmentsInStudentLabel(label.id);
-      assert.equal(enrollments.length, 2);
-      assert.isTrue(enrollments.some((e) => e.id === enrollment1.id));
-      assert.isTrue(enrollments.some((e) => e.id === enrollment2.id));
-    });
-
-    it('creates a label with no enrollments when empty array passed', async () => {
-      const label = await createStudentLabelAndAddEnrollments({
-        course_instance_id: '1',
-        name: 'Empty Label',
-        enrollment_ids: [],
-      });
-
-      assert.equal(label.name, 'Empty Label');
-
-      const enrollments = await selectEnrollmentsInStudentLabel(label.id);
-      assert.equal(enrollments.length, 0);
     });
   });
 });

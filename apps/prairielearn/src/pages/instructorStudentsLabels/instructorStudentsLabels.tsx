@@ -7,23 +7,23 @@ import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
-import * as sqldb from '@prairielearn/postgres';
+import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
-import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
-import { FileModifyEditor } from '../../lib/editors.js';
+import { readCourseInstanceJson, saveCourseInstanceJson } from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
-import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { getUrl } from '../../lib/url.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentLabel,
+  batchAddEnrollmentsToStudentLabel,
+  batchRemoveEnrollmentsFromStudentLabel,
+  selectEnrollmentIdsForStudentLabel,
   selectStudentLabelsByCourseInstance,
   verifyLabelBelongsToCourseInstance,
 } from '../../models/student-label.js';
@@ -34,25 +34,16 @@ import { InstructorStudentsLabels } from './instructorStudentsLabels.html.js';
 import { StudentLabelWithUserDataSchema } from './instructorStudentsLabels.types.js';
 
 const router = Router();
-const sql = sqldb.loadSqlEquiv(import.meta.url);
+const sql = loadSqlEquiv(import.meta.url);
 
 const MAX_UIDS = 1000;
 
 async function getStudentLabelsWithUserData(courseInstanceId: string) {
-  return await sqldb.queryRows(
+  return await queryRows(
     sql.select_student_labels_with_user_data,
     { course_instance_id: courseInstanceId },
     StudentLabelWithUserDataSchema,
   );
-}
-
-/**
- * Reads the infoCourseInstance.json file and returns the parsed JSON.
- */
-async function readCourseInstanceJson(courseInstancePath: string): Promise<Record<string, any>> {
-  const jsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-  const content = await fs.readFile(jsonPath, 'utf8');
-  return JSON.parse(content);
 }
 
 router.get(
@@ -189,7 +180,8 @@ router.post(
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
+      const studentLabels: StudentLabelJson[] =
+        (courseInstanceJson.studentLabels as StudentLabelJson[] | undefined) ?? [];
 
       // Check if label name already exists
       if (studentLabels.some((l) => l.name === name)) {
@@ -201,27 +193,19 @@ router.post(
       studentLabels.push({ name, color });
       courseInstanceJson.studentLabels = studentLabels;
 
-      // Format and write using FileModifyEditor
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: courseInstanceJsonPath,
-        editContents: b64EncodeUnicode(formattedJson),
+      // Save using FileModifyEditor
+      const saveResult = await saveCourseInstanceJson({
+        courseInstanceJson,
+        courseInstanceJsonPath,
+        paths,
         origHash: orig_hash,
+        locals: res.locals,
       });
 
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      if (!saveResult.success) {
         res.status(500).json({
-          error: err instanceof Error ? err.message : 'Failed to save changes',
-          jobSequenceId: serverJob.jobSequenceId,
+          error: saveResult.error,
+          jobSequenceId: saveResult.jobSequenceId,
         });
         return;
       }
@@ -242,12 +226,10 @@ router.post(
         if (!newLabel) {
           throw new error.HttpStatusError(500, 'Label saved but not found in database');
         }
-        for (const user of enrolledUsers) {
-          await addEnrollmentToStudentLabel({
-            enrollment_id: user.enrollment.id,
-            student_label_id: newLabel.id,
-          });
-        }
+        await batchAddEnrollmentsToStudentLabel({
+          enrollment_ids: enrolledUsers.map((u) => u.enrollment.id),
+          student_label_id: newLabel.id,
+        });
       }
 
       res.json({ success: true });
@@ -274,7 +256,8 @@ router.post(
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
+      const studentLabels: StudentLabelJson[] =
+        (courseInstanceJson.studentLabels as StudentLabelJson[] | undefined) ?? [];
 
       // Find and update the label
       const labelIndex = studentLabels.findIndex((l) => l.name === old_name);
@@ -292,27 +275,19 @@ router.post(
       studentLabels[labelIndex] = { name, color };
       courseInstanceJson.studentLabels = studentLabels;
 
-      // Format and write using FileModifyEditor
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: courseInstanceJsonPath,
-        editContents: b64EncodeUnicode(formattedJson),
+      // Save using FileModifyEditor
+      const saveResult = await saveCourseInstanceJson({
+        courseInstanceJson,
+        courseInstanceJsonPath,
+        paths,
         origHash: orig_hash,
+        locals: res.locals,
       });
 
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      if (!saveResult.success) {
         res.status(500).json({
-          error: err instanceof Error ? err.message : 'Failed to save changes',
-          jobSequenceId: serverJob.jobSequenceId,
+          error: saveResult.error,
+          jobSequenceId: saveResult.jobSequenceId,
         });
         return;
       }
@@ -327,11 +302,7 @@ router.post(
 
       // Get current enrollments
       const currentEnrollmentIds = new Set(
-        await sqldb.queryRows(
-          sql.select_enrollment_ids_for_label,
-          { student_label_id: updatedLabel.id },
-          IdSchema,
-        ),
+        await selectEnrollmentIdsForStudentLabel(updatedLabel.id),
       );
 
       // Parse UIDs and get desired enrollments
@@ -348,21 +319,20 @@ router.post(
       }
 
       // Add new enrollments
-      for (const enrollmentId of desiredEnrollmentIds) {
-        if (!currentEnrollmentIds.has(enrollmentId)) {
-          await addEnrollmentToStudentLabel({
-            enrollment_id: enrollmentId,
-            student_label_id: updatedLabel.id,
-          });
-        }
+      const toAdd = [...desiredEnrollmentIds].filter((id) => !currentEnrollmentIds.has(id));
+      if (toAdd.length > 0) {
+        await batchAddEnrollmentsToStudentLabel({
+          enrollment_ids: toAdd,
+          student_label_id: updatedLabel.id,
+        });
       }
 
       // Remove old enrollments
       const toRemove = [...currentEnrollmentIds].filter((id) => !desiredEnrollmentIds.has(id));
       if (toRemove.length > 0) {
-        await sqldb.execute(sql.bulk_remove_enrollments_from_label, {
-          student_label_id: updatedLabel.id,
+        await batchRemoveEnrollmentsFromStudentLabel({
           enrollment_ids: toRemove,
+          student_label_id: updatedLabel.id,
         });
       }
 
@@ -380,7 +350,8 @@ router.post(
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
+      const studentLabels: StudentLabelJson[] =
+        (courseInstanceJson.studentLabels as StudentLabelJson[] | undefined) ?? [];
 
       // Remove the label
       const labelIndex = studentLabels.findIndex((l) => l.name === label_name);
@@ -392,27 +363,19 @@ router.post(
       studentLabels.splice(labelIndex, 1);
       courseInstanceJson.studentLabels = studentLabels;
 
-      // Format and write using FileModifyEditor
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
-
-      const editor = new FileModifyEditor({
-        locals: res.locals,
-        container: {
-          rootPath: paths.rootPath,
-          invalidRootPaths: paths.invalidRootPaths,
-        },
-        filePath: courseInstanceJsonPath,
-        editContents: b64EncodeUnicode(formattedJson),
+      // Save using FileModifyEditor
+      const saveResult = await saveCourseInstanceJson({
+        courseInstanceJson,
+        courseInstanceJsonPath,
+        paths,
         origHash: orig_hash,
+        locals: res.locals,
       });
 
-      const serverJob = await editor.prepareServerJob();
-      try {
-        await editor.executeWithServerJob(serverJob);
-      } catch (err) {
+      if (!saveResult.success) {
         res.status(500).json({
-          error: err instanceof Error ? err.message : 'Failed to save changes',
-          jobSequenceId: serverJob.jobSequenceId,
+          error: saveResult.error,
+          jobSequenceId: saveResult.jobSequenceId,
         });
         return;
       }

@@ -1,13 +1,15 @@
 import { z } from 'zod';
 
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import {
+  RawStaffStudentLabelSchema,
+  StaffEnrollmentSchema,
+} from '../../lib/client/safe-db-types.js';
 import {
   AssessmentInstanceSchema,
   AssessmentSchema,
   AssessmentSetSchema,
   EnrollmentSchema,
   SprocUsersGetDisplayedRoleSchema,
-  StudentLabelSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 
@@ -36,10 +38,10 @@ export const OtherTeamUserSchema = z.object({
 });
 export type OtherTeamUser = z.infer<typeof OtherTeamUserSchema>;
 
-export const GradebookStudentLabelSchema = z.object({
-  id: StudentLabelSchema.shape.id,
-  name: StudentLabelSchema.shape.name,
-  color: StudentLabelSchema.shape.color,
+export const GradebookStudentLabelSchema = RawStaffStudentLabelSchema.pick({
+  id: true,
+  name: true,
+  color: true,
 });
 export type GradebookStudentLabel = z.infer<typeof GradebookStudentLabelSchema>;
 
