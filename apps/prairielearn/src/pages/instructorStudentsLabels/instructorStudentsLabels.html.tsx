@@ -150,49 +150,54 @@ function StudentLabelsCard({
 
   return (
     <>
-      <div className="card mb-4">
-        <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h1 className="h6 mb-0">Student labels</h1>
+      <div className="mb-3">
+        <div className="d-flex align-items-center justify-content-between mb-2">
+          <h5 className="mb-0">Student labels</h5>
           {canEdit && (
-            <Button variant="light" size="sm" onClick={() => setShowAddModal(true)}>
-              <i className="fas fa-plus me-1" />
+            <button
+              type="button"
+              className="btn btn-outline-primary btn-sm text-nowrap"
+              onClick={() => setShowAddModal(true)}
+            >
               Add label
-            </Button>
+            </button>
           )}
         </div>
-        <div className="card-body">
-          {labels.length === 0 ? (
-            <p className="text-muted mb-0">
-              No student labels have been created yet.
-              {canEdit && ' Click "Add label" above to create your first label.'}
-            </p>
-          ) : (
-            <div className="table-responsive">
-              <table className="table table-hover mb-0">
-                <thead>
-                  <tr>
-                    <th>Name</th>
-                    <th>Students</th>
-                    {canEdit && <th style={{ width: '140px' }}>Actions</th>}
-                  </tr>
-                </thead>
-                <tbody>
-                  {labels.map((label) => (
-                    <LabelTableRow
-                      key={label.student_label.id}
-                      label={label}
-                      courseInstanceId={courseInstanceId}
-                      canEdit={canEdit}
-                      onEdit={handleEdit}
-                      onDelete={handleDelete}
-                    />
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          )}
-        </div>
+        <small className="text-muted">
+          Organize students for filtering and analysis. Labels can be used to track sections,
+          accommodations, or any custom categorization. Labels are not visible to students.
+        </small>
       </div>
+
+      {labels.length === 0 ? (
+        <div className="text-center text-muted mb-3">
+          <p className="mb-0">No student labels configured.</p>
+        </div>
+      ) : (
+        <div className="table-responsive">
+          <table className="table table-striped">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>Students</th>
+                {canEdit && <th style={{ width: '140px' }}>Actions</th>}
+              </tr>
+            </thead>
+            <tbody>
+              {labels.map((label) => (
+                <LabelTableRow
+                  key={label.student_label.id}
+                  label={label}
+                  courseInstanceId={courseInstanceId}
+                  canEdit={canEdit}
+                  onEdit={handleEdit}
+                  onDelete={handleDelete}
+                />
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
 
       <LabelModifyModal
         data={modifyModalData}
