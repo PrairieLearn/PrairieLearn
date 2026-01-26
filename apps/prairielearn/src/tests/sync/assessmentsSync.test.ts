@@ -1331,7 +1331,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /Role "Manager" has a minMembers greater than the team's minMembers\./,
+      /Role "Manager" has a minMembers greater than the group's minMembers\./,
     );
   });
 
