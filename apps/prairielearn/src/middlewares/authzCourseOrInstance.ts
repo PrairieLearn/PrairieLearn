@@ -1,3 +1,6 @@
+// This is necessary to drag in the `session` property on `Request`.
+import '@prairielearn/session';
+
 import { isValid, parseISO } from 'date-fns';
 import { type Request, type Response } from 'express';
 import asyncHandler from 'express-async-handler';
