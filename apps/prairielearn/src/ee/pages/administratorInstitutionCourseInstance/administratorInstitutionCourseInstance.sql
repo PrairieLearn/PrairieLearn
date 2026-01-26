@@ -8,8 +8,7 @@ FROM
 WHERE
   c.institution_id = $institution_id
   AND c.deleted_at IS NULL
-  AND ci.id = $course_instance_id
-  AND ci.deleted_at IS NULL;
+  AND ci.id = $course_instance_id;
 
 -- BLOCK update_enrollment_limit
 UPDATE course_instances AS ci

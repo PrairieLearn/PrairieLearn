@@ -71,6 +71,10 @@ router.post(
       unsafe_course_instance_id: req.params.course_instance_id,
     });
 
+    if (course_instance.deleted_at != null) {
+      throw new error.HttpStatusError(403, 'Cannot modify a deleted course instance');
+    }
+
     if (req.body.__action === 'update_enrollment_limit') {
       await execute(sql.update_enrollment_limit, {
         course_instance_id: course_instance.id,

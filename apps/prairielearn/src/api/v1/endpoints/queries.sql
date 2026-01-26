@@ -86,7 +86,8 @@ WITH
           PARTITION BY
             u.id
           ORDER BY
-            score_perc DESC,
+            score_perc DESC NULLS LAST,
+            ai.date DESC,
             ai.number DESC,
             ai.id DESC
         )
@@ -361,7 +362,8 @@ WITH
           PARTITION BY
             v.id
           ORDER BY
-            s.score DESC,
+            s.score DESC NULLS LAST,
+            s.date DESC,
             s.id DESC
         )
       ) = 1 AS best_submission_per_variant
