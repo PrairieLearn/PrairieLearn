@@ -9,6 +9,7 @@ import { z } from 'zod';
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { IdSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
@@ -325,12 +326,13 @@ router.post(
       }
 
       // Get current enrollments
-      const currentEnrollments = await sqldb.queryRows(
-        sql.select_enrollment_ids_for_label,
-        { student_label_id: updatedLabel.id },
-        z.object({ enrollment_id: z.string() }),
+      const currentEnrollmentIds = new Set(
+        await sqldb.queryRows(
+          sql.select_enrollment_ids_for_label,
+          { student_label_id: updatedLabel.id },
+          IdSchema,
+        ),
       );
-      const currentEnrollmentIds = new Set(currentEnrollments.map((e) => e.enrollment_id));
 
       // Parse UIDs and get desired enrollments
       const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);

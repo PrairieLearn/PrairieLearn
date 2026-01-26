@@ -420,7 +420,6 @@ function StudentsCard({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-      setRowSelection({});
     },
   });
 
@@ -453,7 +452,6 @@ function StudentsCard({
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-      setRowSelection({});
     },
   });
 
@@ -482,7 +480,6 @@ function StudentsCard({
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
       await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
       setNewLabelName('');
-      setRowSelection({});
     },
   });
 
