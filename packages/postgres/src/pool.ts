@@ -976,9 +976,8 @@ export class PostgresPool {
     const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
-    // random 6-character suffix to avoid clashes (approx 2 billion possible values)
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = sampleSize(chars, 6).join('');
+    // random 6-character suffix to avoid clashes (approx 1.4 billion possible values)
+    const suffix = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 6).join('');
 
     // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
     // which is the default PostgreSQL identifier limit.
