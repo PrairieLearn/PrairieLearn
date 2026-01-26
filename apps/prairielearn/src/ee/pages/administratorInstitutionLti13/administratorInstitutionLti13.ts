@@ -1,5 +1,5 @@
+import { sortBy } from 'es-toolkit';
 import { Router } from 'express';
-import _ from 'lodash';
 import jose from 'node-jose';
 import { z } from 'zod';
 
@@ -64,7 +64,7 @@ router.get(
       },
     ];
 
-    const platform_defaults = _.sortBy(
+    const platform_defaults = sortBy(
       [...platform_defaults_hardcoded, ...config.lti13InstancePlatforms],
       ['display_order', 'platform'],
     );
