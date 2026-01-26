@@ -1,11 +1,11 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 
 import type { Course } from '../../lib/db-types.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { updateCourseSharingName } from '../../models/course.js';
@@ -35,7 +35,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_own'],
     unauthorizedUsers: 'block',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }
@@ -67,7 +67,11 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
+    if (!res.locals.authz_data.has_course_permission_own) {
+      throw new error.HttpStatusError(403, 'Access denied (must be course owner)');
+    }
+
     if (!res.locals.question_sharing_enabled) {
       throw new error.HttpStatusError(403, 'Access denied (feature not available)');
     }

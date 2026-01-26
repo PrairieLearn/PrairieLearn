@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { AssessmentOpenInstancesAlert } from '../../../components/AssessmentOpenInstancesAlert.js';
 import { Modal } from '../../../components/Modal.js';
@@ -9,7 +9,7 @@ import { PageLayout } from '../../../components/PageLayout.js';
 import { compiledScriptTag } from '../../../lib/assets.js';
 import { AssessmentQuestionSchema, type User } from '../../../lib/db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 
 export const ManualGradingQuestionSchema = AssessmentQuestionSchema.extend({
   qid: z.string(),
@@ -38,7 +38,7 @@ export function ManualGradingAssessment({
   num_open_instances,
   adminFeaturesEnabled,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   questions: ManualGradingQuestion[];
   courseStaff: User[];
   num_open_instances: number;
@@ -92,42 +92,48 @@ export function ManualGradingAssessment({
               {resLocals.assessment_set.name} {resLocals.assessment.number}: Manual Grading Queue
             </h1>
             {adminFeaturesEnabled && questions.length > 0 && (
-              <div className="d-flex align-items-center gap-2">
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light grading-tag-button"
-                  name="export-ai-grading-statistics"
-                  aria-label="Export AI grading statistics"
-                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
-                  onclick="$('#export-ai-grading-statistics').submit();"
-                >
-                  <i className="bi bi-download" aria-hidden="true" />
-                  Export AI grading statistics
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light grading-tag-button"
-                  name="ai-grade-all-questions"
-                  aria-label="AI grade all questions"
-                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
-                  onclick="$('#ai-grade-all').submit();"
-                >
-                  <i className="bi bi-stars" aria-hidden="true" />
-                  AI grade all questions
-                </button>
-                <button
-                  type="button"
-                  className="btn btn-sm btn-light grading-tag-button"
-                  name="delete-ai-grading-data"
-                  aria-label="Delete all AI grading data"
-                  data-bs-toggle="tooltip"
-                  data-bs-title="Delete all AI grading results for this assessment's questions"
-                  // @ts-expect-error -- We don't want to hydrate this part of the DOM
-                  onclick="$('#delete-ai-grading-data').submit();"
-                >
-                  Delete AI grading data
-                </button>
-              </div>
+              <div
+                className="d-flex align-items-center gap-2"
+                // React doesn't let us emit raw event handlers, so
+                // instead we render these buttons inside a `dangerouslySetInnerHTML` block.
+
+                // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
+                dangerouslySetInnerHTML={{
+                  __html: html`
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="export-ai-grading-statistics"
+                      aria-label="Export AI grading statistics"
+                      onclick="$('#export-ai-grading-statistics').submit();"
+                    >
+                      <i class="bi bi-download" aria-hidden="true"></i>
+                      Export AI grading statistics
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="ai-grade-all-questions"
+                      aria-label="AI grade all questions"
+                      onclick="$('#ai-grade-all').submit();"
+                    >
+                      <i class="bi bi-stars" aria-hidden="true"></i>
+                      AI grade all questions
+                    </button>
+                    <button
+                      type="button"
+                      class="btn btn-sm btn-light grading-tag-button"
+                      name="delete-ai-grading-data"
+                      aria-label="Delete all AI grading data"
+                      data-bs-toggle="tooltip"
+                      data-bs-title="Delete all AI grading results for this assessment's questions"
+                      onclick="$('#delete-ai-grading-data').submit();"
+                    >
+                      Delete AI grading data
+                    </button>
+                  `.toString(),
+                }}
+              />
             )}
           </div>
 
@@ -170,7 +176,7 @@ function AssessmentQuestionRow({
   resLocals,
   question,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'assessment'>;
   question: ManualGradingQuestion;
 }) {
   const showGradingButton =
@@ -299,7 +305,7 @@ function GraderAssignmentModal({
                 value={staff.id}
                 className="form-check-input"
               />
-              <label className="form-check-label" for={`grader-assignment-${staff.id}`}>
+              <label className="form-check-label" htmlFor={`grader-assignment-${staff.id}`}>
                 {staff.name ? `${staff.name} (${staff.uid})` : staff.uid}
               </label>
             </div>

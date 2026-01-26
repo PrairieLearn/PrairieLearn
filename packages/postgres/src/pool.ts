@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Readable, Transform } from 'node:stream';
 
 import debugfn from 'debug';
-import _ from 'lodash';
+import { difference, sampleSize } from 'es-toolkit';
 import multipipe from 'multipipe';
 import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
@@ -112,9 +112,9 @@ function paramsToArray(
   processedSql += remainingSql;
   remainingSql = '';
   if (errorOnUnusedParameters) {
-    const difference = _.difference(Object.keys(params), Object.keys(map));
-    if (difference.length > 0) {
-      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(difference)}`);
+    const unusedKeys = difference(Object.keys(params), Object.keys(map));
+    if (unusedKeys.length > 0) {
+      throw new Error(`Unused parameters in SQL query: ${JSON.stringify(unusedKeys)}`);
     }
   }
   return { processedSql, paramsArray };
@@ -976,11 +976,8 @@ export class PostgresPool {
     const truncPrefix = prefix.slice(0, 28);
     // timestamp in format YYYY-MM-DDTHH:MM:SS.SSSZ (guaranteed to not exceed 27 characters in the spec)
     const timestamp = new Date().toISOString();
-    // random 6-character suffix to avoid clashes (approx 2 billion possible values)
-    const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = Array.from({ length: 6 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    // random 6-character suffix to avoid clashes (approx 1.4 billion possible values)
+    const suffix = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 6).join('');
 
     // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
     // which is the default PostgreSQL identifier limit.

@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { FormProvider, useForm } from 'react-hook-form';
 
 import {
@@ -55,7 +55,7 @@ export function CourseInstancePublishing({
 
   const startDate = watch('start_date');
 
-  const onSubmit = (e: SubmitEvent) => {
+  const onSubmit = (e: React.FormEvent) => {
     if (!isValid) {
       e.preventDefault();
       return;

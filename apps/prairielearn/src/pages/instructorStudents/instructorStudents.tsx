@@ -4,7 +4,8 @@ import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
+import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
@@ -122,8 +123,9 @@ router.post(
         success: 0,
         instructor: 0,
         alreadyEnrolled: 0,
-        alreadyBlocked: 0,
         alreadyInvited: 0,
+        alreadyRemoved: 0,
+        alreadyBlocked: 0,
       };
 
       for (const uid of body.uids) {
@@ -150,20 +152,41 @@ router.post(
         });
 
         if (existingEnrollment) {
-          if (existingEnrollment.status === 'joined') {
-            job.info(`${uid}: Skipped (already enrolled)`);
-            counts.alreadyEnrolled++;
-            continue;
-          }
-          if (existingEnrollment.status === 'invited') {
-            job.info(`${uid}: Skipped (already invited)`);
-            counts.alreadyInvited++;
-            continue;
-          }
-          if (existingEnrollment.status === 'blocked') {
-            job.info(`${uid}: Skipped (blocked)`);
-            counts.alreadyBlocked++;
-            continue;
+          switch (existingEnrollment.status) {
+            case 'joined': {
+              job.info(`${uid}: Skipped (already enrolled)`);
+              counts.alreadyEnrolled++;
+              continue;
+            }
+            case 'invited': {
+              job.info(`${uid}: Skipped (already invited)`);
+              counts.alreadyInvited++;
+              continue;
+            }
+            case 'removed': {
+              job.info(`${uid}: Skipped (removed)`);
+              counts.alreadyRemoved++;
+              continue;
+            }
+            case 'blocked': {
+              job.info(`${uid}: Skipped (blocked)`);
+              counts.alreadyBlocked++;
+              continue;
+            }
+            case 'lti13_pending': {
+              // We don't currently have any `lti13_pending` enrollments, so we'll just
+              // ignore this for now. We should have this better once we support LTI 1.3
+              // roster syncing.
+              continue;
+            }
+            case 'left':
+            case 'rejected': {
+              // We can re-invite these users below.
+              break;
+            }
+            default: {
+              assertNever(existingEnrollment.status);
+            }
           }
         }
 
@@ -185,6 +208,9 @@ router.post(
       }
       if (counts.alreadyInvited > 0) {
         job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+      }
+      if (counts.alreadyRemoved > 0) {
+        job.info(`  Skipped (removed): ${counts.alreadyRemoved}`);
       }
       if (counts.alreadyBlocked > 0) {
         job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);

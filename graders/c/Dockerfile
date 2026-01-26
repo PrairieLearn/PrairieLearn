@@ -1,5 +1,5 @@
 FROM ubuntu:24.04
-ARG CACHEBUST=2025-12-15-14-21-51
+ARG CACHEBUST=2026-01-15-14-21-34
 
 LABEL maintainer="jonatan@yorku.ca"
 
@@ -31,7 +31,7 @@ RUN apt-get update \
     # Install uv and Python
     && curl -LO https://astral.sh/uv/install.sh \
     && UV_INSTALL_DIR=/usr/local/bin sh /install.sh && rm /install.sh \
-    && uv venv --python-preference managed --python 3.12 /cgrader/.venv
+    && uv venv --python-preference managed --python 3.13 /cgrader/.venv
 
 COPY requirements.txt /requirements.txt
 RUN uv pip install -r /requirements.txt
