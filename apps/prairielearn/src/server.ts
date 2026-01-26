@@ -52,6 +52,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -77,7 +78,6 @@ import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
-import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
@@ -191,11 +191,11 @@ export async function initExpress(): Promise<Express> {
         '/pl/api/',
         // Static assets don't need to read from or write to sessions.
         //
-        // Note that the `/assets` route is configured to turn any missing files into 404
+        // Note that the assets route is configured to turn any missing files into 404
         // errors, not to fall through and allow other routes to try to serve them. If they
         // did fall through, we'd likely end up running code that does expect sessions to
         // be present, e.g. `middlewares/authn`.
-        '/assets',
+        config.assetsPrefix,
       ],
       sessionRouter,
     ),

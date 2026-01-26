@@ -65,6 +65,14 @@ const {
     },
     loader: {
       load: ['input/tex', 'ui/menu', outputComponent],
+      paths: {
+        // MathJax will retrieve the font from CDN by default, but we want it to
+        // use our locally installed copy. This is particularly important for
+        // CBTF environments, which restrict network access.
+        'mathjax-newcm': document
+          .querySelector('meta[name="mathjax-fonts-path"]')
+          ?.getAttribute('content'),
+      },
     },
     // Kept for compatibility reasons.
     onReady: (cb: any) => {
