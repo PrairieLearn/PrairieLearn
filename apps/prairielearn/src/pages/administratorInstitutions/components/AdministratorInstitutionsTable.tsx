@@ -1,4 +1,4 @@
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 
 import type { AdminInstitution, StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';

@@ -1,18 +1,19 @@
 import { Temporal } from '@js-temporal/polyfill';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { CourseInstanceSchema, EnumCourseInstanceRoleSchema } from '../../lib/db-types.js';
 import { CourseInstanceAddEditor, propertyValueWithDefault } from '../../lib/editors.js';
 import { idsEqual } from '../../lib/id.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import {
   selectCourseInstanceByUuid,
   selectCourseInstancesWithStaffAccess,
@@ -27,7 +28,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     let needToSync = false;
     try {
       await fs.access(res.locals.course.path);
@@ -105,7 +106,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course'>(async (req, res) => {
     const { course, authz_data: authzData } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -140,10 +141,11 @@ router.post(
         throw new error.HttpStatusError(400, 'Long name is required');
       }
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
+      const shortNameValidation = validateShortName(short_name);
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 
@@ -215,7 +217,7 @@ router.post(
           : undefined;
 
       const editor = new CourseInstanceAddEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         short_name,
         long_name,
         metadataOverrides: {

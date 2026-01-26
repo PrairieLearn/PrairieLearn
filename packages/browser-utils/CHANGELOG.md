@@ -1,5 +1,20 @@
 # @prairielearn/browser-utils
 
+## 2.6.2
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/html@5.0.0
+
+## 2.6.1
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
 ## 2.6.0
 
 ### Minor Changes

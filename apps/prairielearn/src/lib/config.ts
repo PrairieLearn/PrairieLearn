@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
@@ -322,7 +323,12 @@ export const ConfigSchema = z.object({
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
+  cacheKeyPrefix: z
+    .string()
+    .default('prairielearn-cache:')
+    .refine((s) => s.endsWith(':'), {
+      message: 'must end with a colon (:)',
+    }),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
@@ -578,11 +584,6 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
-  /**
-   * A list of Python venvs in which to search for Python executables.
-   * Will be resolved relative to the repository root.
-   */
-  pythonVenvSearchPaths: z.string().array().default(['.venv']),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
@@ -616,6 +617,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -631,6 +633,9 @@ export const config = loader.config;
  */
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
+    makeEnvConfigSource<typeof ConfigSchema>({
+      serverPort: 'CONDUCTOR_PORT',
+    }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

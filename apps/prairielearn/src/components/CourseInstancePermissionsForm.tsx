@@ -28,7 +28,7 @@ export function CourseInstancePermissionsForm({ formId }: { formId: string }) {
           value="None"
           {...register('course_instance_permission')}
         />
-        <label className="form-check-label" for={`${formId}-permission-none`}>
+        <label className="form-check-label" htmlFor={`${formId}-permission-none`}>
           No permissions
         </label>
         <div className="small text-muted">You will not have any course instance permissions.</div>
@@ -42,7 +42,7 @@ export function CourseInstancePermissionsForm({ formId }: { formId: string }) {
           value="Student Data Viewer"
           {...register('course_instance_permission')}
         />
-        <label className="form-check-label" for={`${formId}-permission-viewer`}>
+        <label className="form-check-label" htmlFor={`${formId}-permission-viewer`}>
           Student data viewer
         </label>
         <div className="small text-muted">You will be able to view student data and grades.</div>
@@ -56,7 +56,7 @@ export function CourseInstancePermissionsForm({ formId }: { formId: string }) {
           value="Student Data Editor"
           {...register('course_instance_permission')}
         />
-        <label className="form-check-label" for={`${formId}-permission-editor`}>
+        <label className="form-check-label" htmlFor={`${formId}-permission-editor`}>
           Student data editor
         </label>
         <div className="small text-muted">
