@@ -18,31 +18,28 @@ import {
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import { deleteAiInstanceQuestionGroups } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping-util.js';
 import { aiInstanceQuestionGrouping } from '../../../ee/lib/ai-instance-question-grouping/ai-instance-question-grouping.js';
-import { extractPageContext } from '../../../lib/client/page-context.js';
-import type { Course } from '../../../lib/db-types.js';
 import { features } from '../../../lib/features/index.js';
 import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.js';
 import { idsEqual } from '../../../lib/id.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
 
 import { InstanceQuestionRowWithAIGradingStatsSchema } from './assessmentQuestion.types.js';
 import { selectInstanceQuestionsForManualGrading, updateInstanceQuestions } from './queries.js';
 
 export function createContext({ res }: CreateExpressContextOptions) {
-  const pageContext = extractPageContext(res.locals, {
-    pageType: 'assessmentQuestion',
-    accessType: 'instructor',
-  });
+  const locals = res.locals as ResLocalsForPage<'instructor-assessment-question'>;
 
   return {
-    user: pageContext.authz_data.user,
-    authn_user: pageContext.authz_data.authn_user,
-    course: pageContext.course,
-    course_instance: pageContext.course_instance,
-    assessment: pageContext.assessment,
-    question: pageContext.question,
-    assessment_question: pageContext.assessment_question,
-    pageContext,
+    user: locals.authz_data.user,
+    authn_user: locals.authz_data.authn_user,
+    course: locals.course,
+    course_instance: locals.course_instance,
+    assessment: locals.assessment,
+    question: locals.question,
+    assessment_question: locals.assessment_question,
+    urlPrefix: locals.urlPrefix,
+    authz_data: locals.authz_data,
   };
 }
 
@@ -57,7 +54,7 @@ export const t = initTRPC.context<TRPCContext>().create({
  * Required for all mutations that modify data.
  */
 const requireCourseInstancePermissionEdit = t.middleware(async (opts) => {
-  if (!opts.ctx.pageContext.authz_data.has_course_instance_permission_edit) {
+  if (!opts.ctx.authz_data.has_course_instance_permission_edit) {
     throw new TRPCError({
       code: 'FORBIDDEN',
       message: 'Access denied (must be a student data editor)',
@@ -89,7 +86,7 @@ const requireAiGradingFeature = t.middleware(async (opts) => {
 const instancesQuery = t.procedure
   .output(z.array(InstanceQuestionRowWithAIGradingStatsSchema))
   .query(async (opts) => {
-    if (!opts.ctx.pageContext.authz_data.has_course_instance_permission_view) {
+    if (!opts.ctx.authz_data.has_course_instance_permission_view) {
       throw new TRPCError({
         code: 'FORBIDDEN',
         message: 'Access denied (must be a student data viewer)',
@@ -153,12 +150,10 @@ const aiGroupInstanceQuestionsMutation = t.procedure
   .mutation(async (opts) => {
     const job_sequence_id = await aiInstanceQuestionGrouping({
       question: opts.ctx.question,
-      // Type cast needed: pageContext.course is a branded StaffCourse type but aiInstanceQuestionGrouping
-      // expects the db Course type. They're structurally compatible.
-      course: opts.ctx.course as unknown as Course,
+      course: opts.ctx.course,
       course_instance_id: opts.ctx.course_instance.id,
       assessment_question: opts.ctx.assessment_question,
-      urlPrefix: opts.ctx.pageContext.urlPrefix,
+      urlPrefix: opts.ctx.urlPrefix,
       authn_user_id: opts.ctx.authn_user.id,
       user_id: opts.ctx.user.id,
       closed_instance_questions_only: opts.input.closed_instance_questions_only,
@@ -199,13 +194,11 @@ const aiGradeInstanceQuestionMutation = t.procedure
 
     const job_sequence_id = await aiGrade({
       question: opts.ctx.question,
-      // Type cast needed: pageContext.course is a branded StaffCourse type but aiGrade
-      // expects the db Course type. They're structurally compatible.
-      course: opts.ctx.course as unknown as Course,
+      course: opts.ctx.course,
       course_instance: opts.ctx.course_instance,
       assessment: opts.ctx.assessment,
       assessment_question: opts.ctx.assessment_question,
-      urlPrefix: opts.ctx.pageContext.urlPrefix,
+      urlPrefix: opts.ctx.urlPrefix,
       authn_user_id: opts.ctx.authn_user.id,
       user_id: opts.ctx.user.id,
       model_id: opts.input.model_id,
@@ -233,7 +226,7 @@ const setAssignedGraderMutation = t.procedure
       const courseStaff = await selectCourseInstanceGraderStaff({
         courseInstance: opts.ctx.course_instance,
         requiredRole: ['Student Data Editor'],
-        authzData: opts.ctx.pageContext.authz_data,
+        authzData: opts.ctx.authz_data,
       });
       if (!courseStaff.some((staff) => idsEqual(staff.id, assigned_grader))) {
         throw new TRPCError({
