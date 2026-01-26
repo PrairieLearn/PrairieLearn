@@ -20,7 +20,6 @@ WITH
       LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
     WHERE
       ci.course_id = $course_id
-      AND ci.deleted_at IS NULL
     GROUP BY
       ci.id
   )
