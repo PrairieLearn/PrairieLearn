@@ -1,6 +1,6 @@
 import * as cheerio from 'cheerio';
 import { ElementType } from 'domelementtype';
-import { isEqual, pick } from 'es-toolkit';
+import { isEqual, pick, range } from 'es-toolkit';
 import jsonStringifySafe from 'json-stringify-safe';
 import { z } from 'zod';
 
@@ -593,7 +593,7 @@ export async function startTestQuestion({
   const stats: TestResultStats[] = [];
 
   serverJob.executeInBackground(async (job) => {
-    for (const iter of Array.from({ length: count * TEST_TYPES.length }).keys()) {
+    for (const iter of range(count * TEST_TYPES.length)) {
       const type = TEST_TYPES[iter % TEST_TYPES.length];
       const testIterationIndex = Math.floor(iter / TEST_TYPES.length) + 1;
       // Generate a deterministic seed if a prefix was provided, otherwise let the system generate a random one

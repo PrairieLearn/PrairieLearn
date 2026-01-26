@@ -21,6 +21,7 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
+import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -2020,11 +2021,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-
-    res.locals.error_id = Array.from({ length: 12 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 

@@ -2,7 +2,7 @@ import { AsyncLocalStorage } from 'node:async_hooks';
 import { Readable, Transform } from 'node:stream';
 
 import debugfn from 'debug';
-import { difference } from 'es-toolkit';
+import { difference, sampleSize } from 'es-toolkit';
 import multipipe from 'multipipe';
 import pg, { DatabaseError, type QueryResult, escapeLiteral } from 'pg';
 import Cursor from 'pg-cursor';
@@ -978,9 +978,7 @@ export class PostgresPool {
     const timestamp = new Date().toISOString();
     // random 6-character suffix to avoid clashes (approx 2 billion possible values)
     const chars = '0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'.split('');
-    const suffix = Array.from({ length: 6 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    const suffix = sampleSize(chars, 6).join('');
 
     // Schema is guaranteed to have length at most 63 (= 28 + 1 + 27 + 1 + 6),
     // which is the default PostgreSQL identifier limit.
