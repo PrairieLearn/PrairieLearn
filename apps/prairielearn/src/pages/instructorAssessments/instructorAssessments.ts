@@ -22,6 +22,7 @@ import {
 import { AssessmentAddEditor } from '../../lib/editors.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
+import { validateShortName } from '../../lib/short-name.js';
 import {
   type AssessmentRow,
   selectAssessments,
@@ -192,13 +193,11 @@ router.post(
         throw new HttpStatusError(400, 'title is required');
       }
       if (!req.body.aid) {
-        throw new HttpStatusError(400, 'aid is required');
+        throw new HttpStatusError(400, 'AID is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.aid)) {
-        throw new HttpStatusError(
-          400,
-          `Invalid aid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.aid}`,
-        );
+      const shortNameValidation = validateShortName(req.body.aid);
+      if (!shortNameValidation.valid) {
+        throw new HttpStatusError(400, `Invalid AID: ${shortNameValidation.lowercaseMessage}`);
       }
       if (!req.body.type) {
         throw new HttpStatusError(400, 'type is required');

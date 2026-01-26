@@ -78,7 +78,7 @@ export function PublicAssessments({
               <th>
                 <span className="visually-hidden">Title</span>
               </th>
-              <th>AID</th>
+              <th>Short name</th>
             </tr>
           </thead>
           <tbody>

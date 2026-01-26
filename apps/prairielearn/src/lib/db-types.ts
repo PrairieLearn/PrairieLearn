@@ -222,7 +222,17 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 // *******************************************************************************
 
 export const AccessLogSchema = null;
-export const AccessTokenSchema = null;
+
+export const AccessTokenSchema = z.object({
+  created_at: DateFromISOString,
+  id: IdSchema,
+  last_used_at: DateFromISOString.nullable(),
+  name: z.string(),
+  token: z.string().nullable(),
+  token_hash: z.string(),
+  user_id: IdSchema,
+});
+export type AccessToken = z.infer<typeof AccessTokenSchema>;
 
 export const AdministratorSchema = z.object({
   id: IdSchema,
@@ -298,7 +308,7 @@ export const AssessmentSchema = z.object({
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
   modern_access_control: z.boolean(),
-  multiple_instance: z.boolean().nullable(),
+  multiple_instance: z.boolean(),
   number: z.string(),
   obj: z.any().nullable(),
   order_by: z.number().nullable(),
