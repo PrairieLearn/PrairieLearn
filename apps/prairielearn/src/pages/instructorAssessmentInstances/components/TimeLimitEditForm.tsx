@@ -2,8 +2,7 @@ import { Temporal } from '@js-temporal/polyfill';
 import { useState } from 'react';
 
 import { formatDate } from '@prairielearn/formatter';
-
-import { assertNever } from '../../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
 
 type TimeLimitAction =
   | 'set_total'

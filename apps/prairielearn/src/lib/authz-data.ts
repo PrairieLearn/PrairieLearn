@@ -4,6 +4,7 @@ import z from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { withBrand } from '@prairielearn/utils';
 
 import { selectLatestPublishingExtensionByEnrollment } from '../models/course-instance-publishing-extensions.js';
 import { selectOptionalEnrollmentByUserId } from '../models/enrollment.js';
@@ -23,7 +24,6 @@ import {
   EnumModeSchema,
   type User,
 } from './db-types.js';
-import { withBrand } from './types.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

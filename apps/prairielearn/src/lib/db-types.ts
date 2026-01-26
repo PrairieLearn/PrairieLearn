@@ -339,7 +339,7 @@ export const AssessmentSchema = z.object({
   max_bonus_points: z.number().nullable(),
   max_points: z.number().nullable(),
   modern_access_control: z.boolean(),
-  multiple_instance: z.boolean().nullable(),
+  multiple_instance: z.boolean(),
   number: z.string(),
   obj: z.any().nullable(),
   order_by: z.number().nullable(),

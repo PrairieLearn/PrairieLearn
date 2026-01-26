@@ -179,7 +179,7 @@
     "js-cookie": "^3.0.5",
     "json-stringify-safe": "^5.0.1",
     "klaw": "^4.1.0",
-    "lodash": "^4.17.21",
+    "lodash": "^4.17.23",
     "loopbench": "^2.0.0",
     "lru-cache": "^11.2.4",
     "marked": "^17.0.1",
