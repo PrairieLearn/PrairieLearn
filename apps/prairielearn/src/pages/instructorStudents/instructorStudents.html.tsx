@@ -48,12 +48,12 @@ import {
 } from '../../lib/client/url.js';
 import type { EnumEnrollmentStatus } from '../../lib/db-types.js';
 import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
-import { StudentGroupWithUserDataSchema } from '../instructorStudentsGroups/instructorStudentsGroups.types.js';
+import { StudentLabelWithUserDataSchema } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
 import {
   STATUS_VALUES,
-  type StudentGroupInfo,
+  type StudentLabelInfo,
   type StudentRow,
   StudentRowSchema,
 } from './instructorStudents.shared.js';
@@ -85,7 +85,7 @@ function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
 }
 
 /**
- * A checkbox component for handling indeterminate state in group selection.
+ * A checkbox component for handling indeterminate state in label selection.
  */
 function IndeterminateCheckbox({
   checked,
@@ -226,7 +226,7 @@ interface StudentsCardProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   students: StudentRow[];
-  studentGroups: StudentGroupInfo[];
+  studentLabels: StudentLabelInfo[];
   timezone: string;
   selfEnrollLink: string;
 }
@@ -238,14 +238,14 @@ type ColumnId =
   | 'enrollment_status'
   | 'user_email'
   | 'enrollment_first_joined_at'
-  | 'student_groups';
+  | 'student_labels';
 
 function StudentsCard({
   authzData,
   course,
   courseInstance,
   students: initialStudents,
-  studentGroups: initialStudentGroups,
+  studentLabels: initialStudentLabels,
   timezone,
   csrfToken,
   selfEnrollLink,
@@ -265,38 +265,38 @@ function StudentsCard({
       DEFAULT_ENROLLMENT_STATUS_FILTER,
     ),
   );
-  const [studentGroupsFilter, setStudentGroupsFilter] = useQueryState(
-    'student_groups',
+  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState(
+    'student_labels',
     parseAsArrayOf(parseAsString).withDefault([]),
   );
   const [rowSelection, setRowSelection] = useState<RowSelectionState>({});
-  const [newGroupName, setNewGroupName] = useState('');
+  const [newLabelName, setNewLabelName] = useState('');
 
   const { createCheckboxProps } = useShiftClickCheckbox<StudentRow>();
 
   const queryClient = useQueryClient();
 
-  // Fetch student groups for batch actions
-  const { data: studentGroups = initialStudentGroups } = useQuery<StudentGroupInfo[]>({
-    queryKey: ['student-groups', courseInstance.id],
+  // Fetch student labels for batch actions
+  const { data: studentLabels = initialStudentLabels } = useQuery<StudentLabelInfo[]>({
+    queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
       const res = await fetch(
-        `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/groups/data.json`,
+        `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/labels/data.json`,
         {
           headers: { Accept: 'application/json' },
         },
       );
-      if (!res.ok) throw new Error('Failed to fetch student groups');
+      if (!res.ok) throw new Error('Failed to fetch student labels');
       const data = await res.json();
-      const groups = z.array(StudentGroupWithUserDataSchema).parse(data);
-      return groups.map((g) => ({
-        id: g.student_group.id,
-        name: g.student_group.name,
-        color: g.student_group.color,
+      const labels = z.array(StudentLabelWithUserDataSchema).parse(data);
+      return labels.map((l) => ({
+        id: l.student_label.id,
+        name: l.student_label.name,
+        color: l.student_label.color,
       }));
     },
     staleTime: Infinity,
-    initialData: initialStudentGroups,
+    initialData: initialStudentLabels,
   });
 
   // The individual column filters are the source of truth, and this is derived from them.
@@ -307,11 +307,11 @@ function StudentsCard({
         value: enrollmentStatusFilter,
       },
       {
-        id: 'student_groups',
-        value: studentGroupsFilter,
+        id: 'student_labels',
+        value: studentLabelsFilter,
       },
     ];
-  }, [enrollmentStatusFilter, studentGroupsFilter]);
+  }, [enrollmentStatusFilter, studentLabelsFilter]);
 
   const columnFilterSetters = useMemo<Record<ColumnId, Updater<any>>>(() => {
     return {
@@ -321,9 +321,9 @@ function StudentsCard({
       enrollment_status: setEnrollmentStatusFilter,
       user_email: undefined,
       enrollment_first_joined_at: undefined,
-      student_groups: setStudentGroupsFilter,
+      student_labels: setStudentLabelsFilter,
     };
-  }, [setEnrollmentStatusFilter, setStudentGroupsFilter]);
+  }, [setEnrollmentStatusFilter, setStudentLabelsFilter]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -391,21 +391,21 @@ function StudentsCard({
   };
 
   // Batch action mutations
-  const batchAddToGroupMutation = useMutation({
+  const batchAddToLabelMutation = useMutation({
     mutationFn: async ({
       enrollmentIds,
-      studentGroupId,
+      studentLabelId,
     }: {
       enrollmentIds: string[];
-      studentGroupId: string;
+      studentLabelId: string;
     }) => {
       const res = await fetch(window.location.href, {
         method: 'POST',
         body: JSON.stringify({
-          __action: 'batch_add_to_group',
+          __action: 'batch_add_to_label',
           __csrf_token: csrfToken,
           enrollment_ids: enrollmentIds,
-          student_group_id: studentGroupId,
+          student_label_id: studentLabelId,
         }),
         headers: {
           'Content-Type': 'application/json',
@@ -414,7 +414,7 @@ function StudentsCard({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error ?? 'Failed to add to group');
+        throw new Error(json.error ?? 'Failed to add to label');
       }
       return res.json();
     },
@@ -424,21 +424,21 @@ function StudentsCard({
     },
   });
 
-  const batchRemoveFromGroupMutation = useMutation({
+  const batchRemoveFromLabelMutation = useMutation({
     mutationFn: async ({
       enrollmentIds,
-      studentGroupId,
+      studentLabelId,
     }: {
       enrollmentIds: string[];
-      studentGroupId: string;
+      studentLabelId: string;
     }) => {
       const res = await fetch(window.location.href, {
         method: 'POST',
         body: JSON.stringify({
-          __action: 'batch_remove_from_group',
+          __action: 'batch_remove_from_label',
           __csrf_token: csrfToken,
           enrollment_ids: enrollmentIds,
-          student_group_id: studentGroupId,
+          student_label_id: studentLabelId,
         }),
         headers: {
           'Content-Type': 'application/json',
@@ -447,7 +447,7 @@ function StudentsCard({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error ?? 'Failed to remove from group');
+        throw new Error(json.error ?? 'Failed to remove from label');
       }
       return res.json();
     },
@@ -457,12 +457,12 @@ function StudentsCard({
     },
   });
 
-  const createGroupAndAddMutation = useMutation({
+  const createLabelAndAddMutation = useMutation({
     mutationFn: async ({ enrollmentIds, name }: { enrollmentIds: string[]; name: string }) => {
       const res = await fetch(window.location.href, {
         method: 'POST',
         body: JSON.stringify({
-          __action: 'create_group_and_add_students',
+          __action: 'create_label_and_add_students',
           __csrf_token: csrfToken,
           enrollment_ids: enrollmentIds,
           name: name.trim(),
@@ -474,14 +474,14 @@ function StudentsCard({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new Error(json.error ?? 'Failed to create group and add students');
+        throw new Error(json.error ?? 'Failed to create label and add students');
       }
       return res.json();
     },
     onSuccess: async () => {
       await queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
-      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
-      setNewGroupName('');
+      await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
+      setNewLabelName('');
       setRowSelection({});
     },
   });
@@ -578,31 +578,31 @@ function StudentsCard({
           );
         },
       }),
-      columnHelper.accessor((row) => row.student_groups, {
-        id: 'student_groups',
+      columnHelper.accessor((row) => row.student_labels, {
+        id: 'student_labels',
         meta: {
-          label: 'Student Groups',
+          label: 'Student Labels',
         },
         header: () => (
           <span className="d-inline-flex align-items-center gap-1">
-            <span>Groups</span>
+            <span>Labels</span>
             <i className="fas fa-users" />
           </span>
         ),
         cell: (info) => {
-          const groups = info.getValue();
-          if (groups.length === 0) return '—';
-          const groupsUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/groups`;
+          const labels = info.getValue();
+          if (labels.length === 0) return '—';
+          const labelsUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students/labels`;
           return (
             <div className="d-flex flex-wrap gap-1">
-              {groups.map((group) => (
+              {labels.map((label) => (
                 <a
-                  key={group.id}
-                  href={`${groupsUrl}?group=${encodeURIComponent(group.name)}`}
+                  key={label.id}
+                  href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}
                   className="badge text-decoration-none"
-                  style={{ backgroundColor: `var(--color-${group.color ?? 'gray1'})` }}
+                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
                 >
-                  {group.name}
+                  {label.name}
                 </a>
               ))}
             </div>
@@ -610,10 +610,10 @@ function StudentsCard({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const studentGroupIds = new Set(
-            row.getValue<StudentRow['student_groups']>(columnId).map((g) => g.id),
+          const studentLabelIds = new Set(
+            row.getValue<StudentRow['student_labels']>(columnId).map((l) => l.id),
           );
-          return filterValues.some((filterId) => studentGroupIds.has(filterId));
+          return filterValues.some((filterId) => studentLabelIds.has(filterId));
         },
       }),
     ],
@@ -668,41 +668,41 @@ function StudentsCard({
     },
   });
 
-  // Calculate selected enrollment IDs and common groups for batch actions
+  // Calculate selected enrollment IDs and common labels for batch actions
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedEnrollmentIds = selectedRows.map((row) => row.original.enrollment.id);
 
-  // Calculate group membership state for each group: 'all', 'none', or 'some'
-  const groupMembershipState = useMemo(() => {
+  // Calculate label membership state for each label: 'all', 'none', or 'some'
+  const labelMembershipState = useMemo(() => {
     const states = new Map<string, 'all' | 'none' | 'some'>();
 
     if (selectedRows.length === 0) {
-      studentGroups.forEach((g) => states.set(g.id, 'none'));
+      studentLabels.forEach((l) => states.set(l.id, 'none'));
       return states;
     }
 
-    studentGroups.forEach((group) => {
-      const membersInGroup = selectedRows.filter((row) =>
-        row.original.student_groups.some((g) => g.id === group.id),
+    studentLabels.forEach((label) => {
+      const membersInLabel = selectedRows.filter((row) =>
+        row.original.student_labels.some((l) => l.id === label.id),
       ).length;
 
-      if (membersInGroup === 0) {
-        states.set(group.id, 'none');
-      } else if (membersInGroup === selectedRows.length) {
-        states.set(group.id, 'all');
+      if (membersInLabel === 0) {
+        states.set(label.id, 'none');
+      } else if (membersInLabel === selectedRows.length) {
+        states.set(label.id, 'all');
       } else {
-        states.set(group.id, 'some');
+        states.set(label.id, 'some');
       }
     });
 
     return states;
-  }, [selectedRows, studentGroups]);
+  }, [selectedRows, studentLabels]);
 
-  // Check if any group mutation is pending
-  const isGroupMutationPending =
-    batchAddToGroupMutation.isPending ||
-    batchRemoveFromGroupMutation.isPending ||
-    createGroupAndAddMutation.isPending;
+  // Check if any label mutation is pending
+  const isLabelMutationPending =
+    batchAddToLabelMutation.isPending ||
+    batchRemoveFromLabelMutation.isPending ||
+    createLabelAndAddMutation.isPending;
   const emptyStateText = run(() => {
     const baseMessage = "This course doesn't have any students yet.";
     if (!courseInstance.modern_publishing) {
@@ -717,26 +717,26 @@ function StudentsCard({
   });
 
   // Combine mutation errors for display
-  const groupMutationError =
-    batchAddToGroupMutation.error ??
-    batchRemoveFromGroupMutation.error ??
-    createGroupAndAddMutation.error;
+  const labelMutationError =
+    batchAddToLabelMutation.error ??
+    batchRemoveFromLabelMutation.error ??
+    createLabelAndAddMutation.error;
 
   return (
     <>
-      {groupMutationError && (
+      {labelMutationError && (
         <Alert
           variant="danger"
           dismissible
           onClose={() => {
-            batchAddToGroupMutation.reset();
-            batchRemoveFromGroupMutation.reset();
-            createGroupAndAddMutation.reset();
+            batchAddToLabelMutation.reset();
+            batchRemoveFromLabelMutation.reset();
+            createLabelAndAddMutation.reset();
           }}
         >
-          {groupMutationError instanceof Error
-            ? groupMutationError.message
-            : 'Failed to update group membership'}
+          {labelMutationError instanceof Error
+            ? labelMutationError.message
+            : 'Failed to update label membership'}
         </Alert>
       )}
       <TanstackTableCard
@@ -774,46 +774,46 @@ function StudentsCard({
                   size="sm"
                   disabled={selectedEnrollmentIds.length === 0}
                 >
-                  Groups
+                  Labels
                 </Dropdown.Toggle>
                 <Dropdown.Menu>
-                  {studentGroups.map((group) => {
-                    const state = groupMembershipState.get(group.id);
+                  {studentLabels.map((label) => {
+                    const state = labelMembershipState.get(label.id);
                     const isChecked = state === 'all';
                     const isIndeterminate = state === 'some';
 
                     return (
                       <Dropdown.Item
-                        key={group.id}
+                        key={label.id}
                         as="label"
                         className="d-flex align-items-center gap-2"
-                        style={{ cursor: isGroupMutationPending ? 'wait' : 'pointer' }}
+                        style={{ cursor: isLabelMutationPending ? 'wait' : 'pointer' }}
                         onClick={(e) => e.stopPropagation()}
                       >
                         <IndeterminateCheckbox
                           checked={isChecked}
                           indeterminate={isIndeterminate}
-                          disabled={isGroupMutationPending}
-                          aria-label={`${isChecked ? 'Remove from' : 'Add to'} group "${group.name}"`}
+                          disabled={isLabelMutationPending}
+                          aria-label={`${isChecked ? 'Remove from' : 'Add to'} label "${label.name}"`}
                           onChange={() => {
                             if (isChecked) {
-                              batchRemoveFromGroupMutation.mutate({
+                              batchRemoveFromLabelMutation.mutate({
                                 enrollmentIds: selectedEnrollmentIds,
-                                studentGroupId: group.id,
+                                studentLabelId: label.id,
                               });
                             } else {
-                              batchAddToGroupMutation.mutate({
+                              batchAddToLabelMutation.mutate({
                                 enrollmentIds: selectedEnrollmentIds,
-                                studentGroupId: group.id,
+                                studentLabelId: label.id,
                               });
                             }
                           }}
                         />
-                        <span>{group.name}</span>
+                        <span>{label.name}</span>
                       </Dropdown.Item>
                     );
                   })}
-                  {studentGroups.length > 0 && <Dropdown.Divider />}
+                  {studentLabels.length > 0 && <Dropdown.Divider />}
                   <Dropdown.Item
                     as="div"
                     className="p-2 bg-transparent"
@@ -823,16 +823,16 @@ function StudentsCard({
                       <Form.Control
                         type="text"
                         size="sm"
-                        placeholder="New group name"
-                        value={newGroupName}
-                        disabled={isGroupMutationPending}
-                        onChange={(e) => setNewGroupName((e.target as HTMLInputElement).value)}
+                        placeholder="New label name"
+                        value={newLabelName}
+                        disabled={isLabelMutationPending}
+                        onChange={(e) => setNewLabelName((e.target as HTMLInputElement).value)}
                         onKeyDown={(e) => {
-                          if (e.key === 'Enter' && newGroupName.trim() && !isGroupMutationPending) {
+                          if (e.key === 'Enter' && newLabelName.trim() && !isLabelMutationPending) {
                             e.preventDefault();
-                            createGroupAndAddMutation.mutate({
+                            createLabelAndAddMutation.mutate({
                               enrollmentIds: selectedEnrollmentIds,
-                              name: newGroupName,
+                              name: newLabelName,
                             });
                           }
                         }}
@@ -841,13 +841,13 @@ function StudentsCard({
                       <Button
                         size="sm"
                         variant="primary"
-                        disabled={!newGroupName.trim() || isGroupMutationPending}
+                        disabled={!newLabelName.trim() || isLabelMutationPending}
                         onClick={(e) => {
                           e.stopPropagation();
-                          if (newGroupName.trim()) {
-                            createGroupAndAddMutation.mutate({
+                          if (newLabelName.trim()) {
+                            createLabelAndAddMutation.mutate({
                               enrollmentIds: selectedEnrollmentIds,
-                              name: newGroupName,
+                              name: newLabelName,
                             });
                           }
                         }}
@@ -893,20 +893,20 @@ function StudentsCard({
                 )}
               />
             ),
-            student_groups: ({
+            student_labels: ({
               header,
             }: {
-              header: Header<StudentRow, StudentRow['student_groups']>;
+              header: Header<StudentRow, StudentRow['student_labels']>;
             }) => {
-              const groupIds = studentGroups.map((g) => g.id);
+              const labelIds = studentLabels.map((l) => l.id);
               return (
                 <MultiSelectColumnFilter
                   column={header.column as Column<StudentRow, unknown>}
-                  allColumnValues={groupIds}
+                  allColumnValues={labelIds}
                   renderValueLabel={({ value }) => {
-                    const group = studentGroups.find((g) => g.id === String(value));
-                    if (!group) return <span>{String(value)}</span>;
-                    return <span>{group.name}</span>;
+                    const label = studentLabels.find((l) => l.id === String(value));
+                    if (!label) return <span>{String(value)}</span>;
+                    return <span>{label.name}</span>;
                   }}
                 />
               );
@@ -983,7 +983,7 @@ export const InstructorStudents = ({
   selfEnrollLink,
   search,
   students,
-  studentGroups,
+  studentLabels,
   timezone,
   courseInstance,
   course,
@@ -1006,7 +1006,7 @@ export const InstructorStudents = ({
           course={course}
           courseInstance={courseInstance}
           students={students}
-          studentGroups={studentGroups}
+          studentLabels={studentLabels}
           timezone={timezone}
           csrfToken={csrfToken}
         />

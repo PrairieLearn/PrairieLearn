@@ -23,7 +23,7 @@ import {
   AssessmentInstanceScoreResultSchema,
   CourseAssessmentRowSchema,
   GradebookRowSchema,
-  GradebookStudentGroupSchema,
+  GradebookStudentLabelSchema,
 } from './instructorGradebook.types.js';
 
 const router = Router();
@@ -78,10 +78,10 @@ router.get(
       { course_id: course.id, course_instance_id: course_instance.id },
       GradebookRowSchema,
     );
-    const studentGroups = await queryRows(
-      sql.course_student_groups,
+    const studentLabels = await queryRows(
+      sql.course_student_labels,
       { course_instance_id: course_instance.id },
-      GradebookStudentGroupSchema,
+      GradebookStudentLabelSchema,
     );
 
     res.send(
@@ -103,7 +103,7 @@ router.get(
               csrfToken={__csrf_token}
               courseAssessments={courseAssessments}
               gradebookRows={gradebookRows}
-              studentGroups={studentGroups}
+              studentLabels={studentLabels}
               urlPrefix={urlPrefix}
               filenameBase={filenameBase}
               courseInstanceId={course_instance.id}

@@ -22,26 +22,26 @@ import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { getUrl } from '../../lib/url.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentGroup,
-  selectStudentGroupsByCourseInstance,
-  verifyGroupBelongsToCourseInstance,
-} from '../../models/student-group.js';
+  addEnrollmentToStudentLabel,
+  selectStudentLabelsByCourseInstance,
+  verifyLabelBelongsToCourseInstance,
+} from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
-import type { StudentGroupJson } from '../../schemas/infoCourseInstance.js';
+import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
 
-import { InstructorStudentsGroups } from './instructorStudentsGroups.html.js';
-import { StudentGroupWithUserDataSchema } from './instructorStudentsGroups.types.js';
+import { InstructorStudentsLabels } from './instructorStudentsLabels.html.js';
+import { StudentLabelWithUserDataSchema } from './instructorStudentsLabels.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 const MAX_UIDS = 1000;
 
-async function getStudentGroupsWithUserData(courseInstanceId: string) {
+async function getStudentLabelsWithUserData(courseInstanceId: string) {
   return await sqldb.queryRows(
-    sql.select_student_groups_with_user_data,
+    sql.select_student_labels_with_user_data,
     { course_instance_id: courseInstanceId },
-    StudentGroupWithUserDataSchema,
+    StudentLabelWithUserDataSchema,
   );
 }
 
@@ -67,7 +67,7 @@ router.get(
       accessType: 'instructor',
     });
 
-    const groups = await getStudentGroupsWithUserData(courseInstance.id);
+    const labels = await getStudentLabelsWithUserData(courseInstance.id);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
 
     const studentsPageUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`;
@@ -87,19 +87,19 @@ router.get(
     res.send(
       PageLayout({
         resLocals: res.locals,
-        pageTitle: 'Student groups',
+        pageTitle: 'Student labels',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'student_groups',
+          page: 'students',
+          subPage: 'student_labels',
         },
         content: (
           <Hydrate>
-            <InstructorStudentsGroups
+            <InstructorStudentsLabels
               csrfToken={__csrf_token}
               courseInstanceId={courseInstance.id}
               studentsPageUrl={studentsPageUrl}
-              initialGroups={groups}
+              initialLabels={labels}
               canEdit={canEdit}
               isDevMode={config.devMode}
               search={search}
@@ -120,8 +120,8 @@ router.get(
       accessType: 'instructor',
     });
 
-    const groups = await getStudentGroupsWithUserData(courseInstance.id);
-    res.json(groups);
+    const labels = await getStudentLabelsWithUserData(courseInstance.id);
+    res.json(labels);
   }),
 );
 
@@ -154,7 +154,7 @@ router.post(
   '/',
   typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_edit) {
-      throw new error.HttpStatusError(403, 'You do not have permission to edit student groups');
+      throw new error.HttpStatusError(403, 'You do not have permission to edit student labels');
     }
 
     const courseInstance = res.locals.course_instance;
@@ -171,7 +171,7 @@ router.post(
     // Get paths for FileModifyEditor
     const paths = getPaths(undefined, res.locals);
 
-    if (req.body.__action === 'create_group') {
+    if (req.body.__action === 'create_label') {
       const {
         name,
         color,
@@ -179,7 +179,7 @@ router.post(
         orig_hash,
       } = z
         .object({
-          name: z.string().min(1, 'Group name is required').max(255),
+          name: z.string().min(1, 'Label name is required').max(255),
           color: ColorJsonSchema,
           uids: z.string().optional().default(''),
           orig_hash: z.string(),
@@ -188,17 +188,17 @@ router.post(
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentGroups: StudentGroupJson[] = courseInstanceJson.studentGroups ?? [];
+      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
 
-      // Check if group name already exists
-      if (studentGroups.some((g) => g.name === name)) {
-        res.status(400).json({ error: 'A group with this name already exists' });
+      // Check if label name already exists
+      if (studentLabels.some((l) => l.name === name)) {
+        res.status(400).json({ error: 'A label with this name already exists' });
         return;
       }
 
-      // Add new group
-      studentGroups.push({ name, color });
-      courseInstanceJson.studentGroups = studentGroups;
+      // Add new label
+      studentLabels.push({ name, color });
+      courseInstanceJson.studentLabels = studentLabels;
 
       // Format and write using FileModifyEditor
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
@@ -235,24 +235,24 @@ router.post(
           authzData: authz_data,
         });
 
-        // Get the newly created group from database
-        const groups = await selectStudentGroupsByCourseInstance(courseInstance.id);
-        const newGroup = groups.find((g) => g.name === name);
-        if (!newGroup) {
-          throw new error.HttpStatusError(500, 'Group saved but not found in database');
+        // Get the newly created label from database
+        const labels = await selectStudentLabelsByCourseInstance(courseInstance.id);
+        const newLabel = labels.find((l) => l.name === name);
+        if (!newLabel) {
+          throw new error.HttpStatusError(500, 'Label saved but not found in database');
         }
         for (const user of enrolledUsers) {
-          await addEnrollmentToStudentGroup({
+          await addEnrollmentToStudentLabel({
             enrollment_id: user.enrollment.id,
-            student_group_id: newGroup.id,
+            student_label_id: newLabel.id,
           });
         }
       }
 
       res.json({ success: true });
-    } else if (req.body.__action === 'edit_group') {
+    } else if (req.body.__action === 'edit_label') {
       const {
-        group_id,
+        label_id,
         name,
         old_name,
         color,
@@ -260,8 +260,8 @@ router.post(
         orig_hash,
       } = z
         .object({
-          group_id: z.string(),
-          name: z.string().min(1, 'Group name is required').max(255),
+          label_id: z.string(),
+          name: z.string().min(1, 'Label name is required').max(255),
           old_name: z.string(),
           color: ColorJsonSchema,
           uids: z.string().optional().default(''),
@@ -269,27 +269,27 @@ router.post(
         })
         .parse(req.body);
 
-      await verifyGroupBelongsToCourseInstance(group_id, courseInstance.id);
+      await verifyLabelBelongsToCourseInstance(label_id, courseInstance.id);
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentGroups: StudentGroupJson[] = courseInstanceJson.studentGroups ?? [];
+      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
 
-      // Find and update the group
-      const groupIndex = studentGroups.findIndex((g) => g.name === old_name);
-      if (groupIndex === -1) {
-        res.status(400).json({ error: 'Group not found in JSON configuration' });
+      // Find and update the label
+      const labelIndex = studentLabels.findIndex((l) => l.name === old_name);
+      if (labelIndex === -1) {
+        res.status(400).json({ error: 'Label not found in JSON configuration' });
         return;
       }
 
-      // Check if new name conflicts with another group
-      if (name !== old_name && studentGroups.some((g) => g.name === name)) {
-        res.status(400).json({ error: 'A group with this name already exists' });
+      // Check if new name conflicts with another label
+      if (name !== old_name && studentLabels.some((l) => l.name === name)) {
+        res.status(400).json({ error: 'A label with this name already exists' });
         return;
       }
 
-      studentGroups[groupIndex] = { name, color };
-      courseInstanceJson.studentGroups = studentGroups;
+      studentLabels[labelIndex] = { name, color };
+      courseInstanceJson.studentLabels = studentLabels;
 
       // Format and write using FileModifyEditor
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
@@ -316,18 +316,18 @@ router.post(
         return;
       }
 
-      // Update enrollments - get the group by new name after sync
-      const groups = await selectStudentGroupsByCourseInstance(courseInstance.id);
-      const updatedGroup = groups.find((g) => g.name === name);
+      // Update enrollments - get the label by new name after sync
+      const labels = await selectStudentLabelsByCourseInstance(courseInstance.id);
+      const updatedLabel = labels.find((l) => l.name === name);
 
-      if (!updatedGroup) {
-        throw new error.HttpStatusError(500, 'Group saved but not found in database');
+      if (!updatedLabel) {
+        throw new error.HttpStatusError(500, 'Label saved but not found in database');
       }
 
       // Get current enrollments
       const currentEnrollments = await sqldb.queryRows(
-        sql.select_enrollment_ids_for_group,
-        { student_group_id: updatedGroup.id },
+        sql.select_enrollment_ids_for_label,
+        { student_label_id: updatedLabel.id },
         z.object({ enrollment_id: z.string() }),
       );
       const currentEnrollmentIds = new Set(currentEnrollments.map((e) => e.enrollment_id));
@@ -348,9 +348,9 @@ router.post(
       // Add new enrollments
       for (const enrollmentId of desiredEnrollmentIds) {
         if (!currentEnrollmentIds.has(enrollmentId)) {
-          await addEnrollmentToStudentGroup({
+          await addEnrollmentToStudentLabel({
             enrollment_id: enrollmentId,
-            student_group_id: updatedGroup.id,
+            student_label_id: updatedLabel.id,
           });
         }
       }
@@ -358,37 +358,37 @@ router.post(
       // Remove old enrollments
       const toRemove = [...currentEnrollmentIds].filter((id) => !desiredEnrollmentIds.has(id));
       if (toRemove.length > 0) {
-        await sqldb.execute(sql.bulk_remove_enrollments_from_group, {
-          student_group_id: updatedGroup.id,
+        await sqldb.execute(sql.bulk_remove_enrollments_from_label, {
+          student_label_id: updatedLabel.id,
           enrollment_ids: toRemove,
         });
       }
 
       res.json({ success: true });
-    } else if (req.body.__action === 'delete_group') {
-      const { group_id, group_name, orig_hash } = z
+    } else if (req.body.__action === 'delete_label') {
+      const { label_id, label_name, orig_hash } = z
         .object({
-          group_id: z.string(),
-          group_name: z.string(),
+          label_id: z.string(),
+          label_name: z.string(),
           orig_hash: z.string(),
         })
         .parse(req.body);
 
-      await verifyGroupBelongsToCourseInstance(group_id, courseInstance.id);
+      await verifyLabelBelongsToCourseInstance(label_id, courseInstance.id);
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
-      const studentGroups: StudentGroupJson[] = courseInstanceJson.studentGroups ?? [];
+      const studentLabels: StudentLabelJson[] = courseInstanceJson.studentLabels ?? [];
 
-      // Remove the group
-      const groupIndex = studentGroups.findIndex((g) => g.name === group_name);
-      if (groupIndex === -1) {
-        res.status(404).json({ error: 'Group not found in course configuration' });
+      // Remove the label
+      const labelIndex = studentLabels.findIndex((l) => l.name === label_name);
+      if (labelIndex === -1) {
+        res.status(404).json({ error: 'Label not found in course configuration' });
         return;
       }
 
-      studentGroups.splice(groupIndex, 1);
-      courseInstanceJson.studentGroups = studentGroups;
+      studentLabels.splice(labelIndex, 1);
+      courseInstanceJson.studentLabels = studentLabels;
 
       // Format and write using FileModifyEditor
       const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));

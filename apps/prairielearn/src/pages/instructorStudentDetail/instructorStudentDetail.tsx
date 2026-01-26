@@ -20,12 +20,12 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentGroup,
-  removeEnrollmentFromStudentGroup,
-  selectStudentGroupById,
-  selectStudentGroupsByCourseInstance,
-  selectStudentGroupsForEnrollment,
-} from '../../models/student-group.js';
+  addEnrollmentToStudentLabel,
+  removeEnrollmentFromStudentLabel,
+  selectStudentLabelById,
+  selectStudentLabelsByCourseInstance,
+  selectStudentLabelsForEnrollment,
+} from '../../models/student-label.js';
 import { selectUserById } from '../../models/user.js';
 
 import { UserDetailSchema } from './components/OverviewCard.js';
@@ -65,7 +65,7 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [gradebookRows, studentGroupsForEnrollment, allStudentGroups] = await Promise.all([
+    const [gradebookRows, studentLabelsForEnrollment, allStudentLabels] = await Promise.all([
       student.user?.id
         ? getGradebookRows({
             course_instance_id: courseInstance.id,
@@ -75,20 +75,20 @@ router.get(
             auth: 'instructor',
           })
         : [],
-      selectStudentGroupsForEnrollment(req.params.enrollment_id),
-      selectStudentGroupsByCourseInstance(courseInstance.id),
+      selectStudentLabelsForEnrollment(req.params.enrollment_id),
+      selectStudentLabelsByCourseInstance(courseInstance.id),
     ]);
 
     // Transform to simple format
-    const studentGroups = studentGroupsForEnrollment.map((g) => ({
-      id: g.id,
-      name: g.name,
-      color: g.color,
+    const studentLabels = studentLabelsForEnrollment.map((l) => ({
+      id: l.id,
+      name: l.name,
+      color: l.color,
     }));
-    const availableStudentGroups = allStudentGroups.map((g) => ({
-      id: g.id,
-      name: g.name,
-      color: g.color,
+    const availableStudentLabels = allStudentLabels.map((l) => ({
+      id: l.id,
+      name: l.name,
+      color: l.color,
     }));
 
     const pageTitle = run(() => {
@@ -119,8 +119,8 @@ router.get(
               auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
-              studentGroups={studentGroups}
-              availableStudentGroups={availableStudentGroups}
+              studentLabels={studentLabels}
+              availableStudentLabels={availableStudentLabels}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
               csrfToken={pageContext.__csrf_token}
@@ -231,34 +231,34 @@ router.post(
         res.redirect(req.originalUrl);
         break;
       }
-      case 'add_to_group': {
-        const { student_group_id } = z.object({ student_group_id: z.string() }).parse(req.body);
+      case 'add_to_label': {
+        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
 
-        // Verify the group belongs to this course instance
-        const group = await selectStudentGroupById(student_group_id);
-        if (group.course_instance_id !== courseInstance.id) {
-          throw new HttpStatusError(403, 'Group does not belong to this course instance');
+        // Verify the label belongs to this course instance
+        const label = await selectStudentLabelById(student_label_id);
+        if (label.course_instance_id !== courseInstance.id) {
+          throw new HttpStatusError(403, 'Label does not belong to this course instance');
         }
 
-        await addEnrollmentToStudentGroup({
+        await addEnrollmentToStudentLabel({
           enrollment_id,
-          student_group_id,
+          student_label_id,
         });
         res.redirect(req.originalUrl);
         break;
       }
-      case 'remove_from_group': {
-        const { student_group_id } = z.object({ student_group_id: z.string() }).parse(req.body);
+      case 'remove_from_label': {
+        const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
 
-        // Verify the group belongs to this course instance
-        const group = await selectStudentGroupById(student_group_id);
-        if (group.course_instance_id !== courseInstance.id) {
-          throw new HttpStatusError(403, 'Group does not belong to this course instance');
+        // Verify the label belongs to this course instance
+        const label = await selectStudentLabelById(student_label_id);
+        if (label.course_instance_id !== courseInstance.id) {
+          throw new HttpStatusError(403, 'Label does not belong to this course instance');
         }
 
-        await removeEnrollmentFromStudentGroup({
+        await removeEnrollmentFromStudentLabel({
           enrollment_id,
-          student_group_id,
+          student_label_id,
         });
         res.redirect(req.originalUrl);
         break;

@@ -198,8 +198,8 @@ export const SprocServerLoadsCurrentSchema = z.object({
 // Result of sync_assessments sproc
 export const SprocSyncAssessmentsSchema = z.record(z.string(), IdSchema).nullable();
 
-// Result of sync_student_groups sproc
-export const SprocSyncStudentGroupsSchema = z.record(z.string(), IdSchema).nullable();
+// Result of sync_student_labels sproc
+export const SprocSyncStudentLabelsSchema = z.record(z.string(), IdSchema).nullable();
 
 // Result of authz_course_instance sproc
 export const SprocAuthzCourseInstanceSchema = z.object({
@@ -1363,21 +1363,21 @@ export const StripeCheckoutSessionSchema = z.object({
 });
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
-export const StudentGroupSchema = z.object({
+export const StudentLabelSchema = z.object({
   color: z.string().nullable(),
   course_instance_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   id: IdSchema,
   name: z.string(),
 });
-export type StudentGroup = z.infer<typeof StudentGroupSchema>;
+export type StudentLabel = z.infer<typeof StudentLabelSchema>;
 
-export const StudentGroupEnrollmentSchema = z.object({
+export const StudentLabelEnrollmentSchema = z.object({
   enrollment_id: IdSchema,
   id: IdSchema,
-  student_group_id: IdSchema,
+  student_label_id: IdSchema,
 });
-export type StudentGroupEnrollment = z.infer<typeof StudentGroupEnrollmentSchema>;
+export type StudentLabelEnrollment = z.infer<typeof StudentLabelEnrollmentSchema>;
 
 export const SubmissionSchema = z.object({
   auth_user_id: IdSchema.nullable(),
@@ -1657,8 +1657,8 @@ export const TableNames = [
   'sharing_set_questions',
   'sharing_sets',
   'stripe_checkout_sessions',
-  'student_group_enrollments',
-  'student_groups',
+  'student_label_enrollments',
+  'student_labels',
   'submissions',
   'tags',
   'time_series',

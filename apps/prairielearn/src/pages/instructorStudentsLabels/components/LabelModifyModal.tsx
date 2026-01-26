@@ -19,18 +19,18 @@ class SaveError extends Error {
   }
 }
 
-export type GroupModifyModalData =
+export type LabelModifyModalData =
   | { type: 'add'; origHash: string | null }
   | {
       type: 'edit';
-      groupId: string;
+      labelId: string;
       name: string;
       color: string;
       uids: string;
       origHash: string | null;
     };
 
-interface GroupFormValues {
+interface LabelFormValues {
   name: string;
   color: string;
   uids: string;
@@ -38,7 +38,7 @@ interface GroupFormValues {
 
 const MAX_UIDS = 1000;
 
-export function GroupModifyModal({
+export function LabelModifyModal({
   data,
   csrfToken,
   courseInstanceId,
@@ -47,7 +47,7 @@ export function GroupModifyModal({
   onExited,
   onSuccess,
 }: {
-  data: GroupModifyModalData | null;
+  data: LabelModifyModalData | null;
   csrfToken: string;
   courseInstanceId: string;
   show: boolean;
@@ -71,7 +71,7 @@ export function GroupModifyModal({
     formState: { errors },
     watch,
     setValue,
-  } = useForm<GroupFormValues>({
+  } = useForm<LabelFormValues>({
     values: defaultValues,
     mode: 'onSubmit',
     reValidateMode: 'onSubmit',
@@ -123,17 +123,17 @@ export function GroupModifyModal({
   };
 
   const saveMutation = useMutation({
-    mutationFn: async (formData: GroupFormValues) => {
+    mutationFn: async (formData: LabelFormValues) => {
       const body = new URLSearchParams({
         __csrf_token: csrfToken,
-        __action: data?.type === 'edit' ? 'edit_group' : 'create_group',
+        __action: data?.type === 'edit' ? 'edit_label' : 'create_label',
         name: formData.name.trim(),
         color: formData.color,
         uids: formData.uids.trim(),
         orig_hash: data?.origHash ?? '',
       });
       if (data?.type === 'edit') {
-        body.append('group_id', data.groupId);
+        body.append('label_id', data.labelId);
         body.append('old_name', data.name);
       }
       const resp = await fetch(window.location.pathname, {
@@ -149,7 +149,7 @@ export function GroupModifyModal({
     onSuccess,
   });
 
-  const onFormSubmit = async (formData: GroupFormValues) => {
+  const onFormSubmit = async (formData: LabelFormValues) => {
     void saveMutation.mutate(formData);
   };
 
@@ -167,7 +167,7 @@ export function GroupModifyModal({
             ))}
           </div>
           <p>
-            Do you want to continue editing, or save the group anyway? Unenrolled students will be
+            Do you want to continue editing, or save the label anyway? Unenrolled students will be
             ignored.
           </p>
         </Modal.Body>
@@ -208,7 +208,7 @@ export function GroupModifyModal({
       }}
     >
       <Modal.Header closeButton>
-        <Modal.Title>{data?.type === 'add' ? 'Add group' : 'Edit group'}</Modal.Title>
+        <Modal.Title>{data?.type === 'add' ? 'Add label' : 'Edit label'}</Modal.Title>
       </Modal.Header>
       <form onSubmit={handleSubmit(onFormSubmit)}>
         <Modal.Body>
@@ -231,39 +231,39 @@ export function GroupModifyModal({
             </Alert>
           )}
           <div className="mb-3">
-            <label className="form-label" htmlFor="group-name">
-              Group name
+            <label className="form-label" htmlFor="label-name">
+              Label name
             </label>
             <input
-              id="group-name"
+              id="label-name"
               type="text"
               className="form-control"
-              {...register('name', { required: 'Group name is required' })}
+              {...register('name', { required: 'Label name is required' })}
             />
             {errors.name && <div className="text-danger small">{String(errors.name.message)}</div>}
           </div>
           <div className="mb-3">
-            <label className="form-label" htmlFor="group-color">
+            <label className="form-label" htmlFor="label-color">
               Color
             </label>
             <ColorPicker value={selectedColor} onChange={(color) => setValue('color', color)} />
-            <input type="hidden" id="group-color" {...register('color')} />
+            <input type="hidden" id="label-color" {...register('color')} />
           </div>
           <div className="mb-0">
-            <label className="form-label" htmlFor="group-uids">
+            <label className="form-label" htmlFor="label-uids">
               UIDs (optional)
             </label>
             <textarea
-              id="group-uids"
+              id="label-uids"
               className="form-control"
-              aria-describedby="group-uids-help"
+              aria-describedby="label-uids-help"
               rows={5}
               {...register('uids', {
                 validate: validateUids,
               })}
             />
             {errors.uids && <div className="text-danger small">{String(errors.uids.message)}</div>}
-            <small id="group-uids-help" className="form-text">
+            <small id="label-uids-help" className="form-text">
               Enter UIDs separated by commas, whitespace, or new lines.
             </small>
           </div>

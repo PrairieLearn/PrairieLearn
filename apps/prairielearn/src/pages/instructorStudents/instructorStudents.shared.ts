@@ -7,17 +7,17 @@ import { EnumEnrollmentStatusSchema } from '../../lib/db-types.js';
 
 export const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 
-export const StudentGroupInfoSchema = z.object({
+export const StudentLabelInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   color: z.string().nullable(),
 });
-export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
 
 export const StudentRowSchema = z.object({
   enrollment: StaffEnrollmentSchema,
   user: StaffUserSchema.nullable(),
-  student_groups: z.array(StudentGroupInfoSchema),
+  student_labels: z.array(StudentLabelInfoSchema),
 });
 
 export const StudentRowSchemaWithUser = StudentRowSchema.extend({

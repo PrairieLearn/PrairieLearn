@@ -18,18 +18,18 @@ class DeleteError extends Error {
   }
 }
 
-import { GroupModifyModal, type GroupModifyModalData } from './components/GroupModifyModal.js';
-import { GroupTableRow } from './components/GroupTableRow.js';
+import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
+import { LabelTableRow } from './components/LabelTableRow.js';
 import {
-  type StudentGroupWithUserData,
-  StudentGroupWithUserDataSchema,
-} from './instructorStudentsGroups.types.js';
+  type StudentLabelWithUserData,
+  StudentLabelWithUserDataSchema,
+} from './instructorStudentsLabels.types.js';
 
-interface StudentGroupsPageProps {
+interface StudentLabelsPageProps {
   csrfToken: string;
   courseInstanceId: string;
   studentsPageUrl: string;
-  initialGroups: StudentGroupWithUserData[];
+  initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
   isDevMode: boolean;
   search: string;
@@ -37,74 +37,74 @@ interface StudentGroupsPageProps {
 }
 
 interface DeleteModalData {
-  groupId: string;
-  groupName: string;
-  userData: StudentGroupWithUserData['user_data'];
+  labelId: string;
+  labelName: string;
+  userData: StudentLabelWithUserData['user_data'];
 }
 
-function StudentGroupsCard({
+function StudentLabelsCard({
   csrfToken,
   courseInstanceId,
   studentsPageUrl: _studentsPageUrl,
-  initialGroups,
+  initialLabels,
   canEdit,
   origHash,
-}: Omit<StudentGroupsPageProps, 'isDevMode' | 'search'>) {
+}: Omit<StudentLabelsPageProps, 'isDevMode' | 'search'>) {
   const queryClient = useQueryClient();
-  const [groupParam, setGroupParam] = useQueryState('group', parseAsString.withDefault(''));
+  const [labelParam, setLabelParam] = useQueryState('label', parseAsString.withDefault(''));
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteModalDataState, setDeleteModalDataState] = useState<DeleteModalData | null>(null);
   const [deleteModalShow, setDeleteModalShow] = useState(false);
   const [showAllDeletedStudents, setShowAllDeletedStudents] = useState(false);
 
-  const { data: groups } = useQuery<StudentGroupWithUserData[]>({
-    queryKey: ['student-groups'],
+  const { data: labels } = useQuery<StudentLabelWithUserData[]>({
+    queryKey: ['student-labels'],
     queryFn: async () => {
       const res = await fetch(`${window.location.pathname}/data.json`, {
         headers: { Accept: 'application/json' },
       });
-      if (!res.ok) throw new Error('Failed to fetch groups');
+      if (!res.ok) throw new Error('Failed to fetch labels');
       const data = await res.json();
-      return z.array(StudentGroupWithUserDataSchema).parse(data);
+      return z.array(StudentLabelWithUserDataSchema).parse(data);
     },
     staleTime: Infinity,
-    initialData: initialGroups,
+    initialData: initialLabels,
   });
 
   // Derive modal state from URL parameter (edit) or local state (add)
-  const modifyModalData = useMemo((): GroupModifyModalData | null => {
+  const modifyModalData = useMemo((): LabelModifyModalData | null => {
     if (!canEdit) return null;
 
     if (showAddModal) {
       return { type: 'add', origHash };
     }
 
-    if (groupParam) {
-      const group = groups.find((g) => g.student_group.name === groupParam);
-      if (group) {
+    if (labelParam) {
+      const label = labels.find((l) => l.student_label.name === labelParam);
+      if (label) {
         return {
           type: 'edit',
-          groupId: group.student_group.id,
-          name: group.student_group.name,
-          color: group.student_group.color ?? 'gray1',
-          uids: group.user_data.map((u) => u.uid).join('\n'),
+          labelId: label.student_label.id,
+          name: label.student_label.name,
+          color: label.student_label.color ?? 'gray1',
+          uids: label.user_data.map((u) => u.uid).join('\n'),
           origHash,
         };
       }
     }
 
     return null;
-  }, [showAddModal, groupParam, groups, canEdit, origHash]);
+  }, [showAddModal, labelParam, labels, canEdit, origHash]);
 
   const modifyModalShow = modifyModalData !== null;
 
   const deleteMutation = useMutation({
-    mutationFn: async ({ groupId, groupName }: { groupId: string; groupName: string }) => {
+    mutationFn: async ({ labelId, labelName }: { labelId: string; labelName: string }) => {
       const body = new URLSearchParams({
-        __action: 'delete_group',
+        __action: 'delete_label',
         __csrf_token: csrfToken,
-        group_id: groupId,
-        group_name: groupName,
+        label_id: labelId,
+        label_name: labelName,
         orig_hash: origHash ?? '',
       });
       const res = await fetch(window.location.href.split('?')[0], {
@@ -114,57 +114,57 @@ function StudentGroupsCard({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new DeleteError(json.error ?? 'Failed to delete group', json.jobSequenceId);
+        throw new DeleteError(json.error ?? 'Failed to delete label', json.jobSequenceId);
       }
       return res.json();
     },
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+      await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
       setDeleteModalShow(false);
     },
   });
 
-  const handleEdit = (group: StudentGroupWithUserData) => {
-    void setGroupParam(group.student_group.name);
+  const handleEdit = (label: StudentLabelWithUserData) => {
+    void setLabelParam(label.student_label.name);
   };
 
-  const handleDelete = (group: StudentGroupWithUserData) => {
+  const handleDelete = (label: StudentLabelWithUserData) => {
     setDeleteModalDataState({
-      groupId: group.student_group.id,
-      groupName: group.student_group.name,
-      userData: group.user_data,
+      labelId: label.student_label.id,
+      labelName: label.student_label.name,
+      userData: label.user_data,
     });
     setDeleteModalShow(true);
   };
 
   const handleModalHide = () => {
     setShowAddModal(false);
-    void setGroupParam(null);
+    void setLabelParam(null);
   };
 
   const handleSuccess = async () => {
-    await queryClient.invalidateQueries({ queryKey: ['student-groups'] });
+    await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
     setShowAddModal(false);
-    void setGroupParam(null);
+    void setLabelParam(null);
   };
 
   return (
     <>
       <div className="card mb-4">
         <div className="card-header bg-primary text-white d-flex justify-content-between align-items-center">
-          <h1 className="h6 mb-0">Student groups</h1>
+          <h1 className="h6 mb-0">Student labels</h1>
           {canEdit && (
             <Button variant="light" size="sm" onClick={() => setShowAddModal(true)}>
               <i className="fas fa-plus me-1" />
-              Add group
+              Add label
             </Button>
           )}
         </div>
         <div className="card-body">
-          {groups.length === 0 ? (
+          {labels.length === 0 ? (
             <p className="text-muted mb-0">
-              No student groups have been created yet.
-              {canEdit && ' Click "Add group" above to create your first group.'}
+              No student labels have been created yet.
+              {canEdit && ' Click "Add label" above to create your first label.'}
             </p>
           ) : (
             <div className="table-responsive">
@@ -177,10 +177,10 @@ function StudentGroupsCard({
                   </tr>
                 </thead>
                 <tbody>
-                  {groups.map((group) => (
-                    <GroupTableRow
-                      key={group.student_group.id}
-                      group={group}
+                  {labels.map((label) => (
+                    <LabelTableRow
+                      key={label.student_label.id}
+                      label={label}
                       courseInstanceId={courseInstanceId}
                       canEdit={canEdit}
                       onEdit={handleEdit}
@@ -194,7 +194,7 @@ function StudentGroupsCard({
         </div>
       </div>
 
-      <GroupModifyModal
+      <LabelModifyModal
         data={modifyModalData}
         csrfToken={csrfToken}
         courseInstanceId={courseInstanceId}
@@ -214,7 +214,7 @@ function StudentGroupsCard({
         }}
       >
         <Modal.Header closeButton>
-          <Modal.Title>Delete student group</Modal.Title>
+          <Modal.Title>Delete student label</Modal.Title>
         </Modal.Header>
         <Modal.Body>
           {deleteMutation.isError && (
@@ -237,14 +237,14 @@ function StudentGroupsCard({
             </Alert>
           )}
           <p>
-            Are you sure you want to delete the group{' '}
-            <strong>{deleteModalDataState?.groupName}</strong>?
+            Are you sure you want to delete the label{' '}
+            <strong>{deleteModalDataState?.labelName}</strong>?
           </p>
           {(deleteModalDataState?.userData.length ?? 0) > 0 && (
             <Alert variant="warning">
-              This group has {deleteModalDataState?.userData.length} student
+              This label has {deleteModalDataState?.userData.length} student
               {deleteModalDataState?.userData.length !== 1 ? 's' : ''}. They will be removed from
-              this group.
+              this label.
               <details className="mt-2">
                 <summary className="cursor-pointer">
                   {showAllDeletedStudents ? 'Hide' : 'Show'} affected students
@@ -268,8 +268,8 @@ function StudentGroupsCard({
             onClick={() =>
               deleteModalDataState &&
               deleteMutation.mutate({
-                groupId: deleteModalDataState.groupId,
-                groupName: deleteModalDataState.groupName,
+                labelId: deleteModalDataState.labelId,
+                labelName: deleteModalDataState.labelName,
               })
             }
           >
@@ -288,16 +288,16 @@ function StudentGroupsCard({
   );
 }
 
-export function InstructorStudentsGroups(props: StudentGroupsPageProps) {
+export function InstructorStudentsLabels(props: StudentLabelsPageProps) {
   const [queryClient] = useState(() => new QueryClient());
 
   return (
     <NuqsAdapter search={props.search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={props.isDevMode}>
-        <StudentGroupsCard {...props} />
+        <StudentLabelsCard {...props} />
       </QueryClientProviderDebug>
     </NuqsAdapter>
   );
 }
 
-InstructorStudentsGroups.displayName = 'InstructorStudentsGroups';
+InstructorStudentsLabels.displayName = 'InstructorStudentsLabels';

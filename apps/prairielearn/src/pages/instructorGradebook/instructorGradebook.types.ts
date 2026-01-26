@@ -7,7 +7,7 @@ import {
   AssessmentSetSchema,
   EnrollmentSchema,
   SprocUsersGetDisplayedRoleSchema,
-  StudentGroupSchema,
+  StudentLabelSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 
@@ -36,12 +36,12 @@ export const OtherTeamUserSchema = z.object({
 });
 export type OtherTeamUser = z.infer<typeof OtherTeamUserSchema>;
 
-export const GradebookStudentGroupSchema = z.object({
-  id: StudentGroupSchema.shape.id,
-  name: StudentGroupSchema.shape.name,
-  color: StudentGroupSchema.shape.color,
+export const GradebookStudentLabelSchema = z.object({
+  id: StudentLabelSchema.shape.id,
+  name: StudentLabelSchema.shape.name,
+  color: StudentLabelSchema.shape.color,
 });
-export type GradebookStudentGroup = z.infer<typeof GradebookStudentGroupSchema>;
+export type GradebookStudentLabel = z.infer<typeof GradebookStudentLabelSchema>;
 
 export const GradebookRowSchema = z.object({
   user_id: UserSchema.shape.id,
@@ -58,6 +58,6 @@ export const GradebookRowSchema = z.object({
       uid_other_users_team: OtherTeamUserSchema.array(),
     }),
   ),
-  student_groups: GradebookStudentGroupSchema.array(),
+  student_labels: GradebookStudentLabelSchema.array(),
 });
 export type GradebookRow = z.infer<typeof GradebookRowSchema>;

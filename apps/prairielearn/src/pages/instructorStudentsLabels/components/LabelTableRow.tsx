@@ -1,29 +1,29 @@
 import { ExpandableUserList } from '../../../components/ExpandableUserList.js';
-import type { StudentGroupWithUserData } from '../instructorStudentsGroups.types.js';
+import type { StudentLabelWithUserData } from '../instructorStudentsLabels.types.js';
 
-export function GroupTableRow({
-  group,
+export function LabelTableRow({
+  label,
   courseInstanceId,
   canEdit,
   onEdit,
   onDelete,
 }: {
-  group: StudentGroupWithUserData;
+  label: StudentLabelWithUserData;
   courseInstanceId: string;
   canEdit: boolean;
-  onEdit: (group: StudentGroupWithUserData) => void;
-  onDelete: (group: StudentGroupWithUserData) => void;
+  onEdit: (label: StudentLabelWithUserData) => void;
+  onDelete: (label: StudentLabelWithUserData) => void;
 }) {
-  const color = group.student_group.color ?? 'gray1';
+  const color = label.student_label.color ?? 'gray1';
 
   return (
     <tr>
       <td className="align-middle">
-        <span className={`badge color-${color}`}>{group.student_group.name}</span>
+        <span className={`badge color-${color}`}>{label.student_label.name}</span>
       </td>
       <td className="align-middle">
         <ExpandableUserList
-          users={group.user_data}
+          users={label.user_data}
           courseInstanceId={courseInstanceId}
           emptyText="0 students"
           nameFallback="uid"
@@ -35,14 +35,14 @@ export function GroupTableRow({
             <button
               type="button"
               className="btn btn-sm btn-outline-primary"
-              onClick={() => onEdit(group)}
+              onClick={() => onEdit(label)}
             >
               Edit
             </button>
             <button
               type="button"
               className="btn btn-sm btn-outline-danger"
-              onClick={() => onDelete(group)}
+              onClick={() => onDelete(label)}
             >
               Delete
             </button>

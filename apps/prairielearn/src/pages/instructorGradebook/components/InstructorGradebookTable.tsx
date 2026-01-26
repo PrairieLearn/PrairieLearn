@@ -48,7 +48,7 @@ import {
   type CourseAssessmentRow,
   type GradebookRow,
   GradebookRowSchema,
-  type GradebookStudentGroup,
+  type GradebookStudentLabel,
 } from '../instructorGradebook.types.js';
 
 import { EditScoreButton } from './EditScoreModal.js';
@@ -87,14 +87,14 @@ type ColumnId =
   | 'uin'
   | 'role'
   | 'enrollment_status'
-  | 'student_groups'
+  | 'student_labels'
   | `a${number}`;
 
 interface GradebookTableProps {
   csrfToken: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
-  studentGroups: GradebookStudentGroup[];
+  studentLabels: GradebookStudentLabel[];
   urlPrefix: string;
   courseInstanceId: string;
   filenameBase: string;
@@ -104,7 +104,7 @@ function GradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows: initialGradebookRows,
-  studentGroups,
+  studentLabels,
   urlPrefix,
   courseInstanceId,
   filenameBase,
@@ -127,8 +127,8 @@ function GradebookTable({
     'status',
     parseAsArrayOf(parseAsStringLiteral(STATUS_VALUES)).withDefault(DEFAULT_STATUS_FILTER),
   );
-  const [studentGroupsFilter, setStudentGroupsFilter] = useQueryState<string[]>(
-    'student_groups',
+  const [studentLabelsFilter, setStudentLabelsFilter] = useQueryState<string[]>(
+    'student_labels',
     parseAsArrayOf(parseAsString).withDefault([]),
   );
 
@@ -159,7 +159,7 @@ function GradebookTable({
       role: (_columnId: string, value: GradebookRow['role'][]) => setRoleFilter(value),
       enrollment_status: (_columnId: string, value: EnumEnrollmentStatus[]) =>
         setStatusFilter(value),
-      student_groups: (_columnId: string, value: string[]) => setStudentGroupsFilter(value),
+      student_labels: (_columnId: string, value: string[]) => setStudentLabelsFilter(value),
       ...Object.fromEntries(
         assessmentIds.map((assessmentId) => [
           `a${assessmentId}`,
@@ -179,7 +179,7 @@ function GradebookTable({
     setAssessmentFilterValues,
     setRoleFilter,
     setStatusFilter,
-    setStudentGroupsFilter,
+    setStudentLabelsFilter,
   ]);
 
   // The individual column filters are the source of truth, and this is derived from them.
@@ -196,9 +196,9 @@ function GradebookTable({
       filters.push({ id: 'role', value: roleFilter });
     }
 
-    // Apply student groups filter
-    if (studentGroupsFilter.length > 0) {
-      filters.push({ id: 'student_groups', value: studentGroupsFilter });
+    // Apply student labels filter
+    if (studentLabelsFilter.length > 0) {
+      filters.push({ id: 'student_labels', value: studentLabelsFilter });
     }
 
     Object.entries(assessmentFilterValues).forEach(([columnId, filterValue]) => {
@@ -206,7 +206,7 @@ function GradebookTable({
     });
 
     return filters;
-  }, [statusFilter, roleFilter, studentGroupsFilter, assessmentFilterValues]);
+  }, [statusFilter, roleFilter, studentLabelsFilter, assessmentFilterValues]);
 
   // Sync TanStack column filter changes back to URL
   const handleColumnFiltersChange = useMemo(
@@ -324,30 +324,30 @@ function GradebookTable({
         },
       }),
 
-      // Student Groups column
-      columnHelper.accessor('student_groups', {
-        id: 'student_groups',
+      // Student Labels column
+      columnHelper.accessor('student_labels', {
+        id: 'student_labels',
         meta: {
-          label: 'Groups',
+          label: 'Labels',
         },
         header: () => (
           <span className="d-inline-flex align-items-center gap-1">
-            <span>Groups</span>
+            <span>Labels</span>
             <i className="fas fa-users" />
           </span>
         ),
         cell: (info) => {
-          const groups = info.getValue();
-          if (groups.length === 0) return '—';
+          const labels = info.getValue();
+          if (labels.length === 0) return '—';
           return (
             <div className="d-flex flex-wrap gap-1">
-              {groups.map((group) => (
+              {labels.map((label) => (
                 <span
-                  key={group.id}
+                  key={label.id}
                   className="badge"
-                  style={{ backgroundColor: `var(--color-${group.color ?? 'gray1'})` }}
+                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
                 >
-                  {group.name}
+                  {label.name}
                 </span>
               ))}
             </div>
@@ -355,10 +355,10 @@ function GradebookTable({
         },
         filterFn: (row, columnId, filterValues: string[]) => {
           if (filterValues.length === 0) return true;
-          const groupIds = new Set(
-            row.getValue<GradebookRow['student_groups']>(columnId).map((g) => g.id),
+          const labelIds = new Set(
+            row.getValue<GradebookRow['student_labels']>(columnId).map((l) => l.id),
           );
-          return filterValues.some((id) => groupIds.has(id));
+          return filterValues.some((id) => labelIds.has(id));
         },
       }),
 
@@ -433,15 +433,15 @@ function GradebookTable({
   const allColumnIds = extractLeafColumnIds(columns);
 
   // Set default visibility: hide UIN, role, enrollment status columns by default.
-  // Show student_groups column by default only if there are student groups.
+  // Show student_labels column by default only if there are student labels.
   const defaultColumnVisibility = useMemo(() => {
     const hiddenByDefault = new Set(['uin', 'role', 'enrollment_status']);
-    // Hide student_groups column if there are no groups
-    if (studentGroups.length === 0) {
-      hiddenByDefault.add('student_groups');
+    // Hide student_labels column if there are no labels
+    if (studentLabels.length === 0) {
+      hiddenByDefault.add('student_labels');
     }
     return Object.fromEntries(allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]));
-  }, [allColumnIds, studentGroups.length]);
+  }, [allColumnIds, studentLabels.length]);
 
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
@@ -474,7 +474,7 @@ function GradebookTable({
       };
     });
 
-    const groupIds = studentGroups.map((g) => g.id);
+    const labelIds = studentLabels.map((l) => l.id);
 
     return {
       role: ({ header }: { header: Header<GradebookRow, GradebookRow['role']> }) => (
@@ -491,24 +491,24 @@ function GradebookTable({
           renderValueLabel={({ value }) => <EnrollmentStatusIcon type="text" status={value} />}
         />
       ),
-      student_groups: ({
+      student_labels: ({
         header,
       }: {
-        header: Header<GradebookRow, GradebookRow['student_groups']>;
+        header: Header<GradebookRow, GradebookRow['student_labels']>;
       }) => (
         <MultiSelectColumnFilter
           column={header.column as Column<GradebookRow, unknown>}
-          allColumnValues={groupIds}
+          allColumnValues={labelIds}
           renderValueLabel={({ value }) => {
-            const group = studentGroups.find((g) => g.id === String(value));
-            if (!group) return <span>{String(value)}</span>;
-            return <span>{group.name}</span>;
+            const label = studentLabels.find((l) => l.id === String(value));
+            if (!label) return <span>{String(value)}</span>;
+            return <span>{label.name}</span>;
           }}
         />
       ),
       ...assessmentFilters,
     };
-  }, [courseAssessments, studentGroups]);
+  }, [courseAssessments, studentLabels]);
 
   const table = useReactTable({
     data: gradebookRows,
@@ -563,10 +563,10 @@ function GradebookTable({
               { name: 'Role', value: row.role },
               { name: 'Enrollment', value: row.enrollment?.status ?? null },
               {
-                name: 'Groups',
+                name: 'Labels',
                 value:
-                  row.student_groups.length > 0
-                    ? row.student_groups.map((g) => g.name).join(', ')
+                  row.student_labels.length > 0
+                    ? row.student_labels.map((l) => l.name).join(', ')
                     : null,
               },
             ];
@@ -616,7 +616,7 @@ export function InstructorGradebookTable({
   csrfToken,
   courseAssessments,
   gradebookRows,
-  studentGroups,
+  studentLabels,
   urlPrefix,
   filenameBase,
   search,
@@ -635,7 +635,7 @@ export function InstructorGradebookTable({
           csrfToken={csrfToken}
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
-          studentGroups={studentGroups}
+          studentLabels={studentLabels}
           urlPrefix={urlPrefix}
           filenameBase={filenameBase}
           courseInstanceId={courseInstanceId}

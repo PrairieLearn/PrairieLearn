@@ -20,12 +20,12 @@ import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import {
-  addEnrollmentToStudentGroup,
-  batchRemoveEnrollmentsFromStudentGroup,
-  createStudentGroupAndAddEnrollments,
-  selectStudentGroupsByCourseInstance,
-  verifyGroupBelongsToCourseInstance,
-} from '../../models/student-group.js';
+  addEnrollmentToStudentLabel,
+  batchRemoveEnrollmentsFromStudentLabel,
+  createStudentLabelAndAddEnrollments,
+  selectStudentLabelsByCourseInstance,
+  verifyLabelBelongsToCourseInstance,
+} from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
@@ -159,43 +159,43 @@ router.post(
       const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
 
       res.json({ data: staffEnrollment });
-    } else if (req.body.__action === 'batch_add_to_group') {
+    } else if (req.body.__action === 'batch_add_to_label') {
       const BodySchema = z.object({
-        __action: z.literal('batch_add_to_group'),
+        __action: z.literal('batch_add_to_label'),
         enrollment_ids: z.array(z.string()),
-        student_group_id: z.string(),
+        student_label_id: z.string(),
       });
       const body = BodySchema.parse(req.body);
 
-      // Verify the group belongs to this course instance
-      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
+      // Verify the label belongs to this course instance
+      await verifyLabelBelongsToCourseInstance(body.student_label_id, courseInstance.id);
 
-      // Add each enrollment to the group
+      // Add each enrollment to the label
       let added = 0;
-      let alreadyInGroup = 0;
+      let alreadyInLabel = 0;
       for (const enrollmentId of body.enrollment_ids) {
-        const result = await addEnrollmentToStudentGroup({
+        const result = await addEnrollmentToStudentLabel({
           enrollment_id: enrollmentId,
-          student_group_id: body.student_group_id,
+          student_label_id: body.student_label_id,
         });
         if (result) {
           added++;
         } else {
-          alreadyInGroup++;
+          alreadyInLabel++;
         }
       }
 
-      res.json({ success: true, added, alreadyInGroup });
-    } else if (req.body.__action === 'create_group_and_add_students') {
+      res.json({ success: true, added, alreadyInLabel });
+    } else if (req.body.__action === 'create_label_and_add_students') {
       const BodySchema = z.object({
-        __action: z.literal('create_group_and_add_students'),
+        __action: z.literal('create_label_and_add_students'),
         enrollment_ids: z.array(z.string()),
-        name: z.string().min(1, 'Group name is required').max(255),
+        name: z.string().min(1, 'Label name is required').max(255),
       });
       const body = BodySchema.parse(req.body);
 
       try {
-        await createStudentGroupAndAddEnrollments({
+        await createStudentLabelAndAddEnrollments({
           course_instance_id: courseInstance.id,
           name: body.name,
           enrollment_ids: body.enrollment_ids,
@@ -208,21 +208,21 @@ router.post(
           throw err;
         }
       }
-    } else if (req.body.__action === 'batch_remove_from_group') {
+    } else if (req.body.__action === 'batch_remove_from_label') {
       const BodySchema = z.object({
-        __action: z.literal('batch_remove_from_group'),
+        __action: z.literal('batch_remove_from_label'),
         enrollment_ids: z.array(z.string()),
-        student_group_id: z.string(),
+        student_label_id: z.string(),
       });
       const body = BodySchema.parse(req.body);
 
-      // Verify the group belongs to this course instance
-      await verifyGroupBelongsToCourseInstance(body.student_group_id, courseInstance.id);
+      // Verify the label belongs to this course instance
+      await verifyLabelBelongsToCourseInstance(body.student_label_id, courseInstance.id);
 
-      // Remove enrollments from the group (returns count of removed)
-      const removed = await batchRemoveEnrollmentsFromStudentGroup({
+      // Remove enrollments from the label (returns count of removed)
+      const removed = await batchRemoveEnrollmentsFromStudentLabel({
         enrollment_ids: body.enrollment_ids,
-        student_group_id: body.student_group_id,
+        student_label_id: body.student_label_id,
       });
 
       res.json({ success: true, removed });
@@ -389,17 +389,17 @@ router.get(
       return;
     }
 
-    const [students, allStudentGroups] = await Promise.all([
+    const [students, allStudentLabels] = await Promise.all([
       queryRows(
         sql.select_users_and_enrollments_for_course_instance,
         { course_instance_id: courseInstance.id },
         StudentRowSchema,
       ),
-      selectStudentGroupsByCourseInstance(courseInstance.id),
+      selectStudentLabelsByCourseInstance(courseInstance.id),
     ]);
 
-    // Transform student groups to match the expected format
-    const studentGroups = allStudentGroups.map((g) => ({ id: g.id, name: g.name, color: g.color }));
+    // Transform student labels to match the expected format
+    const studentLabels = allStudentLabels.map((l) => ({ id: l.id, name: l.name, color: l.color }));
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -418,7 +418,7 @@ router.get(
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
+          page: 'students',
           subPage: 'students',
         },
         options: {
@@ -431,7 +431,7 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
-              studentGroups={studentGroups}
+              studentLabels={studentLabels}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}

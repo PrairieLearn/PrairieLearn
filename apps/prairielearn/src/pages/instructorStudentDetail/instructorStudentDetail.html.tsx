@@ -26,19 +26,19 @@ export const UserDetailSchema = z.object({
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
-export const StudentGroupInfoSchema = z.object({
+export const StudentLabelInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   color: z.string().nullable(),
 });
-export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
 
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
-  studentGroups: StudentGroupInfo[];
-  availableStudentGroups: StudentGroupInfo[];
+  studentLabels: StudentLabelInfo[];
+  availableStudentLabels: StudentLabelInfo[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
@@ -50,8 +50,8 @@ export function InstructorStudentDetail({
   auditEvents,
   gradebookRows,
   student,
-  studentGroups,
-  availableStudentGroups,
+  studentLabels,
+  availableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -83,8 +83,8 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
-        studentGroups={studentGroups}
-        availableStudentGroups={availableStudentGroups}
+        studentLabels={studentLabels}
+        availableStudentLabels={availableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}

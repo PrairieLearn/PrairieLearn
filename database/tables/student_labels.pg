@@ -1,0 +1,17 @@
+columns
+    color: text
+    course_instance_id: bigint not null
+    deleted_at: timestamp with time zone
+    id: bigint not null default nextval('student_labels_id_seq'::regclass)
+    name: text not null
+
+indexes
+    student_labels_pkey: PRIMARY KEY (id) USING btree (id)
+    student_labels_course_instance_id_name_unique: UNIQUE USING btree (course_instance_id, name) WHERE deleted_at IS NULL
+
+foreign-key constraints
+    student_labels_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
+
+referenced by
+    assessment_access_control_student_labels: FOREIGN KEY (student_label_id) REFERENCES student_labels(id) ON UPDATE CASCADE ON DELETE CASCADE
+    student_label_enrollments: FOREIGN KEY (student_label_id) REFERENCES student_labels(id) ON UPDATE CASCADE ON DELETE CASCADE

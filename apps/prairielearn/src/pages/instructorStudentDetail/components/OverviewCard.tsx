@@ -20,25 +20,25 @@ export const UserDetailSchema = z.object({
 
 export type UserDetail = z.infer<typeof UserDetailSchema>;
 
-export const StudentGroupInfoSchema = z.object({
+export const StudentLabelInfoSchema = z.object({
   id: IdSchema,
   name: z.string(),
   color: z.string().nullable(),
 });
-export type StudentGroupInfo = z.infer<typeof StudentGroupInfoSchema>;
+export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
 
 export function OverviewCard({
   student,
-  studentGroups,
-  availableStudentGroups,
+  studentLabels,
+  availableStudentLabels,
   courseInstanceUrl,
   csrfToken,
   hasCourseInstancePermissionEdit,
   hasModernPublishing,
 }: {
   student: UserDetail;
-  studentGroups: StudentGroupInfo[];
-  availableStudentGroups: StudentGroupInfo[];
+  studentLabels: StudentLabelInfo[];
+  availableStudentLabels: StudentLabelInfo[];
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit: boolean;
@@ -175,37 +175,37 @@ export function OverviewCard({
           </div>
         )}
 
-        {/* Student Groups Section */}
-        {(studentGroups.length > 0 || availableStudentGroups.length > 0) && (
+        {/* Student Labels Section */}
+        {(studentLabels.length > 0 || availableStudentLabels.length > 0) && (
           <div className="mt-3">
-            <div className="fw-bold mb-2">Student groups:</div>
+            <div className="fw-bold mb-2">Student labels:</div>
             <div className="d-flex flex-wrap align-items-center gap-2">
-              {studentGroups.map((group) => (
+              {studentLabels.map((label) => (
                 <span
-                  key={group.id}
+                  key={label.id}
                   className="badge d-inline-flex align-items-center"
-                  style={{ backgroundColor: `var(--color-${group.color ?? 'gray1'})` }}
+                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
                 >
-                  {group.name}
+                  {label.name}
                   {hasCourseInstancePermissionEdit && (
                     <form method="POST" className="d-inline ms-1">
                       <input type="hidden" name="__csrf_token" value={csrfToken} />
-                      <input type="hidden" name="__action" value="remove_from_group" />
-                      <input type="hidden" name="student_group_id" value={group.id} />
+                      <input type="hidden" name="__action" value="remove_from_label" />
+                      <input type="hidden" name="student_label_id" value={label.id} />
                       <button
                         type="submit"
                         className="btn-close btn-close-white"
                         style={{ fontSize: '0.6rem' }}
-                        aria-label={`Remove from ${group.name}`}
+                        aria-label={`Remove from ${label.name}`}
                       />
                     </form>
                   )}
                 </span>
               ))}
-              {studentGroups.length === 0 && (
-                <span className="text-muted fst-italic">No groups</span>
+              {studentLabels.length === 0 && (
+                <span className="text-muted fst-italic">No labels</span>
               )}
-              {hasCourseInstancePermissionEdit && availableStudentGroups.length > 0 && (
+              {hasCourseInstancePermissionEdit && availableStudentLabels.length > 0 && (
                 <div className="dropdown">
                   <button
                     className="btn btn-sm btn-outline-secondary dropdown-toggle"
@@ -214,28 +214,28 @@ export function OverviewCard({
                     aria-expanded="false"
                   >
                     <i className="fas fa-plus me-1" />
-                    Add to group
+                    Add to label
                   </button>
                   <ul className="dropdown-menu">
-                    {availableStudentGroups
-                      .filter((g) => !studentGroups.some((sg) => sg.id === g.id))
-                      .map((group) => (
-                        <li key={group.id}>
+                    {availableStudentLabels
+                      .filter((l) => !studentLabels.some((sl) => sl.id === l.id))
+                      .map((label) => (
+                        <li key={label.id}>
                           <form method="POST">
                             <input type="hidden" name="__csrf_token" value={csrfToken} />
-                            <input type="hidden" name="__action" value="add_to_group" />
-                            <input type="hidden" name="student_group_id" value={group.id} />
+                            <input type="hidden" name="__action" value="add_to_label" />
+                            <input type="hidden" name="student_label_id" value={label.id} />
                             <button type="submit" className="dropdown-item">
-                              {group.name}
+                              {label.name}
                             </button>
                           </form>
                         </li>
                       ))}
-                    {availableStudentGroups.filter(
-                      (g) => !studentGroups.some((sg) => sg.id === g.id),
+                    {availableStudentLabels.filter(
+                      (l) => !studentLabels.some((sl) => sl.id === l.id),
                     ).length === 0 && (
                       <li>
-                        <span className="dropdown-item text-muted">Already in all groups</span>
+                        <span className="dropdown-item text-muted">Already in all labels</span>
                       </li>
                     )}
                   </ul>

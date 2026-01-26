@@ -7,7 +7,7 @@ import { EnrollmentSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
-import { createStudentGroup, deleteStudentGroup } from '../models/student-group.js';
+import { createStudentLabel, deleteStudentLabel } from '../models/student-label.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -36,8 +36,8 @@ const STUDENT_3 = {
   email: 'test-student-3@example.com',
 };
 
-describe('Student groups batch actions', () => {
-  let groupId: string;
+describe('Student labels batch actions', () => {
+  let labelId: string;
   let enrollment1Id: string;
   let enrollment2Id: string;
   let enrollment3Id: string;
@@ -82,18 +82,18 @@ describe('Student groups batch actions', () => {
     enrollment2Id = enrollment2!.id;
     enrollment3Id = enrollment3!.id;
 
-    // Create a test group
-    const group = await createStudentGroup({
+    // Create a test label
+    const label = await createStudentLabel({
       course_instance_id: '1',
-      name: 'Batch Test Group',
+      name: 'Batch Test Label',
     });
-    groupId = group.id;
+    labelId = label.id;
   });
 
   afterAll(async () => {
-    // Clean up the test group
-    if (groupId) {
-      await deleteStudentGroup(groupId);
+    // Clean up the test label
+    if (labelId) {
+      await deleteStudentLabel(labelId);
     }
 
     // Clean up test enrollments
@@ -113,20 +113,20 @@ describe('Student groups batch actions', () => {
     assert.equal(response.status, 200);
   });
 
-  test.sequential('should batch add multiple students to a group', async () => {
+  test.sequential('should batch add multiple students to a label', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
     const csrfToken = getCSRFToken(pageResponse.$);
 
-    // Batch add students to the group
+    // Batch add students to the label
     const addResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'batch_add_to_group',
+        __action: 'batch_add_to_label',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment1Id, enrollment2Id, enrollment3Id],
-        student_group_id: groupId,
+        student_label_id: labelId,
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -136,10 +136,10 @@ describe('Student groups batch actions', () => {
 
     assert.equal(addResponse.status, 200);
 
-    // Verify all students are now in the group
+    // Verify all students are now in the label
     const memberships = await queryRows(
-      'SELECT * FROM student_group_enrollments WHERE student_group_id = $1',
-      [groupId],
+      'SELECT * FROM student_label_enrollments WHERE student_label_id = $1',
+      [labelId],
       EnrollmentSchema.pick({ id: true }).extend({ enrollment_id: EnrollmentSchema.shape.id }),
     );
 
@@ -151,20 +151,20 @@ describe('Student groups batch actions', () => {
     assert.include(memberEnrollmentIds, enrollment3Id);
   });
 
-  test.sequential('should batch remove multiple students from a group', async () => {
+  test.sequential('should batch remove multiple students from a label', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
     const csrfToken = getCSRFToken(pageResponse.$);
 
-    // Batch remove students from the group
+    // Batch remove students from the label
     const removeResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'batch_remove_from_group',
+        __action: 'batch_remove_from_label',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment1Id, enrollment2Id],
-        student_group_id: groupId,
+        student_label_id: labelId,
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -174,10 +174,10 @@ describe('Student groups batch actions', () => {
 
     assert.equal(removeResponse.status, 200);
 
-    // Verify only student 3 remains in the group
+    // Verify only student 3 remains in the label
     const memberships = await queryRows(
-      'SELECT * FROM student_group_enrollments WHERE student_group_id = $1',
-      [groupId],
+      'SELECT * FROM student_label_enrollments WHERE student_label_id = $1',
+      [labelId],
       EnrollmentSchema.pick({ id: true }).extend({ enrollment_id: EnrollmentSchema.shape.id }),
     );
 
@@ -185,7 +185,7 @@ describe('Student groups batch actions', () => {
     assert.equal(memberships[0].enrollment_id, enrollment3Id);
   });
 
-  test.sequential('should remove the last student from a group', async () => {
+  test.sequential('should remove the last student from a label', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
@@ -195,10 +195,10 @@ describe('Student groups batch actions', () => {
     const removeResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'batch_remove_from_group',
+        __action: 'batch_remove_from_label',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment3Id],
-        student_group_id: groupId,
+        student_label_id: labelId,
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -208,10 +208,10 @@ describe('Student groups batch actions', () => {
 
     assert.equal(removeResponse.status, 200);
 
-    // Verify the group is now empty
+    // Verify the label is now empty
     const memberships = await queryRows(
-      'SELECT * FROM student_group_enrollments WHERE student_group_id = $1',
-      [groupId],
+      'SELECT * FROM student_label_enrollments WHERE student_label_id = $1',
+      [labelId],
       EnrollmentSchema.pick({ id: true }).extend({ enrollment_id: EnrollmentSchema.shape.id }),
     );
 
@@ -219,23 +219,23 @@ describe('Student groups batch actions', () => {
   });
 
   test.sequential(
-    'should not allow adding to a group from a different course instance',
+    'should not allow adding to a label from a different course instance',
     async () => {
-      // Create a group in a different course instance (if we had one)
-      // For now, just test with an invalid group ID
+      // Create a label in a different course instance (if we had one)
+      // For now, just test with an invalid label ID
       const pageResponse = await fetchCheerio(studentsUrl);
       assert.equal(pageResponse.status, 200);
 
       const csrfToken = getCSRFToken(pageResponse.$);
 
-      // Try to add to a non-existent group
+      // Try to add to a non-existent label
       const addResponse = await fetchCheerio(studentsUrl, {
         method: 'POST',
         body: JSON.stringify({
-          __action: 'batch_add_to_group',
+          __action: 'batch_add_to_label',
           __csrf_token: csrfToken,
           enrollment_ids: [enrollment1Id],
-          student_group_id: '999999',
+          student_label_id: '999999',
         }),
         headers: {
           'Content-Type': 'application/json',
@@ -243,25 +243,25 @@ describe('Student groups batch actions', () => {
         },
       });
 
-      // Should fail because group doesn't exist
+      // Should fail because label doesn't exist
       assert.notEqual(addResponse.status, 200);
     },
   );
 
-  test.sequential('should create a new group and add students to it', async () => {
+  test.sequential('should create a new label and add students to it', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
     const csrfToken = getCSRFToken(pageResponse.$);
 
-    // Create a new group and add students in one action
+    // Create a new label and add students in one action
     const createResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'create_group_and_add_students',
+        __action: 'create_label_and_add_students',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment1Id, enrollment2Id],
-        name: 'New Created Group',
+        name: 'New Created Label',
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -271,9 +271,9 @@ describe('Student groups batch actions', () => {
 
     assert.equal(createResponse.status, 200);
 
-    // Verify the group was created and students were added
+    // Verify the label was created and students were added
     const memberships = await queryRows(
-      "SELECT sge.* FROM student_group_enrollments sge JOIN student_groups sg ON sge.student_group_id = sg.id WHERE sg.name = 'New Created Group'",
+      "SELECT sle.* FROM student_label_enrollments sle JOIN student_labels sl ON sle.student_label_id = sl.id WHERE sl.name = 'New Created Label'",
       [],
       EnrollmentSchema.pick({ id: true }).extend({ enrollment_id: EnrollmentSchema.shape.id }),
     );
@@ -285,20 +285,20 @@ describe('Student groups batch actions', () => {
     assert.include(memberEnrollmentIds, enrollment2Id);
   });
 
-  test.sequential('should fail to create group with duplicate name', async () => {
+  test.sequential('should fail to create label with duplicate name', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
     const csrfToken = getCSRFToken(pageResponse.$);
 
-    // Try to create another group with the same name as the one we just created
+    // Try to create another label with the same name as the one we just created
     const createResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'create_group_and_add_students',
+        __action: 'create_label_and_add_students',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment3Id],
-        name: 'New Created Group', // Same name as previous test
+        name: 'New Created Label', // Same name as previous test
       }),
       headers: {
         'Content-Type': 'application/json',
@@ -306,21 +306,21 @@ describe('Student groups batch actions', () => {
       },
     });
 
-    // Should fail with 400 because group name already exists
+    // Should fail with 400 because label name already exists
     assert.equal(createResponse.status, 400);
   });
 
-  test.sequential('should fail to create group with empty name', async () => {
+  test.sequential('should fail to create label with empty name', async () => {
     const pageResponse = await fetchCheerio(studentsUrl);
     assert.equal(pageResponse.status, 200);
 
     const csrfToken = getCSRFToken(pageResponse.$);
 
-    // Try to create a group with an empty name
+    // Try to create a label with an empty name
     const createResponse = await fetchCheerio(studentsUrl, {
       method: 'POST',
       body: JSON.stringify({
-        __action: 'create_group_and_add_students',
+        __action: 'create_label_and_add_students',
         __csrf_token: csrfToken,
         enrollment_ids: [enrollment1Id],
         name: '',

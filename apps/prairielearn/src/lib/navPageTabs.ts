@@ -64,10 +64,10 @@ export function getNavPageTabs() {
         tabLabel: 'Students',
       },
       {
-        activeSubPage: 'student_groups',
-        urlSuffix: '/instance_admin/students/groups',
+        activeSubPage: 'student_labels',
+        urlSuffix: '/instance_admin/students/labels',
         iconClasses: 'fas fa-users',
-        tabLabel: 'Student groups',
+        tabLabel: 'Student labels',
       },
     ],
     course_admin: [

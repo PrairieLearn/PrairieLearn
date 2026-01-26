@@ -6,19 +6,19 @@ SELECT
     (
       SELECT
         jsonb_agg(
-          jsonb_build_object('id', sg.id, 'name', sg.name, 'color', sg.color)
+          jsonb_build_object('id', sl.id, 'name', sl.name, 'color', sl.color)
           ORDER BY
-            sg.name
+            sl.name
         )
       FROM
-        student_group_enrollments AS sge
-        JOIN student_groups AS sg ON sg.id = sge.student_group_id
+        student_label_enrollments AS sle
+        JOIN student_labels AS sl ON sl.id = sle.student_label_id
       WHERE
-        sge.enrollment_id = e.id
-        AND sg.deleted_at IS NULL
+        sle.enrollment_id = e.id
+        AND sl.deleted_at IS NULL
     ),
     '[]'::jsonb
-  ) AS student_groups
+  ) AS student_labels
 FROM
   enrollments AS e
   LEFT JOIN users AS u ON (u.id = e.user_id)

@@ -1,6 +1,6 @@
 CREATE FUNCTION
-    sync_student_groups(
-        IN disk_student_groups_data jsonb[],
+    sync_student_labels(
+        IN disk_student_labels_data jsonb[],
         IN syncing_course_instance_id bigint,
         OUT name_to_id_map jsonb
     )
@@ -10,18 +10,18 @@ DECLARE
     missing_src_names TEXT;
 BEGIN
     -- Move all our data into a temporary table so it's easier to work with
-    CREATE TEMPORARY TABLE disk_student_groups (
+    CREATE TEMPORARY TABLE disk_student_labels (
         name TEXT NOT NULL,
         color TEXT
     ) ON COMMIT DROP;
 
-    INSERT INTO disk_student_groups (name, color)
+    INSERT INTO disk_student_labels (name, color)
     SELECT
         entries->>0,
         entries->>1
-    FROM UNNEST(disk_student_groups_data) AS entries;
+    FROM UNNEST(disk_student_labels_data) AS entries;
 
-    -- Synchronize the dest (student_groups) with the src (disk_student_groups).
+    -- Synchronize the dest (student_labels) with the src (disk_student_labels).
     -- This soft-deletes, un-soft-deletes, updates, and inserts rows.
     WITH
     matched_rows AS (
@@ -29,23 +29,23 @@ BEGIN
             src.name AS src_name,
             src.color AS src_color,
             dest.id AS dest_id
-        FROM disk_student_groups AS src
-        LEFT JOIN student_groups AS dest ON (
+        FROM disk_student_labels AS src
+        LEFT JOIN student_labels AS dest ON (
             dest.course_instance_id = syncing_course_instance_id
             AND dest.name = src.name
         )
     ),
-    -- Soft-delete groups not on disk
+    -- Soft-delete labels not on disk
     deactivate_unmatched_dest_rows AS (
-        UPDATE student_groups AS dest
+        UPDATE student_labels AS dest
         SET deleted_at = NOW()
         WHERE dest.course_instance_id = syncing_course_instance_id
             AND dest.deleted_at IS NULL
             AND dest.name NOT IN (SELECT src_name FROM matched_rows)
     ),
-    -- Update existing groups (un-soft-delete and update color)
+    -- Update existing labels (un-soft-delete and update color)
     update_matched_dest_rows AS (
-        UPDATE student_groups AS dest
+        UPDATE student_labels AS dest
         SET
             color = matched_rows.src_color,
             deleted_at = NULL
@@ -53,9 +53,9 @@ BEGIN
         WHERE dest.id = matched_rows.dest_id
             AND matched_rows.dest_id IS NOT NULL
     ),
-    -- Insert new groups
+    -- Insert new labels
     insert_unmatched_src_rows AS (
-        INSERT INTO student_groups (course_instance_id, name, color)
+        INSERT INTO student_labels (course_instance_id, name, color)
         SELECT syncing_course_instance_id, src_name, src_color
         FROM matched_rows
         WHERE dest_id IS NULL
@@ -70,25 +70,25 @@ BEGIN
     -- Internal consistency checks
     SELECT string_agg(src.name, ', ')
     INTO missing_dest_names
-    FROM disk_student_groups AS src
+    FROM disk_student_labels AS src
     WHERE src.name NOT IN (
         SELECT dest.name
-        FROM student_groups AS dest
+        FROM student_labels AS dest
         WHERE dest.course_instance_id = syncing_course_instance_id
             AND dest.deleted_at IS NULL
     );
     IF (missing_dest_names IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: Student group names on disk but not synced to DB: %', missing_dest_names;
+        RAISE EXCEPTION 'Assertion failure: Student label names on disk but not synced to DB: %', missing_dest_names;
     END IF;
 
     SELECT string_agg(dest.name, ', ')
     INTO missing_src_names
-    FROM student_groups AS dest
+    FROM student_labels AS dest
     WHERE dest.course_instance_id = syncing_course_instance_id
         AND dest.deleted_at IS NULL
-        AND dest.name NOT IN (SELECT src.name FROM disk_student_groups AS src);
+        AND dest.name NOT IN (SELECT src.name FROM disk_student_labels AS src);
     IF (missing_src_names IS NOT NULL) THEN
-        RAISE EXCEPTION 'Assertion failure: Student group names in DB but not on disk: %', missing_src_names;
+        RAISE EXCEPTION 'Assertion failure: Student label names in DB but not on disk: %', missing_src_names;
     END IF;
 END;
 $$ LANGUAGE plpgsql VOLATILE;

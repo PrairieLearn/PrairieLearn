@@ -156,17 +156,17 @@ SELECT
     (
       SELECT
         json_agg(
-          json_build_object('id', sg.id, 'name', sg.name, 'color', sg.color)
+          json_build_object('id', sl.id, 'name', sl.name, 'color', sl.color)
         )
       FROM
-        student_group_enrollments sge
-        JOIN student_groups sg ON sg.id = sge.student_group_id
-        AND sg.deleted_at IS NULL
+        student_label_enrollments sle
+        JOIN student_labels sl ON sl.id = sle.student_label_id
+        AND sl.deleted_at IS NULL
       WHERE
-        sge.enrollment_id = e.id
+        sle.enrollment_id = e.id
     ),
     '[]'::json
-  ) AS student_groups
+  ) AS student_labels
 FROM
   course_users AS u
   LEFT JOIN enrollments AS e ON (
@@ -191,13 +191,13 @@ FROM
 WHERE
   ai.id = $assessment_instance_id;
 
--- BLOCK course_student_groups
+-- BLOCK course_student_labels
 SELECT
   id,
   name,
   color
 FROM
-  student_groups
+  student_labels
 WHERE
   course_instance_id = $course_instance_id
   AND deleted_at IS NULL
