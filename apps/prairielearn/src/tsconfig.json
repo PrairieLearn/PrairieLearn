@@ -3,6 +3,11 @@
   "compilerOptions": {
     "rootDir": "./",
     "outDir": "../dist",
+    "types": [
+      // This is necessary to augment the Express `Request` type with a
+      // `session` property.
+      "@prairielearn/session"
+    ],
     "jsx": "react-jsx"
   },
   "include": ["**/*"]
