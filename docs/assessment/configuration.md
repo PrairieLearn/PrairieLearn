@@ -439,11 +439,11 @@ The `groups` object supports the following properties:
 
 The `studentPermissions` object controls what students can do to manage their groups:
 
-| Attribute        | Type    | Default | Description                                                                                               |
-| ---------------- | ------- | ------- | --------------------------------------------------------------------------------------------------------- |
-| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                          |
-| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                         |
-| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                           |
+| Attribute        | Type    | Default | Description                                                                                                |
+| ---------------- | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
+| `canCreateGroup` | boolean | `false` | Allow students to create groups.                                                                           |
+| `canJoinGroup`   | boolean | `false` | Allow students to join other groups by join code.                                                          |
+| `canLeaveGroup`  | boolean | `false` | Allow students to leave groups.                                                                            |
 | `canNameGroup`   | boolean | `true`  | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
 
 Note that changing an assessment from individual to group-based or vice versa after students have started working on it will cause student work to be lost.
@@ -622,11 +622,11 @@ The `groups.rolePermissions` object defines default permissions for the entire a
 }
 ```
 
-| Attribute        | Type            | Default | Description                                                       |
-| ---------------- | --------------- | ------- | ----------------------------------------------------------------- |
-| `canAssignRoles` | Array of string | `[]`    | The names of roles that can assign other users to roles.          |
-| `canView`        | Array of string | -       | The names of roles that can view questions in this assessment.    |
-| `canSubmit`      | Array of string | -       | The names of roles that can submit questions in this assessment.  |
+| Attribute        | Type            | Default | Description                                                      |
+| ---------------- | --------------- | ------- | ---------------------------------------------------------------- |
+| `canAssignRoles` | Array of string | `[]`    | The names of roles that can assign other users to roles.         |
+| `canView`        | Array of string | -       | The names of roles that can view questions in this assessment.   |
+| `canSubmit`      | Array of string | -       | The names of roles that can submit questions in this assessment. |
 
 Setting either `canView` or `canSubmit` to `[]` (empty array) means that **no role** can view or submit that part of the assessment, respectively. If either attribute is not set, it means that **every role** has the permission associated to the attribute, i.e., any student with any role can view or submit that part of the assessment.
 
@@ -635,11 +635,7 @@ Permissions defined at a higher level are propagated down the assessment hierarc
 ```json title="infoAssessment.json"
 {
   "groups": {
-    "roles": [
-      { "name": "Manager" },
-      { "name": "Recorder" },
-      { "name": "Reflector" }
-    ],
+    "roles": [{ "name": "Manager" }, { "name": "Recorder" }, { "name": "Reflector" }],
     "rolePermissions": {
       "canView": ["Manager", "Reflector", "Recorder"]
     }
@@ -687,66 +683,6 @@ Additionally, when an instructor restricts the submitting of a question to certa
 When a role configuration is invalid, which may occur when a user leaves the group or a new user joins the group, students become unable to see any questions until the roles are reviewed. Users with both assigner and non-assigner roles can view these errors. A user with an assigner role is then expected to update the roles to fix the inconsistencies.
 
 ![Group configuration errors](grouproles_invalid_config_errors.png)
-
-### Migrating from legacy group properties to the groups schema
-
-If you have existing assessments using the legacy `groupWork` properties, you can migrate to the new `groups` schema by following these mappings:
-
-| Legacy property            | New property                               |
-| -------------------------- | ------------------------------------------ |
-| `groupWork: true`          | `groups: { ... }`                          |
-| `groupMinSize`             | `groups.minMembers`                        |
-| `groupMaxSize`             | `groups.maxMembers`                        |
-| `studentGroupCreate`       | `groups.studentPermissions.canCreateGroup` |
-| `studentGroupJoin`         | `groups.studentPermissions.canJoinGroup`   |
-| `studentGroupLeave`        | `groups.studentPermissions.canLeaveGroup`  |
-| `studentGroupChooseName`   | `groups.studentPermissions.canNameGroup`   |
-| `groupRoles`               | `groups.roles`                             |
-| `groupRoles[].canAssignRoles` | `groups.rolePermissions.canAssignRoles` |
-| `canView` (assessment)     | `groups.rolePermissions.canView`           |
-| `canSubmit` (assessment)   | `groups.rolePermissions.canSubmit`         |
-
-**Example migration:**
-
-Legacy format:
-
-```json title="infoAssessment.json (legacy)"
-{
-  "groupWork": true,
-  "groupMinSize": 2,
-  "groupMaxSize": 4,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "groupRoles": [
-    { "name": "Manager", "minimum": 1, "canAssignRoles": true },
-    { "name": "Contributor" }
-  ],
-  "canSubmit": ["Manager"]
-}
-```
-
-New format:
-
-```json title="infoAssessment.json (new)"
-{
-  "groups": {
-    "minMembers": 2,
-    "maxMembers": 4,
-    "studentPermissions": {
-      "canCreateGroup": true,
-      "canJoinGroup": true
-    },
-    "roles": [
-      { "name": "Manager", "minimum": 1 },
-      { "name": "Contributor" }
-    ],
-    "rolePermissions": {
-      "canAssignRoles": ["Manager"],
-      "canSubmit": ["Manager"]
-    }
-  }
-}
-```
 
 ## Forcing students to complete questions in-order
 
