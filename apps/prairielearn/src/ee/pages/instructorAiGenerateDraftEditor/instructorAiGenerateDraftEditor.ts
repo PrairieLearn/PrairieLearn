@@ -262,9 +262,7 @@ router.post(
 
     assertCanCreateQuestion(res.locals);
 
-    const intervalCost = await getIntervalUsage({
-      userId: res.locals.authn_user.id,
-    });
+    const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
     if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
       res.status(429).send();

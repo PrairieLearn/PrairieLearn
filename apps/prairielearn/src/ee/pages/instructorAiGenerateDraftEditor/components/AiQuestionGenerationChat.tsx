@@ -12,8 +12,7 @@ import Markdown from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
-
-import { assertNever } from '../../../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
 import type {
   QuestionGenerationToolUIPart,
   QuestionGenerationUIMessage,
@@ -62,7 +61,7 @@ function ToolCallStatus({
 }: {
   state: Exclude<
     ToolUIPart['state'],
-    'approval-requested' | 'approval-responded' | 'output-denied'
+    'approval-requested' | 'approval-responded' | 'output-denied' | undefined
   >;
   statusText: ReactNode;
   showSpinner?: boolean;

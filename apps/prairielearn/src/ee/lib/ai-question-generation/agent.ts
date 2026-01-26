@@ -661,7 +661,7 @@ export async function editQuestionWithAgent({
     });
 
     await addCompletionCostToIntervalUsage({
-      userId: user.id,
+      user,
       usage: totalUsage,
     });
   });

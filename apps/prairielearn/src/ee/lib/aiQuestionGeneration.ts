@@ -276,43 +276,58 @@ const rateLimiter = new RedisRateLimiter({
 });
 
 /**
- * Retrieve the Redis key for a user's current AI question generation interval usage
+ * Approximate the cost of the prompt, in US dollars.
+ * Accounts for the cost of prompt, system, and completion tokens.
  */
-function getIntervalUsageKey(userId: string) {
-  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
-  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+export function approximatePromptCost({
+  model,
+  prompt,
+}: {
+  model: keyof (typeof config)['costPerMillionTokens'];
+  prompt: string;
+}) {
+  const modelPricing = config.costPerMillionTokens[model];
+
+  // There are approximately 4 characters per token (source: https://platform.openai.com/tokenizer),
+  // so we divide the length of the prompt by 4 to approximate the number of prompt tokens.
+  // Also, on average, we generate 3750 system tokens per prompt.
+  const approxInputTokenCost = ((prompt.length / 4 + 3750) * modelPricing.input) / 1e6;
+
+  // On average, we generate 1000 completion tokens per prompt. This includes reasoning tokens.
+  const approxOutputTokenCost = (1000 * modelPricing.output) / 1e6;
+
+  return approxInputTokenCost + approxOutputTokenCost;
+}
+
+/**
+ * Retrieve the Redis key for a user's AI question generation interval usage.
+ */
+function getIntervalUsageKey(user: User) {
+  return `user:${user.id}`;
 }
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: string }) {
-  const cache = await getAiQuestionGenerationCache();
-  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
+export async function getIntervalUsage(user: User) {
+  return rateLimiter.getIntervalUsage(getIntervalUsageKey(user));
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  userId,
+  user,
   usage,
 }: {
-  userId: string;
+  user: User;
   usage: LanguageModelUsage | undefined;
 }) {
   const completionCost = calculateResponseCost({
     model: QUESTION_GENERATION_OPENAI_MODEL,
     usage,
   });
-
-  const cache = await getAiQuestionGenerationCache();
-  const intervalCost = await getIntervalUsage({ userId });
-
-  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
-
-  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(user), completionCost);
 }
 
 /**
