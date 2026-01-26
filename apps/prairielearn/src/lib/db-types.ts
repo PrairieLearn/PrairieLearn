@@ -335,7 +335,7 @@ export const AssessmentSchema = z.object({
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
-  type: z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']).nullable(),
+  type: z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']),
   uuid: z.string().nullable(),
 });
 export type Assessment = z.infer<typeof AssessmentSchema>;

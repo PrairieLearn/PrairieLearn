@@ -52,7 +52,7 @@ columns
     text: text
     tid: text
     title: text
-    type: enum_assessment_type
+    type: enum_assessment_type not null default 'Homework'::enum_assessment_type
     uuid: uuid
 
 indexes
