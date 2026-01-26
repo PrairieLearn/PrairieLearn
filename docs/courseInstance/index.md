@@ -223,6 +223,10 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 
 ### Individual student management
 
+!!! warning "Not available with legacy access control"
+
+    Individual student management features are not available for courses using legacy access control (`allowAccess`). To use these features, you must [migrate to the new publishing system](#migrating-from-allowaccess).
+
 #### Inviting students
 
 Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.

@@ -1,9 +1,9 @@
 import clsx from 'clsx';
 
 import { OverlayTrigger } from '@prairielearn/ui';
+import { assertNever } from '@prairielearn/utils';
 
 import type { EnumEnrollmentStatus } from '../lib/db-types.js';
-import { assertNever } from '../lib/types.js';
 
 interface EnrollmentStatusIconProps {
   status: EnumEnrollmentStatus;
@@ -39,8 +39,7 @@ function getFriendlyStatus(status: EnumEnrollmentStatus): string {
     case 'left':
       return 'Left';
     case 'removed':
-      // TODO: Change to 'Removed' after batched migration of existing enrollments
-      return 'Left';
+      return 'Removed';
     case 'rejected':
       return 'Rejected';
     case 'blocked':

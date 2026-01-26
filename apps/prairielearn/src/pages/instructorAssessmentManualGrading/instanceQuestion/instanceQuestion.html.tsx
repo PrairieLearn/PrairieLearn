@@ -85,6 +85,10 @@ export function InstanceQuestion({
       pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
     },
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledScriptTag('question.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>

@@ -9,6 +9,7 @@ import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
@@ -17,6 +18,7 @@ import {
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
@@ -43,6 +45,10 @@ export function InstructorAiGenerateDraftEditor({
         <meta
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
+        />
+        <meta
+          name="mathjax-fonts-path"
+          content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
         />
         ${[
           HeadContents({ resLocals }),
@@ -413,13 +419,10 @@ function FinalizeModal({ csrfToken }: { csrfToken: string }) {
           class="form-control"
           id="question-qid"
           name="qid"
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           required
         />
-        <div class="form-text text-muted">
-          A unique identifier that will be used to include this question in assessments, e.g.
-          <code>add-random-numbers</code>.
-        </div>
+        <div class="form-text text-muted">${renderHtml(<QuestionShortNameDescription />)}</div>
       </div>
     `,
     footer: html`

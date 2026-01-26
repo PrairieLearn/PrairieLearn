@@ -3,7 +3,6 @@ import * as cheerio from 'cheerio';
 import mustache from 'mustache';
 import { z } from 'zod';
 
-import { markdownToHtml } from '@prairielearn/markdown';
 import {
   callRow,
   execute,
@@ -87,14 +86,11 @@ export async function generatePrompt({
         },
         {
           role: 'user',
-          content: markdownToHtml(
-            mustache.render(grader_guidelines, {
-              submitted_answers: submitted_answer,
-              correct_answers: true_answer,
-              params,
-            }),
-            { inline: true },
-          ),
+          content: mustache.render(grader_guidelines, {
+            submitted_answers: submitted_answer,
+            correct_answers: true_answer,
+            params,
+          }),
         },
       ] satisfies ModelMessage[])
     : [];
