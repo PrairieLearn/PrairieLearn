@@ -185,12 +185,10 @@ export async function randomTeams({
         job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
-        const studentsWithoutTeam = shuffle(
-          await queryRows(
-            sql.select_enrolled_students_without_team,
-            { assessment_id: assessment.id },
-            UserSchema,
-          ),
+        const studentsWithoutTeam = await queryRows(
+          sql.select_enrolled_students_without_team,
+          { assessment_id: assessment.id },
+          UserSchema,
         );
         const numStudents = studentsWithoutTeam.length;
         job.verbose(
@@ -202,9 +200,9 @@ export async function randomTeams({
         let teamsCreated = 0,
           studentsInTeam = 0;
         await runInTransactionAsync(async () => {
-          // Create teams using the teams of maximum size where possible
+          // Create random teams using the maximum size where possible
           const userTeams = chunk(
-            studentsWithoutTeam.map((user) => user.uid),
+            shuffle(studentsWithoutTeam.map((user) => user.uid)),
             max_team_size,
           );
           // If the last team is too small, move students from larger teams to the last team
