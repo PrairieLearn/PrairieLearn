@@ -1,6 +1,6 @@
 import assert from 'node:assert';
 
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';

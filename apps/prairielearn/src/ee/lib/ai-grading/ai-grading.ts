@@ -5,11 +5,13 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
@@ -28,7 +30,6 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
-import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -238,6 +239,21 @@ export async function aiGrade({
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
+      const mustacheParams = {
+        correct_answers: submission.true_answer ?? {},
+        params: submission.params ?? {},
+        submitted_answers: submission.submitted_answer,
+      };
+      for (const rubric_item of rubric_items) {
+        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
+        rubric_item.explanation = rubric_item.explanation
+          ? mustache.render(rubric_item.explanation, mustacheParams)
+          : null;
+        rubric_item.grader_note = rubric_item.grader_note
+          ? mustache.render(rubric_item.grader_note, mustacheParams)
+          : null;
+      }
+
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,
@@ -245,6 +261,8 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         rubric_items,
         grader_guidelines: rubric?.grader_guidelines ?? null,
+        params: variant.params ?? {},
+        true_answer: variant.true_answer ?? {},
         model_id,
       });
 

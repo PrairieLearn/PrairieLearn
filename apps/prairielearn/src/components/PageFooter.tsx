@@ -12,7 +12,7 @@ export function PageFooter() {
               <svg
                 xmlns="http://www.w3.org/2000/svg"
                 viewBox="0 0 479.42 100.57"
-                style="height: 30px; width: auto; color: inherit;"
+                style={{ height: '30px', width: 'auto', color: 'inherit' }}
               >
                 <polygon
                   fill="currentColor"

@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { escapeRegExp } from 'es-toolkit';
 import { z } from 'zod';
 
 import { callRow, execute, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
@@ -76,7 +76,7 @@ export async function createInstitution(id: string, shortName: string, longName:
       id,
       short_name: shortName,
       long_name: longName,
-      uid_regexp: `@${_.escapeRegExp(shortName)}$`,
+      uid_regexp: `@${escapeRegExp(shortName)}$`,
     },
     InstitutionSchema,
   );

@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 
 import type { StaffAuthnProvider, StaffInstitution } from '../../../../lib/client/safe-db-types.js';
 import type { AuthnProvider } from '../../../../lib/db-types.js';
@@ -72,10 +72,10 @@ export function AdministratorInstitutionSsoForm({
                 name="enabled_authn_provider_ids"
                 checked={isEnabled}
                 disabled={provider.name === 'SAML' && !hasSamlProvider}
-                onChange={(e) => {
+                onChange={({ currentTarget }) => {
                   setEnabledProviderIds((prev) => {
                     const newSet = new Set(prev);
-                    if (e.currentTarget.checked) {
+                    if (currentTarget.checked) {
                       newSet.add(provider.id);
                     } else {
                       newSet.delete(provider.id);
@@ -84,12 +84,12 @@ export function AdministratorInstitutionSsoForm({
                   });
 
                   // If the default provider is being disabled, reset to null (none).
-                  if (!e.currentTarget.checked && defaultProviderId === provider.id) {
+                  if (!currentTarget.checked && defaultProviderId === provider.id) {
                     setDefaultProviderId(null);
                   }
                 }}
               />
-              <label className="form-check-label" for={`provider-${provider.id}-enabled`}>
+              <label className="form-check-label" htmlFor={`provider-${provider.id}-enabled`}>
                 {provider.name}
                 {provider.name === 'SAML' && !hasSamlProvider ? (
                   <small className="d-block">

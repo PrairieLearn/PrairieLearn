@@ -9,7 +9,6 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema, TeamConfigSchema } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import { assertAlert, fetchCheerio } from './helperClient.js';
@@ -31,7 +30,7 @@ describe('Team based homework assess control on student side', { timeout: 20_000
     storedConfig.authUin = config.authUin;
   });
 
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
 

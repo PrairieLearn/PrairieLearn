@@ -3,14 +3,13 @@ import * as path from 'path';
 import { Temporal } from '@js-temporal/polyfill';
 import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { DeleteCourseInstanceModal } from '../../components/DeleteCourseInstanceModal.js';
 import { PageLayout } from '../../components/PageLayout.js';
@@ -30,6 +29,8 @@ import {
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getCanonicalTimezones } from '../../lib/timezones.js';
 import { getCanonicalHost } from '../../lib/url.js';
 import { selectCourseInstanceByUuid } from '../../models/course-instances.js';
@@ -45,7 +46,7 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       course_instance: courseInstance,
       course,
@@ -153,7 +154,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     const {
       course_instance: courseInstance,
       course,
@@ -192,11 +193,9 @@ router.post(
         throw new error.HttpStatusError(400, 'Long name is required');
       }
 
-      if (!/^[-A-Za-z0-9_/]+$/.test(short_name)) {
-        throw new error.HttpStatusError(
-          400,
-          'Short name must contain only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
-        );
+      const shortNameValidation = validateShortName(short_name);
+      if (!shortNameValidation.valid) {
+        throw new error.HttpStatusError(400, `Short name ${shortNameValidation.lowercaseMessage}`);
       }
 
       const existingNames = await sqldb.queryRows(
@@ -262,7 +261,7 @@ router.post(
       // First, use the editor to copy the course instance
       const courseInstancesPath = path.join(course.path, 'courseInstances');
       const editor = new CourseInstanceCopyEditor({
-        locals: res.locals as any,
+        locals: res.locals,
         from_course: course,
         from_path: path.join(courseInstancesPath, courseInstance.short_name),
         course_instance: updatedCourseInstance,
@@ -300,7 +299,7 @@ router.post(
       return;
     } else if (req.body.__action === 'delete_course_instance') {
       const editor = new CourseInstanceDeleteEditor({
-        locals: res.locals as any,
+        locals: res.locals,
       });
 
       const serverJob = await editor.prepareServerJob();
@@ -322,12 +321,13 @@ router.post(
         throw new error.HttpStatusError(400, 'infoCourseInstance.json does not exist');
       }
       if (!req.body.ciid) {
-        throw new error.HttpStatusError(400, `Invalid CIID (was falsy): ${req.body.ciid}`);
+        throw new error.HttpStatusError(400, 'Short name is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.ciid)) {
+      const shortNameValidation = validateShortName(req.body.ciid, courseInstance.short_name);
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid CIID (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.ciid}`,
+          `Invalid short name: ${shortNameValidation.lowercaseMessage}`,
         );
       }
 
@@ -416,17 +416,17 @@ router.post(
       } catch {
         throw new error.HttpStatusError(
           400,
-          `Invalid CIID (could not be normalized): ${req.body.ciid}`,
+          `Invalid short name (could not be normalized): ${req.body.ciid}`,
         );
       }
       const editor = new MultiEditor(
         {
-          locals: res.locals as any,
+          locals: res.locals,
           description: `Update course instance: ${courseInstance.short_name}`,
         },
         [
           new FileModifyEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             container: {
               rootPath: paths.rootPath,
               invalidRootPaths: paths.invalidRootPaths,
@@ -436,7 +436,7 @@ router.post(
             origHash: req.body.orig_hash,
           }),
           new CourseInstanceRenameEditor({
-            locals: res.locals as any,
+            locals: res.locals,
             ciid_new,
           }),
         ],

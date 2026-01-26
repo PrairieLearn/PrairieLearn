@@ -7,6 +7,7 @@ import { AugmentedError, HttpStatusError } from '@prairielearn/error';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { type Result, withBrand } from '@prairielearn/utils';
 
 import type { ResLocalsAuthnUser } from '../lib/authn.types.js';
 import {
@@ -30,7 +31,6 @@ import {
 } from '../lib/db-types.js';
 import { features } from '../lib/features/index.js';
 import { idsEqual } from '../lib/id.js';
-import { type Result, withBrand } from '../lib/types.js';
 import { selectCourseHasCourseInstances } from '../models/course-instances.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -315,7 +315,7 @@ interface ResLocalsCourseAuthz {
   overrides: Override[];
 }
 
-interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
+export interface ResLocalsCourseInstanceAuthz extends ResLocalsCourseAuthz {
   authn_course_instance_role: CourseOrInstanceContextData['permissions_course_instance']['course_instance_role'];
   authn_has_course_instance_permission_view: boolean;
   authn_has_course_instance_permission_edit: boolean;
@@ -337,6 +337,7 @@ export interface ResLocalsCourse {
   user: ResLocalsCourseAuthz['user'];
   course_has_course_instances: boolean;
   question_sharing_enabled: boolean;
+  is_administrator: boolean;
 }
 
 export interface ResLocalsCourseInstance extends ResLocalsCourse {

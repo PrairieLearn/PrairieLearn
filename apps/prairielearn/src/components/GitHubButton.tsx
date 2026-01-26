@@ -1,4 +1,4 @@
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 export function GitHubButton({ gitHubLink }: { gitHubLink: string | null }) {
   if (!gitHubLink) return null;

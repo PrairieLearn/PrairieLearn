@@ -8,7 +8,7 @@ import * as assessment from '../../lib/assessment.js';
 import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
 import { idsEqual } from '../../lib/id.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   canUserAssignTeamRoles,
   getQuestionTeamPermissions,
@@ -34,13 +34,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
-async function ensureUpToDate(locals: UntypedResLocals) {
+async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
     locals.authn_user.id,
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
+    // @ts-expect-error This reload doesn't set 'formatted_date'
     locals.assessment_instance = await queryRow(
       sql.select_assessment_instance,
       { assessment_instance_id: locals.assessment_instance.id },
@@ -209,7 +210,14 @@ router.get(
   // have a corresponding page view event to show in the logs.
   clientFingerprint,
   logPageView('studentAssessmentInstance'),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<
+    'assessment-instance',
+    {
+      has_manual_grading_question: boolean;
+      has_auto_grading_question: boolean;
+      assessment_text_templated: string | null;
+    }
+  >(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
@@ -255,7 +263,7 @@ router.get(
 
     // Get the team config info
     const teamConfig = await getTeamConfig(res.locals.assessment.id);
-    const teamInfo = await getTeamInfo(res.locals.assessment_instance.team_id, teamConfig);
+    const teamInfo = await getTeamInfo(res.locals.assessment_instance.team_id!, teamConfig);
     const userCanAssignRoles =
       teamConfig.has_roles &&
       (canUserAssignTeamRoles(teamInfo, res.locals.user.id) ||
@@ -268,7 +276,7 @@ router.get(
         for (const question of instance_question_rows) {
           question.team_role_permissions = await getQuestionTeamPermissions(
             question.id,
-            res.locals.assessment_instance.team_id,
+            res.locals.assessment_instance.team_id!,
             res.locals.authz_data.user.id,
           );
         }

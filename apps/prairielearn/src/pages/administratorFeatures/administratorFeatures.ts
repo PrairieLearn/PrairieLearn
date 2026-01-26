@@ -1,5 +1,4 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -14,6 +13,7 @@ import {
   type User,
 } from '../../lib/db-types.js';
 import { type FeatureName, features } from '../../lib/features/index.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 
 import {
@@ -35,7 +35,7 @@ function validateFeature(feature: string): FeatureName {
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     res.send(
       AdministratorFeatures({
         features: features.allFeatures().sort(),
@@ -47,7 +47,7 @@ router.get(
 
 router.get(
   '/:feature',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const feature = validateFeature(req.params.feature);
 
     const featureGrants = await queryRows(
@@ -136,7 +136,7 @@ async function getEntitiesFromParams(params: AddFeatureGrantModalParams) {
 
 router.get(
   '/:feature/modal',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     const feature = validateFeature(req.params.feature);
 
     const query = AddFeatureGrantModalParamsSchema.parse(req.query);
@@ -160,7 +160,7 @@ router.get(
 
 router.post(
   '/:feature',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'add_feature_grant') {
       const feature = validateFeature(req.params.feature);
 

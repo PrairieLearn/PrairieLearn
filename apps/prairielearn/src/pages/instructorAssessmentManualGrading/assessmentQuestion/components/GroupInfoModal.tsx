@@ -1,7 +1,8 @@
-import { useCallback, useState } from 'preact/compat';
+import { useCallback, useState } from 'react';
 import { Alert, Button, Modal } from 'react-bootstrap';
 
-import { assertNever } from '../../../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
+
 import type { useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 const defaultClosedSubmissionsOnly = true;
@@ -32,7 +33,7 @@ export function GroupInfoModal({
   }, [onHide, mutation]);
 
   const handleSubmit = useCallback(
-    (e: Event) => {
+    (e: React.FormEvent) => {
       e.preventDefault();
       if (!modalState) return;
 
@@ -165,7 +166,7 @@ export function GroupInfoModal({
                   </p>
                 </div>
                 <div className="col-12 col-md-6 d-flex flex-column gap-2">
-                  <label for="grouping-application-select" className="my-0">
+                  <label htmlFor="grouping-application-select" className="my-0">
                     Choose how to apply grouping:
                   </label>
                   <select

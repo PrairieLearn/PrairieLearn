@@ -3,10 +3,11 @@ import itertools as it
 import json
 import math
 import string
+import time
 from collections.abc import Callable
 from enum import Enum
 from pathlib import Path
-from typing import Any, cast
+from typing import Any, NamedTuple, cast
 
 import lxml.html
 import networkx as nx
@@ -411,6 +412,115 @@ def test_grade_answer_parametrized_key_error_blank(
     pl.grade_answer_parameterized(question_data, question_name, grading_function)
 
     assert question_data["partial_scores"][question_name]["score"] == 0.0
+
+
+class TimeoutTestCase(NamedTuple):
+    test_name: str
+    sleep_duration: float
+    return_value: bool
+    has_feedback: bool
+    timeout: float
+    use_custom_timeout_message: bool
+
+
+@pytest.mark.parametrize(
+    "case",
+    [
+        TimeoutTestCase(
+            test_name="timeout_with_default_error_message",
+            sleep_duration=2.0,
+            return_value=True,
+            has_feedback=False,
+            timeout=0.1,
+            use_custom_timeout_message=False,
+        ),
+        TimeoutTestCase(
+            test_name="timeout_with_custom_error_message",
+            sleep_duration=2.0,
+            return_value=True,
+            has_feedback=False,
+            timeout=0.1,
+            use_custom_timeout_message=True,
+        ),
+        TimeoutTestCase(
+            test_name="no_timeout_correct_with_feedback",
+            sleep_duration=0.0,
+            return_value=True,
+            has_feedback=True,
+            timeout=5.0,
+            use_custom_timeout_message=False,
+        ),
+        TimeoutTestCase(
+            test_name="no_timeout_correct_without_feedback",
+            sleep_duration=0.0,
+            return_value=True,
+            has_feedback=False,
+            timeout=5.0,
+            use_custom_timeout_message=False,
+        ),
+        TimeoutTestCase(
+            test_name="no_timeout_incorrect_without_feedback",
+            sleep_duration=0.0,
+            return_value=False,
+            has_feedback=False,
+            timeout=5.0,
+            use_custom_timeout_message=False,
+        ),
+    ],
+)
+def test_grade_answer_parametrized_timeout(
+    question_data: pl.QuestionData,
+    case: TimeoutTestCase,
+) -> None:
+    """Test timeout behavior with various grading functions."""
+    question_name = f"timeout_test_{case.test_name}"
+    question_data["submitted_answers"] = {question_name: "correct"}
+
+    # Generate actual values from boolean flags
+    return_feedback = "Well done!" if case.has_feedback else None
+    timeout_format_error = (
+        "Your answer did not converge, try a simpler expression."
+        if case.use_custom_timeout_message
+        else None
+    )
+
+    def grading_function(_: str) -> tuple[bool, str | None]:
+        if case.sleep_duration > 0.0:
+            time.sleep(case.sleep_duration)
+        return (case.return_value, return_feedback)
+
+    pl.grade_answer_parameterized(
+        question_data,
+        question_name,
+        grading_function,
+        timeout=case.timeout,
+        timeout_format_error=timeout_format_error,
+    )
+
+    # Determine expected values based on whether timeout should occur
+    should_timeout = case.sleep_duration > case.timeout
+
+    if should_timeout:
+        assert question_name in question_data["format_errors"]
+        expected_error_substring = timeout_format_error or "Grading timed out"
+        assert expected_error_substring in question_data["format_errors"][question_name]
+        assert math.isclose(
+            question_data["partial_scores"][question_name]["score"],  # type: ignore[arg-type]
+            0.0,
+        )
+    else:
+        assert question_name not in question_data["format_errors"]
+        expected_score = 1.0 if case.return_value else 0.0
+        assert math.isclose(
+            question_data["partial_scores"][question_name]["score"],  # type: ignore[arg-type]
+            expected_score,
+        )
+
+        if case.has_feedback:
+            assert (
+                question_data["partial_scores"][question_name].get("feedback")
+                == return_feedback
+            )
 
 
 @pytest.mark.repeat(100)
