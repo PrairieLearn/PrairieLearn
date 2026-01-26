@@ -1,7 +1,6 @@
 import * as url from 'node:url';
 
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -15,6 +14,8 @@ import { getCourseOwners } from '../../lib/course.js';
 import { features } from '../../lib/features/index.js';
 import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { validateShortName } from '../../lib/short-name.js';
 import { getSearchParams } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -96,7 +97,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async function (req, res) {
+  typedAsyncHandler<'course' | 'course-instance'>(async function (req, res) {
     const { authz_data: authzData, course } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
@@ -163,7 +164,7 @@ router.get(
     oneOfPermissions: ['has_course_permission_preview'],
     unauthorizedUsers: 'passthrough',
   }),
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     // Access control may not matter as much here, since we'll still deny
     // access after the redirect, but doing this will allow us to avoid
     // leaking the existence or non-existence of questions to viewers,
@@ -213,10 +214,10 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     if (req.body.__action === 'add_question') {
       if (!req.body.qid) {
-        throw new error.HttpStatusError(400, 'qid is required');
+        throw new error.HttpStatusError(400, 'QID is required');
       }
       if (!req.body.title) {
         throw new error.HttpStatusError(400, 'title is required');
@@ -224,10 +225,11 @@ router.post(
       if (!req.body.start_from) {
         throw new error.HttpStatusError(400, 'start_from is required');
       }
-      if (!/^[-A-Za-z0-9_/]+$/.test(req.body.qid)) {
+      const shortNameValidation = validateShortName(req.body.qid);
+      if (!shortNameValidation.valid) {
         throw new error.HttpStatusError(
           400,
-          `Invalid qid (was not only letters, numbers, dashes, slashes, and underscores, with no spaces): ${req.body.qid}`,
+          `Invalid QID: ${shortNameValidation.lowercaseMessage}`,
         );
       }
       const usesTemplate = ['example', 'course'].includes(req.body.start_from);
@@ -239,8 +241,8 @@ router.post(
 
       const result = await api.createQuestion.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         qid: req.body.qid,
         title: req.body.title,

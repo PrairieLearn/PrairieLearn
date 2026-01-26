@@ -3,6 +3,7 @@ import { z } from 'zod';
 
 import { formatDate } from '@prairielearn/formatter';
 import { html } from '@prairielearn/html';
+import { IdSchema } from '@prairielearn/zod';
 
 import { AssessmentBadgeHtml } from '../../components/AssessmentBadge.js';
 import { Modal } from '../../components/Modal.js';
@@ -12,14 +13,13 @@ import { compiledStylesheetTag } from '../../lib/assets.js';
 import {
   AssessmentSetSchema,
   CourseInstanceSchema,
-  IdSchema,
   type Issue,
   IssueSchema,
   QuestionSchema,
   UserSchema,
   VariantSchema,
 } from '../../lib/db-types.js';
-import type { UntypedResLocals } from '../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const PAGE_SIZE = 100;
 
@@ -65,7 +65,7 @@ export function InstructorIssues({
   closedCount,
   chosenPage,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'course' | 'course-instance'>;
   issues: IssueComputedRow[];
   filterQuery: string;
   openFilteredIssuesCount: number;
@@ -389,11 +389,11 @@ function FilterHelpModal() {
             </tr>
             <tr>
               <td>
-                <code>assessment:<em>AID</em></code>
+                <code>assessment:<em>short_name</em></code>
               </td>
               <td>
-                Shows all issues with an assessment ID like <code>AID</code>; supports
-                <code>*</code> as a wildcard. For example,
+                Shows all issues with an assessment short name like <code>short_name</code>;
+                supports <code>*</code> as a wildcard. For example,
                 <code>assessment:exam/instantFeedback</code> shows all issues associated with the
                 assessment <code>exam/instantFeedback</code>, and
                 <code>assessment:exam/*</code> shows all issues associated with any assessment that

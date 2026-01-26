@@ -9,12 +9,12 @@ WHERE
 
 -- BLOCK insert_assessment_instance
 INSERT INTO
-  assessment_instances (assessment_id, user_id, group_id, number, open)
+  assessment_instances (assessment_id, user_id, team_id, number, open)
 VALUES
   (
     $assessment_id,
     $user_id,
-    $group_id,
+    $team_id,
     $instance_number,
     FALSE -- Assume closed by default when recreating
   )
@@ -48,7 +48,7 @@ INSERT INTO
     question_id,
     authn_user_id,
     user_id,
-    group_id,
+    team_id,
     variant_seed,
     params,
     true_answer,
@@ -63,7 +63,7 @@ VALUES
     $question_id,
     $authn_user_id,
     $user_id,
-    $group_id,
+    $team_id,
     $seed,
     $params,
     $true_answer,

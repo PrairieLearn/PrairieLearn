@@ -22,7 +22,7 @@ router.get(
       sql.select_news_item_for_read,
       {
         news_item_id: req.params.news_item_id,
-        user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.authn_user.id,
       },
       NewsItemSchema,
     );
@@ -41,7 +41,7 @@ router.get(
     const newsItemHtml = await fs.readFile(indexFilename, 'utf8');
 
     const userIsInstructor = await userIsInstructorInAnyCourse({
-      user_id: res.locals.authn_user.user_id,
+      user_id: res.locals.authn_user.id,
     });
 
     res.send(NewsItem({ resLocals: res.locals, newsItem, newsItemHtml, userIsInstructor }));

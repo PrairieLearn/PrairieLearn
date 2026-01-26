@@ -70,7 +70,7 @@ FROM
   JOIN assessments AS a ON (a.id = aq.assessment_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
-  JOIN pl_courses AS c ON (c.id = ci.course_id)
+  JOIN courses AS c ON (c.id = ci.course_id)
 WHERE
   a.id = $assessment_id
   AND aq.deleted_at IS NULL

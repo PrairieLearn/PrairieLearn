@@ -8,16 +8,16 @@ import { type CopyTarget } from '../lib/copy-content.js';
 import type {
   AssessmentQuestion,
   CourseInstance,
-  GroupConfig,
   InstanceQuestion,
   Question,
+  TeamConfig,
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { type TeamInfo, getRoleNamesForUser } from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -416,9 +416,9 @@ interface QuestionFooterResLocals {
   assessment_question: AssessmentQuestion | null;
   instance_question_info: Record<string, any>;
   authz_result: Record<string, any> | null;
-  group_config: GroupConfig | null;
-  group_info: GroupInfo | null;
-  group_role_permissions: {
+  team_config: TeamConfig | null;
+  team_info: TeamInfo | null;
+  team_role_permissions: {
     can_view: boolean;
     can_submit: boolean;
   } | null;
@@ -487,9 +487,9 @@ export function QuestionFooterContent({
     assessment_question,
     instance_question_info,
     authz_result,
-    group_config,
-    group_info,
-    group_role_permissions,
+    team_config,
+    team_info,
+    team_role_permissions,
     user,
   } = resLocals;
 
@@ -548,13 +548,13 @@ export function QuestionFooterContent({
                   </button>
                 `
               : ''}
-            ${group_config?.has_roles && !group_role_permissions?.can_submit && group_info
+            ${team_config?.has_roles && !team_role_permissions?.can_submit && team_info
               ? html`
                   <button
                     type="button"
                     class="btn btn-xs btn-ghost me-1"
                     data-bs-toggle="popover"
-                    data-bs-content="Your group role (${getRoleNamesForUser(group_info, user).join(
+                    data-bs-content="Your group role (${getRoleNamesForUser(team_info, user).join(
                       ', ',
                     )}) is not allowed to submit this question."
                     aria-label="Submission blocked"

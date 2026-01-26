@@ -1,12 +1,15 @@
 /* eslint-disable react-hooks/rules-of-hooks */
-import { type ChildProcess, spawn } from 'node:child_process';
+import { execSync } from 'node:child_process';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
-import type { Config } from '../../lib/config.js';
+import { STANDARD_COURSE_DIRS } from '../../lib/config.js';
+import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../../lib/paths.js';
+
+import { setupWorkerServer } from './serverUtils.js';
 
 export { expect } from '@playwright/test';
 
@@ -17,163 +20,52 @@ interface TestFixtures {
 
 interface WorkerFixtures {
   workerPort: number;
-}
-
-const BASE_PORT = 3014;
-
-/**
- * Starts the server as a subprocess and waits for it to be ready.
- * Returns a function to kill the subprocess.
- */
-async function startServerSubprocess(
-  configPath: string,
-): Promise<{ serverProcess: ChildProcess; kill: () => Promise<void> }> {
-  // We do this instead of importing the server.ts file directly because Playwright
-  // doesn't respect tsconfig.json files.
-
-  // See https://github.com/microsoft/playwright/issues/26936
-  // and https://github.com/PrairieLearn/PrairieLearn/pull/13493
-  // > For tsx transformations that add inject semantics (email, pdf),
-  // > I would still recommend compiling the code with the production bundler that applies these
-  // > semantics and only then test it with the test runner, Playwright or different.
-
-  // We don't want to require building the production bundle for tests to make iteration speed faster.
-
-  const serverDir = path.resolve(import.meta.dirname, '..', '..');
-
-  const serverProcess = spawn('yarn', ['dev:no-watch'], {
-    cwd: serverDir,
-    env: {
-      ...process.env,
-      PL_CONFIG_PATH: configPath,
-      NODE_ENV: 'test',
-    },
-    stdio: ['ignore', 'pipe', 'pipe'],
-    // Create a new process group so we can kill all child processes
-    detached: true,
-  });
-
-  // Wait for the server to be ready by watching for the ready message
-  await new Promise<void>((resolve, reject) => {
-    const timeoutMs = 60000;
-    const timeout = setTimeout(() => {
-      serverProcess.kill();
-      reject(new Error(`Server did not start within ${timeoutMs}ms`));
-    }, timeoutMs);
-
-    const readyMessage = 'PrairieLearn server ready';
-
-    const checkOutput = (data: Buffer) => {
-      const output = data.toString();
-      if (output.includes(readyMessage)) {
-        clearTimeout(timeout);
-        resolve();
-      } else {
-        process.stdout.write(output);
-      }
-    };
-
-    serverProcess.stdout.on('data', checkOutput);
-    serverProcess.stderr.on('data', (data) => {
-      const output = data.toString();
-      process.stderr.write(output);
-    });
-
-    serverProcess.on('error', (err) => {
-      clearTimeout(timeout);
-      reject(err);
-    });
-
-    serverProcess.on('exit', (code) => {
-      clearTimeout(timeout);
-      if (code !== 0 && code !== null) {
-        reject(new Error(`Server process exited with code ${code}`));
-      }
-    });
-  });
-
-  const kill = async () => {
-    return new Promise<void>((resolve) => {
-      if (serverProcess.killed) {
-        resolve();
-        return;
-      }
-
-      serverProcess.on('exit', () => resolve());
-
-      // Kill the entire process group (yarn + tsx + server) using negative PID
-      // This ensures SIGTERM reaches the actual server process for graceful shutdown
-      if (serverProcess.pid) {
-        process.kill(-serverProcess.pid, 'SIGTERM');
-      }
-
-      // Force kill after 10 seconds if graceful shutdown doesn't work
-      setTimeout(() => {
-        if (!serverProcess.killed && serverProcess.pid) {
-          try {
-            process.kill(-serverProcess.pid, 'SIGKILL');
-          } catch {
-            // Process may have already exited
-          }
-        }
-      }, 10000);
-    });
-  };
-
-  return { serverProcess, kill };
+  /** Path to the temporary writable copy of testCourse */
+  testCoursePath: string;
 }
 
 /**
  * Worker-scoped fixture that configures Playwright tests to use worker-specific ports.
- * Each Playwright worker gets its own server instance with its own isolated database.
+ * Each Playwright worker gets its own server instance with its own isolated database
+ * and a separate writable copy of testCourse.
  *
  * The server is started as a subprocess and we wait for the "PrairieLearn server ready"
  * message in the output to know when it's ready.
  *
- * The TEST_WORKER_INDEX environment variable is used to determine which database
- * to use for this worker, ensuring test isolation across parallel workers.
+ * The testCoursePath fixture provides the path to the temporary copy of testCourse,
+ * which can be safely modified by tests without affecting other workers or the
+ * original testCourse directory.
  *
  * See https://playwright.dev/docs/test-fixtures#automatic-fixtures and
  * https://playwright.dev/docs/test-parallel#isolate-test-data-between-parallel-workers
  */
 export const test = base.extend<TestFixtures, WorkerFixtures>({
-  workerPort: [
+  testCoursePath: [
     // eslint-disable-next-line no-empty-pattern
-    async ({}, use, workerInfo) => {
-      // Pick a unique port based on the worker index.
-      const port = BASE_PORT + workerInfo.workerIndex + 1;
+    async ({}, use) => {
+      const tempDir = await tmp.dir({ unsafeCleanup: true });
+      const tempTestCoursePath = path.join(tempDir.path, 'testCourse');
+      await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
-      // Initialize the database with the test utils.
-      const { setupDatabases, after: destroyDatabases } = await import('../helperDb.js');
-      const setupResults = await setupDatabases({ configurePool: true });
+      // The file editor requires git
+      execSync('git init', { cwd: tempTestCoursePath });
+      execSync('git add -A', { cwd: tempTestCoursePath });
+      execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
+      execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
+      execSync('git commit -m "Initial commit"', { cwd: tempTestCoursePath });
 
-      await tmp.withFile(
-        async (tmpFile) => {
-          // Construct a test-specific config and write it to disk.
-          const config: Partial<Config> = {
-            serverPort: String(port),
-            postgresqlUser: setupResults.user,
-            postgresqlDatabase: setupResults.database,
-            postgresqlHost: setupResults.host,
-            devMode: true, // We need this to start up the asset server.
-          };
+      await use(tempTestCoursePath);
 
-          await fs.writeFile(tmpFile.path, JSON.stringify(config, null, 2));
+      await tempDir.cleanup();
+    },
+    { scope: 'worker' },
+  ],
 
-          const { kill } = await startServerSubprocess(tmpFile.path);
-
-          try {
-            await use(port);
-          } finally {
-            // Clean up the server subprocess
-            await kill();
-
-            // Tear down the testing database.
-            await destroyDatabases();
-          }
-        },
-        { postfix: 'config.json' },
-      );
+  workerPort: [
+    async ({ testCoursePath }, use, workerInfo) => {
+      await setupWorkerServer(workerInfo, use, {
+        courseDirs: [...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, testCoursePath],
+      });
     },
     { scope: 'worker' },
   ],

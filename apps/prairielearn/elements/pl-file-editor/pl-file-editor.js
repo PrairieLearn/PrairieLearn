@@ -117,7 +117,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     // a style tag in the head, but this tag is not applied to the shadow DOM by
     // default, so we need to manually adopt the MathJax styles.
     await MathJax.startup.promise;
-    const mjxStyles = document.getElementById('MJX-SVG-styles');
+    const mjxStyles = MathJax.svgStylesheet();
     if (mjxStyles) {
       const style = new CSSStyleSheet();
       style.replaceSync(mjxStyles.textContent);
