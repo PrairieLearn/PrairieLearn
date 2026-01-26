@@ -20,6 +20,14 @@ export type EditQuestionModalData =
       type: 'edit';
       question: ZoneQuestionBlockForm | QuestionAlternativeForm;
       zoneQuestionBlock?: ZoneQuestionBlockForm;
+    }
+  | {
+      type: 'create-group';
+      group: ZoneQuestionBlockForm;
+    }
+  | {
+      type: 'edit-group';
+      group: ZoneQuestionBlockForm;
     };
 
 /**
@@ -59,6 +67,7 @@ export function EditQuestionModal({
   onHide,
   onExited,
   handleUpdateQuestion,
+  handleUpdateGroup,
   assessmentType,
   onPickQuestion,
   onAddAndPickAnother,
@@ -71,13 +80,18 @@ export function EditQuestionModal({
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     newQuestionDataRef?: StaffAssessmentQuestionRow,
   ) => void;
+  handleUpdateGroup?: (group: ZoneQuestionBlockForm) => void;
   assessmentType: 'Homework' | 'Exam';
   onPickQuestion?: () => void;
   onAddAndPickAnother?: () => void;
 }) {
   const type = data?.type ?? null;
-  const question = data?.question ?? null;
-  const zoneQuestionBlock = data?.zoneQuestionBlock;
+  const isGroupMode = type === 'create-group' || type === 'edit-group';
+  const question = data && (data.type === 'create' || data.type === 'edit') ? data.question : null;
+  const group =
+    data && (data.type === 'create-group' || data.type === 'edit-group') ? data.group : null;
+  const zoneQuestionBlock =
+    data && (data.type === 'create' || data.type === 'edit') ? data.zoneQuestionBlock : undefined;
   const existingQids = data?.type === 'create' ? data.existingQids : [];
   const isAlternative = !!zoneQuestionBlock;
 
@@ -174,6 +188,83 @@ export function EditQuestionModal({
     values: formValues,
   });
 
+  // If in group mode, render the group editing form
+  if (isGroupMode && group) {
+    return (
+      <EditAlternativeGroupForm
+        show={show}
+        type={type}
+        group={group}
+        handleUpdateGroup={handleUpdateGroup!}
+        assessmentType={assessmentType}
+        onHide={onHide}
+        onExited={onExited}
+      />
+    );
+  }
+
+  // Shared submission logic for both "Save" and "Add & pick another" buttons
+  const submitQuestion = async (
+    formData: ZoneQuestionBlockForm | QuestionAlternativeForm,
+    options: { alwaysFetch?: boolean } = {},
+  ): Promise<boolean> => {
+    // Fetch question data if creating, QID changed, or alwaysFetch is true
+    let questionData: StaffAssessmentQuestionRow | undefined;
+    if (options.alwaysFetch || type === 'create' || formData.id !== question?.id) {
+      const params = new URLSearchParams({ qid: formData.id! });
+      const res = await fetch(`${window.location.pathname}/question.json?${params}`);
+      if (!res.ok) {
+        const data = await res.json();
+        setError('id', { message: data.error ?? 'Failed to fetch question data' });
+        return false;
+      }
+      const data = await res.json();
+      if (data === null) {
+        setError('id', { message: 'Question not found' });
+        return false;
+      }
+      questionData = data;
+    }
+
+    // Filter out inherited values that were not modified
+    const filteredData = { ...formData };
+
+    if (
+      originalInheritedValues[originalPointsProperty] !== undefined &&
+      valuesAreEqual(
+        filteredData[originalPointsProperty],
+        originalInheritedValues[originalPointsProperty],
+      )
+    ) {
+      delete filteredData[originalPointsProperty];
+    }
+
+    if (
+      originalInheritedValues[originalMaxProperty] !== undefined &&
+      valuesAreEqual(
+        filteredData[originalMaxProperty],
+        originalInheritedValues[originalMaxProperty],
+      )
+    ) {
+      delete filteredData[originalMaxProperty];
+    }
+
+    if (
+      originalInheritedValues.manualPoints !== undefined &&
+      valuesAreEqual(filteredData.manualPoints, originalInheritedValues.manualPoints)
+    ) {
+      delete filteredData.manualPoints;
+    }
+
+    handleUpdateQuestion(
+      { ...filteredData, trackingId: question?.trackingId } as
+        | ZoneQuestionBlockForm
+        | QuestionAlternativeForm,
+      questionData,
+    );
+    return true;
+  };
+
   return (
     <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
@@ -182,67 +273,7 @@ export function EditQuestionModal({
       {question && (
         <form
           onSubmit={handleSubmit(async (formData) => {
-            // Fetch question data if creating a new question or if QID changed
-            let questionData: StaffAssessmentQuestionRow | undefined;
-            if (type === 'create' || formData.id !== question.id) {
-              const params = new URLSearchParams({ qid: formData.id! });
-              const res = await fetch(`${window.location.pathname}/question.json?${params}`);
-              if (!res.ok) {
-                const data = await res.json();
-                setError('id', { message: data.error ?? 'Failed to fetch question data' });
-                return;
-              }
-              const data = await res.json();
-              if (data === null) {
-                setError('id', { message: 'Question not found' });
-                return;
-              }
-              questionData = data;
-            }
-
-            // Filter out inherited values that were not modified
-            const filteredData = { ...formData };
-
-            // Check if auto/points field was inherited and unchanged
-            if (
-              originalInheritedValues[originalPointsProperty] !== undefined &&
-              valuesAreEqual(
-                filteredData[originalPointsProperty],
-                originalInheritedValues[originalPointsProperty],
-              )
-            ) {
-              delete filteredData[originalPointsProperty];
-            }
-
-            // Check if max points field was inherited and unchanged
-            if (
-              originalInheritedValues[originalMaxProperty] !== undefined &&
-              valuesAreEqual(
-                filteredData[originalMaxProperty],
-                originalInheritedValues[originalMaxProperty],
-              )
-            ) {
-              delete filteredData[originalMaxProperty];
-            }
-
-            // Check if manual points was inherited and unchanged
-            if (
-              originalInheritedValues.manualPoints !== undefined &&
-              valuesAreEqual(filteredData.manualPoints, originalInheritedValues.manualPoints)
-            ) {
-              delete filteredData.manualPoints;
-            }
-
-            // Preserve the trackingId from the original question
-            const dataWithTrackingId = {
-              ...filteredData,
-              trackingId: question.trackingId,
-            };
-
-            handleUpdateQuestion(
-              dataWithTrackingId as ZoneQuestionBlockForm | QuestionAlternativeForm,
-              questionData,
-            );
+            await submitQuestion(formData);
           })}
         >
           <Modal.Body>
@@ -565,67 +596,10 @@ export function EditQuestionModal({
                 className="btn btn-outline-primary"
                 disabled={isSubmitting}
                 onClick={handleSubmit(async (formData) => {
-                  // Always fetch question data for new questions
-                  const params = new URLSearchParams({ qid: formData.id! });
-                  const res = await fetch(`${window.location.pathname}/question.json?${params}`);
-                  if (!res.ok) {
-                    const data = await res.json();
-                    setError('id', { message: data.error ?? 'Failed to fetch question data' });
-                    return;
+                  const success = await submitQuestion(formData, { alwaysFetch: true });
+                  if (success) {
+                    onAddAndPickAnother();
                   }
-                  const data = await res.json();
-                  if (data === null) {
-                    setError('id', { message: 'Question not found' });
-                    return;
-                  }
-                  const questionData: StaffAssessmentQuestionRow = data;
-
-                  // Filter out inherited values that were not modified
-                  const filteredData = { ...formData };
-
-                  // Check if auto/points field was inherited and unchanged
-                  if (
-                    originalInheritedValues[originalPointsProperty] !== undefined &&
-                    valuesAreEqual(
-                      filteredData[originalPointsProperty],
-                      originalInheritedValues[originalPointsProperty],
-                    )
-                  ) {
-                    delete filteredData[originalPointsProperty];
-                  }
-
-                  // Check if max points field was inherited and unchanged
-                  if (
-                    originalInheritedValues[originalMaxProperty] !== undefined &&
-                    valuesAreEqual(
-                      filteredData[originalMaxProperty],
-                      originalInheritedValues[originalMaxProperty],
-                    )
-                  ) {
-                    delete filteredData[originalMaxProperty];
-                  }
-
-                  // Check if manual points was inherited and unchanged
-                  if (
-                    originalInheritedValues.manualPoints !== undefined &&
-                    valuesAreEqual(filteredData.manualPoints, originalInheritedValues.manualPoints)
-                  ) {
-                    delete filteredData.manualPoints;
-                  }
-
-                  // Preserve the trackingId from the original question
-                  const dataWithTrackingId = {
-                    ...filteredData,
-                    trackingId: question.trackingId,
-                  };
-
-                  handleUpdateQuestion(
-                    dataWithTrackingId as ZoneQuestionBlockForm | QuestionAlternativeForm,
-                    questionData,
-                  );
-
-                  // After adding, open picker for next question
-                  onAddAndPickAnother();
                 })}
               >
                 {isSubmitting ? 'Adding...' : 'Add & pick another'}
@@ -643,6 +617,227 @@ export function EditQuestionModal({
           </Modal.Footer>
         </form>
       )}
+    </Modal>
+  );
+}
+
+/**
+ * Form component for editing alternative groups.
+ * Shows numberChoose and shared defaults (points, maxPoints).
+ */
+function EditAlternativeGroupForm({
+  show,
+  type,
+  group,
+  onHide,
+  onExited,
+  handleUpdateGroup,
+  assessmentType,
+}: {
+  show: boolean;
+  type: 'create-group' | 'edit-group';
+  group: ZoneQuestionBlockForm;
+  onHide: () => void;
+  onExited: () => void;
+  handleUpdateGroup: (group: ZoneQuestionBlockForm) => void;
+  assessmentType: 'Homework' | 'Exam';
+}) {
+  const formValues = useMemo<ZoneQuestionBlockForm>(() => group, [group]);
+
+  // Determine which property was originally set (points vs autoPoints)
+  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
+    if (group.points != null) return 'points';
+    if (group.autoPoints != null) return 'autoPoints';
+    return 'autoPoints';
+  }, [group]);
+
+  // Determine which property was originally set (maxPoints vs maxAutoPoints)
+  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
+    if (group.maxAutoPoints != null) return 'maxAutoPoints';
+    if (group.maxPoints != null) return 'maxPoints';
+    return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
+  }, [group, originalPointsProperty]);
+
+  const autoPointsDisplayValue = group[originalPointsProperty] ?? undefined;
+  const maxAutoPointsDisplayValue = group[originalMaxProperty] ?? undefined;
+
+  const {
+    register,
+    handleSubmit,
+    formState: { errors, isSubmitting },
+  } = useForm<ZoneQuestionBlockForm>({
+    mode: 'onSubmit',
+    reValidateMode: 'onChange',
+    values: formValues,
+  });
+
+  const modalTitle = type === 'create-group' ? 'Add alternative group' : 'Edit alternative group';
+  const submitLabel =
+    type === 'create-group'
+      ? isSubmitting
+        ? 'Adding...'
+        : 'Add group'
+      : isSubmitting
+        ? 'Updating...'
+        : 'Update group';
+
+  return (
+    <Modal show={show} onHide={onHide} onExited={onExited}>
+      <Modal.Header closeButton>
+        <Modal.Title>{modalTitle}</Modal.Title>
+      </Modal.Header>
+      <form
+        onSubmit={handleSubmit((formData) => {
+          const updatedGroup: ZoneQuestionBlockForm = {
+            ...formData,
+            trackingId: group.trackingId,
+            // Ensure alternatives array exists (may be empty for new groups)
+            alternatives: group.alternatives ?? [],
+          };
+          handleUpdateGroup(updatedGroup);
+        })}
+      >
+        <Modal.Body>
+          <div className="mb-3">
+            <label htmlFor="numberChooseInput">Number to choose</label>
+            <input
+              type="number"
+              className={clsx('form-control', errors.numberChoose && 'is-invalid')}
+              id="numberChooseInput"
+              aria-invalid={!!errors.numberChoose}
+              aria-errormessage={errors.numberChoose ? 'numberChooseError' : undefined}
+              aria-describedby="numberChooseHelp"
+              {...register('numberChoose', {
+                value: group.numberChoose ?? 1,
+                setValueAs: (value) => {
+                  if (value === '') return undefined;
+                  return Number(value);
+                },
+                validate: (value) => {
+                  if (value !== undefined && value < 1) {
+                    return 'Number to choose must be at least 1.';
+                  }
+                  if (value !== undefined && !Number.isInteger(value)) {
+                    return 'Number to choose must be an integer.';
+                  }
+                  return true;
+                },
+              })}
+            />
+            {errors.numberChoose && (
+              <div id="numberChooseError" className="invalid-feedback">
+                {errors.numberChoose.message}
+              </div>
+            )}
+            <small id="numberChooseHelp" className="form-text text-muted">
+              The number of questions to choose from this group. Leave empty or set to the total
+              number of alternatives to include all.
+            </small>
+          </div>
+
+          <hr />
+          <p className="text-muted small">
+            <strong>Shared defaults:</strong> These values are inherited by alternatives in this
+            group unless they specify their own.
+          </p>
+
+          {assessmentType === 'Homework' ? (
+            <>
+              <div className="mb-3">
+                <label htmlFor="groupAutoPointsInput">Auto points</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="groupAutoPointsInput"
+                  step="any"
+                  aria-describedby="groupAutoPointsHelp"
+                  {...register(originalPointsProperty, {
+                    value: autoPointsDisplayValue,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                  })}
+                />
+                <small id="groupAutoPointsHelp" className="form-text text-muted">
+                  Default auto points for alternatives in this group.
+                </small>
+              </div>
+              <div className="mb-3">
+                <label htmlFor="groupMaxAutoPointsInput">Max auto points</label>
+                <input
+                  type="number"
+                  className="form-control"
+                  id="groupMaxAutoPointsInput"
+                  aria-describedby="groupMaxPointsHelp"
+                  {...register(originalMaxProperty, {
+                    value: maxAutoPointsDisplayValue,
+                    setValueAs: (value) => {
+                      if (value === '') return undefined;
+                      return Number(value);
+                    },
+                  })}
+                />
+                <small id="groupMaxPointsHelp" className="form-text text-muted">
+                  Default max auto points for alternatives in this group.
+                </small>
+              </div>
+            </>
+          ) : (
+            <div className="mb-3">
+              <label htmlFor="groupPointsInput">Points list</label>
+              <input
+                type="text"
+                className={clsx(
+                  'form-control points-list',
+                  errors[originalPointsProperty] && 'is-invalid',
+                )}
+                id="groupPointsInput"
+                aria-describedby="groupPointsHelp"
+                {...register(originalPointsProperty, {
+                  value: autoPointsDisplayValue,
+                  pattern: {
+                    value: /^[0-9, ]*$/,
+                    message: 'Points must be a number or a comma-separated list of numbers.',
+                  },
+                  setValueAs: (value) => {
+                    if (value === '') return undefined;
+                    if (!Number.isNaN(Number(value))) {
+                      return Number(value);
+                    }
+                    if (value.includes(',')) {
+                      return value
+                        .split(',')
+                        .map((v: string) => Number(v.trim()))
+                        .filter((v: number) => !Number.isNaN(v));
+                    }
+                    return value;
+                  },
+                })}
+              />
+              {errors[originalPointsProperty] && (
+                <div className="invalid-feedback">{errors[originalPointsProperty].message}</div>
+              )}
+              <small id="groupPointsHelp" className="form-text text-muted">
+                Default points for alternatives in this group.
+              </small>
+            </div>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            disabled={isSubmitting}
+            onClick={onHide}
+          >
+            Close
+          </button>
+          <button type="submit" className="btn btn-primary" disabled={isSubmitting}>
+            {submitLabel}
+          </button>
+        </Modal.Footer>
+      </form>
     </Modal>
   );
 }

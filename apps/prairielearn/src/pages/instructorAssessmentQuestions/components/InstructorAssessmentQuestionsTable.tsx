@@ -1,10 +1,13 @@
 import {
+  type Active,
   DndContext,
   type DragEndEvent,
   type DragOverEvent,
   KeyboardSensor,
+  type Over,
   PointerSensor,
   pointerWithin,
+  useDndMonitor,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -25,12 +28,14 @@ import type {
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../instructorAssessmentQuestions.shared.js';
-import type { CourseQuestionForPicker } from '../types.js';
+import type { CourseQuestionForPicker, ParsedDragEvent } from '../types.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
+  findQuestionByTrackingId,
+  getInsertBeforeId,
   stripTrackingIds,
   useAssessmentEditor,
 } from '../utils/useAssessmentEditor.js';
@@ -64,7 +69,25 @@ interface EditingStateEdit {
   zoneQuestionBlock?: ZoneQuestionBlockForm;
 }
 
-type EditingState = EditingStateCreate | EditingStateEdit;
+interface EditingStateCreateGroup {
+  status: 'editing';
+  mode: 'create-group';
+  zoneTrackingId: string;
+  group: ZoneQuestionBlockForm;
+}
+
+interface EditingStateEditGroup {
+  status: 'editing';
+  mode: 'edit-group';
+  questionTrackingId: string;
+  group: ZoneQuestionBlockForm;
+}
+
+type EditingState =
+  | EditingStateCreate
+  | EditingStateEdit
+  | EditingStateCreateGroup
+  | EditingStateEditGroup;
 
 type QuestionEditState =
   | { status: 'idle' }
@@ -72,9 +95,153 @@ type QuestionEditState =
       status: 'picking';
       zoneTrackingId: string;
       /** If returning to edit modal after picking, preserve that context */
-      returnToEdit?: EditingState;
+      returnToEdit?: EditingStateCreate | EditingStateEdit;
     }
   | EditingState;
+
+/**
+ * Parses dnd-kit Active and Over objects into a typed context for drag handlers.
+ */
+function parseDragEvent(active: Active, over: Over): ParsedDragEvent {
+  return {
+    activeId: String(active.id),
+    overId: String(over.id),
+    activeType: active.data.current?.type as ParsedDragEvent['activeType'],
+    overType: over.data.current?.type as ParsedDragEvent['overType'],
+    activeGroupTrackingId: active.data.current?.groupTrackingId as string | undefined,
+    overGroupTrackingId: over.data.current?.groupTrackingId as string | undefined,
+  };
+}
+
+interface DropTarget {
+  zoneTrackingId: string;
+  beforeQuestionTrackingId: string | null;
+}
+
+/**
+ * Finds which alternative group contains an item by its trackingId.
+ * Returns the group's trackingId, or null if not found in any group.
+ */
+function findContainingGroup(zones: ZoneAssessmentForm[], trackingId: string): string | null {
+  for (const zone of zones) {
+    for (const question of zone.questions) {
+      if (question.alternatives?.some((a) => a.trackingId === trackingId)) {
+        return question.trackingId;
+      }
+    }
+  }
+  return null;
+}
+
+function resolveDropTarget(
+  overId: string,
+  overType: ParsedDragEvent['overType'],
+  zones: ZoneAssessmentForm[],
+  positionByStableId: Record<string, { zoneIndex: number; questionIndex: number }>,
+): DropTarget | null {
+  // Don't resolve group-drop targets here - let specific handlers deal with those
+  if (overType === 'group-drop') return null;
+
+  // Check if hovering over zone header (sortable zone)
+  const zoneByTrackingId = zones.find((z) => z.trackingId === overId);
+  if (zoneByTrackingId) {
+    return { zoneTrackingId: zoneByTrackingId.trackingId, beforeQuestionTrackingId: null };
+  }
+
+  // Check if hovering over empty zone droppable
+  const emptyZoneMatch = zones.find((z) => `${z.trackingId}-empty-drop` === overId);
+  if (emptyZoneMatch) {
+    return { zoneTrackingId: emptyZoneMatch.trackingId, beforeQuestionTrackingId: null };
+  }
+
+  // Check if hovering over a question
+  let toPosition = positionByStableId[overId];
+
+  // If overId is an alternative inside a group, use the group's position
+  if (!toPosition) {
+    const containingGroupId = findContainingGroup(zones, overId);
+    if (containingGroupId) {
+      toPosition = positionByStableId[containingGroupId];
+    }
+  }
+
+  if (toPosition) {
+    const toZone = zones[toPosition.zoneIndex];
+    return {
+      zoneTrackingId: toZone.trackingId,
+      beforeQuestionTrackingId: toZone.questions[toPosition.questionIndex]?.trackingId ?? null,
+    };
+  }
+
+  return null;
+}
+
+/**
+ * Monitors drag events to track which group is currently being targeted.
+ * Updates state when dragging a question over an alternative group.
+ */
+function DragTargetMonitor({
+  zones,
+  setTargetGroupTrackingId,
+}: {
+  zones: ZoneAssessmentForm[];
+  setTargetGroupTrackingId: (id: string | null) => void;
+}) {
+  useDndMonitor({
+    onDragOver(event) {
+      const { active, over } = event;
+      if (!over) {
+        setTargetGroupTrackingId(null);
+        return;
+      }
+
+      const activeType = active.data.current?.type;
+
+      // Only track for question drags (not alternatives being extracted or zones)
+      if (activeType !== 'question') {
+        setTargetGroupTrackingId(null);
+        return;
+      }
+
+      const overType = over.data.current?.type;
+
+      // If over a group-drop target, use its group ID
+      if (overType === 'group-drop') {
+        const groupId = over.data.current?.groupTrackingId as string | undefined;
+        setTargetGroupTrackingId(groupId ?? null);
+        return;
+      }
+
+      // If over an alternative, find its parent group
+      if (overType === 'alternative') {
+        const groupId = over.data.current?.groupTrackingId as string | undefined;
+        setTargetGroupTrackingId(groupId ?? null);
+        return;
+      }
+
+      // If over a question that is a group (has alternatives), target that group
+      const overId = String(over.id);
+      for (const zone of zones) {
+        for (const question of zone.questions) {
+          if (question.trackingId === overId && question.alternatives) {
+            setTargetGroupTrackingId(question.trackingId);
+            return;
+          }
+        }
+      }
+
+      setTargetGroupTrackingId(null);
+    },
+    onDragEnd() {
+      setTargetGroupTrackingId(null);
+    },
+    onDragCancel() {
+      setTargetGroupTrackingId(null);
+    },
+  });
+
+  return null;
+}
 
 function EditModeButtons({
   csrfToken,
@@ -212,6 +379,7 @@ export function InstructorAssessmentQuestionsTable({
   const [showResetModal, setShowResetModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const editZoneModal = useModalState<EditZoneModalData>(null);
+  const [targetGroupTrackingId, setTargetGroupTrackingId] = useState<string | null>(null);
 
   // Consolidated state for question picker and edit modal flow
   const [questionEditState, setQuestionEditState] = useState<QuestionEditState>({
@@ -222,6 +390,35 @@ export function InstructorAssessmentQuestionsTable({
   const showPicker = questionEditState.status === 'picking';
   const showEditModal = questionEditState.status === 'editing';
 
+  // Compute modal data with proper type narrowing
+  const editModalData = useMemo(() => {
+    if (questionEditState.status !== 'editing') return null;
+    switch (questionEditState.mode) {
+      case 'create':
+        return {
+          type: 'create' as const,
+          question: questionEditState.question,
+          existingQids: questionEditState.existingQids,
+        };
+      case 'edit':
+        return {
+          type: 'edit' as const,
+          question: questionEditState.question,
+          zoneQuestionBlock: questionEditState.zoneQuestionBlock,
+        };
+      case 'create-group':
+        return {
+          type: 'create-group' as const,
+          group: questionEditState.group,
+        };
+      case 'edit-group':
+        return {
+          type: 'edit-group' as const,
+          group: questionEditState.group,
+        };
+    }
+  }, [questionEditState]);
+
   // Helper functions for state transitions
   const openPickerForNew = (zoneTrackingId: string) => {
     setQuestionEditState({ status: 'picking', zoneTrackingId });
@@ -229,6 +426,10 @@ export function InstructorAssessmentQuestionsTable({
 
   const openPickerToChangeQid = () => {
     if (questionEditState.status !== 'editing') return;
+    // Only allow changing QID for question modes, not group modes
+    if (questionEditState.mode === 'create-group' || questionEditState.mode === 'edit-group') {
+      return;
+    }
     const zoneTrackingId =
       questionEditState.mode === 'create'
         ? questionEditState.zoneTrackingId
@@ -260,6 +461,15 @@ export function InstructorAssessmentQuestionsTable({
       alternativeTrackingId,
       question,
       zoneQuestionBlock,
+    });
+  };
+
+  const openEditForExistingGroup = (group: ZoneQuestionBlockForm) => {
+    setQuestionEditState({
+      status: 'editing',
+      mode: 'edit-group',
+      questionTrackingId: group.trackingId,
+      group,
     });
   };
 
@@ -318,8 +528,39 @@ export function InstructorAssessmentQuestionsTable({
 
   const assessmentType = assessment.type!;
 
-  const handleAddQuestion = (zoneTrackingId: string) => {
-    openPickerForNew(zoneTrackingId);
+  const handleAddAlternativeGroup = (zoneTrackingId: string) => {
+    setQuestionEditState({
+      status: 'editing',
+      mode: 'create-group',
+      zoneTrackingId,
+      group: {
+        trackingId: '' as ZoneQuestionBlockForm['trackingId'],
+        alternatives: [],
+        numberChoose: 1,
+        canSubmit: [],
+        canView: [],
+      } as ZoneQuestionBlockForm,
+    });
+  };
+
+  const handleUpdateGroup = (updatedGroup: ZoneQuestionBlockForm) => {
+    if (questionEditState.status !== 'editing') return;
+
+    if (questionEditState.mode === 'create-group') {
+      dispatch({
+        type: 'ADD_ALTERNATIVE_GROUP',
+        zoneTrackingId: questionEditState.zoneTrackingId,
+        group: createQuestionWithTrackingId(updatedGroup),
+      });
+    } else if (questionEditState.mode === 'edit-group') {
+      dispatch({
+        type: 'UPDATE_QUESTION',
+        questionTrackingId: questionEditState.questionTrackingId,
+        question: updatedGroup,
+      });
+    }
+
+    closeQuestionEditState();
   };
 
   const handleQuestionPicked = (qid: string) => {
@@ -396,7 +637,7 @@ export function InstructorAssessmentQuestionsTable({
         question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
         questionData: preparedQuestionData,
       });
-    } else {
+    } else if (questionEditState.mode === 'edit') {
       // Update existing question
       if (newQuestionData) {
         dispatch({
@@ -493,46 +734,72 @@ export function InstructorAssessmentQuestionsTable({
     editZoneModal.hide();
   };
 
-  const handleDragEnd = ({ active, over }: DragEndEvent) => {
-    if (!over) return;
+  // Sub-handlers for handleDragEnd - each handles a specific drag scenario
+  const handleZoneReorder = (ctx: ParsedDragEvent) => {
+    const fromZoneIndex = zones.findIndex((z) => z.trackingId === ctx.activeId);
+    if (fromZoneIndex === -1) return;
 
-    const activeIdStr = String(active.id);
-    const overIdStr = String(over.id);
-    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
+    const toZoneIndex = zones.findIndex((z) => z.trackingId === ctx.overId);
+    if (toZoneIndex === -1 || fromZoneIndex === toZoneIndex) return;
 
-    // Handle zone reordering
-    if (activeType === 'zone') {
-      const fromZoneIndex = zones.findIndex((z) => z.trackingId === activeIdStr);
-      if (fromZoneIndex === -1) return;
+    const beforeZoneTrackingId = getInsertBeforeId(zones, fromZoneIndex, toZoneIndex);
 
-      // Find the target zone index
-      const toZoneIndex = zones.findIndex((z) => z.trackingId === overIdStr);
-      if (toZoneIndex === -1 || fromZoneIndex === toZoneIndex) return;
+    dispatch({
+      type: 'REORDER_ZONE',
+      zoneTrackingId: ctx.activeId,
+      beforeZoneTrackingId,
+    });
+  };
 
-      // Determine insertion point based on drag direction
-      const isDraggingDown = fromZoneIndex < toZoneIndex;
-      let beforeZoneTrackingId: string | null;
+  const handleQuestionToGroup = (ctx: ParsedDragEvent) => {
+    const groupTrackingId = ctx.overGroupTrackingId;
+    if (!groupTrackingId) return;
 
-      if (isDraggingDown) {
-        // When dragging down, insert after the target (use next zone's trackingId or null)
-        const nextIndex = toZoneIndex + 1;
-        beforeZoneTrackingId = nextIndex < zones.length ? zones[nextIndex].trackingId : null;
-      } else {
-        // When dragging up, insert before the target
-        beforeZoneTrackingId = zones[toZoneIndex].trackingId;
-      }
+    // Check if already added to this group during dragOver
+    const currentGroupId = findContainingGroup(zones, ctx.activeId);
+    if (currentGroupId === groupTrackingId) return;
 
-      dispatch({
-        type: 'REORDER_ZONE',
-        zoneTrackingId: activeIdStr,
-        beforeZoneTrackingId,
-      });
+    // Don't allow dropping a group onto another group
+    const sourceResult = findQuestionByTrackingId(zones, ctx.activeId);
+    if (!sourceResult || sourceResult.question.alternatives) return;
+
+    dispatch({
+      type: 'ADD_TO_ALTERNATIVE_GROUP',
+      questionTrackingId: ctx.activeId,
+      targetGroupTrackingId: groupTrackingId,
+    });
+  };
+
+  const handleAlternativeExtract = (ctx: ParsedDragEvent) => {
+    const groupTrackingId = ctx.activeGroupTrackingId;
+    if (!groupTrackingId) return;
+
+    // If dropped on same group, do nothing (could support reordering later)
+    if (ctx.overType === 'group-drop' && ctx.overGroupTrackingId === groupTrackingId) {
       return;
     }
 
-    // Within-zone question reordering
-    const fromPosition = positionByStableId[activeIdStr];
-    const toPosition = positionByStableId[overIdStr];
+    const dropTarget = resolveDropTarget(ctx.overId, ctx.overType, zones, positionByStableId);
+    if (!dropTarget) return;
+
+    dispatch({
+      type: 'EXTRACT_FROM_ALTERNATIVE_GROUP',
+      groupTrackingId,
+      alternativeTrackingId: ctx.activeId,
+      toZoneTrackingId: dropTarget.zoneTrackingId,
+      beforeQuestionTrackingId: dropTarget.beforeQuestionTrackingId,
+    });
+  };
+
+  const handleQuestionReorder = (ctx: ParsedDragEvent) => {
+    const fromPosition = positionByStableId[ctx.activeId];
+    let toPosition = positionByStableId[ctx.overId];
+
+    // If overId is an alternative inside a group, use the group's position
+    if (!toPosition && ctx.overGroupTrackingId) {
+      toPosition = positionByStableId[ctx.overGroupTrackingId];
+    }
+
     // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
     if (!fromPosition || !toPosition) return;
 
@@ -542,59 +809,126 @@ export function InstructorAssessmentQuestionsTable({
     if (fromZone.trackingId !== toZone.trackingId) return;
     if (fromPosition.questionIndex === toPosition.questionIndex) return;
 
-    // When dragging DOWN, insert AFTER the target (use next question's trackingId or null)
-    const isDraggingDown = fromPosition.questionIndex < toPosition.questionIndex;
-    const beforeQuestionTrackingId = isDraggingDown
-      ? (toZone.questions[toPosition.questionIndex + 1]?.trackingId ?? null)
-      : toZone.questions[toPosition.questionIndex].trackingId;
+    const beforeQuestionTrackingId = getInsertBeforeId(
+      toZone.questions,
+      fromPosition.questionIndex,
+      toPosition.questionIndex,
+    );
 
     dispatch({
       type: 'REORDER_QUESTION',
-      questionTrackingId: activeIdStr,
+      questionTrackingId: ctx.activeId,
       toZoneTrackingId: toZone.trackingId,
       beforeQuestionTrackingId,
     });
+  };
+
+  const handleDragEnd = ({ active, over }: DragEndEvent) => {
+    if (!over) return;
+
+    const ctx = parseDragEvent(active, over);
+
+    if (ctx.activeType === 'zone') {
+      handleZoneReorder(ctx);
+    } else if (ctx.overType === 'group-drop' && ctx.activeType === 'question') {
+      handleQuestionToGroup(ctx);
+    } else if (ctx.activeType === 'alternative') {
+      // Check if already extracted during dragOver
+      const alreadyExtracted = positionByStableId[ctx.activeId] !== undefined;
+      if (alreadyExtracted) {
+        // Extracted during drag - do final reorder if needed
+        handleQuestionReorder(ctx);
+      } else {
+        // Not yet extracted - extract now
+        handleAlternativeExtract(ctx);
+      }
+    } else {
+      handleQuestionReorder(ctx);
+    }
   };
 
   // Move questions between zones during drag for smooth cross-zone reordering animation
   const handleDragOver = ({ active, over }: DragOverEvent) => {
     if (!over) return;
 
-    const activeType = active.data.current?.type as 'zone' | 'question' | undefined;
-    if (activeType !== 'question') return;
+    const ctx = parseDragEvent(active, over);
 
-    const activeIdStr = String(active.id);
-    const overIdStr = String(over.id);
+    // Only handle question and alternative drags
+    if (ctx.activeType !== 'question' && ctx.activeType !== 'alternative') return;
 
-    const fromPosition = positionByStableId[activeIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!fromPosition) return;
+    // Determine current state of the dragged item (may differ from initial activeType)
+    const isCurrentlyStandalone = positionByStableId[ctx.activeId] !== undefined;
+    const currentGroupId = isCurrentlyStandalone ? null : findContainingGroup(zones, ctx.activeId);
 
-    const fromZone = zones[fromPosition.zoneIndex];
+    // Handle hovering over a group-drop target - add question to group during drag
+    if (ctx.overType === 'group-drop') {
+      const groupTrackingId = ctx.overGroupTrackingId;
+      if (!groupTrackingId) return;
 
-    // Empty zone's droppable
-    const targetZone = zones.find((z) => `${z.trackingId}-empty-drop` === overIdStr);
-    if (targetZone && fromZone.trackingId !== targetZone.trackingId) {
+      // Only add standalone questions (not alternatives or groups)
+      if (!isCurrentlyStandalone) return;
+
+      // Don't add groups (questions with alternatives) to other groups
+      const sourceResult = findQuestionByTrackingId(zones, ctx.activeId);
+      if (!sourceResult || sourceResult.question.alternatives) return;
+
+      // Check if already added to this group
+      const alreadyInGroup = findContainingGroup(zones, ctx.activeId);
+      if (alreadyInGroup === groupTrackingId) return;
+
       dispatch({
-        type: 'REORDER_QUESTION',
-        questionTrackingId: activeIdStr,
-        toZoneTrackingId: targetZone.trackingId,
-        beforeQuestionTrackingId: null,
+        type: 'ADD_TO_ALTERNATIVE_GROUP',
+        questionTrackingId: ctx.activeId,
+        targetGroupTrackingId: groupTrackingId,
       });
       return;
     }
 
-    // Question in a different zone
-    const toPosition = positionByStableId[overIdStr];
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (!toPosition) return;
-    const toZone = zones[toPosition.zoneIndex];
-    if (fromZone.trackingId !== toZone.trackingId) {
+    // Handle hovering over non-group targets (zones, questions, empty drops)
+    const dropTarget = resolveDropTarget(ctx.overId, ctx.overType, zones, positionByStableId);
+    if (!dropTarget) return;
+
+    if (currentGroupId) {
+      // Currently in a group - check if we should extract
+      // Don't extract if hovering over the same group's alternatives
+      if (ctx.overGroupTrackingId === currentGroupId) return;
+
+      // Prevent extraction if it would place the item at the end of the zone
+      // right next to the group we're extracting from (causes add/extract loops
+      // when collision detection bounces between the group and zone header)
+      if (ctx.activeType === 'question' && !dropTarget.beforeQuestionTrackingId) {
+        const targetZone = zones.find((z) => z.trackingId === dropTarget.zoneTrackingId);
+        if (targetZone) {
+          const lastQuestion = targetZone.questions[targetZone.questions.length - 1];
+          if (lastQuestion?.trackingId === currentGroupId) {
+            return; // Don't extract to right after the group
+          }
+        }
+      }
+
+      dispatch({
+        type: 'EXTRACT_FROM_ALTERNATIVE_GROUP',
+        groupTrackingId: currentGroupId,
+        alternativeTrackingId: ctx.activeId,
+        toZoneTrackingId: dropTarget.zoneTrackingId,
+        beforeQuestionTrackingId: dropTarget.beforeQuestionTrackingId,
+      });
+      return;
+    }
+
+    // Currently standalone - handle cross-zone reordering
+    const fromPosition = positionByStableId[ctx.activeId];
+    if (!fromPosition) return;
+
+    const fromZone = zones[fromPosition.zoneIndex];
+
+    // Only dispatch reorder if moving to a different zone
+    if (fromZone.trackingId !== dropTarget.zoneTrackingId) {
       dispatch({
         type: 'REORDER_QUESTION',
-        questionTrackingId: activeIdStr,
-        toZoneTrackingId: toZone.trackingId,
-        beforeQuestionTrackingId: toZone.questions[toPosition.questionIndex].trackingId,
+        questionTrackingId: ctx.activeId,
+        toZoneTrackingId: dropTarget.zoneTrackingId,
+        beforeQuestionTrackingId: dropTarget.beforeQuestionTrackingId,
       });
     }
   };
@@ -651,6 +985,10 @@ export function InstructorAssessmentQuestionsTable({
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
         >
+          <DragTargetMonitor
+            zones={zones}
+            setTargetGroupTrackingId={setTargetGroupTrackingId}
+          />
           <SortableContext
             items={zones.map((z) => z.trackingId)}
             strategy={verticalListSortingStrategy}
@@ -702,8 +1040,10 @@ export function InstructorAssessmentQuestionsTable({
                           showAdvanceScorePercCol,
                           assessmentType,
                         }}
-                        handleAddQuestion={handleAddQuestion}
+                        handleAddQuestion={openPickerForNew}
+                        handleAddAlternativeGroup={handleAddAlternativeGroup}
                         handleEditQuestion={openEditForExisting}
+                        handleEditGroup={openEditForExistingGroup}
                         handleDeleteQuestion={handleDeleteQuestion}
                         handleResetButtonClick={handleResetButtonClick}
                         handleEditZone={handleEditZone}
@@ -712,6 +1052,7 @@ export function InstructorAssessmentQuestionsTable({
                         collapsedGroups={collapsedGroups}
                         collapsedZones={collapsedZones}
                         dispatch={dispatch}
+                        targetGroupTrackingId={targetGroupTrackingId}
                       />
                     );
                   })}
@@ -741,23 +1082,10 @@ export function InstructorAssessmentQuestionsTable({
       {editMode && (
         <EditQuestionModal
           show={showEditModal}
-          data={
-            questionEditState.status === 'editing'
-              ? questionEditState.mode === 'create'
-                ? {
-                    type: 'create' as const,
-                    question: questionEditState.question,
-                    existingQids: questionEditState.existingQids,
-                  }
-                : {
-                    type: 'edit' as const,
-                    question: questionEditState.question,
-                    zoneQuestionBlock: questionEditState.zoneQuestionBlock,
-                  }
-              : null
-          }
+          data={editModalData}
           assessmentType={assessmentType === 'Homework' ? 'Homework' : 'Exam'}
           handleUpdateQuestion={handleUpdateQuestion}
+          handleUpdateGroup={handleUpdateGroup}
           onHide={closeQuestionEditState}
           onExited={() => {}}
           onPickQuestion={openPickerToChangeQid}
