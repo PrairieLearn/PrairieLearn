@@ -25,7 +25,7 @@ columns
     max_bonus_points: double precision
     max_points: double precision
     modern_access_control: boolean not null default false
-    multiple_instance: boolean default false
+    multiple_instance: boolean not null default false
     number: text not null default '0'::text
     obj: jsonb
     order_by: integer
