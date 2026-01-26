@@ -7,7 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
-import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
+import { setAssessmentInstancePoints, setAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
@@ -348,9 +348,9 @@ async function updateAssessmentInstanceFromCsvRow(
     const scorePerc = validateNumericColumn(record, 'score_perc');
     const points = validateNumericColumn(record, 'points');
     if (scorePerc != null) {
-      await updateAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
+      await setAssessmentInstanceScore(assessment_instance_id, scorePerc, authn_user_id);
     } else if (points != null) {
-      await updateAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
+      await setAssessmentInstancePoints(assessment_instance_id, points, authn_user_id);
     } else {
       throw new Error('must specify either "score_perc" or "points"');
     }
