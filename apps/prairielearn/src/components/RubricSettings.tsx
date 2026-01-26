@@ -130,7 +130,7 @@ export function RubricSettings({
   const { totalPositive, totalNegative } = useMemo(() => {
     const [pos, neg] = rubricItems
       .map((item) => item.rubric_item.points ?? 0)
-      // For null (empty or unfinished flots), calculate points as if it doesn't exist
+      // For null (empty or unfinished floats), calculate points as if it doesn't exist
       .reduce<[number, number]>(
         ([p, n], v) => (v > 0 ? [p + v, n] : [p, n + v]),
         [startingPoints, startingPoints],
@@ -244,6 +244,7 @@ export function RubricSettings({
   };
 
   const exportRubric = () => {
+    // Need to check for validity since we don't want to export a rubric when it's not completed
     if (!reportInputValidity()) {
       return;
     }
@@ -1078,6 +1079,8 @@ function RubricRow({
           required
           onInput={(e) =>
             updateRubricItem({
+              // e.currentTarget.value will be an empty string if the input is not valid yet
+              // so we can use this to check for partially done inputs such as just a "-" as well
               points: e.currentTarget.value.length > 0 ? Number(e.currentTarget.value) : null,
             })
           }
