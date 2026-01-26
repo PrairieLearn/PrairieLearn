@@ -1,4 +1,4 @@
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 

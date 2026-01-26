@@ -4,9 +4,9 @@ import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
+import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import _ from 'lodash';
 import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
@@ -793,7 +793,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
       } else if (recursive) {
         try {
           const subInfoFiles = await walk(path.join(relativeDir, dir));
-          if (_.isEmpty(subInfoFiles)) {
+          if (isEmptyObject(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
             );
