@@ -130,7 +130,7 @@ export async function updateScore(assessment_instance_id: string) {
       ?.imsx_codeMajor ?? null;
   if (imsx_codeMajor === 'success') {
     logger.info(
-      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${result.imsx_POXEnvelopeResponse.imsx_POXHeader.imsx_POXResponseHeaderInfo.imsx_statusInfo.imsx_codeMajor}`,
+      `ltiOutcomes.updateScore() ai_id=${assessment_instance_id} score=${score} returned ${imsx_codeMajor}`,
     );
   } else {
     logger.info(
