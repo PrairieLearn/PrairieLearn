@@ -91,8 +91,7 @@ router.get(
       qid: q.qid,
       title: q.title,
       topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },
-      tags:
-        q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
+      tags: q.tags?.map((t) => ({ id: String(t.id), name: t.name, color: t.color })) ?? null,
     }));
 
     const editorEnabled = await features.enabledFromLocals(

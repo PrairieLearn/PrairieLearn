@@ -375,9 +375,8 @@ export function InstructorAssessmentQuestionsTable({
   const initialZonesRef = useRef(JSON.stringify(initialState.zones));
 
   // UI-only state
-  const [resetAssessmentQuestionId, setResetAssessmentQuestionId] = useState<string>('');
-  const [showResetModal, setShowResetModal] = useState(false);
   const [editMode, setEditMode] = useState(false);
+  const resetModal = useModalState<string>(null);
   const editZoneModal = useModalState<EditZoneModalData>(null);
   const [targetGroupTrackingId, setTargetGroupTrackingId] = useState<string | null>(null);
 
@@ -522,8 +521,7 @@ export function InstructorAssessmentQuestionsTable({
   }, [zones]);
 
   const handleResetButtonClick = (assessmentQuestionId: string) => {
-    setResetAssessmentQuestionId(assessmentQuestionId);
-    setShowResetModal(true);
+    resetModal.showWithData(assessmentQuestionId);
   };
 
   const assessmentType = assessment.type!;
@@ -1072,12 +1070,17 @@ export function InstructorAssessmentQuestionsTable({
       {assessmentType === 'Homework' ? (
         <ResetQuestionVariantsModal
           csrfToken={csrfToken}
-          assessmentQuestionId={resetAssessmentQuestionId}
-          show={showResetModal}
-          onHide={() => setShowResetModal(false)}
+          assessmentQuestionId={resetModal.data ?? ''}
+          show={resetModal.show}
+          onHide={resetModal.onHide}
+          onExited={resetModal.onExited}
         />
       ) : (
-        <ExamResetNotSupportedModal show={showResetModal} onHide={() => setShowResetModal(false)} />
+        <ExamResetNotSupportedModal
+          show={resetModal.show}
+          onHide={resetModal.onHide}
+          onExited={resetModal.onExited}
+        />
       )}
       {editMode && (
         <EditQuestionModal
@@ -1087,7 +1090,6 @@ export function InstructorAssessmentQuestionsTable({
           handleUpdateQuestion={handleUpdateQuestion}
           handleUpdateGroup={handleUpdateGroup}
           onHide={closeQuestionEditState}
-          onExited={() => {}}
           onPickQuestion={openPickerToChangeQid}
           onAddAndPickAnother={handleAddAndPickAnother}
         />
@@ -1104,7 +1106,6 @@ export function InstructorAssessmentQuestionsTable({
               : null
           }
           onHide={handlePickerCancel}
-          onExited={() => {}}
           onQuestionSelected={handleQuestionPicked}
         />
       )}
