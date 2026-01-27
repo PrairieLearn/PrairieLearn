@@ -37,6 +37,7 @@ export function AiQuestionGenerationEditor({
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [questionFiles, setQuestionFiles] = useState(initialQuestionFiles);
+  const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const newVariantRef = useRef<NewVariantHandle>(null);
 
   const refreshFiles = useCallback(async () => {
@@ -69,6 +70,7 @@ export function AiQuestionGenerationEditor({
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
         loadNewVariant={() => newVariantRef.current?.newVariant()}
+        hasUnsavedChanges={hasUnsavedChanges}
         onGeneratingChange={setIsGenerating}
         onGenerationComplete={refreshFiles}
       />
@@ -122,6 +124,7 @@ export function AiQuestionGenerationEditor({
           variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
           isGenerating={isGenerating}
+          onHasUnsavedChanges={setHasUnsavedChanges}
         />
       </div>
       <FinalizeModal

@@ -8,11 +8,13 @@ export function QuestionCodeEditors({
   pythonContents,
   csrfToken,
   isGenerating,
+  onHasChangesChange,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
   csrfToken: string;
   isGenerating: boolean;
+  onHasChangesChange?: (hasChanges: boolean) => void;
 }) {
   const htmlEditorRef = useRef<HTMLDivElement>(null);
   const pythonEditorRef = useRef<HTMLDivElement>(null);
@@ -22,6 +24,13 @@ export function QuestionCodeEditors({
   const [htmlValue, setHtmlValue] = useState(htmlContents ?? '');
   const [pythonValue, setPythonValue] = useState(pythonContents ?? '');
   const [hasChanges, setHasChanges] = useState(false);
+
+  // Notify parent of changes. This needs to use an effect because the state
+  // is managed locally and we need to inform the parent when it changes.
+  useEffect(() => {
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
+    onHasChangesChange?.(hasChanges);
+  }, [hasChanges, onHasChangesChange]);
 
   // Initialize ACE editors.
   // TODO: this doesn't have any sensible undo story. Should it?

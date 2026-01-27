@@ -182,6 +182,7 @@ export function QuestionAndFilePreview({
   variantCsrfToken,
   newVariantRef,
   isGenerating,
+  onHasUnsavedChanges,
 }: {
   questionFiles: Record<string, string>;
   richTextEditorEnabled: boolean;
@@ -191,6 +192,7 @@ export function QuestionAndFilePreview({
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
   isGenerating: boolean;
+  onHasUnsavedChanges?: (hasChanges: boolean) => void;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
 
@@ -215,6 +217,7 @@ export function QuestionAndFilePreview({
           pythonContents={b64DecodeUnicode(questionFiles['server.py'] || '')}
           csrfToken={csrfToken}
           isGenerating={isGenerating}
+          onHasChangesChange={onHasUnsavedChanges}
         />
       </div>
       <div

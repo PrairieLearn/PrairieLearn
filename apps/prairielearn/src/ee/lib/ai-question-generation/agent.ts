@@ -304,7 +304,7 @@ export async function createQuestionGenerationAgent({
 
   // Track whether the agent was canceled. This is set by the `stopWhen` check
   // and read by the `messageMetadata` callback to emit the correct status.
-  const cancellationState = { wasCanceled: false };
+  const cancellationState: { wasCanceled: boolean } = { wasCanceled: false };
 
   // Create a cancellation check function that queries the database
   const checkCancellation = async () => {
@@ -582,6 +582,7 @@ export async function editQuestionWithAgent({
     const res = await agent.stream(args);
 
     let finalMessage = null as UIMessage<any, any> | null;
+    const errorState: { hasError: boolean } = { hasError: false };
     const stream = res.toUIMessageStream<QuestionGenerationUIMessage>({
       generateMessageId: () => messageRow.id,
       messageMetadata: ({ part }) => {
@@ -592,10 +593,13 @@ export async function editQuestionWithAgent({
           };
         }
         if (part.type === 'finish') {
-          // TODO: we could also capture token usage here if we wanted.
           return {
             job_sequence_id: serverJob.jobSequenceId,
-            status: cancellationState.wasCanceled ? 'canceled' : 'completed',
+            status: cancellationState.wasCanceled
+              ? 'canceled'
+              : errorState.hasError
+                ? 'errored'
+                : 'completed',
           };
         }
       },
@@ -605,13 +609,14 @@ export async function editQuestionWithAgent({
       // Note: the return value of `onError` MUST be a string. If it is not,
       // things downstream will break.
       onError(error): string {
+        errorState.hasError = true;
+
         // `onError` is sometimes called with non-Error values, e.g. strings.
         // We don't care about logging those.
         if (error instanceof Error) {
           job.error(error.message);
         }
 
-        // TODO: need to find some sensible way to handle errors here.
         return getErrorMessage(error);
       },
     });
@@ -634,9 +639,15 @@ export async function editQuestionWithAgent({
     job.info(JSON.stringify(steps, null, 2));
     job.info(JSON.stringify(totalUsage, null, 2));
 
+    const finalStatus = cancellationState.wasCanceled
+      ? 'canceled'
+      : errorState.hasError
+        ? 'errored'
+        : 'completed';
+
     await execute(sql.finalize_assistant_message, {
       id: messageRow.id,
-      status: cancellationState.wasCanceled ? 'canceled' : 'completed',
+      status: finalStatus,
       parts: JSON.stringify(finalMessage?.parts ?? []),
       usage_input_tokens: totalUsage.inputTokens,
       usage_output_tokens: totalUsage.outputTokens,

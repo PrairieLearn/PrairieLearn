@@ -8,6 +8,7 @@ import {
 } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
+import { Modal } from 'react-bootstrap';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
@@ -486,6 +487,7 @@ export function AiQuestionGenerationChat({
   loadNewVariant,
   onGeneratingChange,
   onGenerationComplete,
+  hasUnsavedChanges,
 }: {
   chatCsrfToken: string;
   cancelCsrfToken: string;
@@ -496,8 +498,11 @@ export function AiQuestionGenerationChat({
   loadNewVariant: () => void;
   onGeneratingChange?: (isGenerating: boolean) => void;
   onGenerationComplete?: () => void;
+  hasUnsavedChanges?: boolean;
 }) {
   const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
+  const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
+  const [pendingMessage, setPendingMessage] = useState<{ text: string } | null>(null);
   const prevIsGeneratingRef = useRef<boolean | null>(null);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
@@ -686,8 +691,13 @@ export function AiQuestionGenerationChat({
             isGenerating={isGenerating}
             loadNewVariantAfterChanges={loadNewVariantAfterChanges}
             sendMessage={(message: { text: string }) => {
-              void sendMessage(message);
-              void stickToBottom.scrollToBottom();
+              if (hasUnsavedChanges) {
+                setPendingMessage(message);
+                setShowUnsavedChangesModal(true);
+              } else {
+                void sendMessage(message);
+                void stickToBottom.scrollToBottom();
+              }
             }}
             setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
             onStop={async () => {
@@ -705,6 +715,41 @@ export function AiQuestionGenerationChat({
           role="separator"
         />
       </div>
+
+      <Modal show={showUnsavedChangesModal} onHide={() => setShowUnsavedChangesModal(false)}>
+        <Modal.Header closeButton>
+          <Modal.Title>Unsaved changes</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          <p>
+            You have unsaved changes to the question files. If you continue, your changes will be
+            discarded when the AI updates the files.
+          </p>
+        </Modal.Body>
+        <Modal.Footer>
+          <button
+            type="button"
+            className="btn btn-secondary"
+            onClick={() => setShowUnsavedChangesModal(false)}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            className="btn btn-primary"
+            onClick={() => {
+              setShowUnsavedChangesModal(false);
+              if (pendingMessage) {
+                void sendMessage(pendingMessage);
+                void stickToBottom.scrollToBottom();
+                setPendingMessage(null);
+              }
+            }}
+          >
+            Continue anyway
+          </button>
+        </Modal.Footer>
+      </Modal>
     </div>
   );
 }
