@@ -530,21 +530,6 @@ describe('Student Label Model', () => {
       assert.equal(updatedLabel.color, 'green1');
     });
 
-    it('sets color to null when null is passed', async () => {
-      const label = await createStudentLabel({
-        course_instance_id: '1',
-        name: 'Test Label',
-        color: 'blue1',
-      });
-
-      const updatedLabel = await updateStudentLabel({
-        id: label.id,
-        name: 'Test Label',
-        color: null,
-      });
-
-      assert.equal(updatedLabel.color, null);
-    });
   });
 
   describe('verifyLabelBelongsToCourseInstance', () => {

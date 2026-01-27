@@ -29,15 +29,15 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function createStudentLabel({
   course_instance_id,
   name,
-  color,
+  color = 'gray1',
 }: {
   course_instance_id: string;
   name: string;
-  color?: string | null;
+  color?: string;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,
-    { course_instance_id, name, color: color ?? null },
+    { course_instance_id, name, color },
     StudentLabelSchema,
   );
 }
@@ -72,7 +72,7 @@ export async function updateStudentLabel({
 }: {
   id: string;
   name: string;
-  color: string | null;
+  color: string;
 }): Promise<StudentLabel> {
   return await queryRow(sql.update_student_label, { id, name, color }, StudentLabelSchema);
 }
