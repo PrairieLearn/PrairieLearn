@@ -1,6 +1,5 @@
 import { QueryClient, useQuery } from '@tanstack/react-query';
 import {
-  type Column,
   type ColumnFiltersState,
   type ColumnPinningState,
   type ColumnSizingState,
@@ -42,6 +41,7 @@ import {
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
+import type { StaffStudentLabel } from '../../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -49,7 +49,6 @@ import {
   type CourseAssessmentRow,
   type GradebookRow,
   GradebookRowSchema,
-  type GradebookStudentLabel,
 } from '../instructorGradebook.types.js';
 
 import { EditScoreButton } from './EditScoreModal.js';
@@ -95,7 +94,7 @@ interface GradebookTableProps {
   csrfToken: string;
   courseAssessments: CourseAssessmentRow[];
   gradebookRows: GradebookRow[];
-  studentLabels: GradebookStudentLabel[];
+  studentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceId: string;
   filenameBase: string;
@@ -343,7 +342,7 @@ function GradebookTable({
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
-<StudentLabelBadge key={label.id} label={label} />
+                <StudentLabelBadge key={label.id} label={label} />
               ))}
             </div>
           );
@@ -366,7 +365,6 @@ function GradebookTable({
             columnHelper.accessor(
               (row) => {
                 const data = row.scores[assessment.assessment_id];
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 return data ? data.score_perc : null;
               },
               {
@@ -392,7 +390,6 @@ function GradebookTable({
                   const row = info.row.original;
                   const assessmentData = row.scores[assessment.assessment_id];
 
-                  // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                   if (score == null || !assessmentData?.assessment_instance_id) {
                     return '—';
                   }
@@ -427,8 +424,6 @@ function GradebookTable({
   // Extract only leaf column IDs (exclude group columns)
   const allColumnIds = extractLeafColumnIds(columns);
 
-  // Set default visibility: hide UIN, role, enrollment status columns by default.
-  // Show student_labels column by default only if there are student labels.
   const defaultColumnVisibility = useMemo(() => {
     const hiddenByDefault = new Set(['uin', 'role', 'enrollment_status']);
     // Hide student_labels column if there are no labels
@@ -492,7 +487,7 @@ function GradebookTable({
         header: Header<GradebookRow, GradebookRow['student_labels']>;
       }) => (
         <MultiSelectColumnFilter
-          column={header.column as Column<GradebookRow, unknown>}
+          column={header.column}
           allColumnValues={labelIds}
           renderValueLabel={({ value }) => {
             const label = studentLabels.find((l) => l.id === String(value));
@@ -568,7 +563,7 @@ function GradebookTable({
             for (const assessment of courseAssessments) {
               data.push({
                 name: assessment.label,
-                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+
                 value: row.scores[assessment.assessment_id]?.score_perc ?? null,
               });
             }

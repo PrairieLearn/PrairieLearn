@@ -11,8 +11,8 @@ import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import {
-  selectEnrollmentIdsForStudentLabel,
-  selectStudentLabelsByCourseInstance,
+  selectEnrollmentsInStudentLabel,
+  selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
@@ -153,8 +153,9 @@ describe('Instructor student labels page', () => {
     assert.equal(createResponse.status, 200);
 
     // Verify label exists in database
-    let labels = await selectStudentLabelsByCourseInstance('1');
-    const labelA = labels.find((l) => l.name === 'Test Label A');
+    const courseInstance = await selectCourseInstanceById('1');
+    let labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const labelA = labels.find((l: (typeof labels)[number]) => l.name === 'Test Label A');
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'blue1');
 
@@ -172,10 +173,10 @@ describe('Instructor student labels page', () => {
     assert.equal(createWithStudentsResponse.status, 200);
 
     // Verify label exists with enrollments
-    labels = await selectStudentLabelsByCourseInstance('1');
-    const labelB = labels.find((l) => l.name === 'Test Label B');
+    labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const labelB = labels.find((l: (typeof labels)[number]) => l.name === 'Test Label B');
     assert.isDefined(labelB);
-    const labelBEnrollments = await selectEnrollmentIdsForStudentLabel(labelB.id);
+    const labelBEnrollments = (await selectEnrollmentsInStudentLabel(labelB)).map((e) => e.id);
     assert.equal(labelBEnrollments.length, 2);
     assert.includeMembers(labelBEnrollments, [enrollmentIds[0], enrollmentIds[1]]);
 
@@ -208,7 +209,7 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle edit label operations', async () => {
     // Get current labels
-    let labels = await selectStudentLabelsByCourseInstance('1');
+    let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     let labelA = labels.find((l) => l.name === 'Test Label A');
     assert.isDefined(labelA);
 
@@ -228,7 +229,7 @@ describe('Instructor student labels page', () => {
     assert.equal(editNameResponse.status, 200);
 
     // Verify name changed
-    labels = await selectStudentLabelsByCourseInstance('1');
+    labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
@@ -247,7 +248,7 @@ describe('Instructor student labels page', () => {
     );
     assert.equal(editColorResponse.status, 200);
 
-    labels = await selectStudentLabelsByCourseInstance('1');
+    labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
     assert.equal(labelA.color, 'purple3');
@@ -267,7 +268,7 @@ describe('Instructor student labels page', () => {
     );
     assert.equal(addStudentsResponse.status, 200);
 
-    let enrollmentIdsInLabel = await selectEnrollmentIdsForStudentLabel(labelA.id);
+    let enrollmentIdsInLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
     assert.equal(enrollmentIdsInLabel.length, 1);
     assert.include(enrollmentIdsInLabel, enrollmentIds[2]);
 
@@ -286,7 +287,7 @@ describe('Instructor student labels page', () => {
     );
     assert.equal(removeStudentsResponse.status, 200);
 
-    enrollmentIdsInLabel = await selectEnrollmentIdsForStudentLabel(labelA.id);
+    enrollmentIdsInLabel = (await selectEnrollmentsInStudentLabel(labelA)).map((e) => e.id);
     assert.equal(enrollmentIdsInLabel.length, 0);
 
     // Attempt to rename to existing label name - should fail
@@ -310,7 +311,7 @@ describe('Instructor student labels page', () => {
 
   test.sequential('should handle delete label operations', async () => {
     // Get current labels
-    let labels = await selectStudentLabelsByCourseInstance('1');
+    let labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     const labelA = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isDefined(labelA);
 
@@ -327,7 +328,7 @@ describe('Instructor student labels page', () => {
     assert.equal(deleteResponse.status, 200);
 
     // Verify label is deleted (soft delete via deleted_at)
-    labels = await selectStudentLabelsByCourseInstance('1');
+    labels = await selectStudentLabelsInCourseInstance(await selectCourseInstanceById('1'));
     const deletedLabel = labels.find((l) => l.name === 'Test Label A Renamed');
     assert.isUndefined(deletedLabel);
 

@@ -2,14 +2,17 @@ import clsx from 'clsx';
 
 import { type ColorJson, ColorJsonSchema } from '../schemas/infoCourse.js';
 
-interface ColorPickerProps {
+export function ColorPicker({
+  value,
+  onChange,
+  invalid,
+  id,
+}: {
   value: string;
   onChange: (color: ColorJson) => void;
   invalid?: boolean;
   id?: string;
-}
-
-export function ColorPicker({ value, onChange, invalid, id }: ColorPickerProps) {
+}) {
   return (
     <div className="d-flex gap-2 align-items-center">
       <select

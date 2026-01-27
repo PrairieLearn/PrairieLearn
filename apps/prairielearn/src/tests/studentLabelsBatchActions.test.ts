@@ -4,14 +4,15 @@ import { execute } from '@prairielearn/postgres';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
 import { config } from '../lib/config.js';
+import type { StudentLabel } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../models/enrollment.js';
 import {
   createStudentLabel,
   deleteStudentLabel,
-  selectEnrollmentIdsForStudentLabel,
-  selectStudentLabelsByCourseInstance,
+  selectEnrollmentsInStudentLabel,
+  selectStudentLabelsInCourseInstance,
 } from '../models/student-label.js';
 
 import { fetchCheerio, getCSRFToken } from './helperClient.js';
@@ -42,7 +43,7 @@ async function postAction(action: Record<string, unknown>) {
 }
 
 describe('Student labels batch actions', () => {
-  let labelId: string;
+  let label: StudentLabel;
   let enrollmentIds: string[];
   let courseRepo: CourseRepoFixture;
 
@@ -67,13 +68,12 @@ describe('Student labels batch actions', () => {
     );
     enrollmentIds = enrollments.map((e) => e!.id);
 
-    const label = await createStudentLabel({ course_instance_id: '1', name: 'Batch Test Label' });
-    labelId = label.id;
+    label = await createStudentLabel({ courseInstanceId: '1', name: 'Batch Test Label' });
   });
 
   afterAll(async () => {
     try {
-      await deleteStudentLabel(labelId);
+      await deleteStudentLabel(label.id);
     } catch {
       // ignore
     }
@@ -90,11 +90,11 @@ describe('Student labels batch actions', () => {
     const response = await postAction({
       __action: 'batch_add_to_label',
       enrollment_ids: enrollmentIds,
-      student_label_id: labelId,
+      student_label_id: label.id,
     });
     assert.equal(response.status, 200);
 
-    const memberIds = await selectEnrollmentIdsForStudentLabel(labelId);
+    const memberIds = (await selectEnrollmentsInStudentLabel(label)).map((e) => e.id);
     assert.equal(memberIds.length, 3);
     assert.includeMembers(memberIds, enrollmentIds);
   });
@@ -103,11 +103,11 @@ describe('Student labels batch actions', () => {
     const response = await postAction({
       __action: 'batch_remove_from_label',
       enrollment_ids: [enrollmentIds[0], enrollmentIds[1]],
-      student_label_id: labelId,
+      student_label_id: label.id,
     });
     assert.equal(response.status, 200);
 
-    const memberIds = await selectEnrollmentIdsForStudentLabel(labelId);
+    const memberIds = (await selectEnrollmentsInStudentLabel(label)).map((e) => e.id);
     assert.deepEqual(memberIds, [enrollmentIds[2]]);
   });
 
@@ -115,11 +115,11 @@ describe('Student labels batch actions', () => {
     const response = await postAction({
       __action: 'batch_remove_from_label',
       enrollment_ids: [enrollmentIds[2]],
-      student_label_id: labelId,
+      student_label_id: label.id,
     });
     assert.equal(response.status, 200);
 
-    const memberIds = await selectEnrollmentIdsForStudentLabel(labelId);
+    const memberIds = (await selectEnrollmentsInStudentLabel(label)).map((e) => e.id);
     assert.equal(memberIds.length, 0);
   });
 
@@ -140,11 +140,12 @@ describe('Student labels batch actions', () => {
     });
     assert.equal(response.status, 200);
 
-    const labels = await selectStudentLabelsByCourseInstance('1');
-    const newLabel = labels.find((l) => l.name === 'New Created Label');
+    const courseInstance = await selectCourseInstanceById('1');
+    const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    const newLabel = labels.find((l: (typeof labels)[number]) => l.name === 'New Created Label');
     assert.isDefined(newLabel);
 
-    const memberIds = await selectEnrollmentIdsForStudentLabel(newLabel.id);
+    const memberIds = (await selectEnrollmentsInStudentLabel(newLabel)).map((e) => e.id);
     assert.equal(memberIds.length, 2);
     assert.includeMembers(memberIds, [enrollmentIds[0], enrollmentIds[1]]);
   });

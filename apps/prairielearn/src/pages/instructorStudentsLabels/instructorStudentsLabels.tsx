@@ -22,10 +22,10 @@ import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { getUrl } from '../../lib/url.js';
 import { selectUsersAndEnrollmentsByUidsInCourseInstance } from '../../models/enrollment.js';
 import {
-  batchAddEnrollmentsToStudentLabel,
-  batchRemoveEnrollmentsFromStudentLabel,
-  selectEnrollmentIdsForStudentLabel,
-  selectStudentLabelsByCourseInstance,
+  addEnrollmentsToStudentLabel,
+  removeEnrollmentsFromStudentLabel,
+  selectEnrollmentsInStudentLabel,
+  selectStudentLabelsInCourseInstance,
   verifyLabelBelongsToCourseInstance,
 } from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
@@ -220,14 +220,14 @@ router.post(
         });
 
         // Get the newly created label from database
-        const labels = await selectStudentLabelsByCourseInstance(courseInstance.id);
+        const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         const newLabel = labels.find((l) => l.name === name);
         if (!newLabel) {
           throw new error.HttpStatusError(500, 'Label saved but not found in database');
         }
-        await batchAddEnrollmentsToStudentLabel({
-          enrollment_ids: enrolledUsers.map((u) => u.enrollment.id),
-          student_label_id: newLabel.id,
+        await addEnrollmentsToStudentLabel({
+          enrollments: enrolledUsers.map((u) => u.enrollment),
+          label: newLabel,
         });
       }
 
@@ -251,7 +251,7 @@ router.post(
         })
         .parse(req.body);
 
-      await verifyLabelBelongsToCourseInstance(label_id, courseInstance.id);
+      await verifyLabelBelongsToCourseInstance({ labelId: label_id, courseInstance });
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
@@ -292,7 +292,7 @@ router.post(
       }
 
       // Update enrollments - get the label by new name after sync
-      const labels = await selectStudentLabelsByCourseInstance(courseInstance.id);
+      const labels = await selectStudentLabelsInCourseInstance(courseInstance);
       const updatedLabel = labels.find((l) => l.name === name);
 
       if (!updatedLabel) {
@@ -300,38 +300,39 @@ router.post(
       }
 
       // Get current enrollments
-      const currentEnrollmentIds = new Set(
-        await selectEnrollmentIdsForStudentLabel(updatedLabel.id),
-      );
+      const currentEnrollments = await selectEnrollmentsInStudentLabel(updatedLabel);
+      const currentEnrollmentIdSet = new Set(currentEnrollments.map((e) => e.id));
 
       // Parse UIDs and get desired enrollments
       const uids = parseUniqueValuesFromString(uidsString, MAX_UIDS);
-      const desiredEnrollmentIds = new Set<string>();
-      if (uids.length > 0) {
-        const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
-          uids,
-          courseInstance,
-          requiredRole: ['Student Data Editor'],
-          authzData: authz_data,
-        });
-        enrolledUsers.forEach((u) => desiredEnrollmentIds.add(u.enrollment.id));
-      }
+      const desiredEnrollments =
+        uids.length > 0
+          ? (
+              await selectUsersAndEnrollmentsByUidsInCourseInstance({
+                uids,
+                courseInstance,
+                requiredRole: ['Student Data Editor'],
+                authzData: authz_data,
+              })
+            ).map((u) => u.enrollment)
+          : [];
+      const desiredEnrollmentIdSet = new Set(desiredEnrollments.map((e) => e.id));
 
       // Add new enrollments
-      const toAdd = [...desiredEnrollmentIds].filter((id) => !currentEnrollmentIds.has(id));
+      const toAdd = desiredEnrollments.filter((e) => !currentEnrollmentIdSet.has(e.id));
       if (toAdd.length > 0) {
-        await batchAddEnrollmentsToStudentLabel({
-          enrollment_ids: toAdd,
-          student_label_id: updatedLabel.id,
+        await addEnrollmentsToStudentLabel({
+          enrollments: toAdd,
+          label: updatedLabel,
         });
       }
 
       // Remove old enrollments
-      const toRemove = [...currentEnrollmentIds].filter((id) => !desiredEnrollmentIds.has(id));
+      const toRemove = currentEnrollments.filter((e) => !desiredEnrollmentIdSet.has(e.id));
       if (toRemove.length > 0) {
-        await batchRemoveEnrollmentsFromStudentLabel({
-          enrollment_ids: toRemove,
-          student_label_id: updatedLabel.id,
+        await removeEnrollmentsFromStudentLabel({
+          enrollments: toRemove,
+          label: updatedLabel,
         });
       }
 
@@ -345,7 +346,7 @@ router.post(
         })
         .parse(req.body);
 
-      await verifyLabelBelongsToCourseInstance(label_id, courseInstance.id);
+      await verifyLabelBelongsToCourseInstance({ labelId: label_id, courseInstance });
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);

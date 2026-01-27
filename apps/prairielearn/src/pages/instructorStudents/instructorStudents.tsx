@@ -13,7 +13,7 @@ import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
@@ -23,14 +23,19 @@ import {
   saveCourseInstanceJson,
 } from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
-import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
 import {
-  batchAddEnrollmentsToStudentLabel,
-  batchRemoveEnrollmentsFromStudentLabel,
-  selectStudentLabelsByCourseInstance,
+  inviteStudentByUid,
+  selectEnrollmentsByIdsInCourseInstance,
+  selectOptionalEnrollmentByUid,
+} from '../../models/enrollment.js';
+import {
+  addEnrollmentsToStudentLabel,
+  removeEnrollmentsFromStudentLabel,
+  selectStudentLabelsInCourseInstance,
   verifyLabelBelongsToCourseInstance,
 } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
@@ -95,7 +100,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
@@ -176,15 +181,26 @@ router.post(
       const body = BodySchema.parse(req.body);
 
       // Verify the label belongs to this course instance
-      await verifyLabelBelongsToCourseInstance(body.student_label_id, courseInstance.id);
+      const label = await verifyLabelBelongsToCourseInstance({
+        labelId: body.student_label_id,
+        courseInstance,
+      });
+
+      // Look up enrollments and verify they belong to this course instance
+      const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+        ids: body.enrollment_ids,
+        courseInstance,
+        requiredRole: ['Student Data Editor'],
+        authzData,
+      });
 
       // Add enrollments to the label
-      const addedEnrollments = await batchAddEnrollmentsToStudentLabel({
-        enrollment_ids: body.enrollment_ids,
-        student_label_id: body.student_label_id,
+      const addedEnrollments = await addEnrollmentsToStudentLabel({
+        enrollments,
+        label,
       });
       const added = addedEnrollments.length;
-      const alreadyInLabel = body.enrollment_ids.length - added;
+      const alreadyInLabel = enrollments.length - added;
 
       res.json({ success: true, added, alreadyInLabel });
     } else if (req.body.__action === 'create_label_and_add_students') {
@@ -249,14 +265,21 @@ router.post(
 
       // After sync, add enrollments to the newly created label
       if (body.enrollment_ids.length > 0) {
-        const labels = await selectStudentLabelsByCourseInstance(courseInstance.id);
+        const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         const newLabel = labels.find((l) => l.name === body.name);
         if (!newLabel) {
           throw new HttpStatusError(500, 'Label saved but not found in database');
         }
-        await batchAddEnrollmentsToStudentLabel({
-          enrollment_ids: body.enrollment_ids,
-          student_label_id: newLabel.id,
+
+        const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+          ids: body.enrollment_ids,
+          courseInstance,
+          requiredRole: ['Student Data Editor'],
+          authzData,
+        });
+        await addEnrollmentsToStudentLabel({
+          enrollments,
+          label: newLabel,
         });
       }
 
@@ -270,12 +293,23 @@ router.post(
       const body = BodySchema.parse(req.body);
 
       // Verify the label belongs to this course instance
-      await verifyLabelBelongsToCourseInstance(body.student_label_id, courseInstance.id);
+      const label = await verifyLabelBelongsToCourseInstance({
+        labelId: body.student_label_id,
+        courseInstance,
+      });
+
+      // Look up enrollments and verify they belong to this course instance
+      const enrollments = await selectEnrollmentsByIdsInCourseInstance({
+        ids: body.enrollment_ids,
+        courseInstance,
+        requiredRole: ['Student Data Editor'],
+        authzData,
+      });
 
       // Remove enrollments from the label (returns count of removed)
-      const removed = await batchRemoveEnrollmentsFromStudentLabel({
-        enrollment_ids: body.enrollment_ids,
-        student_label_id: body.student_label_id,
+      const removed = await removeEnrollmentsFromStudentLabel({
+        enrollments,
+        label,
       });
 
       res.json({ success: true, removed });
@@ -448,7 +482,7 @@ router.get(
         { course_instance_id: courseInstance.id },
         StudentRowSchema,
       ),
-      selectStudentLabelsByCourseInstance(courseInstance.id),
+      selectStudentLabelsInCourseInstance(courseInstance),
     ]);
 
     const host = getCanonicalHost(req);
@@ -481,7 +515,7 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
-              studentLabels={studentLabels}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}

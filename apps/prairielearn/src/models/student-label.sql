@@ -26,7 +26,6 @@ WHERE
   id = $id
   AND deleted_at IS NULL;
 
-
 -- BLOCK delete_student_label
 UPDATE student_labels
 SET
@@ -40,17 +39,8 @@ RETURNING
 -- BLOCK add_enrollment_to_student_label
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
-SELECT
-  e.id AS enrollment_id,
-  sl.id AS student_label_id
-FROM
-  enrollments AS e,
-  student_labels AS sl
-WHERE
-  e.id = $enrollment_id
-  AND sl.id = $student_label_id
-  -- Ensure the enrollment is in the same course instance as the student label
-  AND e.course_instance_id = sl.course_instance_id
+VALUES
+  ($enrollment_id, $student_label_id)
 ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;
@@ -82,31 +72,17 @@ WHERE
 ORDER BY
   sl.name;
 
--- BLOCK select_enrollment_ids_for_student_label
-SELECT
-  sle.enrollment_id
-FROM
-  student_label_enrollments AS sle
-WHERE
-  sle.student_label_id = $student_label_id;
-
--- BLOCK batch_add_enrollments_to_student_label
+-- BLOCK add_enrollments_to_student_label
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
 SELECT
-  e.id AS enrollment_id,
-  sl.id AS student_label_id
-FROM
-  unnest($enrollment_ids::bigint[]) AS input_id
-  JOIN enrollments AS e ON e.id = input_id
-  JOIN student_labels AS sl ON sl.id = $student_label_id
-WHERE
-  e.course_instance_id = sl.course_instance_id
+  unnest($enrollment_ids::bigint[]) AS enrollment_id,
+  $student_label_id AS student_label_id
 ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;
 
--- BLOCK batch_remove_enrollments_from_student_label_with_count
+-- BLOCK remove_enrollments_from_student_label_with_count
 WITH
   deleted AS (
     DELETE FROM student_label_enrollments

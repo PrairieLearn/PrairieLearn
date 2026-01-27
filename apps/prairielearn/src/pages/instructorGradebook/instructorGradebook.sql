@@ -155,9 +155,7 @@ SELECT
   COALESCE(
     (
       SELECT
-        json_agg(
-          json_build_object('id', sl.id, 'name', sl.name, 'color', sl.color)
-        )
+        json_agg(to_jsonb(sl.*))
       FROM
         student_label_enrollments sle
         JOIN student_labels sl ON sl.id = sle.student_label_id

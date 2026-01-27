@@ -1,14 +1,16 @@
 import type { ReactNode } from 'react';
 
-import type { StudentLabel } from '../lib/db-types.js';
+import type { StaffStudentLabel } from '../lib/client/safe-db-types.js';
 
-interface StudentLabelBadgeProps {
-  label: Pick<StudentLabel, 'color' | 'name'>;
+export function StudentLabelBadge({
+  label,
+  href,
+  children,
+}: {
+  label: StaffStudentLabel;
   href?: string;
   children?: ReactNode;
-}
-
-export function StudentLabelBadge({ label, href, children }: StudentLabelBadgeProps) {
+}) {
   const className = `badge color-${label.color}${children ? ' d-inline-flex align-items-center gap-1' : ''}`;
 
   if (href) {

@@ -1,20 +1,7 @@
 import { useState } from 'react';
 
+import type { StaffEnrollment, StaffUser } from '../lib/client/safe-db-types.js';
 import { getStudentEnrollmentUrl } from '../lib/client/url.js';
-
-interface UserData {
-  uid: string;
-  name: string | null;
-  enrollment_id: string;
-}
-
-interface ExpandableUserListProps {
-  users: UserData[];
-  courseInstanceId: string;
-  initialLimit?: number;
-  emptyText?: string;
-  nameFallback?: 'uid' | 'dash';
-}
 
 export function ExpandableUserList({
   users,
@@ -22,7 +9,17 @@ export function ExpandableUserList({
   initialLimit = 3,
   emptyText = 'No students',
   nameFallback = 'uid',
-}: ExpandableUserListProps) {
+}: {
+  users: {
+    uid: StaffUser['uid'];
+    name: StaffUser['name'];
+    enrollment_id: StaffEnrollment['id'];
+  }[];
+  courseInstanceId: string;
+  initialLimit?: number;
+  emptyText?: string;
+  nameFallback?: 'uid' | 'dash';
+}) {
   const [expanded, setExpanded] = useState(false);
 
   if (users.length === 0) {

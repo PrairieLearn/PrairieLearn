@@ -39,6 +39,7 @@ import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
 import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
+import type { StaffStudentLabel } from '../../lib/client/safe-db-types.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
   getCourseInstanceJobSequenceUrl,
@@ -52,12 +53,7 @@ import { courseInstanceFilenamePrefix } from '../../lib/sanitize-name.js';
 import { StudentLabelWithUserDataSchema } from '../instructorStudentsLabels/instructorStudentsLabels.types.js';
 
 import { InviteStudentsModal } from './components/InviteStudentsModal.js';
-import {
-  STATUS_VALUES,
-  type StudentLabelInfo,
-  type StudentRow,
-  StudentRowSchema,
-} from './instructorStudents.shared.js';
+import { STATUS_VALUES, type StudentRow, StudentRowSchema } from './instructorStudents.shared.js';
 
 /**
  * A checkbox component that properly handles the indeterminate state using a ref and useEffect,
@@ -226,7 +222,7 @@ interface StudentsCardProps {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
   csrfToken: string;
   students: StudentRow[];
-  studentLabels: StudentLabelInfo[];
+  studentLabels: StaffStudentLabel[];
   timezone: string;
   selfEnrollLink: string;
 }
@@ -277,7 +273,7 @@ function StudentsCard({
   const queryClient = useQueryClient();
 
   // Fetch student labels for batch actions
-  const { data: studentLabels = initialStudentLabels } = useQuery<StudentLabelInfo[]>({
+  const { data: studentLabels = initialStudentLabels } = useQuery({
     queryKey: ['student-labels', courseInstance.id],
     queryFn: async () => {
       const res = await fetch(
@@ -289,11 +285,7 @@ function StudentsCard({
       if (!res.ok) throw new Error('Failed to fetch student labels');
       const data = await res.json();
       const labels = z.array(StudentLabelWithUserDataSchema).parse(data);
-      return labels.map((l) => ({
-        id: l.student_label.id,
-        name: l.student_label.name,
-        color: l.student_label.color,
-      }));
+      return labels.map((l) => l.student_label);
     },
     staleTime: Infinity,
     initialData: initialStudentLabels,
@@ -578,7 +570,7 @@ function StudentsCard({
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
-<StudentLabelBadge
+                <StudentLabelBadge
                   key={label.id}
                   label={label}
                   href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}

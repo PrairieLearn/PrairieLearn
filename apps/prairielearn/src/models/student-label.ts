@@ -8,9 +8,9 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import {
+  type CourseInstance,
   type Enrollment,
   EnrollmentSchema,
   type StudentLabel,
@@ -27,17 +27,17 @@ const sql = loadSqlEquiv(import.meta.url);
  * This should ONLY be called for testing.
  */
 export async function createStudentLabel({
-  course_instance_id,
+  courseInstanceId,
   name,
   color = 'gray1',
 }: {
-  course_instance_id: string;
+  courseInstanceId: string;
   name: string;
   color?: string;
 }): Promise<StudentLabel> {
   return await queryRow(
     sql.create_student_label,
-    { course_instance_id, name, color },
+    { course_instance_id: courseInstanceId, name, color },
     StudentLabelSchema,
   );
 }
@@ -45,12 +45,12 @@ export async function createStudentLabel({
 /**
  * Selects all student labels for a given course instance.
  */
-export async function selectStudentLabelsByCourseInstance(
-  course_instance_id: string,
+export async function selectStudentLabelsInCourseInstance(
+  courseInstance: CourseInstance,
 ): Promise<StudentLabel[]> {
   return await queryRows(
     sql.select_student_labels_by_course_instance,
-    { course_instance_id },
+    { course_instance_id: courseInstance.id },
     StudentLabelSchema,
   );
 }
@@ -74,52 +74,60 @@ export async function deleteStudentLabel(id: string): Promise<StudentLabel> {
 /**
  * Adds an enrollment to a student label. If the enrollment is already in the label,
  * this is a no-op.
+ *
+ * Callers must ensure that the enrollment belongs to the same course instance as the label.
  */
 export async function addEnrollmentToStudentLabel({
-  enrollment_id,
-  student_label_id,
+  enrollment,
+  label,
 }: {
-  enrollment_id: string;
-  student_label_id: string;
+  enrollment: Enrollment;
+  label: StudentLabel;
 }): Promise<StudentLabelEnrollment | null> {
   return await queryOptionalRow(
     sql.add_enrollment_to_student_label,
-    { enrollment_id, student_label_id },
+    { enrollment_id: enrollment.id, student_label_id: label.id },
     StudentLabelEnrollmentSchema,
   );
 }
 
 /**
  * Removes an enrollment from a student label.
+ *
+ * Callers must ensure that the enrollment belongs to the same course instance as the label.
  */
 export async function removeEnrollmentFromStudentLabel({
-  enrollment_id,
-  student_label_id,
+  enrollment,
+  label,
 }: {
-  enrollment_id: string;
-  student_label_id: string;
+  enrollment: Enrollment;
+  label: StudentLabel;
 }): Promise<void> {
-  await execute(sql.remove_enrollment_from_student_label, { enrollment_id, student_label_id });
+  await execute(sql.remove_enrollment_from_student_label, {
+    enrollment_id: enrollment.id,
+    student_label_id: label.id,
+  });
 }
 
 /**
  * Adds multiple enrollments to a student label in a single operation.
- * Only adds enrollments that are in the same course instance as the label.
  * Returns the newly added enrollments (those not already in the label).
+ *
+ * Callers must ensure that all enrollments belong to the same course instance as the label.
  */
-export async function batchAddEnrollmentsToStudentLabel({
-  enrollment_ids,
-  student_label_id,
+export async function addEnrollmentsToStudentLabel({
+  enrollments,
+  label,
 }: {
-  enrollment_ids: string[];
-  student_label_id: string;
+  enrollments: Enrollment[];
+  label: StudentLabel;
 }): Promise<StudentLabelEnrollment[]> {
-  if (enrollment_ids.length === 0) {
+  if (enrollments.length === 0) {
     return [];
   }
   return await queryRows(
-    sql.batch_add_enrollments_to_student_label,
-    { enrollment_ids, student_label_id },
+    sql.add_enrollments_to_student_label,
+    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
     StudentLabelEnrollmentSchema,
   );
 }
@@ -127,20 +135,22 @@ export async function batchAddEnrollmentsToStudentLabel({
 /**
  * Removes multiple enrollments from a student label in a single operation.
  * Returns the count of enrollments actually removed.
+ *
+ * Callers must ensure that all enrollments belong to the same course instance as the label.
  */
-export async function batchRemoveEnrollmentsFromStudentLabel({
-  enrollment_ids,
-  student_label_id,
+export async function removeEnrollmentsFromStudentLabel({
+  enrollments,
+  label,
 }: {
-  enrollment_ids: string[];
-  student_label_id: string;
+  enrollments: Enrollment[];
+  label: StudentLabel;
 }): Promise<number> {
-  if (enrollment_ids.length === 0) {
+  if (enrollments.length === 0) {
     return 0;
   }
   return await queryRow(
-    sql.batch_remove_enrollments_from_student_label_with_count,
-    { enrollment_ids, student_label_id },
+    sql.remove_enrollments_from_student_label_with_count,
+    { enrollment_ids: enrollments.map((e) => e.id), student_label_id: label.id },
     z.number(),
   );
 }
@@ -148,26 +158,11 @@ export async function batchRemoveEnrollmentsFromStudentLabel({
 /**
  * Selects all enrollments in a given student label.
  */
-export async function selectEnrollmentsInStudentLabel(
-  student_label_id: string,
-): Promise<Enrollment[]> {
+export async function selectEnrollmentsInStudentLabel(label: StudentLabel): Promise<Enrollment[]> {
   return await queryRows(
     sql.select_enrollments_in_student_label,
-    { student_label_id },
+    { student_label_id: label.id },
     EnrollmentSchema,
-  );
-}
-
-/**
- * Selects the IDs of all enrollments in a given student label.
- */
-export async function selectEnrollmentIdsForStudentLabel(
-  student_label_id: string,
-): Promise<string[]> {
-  return await queryRows(
-    sql.select_enrollment_ids_for_student_label,
-    { student_label_id },
-    IdSchema,
   );
 }
 
@@ -175,11 +170,11 @@ export async function selectEnrollmentIdsForStudentLabel(
  * Selects all student labels that an enrollment belongs to.
  */
 export async function selectStudentLabelsForEnrollment(
-  enrollment_id: string,
+  enrollment: Enrollment,
 ): Promise<StudentLabel[]> {
   return await queryRows(
     sql.select_student_labels_for_enrollment,
-    { enrollment_id },
+    { enrollment_id: enrollment.id },
     StudentLabelSchema,
   );
 }
@@ -189,12 +184,15 @@ export async function selectStudentLabelsForEnrollment(
  * Throws HttpStatusError(403) if the label doesn't belong to the course instance.
  * Returns the label if valid.
  */
-export async function verifyLabelBelongsToCourseInstance(
-  label_id: string,
-  course_instance_id: string,
-): Promise<StudentLabel> {
-  const label = await selectStudentLabelById(label_id);
-  if (label.course_instance_id !== course_instance_id) {
+export async function verifyLabelBelongsToCourseInstance({
+  labelId,
+  courseInstance,
+}: {
+  labelId: string;
+  courseInstance: CourseInstance;
+}): Promise<StudentLabel> {
+  const label = await selectStudentLabelById(labelId);
+  if (label.course_instance_id !== courseInstance.id) {
     throw new HttpStatusError(403, 'Label does not belong to this course instance');
   }
   return label;

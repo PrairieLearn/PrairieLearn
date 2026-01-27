@@ -18,6 +18,7 @@ import {
   UserSchema,
 } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
+import { uniqueEnrollmentCode } from '../sync/fromDisk/courseInstances.js';
 
 type CourseContext = Course | PageContext<'course', 'student' | 'instructor'>['course'];
 
@@ -205,6 +206,29 @@ export async function selectCourseInstanceByUuid({
   return await queryRow(
     sql.select_course_instance_by_uuid,
     { uuid, course_id: course.id },
+    CourseInstanceSchema,
+  );
+}
+
+/**
+ * Creates a new course instance in the given course.
+ *
+ * This should ONLY be called for testing.
+ */
+export async function createCourseInstance({
+  courseId,
+  displayTimezone = 'America/Chicago',
+}: {
+  courseId: string;
+  displayTimezone?: string;
+}): Promise<CourseInstance> {
+  return await queryRow(
+    sql.create_course_instance,
+    {
+      course_id: courseId,
+      display_timezone: displayTimezone,
+      enrollment_code: await uniqueEnrollmentCode(),
+    },
     CourseInstanceSchema,
   );
 }

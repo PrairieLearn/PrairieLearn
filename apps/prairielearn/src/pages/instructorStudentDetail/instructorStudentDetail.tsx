@@ -23,8 +23,8 @@ import {
   addEnrollmentToStudentLabel,
   removeEnrollmentFromStudentLabel,
   selectStudentLabelById,
-  selectStudentLabelsByCourseInstance,
   selectStudentLabelsForEnrollment,
+  selectStudentLabelsInCourseInstance,
 } from '../../models/student-label.js';
 import { selectUserById } from '../../models/user.js';
 
@@ -75,8 +75,8 @@ router.get(
             auth: 'instructor',
           })
         : [],
-      selectStudentLabelsForEnrollment(req.params.enrollment_id),
-      selectStudentLabelsByCourseInstance(courseInstance.id),
+      selectStudentLabelsForEnrollment(student.enrollment),
+      selectStudentLabelsInCourseInstance(courseInstance),
     ]);
 
     const pageTitle = run(() => {
@@ -231,8 +231,8 @@ router.post(
         }
 
         await addEnrollmentToStudentLabel({
-          enrollment_id,
-          student_label_id,
+          enrollment,
+          label,
         });
         res.redirect(req.originalUrl);
         break;
@@ -247,8 +247,8 @@ router.post(
         }
 
         await removeEnrollmentFromStudentLabel({
-          enrollment_id,
-          student_label_id,
+          enrollment,
+          label,
         });
         res.redirect(req.originalUrl);
         break;
