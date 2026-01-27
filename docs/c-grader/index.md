@@ -211,7 +211,7 @@ self.test_compile_file("square.c", "square", name="Compilation of the first file
 Note that you can set the `points` to zero if you want to create a test result for the compilation, but do not want to assign any points to it. This may be useful in combination with the `add_warning_result_msg=False` argument, which in this case will cause the warning to be shown in the test output instead of the main results message.
 
 ```python
-self.test_compile_file("square.c", "square", add_warning_result_msg=False)
+self.test_compile_file("square.c", "square", points=0, add_warning_result_msg=False)
 ```
 
 ### Running a program and checking its standard output
