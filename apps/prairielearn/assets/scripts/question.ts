@@ -19,6 +19,10 @@ import { setupCountdown } from './lib/countdown.js';
 // We use `selector-observer` throughout this file to handle the case of
 // updating the page's contents without reloading the whole page. At the
 // time of writing, this was used on the AI question generation editor page.
+//
+// Note: DOM event listeners on child elements of the container are
+// automatically garbage collected when the container is removed from the DOM,
+// so some of these observers don't need explicit cleanup logic.
 onDocumentReady(() => {
   observe('.question-container', {
     constructor: HTMLDivElement,
@@ -33,15 +37,7 @@ onDocumentReady(() => {
         }
       });
 
-      return {
-        remove: () => {
-          externalGrading?.close();
-          // Note: DOM event listeners on child elements of the container are
-          // automatically garbage collected when the container is removed from the DOM.
-          // copyContentModal adds listeners to form elements which will be garbage
-          // collected when the container is removed.
-        },
-      };
+      return { remove: () => externalGrading?.close() };
     },
   });
 
