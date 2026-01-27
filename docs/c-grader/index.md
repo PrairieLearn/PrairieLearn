@@ -532,3 +532,13 @@ self.change_mode("/grade/student/myfile.txt", "744")
 ```
 
 Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
+
+As is typical in Unix-like systems, creating new files requires write permission in the directory where the file is created. Therefore, if a program is expected to create new files in a specific directory, write permission must be granted to that directory as well. You are encouraged to avoid granting write permissions to system directories, such as `/grade` or `/grade/tests`, as students may be able to bypass the sandbox environment otherwise. Instead, create specific subdirectories for student files, and grant write permission to those directories only. You may want to switch the current working directory to that directory as well, which can be done with the `os.chdir()` method.
+
+```python
+self.run_command("mkdir -p /tmp/sbdir", sandboxed=False)
+self.change_mode("/tmp/sbdir", "777")
+os.chdir("/tmp/sbdir")
+```
+
+The use of the `tempfile` library is also recommended to create temporary files and directories that the student code may use. Note that any file or directory created with this library will not be accessible to the sandbox user by default, so you must explicitly change its mode as shown above.
