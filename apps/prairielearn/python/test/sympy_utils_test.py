@@ -502,9 +502,10 @@ class TestValidateNamesForConflicts:
         # Should not raise when there are no conflicts
         psu.validate_names_for_conflicts("test", ["x", "y"], ["f", "g"])
 
-    def test_variable_conflicts_with_constant(self) -> None:
-        with pytest.raises(ValueError, match="pi"):
-            psu.validate_names_for_conflicts("test", ["pi", "x"], [])
+    @pytest.mark.parametrize("conflicting_name", ["e", "pi", "infty"])
+    def test_variable_conflicts_with_constant(self, conflicting_name) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name, "x"], [])
 
     def test_variable_conflicts_with_function(self) -> None:
         with pytest.raises(ValueError, match="sin"):
@@ -514,21 +515,39 @@ class TestValidateNamesForConflicts:
         with pytest.raises(ValueError, match="cos"):
             psu.validate_names_for_conflicts("test", [], ["cos"])
 
-    def test_complex_constants_only_conflict_when_enabled(self) -> None:
-        # 'i' should not conflict when allow_complex=False
-        psu.validate_names_for_conflicts("test", ["i"], [], allow_complex=False)
-        # 'i' should conflict when allow_complex=True
-        with pytest.raises(ValueError, match="i"):
-            psu.validate_names_for_conflicts("test", ["i"], [], allow_complex=True)
-
-    def test_trig_functions_only_conflict_when_enabled(self) -> None:
-        # 'sin' should not conflict when allow_trig_functions=False
+    @pytest.mark.parametrize("conflicting_name", ["i", "j"])
+    def test_complex_constants_only_conflict_when_enabled(
+        self, conflicting_name
+    ) -> None:
         psu.validate_names_for_conflicts(
-            "test", ["sin"], [], allow_trig_functions=False
+            "test", [conflicting_name], [], allow_complex=False
         )
-        # 'sin' should conflict when allow_trig_functions=True (default)
-        with pytest.raises(ValueError, match="sin"):
-            psu.validate_names_for_conflicts("test", ["sin"], [])
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_complex=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_complex=True
+            )
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [], [conflicting_name], allow_complex=True
+            )
+
+    @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
+    def test_trig_functions_only_conflict_when_enabled(self, conflicting_name) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_trig_functions=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_trig_functions=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name], [])
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [], [conflicting_name])
 
 
 class TestValidateStringConfigurationErrors:
