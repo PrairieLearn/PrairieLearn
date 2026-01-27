@@ -1,4 +1,4 @@
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
@@ -237,7 +237,7 @@ async function updateInstanceQuestionFromCsvRow(
   assessment: Assessment,
   authn_user_id: string,
 ): Promise<boolean> {
-  const uid_or_team = record.group_name ?? record.uid;
+  const uid_or_group = record.group_name ?? record.uid;
 
   return await sqldb.runInTransactionAsync(async () => {
     const submission_data = await sqldb.queryOptionalRow(
@@ -245,26 +245,26 @@ async function updateInstanceQuestionFromCsvRow(
       {
         assessment_id: assessment.id,
         submission_id: record.submission_id,
-        uid_or_team,
+        uid_or_group,
         ai_number: record.instance,
         qid: record.qid,
       },
       z.object({
         submission_id: IdSchema.nullable(),
         instance_question_id: IdSchema,
-        uid_or_team: z.string(),
+        uid_or_group: z.string(),
         qid: z.string(),
       }),
     );
 
     if (submission_data == null) {
       throw new Error(
-        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_team}, qid=${record.qid} for this assessment.`,
+        `Could not locate submission with id=${record.submission_id}, instance=${record.instance}, uid/group=${uid_or_group}, qid=${record.qid} for this assessment.`,
       );
     }
-    if (uid_or_team !== null && submission_data.uid_or_team !== uid_or_team) {
+    if (uid_or_group !== null && submission_data.uid_or_group !== uid_or_group) {
       throw new Error(
-        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_team}.`,
+        `Found submission with id=${record.submission_id}, but uid/group does not match ${uid_or_group}.`,
       );
     }
     if (record.qid !== null && submission_data.qid !== record.qid) {
@@ -317,10 +317,10 @@ async function getAssessmentInstanceId(record: Record<string, any>, assessment_i
     return {
       id: record.group_name,
       assessment_instance_id: await sqldb.queryOptionalRow(
-        sql.select_assessment_instance_team,
+        sql.select_assessment_instance_group,
         {
           assessment_id,
-          team_name: record.group_name,
+          group_name: record.group_name,
           instance_number: record.instance,
         },
         IdSchema,

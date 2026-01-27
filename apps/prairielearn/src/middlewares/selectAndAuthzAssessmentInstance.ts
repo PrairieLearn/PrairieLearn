@@ -10,9 +10,9 @@ import {
   AssessmentSchema,
   AssessmentSetSchema,
   FileSchema,
+  GroupSchema,
   SprocAuthzAssessmentInstanceSchema,
   SprocUsersGetDisplayedRoleSchema,
-  TeamSchema,
   UserSchema,
 } from '../lib/db-types.js';
 
@@ -32,18 +32,18 @@ const SelectAndAuthzAssessmentInstanceBaseSchema = z.object({
   assessment_instance_label: z.string(),
   assessment_label: z.string(),
   file_list: z.array(FileSchema),
-  instance_team_uid_list: z.array(z.string()),
+  instance_group_uid_list: z.array(z.string()),
 });
 
 // See `user_team_xor` constraint
 const SelectAndAuthzAssessmentInstanceSchema = z.union([
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: UserSchema,
-    instance_team: z.null(),
+    instance_group: z.null(),
   }),
   SelectAndAuthzAssessmentInstanceBaseSchema.extend({
     instance_user: z.null(),
-    instance_team: TeamSchema,
+    instance_group: GroupSchema,
   }),
 ]);
 

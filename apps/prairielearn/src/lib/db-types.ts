@@ -877,6 +877,7 @@ export const GradingJobSchema = z.object({
 });
 export type GradingJob = z.infer<typeof GradingJobSchema>;
 
+/** @deprecated */
 export const TeamSchema = z.object({
   course_instance_id: IdSchema,
   date: DateFromISOString.nullable(),
@@ -886,8 +887,10 @@ export const TeamSchema = z.object({
   name: z.string(),
   team_config_id: IdSchema,
 });
+/** @deprecated */
 export type Team = z.infer<typeof TeamSchema>;
 
+/** @deprecated */
 export const TeamConfigSchema = z.object({
   assessment_id: IdSchema.nullable(),
   course_instance_id: IdSchema,
@@ -903,10 +906,13 @@ export const TeamConfigSchema = z.object({
   student_authz_join: z.boolean().nullable(),
   student_authz_leave: z.boolean().nullable(),
 });
+/** @deprecated */
 export type TeamConfig = z.infer<typeof TeamConfigSchema>;
 
+/** @deprecated */
 export const TeamLogSchema = null;
 
+/** @deprecated */
 export const TeamRoleSchema = z.object({
   assessment_id: IdSchema.nullable(),
   can_assign_roles: z.boolean().nullable(),
@@ -915,22 +921,47 @@ export const TeamRoleSchema = z.object({
   minimum: z.number().nullable(),
   role_name: z.string(),
 });
+/** @deprecated */
 export type TeamRole = z.infer<typeof TeamRoleSchema>;
 
+/** @deprecated */
 export const TeamUserSchema = z.object({
   team_config_id: IdSchema,
   team_id: IdSchema,
   user_id: IdSchema,
 });
+/** @deprecated */
 export type TeamUser = z.infer<typeof TeamUserSchema>;
 
+/** @deprecated */
 export const TeamUserRoleSchema = z.object({
   id: IdSchema,
   team_id: IdSchema,
   team_role_id: IdSchema,
   user_id: IdSchema,
 });
+/** @deprecated */
 export type TeamUserRole = z.infer<typeof TeamUserRoleSchema>;
+
+// Backwards compatibility aliases for renamed group/team tables
+// In early 2025, we'd planned to rename "groups" to "teams". We got halfway through
+// the migration before realizing that it was a poor idea. We were able to undo most
+// of the changes, with the exception of database table/column names.
+//
+// The "group" aliases below allow us to refer to "groups" throughout the codebase.
+// Once we undo the renaming, we can make these the primary types/schemas again and
+// remove the "team" versions.
+export const GroupSchema = TeamSchema;
+export type Group = Team;
+export const GroupConfigSchema = TeamConfigSchema;
+export type GroupConfig = TeamConfig;
+export const GroupRoleSchema = TeamRoleSchema;
+export type GroupRole = TeamRole;
+export const GroupUserSchema = TeamUserSchema;
+export type GroupUser = TeamUser;
+export const GroupUserRoleSchema = TeamUserRoleSchema;
+export type GroupUserRole = TeamUserRole;
+export const GroupLogSchema = TeamLogSchema;
 
 export const InstanceQuestionSchema = z.object({
   ai_instance_question_group_id: IdSchema.nullable(),

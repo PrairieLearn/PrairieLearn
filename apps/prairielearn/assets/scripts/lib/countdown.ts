@@ -99,11 +99,14 @@ export function setupCountdown(options: {
 
   function updateServerRemainingMS() {
     if (options.serverUpdateURL) {
-      fetch(options.serverUpdateURL)
+      fetch(options.serverUpdateURL, { signal: options.signal })
         .then(async (response) => {
           handleServerResponseRemainingMS(await response.json());
         })
         .catch((err) => {
+          // Don't handle abort errors - they're expected during cleanup
+          if (err.name === 'AbortError') return;
+
           console.error('Error retrieving remaining time', err);
           const remainingMS = Math.max(0, serverRemainingMS - (Date.now() - clientStart));
           options.onServerUpdateFail?.(remainingMS);

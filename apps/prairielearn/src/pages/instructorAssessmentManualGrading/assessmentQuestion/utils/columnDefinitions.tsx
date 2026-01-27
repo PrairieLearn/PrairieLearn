@@ -63,7 +63,7 @@ export type ColumnId =
   | 'ai_grading_status'
   | 'index'
   | 'instance_question_group_name'
-  | 'user_or_team_name'
+  | 'user_or_group_name'
   | 'uid'
   | 'requires_manual_grading'
   | 'assigned_grader_name'
@@ -234,8 +234,8 @@ export function createColumns({
       enableHiding: aiGradingMode && instanceQuestionGroups.length > 0,
     }),
 
-    columnHelper.accessor('user_or_team_name', {
-      id: 'user_or_team_name',
+    columnHelper.accessor('user_or_group_name', {
+      id: 'user_or_group_name',
       header: assessment.team_work ? 'Group name' : 'Name',
       cell: (info) => info.getValue() || '—',
     }),

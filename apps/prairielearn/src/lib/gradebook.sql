@@ -16,13 +16,13 @@ WHERE
     ai.user_id = $user_id
     OR ai.team_id IN (
       SELECT
-        t.id
+        g.id
       FROM
-        teams AS t
-        JOIN team_users AS tu ON t.id = tu.team_id
+        teams AS g
+        JOIN team_users AS gu ON g.id = gu.team_id
       WHERE
-        t.deleted_at IS NULL
-        AND tu.user_id = $user_id
+        g.deleted_at IS NULL
+        AND gu.user_id = $user_id
     )
   )
   AND a.deleted_at IS NULL
