@@ -15,8 +15,8 @@ import {
   type AssessmentJson,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
-  GroupRoleJsonSchema,
   GroupsRoleJsonSchema,
+  LegacyGroupRoleJsonSchema,
   PointsJsonSchema,
   PointsListJsonSchema,
   PointsSingleJsonSchema,
@@ -105,7 +105,7 @@ const schemaOverride = (
     // Note: `deprecated: true` is added automatically by the traverse function below
     // because the description contains "DEPRECATED"
     return {
-      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using groups instead.`,
+      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.`,
       type: 'array',
       items: {
         type: 'string',
@@ -186,7 +186,7 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
     ZoneQuestionJsonSchema,
-    GroupRoleJsonSchema,
+    LegacyGroupRoleJsonSchema,
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
