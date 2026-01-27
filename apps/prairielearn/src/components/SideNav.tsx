@@ -127,8 +127,8 @@ const sideNavPagesTabs = {
       tabLabel: 'Gradebook',
     },
     {
-      activePages: ['instance_admin'],
-      activeSubPages: ['students'],
+      activePages: ['students'],
+      activeSubPages: ['overview', 'student_labels', 'detail'],
       urlSuffix: '/instance_admin/students',
       iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',

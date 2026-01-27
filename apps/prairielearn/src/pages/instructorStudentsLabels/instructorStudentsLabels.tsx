@@ -100,10 +100,13 @@ router.get(
 router.get(
   '/data.json',
   asyncHandler(async (req, res) => {
-    const { course_instance: courseInstance } = extractPageContext(res.locals, {
+    const { course_instance: courseInstance, authz_data } = extractPageContext(res.locals, {
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
+    if (!authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
 
     const labels = await getStudentLabelsWithUserData(courseInstance.id);
     res.json(labels);
@@ -117,6 +120,9 @@ router.get(
       pageType: 'courseInstance',
       accessType: 'instructor',
     });
+    if (!authz_data.has_course_instance_permission_view) {
+      throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
+    }
 
     const uidsParam = z.string().parse(req.query.uids);
     const uids = uidsParam.split(',').filter(Boolean);

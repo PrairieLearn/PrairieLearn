@@ -110,8 +110,8 @@ router.get(
         pageTitle,
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'detail',
         },
         content: (
           <Hydrate>

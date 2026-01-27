@@ -431,8 +431,8 @@ router.get(
           resLocals: res.locals,
           navContext: {
             type: 'instructor',
-            page: 'instance_admin',
-            subPage: 'students',
+            page: 'students',
+            subPage: 'overview',
           },
           courseOwners,
           pageTitle: 'Students',
@@ -469,7 +469,7 @@ router.get(
         navContext: {
           type: 'instructor',
           page: 'students',
-          subPage: 'students',
+          subPage: 'overview',
         },
         options: {
           fullWidth: true,

@@ -58,7 +58,7 @@ export function getNavPageTabs() {
     ],
     students: [
       {
-        activeSubPage: 'students',
+        activeSubPage: ['overview', 'detail'],
         urlSuffix: '/instance_admin/students',
         iconClasses: 'fas fa-users-line',
         tabLabel: 'Students',
