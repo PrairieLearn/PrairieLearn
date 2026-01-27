@@ -765,14 +765,24 @@ def json_to_sympy(
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 
+    # Filter out built-in constants/functions from variables to prevent conflicts.
+    # This can happen if the JSON was created from an expression where a symbol
+    # has the same name as a built-in (e.g., Symbol("pi") vs sympy.pi).
+    variables, custom_functions = filter_out_builtins(
+        sympy_expr_dict["_variables"],
+        sympy_expr_dict.get("_custom_functions"),
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig_functions,
+    )
+
     return convert_string_to_sympy(
         sympy_expr_dict["_value"],
-        sympy_expr_dict["_variables"],
+        variables or None,
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
-        custom_functions=sympy_expr_dict.get("_custom_functions"),
+        custom_functions=custom_functions or None,
         assumptions=sympy_expr_dict.get("_assumptions"),
     )
 
@@ -877,8 +887,22 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
-        return "Invalid format."
+    except HasConflictingVariableError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The variable list contains a name that conflicts with a built-in constant. "
+            "Please contact the course staff."
+        )
+    except HasConflictingFunctionError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The custom function list contains a name that conflicts with a built-in function. "
+            "Please contact the course staff."
+        )
+    except HasInvalidAssumptionError as exc:
+        return f"Question configuration error: {exc}. Please contact the course staff."
+    except Exception as exc:
+        return f"Invalid format. {exc}"
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
@@ -901,6 +925,86 @@ def get_items_list(items_string: str | None) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
+    """Return the set of built-in constant names.
+
+    Parameters:
+        allow_complex: Whether to include complex number constants (i, j).
+
+    Returns:
+        A set of built-in constant names.
+    """
+    const = _Constants()
+    names = set(const.variables.keys())
+    if allow_complex:
+        names |= const.complex_variables.keys()
+    return names
+
+
+def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
+    """Return the set of built-in function names.
+
+    Parameters:
+        allow_trig_functions: Whether to include trigonometric functions.
+
+    Returns:
+        A set of built-in function names.
+    """
+    const = _Constants()
+    names = set(const.functions.keys())
+    if allow_trig_functions:
+        names |= const.trig_functions.keys()
+    return names
+
+
+def filter_out_builtins(
+    variables: list[str] | None,
+    custom_functions: list[str] | None,
+    *,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+) -> tuple[list[str], list[str]]:
+    """Filter out built-in constants and functions from user-specified lists.
+
+    This helps prevent conflicts when users specify variable or function names
+    that overlap with built-in constants (like pi, e, infty) or functions
+    (like sin, cos, sqrt).
+
+    Parameters:
+        variables: User-specified variable names (may include built-in constants).
+        custom_functions: User-specified function names (may include built-in functions).
+        allow_complex: Whether complex constants (i, j) are available.
+        allow_trig_functions: Whether trig functions are available.
+
+    Returns:
+        A tuple of (filtered_variables, filtered_functions) with built-ins removed.
+    """
+    builtin_constants = get_builtin_constants(allow_complex=allow_complex)
+    builtin_functions = get_builtin_functions(allow_trig_functions=allow_trig_functions)
+
+    filtered_variables = (
+        [
+            v
+            for v in variables
+            if v not in builtin_constants and v not in builtin_functions
+        ]
+        if variables is not None
+        else []
+    )
+
+    filtered_functions = (
+        [
+            f
+            for f in custom_functions
+            if f not in builtin_constants and f not in builtin_functions
+        ]
+        if custom_functions is not None
+        else []
+    )
+
+    return filtered_variables, filtered_functions
 
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda
