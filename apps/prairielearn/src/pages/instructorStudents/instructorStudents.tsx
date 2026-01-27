@@ -1,9 +1,7 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
@@ -14,13 +12,16 @@ import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
-import { readCourseInstanceJson, saveCourseInstanceJson } from '../../lib/courseInstanceJson.js';
+import {
+  computeCourseInstanceJsonHash,
+  readCourseInstanceJson,
+  saveCourseInstanceJson,
+} from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { createServerJob } from '../../lib/server-jobs.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
@@ -203,8 +204,14 @@ router.post(
       const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
       const paths = getPaths(undefined, res.locals);
 
-      // Read current JSON
-      const content = await fs.readFile(courseInstanceJsonPath, 'utf8');
+      // Compute origHash for optimistic concurrency (must be done before reading/modifying)
+      const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+      if (origHash === null) {
+        res.status(500).json({ error: 'Course instance JSON file not found' });
+        return;
+      }
+
+      // Read and modify JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
       const studentLabels: StudentLabelJson[] =
         (courseInstanceJson.studentLabels as StudentLabelJson[] | undefined) ?? [];
@@ -218,9 +225,6 @@ router.post(
       // Add new label with default color
       studentLabels.push({ name: body.name, color: 'gray1' });
       courseInstanceJson.studentLabels = studentLabels;
-
-      // Compute origHash for optimistic concurrency
-      const origHash = sha256(b64EncodeUnicode(content)).toString();
 
       // Save using FileModifyEditor
       const saveResult = await saveCourseInstanceJson({
@@ -438,7 +442,7 @@ router.get(
       return;
     }
 
-    const [students, allStudentLabels] = await Promise.all([
+    const [students, studentLabels] = await Promise.all([
       queryRows(
         sql.select_users_and_enrollments_for_course_instance,
         { course_instance_id: courseInstance.id },
@@ -446,9 +450,6 @@ router.get(
       ),
       selectStudentLabelsByCourseInstance(courseInstance.id),
     ]);
-
-    // Transform student labels to match the expected format
-    const studentLabels = allStudentLabels.map((l) => ({ id: l.id, name: l.name, color: l.color }));
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(

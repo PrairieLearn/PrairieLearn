@@ -7,17 +7,9 @@ import z from 'zod';
 import { run } from '@prairielearn/run';
 
 import { ColorPicker } from '../../../components/ColorPicker.js';
+import { JobSequenceError } from '../../../lib/client/errors.js';
 import { getCourseInstanceJobSequenceUrl } from '../../../lib/client/url.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
-
-class SaveError extends Error {
-  jobSequenceId?: string;
-
-  constructor(message: string, jobSequenceId?: string) {
-    super(message);
-    this.jobSequenceId = jobSequenceId;
-  }
-}
 
 export type LabelModifyModalData =
   | { type: 'add'; origHash: string | null }
@@ -52,7 +44,7 @@ export function LabelModifyModal({
   courseInstanceId: string;
   show: boolean;
   onHide: () => void;
-  onExited: () => void;
+  onExited?: () => void;
   onSuccess: () => void;
 }) {
   const [stage, setStage] = useState<
@@ -143,7 +135,7 @@ export function LabelModifyModal({
       });
       if (!resp.ok) {
         const responseBody = await resp.json();
-        throw new SaveError(responseBody.error, responseBody.jobSequenceId);
+        throw new JobSequenceError(responseBody.error, responseBody.jobSequenceId);
       }
     },
     onSuccess,
@@ -204,7 +196,7 @@ export function LabelModifyModal({
       onExited={() => {
         setStage({ type: 'editing' });
         saveMutation.reset();
-        onExited();
+        onExited?.();
       }}
     >
       <Modal.Header closeButton>
@@ -215,19 +207,20 @@ export function LabelModifyModal({
           {saveMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => saveMutation.reset()}>
               {saveMutation.error.message}
-              {saveMutation.error instanceof SaveError && saveMutation.error.jobSequenceId && (
-                <>
-                  {' '}
-                  <a
-                    href={getCourseInstanceJobSequenceUrl(
-                      courseInstanceId,
-                      saveMutation.error.jobSequenceId,
-                    )}
-                  >
-                    View job logs
-                  </a>
-                </>
-              )}
+              {saveMutation.error instanceof JobSequenceError &&
+                saveMutation.error.jobSequenceId && (
+                  <>
+                    {' '}
+                    <a
+                      href={getCourseInstanceJobSequenceUrl(
+                        courseInstanceId,
+                        saveMutation.error.jobSequenceId,
+                      )}
+                    >
+                      View job logs
+                    </a>
+                  </>
+                )}
             </Alert>
           )}
           <div className="mb-3">

@@ -432,3 +432,11 @@ export const RawStaffStudentLabelSchema = RawStudentLabelSchema.pick({
 });
 export const StaffStudentLabelSchema = RawStaffStudentLabelSchema.brand<'StaffStudentLabel'>();
 export type StaffStudentLabel = z.infer<typeof StaffStudentLabelSchema>;
+
+/** Student Label Info (for lists/filters) */
+export const StudentLabelInfoSchema = RawStaffStudentLabelSchema.pick({
+  color: true,
+  id: true,
+  name: true,
+});
+export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;

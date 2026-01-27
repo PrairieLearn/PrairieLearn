@@ -1,20 +1,16 @@
 import z from 'zod';
 
 import {
-  RawStaffStudentLabelSchema,
   StaffEnrollmentSchema,
   StaffUserSchema,
+  StudentLabelInfoSchema,
 } from '../../lib/client/safe-db-types.js';
 import { EnumEnrollmentStatusSchema } from '../../lib/db-types.js';
 
 export const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 
-export const StudentLabelInfoSchema = RawStaffStudentLabelSchema.pick({
-  id: true,
-  name: true,
-  color: true,
-});
 export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
+export { StudentLabelInfoSchema };
 
 export const StudentRowSchema = z.object({
   enrollment: StaffEnrollmentSchema,

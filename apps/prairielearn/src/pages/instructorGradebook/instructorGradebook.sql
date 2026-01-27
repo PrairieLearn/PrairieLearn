@@ -190,16 +190,3 @@ FROM
   LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
 WHERE
   ai.id = $assessment_instance_id;
-
--- BLOCK course_student_labels
-SELECT
-  id,
-  name,
-  color
-FROM
-  student_labels
-WHERE
-  course_instance_id = $course_instance_id
-  AND deleted_at IS NULL
-ORDER BY
-  name

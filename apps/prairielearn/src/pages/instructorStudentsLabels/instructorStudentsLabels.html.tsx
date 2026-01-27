@@ -6,17 +6,9 @@ import { z } from 'zod';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import { JobSequenceError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
-
-class DeleteError extends Error {
-  jobSequenceId?: string;
-
-  constructor(message: string, jobSequenceId?: string) {
-    super(message);
-    this.jobSequenceId = jobSequenceId;
-  }
-}
 
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
 import { LabelTableRow } from './components/LabelTableRow.js';
@@ -28,7 +20,6 @@ import {
 interface StudentLabelsPageProps {
   csrfToken: string;
   courseInstanceId: string;
-  studentsPageUrl: string;
   initialLabels: StudentLabelWithUserData[];
   canEdit: boolean;
   isDevMode: boolean;
@@ -45,7 +36,6 @@ interface DeleteModalData {
 function StudentLabelsCard({
   csrfToken,
   courseInstanceId,
-  studentsPageUrl: _studentsPageUrl,
   initialLabels,
   canEdit,
   origHash,
@@ -55,7 +45,6 @@ function StudentLabelsCard({
   const [showAddModal, setShowAddModal] = useState(false);
   const [deleteModalDataState, setDeleteModalDataState] = useState<DeleteModalData | null>(null);
   const [deleteModalShow, setDeleteModalShow] = useState(false);
-  const [showAllDeletedStudents, setShowAllDeletedStudents] = useState(false);
 
   const { data: labels } = useQuery<StudentLabelWithUserData[]>({
     queryKey: ['student-labels'],
@@ -114,7 +103,7 @@ function StudentLabelsCard({
       });
       if (!res.ok) {
         const json = await res.json();
-        throw new DeleteError(json.error ?? 'Failed to delete label', json.jobSequenceId);
+        throw new JobSequenceError(json.error ?? 'Failed to delete label', json.jobSequenceId);
       }
       return res.json();
     },
@@ -205,7 +194,6 @@ function StudentLabelsCard({
         courseInstanceId={courseInstanceId}
         show={modifyModalShow}
         onHide={handleModalHide}
-        onExited={() => {}}
         onSuccess={handleSuccess}
       />
 
@@ -213,7 +201,6 @@ function StudentLabelsCard({
         show={deleteModalShow}
         onHide={() => setDeleteModalShow(false)}
         onExited={() => {
-          setShowAllDeletedStudents(false);
           setDeleteModalDataState(null);
           deleteMutation.reset();
         }}
@@ -225,7 +212,7 @@ function StudentLabelsCard({
           {deleteMutation.isError && (
             <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
               {deleteMutation.error.message}
-              {deleteMutation.error instanceof DeleteError &&
+              {deleteMutation.error instanceof JobSequenceError &&
                 deleteMutation.error.jobSequenceId && (
                   <>
                     {' '}
@@ -251,9 +238,7 @@ function StudentLabelsCard({
               {deleteModalDataState?.userData.length !== 1 ? 's' : ''}. They will be removed from
               this label.
               <details className="mt-2">
-                <summary className="cursor-pointer">
-                  {showAllDeletedStudents ? 'Hide' : 'Show'} affected students
-                </summary>
+                <summary className="cursor-pointer">Show affected students</summary>
                 <div className="mt-2 p-2 bg-light border rounded">
                   {deleteModalDataState?.userData.map((user) => (
                     <div key={user.uid}>{user.name || user.uid}</div>

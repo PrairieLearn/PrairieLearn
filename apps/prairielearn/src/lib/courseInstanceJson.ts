@@ -1,10 +1,11 @@
 import * as path from 'path';
 
+import sha256 from 'crypto-js/sha256.js';
 import fs from 'fs-extra';
 
 import { b64EncodeUnicode } from './base64-util.js';
 import { FileModifyEditor } from './editors.js';
-import { getPaths } from './instructorFiles.js';
+import { type getPaths } from './instructorFiles.js';
 import { formatJsonWithPrettier } from './prettier.js';
 
 /**
@@ -24,7 +25,6 @@ interface SaveCourseInstanceJsonParams {
   paths: ReturnType<typeof getPaths>;
   origHash: string;
   locals: {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     authz_data: Record<string, any>;
     course: { path: string };
     user: { id: string };
@@ -54,7 +54,6 @@ export async function saveCourseInstanceJson({
 }: SaveCourseInstanceJsonParams): Promise<SaveResult | SaveError> {
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const editor = new FileModifyEditor({
     locals: locals as any,
     container: {
@@ -77,4 +76,16 @@ export async function saveCourseInstanceJson({
       jobSequenceId: serverJob.jobSequenceId,
     };
   }
+}
+
+/**
+ * Computes the hash of the infoCourseInstance.json file for optimistic concurrency.
+ * Returns null if the file does not exist.
+ */
+export async function computeCourseInstanceJsonHash(
+  courseInstanceJsonPath: string,
+): Promise<string | null> {
+  if (!(await fs.pathExists(courseInstanceJsonPath))) return null;
+  const content = await fs.readFile(courseInstanceJsonPath, 'utf8');
+  return sha256(b64EncodeUnicode(content)).toString();
 }

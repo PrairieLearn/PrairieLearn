@@ -1,5 +1,6 @@
 import { afterEach, assert, beforeEach, describe, it } from 'vitest';
 
+import { HttpStatusError } from '@prairielearn/error';
 import { queryRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
@@ -567,9 +568,12 @@ describe('Student Label Model', () => {
       try {
         await verifyLabelBelongsToCourseInstance(label.id, '999999');
         assert.fail('Expected error to be thrown');
-      } catch (err: any) {
-        assert.equal(err.status, 403);
-        assert.include(err.message, 'does not belong to this course instance');
+      } catch (err) {
+        assert.instanceOf(err, HttpStatusError);
+        if (err instanceof HttpStatusError) {
+          assert.equal(err.status, 403);
+          assert.include(err.message, 'does not belong to this course instance');
+        }
       }
     });
   });

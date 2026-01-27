@@ -1,9 +1,7 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
-import fs from 'fs-extra';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -11,10 +9,13 @@ import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
-import { readCourseInstanceJson, saveCourseInstanceJson } from '../../lib/courseInstanceJson.js';
+import {
+  computeCourseInstanceJsonHash,
+  readCourseInstanceJson,
+  saveCourseInstanceJson,
+} from '../../lib/courseInstanceJson.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { parseUniqueValuesFromString } from '../../lib/string-util.js';
@@ -62,19 +63,12 @@ router.get(
     const labels = await getStudentLabelsWithUserData(courseInstance.id);
     const canEdit = authz_data.has_course_instance_permission_edit ?? false;
 
-    const studentsPageUrl = `/pl/course_instance/${courseInstance.id}/instructor/instance_admin/students`;
-
     const search = getUrl(req).search;
 
     // Compute origHash for optimistic concurrency
     const courseInstancePath = path.join(course.path, 'courseInstances', courseInstance.short_name);
     const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
-    let origHash: string | null = null;
-    if (await fs.pathExists(courseInstanceJsonPath)) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(courseInstanceJsonPath, 'utf8')),
-      ).toString();
-    }
+    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
 
     res.send(
       PageLayout({
@@ -90,7 +84,6 @@ router.get(
             <InstructorStudentsLabels
               csrfToken={__csrf_token}
               courseInstanceId={courseInstance.id}
-              studentsPageUrl={studentsPageUrl}
               initialLabels={labels}
               canEdit={canEdit}
               isDevMode={config.devMode}
