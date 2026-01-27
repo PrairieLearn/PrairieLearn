@@ -29,7 +29,7 @@ import { idsEqual } from '../../lib/id.js';
 import type {
   AssessmentJsonInput,
   AssessmentSetJsonInput,
-  GroupRoleJsonInput,
+  LegacyGroupRoleJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -73,7 +73,7 @@ function getGroupRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ] satisfies GroupRoleJsonInput[];
+  ] satisfies LegacyGroupRoleJsonInput[];
 }
 
 function getPermission(
@@ -1304,18 +1304,18 @@ describe('Assessment syncing', () => {
     );
   });
 
-  it('still validates when teams.minMembers is 0', async () => {
+  it('still validates when groups.minMembers is 0', async () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.teams = {
+    teamAssessment.groups = {
       enabled: true,
       minMembers: 0,
       roles: [{ name: 'Manager', minMembers: 1 }],
       studentPermissions: {
-        canCreateTeam: false,
-        canJoinTeam: false,
-        canLeaveTeam: false,
-        canNameTeam: true,
+        canCreateGroup: false,
+        canJoinGroup: false,
+        canLeaveGroup: false,
+        canNameGroup: true,
       },
       rolePermissions: {
         canAssignRoles: ['Manager'],
@@ -1332,7 +1332,7 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_warnings);
     assert.match(
       syncedAssessment.sync_warnings,
-      /Role "Manager" has a minMembers greater than the team's minMembers\./,
+      /Role "Manager" has a minMembers greater than the group's minMembers\./,
     );
   });
 
@@ -3953,11 +3953,11 @@ describe('Assessment syncing', () => {
     assert.isNull(syncedData.assessment_questions[2].json_tries_per_variant);
   });
 
-  it('records an error if both teams and legacy group properties are used', async () => {
+  it('records an error if both groups and legacy group properties are used', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
     assessment.groupWork = true;
-    assessment.teams = {
+    assessment.groups = {
       enabled: true,
       minMembers: 2,
       maxMembers: 4,
@@ -3976,14 +3976,14 @@ describe('Assessment syncing', () => {
     assert.isNotNull(syncedAssessment.sync_errors);
     assert.match(
       syncedAssessment.sync_errors,
-      /Cannot use both "teams" and legacy group properties/,
+      /Cannot use both "groups" and legacy group properties/,
     );
   });
 
-  it('syncs teams configuration correctly', async () => {
+  it('syncs groups configuration correctly', async () => {
     const courseData = util.getCourseData();
     const assessment = makeAssessment(courseData, 'Homework');
-    assessment.teams = {
+    assessment.groups = {
       enabled: true,
       minMembers: 2,
       maxMembers: 5,
@@ -3993,10 +3993,10 @@ describe('Assessment syncing', () => {
         { name: 'Contributor' },
       ],
       studentPermissions: {
-        canCreateTeam: true,
-        canJoinTeam: true,
-        canLeaveTeam: false,
-        canNameTeam: true,
+        canCreateGroup: true,
+        canJoinGroup: true,
+        canLeaveGroup: false,
+        canNameGroup: true,
       },
       rolePermissions: {
         canAssignRoles: ['Manager'],
@@ -4041,10 +4041,10 @@ describe('Assessment syncing', () => {
     assert.equal(recorderRole.can_assign_roles, false);
   });
 
-  it('cascades teams.rolePermissions to zones and questions when not overridden', async () => {
+  it('cascades groups.rolePermissions to zones and questions when not overridden', async () => {
     const courseData = util.getCourseData();
     const teamAssessment = makeAssessment(courseData, 'Homework');
-    teamAssessment.teams = {
+    teamAssessment.groups = {
       enabled: true,
       minMembers: 2,
       maxMembers: 4,
