@@ -165,6 +165,8 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
       case 'pl-symbolic-input':
         return checkSymbolicInput(ast);
       case 'pl-question-panel':
+      case 'pl-answer-panel':
+      case 'pl-submission-panel':
         return { errors: [] };
       case 'pl-answer':
         return { errors: [] }; // covered elsewhere

@@ -5,7 +5,12 @@ import { unified } from 'unified';
 
 const DEPRECATED_ELEMENTS = new Set(['pl-prairiedraw-figure', 'pl-threejs', 'pl-variable-score']);
 const ALLOWED_ELEMENTS = new Set([
+  // Decorative elements
   'pl-question-panel',
+  'pl-answer-panel',
+  'pl-submission-panel',
+
+  // Submission elements
   'pl-multiple-choice',
   'pl-checkbox',
   'pl-integer-input',
