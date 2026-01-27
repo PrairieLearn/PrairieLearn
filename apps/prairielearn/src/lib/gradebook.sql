@@ -18,7 +18,7 @@ WHERE
       SELECT
         g.id
       FROM
-        teams g
+        teams AS g
         JOIN team_users AS gu ON g.id = gu.team_id
       WHERE
         g.deleted_at IS NULL
