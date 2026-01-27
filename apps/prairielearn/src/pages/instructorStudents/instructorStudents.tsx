@@ -35,8 +35,8 @@ import {
 import {
   addEnrollmentsToStudentLabel,
   removeEnrollmentsFromStudentLabel,
+  selectStudentLabelById,
   selectStudentLabelsInCourseInstance,
-  verifyLabelBelongsToCourseInstance,
 } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
 import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
@@ -180,11 +180,7 @@ router.post(
       });
       const body = BodySchema.parse(req.body);
 
-      // Verify the label belongs to this course instance
-      const label = await verifyLabelBelongsToCourseInstance({
-        labelId: body.student_label_id,
-        courseInstance,
-      });
+      const label = await selectStudentLabelById({ id: body.student_label_id, courseInstance });
 
       // Look up enrollments and verify they belong to this course instance
       const enrollments = await selectEnrollmentsByIdsInCourseInstance({
@@ -292,11 +288,7 @@ router.post(
       });
       const body = BodySchema.parse(req.body);
 
-      // Verify the label belongs to this course instance
-      const label = await verifyLabelBelongsToCourseInstance({
-        labelId: body.student_label_id,
-        courseInstance,
-      });
+      const label = await selectStudentLabelById({ id: body.student_label_id, courseInstance });
 
       // Look up enrollments and verify they belong to this course instance
       const enrollments = await selectEnrollmentsByIdsInCourseInstance({

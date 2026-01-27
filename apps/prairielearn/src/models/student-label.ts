@@ -58,8 +58,18 @@ export async function selectStudentLabelsInCourseInstance(
 /**
  * Selects a student label by its ID.
  */
-export async function selectStudentLabelById(id: string): Promise<StudentLabel> {
-  return await queryRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
+export async function selectStudentLabelById({
+  id,
+  courseInstance,
+}: {
+  id: string;
+  courseInstance: CourseInstance;
+}): Promise<StudentLabel> {
+  const label = await queryRow(sql.select_student_label_by_id, { id }, StudentLabelSchema);
+  if (label.course_instance_id !== courseInstance.id) {
+    throw new HttpStatusError(403, 'Label does not belong to this course instance');
+  }
+  return label;
 }
 
 /**
@@ -177,23 +187,4 @@ export async function selectStudentLabelsForEnrollment(
     { enrollment_id: enrollment.id },
     StudentLabelSchema,
   );
-}
-
-/**
- * Verifies that a student label belongs to the given course instance.
- * Throws HttpStatusError(403) if the label doesn't belong to the course instance.
- * Returns the label if valid.
- */
-export async function verifyLabelBelongsToCourseInstance({
-  labelId,
-  courseInstance,
-}: {
-  labelId: string;
-  courseInstance: CourseInstance;
-}): Promise<StudentLabel> {
-  const label = await selectStudentLabelById(labelId);
-  if (label.course_instance_id !== courseInstance.id) {
-    throw new HttpStatusError(403, 'Label does not belong to this course instance');
-  }
-  return label;
 }

@@ -565,7 +565,6 @@ function GradebookTable({
             for (const assessment of courseAssessments) {
               data.push({
                 name: assessment.label,
-
                 // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
                 value: row.scores[assessment.assessment_id]?.score_perc ?? null,
               });

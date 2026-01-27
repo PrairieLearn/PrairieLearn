@@ -20,7 +20,6 @@ import {
   selectStudentLabelById,
   selectStudentLabelsForEnrollment,
   selectStudentLabelsInCourseInstance,
-  verifyLabelBelongsToCourseInstance,
 } from './student-label.js';
 
 let enrollmentCounter = 0;
@@ -101,19 +100,25 @@ describe('Student Label Model', () => {
 
   describe('selectStudentLabelById', () => {
     it('returns student label by id', async () => {
+      const courseInstance = await selectCourseInstanceById('1');
       const createdLabel = await createStudentLabel({
         courseInstanceId: '1',
         name: 'Test Label',
       });
 
-      const retrievedLabel = await selectStudentLabelById(createdLabel.id);
+      const retrievedLabel = await selectStudentLabelById({
+        id: createdLabel.id,
+        courseInstance,
+      });
       assert.equal(retrievedLabel.id, createdLabel.id);
       assert.equal(retrievedLabel.name, 'Test Label');
     });
 
     it('throws error for non-existent or deleted labels', async () => {
+      const courseInstance = await selectCourseInstanceById('1');
+
       try {
-        await selectStudentLabelById('999999');
+        await selectStudentLabelById({ id: '999999', courseInstance });
         assert.fail('Expected error');
       } catch (err) {
         assert.instanceOf(err, Error);
@@ -123,10 +128,26 @@ describe('Student Label Model', () => {
       await deleteStudentLabel(label.id);
 
       try {
-        await selectStudentLabelById(label.id);
+        await selectStudentLabelById({ id: label.id, courseInstance });
         assert.fail('Expected error');
       } catch (err) {
         assert.instanceOf(err, Error);
+      }
+    });
+
+    it('throws 403 when label does not belong to course instance', async () => {
+      const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
+      const courseInstance2 = await createCourseInstance({ courseId: '1' });
+
+      try {
+        await selectStudentLabelById({
+          id: label.id,
+          courseInstance: courseInstance2,
+        });
+        assert.fail('Expected error');
+      } catch (err) {
+        assert.instanceOf(err, HttpStatusError);
+        assert.equal(err.status, 403);
       }
     });
   });
@@ -238,35 +259,6 @@ describe('Student Label Model', () => {
       const labelsAfterDelete = await selectStudentLabelsForEnrollment(enrollment);
       assert.equal(labelsAfterDelete.length, 1);
       assert.equal(labelsAfterDelete[0].id, label2.id);
-    });
-  });
-
-  describe('verifyLabelBelongsToCourseInstance', () => {
-    it('returns label when it belongs to the course instance', async () => {
-      const courseInstance = await selectCourseInstanceById('1');
-      const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-
-      const verifiedLabel = await verifyLabelBelongsToCourseInstance({
-        labelId: label.id,
-        courseInstance,
-      });
-      assert.equal(verifiedLabel.id, label.id);
-    });
-
-    it('throws 403 when label does not belong to course instance', async () => {
-      const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-      const courseInstance2 = await createCourseInstance({ courseId: '1' });
-
-      try {
-        await verifyLabelBelongsToCourseInstance({
-          labelId: label.id,
-          courseInstance: courseInstance2,
-        });
-        assert.fail('Expected error');
-      } catch (err) {
-        assert.instanceOf(err, HttpStatusError);
-        assert.equal(err.status, 403);
-      }
     });
   });
 });

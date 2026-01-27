@@ -224,11 +224,7 @@ router.post(
       case 'add_to_label': {
         const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
 
-        // Verify the label belongs to this course instance
-        const label = await selectStudentLabelById(student_label_id);
-        if (label.course_instance_id !== courseInstance.id) {
-          throw new HttpStatusError(403, 'Label does not belong to this course instance');
-        }
+        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
 
         await addEnrollmentToStudentLabel({
           enrollment,
@@ -240,11 +236,7 @@ router.post(
       case 'remove_from_label': {
         const { student_label_id } = z.object({ student_label_id: z.string() }).parse(req.body);
 
-        // Verify the label belongs to this course instance
-        const label = await selectStudentLabelById(student_label_id);
-        if (label.course_instance_id !== courseInstance.id) {
-          throw new HttpStatusError(403, 'Label does not belong to this course instance');
-        }
+        const label = await selectStudentLabelById({ id: student_label_id, courseInstance });
 
         await removeEnrollmentFromStudentLabel({
           enrollment,

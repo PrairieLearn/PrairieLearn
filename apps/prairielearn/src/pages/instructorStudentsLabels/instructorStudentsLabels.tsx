@@ -25,8 +25,8 @@ import {
   addEnrollmentsToStudentLabel,
   removeEnrollmentsFromStudentLabel,
   selectEnrollmentsInStudentLabel,
+  selectStudentLabelById,
   selectStudentLabelsInCourseInstance,
-  verifyLabelBelongsToCourseInstance,
 } from '../../models/student-label.js';
 import { ColorJsonSchema } from '../../schemas/infoCourse.js';
 import type { StudentLabelJson } from '../../schemas/infoCourseInstance.js';
@@ -251,7 +251,7 @@ router.post(
         })
         .parse(req.body);
 
-      await verifyLabelBelongsToCourseInstance({ labelId: label_id, courseInstance });
+      await selectStudentLabelById({ id: label_id, courseInstance });
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
@@ -346,7 +346,7 @@ router.post(
         })
         .parse(req.body);
 
-      await verifyLabelBelongsToCourseInstance({ labelId: label_id, courseInstance });
+      await selectStudentLabelById({ id: label_id, courseInstance });
 
       // Read current JSON
       const courseInstanceJson = await readCourseInstanceJson(courseInstancePath);
