@@ -3,8 +3,8 @@ import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
 import { type StaffTag, type StaffTopic } from '../lib/client/safe-db-types.js';
-import { ColorJsonSchema } from '../schemas/infoCourse.js';
 
+import { ColorPicker } from './ColorPicker.js';
 import { TagBadge } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
@@ -125,46 +125,14 @@ export function EditTagsTopicsModal<Entity extends StaffTopic | StaffTag>({
               <label className="form-label" htmlFor="color">
                 Color
               </label>
-              <div className="d-flex gap-2 align-items-center">
-                <select
-                  className={clsx('form-select', invalidColor && 'is-invalid')}
-                  id="color"
-                  value={entity.color}
-                  onChange={(e) =>
-                    setEntity({
-                      ...entity,
-                      color: e.currentTarget.value,
-                    })
-                  }
-                >
-                  {ColorJsonSchema.options.map((color) => (
-                    <option key={color} value={color}>
-                      {color}
-                    </option>
-                  ))}
-                </select>
-                <svg
-                  viewBox="0 0 32 32"
-                  // `form-control-color` provides the correct sizing. We override the
-                  // cursor and padding to make it appear just as a plain, non-interactive
-                  // color swatch.
-                  className="form-control-color p-0"
-                  style={{ cursor: 'default' }}
-                  aria-hidden="true"
-                >
-                  <rect
-                    width="32"
-                    height="32"
-                    style={{
-                      fill: `var(--color-${entity.color})`,
-                      rx: 'var(--bs-border-radius)',
-                      ry: 'var(--bs-border-radius)',
-                    }}
-                  />
-                </svg>
-              </div>
+              <ColorPicker
+                id="color"
+                value={entity.color}
+                invalid={invalidColor}
+                onChange={(color) => setEntity({ ...entity, color })}
+              />
               {invalidColor && (
-                <div className="invalid-feedback">
+                <div className="invalid-feedback d-block">
                   {state.type !== 'closed' && state.entityType === 'topic' ? 'Topic' : 'Tag'} color
                   is required
                 </div>

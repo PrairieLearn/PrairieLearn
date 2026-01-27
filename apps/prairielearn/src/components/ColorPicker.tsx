@@ -1,31 +1,45 @@
+import clsx from 'clsx';
+
 import { type ColorJson, ColorJsonSchema } from '../schemas/infoCourse.js';
 
 interface ColorPickerProps {
   value: string;
   onChange: (color: ColorJson) => void;
+  invalid?: boolean;
+  id?: string;
 }
 
-export function ColorPicker({ value, onChange }: ColorPickerProps) {
+export function ColorPicker({ value, onChange, invalid, id }: ColorPickerProps) {
   return (
-    <div className="d-flex flex-wrap gap-2" role="radiogroup" aria-label="Select color">
-      {ColorJsonSchema.options.map((color) => (
-        <button
-          key={color}
-          type="button"
-          role="radio"
-          className="btn btn-sm"
+    <div className="d-flex gap-2 align-items-center">
+      <select
+        className={clsx('form-select', invalid && 'is-invalid')}
+        id={id}
+        value={value}
+        onChange={(e) => onChange(e.currentTarget.value as ColorJson)}
+      >
+        {ColorJsonSchema.options.map((color) => (
+          <option key={color} value={color}>
+            {color}
+          </option>
+        ))}
+      </select>
+      <svg
+        viewBox="0 0 32 32"
+        className="form-control-color p-0"
+        style={{ cursor: 'default' }}
+        aria-hidden="true"
+      >
+        <rect
+          width="32"
+          height="32"
           style={{
-            width: '32px',
-            height: '32px',
-            backgroundColor: `var(--color-${color})`,
-            border: value === color ? '2px solid #0d6efd' : '1px solid #dee2e6',
+            fill: `var(--color-${value})`,
+            rx: 'var(--bs-border-radius)',
+            ry: 'var(--bs-border-radius)',
           }}
-          title={color}
-          aria-label={`Color: ${color}`}
-          aria-checked={value === color}
-          onClick={() => onChange(color)}
         />
-      ))}
+      </svg>
     </div>
   );
 }

@@ -239,8 +239,11 @@ export function LabelModifyModal({
             <label className="form-label" htmlFor="label-color">
               Color
             </label>
-            <ColorPicker value={selectedColor} onChange={(color) => setValue('color', color)} />
-            <input type="hidden" id="label-color" {...register('color')} />
+            <ColorPicker
+              id="label-color"
+              value={selectedColor}
+              onChange={(color) => setValue('color', color)}
+            />
           </div>
           <div className="mb-0">
             <label className="form-label" htmlFor="label-uids">
