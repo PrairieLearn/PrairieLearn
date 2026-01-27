@@ -130,7 +130,7 @@ const sideNavPagesTabs = {
       activePages: ['students'],
       activeSubPages: ['overview', 'student_labels', 'detail'],
       urlSuffix: '/instance_admin/students',
-      iconClasses: 'bi bi-people-fill',
+      iconClasses: 'fas fa-users-line',
       tabLabel: 'Students',
     },
     {

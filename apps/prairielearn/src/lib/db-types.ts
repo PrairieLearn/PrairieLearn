@@ -1364,7 +1364,7 @@ export const StripeCheckoutSessionSchema = z.object({
 export type StripeCheckoutSession = z.infer<typeof StripeCheckoutSessionSchema>;
 
 export const StudentLabelSchema = z.object({
-  color: z.string().nullable(),
+  color: z.string(),
   course_instance_id: IdSchema,
   deleted_at: DateFromISOString.nullable(),
   id: IdSchema,

@@ -1,13 +1,12 @@
 import z from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 import { TimezoneContext } from '../../components/FriendlyDate.js';
 import { setCookieClient } from '../../lib/client/cookie.js';
 import {
   type StaffAuditEvent,
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
+  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
@@ -26,19 +25,12 @@ export const UserDetailSchema = z.object({
 
 type UserDetail = z.infer<typeof UserDetailSchema>;
 
-export const StudentLabelInfoSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  color: z.string().nullable(),
-});
-export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
-
 interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
-  studentLabels: StudentLabelInfo[];
-  availableStudentLabels: StudentLabelInfo[];
+  studentLabels: StaffStudentLabel[];
+  availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;

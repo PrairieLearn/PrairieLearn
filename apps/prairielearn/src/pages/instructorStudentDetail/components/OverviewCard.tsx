@@ -1,13 +1,12 @@
 import { z } from 'zod';
 
-import { IdSchema } from '@prairielearn/zod';
-
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
 import {
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
+  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../../lib/client/safe-db-types.js';
 
@@ -20,13 +19,6 @@ export const UserDetailSchema = z.object({
 
 export type UserDetail = z.infer<typeof UserDetailSchema>;
 
-export const StudentLabelInfoSchema = z.object({
-  id: IdSchema,
-  name: z.string(),
-  color: z.string().nullable(),
-});
-export type StudentLabelInfo = z.infer<typeof StudentLabelInfoSchema>;
-
 export function OverviewCard({
   student,
   studentLabels,
@@ -37,8 +29,8 @@ export function OverviewCard({
   hasModernPublishing,
 }: {
   student: UserDetail;
-  studentLabels: StudentLabelInfo[];
-  availableStudentLabels: StudentLabelInfo[];
+  studentLabels: StaffStudentLabel[];
+  availableStudentLabels: StaffStudentLabel[];
   courseInstanceUrl: string;
   csrfToken: string;
   hasCourseInstancePermissionEdit: boolean;
@@ -183,21 +175,21 @@ export function OverviewCard({
               {studentLabels.map((label) => (
                 <span
                   key={label.id}
-                  className="badge d-inline-flex align-items-center"
-                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
+                  className={`badge color-${label.color} d-inline-flex align-items-center gap-1`}
                 >
                   {label.name}
                   {hasCourseInstancePermissionEdit && (
-                    <form method="POST" className="d-inline ms-1">
+                    <form method="POST" className="d-inline">
                       <input type="hidden" name="__csrf_token" value={csrfToken} />
                       <input type="hidden" name="__action" value="remove_from_label" />
                       <input type="hidden" name="student_label_id" value={label.id} />
                       <button
                         type="submit"
-                        className="btn-close btn-close-white"
-                        style={{ fontSize: '0.6rem' }}
-                        aria-label={`Remove from ${label.name}`}
-                      />
+                        className="btn p-0 lh-1"
+                        aria-label={`Remove label "${label.name}"`}
+                      >
+                        <i className="bi bi-x text-danger" aria-hidden="true" />
+                      </button>
                     </form>
                   )}
                 </span>
@@ -213,8 +205,8 @@ export function OverviewCard({
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                   >
-                    <i className="fas fa-plus me-1" />
-                    Add to label
+                    <i className="bi bi-plus me-1" aria-hidden="true" />
+                    Add label
                   </button>
                   <ul className="dropdown-menu">
                     {availableStudentLabels

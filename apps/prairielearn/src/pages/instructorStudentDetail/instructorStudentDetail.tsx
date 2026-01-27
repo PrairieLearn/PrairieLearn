@@ -9,7 +9,7 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffAuditEventSchema } from '../../lib/client/safe-db-types.js';
+import { StaffAuditEventSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getGradebookRows } from '../../lib/gradebook.js';
 import { getCourseInstanceUrl } from '../../lib/url.js';
 import { selectAuditEventsByEnrollmentId } from '../../models/audit-event.js';
@@ -65,7 +65,7 @@ router.get(
       throw new HttpStatusError(404, 'Student not found');
     }
 
-    const [gradebookRows, studentLabelsForEnrollment, allStudentLabels] = await Promise.all([
+    const [gradebookRows, studentLabels, availableStudentLabels] = await Promise.all([
       student.user?.id
         ? getGradebookRows({
             course_instance_id: courseInstance.id,
@@ -78,18 +78,6 @@ router.get(
       selectStudentLabelsForEnrollment(req.params.enrollment_id),
       selectStudentLabelsByCourseInstance(courseInstance.id),
     ]);
-
-    // Transform to simple format
-    const studentLabels = studentLabelsForEnrollment.map((l) => ({
-      id: l.id,
-      name: l.name,
-      color: l.color,
-    }));
-    const availableStudentLabels = allStudentLabels.map((l) => ({
-      id: l.id,
-      name: l.name,
-      color: l.color,
-    }));
 
     const pageTitle = run(() => {
       if (student.user) {
@@ -119,8 +107,10 @@ router.get(
               auditEvents={auditEvents}
               gradebookRows={gradebookRows}
               student={student}
-              studentLabels={studentLabels}
-              availableStudentLabels={availableStudentLabels}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
+              availableStudentLabels={z
+                .array(StaffStudentLabelSchema)
+                .parse(availableStudentLabels)}
               urlPrefix={urlPrefix}
               courseInstanceUrl={courseInstanceUrl}
               csrfToken={pageContext.__csrf_token}
