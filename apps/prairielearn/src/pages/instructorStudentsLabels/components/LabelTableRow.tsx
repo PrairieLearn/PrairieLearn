@@ -18,7 +18,7 @@ export function LabelTableRow({
   return (
     <tr>
       <td className="align-middle">
-<StudentLabelBadge label={label.student_label} />
+        <StudentLabelBadge label={label.student_label} />
       </td>
       <td className="align-middle">
         <ExpandableUserList
