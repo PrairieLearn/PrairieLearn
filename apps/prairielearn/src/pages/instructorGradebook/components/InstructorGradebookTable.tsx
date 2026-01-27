@@ -407,7 +407,7 @@ function GradebookTable({
                         assessmentInstanceId={assessmentData.assessment_instance_id}
                         courseInstanceId={courseInstanceId}
                         currentScore={score}
-                        otherUsers={assessmentData.uid_other_users_team}
+                        otherUsers={assessmentData.uid_other_users_group}
                         csrfToken={csrfToken}
                       />
                     </span>
