@@ -19,6 +19,7 @@ export const renameQuestion = privateProcedure
 
       // Question data.
       qid: z.string(),
+      title: z.string().optional(),
     }),
   )
   .output(
@@ -47,6 +48,7 @@ export const renameQuestion = privateProcedure
         question,
       },
       qid_new: opts.input.qid,
+      title_new: opts.input.title,
     });
 
     const serverJob = await editor.prepareServerJob();

@@ -1616,12 +1616,16 @@ export class QuestionDeleteEditor extends Editor {
 
 export class QuestionRenameEditor extends Editor {
   private qid_new: string;
+  private title_new: string | undefined;
   private question: Question;
 
-  constructor(params: BaseEditorOptions<{ question: Question }> & { qid_new: string }) {
+  constructor(
+    params: BaseEditorOptions<{ question: Question }> & { qid_new: string; title_new?: string },
+  ) {
     const {
       locals: { question },
       qid_new,
+      title_new,
     } = params;
 
     super({
@@ -1630,6 +1634,7 @@ export class QuestionRenameEditor extends Editor {
     });
 
     this.qid_new = qid_new;
+    this.title_new = title_new;
     this.question = question;
   }
 
@@ -1642,11 +1647,13 @@ export class QuestionRenameEditor extends Editor {
     const oldPath = path.join(questionsPath, this.question.qid);
     const newPath = path.join(questionsPath, this.qid_new);
 
-    // Skip editing if the paths are the same.
-    if (oldPath === newPath) return null;
+    const qidChanging = oldPath !== newPath;
+
+    // Skip editing if neither the QID nor the title is changing.
+    if (!qidChanging && !this.title_new) return null;
 
     // Ensure that the updated question folder path is fully contained in the questions directory
-    if (!contains(questionsPath, newPath)) {
+    if (qidChanging && !contains(questionsPath, newPath)) {
       throw new AugmentedError('Invalid folder path', {
         info: html`
           <p>The updated path of the question folder</p>
@@ -1661,72 +1668,107 @@ export class QuestionRenameEditor extends Editor {
       });
     }
 
-    debug(`Move files from ${oldPath} to ${newPath}`);
-    await fs.move(oldPath, newPath, { overwrite: false });
-    await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
+    const pathsToAdd: string[] = [];
 
-    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-    const assessments = await sqldb.queryRows(
-      sql.select_assessments_with_question,
-      { question_id: this.question.id },
-      z.object({
-        course_instance_directory: CourseInstanceSchema.shape.short_name,
-        assessment_directory: AssessmentSchema.shape.tid,
-      }),
-    );
+    if (qidChanging) {
+      debug(`Move files from ${oldPath} to ${newPath}`);
+      await fs.move(oldPath, newPath, { overwrite: false });
+      await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
 
-    const pathsToAdd = [oldPath, newPath];
+      pathsToAdd.push(oldPath, newPath);
 
-    debug(
-      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
-    );
-    for (const assessment of assessments) {
-      assert(
-        assessment.course_instance_directory !== null,
-        'course_instance_directory is required',
+      debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
+      const assessments = await sqldb.queryRows(
+        sql.select_assessments_with_question,
+        { question_id: this.question.id },
+        z.object({
+          course_instance_directory: CourseInstanceSchema.shape.short_name,
+          assessment_directory: AssessmentSchema.shape.tid,
+        }),
       );
-      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-      const infoPath = path.join(
-        this.course.path,
-        'courseInstances',
-        assessment.course_instance_directory,
-        'assessments',
-        assessment.assessment_directory,
-        'infoAssessment.json',
+
+      debug(
+        `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
       );
-      pathsToAdd.push(infoPath);
+      for (const assessment of assessments) {
+        assert(
+          assessment.course_instance_directory !== null,
+          'course_instance_directory is required',
+        );
+        assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+        const infoPath = path.join(
+          this.course.path,
+          'courseInstances',
+          assessment.course_instance_directory,
+          'assessments',
+          assessment.assessment_directory,
+          'infoAssessment.json',
+        );
+        pathsToAdd.push(infoPath);
 
-      debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+        debug(`Read ${infoPath}`);
+        const infoJson: any = await fs.readJson(infoPath);
 
-      debug(`Find/replace QID in ${infoPath}`);
-      let found = false as boolean;
-      infoJson.zones?.forEach((zone: any) => {
-        zone.questions?.forEach((question: any) => {
-          if (question.alternatives) {
-            question.alternatives?.forEach((alternative: any) => {
-              if (alternative.id === this.question.qid) {
-                alternative.id = this.qid_new;
-                found = true;
-              }
-            });
-          } else if (question.id === this.question.qid) {
-            question.id = this.qid_new;
-            found = true;
-          }
+        debug(`Find/replace QID in ${infoPath}`);
+        let found = false as boolean;
+        infoJson.zones?.forEach((zone: any) => {
+          zone.questions?.forEach((question: any) => {
+            if (question.alternatives) {
+              question.alternatives?.forEach((alternative: any) => {
+                if (alternative.id === this.question.qid) {
+                  alternative.id = this.qid_new;
+                  found = true;
+                }
+              });
+            } else if (question.id === this.question.qid) {
+              question.id = this.qid_new;
+              found = true;
+            }
+          });
         });
-      });
-      if (!found) {
-        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+        if (!found) {
+          logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+        }
+        debug(`Write ${infoPath}`);
+        const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+        await fs.writeFile(infoPath, formattedJson);
       }
-      debug(`Write ${infoPath}`);
-      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-      await fs.writeFile(infoPath, formattedJson);
     }
+
+    // Update the question title in info.json if a new title was provided.
+    if (this.title_new) {
+      // Use the new path if QID changed, otherwise use the old path.
+      const questionPath = qidChanging ? newPath : oldPath;
+      const questionInfoPath = path.join(questionPath, 'info.json');
+
+      debug(`Read ${questionInfoPath}`);
+      const questionInfoJson: any = await fs.readJson(questionInfoPath);
+
+      debug(`Update title in ${questionInfoPath}`);
+      questionInfoJson.title = this.title_new;
+
+      const formattedQuestionInfoJson = await formatJsonWithPrettier(
+        JSON.stringify(questionInfoJson),
+      );
+      await fs.writeFile(questionInfoPath, formattedQuestionInfoJson);
+
+      // Only add to pathsToAdd if we haven't already added the question path.
+      if (!qidChanging) {
+        pathsToAdd.push(questionPath);
+      }
+    }
+
+    const commitMessage = run(() => {
+      if (qidChanging) {
+        return `rename question ${this.question.qid} to ${this.qid_new}`;
+      }
+
+      return `update title of question ${this.question.qid}`;
+    });
 
     return {
       pathsToAdd,
-      commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+      commitMessage,
     };
   }
 }

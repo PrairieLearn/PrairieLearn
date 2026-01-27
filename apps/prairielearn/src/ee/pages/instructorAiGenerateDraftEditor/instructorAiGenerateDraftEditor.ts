@@ -313,7 +313,6 @@ router.post(
     if (req.body.__action === 'save_question') {
       const client = getCourseFilesClient();
 
-      // TODO: this needs to handle updating the question title as well.
       const result = await client.renameQuestion.mutate({
         course_id: res.locals.course.id,
         user_id: res.locals.user.id,
@@ -321,6 +320,7 @@ router.post(
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_id: res.locals.question.id,
         qid: req.body.qid,
+        title: req.body.title,
       });
 
       if (result.status === 'error') {
