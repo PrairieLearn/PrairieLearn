@@ -1,14 +1,13 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'path';
 
-import _ from 'lodash';
-
 import { logger } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 
 import { NewsItemJsonSchema, type NewsItemJson } from '../schemas/index.js';
+import { groupBy, sortBy } from 'es-toolkit';
 
 const DIRECTORY_REGEX = /^([0-9]+)_.+$/;
 
@@ -33,7 +32,7 @@ async function loadNewsItems() {
   }
 
   // Check for duplicate UUIDs
-  Object.entries(_.groupBy(news_items, 'uuid')).forEach(([uuid, items]) => {
+  Object.entries(groupBy(news_items, (item) => item.uuid)).forEach(([uuid, items]) => {
     if (items.length > 1) {
       const directories = items.map((a) => a.directory).join(', ');
       throw new Error(`UUID ${uuid} is used in multiple news items: ${directories}`);
@@ -41,14 +40,14 @@ async function loadNewsItems() {
   });
 
   // Check for duplicate indexes
-  Object.entries(_.groupBy(news_items, 'index')).forEach(([index, items]) => {
+  Object.entries(groupBy(news_items, (item) => item.index)).forEach(([index, items]) => {
     if (items.length > 1) {
       const directories = items.map((a) => a.directory).join(', ');
       throw new Error(`News item index ${index} is used in multiple news items: ${directories}`);
     }
   });
 
-  return _.sortBy(news_items, 'directory');
+  return sortBy(news_items, ['directory']);
 }
 
 interface InitOptions {

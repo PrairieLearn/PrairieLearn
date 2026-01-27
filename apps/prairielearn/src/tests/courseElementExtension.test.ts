@@ -1,8 +1,8 @@
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { isEqual } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { config } from '../lib/config.js';
@@ -28,7 +28,7 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
     const check_ext = (loaded: ElementExtensionNameDirMap) => {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
-        _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
+        isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
         'could not load all extensions',
       );
     };
