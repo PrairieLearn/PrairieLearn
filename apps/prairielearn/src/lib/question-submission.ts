@@ -1,5 +1,5 @@
+import { omit } from 'es-toolkit';
 import { type Request, type Response } from 'express';
-import _ from 'lodash';
 
 import { HttpStatusError } from '@prairielearn/error';
 
@@ -20,7 +20,7 @@ export async function processSubmission(
   let variant_id: string, submitted_answer: Record<string, any>;
   if (res.locals.question.type === 'Freeform') {
     variant_id = req.body.__variant_id;
-    submitted_answer = _.omit(req.body, ['__action', '__csrf_token', '__variant_id']);
+    submitted_answer = omit(req.body, ['__action', '__csrf_token', '__variant_id']);
   } else {
     if (!req.body.postData) {
       throw new HttpStatusError(400, 'No postData');
