@@ -14,7 +14,7 @@ VALUES
   (
     $assessment_id,
     $user_id,
-    $team_id,
+    $group_id,
     $instance_number,
     FALSE -- Assume closed by default when recreating
   )
@@ -63,7 +63,7 @@ VALUES
     $question_id,
     $authn_user_id,
     $user_id,
-    $team_id,
+    $group_id,
     $seed,
     $params,
     $true_answer,

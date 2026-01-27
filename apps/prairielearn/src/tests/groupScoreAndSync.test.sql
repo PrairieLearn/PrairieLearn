@@ -1,4 +1,4 @@
--- BLOCK select_team_work_assessment
+-- BLOCK select_group_work_assessment
 SELECT
   a.id
 FROM
@@ -9,18 +9,18 @@ WHERE
   AND aset.abbreviation = 'HW'
   AND a.team_work IS TRUE;
 
--- BLOCK select_team_users
+-- BLOCK select_group_users
 SELECT
   *
 FROM
-  team_configs AS tc
-  LEFT JOIN teams AS t ON (t.team_config_id = tc.id)
-  LEFT JOIN team_users AS tu ON (tu.team_id = t.id)
+  team_configs AS gc
+  LEFT JOIN teams AS g ON (g.team_config_id = gc.id)
+  LEFT JOIN team_users AS gu ON (gu.team_id = g.id)
 WHERE
-  tc.assessment_id = $assessment_id
-  AND tc.deleted_at IS NULL
-  AND t.deleted_at IS NULL
-  AND t.name = $team_name;
+  gc.assessment_id = $assessment_id
+  AND gc.deleted_at IS NULL
+  AND g.deleted_at IS NULL
+  AND g.name = $group_name;
 
 -- BLOCK select_all_assessment_instance
 SELECT
