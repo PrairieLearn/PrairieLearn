@@ -1,15 +1,13 @@
-import { QueryClient, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import { parseAsString, useQueryState } from 'nuqs';
 import { useMemo, useState } from 'react';
-import { Alert, Button, Modal } from 'react-bootstrap';
 import { z } from 'zod';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
-import { JobSequenceError } from '../../lib/client/errors.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
-import { getCourseInstanceJobSequenceUrl } from '../../lib/client/url.js';
 
+import { LabelDeleteModal, type LabelDeleteModalData } from './components/LabelDeleteModal.js';
 import { LabelModifyModal, type LabelModifyModalData } from './components/LabelModifyModal.js';
 import { LabelTableRow } from './components/LabelTableRow.js';
 import {
@@ -27,12 +25,6 @@ interface StudentLabelsPageProps {
   origHash: string | null;
 }
 
-interface DeleteModalData {
-  labelId: string;
-  labelName: string;
-  userData: StudentLabelWithUserData['user_data'];
-}
-
 function StudentLabelsCard({
   csrfToken,
   courseInstanceId,
@@ -43,7 +35,7 @@ function StudentLabelsCard({
   const queryClient = useQueryClient();
   const [labelParam, setLabelParam] = useQueryState('label', parseAsString.withDefault(''));
   const [showAddModal, setShowAddModal] = useState(false);
-  const [deleteModalDataState, setDeleteModalDataState] = useState<DeleteModalData | null>(null);
+  const [deleteModalData, setDeleteModalData] = useState<LabelDeleteModalData | null>(null);
   const [deleteModalShow, setDeleteModalShow] = useState(false);
 
   const { data: labels } = useQuery<StudentLabelWithUserData[]>({
@@ -87,43 +79,22 @@ function StudentLabelsCard({
 
   const modifyModalShow = modifyModalData !== null;
 
-  const deleteMutation = useMutation({
-    mutationFn: async ({ labelId, labelName }: { labelId: string; labelName: string }) => {
-      const body = new URLSearchParams({
-        __action: 'delete_label',
-        __csrf_token: csrfToken,
-        label_id: labelId,
-        label_name: labelName,
-        orig_hash: origHash ?? '',
-      });
-      const res = await fetch(window.location.href.split('?')[0], {
-        method: 'POST',
-        body,
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) {
-        const json = await res.json();
-        throw new JobSequenceError(json.error ?? 'Failed to delete label', json.jobSequenceId);
-      }
-      return res.json();
-    },
-    onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
-      setDeleteModalShow(false);
-    },
-  });
-
   const handleEdit = (label: StudentLabelWithUserData) => {
     void setLabelParam(label.student_label.name);
   };
 
   const handleDelete = (label: StudentLabelWithUserData) => {
-    setDeleteModalDataState({
+    setDeleteModalData({
       labelId: label.student_label.id,
       labelName: label.student_label.name,
       userData: label.user_data,
     });
     setDeleteModalShow(true);
+  };
+
+  const handleDeleteSuccess = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['student-labels'] });
+    setDeleteModalShow(false);
   };
 
   const handleModalHide = () => {
@@ -197,83 +168,16 @@ function StudentLabelsCard({
         onSuccess={handleSuccess}
       />
 
-      <Modal
+      <LabelDeleteModal
+        data={deleteModalData}
+        csrfToken={csrfToken}
+        courseInstanceId={courseInstanceId}
+        origHash={origHash}
         show={deleteModalShow}
         onHide={() => setDeleteModalShow(false)}
-        onExited={() => {
-          setDeleteModalDataState(null);
-          deleteMutation.reset();
-        }}
-      >
-        <Modal.Header closeButton>
-          <Modal.Title>Delete student label</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {deleteMutation.isError && (
-            <Alert variant="danger" dismissible onClose={() => deleteMutation.reset()}>
-              {deleteMutation.error.message}
-              {deleteMutation.error instanceof JobSequenceError &&
-                deleteMutation.error.jobSequenceId && (
-                  <>
-                    {' '}
-                    <a
-                      href={getCourseInstanceJobSequenceUrl(
-                        courseInstanceId,
-                        deleteMutation.error.jobSequenceId,
-                      )}
-                    >
-                      View job logs
-                    </a>
-                  </>
-                )}
-            </Alert>
-          )}
-          <p>
-            Are you sure you want to delete the label{' '}
-            <strong>{deleteModalDataState?.labelName}</strong>?
-          </p>
-          {(deleteModalDataState?.userData.length ?? 0) > 0 && (
-            <Alert variant="warning">
-              This label has {deleteModalDataState?.userData.length} student
-              {deleteModalDataState?.userData.length !== 1 ? 's' : ''}. They will be removed from
-              this label.
-              <details className="mt-2">
-                <summary className="cursor-pointer">Show affected students</summary>
-                <div className="mt-2 p-2 bg-light border rounded">
-                  {deleteModalDataState?.userData.map((user) => (
-                    <div key={user.uid}>{user.name || user.uid}</div>
-                  ))}
-                </div>
-              </details>
-            </Alert>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
-          <Button variant="secondary" onClick={() => setDeleteModalShow(false)}>
-            Cancel
-          </Button>
-          <Button
-            variant="danger"
-            disabled={deleteMutation.isPending}
-            onClick={() =>
-              deleteModalDataState &&
-              deleteMutation.mutate({
-                labelId: deleteModalDataState.labelId,
-                labelName: deleteModalDataState.labelName,
-              })
-            }
-          >
-            {deleteMutation.isPending ? (
-              <>
-                <i className="fas fa-spinner fa-spin me-1" />
-                Deleting...
-              </>
-            ) : (
-              'Delete'
-            )}
-          </Button>
-        </Modal.Footer>
-      </Modal>
+        onExited={() => setDeleteModalData(null)}
+        onSuccess={handleDeleteSuccess}
+      />
     </>
   );
 }
