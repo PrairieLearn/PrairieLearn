@@ -13,13 +13,13 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { AssessmentModuleSchema, AssessmentSetSchema } from '../../lib/db-types.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';

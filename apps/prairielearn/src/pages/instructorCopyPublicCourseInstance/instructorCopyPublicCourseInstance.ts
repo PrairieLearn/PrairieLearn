@@ -7,7 +7,7 @@ import { BooleanFromCheckboxSchema, DatetimeLocalStringSchema } from '@prairiele
 
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { copyCourseInstanceBetweenCourses } from '../../lib/copy-content.js';
-import { propertyValueWithDefault } from '../../lib/editors.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import { selectOptionalCourseInstanceById } from '../../models/course-instances.js';
 import { selectCourseById } from '../../models/course.js';
 

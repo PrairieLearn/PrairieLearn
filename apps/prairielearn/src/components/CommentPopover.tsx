@@ -24,7 +24,7 @@ export function CommentPopover({
       data-bs-html="true"
       data-bs-content={escapeHtml(html`${content}`).toString()}
     >
-      <i className="fa fa-comment" />
+      <i className="bi bi-sticky" />
     </button>
   );
 }
