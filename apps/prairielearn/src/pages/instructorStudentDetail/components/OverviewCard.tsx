@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../../components/FriendlyDate.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { setCookieClient } from '../../../lib/client/cookie.js';
 import {
   StaffCourseInstanceSchema,
@@ -173,11 +174,7 @@ export function OverviewCard({
             <div className="fw-bold mb-2">Student labels:</div>
             <div className="d-flex flex-wrap align-items-center gap-2">
               {studentLabels.map((label) => (
-                <span
-                  key={label.id}
-                  className={`badge color-${label.color} d-inline-flex align-items-center gap-1`}
-                >
-                  {label.name}
+                <StudentLabelBadge key={label.id} label={label}>
                   {hasCourseInstancePermissionEdit && (
                     <form method="POST" className="d-inline">
                       <input type="hidden" name="__csrf_token" value={csrfToken} />
@@ -192,7 +189,7 @@ export function OverviewCard({
                       </button>
                     </form>
                   )}
-                </span>
+                </StudentLabelBadge>
               ))}
               {studentLabels.length === 0 && (
                 <span className="text-muted fst-italic">No labels</span>

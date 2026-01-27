@@ -37,6 +37,7 @@ import {
 
 import { EnrollmentStatusIcon } from '../../components/EnrollmentStatusIcon.js';
 import { FriendlyDate } from '../../components/FriendlyDate.js';
+import { StudentLabelBadge } from '../../components/StudentLabelBadge.js';
 import type { PageContext, PageContextWithAuthzData } from '../../lib/client/page-context.js';
 import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import {
@@ -577,14 +578,11 @@ function StudentsCard({
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
-                <a
+<StudentLabelBadge
                   key={label.id}
+                  label={label}
                   href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}
-                  className="badge text-decoration-none"
-                  style={{ backgroundColor: `var(--color-${label.color})` }}
-                >
-                  {label.name}
-                </a>
+                />
               ))}
             </div>
           );

@@ -41,6 +41,7 @@ import {
 } from '@prairielearn/ui';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -342,13 +343,7 @@ function GradebookTable({
           return (
             <div className="d-flex flex-wrap gap-1">
               {labels.map((label) => (
-                <span
-                  key={label.id}
-                  className="badge"
-                  style={{ backgroundColor: `var(--color-${label.color})` }}
-                >
-                  {label.name}
-                </span>
+<StudentLabelBadge key={label.id} label={label} />
               ))}
             </div>
           );

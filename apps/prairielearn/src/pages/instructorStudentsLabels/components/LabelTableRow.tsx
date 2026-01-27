@@ -1,4 +1,5 @@
 import { ExpandableUserList } from '../../../components/ExpandableUserList.js';
+import { StudentLabelBadge } from '../../../components/StudentLabelBadge.js';
 import type { StudentLabelWithUserData } from '../instructorStudentsLabels.types.js';
 
 export function LabelTableRow({
@@ -17,9 +18,7 @@ export function LabelTableRow({
   return (
     <tr>
       <td className="align-middle">
-        <span className={`badge color-${label.student_label.color}`}>
-          {label.student_label.name}
-        </span>
+<StudentLabelBadge label={label.student_label} />
       </td>
       <td className="align-middle">
         <ExpandableUserList
