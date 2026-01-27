@@ -290,7 +290,7 @@ def test_answer_validation(options: dict, answer_options_list: list[dict]) -> No
                 {"tag": "2", "depends": r"1"},
                 {"tag": "3", "depends": r"1|2", "final": True},
             ],
-            "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question.",
+            "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering.",
         ),
     ],
 )

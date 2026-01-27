@@ -371,7 +371,7 @@ class OrderBlocksOptions:
 
             if not has_final:
                 raise ValueError(
-                    "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
+                    "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering."
                 )
 
     def _validate_order_blocks_options(self) -> None:
