@@ -10,7 +10,6 @@ import type { CourseQuestionForPicker } from '../types.js';
 export interface QuestionPickerModalProps {
   show: boolean;
   onHide: () => void;
-  onExited: () => void;
   onQuestionSelected: (qid: string) => void;
   courseQuestions: CourseQuestionForPicker[];
   questionsInAssessment: Set<string>;
@@ -25,7 +24,6 @@ export interface QuestionPickerModalProps {
 export function QuestionPickerModal({
   show,
   onHide,
-  onExited,
   onQuestionSelected,
   courseQuestions,
   questionsInAssessment,
@@ -111,15 +109,10 @@ export function QuestionPickerModal({
     setExpandedTagsQids(new Set());
   };
 
-  const handleExited = () => {
-    resetFilters();
-    onExited();
-  };
-
   const virtualRows = rowVirtualizer.getVirtualItems();
 
   return (
-    <Modal show={show} size="lg" onHide={onHide} onExited={handleExited}>
+    <Modal show={show} size="lg" onHide={onHide} onExited={resetFilters}>
       <Modal.Header closeButton>
         <Modal.Title>Select question</Modal.Title>
       </Modal.Header>
