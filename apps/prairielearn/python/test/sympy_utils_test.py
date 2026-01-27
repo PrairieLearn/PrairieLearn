@@ -493,3 +493,55 @@ def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
 )
 def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
     assert psu.get_items_list(items_string) == expected_output
+
+
+class TestValidateNamesForConflicts:
+    """Tests for validate_names_for_conflicts()."""
+
+    def test_no_conflicts(self) -> None:
+        # Should not raise when there are no conflicts
+        psu.validate_names_for_conflicts("test", ["x", "y"], ["f", "g"])
+
+    def test_variable_conflicts_with_constant(self) -> None:
+        with pytest.raises(ValueError, match="pi"):
+            psu.validate_names_for_conflicts("test", ["pi", "x"], [])
+
+    def test_variable_conflicts_with_function(self) -> None:
+        with pytest.raises(ValueError, match="sin"):
+            psu.validate_names_for_conflicts("test", ["sin"], [])
+
+    def test_custom_function_conflicts_with_builtin(self) -> None:
+        with pytest.raises(ValueError, match="cos"):
+            psu.validate_names_for_conflicts("test", [], ["cos"])
+
+    def test_complex_constants_only_conflict_when_enabled(self) -> None:
+        # 'i' should not conflict when allow_complex=False
+        psu.validate_names_for_conflicts("test", ["i"], [], allow_complex=False)
+        # 'i' should conflict when allow_complex=True
+        with pytest.raises(ValueError, match="i"):
+            psu.validate_names_for_conflicts("test", ["i"], [], allow_complex=True)
+
+    def test_trig_functions_only_conflict_when_enabled(self) -> None:
+        # 'sin' should not conflict when allow_trig_functions=False
+        psu.validate_names_for_conflicts(
+            "test", ["sin"], [], allow_trig_functions=False
+        )
+        # 'sin' should conflict when allow_trig_functions=True (default)
+        with pytest.raises(ValueError, match="sin"):
+            psu.validate_names_for_conflicts("test", ["sin"], [])
+
+
+class TestValidateStringConfigurationErrors:
+    """Tests for configuration error messages in validate_string_as_sympy()."""
+
+    def test_conflicting_variable_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy("x + 1", ["pi", "x"])
+        assert error_msg is not None
+        assert "conflicts with a built-in constant" in error_msg
+
+    def test_conflicting_function_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "x + 1", ["x"], custom_functions=["sin"]
+        )
+        assert error_msg is not None
+        assert "conflicts with a built-in function" in error_msg

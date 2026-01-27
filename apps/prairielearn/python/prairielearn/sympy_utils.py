@@ -892,7 +892,7 @@ def validate_string_as_sympy(
     except HasInvalidAssumptionError as exc:
         return f"Question configuration error: {exc}. Please contact the course staff."
     except Exception as exc:
-        return f"Invalid format. {exc}"
+        return f"Unexpected error: {exc}. Please contact the course staff."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
