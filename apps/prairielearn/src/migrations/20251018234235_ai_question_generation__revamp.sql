@@ -1,12 +1,3 @@
--- TODO: remove before merging.
-DROP TABLE IF EXISTS ai_question_generation_parts;
-
-DROP TABLE IF EXISTS ai_question_generation_messages;
-
-DROP TYPE IF EXISTS enum_ai_question_generation_message_role;
-
-DROP TYPE IF EXISTS enum_ai_question_generation_message_status;
-
 CREATE TYPE enum_ai_question_generation_message_role AS ENUM('system', 'user', 'assistant');
 
 CREATE TYPE enum_ai_question_generation_message_status AS ENUM(
@@ -31,3 +22,5 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
   usage_output_tokens INT NOT NULL DEFAULT 0,
   usage_total_tokens INT NOT NULL DEFAULT 0
 );
+
+CREATE INDEX IF NOT EXISTS ai_question_generation_messages_question_id_idx ON ai_question_generation_messages (question_id);

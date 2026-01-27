@@ -13,11 +13,13 @@ import { privateProcedure } from '../../trpc.js';
 
 /**
  * Returns base64-encoded `question.html` and `server.py` files for a question.
+ *
+ * This function does not perform any authorization checks. It's up to the caller
+ * to ensure that it's safe to call this function for a given course and question.
  */
 export const getQuestionFiles = privateProcedure
   .input(
     z.object({
-      // TODO: is there any security to think through here?
       course_id: IdSchema,
       question_id: IdSchema,
     }),
@@ -31,12 +33,15 @@ export const getQuestionFiles = privateProcedure
     const course = await selectCourseById(opts.input.course_id);
     const question = await selectQuestionById(opts.input.question_id);
 
+    assert(question.course_id === course.id);
     assert(question.qid);
+
     const questionPath = path.join(course.path, 'questions', question.qid);
 
     const files: Record<string, string> = {};
 
-    // TODO: support more than just these two files.
+    // In the future, we should support more than just these two files. For now,
+    // this is sufficient.
     if (await pathExists(path.join(questionPath, 'question.html'))) {
       files['question.html'] = (
         await fs.readFile(path.join(questionPath, 'question.html'))

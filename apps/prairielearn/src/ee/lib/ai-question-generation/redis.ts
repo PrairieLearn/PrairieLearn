@@ -1,4 +1,5 @@
 import { Redis } from 'ioredis';
+import memoize from 'p-memoize';
 import {
   type ResumableStreamContext,
   createResumableStreamContext,
@@ -6,25 +7,17 @@ import {
 
 import { config } from '../../../lib/config.js';
 
-interface AiQuestionGenerationClients {
-  redis: Redis;
-  pub: Redis;
-  sub: Redis;
-}
-
-const clients: AiQuestionGenerationClients | null = null;
-
-export async function getAiQuestionGenerationRedisClient() {
-  if (clients) return clients;
-
+const getAiQuestionGenerationRedisClient = memoize(async () => {
   if (!config.redisUrl) throw new Error('Redis URL is not configured');
 
-  const redis = new Redis(config.redisUrl);
-  const pub = new Redis(config.redisUrl);
-  const sub = new Redis(config.redisUrl);
+  // See note in `socket-server.ts` about the configuration here.
+  const pub = new Redis(config.redisUrl, { lazyConnect: true });
+  const sub = new Redis(config.redisUrl, { lazyConnect: true });
 
-  return { redis, pub, sub };
-}
+  await Promise.all([pub.connect(), sub.connect()]);
+
+  return { pub, sub };
+});
 
 export async function getAiQuestionGenerationStreamContext(): Promise<ResumableStreamContext> {
   const clients = await getAiQuestionGenerationRedisClient();
