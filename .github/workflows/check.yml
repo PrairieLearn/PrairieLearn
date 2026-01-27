@@ -67,12 +67,7 @@ jobs:
       - name: Check that JSON schema is up-to-date
         run: make check-jsonschema
       - name: Check that all packages exist on npm
-        # We add an auth token to the .npmrc file to help with rate limiting.
-        run: |
-          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" >> .npmrc
-          make check-npm-packages
-        env:
-          NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+        run: make check-npm-packages
       # The rest of our code is typechecked in the `build` Makefile target, which
       # is run above.
       - name: Run the TypeScript typechecker for contrib
