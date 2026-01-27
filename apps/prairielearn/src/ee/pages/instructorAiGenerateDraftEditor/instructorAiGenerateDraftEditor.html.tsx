@@ -9,7 +9,7 @@ import {
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
 import { type Question } from '../../../lib/db-types.js';
-import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
 import type { QuestionGenerationUIMessage } from '../../lib/ai-question-generation/agent.js';
 
@@ -23,7 +23,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   questionContainerHtml,
 }: {
-  resLocals: UntypedResLocals;
+  resLocals: ResLocalsForPage<'instructor-question'>;
   question: Question;
   messages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -32,18 +32,18 @@ export function InstructorAiGenerateDraftEditor({
 }) {
   const chatCsrfToken = generateCsrfToken({
     url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
-    authnUserId: resLocals.authn_user?.user_id ?? '',
+    authnUserId: resLocals.authn_user.id,
   });
 
   const cancelCsrfToken = generateCsrfToken({
     url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat/cancel`,
-    authnUserId: resLocals.authn_user?.user_id ?? '',
+    authnUserId: resLocals.authn_user.id,
   });
 
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
   const variantCsrfToken = generateCsrfToken({
     url: variantUrl,
-    authnUserId: resLocals.authn_user?.user_id ?? '',
+    authnUserId: resLocals.authn_user.id,
   });
 
   return PageLayout({
@@ -68,8 +68,8 @@ export function InstructorAiGenerateDraftEditor({
       />`,
       compiledScriptTag('question.ts'),
       compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
-      html`<script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>`,
-      unsafeHtml(resLocals.extraHeadContentHtml),
+      html`<script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>`,
+      unsafeHtml(resLocals.extraHeadersHtml),
       html`
         <meta
           name="ace-base-path"

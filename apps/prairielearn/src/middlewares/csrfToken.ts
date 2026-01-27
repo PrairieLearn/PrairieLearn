@@ -20,6 +20,7 @@ export default asyncHandler(async (req, res, next) => {
     // Search for "upload.single('file')" in server.js, for example.
 
     const __csrf_token = req.headers['x-csrf-token'] ?? req.body.__csrf_token;
+
     if (!checkSignedToken(__csrf_token, tokenData, config.secretKey)) {
       throw new HttpStatusError(403, 'CSRF fail');
     }

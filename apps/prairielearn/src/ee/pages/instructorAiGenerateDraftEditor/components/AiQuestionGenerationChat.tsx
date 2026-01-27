@@ -8,7 +8,6 @@ import {
 } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
-import Markdown from 'react-markdown';
 import { useStickToBottom } from 'use-stick-to-bottom';
 
 import { run } from '@prairielearn/run';
@@ -19,6 +18,7 @@ import type {
   QuestionGenerationUIMessage,
 } from '../../../lib/ai-question-generation/agent.js';
 
+import { MemoizedMarkdown } from './MemoizedMarkdown.js';
 import { PromptInput } from './PromptInput.js';
 
 function isToolPart(part: UIMessage['parts'][0]): part is ToolUIPart {
@@ -297,7 +297,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
 
       {isExpanded && (
         <div className="markdown-body reasoning-body p-1 pt-0">
-          <Markdown>{part.text}</Markdown>
+          <MemoizedMarkdown content={part.text} />
         </div>
       )}
     </div>
@@ -307,7 +307,7 @@ function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
 function TextPart({ part }: { part: TextUIPart }) {
   return (
     <div className="markdown-body">
-      <Markdown>{part.text}</Markdown>
+      <MemoizedMarkdown content={part.text} />
     </div>
   );
 }
@@ -520,6 +520,9 @@ export function AiQuestionGenerationChat({
         return res;
       },
     }),
+    // Limit the frequency of updates to avoid overwhelming React. This approach
+    // was recommended on https://github.com/vercel/ai/issues/6166.
+    experimental_throttle: 100,
     onFinish({ messages, message }) {
       // We receive this event on page load, even when there's no active streaming in progress.
       // In that case, we want to avoid immediately loading a new variant.

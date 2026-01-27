@@ -160,6 +160,19 @@ function useQuestionHtml({
   return { wrapperRef, newVariant };
 }
 
+function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: string }) {
+  const ref = useRef<HTMLDivElement>(null);
+
+  // We use this approach instead of `dangerouslySetInnerHTML` to avoid a hydration error
+  // if a question uses scripts that change its own HTML after loading.
+  useEffect(() => {
+    if (!ref.current) return;
+    ref.current.innerHTML = questionContainerHtml;
+  }, [questionContainerHtml]);
+
+  return <div ref={ref} suppressHydrationWarning />;
+}
+
 export function QuestionAndFilePreview({
   questionFiles,
   richTextEditorEnabled,
@@ -192,12 +205,9 @@ export function QuestionAndFilePreview({
         className="tab-pane active"
         style={{ height: '100%' }}
       >
-        <div
-          ref={wrapperRef}
-          className="question-wrapper mx-auto p-3"
-          // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
-          dangerouslySetInnerHTML={{ __html: questionContainerHtml }}
-        />
+        <div ref={wrapperRef} className="question-wrapper mx-auto p-3">
+          <QuestionPreview questionContainerHtml={questionContainerHtml} />
+        </div>
       </div>
       <div role="tabpanel" id="question-code" className="tab-pane" style={{ height: '100%' }}>
         <QuestionCodeEditors
