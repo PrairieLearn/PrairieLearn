@@ -457,55 +457,67 @@ export const AssessmentJsonSchema = z
     groupWork: z
       .boolean()
       .describe(
-        'Whether the assessment will support group work. DEPRECATED -- prefer using groups instead.',
+        'Whether the assessment will support group work. DEPRECATED -- prefer using the "groups" property instead.',
       )
       .optional()
       .default(false),
     groupMaxSize: z
       .number()
-      .describe('Maximum number of students in a group. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Maximum number of students in a group. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional(),
     groupMinSize: z
       .number()
-      .describe('Minimum number of students in a group. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Minimum number of students in a group. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional(),
     groupRoles: z
       .array(LegacyGroupRoleJsonSchema)
-      .describe('Array of custom user roles in a group. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Array of custom user roles in a group. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional()
       .default([]),
     canSubmit: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using groups instead.',
+        'A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.',
       )
       .optional()
       .default([]),
     canView: uniqueArray(z.string())
       .describe(
-        'A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using groups instead.',
+        'A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.',
       )
       .optional()
       .default([]),
     studentGroupCreate: z
       .boolean()
-      .describe('Whether students can create groups. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Whether students can create groups. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional()
       .default(false),
     studentGroupChooseName: z
       .boolean()
       .describe(
-        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using groups instead.',
+        'Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the "groups" property instead.',
       )
       .optional()
       .default(true),
     studentGroupJoin: z
       .boolean()
-      .describe('Whether students can join groups. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Whether students can join groups. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional()
       .default(false),
     studentGroupLeave: z
       .boolean()
-      .describe('Whether students can leave groups. DEPRECATED -- prefer using groups instead.')
+      .describe(
+        'Whether students can leave groups. DEPRECATED -- prefer using the "groups" property instead.',
+      )
       .optional()
       .default(false),
     groups: GroupsJsonSchema.optional(),
