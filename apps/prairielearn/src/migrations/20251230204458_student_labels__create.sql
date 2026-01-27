@@ -3,6 +3,7 @@ CREATE TABLE student_labels (
   -- This also creates an index to lookup student_labels for a course instance.
   course_instance_id BIGINT NOT NULL REFERENCES course_instances (id) ON UPDATE CASCADE ON DELETE CASCADE,
   name TEXT NOT NULL,
+  color text NOT NULL DEFAULT 'gray1',
   deleted_at TIMESTAMP WITH TIME ZONE
 );
 
