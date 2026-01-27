@@ -77,7 +77,6 @@ function SelectAllCheckbox({ table }: { table: Table<StudentRow> }) {
       ref={checkboxRef}
       type="checkbox"
       checked={table.getIsAllRowsSelected()}
-      autoComplete="off"
       aria-label="Select all students"
       onChange={table.getToggleAllRowsSelectedHandler()}
     />
