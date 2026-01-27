@@ -2,7 +2,6 @@ import { observe } from 'selector-observer';
 import { type Socket, io } from 'socket.io-client';
 
 import { decodeData, onDocumentReady, parseHTMLElement } from '@prairielearn/browser-utils';
-import { run } from '@prairielearn/run';
 
 import { mathjaxTypeset } from '../../src/lib/client/mathjax.js';
 import type {
@@ -31,13 +30,10 @@ onDocumentReady(() => {
       initializeReadmeExpansion(container);
       setupDisableOnSubmit(container);
 
-      const externalGrading = run(() => {
-        if (container.dataset.gradingMethod === 'External') {
-          return initializeExternalGrading({ container });
-        }
-      });
-
-      return { remove: () => externalGrading?.close() };
+      if (container.dataset.gradingMethod === 'External') {
+        const externalGrading = initializeExternalGrading({ container });
+        return { remove: () => externalGrading?.close() };
+      }
     },
   });
 
@@ -124,73 +120,6 @@ onDocumentReady(() => {
   });
 });
 
-function updateStatus(
-  container: HTMLElement,
-  submission: Omit<StatusMessageSubmission, 'grading_job_id'>,
-): void {
-  const display = container.querySelector('#grading-status-' + submission.id);
-  if (!display) return;
-  let label;
-  const spinner = '<i class="fa fa-sync fa-spin"></i>';
-  switch (submission.grading_job_status) {
-    case 'requested':
-      label = 'Grading requested ' + spinner;
-      break;
-    case 'queued':
-      label = 'Queued for grading ' + spinner;
-      break;
-    case 'grading':
-      label = 'Grading in progress ' + spinner;
-      break;
-    case 'graded':
-      label = 'Graded!';
-      break;
-    default:
-      label = 'UNKNOWN STATUS';
-      break;
-  }
-  display.innerHTML = label;
-}
-
-function handleStatusChange({
-  container,
-  socket,
-  msg,
-  signal,
-}: {
-  container: HTMLElement;
-  socket: Socket;
-  msg: StatusMessage;
-  signal: AbortSignal;
-}): void {
-  msg.submissions.forEach((submission) => {
-    // Always update results
-    updateStatus(container, submission);
-
-    if (submission.grading_job_status === 'graded') {
-      const element = container.querySelector<HTMLElement>('#submission-' + submission.id);
-
-      if (!element) return;
-
-      // Check if this state is reflected in the DOM; it's possible this is
-      // just a message from the initial data sync and that we already have
-      // results in the DOM.
-      const status = element.dataset.gradingJobStatus;
-      const gradingJobId = element.dataset.gradingJobId;
-
-      // Ignore jobs that we already have results for, but allow results
-      // from more recent grading jobs to replace the existing ones.
-      if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
-        // Let's get results for this job!
-        fetchResults({ container, submissionId: submission.id, signal });
-
-        // We don't need the socket anymore.
-        socket.close();
-      }
-    }
-  });
-}
-
 function initializeExternalGrading({ container }: { container: HTMLElement }) {
   const abortController = new AbortController();
   const { variantId, variantToken } = container.dataset;
@@ -257,28 +186,41 @@ function initializeReadmeExpansion(container: HTMLElement): void {
   }
 }
 
-function setupDisableOnSubmit(container: HTMLElement): void {
-  const form = container.querySelector<HTMLFormElement>('form.question-form');
+function handleStatusChange({
+  container,
+  socket,
+  msg,
+  signal,
+}: {
+  container: HTMLElement;
+  socket: Socket;
+  msg: StatusMessage;
+  signal: AbortSignal;
+}): void {
+  msg.submissions.forEach((submission) => {
+    // Always update results
+    updateStatus(container, submission);
 
-  if (!form) return;
+    if (submission.grading_job_status === 'graded') {
+      const element = container.querySelector<HTMLElement>('#submission-' + submission.id);
 
-  form.addEventListener('submit', () => {
-    if (!form.dataset.submitted) {
-      form.dataset.submitted = 'true';
+      if (!element) return;
 
-      // Since `.disabled` buttons don't POST, clone and hide as workaround
-      form.querySelectorAll<HTMLButtonElement>('.disable-on-submit').forEach((element) => {
-        // Create disabled clone of button
-        const clonedElement = element.cloneNode(true) as HTMLButtonElement;
-        clonedElement.id = '';
-        clonedElement.disabled = true;
+      // Check if this state is reflected in the DOM; it's possible this is
+      // just a message from the initial data sync and that we already have
+      // results in the DOM.
+      const status = element.dataset.gradingJobStatus;
+      const gradingJobId = element.dataset.gradingJobId;
 
-        // Add it to the same position
-        element.parentNode?.insertBefore(clonedElement, element);
+      // Ignore jobs that we already have results for, but allow results
+      // from more recent grading jobs to replace the existing ones.
+      if (status !== 'graded' || gradingJobId !== submission.grading_job_id) {
+        // Let's get results for this job!
+        fetchResults({ container, submissionId: submission.id, signal });
 
-        // Hide actual submit button
-        element.style.display = 'none';
-      });
+        // We don't need the socket anymore.
+        socket.close();
+      }
     }
   });
 }
@@ -409,14 +351,14 @@ function updateDynamicPanels({
     // TODO: switch back to using a specific ID once we drop the legacy markup.
     // Using a specific ID ensures we can find things easily via grep.
     //
-    // Note: we use `document` and not `this.container` here because the question
+    // Note: we use `document` and not `container` here because the question
     // score panel is outside the question container.
     const targetElement = document.getElementById(parsedHTML.id);
     targetElement?.replaceWith(parsedHTML);
   }
 
   if (msg.assessmentScorePanel) {
-    // Note: we use `document` and not `this.container` here because the assessment
+    // Note: we use `document` and not `container` here because the assessment
     // score panel is outside the question container.
     const assessmentScorePanel = document.getElementById('assessment-score-panel');
     if (assessmentScorePanel) {
@@ -437,13 +379,41 @@ function updateDynamicPanels({
   }
 
   if (msg.questionNavNextButton) {
-    // Note: we use `document` and not `this.container` here because this button
+    // Note: we use `document` and not `container` here because this button
     // is outside the question container.
     const questionNavNextButton = document.getElementById('question-nav-next');
     if (questionNavNextButton) {
       questionNavNextButton.outerHTML = msg.questionNavNextButton;
     }
   }
+}
+
+function updateStatus(
+  container: HTMLElement,
+  submission: Omit<StatusMessageSubmission, 'grading_job_id'>,
+): void {
+  const display = container.querySelector('#grading-status-' + submission.id);
+  if (!display) return;
+  let label;
+  const spinner = '<i class="fa fa-sync fa-spin"></i>';
+  switch (submission.grading_job_status) {
+    case 'requested':
+      label = 'Grading requested ' + spinner;
+      break;
+    case 'queued':
+      label = 'Queued for grading ' + spinner;
+      break;
+    case 'grading':
+      label = 'Grading in progress ' + spinner;
+      break;
+    case 'graded':
+      label = 'Graded!';
+      break;
+    default:
+      label = 'UNKNOWN STATUS';
+      break;
+  }
+  display.innerHTML = label;
 }
 
 function loadPendingSubmissionPanel({
@@ -479,4 +449,30 @@ function loadPendingSubmissionPanel({
 
       panel.innerHTML = '<div class="card-body submission-body">Error retrieving submission</div>';
     });
+}
+
+function setupDisableOnSubmit(container: HTMLElement): void {
+  const form = container.querySelector<HTMLFormElement>('form.question-form');
+
+  if (!form) return;
+
+  form.addEventListener('submit', () => {
+    if (!form.dataset.submitted) {
+      form.dataset.submitted = 'true';
+
+      // Since `.disabled` buttons don't POST, clone and hide as workaround
+      form.querySelectorAll<HTMLButtonElement>('.disable-on-submit').forEach((element) => {
+        // Create disabled clone of button
+        const clonedElement = element.cloneNode(true) as HTMLButtonElement;
+        clonedElement.id = '';
+        clonedElement.disabled = true;
+
+        // Add it to the same position
+        element.parentNode?.insertBefore(clonedElement, element);
+
+        // Hide actual submit button
+        element.style.display = 'none';
+      });
+    }
+  });
 }
