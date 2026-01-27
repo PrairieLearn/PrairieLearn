@@ -4,12 +4,16 @@ import { HttpStatusError } from '@prairielearn/error';
 import { queryRow } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
-import { type Enrollment, EnrollmentSchema } from '../lib/db-types.js';
+import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
+import type { Enrollment } from '../lib/db-types.js';
 import { EXAMPLE_COURSE_PATH } from '../lib/paths.js';
+import { uniqueEnrollmentCode } from '../sync/fromDisk/courseInstances.js';
 import * as helperCourse from '../tests/helperCourse.js';
 import * as helperDb from '../tests/helperDb.js';
 import { getOrCreateUser } from '../tests/utils/auth.js';
 
+import { selectCourseInstanceById } from './course-instances.js';
+import { ensureUncheckedEnrollment } from './enrollment.js';
 import {
   addEnrollmentToStudentLabel,
   createStudentLabel,
@@ -26,20 +30,24 @@ import {
 let enrollmentCounter = 0;
 
 async function createEnrollment(courseInstanceId = '1'): Promise<Enrollment> {
-  const uid = `test${++enrollmentCounter}@example.com`;
+  enrollmentCounter++;
+  const uid = `test${enrollmentCounter}@example.com`;
   const user = await getOrCreateUser({
     uid,
     name: `Test User ${enrollmentCounter}`,
     uin: uid,
     email: uid,
   });
-  return queryRow(
-    `INSERT INTO enrollments (user_id, course_instance_id, status, first_joined_at)
-     VALUES ($user_id, $course_instance_id, 'joined', NOW())
-     RETURNING *`,
-    { user_id: user.id, course_instance_id: courseInstanceId },
-    EnrollmentSchema,
-  );
+  const courseInstance = await selectCourseInstanceById(courseInstanceId);
+  const enrollment = await ensureUncheckedEnrollment({
+    userId: user.id,
+    courseInstance,
+    requiredRole: ['System'],
+    authzData: dangerousFullSystemAuthz(),
+    actionDetail: 'implicit_joined',
+  });
+  assert.isNotNull(enrollment);
+  return enrollment;
 }
 
 describe('Student Label Model', () => {
@@ -162,15 +170,13 @@ describe('Student Label Model', () => {
       const enrollment = await createEnrollment('1');
 
       const courseInstance2Id = await queryRow(
-        `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
-         VALUES ($course_id, $short_name, $long_name, $display_timezone, $enrollment_code)
+        `INSERT INTO course_instances (course_id, display_timezone, enrollment_code)
+         VALUES ($course_id, $display_timezone, $enrollment_code)
          RETURNING id`,
         {
           course_id: '1',
-          short_name: 'test-instance-2',
-          long_name: 'Test Instance 2',
           display_timezone: 'America/Chicago',
-          enrollment_code: 'test-code-2',
+          enrollment_code: await uniqueEnrollmentCode(),
         },
         IdSchema,
       );
