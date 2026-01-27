@@ -503,7 +503,7 @@ class TestValidateNamesForConflicts:
         psu.validate_names_for_conflicts("test", ["x", "y"], ["f", "g"])
 
     @pytest.mark.parametrize("conflicting_name", ["e", "pi", "infty"])
-    def test_variable_conflicts_with_constant(self, conflicting_name) -> None:
+    def test_variable_conflicts_with_constant(self, conflicting_name: str) -> None:
         with pytest.raises(ValueError, match=conflicting_name):
             psu.validate_names_for_conflicts("test", [conflicting_name, "x"], [])
 
@@ -517,7 +517,7 @@ class TestValidateNamesForConflicts:
 
     @pytest.mark.parametrize("conflicting_name", ["i", "j"])
     def test_complex_constants_only_conflict_when_enabled(
-        self, conflicting_name
+        self, conflicting_name: str
     ) -> None:
         psu.validate_names_for_conflicts(
             "test", [conflicting_name], [], allow_complex=False
@@ -536,7 +536,9 @@ class TestValidateNamesForConflicts:
             )
 
     @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
-    def test_trig_functions_only_conflict_when_enabled(self, conflicting_name) -> None:
+    def test_trig_functions_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
         psu.validate_names_for_conflicts(
             "test", [conflicting_name], [], allow_trig_functions=False
         )
