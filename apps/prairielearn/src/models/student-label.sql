@@ -104,8 +104,8 @@ WHERE
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
 SELECT
-  e.id,
-  sl.id
+  e.id AS enrollment_id,
+  sl.id AS student_label_id
 FROM
   unnest($enrollment_ids::bigint[]) AS input_id
   JOIN enrollments AS e ON e.id = input_id
