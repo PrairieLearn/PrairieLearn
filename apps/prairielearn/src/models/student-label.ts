@@ -63,22 +63,9 @@ export async function selectStudentLabelById(id: string): Promise<StudentLabel> 
 }
 
 /**
- * Updates a student label's name and color.
- */
-export async function updateStudentLabel({
-  id,
-  name,
-  color,
-}: {
-  id: string;
-  name: string;
-  color: string;
-}): Promise<StudentLabel> {
-  return await queryRow(sql.update_student_label, { id, name, color }, StudentLabelSchema);
-}
-
-/**
  * Soft deletes a student label by setting its deleted_at timestamp.
+ *
+ * This should ONLY be called for testing.
  */
 export async function deleteStudentLabel(id: string): Promise<StudentLabel> {
   return await queryRow(sql.delete_student_label, { id }, StudentLabelSchema);

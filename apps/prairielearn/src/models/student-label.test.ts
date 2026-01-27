@@ -23,7 +23,6 @@ import {
   selectStudentLabelById,
   selectStudentLabelsByCourseInstance,
   selectStudentLabelsForEnrollment,
-  updateStudentLabel,
   verifyLabelBelongsToCourseInstance,
 } from './student-label.js';
 
@@ -268,26 +267,6 @@ describe('Student Label Model', () => {
       const labelsAfterDelete = await selectStudentLabelsForEnrollment(enrollment.id);
       assert.equal(labelsAfterDelete.length, 1);
       assert.equal(labelsAfterDelete[0].id, label2.id);
-    });
-  });
-
-  describe('updateStudentLabel', () => {
-    it('updates label name and color', async () => {
-      const label = await createStudentLabel({
-        course_instance_id: '1',
-        name: 'Original Name',
-        color: 'blue1',
-      });
-
-      const updatedLabel = await updateStudentLabel({
-        id: label.id,
-        name: 'New Name',
-        color: 'green1',
-      });
-
-      assert.equal(updatedLabel.id, label.id);
-      assert.equal(updatedLabel.name, 'New Name');
-      assert.equal(updatedLabel.color, 'green1');
     });
   });
 

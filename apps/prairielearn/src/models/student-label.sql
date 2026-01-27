@@ -26,16 +26,6 @@ WHERE
   id = $id
   AND deleted_at IS NULL;
 
--- BLOCK update_student_label
-UPDATE student_labels
-SET
-  name = $name,
-  color = $color
-WHERE
-  id = $id
-  AND deleted_at IS NULL
-RETURNING
-  *;
 
 -- BLOCK delete_student_label
 UPDATE student_labels
