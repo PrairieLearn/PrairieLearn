@@ -541,4 +541,10 @@ self.change_mode("/tmp/sbdir", "777")
 os.chdir("/tmp/sbdir")
 ```
 
+Note that changing the working directory also affects how student programs are invoked. This typically means that any execution of a student program must replace the typical `./` prefix with the directory where the student file was originally compiled, which by default is `/grade/student/`. For example, if the compilation process was executed before the statements above, the following command must be used to run a student program named `myprog`:
+
+```python
+self.test_run("/grade/student/myprog", ...)
+```
+
 The use of the `tempfile` library is also recommended to create temporary files and directories that the student code may use. Note that any file or directory created with this library will not be accessible to the sandbox user by default, so you must explicitly change its mode as shown above.
