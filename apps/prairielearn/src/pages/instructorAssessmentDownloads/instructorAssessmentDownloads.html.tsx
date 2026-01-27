@@ -23,11 +23,11 @@ export interface Filenames {
   finalFilesZipFilename: string;
   bestFilesZipFilename: string;
   allFilesZipFilename: string;
-  teamsCsvFilename?: string;
-  scoresTeamCsvFilename?: string;
-  scoresTeamAllCsvFilename?: string;
-  pointsTeamCsvFilename?: string;
-  pointsTeamAllCsvFilename?: string;
+  groupsCsvFilename?: string;
+  scoresGroupCsvFilename?: string;
+  scoresGroupAllCsvFilename?: string;
+  pointsGroupCsvFilename?: string;
+  pointsGroupAllCsvFilename?: string;
 }
 
 export function InstructorAssessmentDownloads({
@@ -148,8 +148,8 @@ export function InstructorAssessmentDownloads({
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.teamsCsvFilename}"
-                          >${filenames.teamsCsvFilename}</a
+                            .id}/downloads/${filenames.groupsCsvFilename}"
+                          >${filenames.groupsCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -160,8 +160,8 @@ export function InstructorAssessmentDownloads({
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.scoresTeamCsvFilename}"
-                          >${filenames.scoresTeamCsvFilename}</a
+                            .id}/downloads/${filenames.scoresGroupCsvFilename}"
+                          >${filenames.scoresGroupCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -175,8 +175,8 @@ export function InstructorAssessmentDownloads({
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.scoresTeamAllCsvFilename}"
-                                >${filenames.scoresTeamAllCsvFilename}</a
+                                  .id}/downloads/${filenames.scoresGroupAllCsvFilename}"
+                                >${filenames.scoresGroupAllCsvFilename}</a
                               >
                             </td>
                             <td>
@@ -190,8 +190,8 @@ export function InstructorAssessmentDownloads({
                       <td>
                         <a
                           href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                            .id}/downloads/${filenames.pointsTeamCsvFilename}"
-                          >${filenames.pointsTeamCsvFilename}</a
+                            .id}/downloads/${filenames.pointsGroupCsvFilename}"
+                          >${filenames.pointsGroupCsvFilename}</a
                         >
                       </td>
                       <td>
@@ -205,8 +205,8 @@ export function InstructorAssessmentDownloads({
                             <td>
                               <a
                                 href="${resLocals.urlPrefix}/assessment/${resLocals.assessment
-                                  .id}/downloads/${filenames.pointsTeamAllCsvFilename}"
-                                >${filenames.pointsTeamAllCsvFilename}</a
+                                  .id}/downloads/${filenames.pointsGroupAllCsvFilename}"
+                                >${filenames.pointsGroupAllCsvFilename}</a
                               >
                             </td>
                             <td>

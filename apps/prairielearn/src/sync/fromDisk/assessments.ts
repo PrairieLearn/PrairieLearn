@@ -319,7 +319,7 @@ function getParamsForAssessment(
     });
   });
 
-  const teamRoles = teams.roles.map((role) => ({
+  const groupRoles = teams.roles.map((role) => ({
     role_name: role.name,
     minimum: role.minMembers,
     maximum: role.maxMembers,
@@ -354,16 +354,15 @@ function getParamsForAssessment(
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
     team_work: teams.enabled,
-    team_max_size: teams.maxMembers ?? null,
-    team_min_size: teams.minMembers ?? null,
-    student_team_create: teams.studentPermissions.canCreateTeam,
-    student_team_choose_name: teams.studentPermissions.canNameTeam,
-    student_team_join: teams.studentPermissions.canJoinTeam,
-    student_team_leave: teams.studentPermissions.canLeaveTeam,
-
+    group_max_size: teams.maxMembers ?? null,
+    group_min_size: teams.minMembers ?? null,
+    student_group_create: teams.studentPermissions.canCreateTeam,
+    student_group_choose_name: teams.studentPermissions.canNameTeam,
+    student_group_join: teams.studentPermissions.canJoinTeam,
+    student_group_leave: teams.studentPermissions.canLeaveTeam,
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: teamRoles.length > 0,
+    has_roles: groupRoles.length > 0,
     json_can_view: teams.rolePermissions.canView,
     json_can_submit: teams.rolePermissions.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
@@ -371,7 +370,7 @@ function getParamsForAssessment(
     allowAccess,
     zones,
     alternativeGroups,
-    teamRoles,
+    groupRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,
