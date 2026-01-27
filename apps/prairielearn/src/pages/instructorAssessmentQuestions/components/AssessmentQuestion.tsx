@@ -62,10 +62,10 @@ interface AssessmentQuestionAlternativeRow extends AssessmentQuestionBaseProps {
   alternativeIndex: number;
   zoneQuestionBlockAutoPoints: number | number[] | null;
 
-  sortableRef?: never;
-  sortableStyle?: never;
-  sortableAttributes?: never;
-  sortableListeners?: never;
+  sortableRef?: (node: HTMLElement | null) => void;
+  sortableStyle?: CSSProperties;
+  sortableAttributes?: DraggableAttributes;
+  sortableListeners?: DraggableSyntheticListeners;
 }
 
 interface AssessmentQuestionIndividualRow extends AssessmentQuestionBaseProps {
@@ -178,11 +178,8 @@ export function AssessmentQuestion({
       <QuestionNumberTitleCell
         questionNumber={questionNumber}
         alternativeNumber={
-          questionData.alternative_group_size > 1
-            ? alternativeIndex !== undefined
-              ? alternativeIndex + 1
-              : 1
-            : null
+          // Use live state (alternative prop) rather than questionData which may be stale
+          alternative != null ? alternativeIndex + 1 : null
         }
         titleContent={
           hasCoursePermissionPreview ? (
