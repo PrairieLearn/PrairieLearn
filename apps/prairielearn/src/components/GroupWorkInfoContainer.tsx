@@ -62,7 +62,7 @@ export function GroupWorkInfoContainer({
                     data-bs-toggle="modal"
                     data-bs-target="#leaveGroupModal"
                   >
-                    Leave the Group
+                    Leave the group
                   </button>
                 </div>
                 ${LeaveGroupModal({ csrfToken })}
