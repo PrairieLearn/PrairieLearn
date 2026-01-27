@@ -102,23 +102,23 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using groups instead.",
+      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a group. DEPRECATED -- prefer using groups instead.",
+      "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "number",
       "deprecated": true
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a group. DEPRECATED -- prefer using groups instead.",
+      "description": "Minimum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "number",
       "deprecated": true
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using groups instead.",
+      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
@@ -147,25 +147,25 @@
       "deprecated": true
     },
     "studentGroupCreate": {
-      "description": "Whether students can create groups. DEPRECATED -- prefer using groups instead.",
+      "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using groups instead.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": true,
       "deprecated": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join groups. DEPRECATED -- prefer using groups instead.",
+      "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave groups. DEPRECATED -- prefer using groups instead.",
+      "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
       "default": false,
       "deprecated": true

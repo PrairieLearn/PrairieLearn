@@ -369,7 +369,7 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
     body: html`
       <p>Upload a CSV file in the format of:</p>
       <code class="text-dark">
-        groupName,UID<br />
+        group_name,uid<br />
         groupA,one@example.com<br />
         groupA,two@example.com<br />
         groupB,three@example.com<br />
@@ -377,8 +377,8 @@ function UploadAssessmentGroupsModal({ csrfToken }: { csrfToken: string }) {
       >
       <!-- Closing code tag not on its own line to improve copy/paste formatting -->
       <p class="mt-3">
-        The <code>groupname</code> column should be a unique identifier for each group. To change
-        the grouping, link uids to the groupname.
+        The <code>group_name</code> column should be a unique identifier for each group. To change
+        the grouping, link uids to the group name.
       </p>
       <div class="mb-3">
         <label class="form-label" for="uploadAssessmentGroupsFileInput"> Choose CSV file </label>
