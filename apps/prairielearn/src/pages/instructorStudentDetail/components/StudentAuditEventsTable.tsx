@@ -20,12 +20,14 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     invitation_accepted: 'Accepted invitation',
     invitation_rejected: 'Rejected invitation',
     blocked: 'Blocked from course',
-    unblocked: 'Unblocked from course, now enrolled',
+    unblocked: 'Reenrolled in course (unblocked)',
     // You can never actually see this state since canceling an invitation hard-deletes the enrollment.
     invitation_deleted: 'Invitation cancelled',
     left: 'Student left course',
-    // TODO: Change to 'Student removed from course' after batched migration of existing enrollments
-    removed: 'Student left course',
+    // NOTE: at the time of writing, we hadn't yet written any `removed` events to production.
+    // We should feel free to adjust this text or the action detail later if needed.
+    removed: 'Student removed from course by instructor',
+    reenrolled_by_instructor: 'Reenrolled in course by instructor',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];

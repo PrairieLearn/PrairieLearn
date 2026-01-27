@@ -4,9 +4,9 @@ import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
+import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import _ from 'lodash';
 import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
@@ -23,10 +23,10 @@ import {
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
+  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
-  type TeamsJson,
 } from '../schemas/index.js';
 import * as schemas from '../schemas/index.js';
 
@@ -432,11 +432,19 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // fail to parse, we'll take the hit and reparse with jju to generate
     // a better error report for users.
     const json = JSON.parse(contents);
-    if (!json.uuid) {
-      return infofile.makeError('UUID is missing');
-    }
-    if (!UUID_REGEX.test(json.uuid)) {
-      return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+
+    // The UUID is required in all files except infoCourse.json. Since this file
+    // used to require a UUID, we allow it to be parsed without a warning. In
+    // the future, once we're confident that most courses have removed the UUID
+    // from infoCourse.json, we can add a warning for unnecessary UUIDs in that
+    // file. Also, see https://github.com/PrairieLearn/PrairieLearn/issues/13709
+    if (filePath !== 'infoCourse.json') {
+      if (!json.uuid) {
+        return infofile.makeError('UUID is missing');
+      }
+      if (!UUID_REGEX.test(json.uuid)) {
+        return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+      }
     }
 
     if (!schema) {
@@ -478,27 +486,30 @@ export async function loadInfoFile<T extends { uuid: string }>({
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
-    // The document was still valid JSON, but we may still be able to
-    // extract a UUID from the raw files contents with a regex.
-    const match = (contents || '').match(FILE_UUID_REGEX);
-    if (!match) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-    if (match.length > 1) {
-      infofile.addError(result, 'More than one UUID found in file');
-      return result;
+    if (filePath !== 'infoCourse.json') {
+      // The document was still valid JSON, but we may still be able to
+      // extract a UUID from the raw files contents with a regex.
+      const match = (contents || '').match(FILE_UUID_REGEX);
+      if (!match) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+      if (match.length > 1) {
+        infofile.addError(result, 'More than one UUID found in file');
+        return result;
+      }
+
+      // Extract and store UUID. Checking for a falsy value isn't technically
+      // required, but it keeps TypeScript happy.
+      const uuid = match[0].match(UUID_REGEX);
+      if (!uuid) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+
+      result.uuid = uuid[0];
     }
 
-    // Extract and store UUID. Checking for a falsy value isn't technically
-    // required, but it keeps TypeScript happy.
-    const uuid = match[0].match(UUID_REGEX);
-    if (!uuid) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-
-    result.uuid = uuid[0];
     return result;
   }
 }
@@ -664,7 +675,6 @@ export async function loadCourseInfo({
   }
 
   const course = {
-    uuid: info.uuid.toLowerCase(),
     path: coursePath,
     name: info.name,
     title: info.title,
@@ -793,7 +803,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
       } else if (recursive) {
         try {
           const subInfoFiles = await walk(path.join(relativeDir, dir));
-          if (_.isEmpty(subInfoFiles)) {
+          if (isEmptyObject(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
             );
@@ -1110,9 +1120,9 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
- * Converts legacy group properties to the new teams format for unified handling.
+ * Converts legacy group properties to the new groups format for unified handling.
  */
-export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJson {
+export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
   const canAssignRoles = assessment.groupRoles
     .filter((role) => role.canAssignRoles)
     .map((role) => role.name);
@@ -1127,10 +1137,10 @@ export function convertLegacyGroupsToTeams(assessment: AssessmentJson): TeamsJso
       maxMembers: role.maximum,
     })),
     studentPermissions: {
-      canCreateTeam: assessment.studentGroupCreate,
-      canJoinTeam: assessment.studentGroupJoin,
-      canLeaveTeam: assessment.studentGroupLeave,
-      canNameTeam: assessment.studentGroupChooseName,
+      canCreateGroup: assessment.studentGroupCreate,
+      canJoinGroup: assessment.studentGroupJoin,
+      canLeaveGroup: assessment.studentGroupLeave,
+      canNameGroup: assessment.studentGroupChooseName,
     },
     rolePermissions: {
       canAssignRoles,
@@ -1162,8 +1172,8 @@ function validateAssessment({
     );
   }
 
-  // Check for conflict between legacy group properties and new teams schema
-  if (assessment.teams != null) {
+  // Check for conflict between legacy group properties and new groups schema
+  if (assessment.groups != null) {
     const usedLegacyProps: string[] = [];
 
     // We need to use `rawAssessment` here to check if the user specified any
@@ -1189,7 +1199,7 @@ function validateAssessment({
     if (usedLegacyProps.length > 0) {
       const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
       errors.push(
-        `Cannot use both "teams" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+        `Cannot use both "groups" and legacy group properties (${stringifiedProps}) in the same assessment.`,
       );
     }
   }
@@ -1420,24 +1430,22 @@ function validateAssessment({
     );
   }
 
-  // Convert legacy group properties to teams format for unified validation
-  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
-  // Use 'team' for new schema, 'group' for legacy properties (for error messages)
-  const teamType = assessment.teams != null ? 'team' : 'group';
+  // Convert legacy group properties to groups format for unified validation
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
 
-  // Validate teams/groups if we have roles defined
-  if (teams.roles.length > 0) {
-    const rolePerms = teams.rolePermissions;
+  // Validate groups if we have roles defined
+  if (groups.roles.length > 0) {
+    const rolePerms = groups.rolePermissions;
 
     const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
-    const hasAssigner = teams.roles.some(
+    const hasAssigner = groups.roles.some(
       (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
     );
     if (!hasAssigner) {
       errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    const validRoleNames = new Set(teams.roles.map((r) => r.name));
+    const validRoleNames = new Set(groups.roles.map((r) => r.name));
 
     rolePerms.canAssignRoles.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
@@ -1461,24 +1469,22 @@ function validateAssessment({
       }
     });
 
-    teams.roles.forEach((role) => {
-      if (teams.minMembers != null && role.minMembers > teams.minMembers) {
-        warnings.push(
-          `Role "${role.name}" has a minMembers greater than the ${teamType}'s minMembers.`,
-        );
+    groups.roles.forEach((role) => {
+      if (groups.minMembers != null && role.minMembers > groups.minMembers) {
+        warnings.push(`Role "${role.name}" has a minMembers greater than the group's minMembers.`);
       }
-      if (teams.maxMembers != null && role.minMembers > teams.maxMembers) {
+      if (groups.maxMembers != null && role.minMembers > groups.maxMembers) {
         errors.push(
-          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${teams.maxMembers}, found ${role.minMembers}).`,
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${groups.maxMembers}, found ${role.minMembers}).`,
         );
       }
       if (
         role.maxMembers != null &&
-        teams.maxMembers != null &&
-        role.maxMembers > teams.maxMembers
+        groups.maxMembers != null &&
+        role.maxMembers > groups.maxMembers
       ) {
         errors.push(
-          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${teams.maxMembers}, found ${role.maxMembers}).`,
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${groups.maxMembers}, found ${role.maxMembers}).`,
         );
       }
       if (role.maxMembers != null && role.minMembers > role.maxMembers) {

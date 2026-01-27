@@ -26,6 +26,11 @@ class SourceBlocksOrderType(Enum):
     ORDERED = "ordered"
 
 
+class DistractorOrderType(Enum):
+    RANDOM = "random"
+    INHERIT = "inherit"
+
+
 class SolutionPlacementType(Enum):
     RIGHT = "right"
     BOTTOM = "bottom"
@@ -68,6 +73,7 @@ ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
+DISTRACTOR_ORDER_DEFAULT = DistractorOrderType.INHERIT
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -232,6 +238,7 @@ class OrderBlocksOptions:
     allow_blank: bool
     file_name: str
     source_blocks_order: SourceBlocksOrderType
+    distractor_order: DistractorOrderType
     indentation: bool
     source_header: str
     solution_header: str
@@ -266,6 +273,12 @@ class OrderBlocksOptions:
             "source-blocks-order",
             SourceBlocksOrderType,
             SOURCE_BLOCKS_ORDER_DEFAULT,
+        )
+        self.distractor_order = pl.get_enum_attrib(
+            html_element,
+            "distractor-order",
+            DistractorOrderType,
+            DISTRACTOR_ORDER_DEFAULT,
         )
         self.indentation = pl.get_boolean_attrib(
             html_element, "indentation", INDENTATION_DEFAULT
@@ -321,6 +334,7 @@ class OrderBlocksOptions:
         required_attribs = ["answers-name"]
         optional_attribs = [
             "source-blocks-order",
+            "distractor-order",
             "grading-method",
             "indentation",
             "source-header",
@@ -407,6 +421,14 @@ class OrderBlocksOptions:
         if self.inline and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
+            )
+
+        if (
+            self.distractor_order == DistractorOrderType.RANDOM
+            and self.source_blocks_order == SourceBlocksOrderType.RANDOM
+        ):
+            raise ValueError(
+                'distractor-order="random" cannot be used with source-blocks-order="random".'
             )
 
     def _validate_answer_options(self) -> None:

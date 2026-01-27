@@ -323,7 +323,12 @@ export const ConfigSchema = z.object({
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
   nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
+  cacheKeyPrefix: z
+    .string()
+    .default('prairielearn-cache:')
+    .refine((s) => s.endsWith(':'), {
+      message: 'must end with a colon (:)',
+    }),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
@@ -612,6 +617,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

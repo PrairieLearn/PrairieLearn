@@ -3,6 +3,7 @@ import json
 import math
 import os
 import random
+from collections import defaultdict
 from copy import deepcopy
 from typing import TypedDict
 
@@ -23,6 +24,7 @@ from dag_checker import (
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
+    DistractorOrderType,
     FeedbackType,
     FormatType,
     GradingMethodType,
@@ -87,6 +89,60 @@ def extract_dag(
     }
     depends_graph.update(group_depends)
     return depends_graph, group_belonging
+
+
+def build_grading_dag(
+    answers_list: list[OrderBlocksAnswerData],
+    grading_method: GradingMethodType,
+) -> tuple[Dag, dict[str, str | None]]:
+    """Build the depends_graph and group_belonging for DAG/RANKING grading methods."""
+    if grading_method is GradingMethodType.DAG:
+        return extract_dag(answers_list)
+    elif grading_method in (GradingMethodType.RANKING, GradingMethodType.ORDERED):
+        if grading_method is GradingMethodType.ORDERED:
+            for index, answer in enumerate(answers_list):
+                answer["ranking"] = index
+
+        sorted_answers = sorted(answers_list, key=lambda x: int(x["ranking"]))
+        tag_to_rank = {ans["tag"]: ans["ranking"] for ans in sorted_answers}
+        lines_of_rank = {
+            rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
+            for rank in set(tag_to_rank.values())
+        }
+
+        depends_graph: Dag = {}
+        cur_rank_depends: list[str] = []
+        prev_rank = None
+        for ans in sorted_answers:
+            tag = ans["tag"]
+            ranking = tag_to_rank[tag]
+            if prev_rank is not None and ranking != prev_rank:
+                cur_rank_depends = lines_of_rank[prev_rank]
+            depends_graph[tag] = cur_rank_depends
+            prev_rank = ranking
+
+        return depends_graph, {}
+    else:
+        raise ValueError(f"Unsupported grading method: {grading_method}")
+
+
+def shuffle_distractor_groups(
+    all_blocks: list[OrderBlocksAnswerData],
+) -> list[OrderBlocksAnswerData]:
+    """Shuffle each correct block with its related distractors"""
+    distractors = defaultdict(list)
+    for block in all_blocks:
+        if block.get("distractor_for"):
+            distractors[block.get("distractor_for")].append(block)
+
+    new_block_ordering: list[OrderBlocksAnswerData] = []
+    for block in all_blocks:
+        if block.get("distractor_for"):
+            continue
+        block_with_distractors = [block, *distractors[block["tag"]]]
+        random.shuffle(block_with_distractors)
+        new_block_ordering.extend(block_with_distractors)
+    return new_block_ordering
 
 
 def extract_multigraph(
@@ -175,6 +231,9 @@ def prepare(html: str, data: pl.QuestionData) -> None:
         all_blocks.sort(key=lambda a: a["inner_html"])
     else:
         assert_never(order_blocks_options.source_blocks_order)
+
+    if order_blocks_options.distractor_order == DistractorOrderType.RANDOM:
+        all_blocks = shuffle_distractor_groups(all_blocks)
 
     # prep for visual pairing
     correct_tags = {block["tag"] for block in all_blocks}
@@ -587,50 +646,28 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
     elif grading_method in LCS_GRADABLE_TYPES:
         submission = [ans["tag"] for ans in student_answer]
-        depends_graph = {}
-        group_belonging = {}
+        depends_graph: Dag = {}
+        group_belonging: dict[str, str | None] = {}
 
         if (
-            grading_method is GradingMethodType.RANKING
-            or grading_method is GradingMethodType.ORDERED
+            grading_method is GradingMethodType.DAG
+            and order_blocks_options.has_optional_blocks
         ):
-            if grading_method is GradingMethodType.ORDERED:
-                for index, answer in enumerate(true_answer_list):
-                    answer["ranking"] = index
-
-            true_answer_list = sorted(true_answer_list, key=lambda x: int(x["ranking"]))
-            true_answer = [answer["tag"] for answer in true_answer_list]
-            tag_to_rank = {
-                answer["tag"]: answer["ranking"] for answer in true_answer_list
-            }
-            lines_of_rank = {
-                rank: [tag for tag in tag_to_rank if tag_to_rank[tag] == rank]
-                for rank in set(tag_to_rank.values())
-            }
-
-            cur_rank_depends = []
-            prev_rank = None
-            for tag in true_answer:
-                ranking = tag_to_rank[tag]
-                if prev_rank is not None and ranking != prev_rank:
-                    cur_rank_depends = lines_of_rank[prev_rank]
-                depends_graph[tag] = cur_rank_depends
-                prev_rank = ranking
-
+            depends_multigraph, final_blocks = extract_multigraph(true_answer_list)
+            num_initial_correct, true_answer_length, depends_graph = (
+                grade_multigraph(submission, depends_multigraph, final_blocks)
+            )
+        elif grading_method in (
+            GradingMethodType.RANKING,
+            GradingMethodType.ORDERED,
+            GradingMethodType.DAG,
+        ):
+            depends_graph, group_belonging = build_grading_dag(
+                true_answer_list, grading_method
+            )
             num_initial_correct, true_answer_length = grade_dag(
                 submission, depends_graph, group_belonging
             )
-        elif grading_method is GradingMethodType.DAG:
-            if order_blocks_options.has_optional_blocks:
-                depends_multigraph, final_blocks = extract_multigraph(true_answer_list)
-                num_initial_correct, true_answer_length, depends_graph = (
-                    grade_multigraph(submission, depends_multigraph, final_blocks)
-                )
-            else:
-                depends_graph, group_belonging = extract_dag(true_answer_list)
-                num_initial_correct, true_answer_length = grade_dag(
-                    submission, depends_graph, group_belonging
-                )
         elif grading_method is GradingMethodType.EXTERNAL:
             raise NotImplementedError(
                 "grade function should never be called for EXTERNAL grading method"
@@ -752,7 +789,7 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
     # TODO: The only wrong answer being tested is the correct answer with the first
     # block mising. We should instead do a random selection of correct and incorrect blocks.
     elif data["test_type"] == "incorrect":
-        answer = (
+        answer = list(
             solve_problem(correct_answers, grading_method, has_optional_blocks)
             if order_block_options.has_optional_blocks
             else correct_answers
@@ -765,16 +802,22 @@ def test(element_html: str, data: pl.ElementTestData) -> None:
         ):
             score = round(float(len(answer)) / (len(answer) + 1), 2)
 
-        if grading_method in [
-            GradingMethodType.DAG,
-            GradingMethodType.RANKING,
-        ]:
-            first_wrong = 0
-            group_belonging = {
-                ans["tag"]: ans["group_info"]["tag"]
-                for ans in data["correct_answers"][answer_name]
-            }
-            first_wrong_is_distractor = answer[first_wrong]["uuid"] in {
+        if grading_method in (GradingMethodType.DAG, GradingMethodType.RANKING):
+            # Determine first_wrong using the actual DAG grading logic
+            submission = [ans["tag"] for ans in answer]
+            depends_graph, group_belonging = build_grading_dag(
+                correct_answers, grading_method
+            )
+            num_initial_correct, _ = grade_dag(
+                submission, depends_graph, group_belonging
+            )
+            first_wrong = (
+                None if num_initial_correct == len(submission) else num_initial_correct
+            )
+
+            first_wrong_is_distractor = first_wrong is not None and answer[first_wrong][
+                "uuid"
+            ] in {
                 block["uuid"]
                 for block in get_distractors(
                     data["params"][answer_name], correct_answers

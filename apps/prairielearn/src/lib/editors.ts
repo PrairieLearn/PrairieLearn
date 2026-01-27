@@ -1240,7 +1240,7 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     // At this point, upstream code should have already validated
-    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
+    // the short name using `validateShortName` from `short-name.ts`.
 
     // If upstream code has not done this, that could lead to a path traversal attack.
     const courseInstancePath = path.join(courseInstancesPath, this.short_name);
