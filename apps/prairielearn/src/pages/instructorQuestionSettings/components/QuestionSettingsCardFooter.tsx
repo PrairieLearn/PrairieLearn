@@ -1,6 +1,7 @@
 import { useState } from 'react';
+import { Modal } from 'react-bootstrap';
 
-import { OverlayTrigger } from '@prairielearn/ui';
+import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.shared.js';
@@ -60,82 +61,79 @@ function CopyQuestionPopover({
   );
 }
 
-function DeleteQuestionModal({
-  qid,
-  assessmentsWithQuestion,
-  csrfToken,
-}: {
+interface DeleteQuestionModalData {
   qid: string;
   assessmentsWithQuestion: SelectedAssessments[];
-  csrfToken: string;
-}) {
-  const labelId = 'deleteQuestionModalLabel';
+}
 
+function DeleteQuestionModal({
+  data,
+  csrfToken,
+  show,
+  onHide,
+  onExited,
+}: {
+  data: DeleteQuestionModalData | null;
+  csrfToken: string;
+  show: boolean;
+  onHide: () => void;
+  onExited: () => void;
+}) {
   return (
-    <div
-      className="modal fade"
-      id="deleteQuestionModal"
-      tabIndex={-1}
-      role="dialog"
-      aria-labelledby={labelId}
-    >
-      <div className="modal-dialog" role="document">
-        <form method="POST" className="modal-content">
-          <div className="modal-header">
-            <h2 className="modal-title h4" id={labelId}>
-              Delete question
-            </h2>
-            <button
-              type="button"
-              className="btn-close"
-              data-bs-dismiss="modal"
-              aria-label="Close"
-            />
-          </div>
-          <div className="modal-body">
-            <p>
-              Are you sure you want to delete the question <strong>{qid}</strong>?
-            </p>
-            {assessmentsWithQuestion.length > 0 && (
-              <>
-                <p>It is included by these assessments:</p>
-                <ul className="list-group my-4">
-                  {assessmentsWithQuestion.map((aWithQ) => (
-                    <li key={aWithQ.course_instance_id} className="list-group-item">
-                      <div className="h6">
-                        {aWithQ.short_name ?? <i>Unknown</i>} ({aWithQ.long_name ?? <i>Unknown</i>})
-                      </div>
-                      {aWithQ.assessments.map((assessment) => (
-                        <AssessmentBadge
-                          key={assessment.assessment_id}
-                          courseInstanceId={aWithQ.course_instance_id}
-                          assessment={assessment}
-                        />
-                      ))}
-                    </li>
-                  ))}
-                </ul>
-                <p>
-                  So, if you delete it, you will be unable to sync your course content to the
-                  database until you either remove the question from these assessments or create a
-                  new question with the same QID.
-                </p>
-              </>
-            )}
-          </div>
-          <div className="modal-footer">
-            <input type="hidden" name="__action" value="delete_question" />
-            <input type="hidden" name="__csrf_token" value={csrfToken} />
-            <button type="button" className="btn btn-secondary" data-bs-dismiss="modal">
-              Cancel
-            </button>
-            <button type="submit" className="btn btn-danger">
-              Delete
-            </button>
-          </div>
-        </form>
-      </div>
-    </div>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
+      <form method="POST">
+        <Modal.Header closeButton>
+          <Modal.Title>Delete question</Modal.Title>
+        </Modal.Header>
+        <Modal.Body>
+          {data && (
+            <>
+              <p>
+                Are you sure you want to delete the question <strong>{data.qid}</strong>?
+              </p>
+              {data.assessmentsWithQuestion.length > 0 && (
+                <>
+                  <p>It is included by these assessments:</p>
+                  <ul className="list-group my-4">
+                    {data.assessmentsWithQuestion.map((aWithQ) => (
+                      <li key={aWithQ.course_instance_id} className="list-group-item">
+                        <div className="h6">
+                          {aWithQ.short_name ?? <i>Unknown</i>} (
+                          {aWithQ.long_name ?? <i>Unknown</i>})
+                        </div>
+                        {aWithQ.assessments.map((assessment) => (
+                          <AssessmentBadge
+                            key={assessment.assessment_id}
+                            courseInstanceId={aWithQ.course_instance_id}
+                            assessment={assessment}
+                            className="btn"
+                          />
+                        ))}
+                      </li>
+                    ))}
+                  </ul>
+                  <p>
+                    So, if you delete it, you will be unable to sync your course content to the
+                    database until you either remove the question from these assessments or create a
+                    new question with the same QID.
+                  </p>
+                </>
+              )}
+            </>
+          )}
+        </Modal.Body>
+        <Modal.Footer>
+          <input type="hidden" name="__action" value="delete_question" />
+          <input type="hidden" name="__csrf_token" value={csrfToken} />
+          <button type="button" className="btn btn-secondary" onClick={onHide}>
+            Cancel
+          </button>
+          <button type="submit" className="btn btn-danger">
+            Delete
+          </button>
+        </Modal.Footer>
+      </form>
+    </Modal>
   );
 }
 
@@ -149,6 +147,7 @@ export function QuestionSettingsCardFooter({
   csrfToken,
 }: QuestionSettingsCardFooterProps) {
   const [showCopyPopover, setShowCopyPopover] = useState(false);
+  const deleteModalState = useModalState<DeleteQuestionModalData>(null);
 
   const handleCancelCopy = () => {
     setShowCopyPopover(false);
@@ -186,16 +185,11 @@ export function QuestionSettingsCardFooter({
           <button
             type="button"
             className="btn btn-sm btn-primary"
-            data-bs-toggle="modal"
-            data-bs-target="#deleteQuestionModal"
+            onClick={() => deleteModalState.showWithData({ qid, assessmentsWithQuestion })}
           >
             <i className="fa fa-times" aria-hidden="true" /> Delete this question
           </button>
-          <DeleteQuestionModal
-            qid={qid}
-            assessmentsWithQuestion={assessmentsWithQuestion}
-            csrfToken={csrfToken}
-          />
+          <DeleteQuestionModal {...deleteModalState} csrfToken={csrfToken} />
         </>
       )}
     </div>

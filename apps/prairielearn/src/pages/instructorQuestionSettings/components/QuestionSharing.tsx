@@ -1,16 +1,14 @@
 import type { SharingSetRow } from '../instructorQuestionSettings.shared.js';
 
-export interface QuestionSharingProps {
-  sharePublicly: boolean;
-  shareSourcePublicly: boolean;
-  sharingSetsIn: SharingSetRow[];
-}
-
 export function QuestionSharing({
   sharePublicly,
   shareSourcePublicly,
   sharingSetsIn,
-}: QuestionSharingProps) {
+}: {
+  sharePublicly: boolean;
+  shareSourcePublicly: boolean;
+  sharingSetsIn: SharingSetRow[];
+}) {
   if (!sharePublicly && !shareSourcePublicly && sharingSetsIn.length === 0) {
     return <p>This question is not being shared.</p>;
   }

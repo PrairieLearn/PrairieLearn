@@ -1,9 +1,10 @@
-export interface QuestionTestsFormProps {
+export function QuestionTestsForm({
+  questionTestPath,
+  csrfToken,
+}: {
   questionTestPath: string;
   csrfToken: string;
-}
-
-export function QuestionTestsForm({ questionTestPath, csrfToken }: QuestionTestsFormProps) {
+}) {
   return (
     <form
       name="question-tests-form"

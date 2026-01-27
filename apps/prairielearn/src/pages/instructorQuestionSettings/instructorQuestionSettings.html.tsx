@@ -27,12 +27,7 @@ import {
   type SelectedAssessments,
   SelectedAssessmentsSchema,
   type SharingSetRow,
-  SharingSetRowSchema,
 } from './instructorQuestionSettings.shared.js';
-
-// Re-export types and schemas for backward compatibility with the route handler
-export { SelectedAssessmentsSchema, SharingSetRowSchema };
-export type { SharingSetRow };
 
 export function InstructorQuestionSettings({
   resLocals,
