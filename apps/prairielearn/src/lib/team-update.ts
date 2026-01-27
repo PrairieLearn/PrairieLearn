@@ -85,13 +85,22 @@ export async function uploadInstanceGroups({
           totalCount = 0;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            const { uid, groupname } = record;
-            if (!uid || !groupname) continue;
+            const uid = record.uid;
+            // `groupname` is supported for backwards compatibility. `group_name` is preferred.
+            const group_name = record.group_name ?? record.groupname;
+
+            if (!uid) {
+              throw new Error('Missing required "uid" value in CSV row.');
+            }
+            if (!group_name) {
+              throw new Error('Missing required "group_name" value in CSV row.');
+            }
+
             totalCount++;
             await createOrAddToGroup({
               course_instance,
               assessment,
-              group_name: groupname,
+              group_name,
               uids: [uid],
               authn_user_id,
               authzData,
@@ -99,7 +108,7 @@ export async function uploadInstanceGroups({
               () => successCount++,
               (err) => {
                 if (err instanceof GroupOperationError) {
-                  job.error(`Error adding ${uid} to group ${groupname}: ${err.message}`);
+                  job.error(`Error adding ${uid} to group ${group_name}: ${err.message}`);
                 } else {
                   throw err;
                 }

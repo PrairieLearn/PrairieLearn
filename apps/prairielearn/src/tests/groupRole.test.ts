@@ -994,7 +994,7 @@ describe(
         );
 
         const roleUpdates =
-          secondUserRole.user_id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
+          secondUserRole.team_role_id === locals.recorder.id ? roleUpdates1 : roleUpdates2;
         const expected = roleUpdates.map(({ roleId, groupUserId }) => ({
           user_id: groupUserId,
           team_role_id: roleId,
