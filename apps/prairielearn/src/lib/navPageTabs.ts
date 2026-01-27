@@ -60,13 +60,13 @@ export function getNavPageTabs() {
       {
         activeSubPage: ['overview', 'detail'],
         urlSuffix: '/instance_admin/students',
-        iconClasses: 'fas fa-users-line',
+        iconClasses: 'bi bi-people-fill',
         tabLabel: 'Students',
       },
       {
         activeSubPage: 'student_labels',
         urlSuffix: '/instance_admin/students/labels',
-        iconClasses: 'fas fa-users',
+        iconClasses: 'bi bi-person-badge',
         tabLabel: 'Student labels',
       },
     ],

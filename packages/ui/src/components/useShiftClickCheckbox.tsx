@@ -54,6 +54,9 @@ export function useShiftClickCheckbox<TData>() {
         checked: row.getIsSelected(),
         disabled: !row.getCanSelect(),
         onClick: handleClick,
+        // Empty onChange to satisfy React's controlled input requirement
+        // (actual state changes are handled via onClick for shift-click support)
+        onChange: () => {},
       };
     },
     [lastClickedRowIndex],

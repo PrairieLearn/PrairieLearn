@@ -563,28 +563,13 @@ function StudentsCard({
           );
         },
       }),
-      columnHelper.accessor((row) => row.enrollment.first_joined_at, {
-        id: 'enrollment_first_joined_at',
-        header: 'Joined',
-        cell: (info) => {
-          const date = info.getValue();
-          if (date == null) return '—';
-          return (
-            <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
-          );
-        },
-      }),
+
       columnHelper.accessor((row) => row.student_labels, {
         id: 'student_labels',
         meta: {
           label: 'Student Labels',
         },
-        header: () => (
-          <span className="d-inline-flex align-items-center gap-1">
-            <span>Labels</span>
-            <i className="fas fa-users" />
-          </span>
-        ),
+        header: 'Labels',
         cell: (info) => {
           const labels = info.getValue();
           if (labels.length === 0) return '—';
@@ -612,6 +597,17 @@ function StudentsCard({
           return filterValues.some((filterId) => studentLabelIds.has(filterId));
         },
       }),
+      columnHelper.accessor((row) => row.enrollment.first_joined_at, {
+        id: 'enrollment_first_joined_at',
+        header: 'Joined',
+        cell: (info) => {
+          const date = info.getValue();
+          if (date == null) return '—';
+          return (
+            <FriendlyDate date={date} timezone={timezone} options={{ includeTz: false }} tooltip />
+          );
+        },
+      }),
     ],
     [timezone, courseInstance.id, createCheckboxProps],
   );
@@ -619,7 +615,10 @@ function StudentsCard({
   const allColumnIds = columns
     .map((col) => col.id)
     .filter((id): id is string => typeof id === 'string' && id !== 'select');
-  const defaultColumnVisibility = Object.fromEntries(allColumnIds.map((id) => [id, true]));
+  const hiddenByDefault = new Set(['user_email']);
+  const defaultColumnVisibility = Object.fromEntries(
+    allColumnIds.map((id) => [id, !hiddenByDefault.has(id)]),
+  );
   const [columnVisibility, setColumnVisibility] = useQueryState(
     'columns',
     parseAsColumnVisibilityStateWithColumns(allColumnIds).withDefault(defaultColumnVisibility),
@@ -772,7 +771,7 @@ function StudentsCard({
                 >
                   Labels
                 </Dropdown.Toggle>
-                <Dropdown.Menu>
+                <Dropdown.Menu style={{ minWidth: '220px' }}>
                   {studentLabels.map((label) => {
                     const state = labelMembershipState.get(label.id);
                     const isChecked = state === 'all';
@@ -819,7 +818,8 @@ function StudentsCard({
                       <Form.Control
                         type="text"
                         size="sm"
-                        placeholder="New label name"
+                        placeholder="e.g. Lab section 1"
+                        aria-label="New label name"
                         value={newLabelName}
                         disabled={isLabelMutationPending}
                         onChange={(e) => setNewLabelName((e.target as HTMLInputElement).value)}
