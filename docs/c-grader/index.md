@@ -82,14 +82,14 @@ Any file submitted using a `pl-file-editor` or `pl-file-upload`, or through work
 
 ## Available test options
 
-After compiling the student and instructor code, test may be created using on one of two methods. The choice of method depends on the type of code students are expected to write, and the type of validation that need to be performed. The two main options are:
+After compiling the student and instructor code, test may be created using one of two methods. The choice of method depends on the type of code students are expected to write, and the type of validation that need to be performed. The two main options are:
 
 - Running the executable file compiled from student code, and [checking its output](#running-a-program-and-checking-its-standard-output). This option is recommended if students are expected to write open-ended complete programs that can be executed from the command line, and where the main purpose of the program is to generate some predetermined output based on the standard input, command line arguments, or external files.
-- Running a [unit test suite based on the Check framework](#running-a-check-framework-test-suite). This options is strongly recommended for more complex cases, where students are expected to implement specific functions with well-defined behavior, and where multiple test cases and scenarios must be checked. This option is also recommended if you want to check for memory leaks and dangling pointers, which can be done using [the AddressSanitizer functionality](#identifying-dangling-pointers-memory-leaks-and-similar-issues).
+- Running a [unit test suite based on the Check framework](#running-a-check-framework-test-suite). This option is strongly recommended for more complex cases, where students are expected to implement specific functions with well-defined behavior, and where multiple test cases and scenarios must be checked. This option is also recommended if you want to check for memory leaks and dangling pointers, which can be done using [the AddressSanitizer functionality](#identifying-dangling-pointers-memory-leaks-and-similar-issues).
 
 ### Compiling a C/C++ program
 
-To compile a C or C++ file, you may use the method `self.compile_file()`. A typical call of this method, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (the file submitted by the student), and the name of an executable file to be created.
+To compile a C or C++ file, you may use the method `self.compile_file()`. A typical call to this method, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (the file submitted by the student), and the name of an executable file to be created.
 
 ```python
 self.compile_file("square.c", "square")      # Compile the file, but do not create a unit test result
