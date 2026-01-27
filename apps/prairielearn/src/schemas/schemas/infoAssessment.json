@@ -121,13 +121,13 @@
       "description": "Array of custom user roles in a group. DEPRECATED -- prefer using groups instead.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/GroupRoleJsonSchema"
+        "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
       },
       "default": [],
       "deprecated": true
     },
     "canSubmit": {
-      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using groups instead.",
+      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
@@ -137,7 +137,7 @@
       "deprecated": true
     },
     "canView": {
-      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using groups instead.",
+      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
@@ -277,31 +277,6 @@
     }
   },
   "definitions": {
-    "GroupRoleJsonSchema": {
-      "description": "A custom role for use in group assessments that allows control over certain permissions.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
-          "type": "string"
-        },
-        "minimum": {
-          "description": "The minimum number of users that should be in this role in a group.",
-          "type": "number",
-          "default": 0
-        },
-        "maximum": {
-          "description": "The maximum number of users that should be in this role in a group.",
-          "type": "number"
-        },
-        "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' group roles.",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
     "AssessmentAccessRuleJsonSchema": {
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
@@ -619,6 +594,31 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
+    },
+    "LegacyGroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
+          "type": "boolean",
+          "default": false
+        }
+      }
     },
     "GroupsRoleJsonSchema": {
       "description": "A custom role for use in group assessments.",

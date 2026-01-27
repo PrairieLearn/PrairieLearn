@@ -10,7 +10,7 @@ function uniqueArray<T extends ZodSchema>(schema: T) {
 
 // TODO: This schema is being deprecated
 // https://github.com/PrairieLearn/PrairieLearn/issues/13545
-export const GroupRoleJsonSchema = z
+export const LegacyGroupRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (i.e. Manager, Reflector, Recorder)."),
     minimum: z
@@ -32,8 +32,8 @@ export const GroupRoleJsonSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export type GroupRoleJson = z.infer<typeof GroupRoleJsonSchema>;
-export type GroupRoleJsonInput = z.input<typeof GroupRoleJsonSchema>;
+export type LegacyGroupRoleJson = z.infer<typeof LegacyGroupRoleJsonSchema>;
+export type LegacyGroupRoleJsonInput = z.input<typeof LegacyGroupRoleJsonSchema>;
 
 export const GroupsRoleJsonSchema = z
   .object({
@@ -470,7 +470,7 @@ export const AssessmentJsonSchema = z
       .describe('Minimum number of students in a group. DEPRECATED -- prefer using groups instead.')
       .optional(),
     groupRoles: z
-      .array(GroupRoleJsonSchema)
+      .array(LegacyGroupRoleJsonSchema)
       .describe('Array of custom user roles in a group. DEPRECATED -- prefer using groups instead.')
       .optional()
       .default([]),
