@@ -283,7 +283,7 @@ reportMissingTypeArgument = "none"
 reportOperatorIssue = "information"
 reportUnknownParameterType = "information"
 
-[tool.pytest]
+[tool.pytest.ini_options]
 pythonpath = ["apps/prairielearn/python"]
 addopts = ["--cov=apps"]
 testpaths = [
