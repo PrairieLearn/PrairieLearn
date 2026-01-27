@@ -31,9 +31,9 @@ import {
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatPoints } from '../../lib/format.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type GroupInfo, getRoleNamesForUser } from '../../lib/teams.js';
 import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
-import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
