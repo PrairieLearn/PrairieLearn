@@ -22,7 +22,10 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
-import { type ManualGradingTrpcClient, createManualGradingTrpcClient } from './utils/trpc.js';
+import {
+  type ManualGradingTrpcClient,
+  createManualGradingTrpcClient,
+} from './utils/trpc-client.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 export interface AssessmentQuestionManualGradingProps {

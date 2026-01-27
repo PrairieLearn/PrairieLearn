@@ -51,7 +51,7 @@ import {
 import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
-import type { ManualGradingTrpcClient } from '../utils/trpc.js';
+import type { ManualGradingTrpcClient } from '../utils/trpc-client.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';

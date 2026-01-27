@@ -28,6 +28,7 @@ import { generateJobSequenceToken } from '../../../lib/generateJobSequenceToken.
 import * as manualGrading from '../../../lib/manualGrading.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import { getJobSequenceIds } from '../../../lib/server-jobs.js';
+import { handleTrpcError } from '../../../lib/trpc.js';
 import { getUrl } from '../../../lib/url.js';
 import { createAuthzMiddleware } from '../../../middlewares/authzHelper.js';
 import { selectCourseInstanceGraderStaff } from '../../../models/course-instances.js';
@@ -235,6 +236,7 @@ router.use(
   trpcExpress.createExpressMiddleware({
     router: manualGradingAssessmentQuestionRouter,
     createContext,
+    onError: handleTrpcError,
   }),
 );
 

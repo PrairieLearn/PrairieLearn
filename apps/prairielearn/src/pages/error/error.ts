@@ -67,6 +67,9 @@ export default (function (err, req, res, _next) {
 
     res.json({
       error: {
+        // The nested `json` property here is needed because we use `superjson` to
+        // serialize and deserialize responses, and it expects the data to be under
+        // a `json` property.
         json: {
           message: err.message,
           code: trpcError.code,

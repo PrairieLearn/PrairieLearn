@@ -2,7 +2,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 
 import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 
-import type { ManualGradingTrpcClient } from './trpc.js';
+import type { ManualGradingTrpcClient } from './trpc-client.js';
 
 export function useManualGradingActions(client: ManualGradingTrpcClient) {
   const queryClient = useQueryClient();
