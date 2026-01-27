@@ -15,9 +15,8 @@ import { GroupOperationError, createGroup, createOrAddToGroup } from './teams.js
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Validates that required headers are present in the CSV.
- * @param headers The headers from the CSV file.
- * @throws {Error} If required headers are missing.
+ * Validates that required headers are present in the CSV. Throws an error if
+ * any required headers are missing.
  */
 function validateHeaders(headers: string[]): void {
   const headerSet = new Set(headers);
@@ -111,6 +110,7 @@ export async function uploadInstanceGroups({
             }
 
             const uid = record.uid;
+            // `groupname` is supported for backwards compatibility. `group_name` is preferred.
             const group_name = record.group_name ?? record.groupname;
             if (!uid || !group_name) continue;
             totalCount++;
