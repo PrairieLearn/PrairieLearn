@@ -5,7 +5,6 @@ import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 import z from 'zod';
 
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
 import { AssessmentInstanceSchema } from '../lib/db-types.js';

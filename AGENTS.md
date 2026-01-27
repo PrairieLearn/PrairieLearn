@@ -82,7 +82,7 @@ Prefer interacting with the database using model functions in `apps/prairielearn
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
-If you are confused about "groups" vs. "teams" terminology, see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
+When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
 
 ## TypeScript guidance
 
