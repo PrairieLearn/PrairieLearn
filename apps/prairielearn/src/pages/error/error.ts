@@ -45,29 +45,6 @@ export default (function (err, req, res, _next) {
   err.status ??= 500;
   res.status(err.status);
 
-  // Handle errors for tRPC requests (e.g., CSRF failures before tRPC middleware runs).
-  // Format the response to match tRPC's expected JSON-RPC 2.0 error structure.
-  if (req.header('X-TRPC') === 'true') {
-    const trpcError = HTTP_TO_TRPC_CODE[err.status] ?? {
-      code: -32603,
-      name: 'INTERNAL_SERVER_ERROR',
-    };
-
-    res.json({
-      error: {
-        message: err.message,
-        code: trpcError.code,
-        data: {
-          code: trpcError.name,
-          httpStatus: err.status,
-          // Only include stack trace in development mode
-          ...(config.devMode && { stack: err.stack }),
-        },
-      },
-    });
-    return;
-  }
-
   const referrer = req.get('Referrer') || null;
 
   logger.log(err.status >= 500 ? 'error' : 'verbose', 'Error page', {
@@ -82,6 +59,28 @@ export default (function (err, req, res, _next) {
     referrer,
     response_id: res.locals.response_id,
   });
+
+  // Handle errors for tRPC requests (e.g., CSRF failures before tRPC middleware runs).
+  // Format the response to match tRPC's expected JSON-RPC 2.0 error structure.
+  if (req.header('X-TRPC') === 'true') {
+    const trpcError = HTTP_TO_TRPC_CODE[err.status] ?? HTTP_TO_TRPC_CODE[500]!;
+
+    res.json({
+      error: {
+        json: {
+          message: err.message,
+          code: trpcError.code,
+          data: {
+            code: trpcError.name,
+            httpStatus: err.status,
+            // Only include stack trace in development mode
+            ...(config.devMode && { stack: err.stack }),
+          },
+        },
+      },
+    });
+    return;
+  }
 
   // Check if the client only accepts JSON
   if (req.accepts('application/json') && !req.accepts('html')) {
