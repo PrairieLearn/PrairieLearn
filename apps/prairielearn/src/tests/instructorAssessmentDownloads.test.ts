@@ -391,9 +391,9 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       const res = await fetch(ctx.instructorAssessmentGroupsUrl, {
         method: 'POST',
         body: new URLSearchParams({
-          __action: 'add_team',
+          __action: 'add_group',
           __csrf_token: getCSRFToken(ctx.$),
-          team_name: 'testteam',
+          group_name: 'testteam',
           uids: ctx.studentUsers.map((u) => u.uid).join(','),
         }),
       });
