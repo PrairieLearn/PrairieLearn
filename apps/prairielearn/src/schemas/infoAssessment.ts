@@ -32,9 +32,6 @@ export const LegacyGroupRoleJsonSchema = z
     'A custom role for use in group assessments that allows control over certain permissions.',
   );
 
-export type LegacyGroupRoleJson = z.infer<typeof LegacyGroupRoleJsonSchema>;
-export type LegacyGroupRoleJsonInput = z.input<typeof LegacyGroupRoleJsonSchema>;
-
 export const GroupsRoleJsonSchema = z
   .object({
     name: z.string().describe("The group role's name (e.g., Manager, Recorder)."),
@@ -119,6 +116,7 @@ export const GroupsJsonSchema = z
   .describe('Configuration for group-based assessments.');
 
 export type GroupsJson = z.infer<typeof GroupsJsonSchema>;
+export type GroupsJsonInput = z.input<typeof GroupsJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .object({

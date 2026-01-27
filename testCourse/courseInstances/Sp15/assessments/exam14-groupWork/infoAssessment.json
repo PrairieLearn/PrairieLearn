@@ -4,12 +4,17 @@
   "title": "Group Activity Exam Example",
   "set": "Exam",
   "number": "14",
-  "groupWork": true,
-  "groupMaxSize": 2,
-  "groupMinSize": 2,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
+  "groups": {
+    "enabled": true,
+    "minMembers": 2,
+    "maxMembers": 2,
+    "roles": [],
+    "studentPermissions": {
+      "canCreateGroup": true,
+      "canJoinGroup": true,
+      "canLeaveGroup": true
+    }
+  },
   "allowAccess": [{ "credit": 100 }],
   "zones": [
     {
