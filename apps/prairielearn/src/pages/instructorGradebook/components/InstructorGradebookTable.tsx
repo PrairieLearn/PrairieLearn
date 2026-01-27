@@ -345,7 +345,7 @@ function GradebookTable({
                 <span
                   key={label.id}
                   className="badge"
-                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
+                  style={{ backgroundColor: `var(--color-${label.color})` }}
                 >
                   {label.name}
                 </span>

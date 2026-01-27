@@ -581,7 +581,7 @@ function StudentsCard({
                   key={label.id}
                   href={`${labelsUrl}?label=${encodeURIComponent(label.name)}`}
                   className="badge text-decoration-none"
-                  style={{ backgroundColor: `var(--color-${label.color ?? 'gray1'})` }}
+                  style={{ backgroundColor: `var(--color-${label.color})` }}
                 >
                   {label.name}
                 </a>

@@ -75,7 +75,7 @@ function StudentLabelsCard({
           type: 'edit',
           labelId: label.student_label.id,
           name: label.student_label.name,
-          color: label.student_label.color ?? 'gray1',
+          color: label.student_label.color,
           uids: label.user_data.map((u) => u.uid).join('\n'),
           origHash,
         };

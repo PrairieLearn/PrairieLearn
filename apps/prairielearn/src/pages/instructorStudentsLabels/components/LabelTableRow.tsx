@@ -14,12 +14,12 @@ export function LabelTableRow({
   onEdit: (label: StudentLabelWithUserData) => void;
   onDelete: (label: StudentLabelWithUserData) => void;
 }) {
-  const color = label.student_label.color ?? 'gray1';
-
   return (
     <tr>
       <td className="align-middle">
-        <span className={`badge color-${color}`}>{label.student_label.name}</span>
+        <span className={`badge color-${label.student_label.color}`}>
+          {label.student_label.name}
+        </span>
       </td>
       <td className="align-middle">
         <ExpandableUserList
