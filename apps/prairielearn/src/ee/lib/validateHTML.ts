@@ -4,6 +4,21 @@ import * as parse5 from 'parse5';
 type DocumentFragment = parse5.DefaultTreeAdapterMap['documentFragment'];
 type ChildNode = parse5.DefaultTreeAdapterMap['childNode'];
 
+export const SUPPORTED_ELEMENTS = new Set([
+  // Decorative elements
+  'pl-question-panel',
+  'pl-answer-panel',
+  'pl-submission-panel',
+
+  // Submission elements
+  'pl-multiple-choice',
+  'pl-checkbox',
+  'pl-integer-input',
+  'pl-number-input',
+  'pl-string-input',
+  'pl-symbolic-input',
+]);
+
 const BOOLEAN_TRUE_VALUES = ['true', 't', '1', 'True', 'T', 'TRUE', 'yes', 'y', 'Yes', 'Y', 'YES'];
 const BOOLEAN_FALSE_VALUES = ['false', 'f', '0', 'False', 'F', 'FALSE', 'no', 'n', 'No', 'N', 'NO'];
 const BOOLEAN_VALUES = [...BOOLEAN_TRUE_VALUES, ...BOOLEAN_FALSE_VALUES];
@@ -151,6 +166,8 @@ function isBooleanTrue(val: string): boolean {
  */
 function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
   if ('tagName' in ast) {
+    // The elements supported here should be kept in sync with those in
+    // `context-parsers/documentation.ts`.
     switch (ast.tagName) {
       case 'pl-multiple-choice':
         return checkMultipleChoice(ast);
@@ -172,9 +189,10 @@ function checkTag(ast: DocumentFragment | ChildNode): ValidationResult {
         return { errors: [] }; // covered elsewhere
       default:
         if (ast.tagName.startsWith('pl-')) {
+          const formattedSupportedElements = Array.from(SUPPORTED_ELEMENTS).join(', ');
           return {
             errors: [
-              `${ast.tagName} is not a valid tag. Please use tags from the following: \`pl-question-panel\`, \`pl-multiple-choice\`, \`pl-checkbox\`, \`pl-integer-input\`, \`pl-number-input\`,\`pl-string-input\`, \`pl-symbolic-input\``,
+              `${ast.tagName} is not a valid tag. You must use only the following tags: ${formattedSupportedElements}`,
             ],
           };
         }
