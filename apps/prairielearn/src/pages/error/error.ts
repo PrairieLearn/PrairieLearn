@@ -39,7 +39,12 @@ export default (function (err, req, res, _next) {
   if (req.accepts('application/json') && !req.accepts('html')) {
     res.send({
       error: err.message,
-      errorStack: err.stack?.split('\n'),
+      // for debugging purposes, include the error stack in the response
+      ...(config.devMode
+        ? {
+            errorStack: err.stack?.split('\n'),
+          }
+        : {}),
       errorId,
     });
     return;
