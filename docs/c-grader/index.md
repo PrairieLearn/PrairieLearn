@@ -357,7 +357,7 @@ int main(void) {
 
 A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check documentation](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes [basic questions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/c) that can be used as a starting point.
 
-::: note
+!!! note
 
     Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
 
