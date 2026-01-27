@@ -14,23 +14,6 @@ import { GroupOperationError, createGroup, createOrAddToGroup } from './teams.js
 
 const sql = loadSqlEquiv(import.meta.url);
 
-/**
- * Validates that required headers are present in the CSV. Throws an error if
- * any required headers are missing.
- */
-function validateHeaders(headers: string[]): void {
-  const headerSet = new Set(headers);
-
-  if (!headerSet.has('uid')) {
-    throw new Error('Missing required column "uid" in CSV file.');
-  }
-
-  // Accept both "group_name" (preferred) and "groupname" (legacy)
-  if (!headerSet.has('group_name') && !headerSet.has('groupname')) {
-    throw new Error('Missing required column "group_name" in CSV file.');
-  }
-}
-
 function groupUpdateLockName(assessment_id: string): string {
   return `assessment:${assessment_id}:groups`;
 }
@@ -100,19 +83,19 @@ export async function uploadInstanceGroups({
         const csvParser = createCsvParser(csvStream);
         let successCount = 0,
           totalCount = 0;
-        let headersValidated = false;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            // Validate headers on first record
-            if (!headersValidated) {
-              validateHeaders(Object.keys(record));
-              headersValidated = true;
-            }
-
             const uid = record.uid;
             // `groupname` is supported for backwards compatibility. `group_name` is preferred.
             const group_name = record.group_name ?? record.groupname;
-            if (!uid || !group_name) continue;
+
+            if (!uid) {
+              throw new Error('Missing required "uid" value in CSV row.');
+            }
+            if (!group_name) {
+              throw new Error('Missing required "group_name" value in CSV row.');
+            }
+
             totalCount++;
             await createOrAddToGroup({
               course_instance,
