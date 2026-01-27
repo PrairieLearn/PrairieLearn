@@ -1,4 +1,13 @@
--- BLOCK select_team_config
+-- BLOCK select_group_exam_by_tid
+SELECT
+  a.id
+FROM
+  assessments AS a
+  JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
+WHERE
+  a.tid = $assessment_tid;
+
+-- BLOCK select_group_config
 SELECT
   minimum,
   maximum

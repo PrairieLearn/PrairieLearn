@@ -458,14 +458,14 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
     it('should have team_work assessment with group-specific filenames', function () {
       assert.isTrue(ctx.assessment.team_work);
-      assert.isDefined(ctx.filenames.teamsCsvFilename);
-      assert.isDefined(ctx.filenames.scoresTeamCsvFilename);
-      assert.isDefined(ctx.filenames.pointsTeamCsvFilename);
+      assert.isDefined(ctx.filenames.groupsCsvFilename);
+      assert.isDefined(ctx.filenames.scoresGroupCsvFilename);
+      assert.isDefined(ctx.filenames.pointsGroupCsvFilename);
     });
 
     it('groups.csv should contain both team members', async () => {
       const data = await downloadCsv(
-        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.teamsCsvFilename,
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.groupsCsvFilename,
       );
       const teamRows = data.filter((row) => row['groupName'] === 'testteam');
       assert.lengthOf(teamRows, 2);
@@ -477,7 +477,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
     it('scores_by_group.csv should contain team with valid score', async () => {
       const data = await downloadCsv(
-        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresTeamCsvFilename,
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.scoresGroupCsvFilename,
       );
       const teamRow = data.find((row) => row['Group name'] === 'testteam');
       assert.isDefined(teamRow);
@@ -489,7 +489,7 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
 
     it('points_by_group.csv should contain team with valid points', async () => {
       const data = await downloadCsv(
-        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsTeamCsvFilename,
+        ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.pointsGroupCsvFilename,
       );
       const teamRow = data.find((row) => row['Group name'] === 'testteam');
       assert.isDefined(teamRow);
