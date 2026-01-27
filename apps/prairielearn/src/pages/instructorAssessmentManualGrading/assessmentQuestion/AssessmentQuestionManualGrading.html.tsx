@@ -1,9 +1,15 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
 import { useState } from 'react';
-import { Alert } from 'react-bootstrap';
+import { Alert, Dropdown } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
 
+import {
+  AI_GRADING_MODELS,
+  AI_GRADING_MODEL_ID_TO_NAME,
+  type AiGradingModelId,
+  DEFAULT_AI_GRADING_MODEL,
+} from '../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
@@ -35,7 +41,6 @@ export interface AssessmentQuestionManualGradingProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingEnabled: boolean;
-  aiGradingModelSelectionEnabled: boolean;
   initialAiGradingMode: boolean;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
@@ -65,7 +70,6 @@ function AssessmentQuestionManualGradingInner({
   assessmentQuestion,
   questionQid,
   aiGradingEnabled,
-  aiGradingModelSelectionEnabled,
   initialAiGradingMode,
   rubricData,
   instanceQuestionGroups,
@@ -81,16 +85,23 @@ function AssessmentQuestionManualGradingInner({
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+  const [aiGradingModel, setAiGradingModel] = useState<AiGradingModelId>(
+    (assessmentQuestion.ai_grading_model as AiGradingModelId | null) ?? DEFAULT_AI_GRADING_MODEL,
+  );
 
-  const { groupSubmissionMutation, setAiGradingModeMutation, ...mutations } =
-    useManualGradingActions({
-      csrfToken,
-      courseInstanceId: courseInstance.id,
-    });
+  const {
+    groupSubmissionMutation,
+    setAiGradingModeMutation,
+    setAiGradingModelMutation,
+    ...mutations
+  } = useManualGradingActions({
+    csrfToken,
+    courseInstanceId: courseInstance.id,
+  });
 
   return (
     <>
-      {setAiGradingModeMutation.isError && (
+      {setAiGradingModeMutation.error && (
         <Alert
           variant="danger"
           className="mb-3"
@@ -100,7 +111,19 @@ function AssessmentQuestionManualGradingInner({
           <strong>Error:</strong> {setAiGradingModeMutation.error.message}
         </Alert>
       )}
-      <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+
+      {setAiGradingModelMutation.error && (
+        <Alert
+          variant="danger"
+          className="mb-3"
+          dismissible
+          onClose={() => setAiGradingModelMutation.reset()}
+        >
+          <strong>Error:</strong> {setAiGradingModelMutation.error.message}
+        </Alert>
+      )}
+
+      <div className="d-flex flex-wrap justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
           <ol className="breadcrumb mb-0">
             <li className="breadcrumb-item">
@@ -112,27 +135,61 @@ function AssessmentQuestionManualGradingInner({
           </ol>
         </nav>
         {aiGradingEnabled && (
-          <div className="card px-3 py-2 mb-0">
-            <div className="form-check form-switch mb-0">
-              <input
-                className="form-check-input"
-                type="checkbox"
-                role="switch"
-                id="switchCheckDefault"
-                checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
-                onChange={() =>
-                  setAiGradingModeMutation.mutate(!aiGradingMode, {
-                    onSuccess: () => {
-                      setAiGradingMode((prev) => !prev);
-                    },
-                  })
-                }
-              />
-              <label className="form-check-label" htmlFor="switchCheckDefault">
-                <i className="bi bi-stars" />
-                AI grading mode
-              </label>
+          <div className="d-flex flex-wrap gap-2 justify-content-end">
+            {aiGradingMode && hasCourseInstancePermissionEdit && (
+              <Dropdown>
+                <Dropdown.Toggle
+                  variant="light"
+                  className="card px-3 py-2 mb-0 d-flex flex-row align-items-center text-decoration-none text-body"
+                >
+                  <i className="bi bi-stars" aria-hidden="true" />
+                  <span className="ms-1 text-wrap text-left">
+                    {AI_GRADING_MODEL_ID_TO_NAME[aiGradingModel]}
+                  </span>
+                </Dropdown.Toggle>
+                <Dropdown.Menu align="end">
+                  <p className="my-0 text-muted px-3">AI grader model</p>
+                  <Dropdown.Divider />
+                  {AI_GRADING_MODELS.map((model) => (
+                    <Dropdown.Item
+                      key={model.modelId}
+                      active={aiGradingModel === model.modelId}
+                      onClick={() =>
+                        setAiGradingModelMutation.mutate(model.modelId, {
+                          onSuccess: () => {
+                            setAiGradingModel(model.modelId);
+                          },
+                        })
+                      }
+                    >
+                      {model.name}
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown>
+            )}
+            <div className="card px-3 py-2 mb-0">
+              <div className="form-check form-switch mb-0">
+                <input
+                  className="form-check-input"
+                  type="checkbox"
+                  role="switch"
+                  id="switchCheckDefault"
+                  checked={aiGradingMode}
+                  disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
+                  onChange={() =>
+                    setAiGradingModeMutation.mutate(!aiGradingMode, {
+                      onSuccess: () => {
+                        setAiGradingMode((prev) => !prev);
+                      },
+                    })
+                  }
+                />
+                <label className="form-check-label" htmlFor="switchCheckDefault">
+                  <i className="bi bi-stars" />
+                  AI grading mode
+                </label>
+              </div>
             </div>
           </div>
         )}
@@ -148,7 +205,7 @@ function AssessmentQuestionManualGradingInner({
         assessmentQuestion={assessmentQuestion}
         questionQid={questionQid}
         aiGradingMode={aiGradingMode}
-        aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
+        aiGradingModel={aiGradingModel}
         rubricData={rubricData}
         instanceQuestionGroups={instanceQuestionGroups}
         courseStaff={courseStaff}

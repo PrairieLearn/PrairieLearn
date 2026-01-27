@@ -247,6 +247,7 @@ const mockAssessmentData = {
 const STAFF_ASSESSMENT_QUESTION = {
   advance_score_perc: null,
   ai_grading_mode: false,
+  ai_grading_model: null,
   allow_real_time_grading: true,
   alternative_group_id: null,
   assessment_id: '1',

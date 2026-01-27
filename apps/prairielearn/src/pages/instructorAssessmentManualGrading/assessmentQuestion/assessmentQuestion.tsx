@@ -20,6 +20,7 @@ import {
 import {
   deleteAiGradingJobs,
   setAiGradingMode,
+  setAiGradingModel,
 } from '../../../ee/lib/ai-grading/ai-grading-util.js';
 import { aiGrade } from '../../../ee/lib/ai-grading/ai-grading.js';
 import {
@@ -64,10 +65,6 @@ router.get(
       }),
     );
     const aiGradingEnabled = await features.enabledFromLocals('ai-grading', res.locals);
-    const aiGradingModelSelectionEnabled = await features.enabledFromLocals(
-      'ai-grading-model-selection',
-      res.locals,
-    );
 
     const rubric_data = await manualGrading.selectRubricData({
       assessment_question: res.locals.assessment_question,
@@ -167,7 +164,6 @@ router.get(
                 assessmentQuestion={assessment_question}
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
-                aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                 initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
@@ -285,6 +281,17 @@ router.post(
       }
 
       await setAiGradingMode(res.locals.assessment_question.id, req.body.value);
+      res.sendStatus(204);
+    } else if (req.body.__action === 'set_ai_grading_model') {
+      if (!(await features.enabledFromLocals('ai-grading', res.locals))) {
+        throw new error.HttpStatusError(403, 'Access denied (feature not available)');
+      }
+
+      if (!AI_GRADING_MODEL_IDS.includes(req.body.value)) {
+        throw new error.HttpStatusError(400, 'Invalid AI grading model specified');
+      }
+
+      await setAiGradingModel(res.locals.assessment_question.id, req.body.value);
       res.sendStatus(204);
     } else if (req.body.__action === 'batch_action') {
       if (req.body.batch_action === 'ai_grade_assessment_selected') {

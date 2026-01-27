@@ -29,11 +29,7 @@ import {
 import { RubricSettings } from '../../../../components/RubricSettings.js';
 import { ServerJobsProgressInfo } from '../../../../components/ServerJobProgress/ServerJobProgressBars.js';
 import { useServerJobProgress } from '../../../../components/ServerJobProgress/useServerJobProgress.js';
-import {
-  AI_GRADING_MODELS,
-  type AiGradingModelId,
-  DEFAULT_AI_GRADING_MODEL,
-} from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
+import type { AiGradingModelId } from '../../../../ee/lib/ai-grading/ai-grading-models.shared.js';
 import type { AiGradingGeneralStats } from '../../../../ee/lib/ai-grading/types.js';
 import type { PageContext } from '../../../../lib/client/page-context.js';
 import type {
@@ -78,7 +74,7 @@ export interface AssessmentQuestionTableProps {
   assessmentQuestion: StaffAssessmentQuestion;
   questionQid: string;
   aiGradingMode: boolean;
-  aiGradingModelSelectionEnabled: boolean;
+  aiGradingModel: AiGradingModelId;
   rubricData: RubricData | null;
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
@@ -98,52 +94,22 @@ export interface AssessmentQuestionTableProps {
   };
 }
 
-function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
-  return (
-    <div className="d-flex justify-content-between align-items-center w-100">
-      <span>{text}</span>
-      <span className="badge bg-secondary ms-2">{numToGrade}</span>
-    </div>
-  );
-}
-
 function AiGradingOption({
   text,
   numToGrade,
-  aiGradingModelSelectionEnabled,
-  onSelectModel,
+  onClick,
 }: {
   text: string;
   numToGrade: number;
-  aiGradingModelSelectionEnabled: boolean;
-  onSelectModel: (modelId: AiGradingModelId) => void;
+  onClick: () => void;
 }) {
-  if (!aiGradingModelSelectionEnabled) {
-    return (
-      <Dropdown.Item
-        disabled={numToGrade === 0}
-        onClick={() => onSelectModel(DEFAULT_AI_GRADING_MODEL)}
-      >
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Item>
-    );
-  }
-
   return (
-    <Dropdown drop="end">
-      <Dropdown.Toggle className={`dropdown-item ${numToGrade > 0 ? '' : 'disabled'}`}>
-        <AiGradingOptionContent text={text} numToGrade={numToGrade} />
-      </Dropdown.Toggle>
-      <Dropdown.Menu>
-        <p className="my-0 text-muted px-3">AI grader model</p>
-        <Dropdown.Divider />
-        {AI_GRADING_MODELS.map((model) => (
-          <Dropdown.Item key={model.modelId} onClick={() => onSelectModel(model.modelId)}>
-            {model.name}
-          </Dropdown.Item>
-        ))}
-      </Dropdown.Menu>
-    </Dropdown>
+    <Dropdown.Item disabled={numToGrade === 0} onClick={onClick}>
+      <div className="d-flex justify-content-between align-items-center w-100">
+        <span>{text}</span>
+        <span className="badge bg-secondary ms-2">{numToGrade}</span>
+      </div>
+    </Dropdown.Item>
   );
 }
 
@@ -156,7 +122,7 @@ export function AssessmentQuestionTable({
   assessmentQuestion,
   questionQid,
   aiGradingMode,
-  aiGradingModelSelectionEnabled,
+  aiGradingModel,
   rubricData,
   instanceQuestionGroups,
   courseStaff,
@@ -770,12 +736,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all human-graded"
                       numToGrade={aiGradingCounts.humanGraded}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         batchActionMutation.mutate(
                           {
                             action: 'ai_grade_assessment_graded',
-                            modelId,
+                            modelId: aiGradingModel,
                           },
                           {
                             onSuccess: (data) => {
@@ -793,10 +758,12 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade selected"
                       numToGrade={aiGradingCounts.selected}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
+                          {
+                            batch_action: 'ai_grade_assessment_selected',
+                            model_id: aiGradingModel,
+                          },
                           selectedIds,
                           (data) => {
                             if (data && 'job_sequence_token' in data) {
@@ -813,12 +780,11 @@ export function AssessmentQuestionTable({
                     <AiGradingOption
                       text="Grade all"
                       numToGrade={aiGradingCounts.all}
-                      aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                      onSelectModel={(modelId) => {
+                      onClick={() => {
                         batchActionMutation.mutate(
                           {
                             action: 'ai_grade_assessment_all',
-                            modelId,
+                            modelId: aiGradingModel,
                           },
                           {
                             onSuccess: (data) => {

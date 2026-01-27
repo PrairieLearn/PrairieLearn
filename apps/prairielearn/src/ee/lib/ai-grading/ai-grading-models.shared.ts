@@ -9,6 +9,14 @@ export const AI_GRADING_MODELS = [
   { provider: 'anthropic', modelId: 'claude-opus-4-5', name: 'Anthropic Claude Opus 4.5' },
 ] as const;
 
+export const AI_GRADING_MODEL_ID_TO_NAME = AI_GRADING_MODELS.reduce(
+  (acc, model) => {
+    acc[model.modelId] = model.name;
+    return acc;
+  },
+  {} as Record<string, string>,
+);
+
 export const AI_GRADING_MODEL_IDS = AI_GRADING_MODELS.map((model) => model.modelId);
 
 export type AiGradingModelId = (typeof AI_GRADING_MODEL_IDS)[number];
