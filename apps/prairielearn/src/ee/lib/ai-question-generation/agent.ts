@@ -567,26 +567,9 @@ export async function editQuestionWithAgent({
 
     const args = await run(async () => {
       if (messages) {
-        const filteredMessages = messages.map((msg) => {
-          return {
-            ...msg,
-            parts: msg.parts.filter(() => {
-              // Drop file reads/writes from the history. This helps force the model
-              // to always re-read files after new prompts, to account for modifications.
-              // TODO: this isn't working with reprompts because of this reason:
-              // https://github.com/vercel/ai/issues/8379
-              // return !['tool-readFile', 'tool-writeFile'].includes(part.type);
-              // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-              return true;
-            }),
-          };
-        });
-
         // Naive context management: keep the first message and the last 10 messages.
-        const trimmedMessages = [
-          filteredMessages[0],
-          ...filteredMessages.slice(Math.max(filteredMessages.length - 10, 1)),
-        ];
+        // This will probably result in cache misses - this is just a simple first implementation.
+        const trimmedMessages = [messages[0], ...messages.slice(Math.max(messages.length - 10, 1))];
 
         return { messages: await convertToModelMessages(trimmedMessages) };
       } else if (prompt) {
@@ -619,7 +602,9 @@ export async function editQuestionWithAgent({
       onFinish: async ({ responseMessage }) => {
         finalMessage = responseMessage;
       },
-      onError(error) {
+      // Note: the return value of `onError` MUST be a string. If it is not,
+      // things downstream will break.
+      onError(error): string {
         // `onError` is sometimes called with non-Error values, e.g. strings.
         // We don't care about logging those.
         if (error instanceof Error) {
@@ -627,8 +612,6 @@ export async function editQuestionWithAgent({
         }
 
         // TODO: need to find some sensible way to handle errors here.
-        // Note: the return value of `onError` MUST be a string. If it is not,
-        // things downstream will break.
         return getErrorMessage(error);
       },
     });
