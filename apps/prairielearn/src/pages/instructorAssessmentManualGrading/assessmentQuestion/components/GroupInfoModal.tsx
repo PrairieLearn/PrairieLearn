@@ -41,10 +41,8 @@ export function GroupInfoModal({
         case 'selected': {
           mutation.mutate(
             {
-              action: 'batch_action',
+              selection: modalState.ids,
               closedSubmissionsOnly,
-              numOpenInstances,
-              instanceQuestionIds: modalState.ids,
             },
             {
               onSuccess: onHide,
@@ -55,9 +53,8 @@ export function GroupInfoModal({
         case 'all': {
           mutation.mutate(
             {
-              action: 'ai_instance_question_group_assessment_all',
+              selection: 'all',
               closedSubmissionsOnly,
-              numOpenInstances,
             },
             {
               onSuccess: onHide,
@@ -68,9 +65,8 @@ export function GroupInfoModal({
         case 'ungrouped': {
           mutation.mutate(
             {
-              action: 'ai_instance_question_group_assessment_ungrouped',
+              selection: 'ungrouped',
               closedSubmissionsOnly,
-              numOpenInstances,
             },
             {
               onSuccess: onHide,
@@ -82,7 +78,7 @@ export function GroupInfoModal({
           assertNever(modalState);
       }
     },
-    [modalState, closedSubmissionsOnly, numOpenInstances, mutation, onHide],
+    [modalState, closedSubmissionsOnly, mutation, onHide],
   );
 
   const getTitle = () => {
