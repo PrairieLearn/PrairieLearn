@@ -147,7 +147,7 @@ export function LabelModifyModal({
 
   if (stage.type === 'confirming') {
     return (
-      <Modal show={data !== null} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
+      <Modal show={show} backdrop="static" onHide={() => setStage({ type: 'editing' })}>
         <Modal.Header closeButton>
           <Modal.Title>Confirm unenrolled students</Modal.Title>
         </Modal.Header>

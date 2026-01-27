@@ -42,7 +42,7 @@ export default (function (err, req, res, _next) {
       // for debugging purposes, include the error stack in the response
       ...(config.devMode
         ? {
-            errorStack: err.stack?.split('\n'),
+            errorStack: typeof err.stack === 'string' ? err.stack.split('\n') : undefined,
           }
         : {}),
       errorId,

@@ -72,10 +72,15 @@ describe('Student labels batch actions', () => {
   });
 
   afterAll(async () => {
-    try {
-      await deleteStudentLabel(label.id);
-    } catch {
-      // ignore
+    // Clean up all labels created during tests
+    const courseInstance = await selectCourseInstanceById('1');
+    const labels = await selectStudentLabelsInCourseInstance(courseInstance);
+    for (const l of labels) {
+      try {
+        await deleteStudentLabel(l.id);
+      } catch {
+        // ignore
+      }
     }
     await execute('DELETE FROM enrollments WHERE id = ANY($1::bigint[])', [enrollmentIds]);
     await helperServer.after();

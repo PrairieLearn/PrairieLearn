@@ -244,11 +244,7 @@ router.post(
         courseInstanceJsonPath,
         paths,
         origHash,
-        locals: {
-          authz_data: authzData,
-          course,
-          user: authzData.user,
-        },
+        locals: res.locals,
       });
 
       if (!saveResult.success) {

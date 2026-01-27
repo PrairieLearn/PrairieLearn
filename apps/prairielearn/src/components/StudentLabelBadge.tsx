@@ -17,6 +17,7 @@ export function StudentLabelBadge({
     return (
       <a href={href} className={`${className} text-decoration-none`}>
         {label.name}
+        {children}
       </a>
     );
   }

@@ -125,7 +125,10 @@ router.get(
     }
 
     const uidsParam = z.string().parse(req.query.uids);
-    const uids = uidsParam.split(',').filter(Boolean);
+    const uids = uidsParam
+      .split(',')
+      .map((uid) => uid.trim())
+      .filter(Boolean);
 
     const enrolledUsers = await selectUsersAndEnrollmentsByUidsInCourseInstance({
       uids,

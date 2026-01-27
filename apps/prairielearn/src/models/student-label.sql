@@ -39,8 +39,17 @@ RETURNING
 -- BLOCK add_enrollment_to_student_label
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
-VALUES
-  ($enrollment_id, $student_label_id)
+SELECT
+  e.id AS enrollment_id,
+  sl.id AS student_label_id
+FROM
+  enrollments e
+  -- ensure the enrollment is in the same course instance as the student label
+  JOIN student_labels sl ON e.course_instance_id = sl.course_instance_id
+WHERE
+  e.id = $enrollment_id
+  AND sl.id = $student_label_id
+  AND sl.deleted_at IS NULL
 ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;
@@ -76,8 +85,16 @@ ORDER BY
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
 SELECT
-  unnest($enrollment_ids::bigint[]) AS enrollment_id,
-  $student_label_id AS student_label_id
+  e.id AS enrollment_id,
+  sl.id AS student_label_id
+FROM
+  enrollments e
+  -- ensure the enrollments belong to the same course instance as the student label
+  JOIN student_labels sl ON e.course_instance_id = sl.course_instance_id
+WHERE
+  e.id = ANY ($enrollment_ids::bigint[])
+  AND sl.id = $student_label_id
+  AND sl.deleted_at IS NULL
 ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;

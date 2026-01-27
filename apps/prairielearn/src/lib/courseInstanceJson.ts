@@ -19,16 +19,15 @@ export async function readCourseInstanceJson(
   return JSON.parse(content);
 }
 
+type FileModifyEditorParams = ConstructorParameters<typeof FileModifyEditor>[0];
+type FileModifyEditorLocals = FileModifyEditorParams['locals'];
+
 interface SaveCourseInstanceJsonParams {
   courseInstanceJson: Record<string, unknown>;
   courseInstanceJsonPath: string;
   paths: ReturnType<typeof getPaths>;
   origHash: string;
-  locals: {
-    authz_data: Record<string, any>;
-    course: { path: string };
-    user: { id: string };
-  };
+  locals: FileModifyEditorLocals;
 }
 
 interface SaveResult {
@@ -55,7 +54,7 @@ export async function saveCourseInstanceJson({
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
 
   const editor = new FileModifyEditor({
-    locals: locals as any,
+    locals,
     container: {
       rootPath: paths.rootPath,
       invalidRootPaths: paths.invalidRootPaths,
