@@ -765,24 +765,14 @@ def json_to_sympy(
     if "_variables" not in sympy_expr_dict:
         sympy_expr_dict["_variables"] = None
 
-    # Filter out built-in constants/functions from variables to prevent conflicts.
-    # This can happen if the JSON was created from an expression where a symbol
-    # has the same name as a built-in (e.g., Symbol("pi") vs sympy.pi).
-    variables, custom_functions = filter_out_builtins(
-        sympy_expr_dict["_variables"],
-        sympy_expr_dict.get("_custom_functions"),
-        allow_complex=allow_complex,
-        allow_trig_functions=allow_trig_functions,
-    )
-
     return convert_string_to_sympy(
         sympy_expr_dict["_value"],
-        variables or None,
+        sympy_expr_dict["_variables"],
         allow_hidden=True,
         allow_complex=allow_complex,
         allow_trig_functions=allow_trig_functions,
         simplify_expression=simplify_expression,
-        custom_functions=custom_functions or None,
+        custom_functions=sympy_expr_dict.get("_custom_functions"),
         assumptions=sympy_expr_dict.get("_assumptions"),
     )
 
@@ -959,52 +949,36 @@ def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
     return names
 
 
-def filter_out_builtins(
-    variables: list[str] | None,
-    custom_functions: list[str] | None,
+def validate_names_for_conflicts(
+    element_name: str,
+    variables: list[str],
+    custom_functions: list[str],
     *,
     allow_complex: bool = False,
     allow_trig_functions: bool = True,
-) -> tuple[list[str], list[str]]:
-    """Filter out built-in constants and functions from user-specified lists.
-
-    This helps prevent conflicts when users specify variable or function names
-    that overlap with built-in constants (like pi, e, infty) or functions
-    (like sin, cos, sqrt).
+) -> None:
+    """Validate that user-specified names don't conflict with built-in constants or functions.
 
     Parameters:
-        variables: User-specified variable names (may include built-in constants).
-        custom_functions: User-specified function names (may include built-in functions).
+        element_name: Name of the element (for error messages).
+        variables: User-specified variable names.
+        custom_functions: User-specified custom function names.
         allow_complex: Whether complex constants (i, j) are available.
         allow_trig_functions: Whether trig functions are available.
 
-    Returns:
-        A tuple of (filtered_variables, filtered_functions) with built-ins removed.
+    Raises:
+        ValueError: If any names conflict with built-ins.
     """
-    builtin_constants = get_builtin_constants(allow_complex=allow_complex)
-    builtin_functions = get_builtin_functions(allow_trig_functions=allow_trig_functions)
+    builtins = get_builtin_constants(
+        allow_complex=allow_complex
+    ) | get_builtin_functions(allow_trig_functions=allow_trig_functions)
 
-    filtered_variables = (
-        [
-            v
-            for v in variables
-            if v not in builtin_constants and v not in builtin_functions
-        ]
-        if variables is not None
-        else []
-    )
-
-    filtered_functions = (
-        [
-            f
-            for f in custom_functions
-            if f not in builtin_constants and f not in builtin_functions
-        ]
-        if custom_functions is not None
-        else []
-    )
-
-    return filtered_variables, filtered_functions
+    conflicts = [name for name in variables + custom_functions if name in builtins]
+    if conflicts:
+        raise ValueError(
+            f'Element "{element_name}" specifies names that conflict with built-ins: '
+            f"{', '.join(conflicts)}. These are automatically available and should not be listed."
+        )
 
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda

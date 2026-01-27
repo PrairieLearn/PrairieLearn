@@ -78,57 +78,27 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
 
-    # Get element configuration for validation
-    allow_complex = pl.get_boolean_attrib(
-        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
-    )
-    allow_trig = pl.get_boolean_attrib(
-        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
-    )
-
-    # Validate that user-specified variables don't conflict with built-in constants
+    # Validate that user-specified variables/functions don't conflict with built-ins
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
+    allow_complex = pl.get_boolean_attrib(
+        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+    )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    psu.validate_names_for_conflicts(
+        name,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig,
+    )
 
-    builtin_constants = psu.get_builtin_constants(allow_complex=allow_complex)
-    builtin_functions = psu.get_builtin_functions(allow_trig_functions=allow_trig)
-
-    conflicting_vars = [v for v in variables if v in builtin_constants]
-    if conflicting_vars:
-        raise ValueError(
-            f'The "variables" attribute for "{name}" contains names that conflict with '
-            f"built-in constants: {', '.join(conflicting_vars)}. "
-            f"These constants ({', '.join(sorted(builtin_constants))}) are automatically available "
-            "and should not be listed as variables."
-        )
-
-    conflicting_var_funcs = [v for v in variables if v in builtin_functions]
-    if conflicting_var_funcs:
-        raise ValueError(
-            f'The "variables" attribute for "{name}" contains names that conflict with '
-            f"built-in functions: {', '.join(conflicting_var_funcs)}. "
-            "These functions are automatically available and should not be listed as variables."
-        )
-
-    conflicting_funcs = [f for f in custom_functions if f in builtin_functions]
-    if conflicting_funcs:
-        raise ValueError(
-            f'The "custom-functions" attribute for "{name}" contains names that conflict with '
-            f"built-in functions: {', '.join(conflicting_funcs)}. "
-            "These functions are automatically available and should not be listed as custom functions."
-        )
-
-    conflicting_func_consts = [f for f in custom_functions if f in builtin_constants]
-    if conflicting_func_consts:
-        raise ValueError(
-            f'The "custom-functions" attribute for "{name}" contains names that conflict with '
-            f"built-in constants: {', '.join(conflicting_func_consts)}. "
-            "These constants are automatically available and should not be listed as custom functions."
-        )
     pl.check_answers_names(data, name)
 
     if pl.has_attrib(element, "correct-answer"):
