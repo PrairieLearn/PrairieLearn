@@ -561,8 +561,8 @@ router.get(
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
-        ['UID', 'uid'],
+        ['group_name', 'name'],
+        ['uid', 'uid'],
       ];
       if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);

@@ -467,10 +467,10 @@ describe('Instructor Assessment Downloads', { timeout: 60_000 }, function () {
       const data = await downloadCsv(
         ctx.instructorAssessmentDownloadsUrl + '/' + ctx.filenames.groupsCsvFilename,
       );
-      const teamRows = data.filter((row) => row['groupName'] === 'testteam');
+      const teamRows = data.filter((row) => row['group_name'] === 'testteam');
       assert.lengthOf(teamRows, 2);
 
-      const uids = teamRows.map((row) => row['UID']);
+      const uids = teamRows.map((row) => row['uid']);
       assert.include(uids, ctx.studentUsers[0].uid);
       assert.include(uids, ctx.studentUsers[1].uid);
     });

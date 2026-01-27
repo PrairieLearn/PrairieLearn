@@ -56,7 +56,7 @@ WITH
       aig.user_id ASC,
       aig.assessment_id ASC,
       aig.score_perc DESC,
-      aig.id ASC
+      aig.id DESC
   ),
   user_ids AS (
     (
