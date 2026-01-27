@@ -161,8 +161,8 @@ const testEditData: EditData[] = [
   },
   {
     url: `${courseInstanceUrl}/question/1/settings`,
-    button: '#copyQuestionButton',
     formSelector: 'form[name="copy-question-form"]',
+    dynamicPostInfo: getQuestionCopyPostInfo,
     data: {
       to_course_id: 1,
     },
@@ -357,6 +357,20 @@ function getCourseInstanceCopyPostInfo(_: cheerio.Cheerio<any>) {
   return {
     csrfToken,
     url: '/pl/course/1/copy_public_course_instance',
+  };
+}
+
+function getQuestionCopyPostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // The copy question form is rendered as a React popover, so we generate
+  // the CSRF token directly instead of parsing it from data-bs-content.
+  const csrfToken = generateCsrfToken({
+    url: '/pl/course_instance/1/instructor/question/1/settings',
+    authnUserId,
+  });
+  return {
+    csrfToken,
+    url: undefined,
   };
 }
 
