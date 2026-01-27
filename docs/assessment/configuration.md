@@ -467,8 +467,8 @@ Note that changing an assessment from individual to group-based or vice versa af
     | Attribute                | Type    | Default | Description                                                                                                |
     | ------------------------ | ------- | ------- | ---------------------------------------------------------------------------------------------------------- |
     | `groupWork`              | boolean | false   | Enable the group work for the assessment.                                                                  |
-    | `groupMaxSize`           | integer | -       | The maximum size of a group (default: no minimum).                                                         |
-    | `groupMinSize`           | integer | -       | The minimum size of a group (default: no maximum).                                                         |
+    | `groupMaxSize`           | integer | -       | The maximum size of a group (default: no maximum).                                                         |
+    | `groupMinSize`           | integer | -       | The minimum size of a group (default: no minimum).                                                         |
     | `studentGroupCreate`     | boolean | false   | Allow students to create groups.                                                                           |
     | `studentGroupChooseName` | boolean | true    | Allow students to choose a group name when creating a group. If set to false, a default name will be used. |
     | `studentGroupJoin`       | boolean | false   | Allow students to join other groups by join code.                                                          |
@@ -526,18 +526,18 @@ To opt in to custom group roles, roles must be defined in the `groups.roles` arr
     "roles": [
       {
         "name": "Manager",
-        "minimum": 1,
-        "maximum": 1
+        "minMembers": 1,
+        "maxMembers": 1
       },
       {
         "name": "Recorder",
-        "minimum": 1,
-        "maximum": 1
+        "minMembers": 1,
+        "maxMembers": 1
       },
       {
         "name": "Reflector",
-        "minimum": 1,
-        "maximum": 1
+        "minMembers": 1,
+        "maxMembers": 1
       },
       {
         "name": "Contributor"
@@ -550,11 +550,11 @@ To opt in to custom group roles, roles must be defined in the `groups.roles` arr
 }
 ```
 
-| Attribute | Type    | Default | Description                                                                  |
-| --------- | ------- | ------- | ---------------------------------------------------------------------------- |
-| `name`    | string  | -       | The name of the role.                                                        |
-| `minimum` | integer | 0       | The minimum required number of students holding this role in the assessment. |
-| `maximum` | integer | -       | The maximum required number of students holding this role in the assessment. |
+| Attribute    | Type    | Default | Description                                                                  |
+| ------------ | ------- | ------- | ---------------------------------------------------------------------------- |
+| `name`       | string  | -       | The name of the role.                                                        |
+| `minMembers` | integer | 0       | The minimum required number of students holding this role in the assessment. |
+| `maxMembers` | integer | -       | The maximum required number of students holding this role in the assessment. |
 
 ??? note "Legacy group roles format"
 

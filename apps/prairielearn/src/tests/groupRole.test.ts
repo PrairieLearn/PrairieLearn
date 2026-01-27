@@ -1223,7 +1223,9 @@ const changeGroupRolesConfig = async (
     'infoAssessment.json',
   );
   const infoAssessment = await fs.readJSON(infoAssessmentPath);
+  infoAssessment.groups ??= {};
   infoAssessment.groups.roles = groupRoles;
+  infoAssessment.groups.rolePermissions ??= {};
   infoAssessment.groups.rolePermissions.canAssignRoles = canAssignRoles;
   await fs.writeJSON(infoAssessmentPath, infoAssessment);
   await syncCourseData(courseDir);
