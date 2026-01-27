@@ -2,7 +2,7 @@ import crypto from 'node:crypto';
 
 import base64url from 'base64url';
 import debugfn from 'debug';
-import _ from 'lodash';
+import { isEqual } from 'es-toolkit';
 
 const debug = debugfn('prairielearn:csrf');
 const sep = '.';
@@ -118,7 +118,7 @@ export function checkSignedToken(
   const tokenData = getCheckedSignedTokenData(token, secretKey, options);
   debug(`checkSignedToken(): tokenData = ${JSON.stringify(tokenData)}`);
   if (tokenData == null) return false;
-  if (!_.isEqual(data, tokenData)) return false;
+  if (!isEqual(data, tokenData)) return false;
   return true;
 }
 

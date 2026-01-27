@@ -3990,12 +3990,11 @@ __metadata:
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.23"
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
+    es-toolkit: "npm:^1.43.0"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.23"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4048,7 +4047,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4128,7 +4127,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4352,15 +4351,14 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.23"
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
     commander: "npm:^14.0.2"
     diff: "npm:^8.0.3"
+    es-toolkit: "npm:^1.43.0"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.23"
     postgres-array: "npm:^3.0.4"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
@@ -4376,12 +4374,12 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/lodash": "npm:^4.17.23"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^24.10.9"
     "@types/pg-cursor": "npm:^2.7.2"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
+    es-toolkit: "npm:^1.43.0"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.17.0"
     pg-cursor: "npm:^2.16.0"
@@ -4578,6 +4576,7 @@ __metadata:
     dompurify: "npm:^3.3.1"
     dropzone: "npm:^5.9.3"
     es-main: "npm:^1.4.0"
+    es-toolkit: "npm:^1.43.0"
     execa: "npm:^9.6.1"
     express: "npm:^4.22.1"
     express-async-handler: "npm:^1.2.0"
@@ -4602,7 +4601,6 @@ __metadata:
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.9.1"
-    is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^6.0.0"
     jju: "npm:^1.4.0"
     jose: "npm:^6.1.3"
@@ -4803,7 +4801,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^4.0.17"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
   languageName: unknown
@@ -4906,7 +4904,6 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     fast-glob: "npm:^3.3.3"
     ioredis: "npm:^5.9.1"
-    lodash: "npm:^4.17.23"
     minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.11"
@@ -12373,6 +12370,18 @@ __metadata:
     has-tostringtag: "npm:^1.0.2"
     hasown: "npm:^2.0.2"
   checksum: 10c0/ef2ca9ce49afe3931cb32e35da4dcb6d86ab02592cfc2ce3e49ced199d9d0bb5085fc7e73e06312213765f5efa47cc1df553a6a5154584b21448e9fb8355b1af
+  languageName: node
+  linkType: hard
+
+"es-toolkit@npm:^1.43.0":
+  version: 1.44.0
+  resolution: "es-toolkit@npm:1.44.0"
+  dependenciesMeta:
+    "@trivago/prettier-plugin-sort-imports@4.3.0":
+      unplugged: true
+    prettier-plugin-sort-re-exports@0.0.1:
+      unplugged: true
+  checksum: 10c0/b80ff52ddc85ba26914cda57c9d4e46379ccc38c60dc097ef0d065cc0b20f95a16cf8d537969eea600b51c6687b5900a6cce67489db16d5ccc14d47597a29c34
   languageName: node
   linkType: hard
 
