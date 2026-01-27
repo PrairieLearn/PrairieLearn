@@ -654,8 +654,8 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
             and order_blocks_options.has_optional_blocks
         ):
             depends_multigraph, final_blocks = extract_multigraph(true_answer_list)
-            num_initial_correct, true_answer_length, depends_graph = (
-                grade_multigraph(submission, depends_multigraph, final_blocks)
+            num_initial_correct, true_answer_length, depends_graph = grade_multigraph(
+                submission, depends_multigraph, final_blocks
             )
         elif grading_method in (
             GradingMethodType.RANKING,
