@@ -1,19 +1,19 @@
 import { html } from '@prairielearn/html';
 
-import type { TeamConfig } from '../lib/db-types.js';
+import type { GroupConfig } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-import type { TeamInfo } from '../lib/teams.js';
+import type { GroupInfo } from '../lib/teams.js';
 
 import { Modal } from './Modal.js';
 
-export function TeamWorkInfoContainer({
-  teamConfig,
-  teamInfo,
+export function GroupWorkInfoContainer({
+  groupConfig,
+  groupInfo,
   userCanAssignRoles,
   csrfToken,
 }: {
-  teamConfig: TeamConfig;
-  teamInfo: TeamInfo;
+  groupConfig: GroupConfig;
+  groupInfo: GroupInfo;
   userCanAssignRoles: boolean;
   csrfToken: string;
 }) {
@@ -21,29 +21,31 @@ export function TeamWorkInfoContainer({
     <div class="container-fluid">
       <div class="row">
         <div class="col-sm bg-light py-4 px-4 border">
-          <div><strong>Group name:</strong> <span id="team-name">${teamInfo.teamName}</span></div>
-          ${teamConfig.student_authz_join
+          <div>
+            <strong>Group name:</strong> <span id="group-name">${groupInfo.groupName}</span>
+          </div>
+          ${groupConfig.student_authz_join
             ? html`
                 <div>
-                  <strong>Join code:</strong> <span id="join-code">${teamInfo.joinCode}</span>
+                  <strong>Join code:</strong> <span id="join-code">${groupInfo.joinCode}</span>
                 </div>
                 <div class="mt-3">
-                  ${(teamConfig.minimum ?? 0) > 1
+                  ${(groupConfig.minimum ?? 0) > 1
                     ? html`
                         This is a group assessment. Use your join code to invite others to join the
                         group. A group must have
-                        ${teamConfig.minimum === teamConfig.maximum
-                          ? teamConfig.minimum
-                          : teamConfig.maximum
-                            ? `between ${teamConfig.minimum} and ${teamConfig.maximum}`
-                            : `at least ${teamConfig.minimum}`}
+                        ${groupConfig.minimum === groupConfig.maximum
+                          ? groupConfig.minimum
+                          : groupConfig.maximum
+                            ? `between ${groupConfig.minimum} and ${groupConfig.maximum}`
+                            : `at least ${groupConfig.minimum}`}
                         students.
                       `
                     : html`
                         This assessment can be done individually or in groups. Use your join code if
                         you wish to invite others to join the group.
-                        ${teamConfig.maximum
-                          ? `A group must have no more than ${teamConfig.maximum} students.`
+                        ${groupConfig.maximum
+                          ? `A group must have no more than ${groupConfig.maximum} students.`
                           : ''}
                       `}
                 </div>
@@ -51,28 +53,28 @@ export function TeamWorkInfoContainer({
             : ''}
         </div>
         <div class="col-sm bg-light py-4 px-4 border">
-          ${teamConfig.student_authz_leave
+          ${groupConfig.student_authz_leave
             ? html`
                 <div class="text-end">
                   <button
                     type="button"
                     class="btn btn-danger"
                     data-bs-toggle="modal"
-                    data-bs-target="#leaveTeamModal"
+                    data-bs-target="#leaveGroupModal"
                   >
                     Leave the group
                   </button>
                 </div>
-                ${LeaveTeamModal({ csrfToken })}
+                ${LeaveGroupModal({ csrfToken })}
               `
             : ''}
-          <span id="team-member"><b>Group members: </b></span>
-          ${teamInfo.teamMembers.map((user) =>
-            teamConfig.has_roles
+          <span id="group-member"><b>Group members: </b></span>
+          ${groupInfo.groupMembers.map((user) =>
+            groupConfig.has_roles
               ? html`
                   <li>
                     ${user.uid} -
-                    ${teamInfo.rolesInfo?.roleAssignments[user.uid]
+                    ${groupInfo.rolesInfo?.roleAssignments[user.uid]
                       ?.map((a) => a.role_name)
                       .join(', ') || 'No role assigned'}
                   </li>
@@ -82,13 +84,13 @@ export function TeamWorkInfoContainer({
         </div>
       </div>
     </div>
-    ${teamConfig.has_roles ? TeamRoleTable({ teamInfo, userCanAssignRoles, csrfToken }) : ''}
+    ${groupConfig.has_roles ? GroupRoleTable({ groupInfo, userCanAssignRoles, csrfToken }) : ''}
   `;
 }
 
-function LeaveTeamModal({ csrfToken }: { csrfToken: string }) {
+function LeaveGroupModal({ csrfToken }: { csrfToken: string }) {
   return Modal({
-    id: 'leaveTeamModal',
+    id: 'leaveGroupModal',
     title: 'Confirm leave group',
     body: html`
       <p>Are you sure you want to leave the group?</p>
@@ -98,24 +100,24 @@ function LeaveTeamModal({ csrfToken }: { csrfToken: string }) {
       </p>
     `,
     footer: html`
-      <input type="hidden" name="__action" value="leave_team" />
+      <input type="hidden" name="__action" value="leave_group" />
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
-      <button id="leave-team" type="submit" class="btn btn-danger">Leave group</button>
+      <button id="leave-group" type="submit" class="btn btn-danger">Leave group</button>
     `,
   });
 }
 
-function TeamRoleTable({
-  teamInfo,
+function GroupRoleTable({
+  groupInfo,
   userCanAssignRoles,
   csrfToken,
 }: {
-  teamInfo: TeamInfo;
+  groupInfo: GroupInfo;
   userCanAssignRoles: boolean;
   csrfToken: string;
 }) {
-  const { rolesInfo, teamMembers, teamSize } = teamInfo;
+  const { rolesInfo, groupMembers, groupSize } = groupInfo;
   if (!rolesInfo) return '';
   const roleConfigProblems =
     rolesInfo.validationErrors.length +
@@ -141,7 +143,7 @@ function TeamRoleTable({
           ? html`
               <span
                 class="badge rounded-pill text-bg-danger"
-                data-testid="team-role-config-problems"
+                data-testid="group-role-config-problems"
               >
                 ${roleConfigProblems}
               </span>
@@ -149,7 +151,7 @@ function TeamRoleTable({
           : ''}
       </summary>
       <div class="card-body">
-        ${TeamRoleErrors({ rolesInfo, teamSize })}
+        ${GroupRoleErrors({ rolesInfo, groupSize })}
         <p>
           This assessment contains group roles, which selectively allow students to view questions,
           submit answers, and change group role assignments.
@@ -168,13 +170,13 @@ function TeamRoleTable({
                 </tr>
               </thead>
               <tbody>
-                ${teamMembers.map(
+                ${groupMembers.map(
                   (user) => html`
                     <tr>
                       <td>${user.uid}</td>
                       <td>
                         <div class="d-flex gap-3">
-                          ${rolesInfo.teamRoles.map(
+                          ${rolesInfo.groupRoles.map(
                             (role) => html`
                               <label
                                 class="d-inline-flex gap-1 ${rolesInfo.disabledRoles.includes(
@@ -215,7 +217,7 @@ function TeamRoleTable({
           ${userCanAssignRoles
             ? html`
                 <div class="d-flex justify-content-center">
-                  <input type="hidden" name="__action" value="update_team_roles" />
+                  <input type="hidden" name="__action" value="update_group_roles" />
                   <input type="hidden" name="__csrf_token" value="${csrfToken}" />
                   <button type="submit" class="btn btn-primary">Update Roles</button>
                 </div>
@@ -238,13 +240,13 @@ function TeamRoleTable({
               </tr>
             </thead>
             <tbody>
-              ${rolesInfo.teamRoles.map(
-                (teamRole) => html`
+              ${rolesInfo.groupRoles.map(
+                (groupRole) => html`
                   <tr>
-                    <td>${teamRole.role_name}</td>
-                    <td>${teamRole.minimum ?? 0}</td>
-                    <td>${teamRole.maximum ?? 'Unlimited'}</td>
-                    <td>${teamRole.can_assign_roles ? 'Yes' : 'No'}</td>
+                    <td>${groupRole.role_name}</td>
+                    <td>${groupRole.minimum ?? 0}</td>
+                    <td>${groupRole.maximum ?? 'Unlimited'}</td>
+                    <td>${groupRole.can_assign_roles ? 'Yes' : 'No'}</td>
                   </tr>
                 `,
               )}
@@ -256,18 +258,18 @@ function TeamRoleTable({
   `;
 }
 
-function TeamRoleErrors({
+function GroupRoleErrors({
   rolesInfo,
-  teamSize,
+  groupSize,
 }: {
-  rolesInfo: NonNullable<TeamInfo['rolesInfo']>;
-  teamSize: number;
+  rolesInfo: NonNullable<GroupInfo['rolesInfo']>;
+  groupSize: number;
 }) {
   return html`
     ${!rolesInfo.rolesAreBalanced
       ? html`
           <div class="alert alert-danger" role="alert">
-            At least one student has too many roles. In a group with ${teamSize} students, every
+            At least one student has too many roles. In a group with ${groupSize} students, every
             student must be assigned to exactly <strong>one</strong> role.
           </div>
         `
