@@ -9,7 +9,6 @@ import { type NewVariantHandle, QuestionAndFilePreview } from './QuestionAndFile
 
 export function AiQuestionGenerationEditor({
   chatCsrfToken,
-  cancelCsrfToken,
   question,
   initialMessages,
   questionFiles: initialQuestionFiles,
@@ -22,7 +21,6 @@ export function AiQuestionGenerationEditor({
   variantCsrfToken,
 }: {
   chatCsrfToken: string;
-  cancelCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
   questionFiles: Record<string, string>;
@@ -64,7 +62,6 @@ export function AiQuestionGenerationEditor({
       </div>
       <AiQuestionGenerationChat
         chatCsrfToken={chatCsrfToken}
-        cancelCsrfToken={cancelCsrfToken}
         initialMessages={initialMessages}
         questionId={question.id}
         showJobLogsLink={showJobLogsLink}

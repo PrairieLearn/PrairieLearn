@@ -479,7 +479,6 @@ function useShowSpinner({
 
 export function AiQuestionGenerationChat({
   chatCsrfToken,
-  cancelCsrfToken,
   initialMessages,
   questionId,
   showJobLogsLink,
@@ -490,7 +489,6 @@ export function AiQuestionGenerationChat({
   hasUnsavedChanges,
 }: {
   chatCsrfToken: string;
-  cancelCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
   questionId: string;
   showJobLogsLink: boolean;
@@ -705,7 +703,7 @@ export function AiQuestionGenerationChat({
             onStop={async () => {
               await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`, {
                 method: 'POST',
-                headers: { 'X-CSRF-Token': cancelCsrfToken },
+                headers: { 'X-CSRF-Token': chatCsrfToken },
               });
             }}
           />

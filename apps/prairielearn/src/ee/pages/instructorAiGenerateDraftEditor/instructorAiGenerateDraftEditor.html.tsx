@@ -1,5 +1,6 @@
 import { html, unsafeHtml } from '@prairielearn/html';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 
 import { PageLayout } from '../../../components/PageLayout.js';
 import {
@@ -8,6 +9,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
+import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import { generateCsrfToken } from '../../../middlewares/csrfToken.js';
@@ -30,15 +32,13 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled: boolean;
   questionContainerHtml: string;
 }) {
-  const chatCsrfToken = generateCsrfToken({
-    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
-    authnUserId: resLocals.authn_user.id,
-  });
-
-  const cancelCsrfToken = generateCsrfToken({
-    url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat/cancel`,
-    authnUserId: resLocals.authn_user.id,
-  });
+  const chatCsrfToken = generatePrefixCsrfToken(
+    {
+      url: `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/chat`,
+      authn_user_id: resLocals.authn_user.id,
+    },
+    config.secretKey,
+  );
 
   const variantUrl = `${resLocals.urlPrefix}/ai_generate_editor/${question.id}/variant`;
   const variantCsrfToken = generateCsrfToken({
@@ -81,7 +81,6 @@ export function InstructorAiGenerateDraftEditor({
       <Hydrate className="app-content-container">
         <AiQuestionGenerationEditor
           chatCsrfToken={chatCsrfToken}
-          cancelCsrfToken={cancelCsrfToken}
           question={StaffQuestionSchema.parse(question)}
           initialMessages={messages}
           questionFiles={questionFiles}
