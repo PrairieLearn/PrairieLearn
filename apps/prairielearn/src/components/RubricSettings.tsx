@@ -19,8 +19,6 @@ type RubricItemData = Omit<RenderedRubricItem, 'rubric_item' | 'num_submissions'
   num_submissions: number | null;
 };
 
-type RubricItemWithNoPoints = Omit<RubricItem, 'points'> & { points: number | null };
-
 const ExportedRubricItemSchema = z.object({
   order: z.number(),
   points: z.number(),
@@ -219,7 +217,7 @@ export function RubricSettings({
     });
   };
 
-  const updateRubricItem = (idx: number, patch: Partial<RubricItemWithNoPoints>) => {
+  const updateRubricItem = (idx: number, patch: Partial<RubricItemData['rubric_item']>) => {
     setRubricItems((prev) => {
       const next = prev.slice();
       next[idx] = {
@@ -988,7 +986,7 @@ function RubricRow({
   deleteRow: () => void;
   moveUp: () => void;
   moveDown: () => void;
-  updateRubricItem: (patch: Partial<RubricItemWithNoPoints>) => void;
+  updateRubricItem: (patch: Partial<RubricItemData['rubric_item']>) => void;
   onDragStart: () => void;
   onDragOver: () => void;
   hasCourseInstancePermissionEdit: boolean;
