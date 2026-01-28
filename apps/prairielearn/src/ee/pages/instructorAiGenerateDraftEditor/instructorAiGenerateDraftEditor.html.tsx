@@ -17,6 +17,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
@@ -82,7 +83,7 @@ export function InstructorAiGenerateDraftEditor({
             <main id="content" class="app-content">
               <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back">
                 <a
-                  href="${resLocals.urlPrefix}/ai_generate_question_drafts"
+                  href="${getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}"
                   class="btn btn-sm btn-ghost"
                 >
                   <i class="fa fa-arrow-left" aria-hidden="true"></i>
@@ -190,8 +191,6 @@ export function InstructorAiGenerateDraftEditor({
 }
 
 export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'course'> }) {
-  const draftsUrl = `${resLocals.urlPrefix}/ai_generate_question_drafts`;
-
   return PageLayout({
     resLocals,
     pageTitle: 'Draft question not found',
@@ -200,23 +199,26 @@ export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'cour
       page: 'course_admin',
       subPage: 'questions',
     },
-    content: html`
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white">Draft question not found</div>
-        <div class="card-body">
-          <p class="mb-0">
+    content: (
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">Draft question not found</div>
+        <div className="card-body">
+          <p className="mb-0">
             The draft question you're looking for could not be found. It may have been deleted or
             already finalized.
           </p>
         </div>
-        <div class="card-footer">
-          <a href="${draftsUrl}" class="btn btn-primary">
-            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+        <div className="card-footer">
+          <a
+            href={getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}
+            className="btn btn-primary"
+          >
+            <i className="fa fa-arrow-left" aria-hidden="true" />
             Back to AI question drafts
           </a>
         </div>
       </div>
-    `,
+    ),
   });
 }
 
