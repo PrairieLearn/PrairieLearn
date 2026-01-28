@@ -230,7 +230,7 @@ export async function aiGrade({
         return false;
       }
 
-      // Since other jobs are concurrently running, we could exceed the rate limit
+      // Since other jobs may be concurrently running, we could exceed the rate limit
       // by 19 requests worth of usage. We are okay with this potential race condition.
       const intervalCost = await getIntervalUsage(course_instance);
 
