@@ -8,7 +8,7 @@ indexes
     assessment_access_control_student_labels_pkey: PRIMARY KEY (id) USING btree (id)
     assessment_access_control_stu_assessment_access_control_id__key: UNIQUE (assessment_access_control_id, student_label_id) USING btree (assessment_access_control_id, student_label_id)
     assessment_access_control_student_labels_aac_id_idx: USING btree (assessment_access_control_id)
-    assessment_access_control_student_labels_sl_id_idx: USING btree (student_label_id)
+    assessment_access_control_student_labels_sg_id_idx: USING btree (student_label_id)
 
 check constraints
     assessment_access_control_student_labels_target_type_check: CHECK (target_type = 'student_label'::text)
