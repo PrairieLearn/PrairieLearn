@@ -56,6 +56,20 @@ export function getNavPageTabs() {
         renderCondition: (resLocals) => resLocals.billing_enabled,
       },
     ],
+    students: [
+      {
+        activeSubPage: ['overview', 'detail'],
+        urlSuffix: '/instance_admin/students',
+        iconClasses: 'bi bi-people-fill',
+        tabLabel: 'Students',
+      },
+      {
+        activeSubPage: 'student_labels',
+        urlSuffix: '/instance_admin/students/labels',
+        iconClasses: 'bi bi-person-badge',
+        tabLabel: 'Student labels',
+      },
+    ],
     course_admin: [
       {
         activeSubPage: 'settings',

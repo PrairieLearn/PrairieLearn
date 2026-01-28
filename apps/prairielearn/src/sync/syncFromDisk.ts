@@ -26,6 +26,7 @@ import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
+import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
 import {
@@ -149,6 +150,15 @@ export async function syncDiskToSqlWithLock(
     const courseInstanceIds = await timed('Synced course instances', () =>
       syncCourseInstances.sync(courseId, courseData),
     );
+    await timed('Synced student labels', async () => {
+      for (const [ciid, courseInstanceData] of Object.entries(courseData.courseInstances)) {
+        const courseInstanceId = courseInstanceIds[ciid];
+        if (courseInstanceId) {
+          const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
+          await syncStudentLabels(courseInstanceId, studentLabels);
+        }
+      }
+    });
     await timed('Synced topics', () => syncTopics.sync(courseId, courseData));
     const questionIds = await timed('Synced questions', () =>
       syncQuestions.sync(courseId, courseData),

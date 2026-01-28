@@ -6,6 +6,7 @@ import {
   type StaffAuditEvent,
   StaffCourseInstanceSchema,
   StaffEnrollmentSchema,
+  type StaffStudentLabel,
   StaffUserSchema,
 } from '../../lib/client/safe-db-types.js';
 import { SprocUsersGetDisplayedRoleSchema } from '../../lib/db-types.js';
@@ -28,6 +29,8 @@ interface StudentDetailProps {
   auditEvents: StaffAuditEvent[];
   gradebookRows: StaffGradebookRow[];
   student: UserDetail;
+  studentLabels: StaffStudentLabel[];
+  availableStudentLabels: StaffStudentLabel[];
   urlPrefix: string;
   courseInstanceUrl: string;
   csrfToken: string;
@@ -39,6 +42,8 @@ export function InstructorStudentDetail({
   auditEvents,
   gradebookRows,
   student,
+  studentLabels,
+  availableStudentLabels,
   urlPrefix,
   courseInstanceUrl,
   csrfToken,
@@ -70,6 +75,8 @@ export function InstructorStudentDetail({
     <TimezoneContext value={course_instance.display_timezone}>
       <OverviewCard
         student={student}
+        studentLabels={studentLabels}
+        availableStudentLabels={availableStudentLabels}
         courseInstanceUrl={courseInstanceUrl}
         csrfToken={csrfToken}
         hasCourseInstancePermissionEdit={hasCourseInstancePermissionEdit ?? false}

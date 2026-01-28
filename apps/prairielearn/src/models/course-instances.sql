@@ -130,3 +130,11 @@ WHERE
   ci.uuid = $uuid
   AND ci.course_id = $course_id
   AND ci.deleted_at IS NULL;
+
+-- BLOCK create_course_instance
+INSERT INTO
+  course_instances (course_id, display_timezone, enrollment_code)
+VALUES
+  ($course_id, $display_timezone, $enrollment_code)
+RETURNING
+  *;
