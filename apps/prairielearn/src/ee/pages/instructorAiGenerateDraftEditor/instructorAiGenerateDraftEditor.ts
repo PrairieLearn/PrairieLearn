@@ -7,6 +7,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+import { run } from '@prairielearn/run';
 import { IdSchema } from '@prairielearn/zod';
 
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
@@ -149,23 +150,30 @@ router.get(
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     const messages = await selectAiQuestionGenerationMessages(res.locals.question.id);
 
-    const initialMessages = messages
-      .filter((message) => {
-        // We need to filter out any empty messages, as they'll fail validation by
-        // `validateUIMessages()`.
-        return message.parts.length > 0;
-      })
-      .map((message): QuestionGenerationUIMessage => {
-        return {
-          id: message.id,
-          role: message.role,
-          parts: message.parts,
-          metadata: {
-            job_sequence_id: message.job_sequence_id,
-            status: message.status,
-          },
-        };
+    const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
+      // Messages without parts will fail validation by `validateUIMessages()`.
+      // We'll inject an empty text part in that case.
+      //
+      // This is not expected to happen in most cases, but there's a possibility
+      // that it could in an error scenario.
+      const parts = run(() => {
+        if (message.parts.length === 0) {
+          return [{ type: 'text', text: '' }];
+        }
+        return message.parts;
       });
+
+      return {
+        id: message.id,
+        role: message.role,
+        parts,
+        metadata: {
+          job_sequence_id: message.job_sequence_id,
+          status: message.status,
+          include_in_context: message.include_in_context,
+        },
+      };
+    });
 
     // `validateUIMessages()` won't validate an empty array; we'll skip validation in that case.
     //
@@ -270,6 +278,10 @@ router.post(
     }
 
     const { model, modelId } = getAgenticModel();
+    const messageParts = req.body.message?.parts;
+    if (!messageParts) {
+      throw new error.HttpStatusError(400, 'No message parts provided');
+    }
     const { message } = await editQuestionWithAgent({
       model,
       modelId,
@@ -278,7 +290,7 @@ router.post(
       user: res.locals.user,
       authnUser: res.locals.authn_user,
       hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
-      messages: req.body.messages,
+      userMessageParts: messageParts,
     });
 
     const streamContext = await getAiQuestionGenerationStreamContext();

@@ -370,6 +370,65 @@ function ScrollToBottomButton({
   );
 }
 
+function Message({
+  message,
+  isLastMessage,
+  showJobLogsLink,
+  showSpinner,
+  urlPrefix,
+}: {
+  message: QuestionGenerationUIMessage;
+  isLastMessage: boolean;
+  showJobLogsLink: boolean;
+  showSpinner: boolean;
+  urlPrefix: string;
+}) {
+  if (message.role === 'user') {
+    const textContent = message.parts
+      .filter((part): part is TextUIPart => part.type === 'text')
+      .map((part) => part.text)
+      .join('\n');
+
+    return (
+      <div className="d-flex flex-row-reverse mb-3">
+        <div
+          className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
+          style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
+        >
+          {textContent}
+        </div>
+      </div>
+    );
+  }
+
+  const jobLogsUrl = run(() => {
+    if (!showJobLogsLink) return null;
+
+    const job_sequence_id = message.metadata?.job_sequence_id;
+    if (!job_sequence_id) return null;
+
+    return urlPrefix + '/jobSequence/' + job_sequence_id;
+  });
+
+  return (
+    <div className="d-flex flex-column gap-2 mb-3">
+      <MessageParts parts={message.parts} />
+      {message.metadata?.status === 'canceled' && (
+        <div className="small text-muted fst-italic">
+          <i className="bi bi-stop-circle me-1" aria-hidden="true" />
+          Generation was stopped
+        </div>
+      )}
+      {isLastMessage && showSpinner && <ProgressStatus state="streaming" statusText="Working..." />}
+      {jobLogsUrl && (
+        <a className="small" href={jobLogsUrl} target="_blank">
+          View job logs
+        </a>
+      )}
+    </div>
+  );
+}
+
 function Messages({
   messages,
   showJobLogsLink,
@@ -381,59 +440,65 @@ function Messages({
   showSpinner: boolean;
   urlPrefix: string;
 }) {
-  return messages.map((message, index) => {
-    const isLastMessage = index === messages.length - 1;
+  const [showExcluded, setShowExcluded] = useState(false);
 
-    if (message.role === 'user') {
-      // Extract text content from user message parts and render as plain text
-      // to avoid unexpected markdown formatting when users paste code/URLs/etc.
-      const textContent = message.parts
-        .filter((part): part is TextUIPart => part.type === 'text')
-        .map((part) => part.text)
-        .join('\n');
+  const excludedMessages = messages.filter((m) => m.metadata?.include_in_context === false);
+  const activeMessages = messages.filter((m) => m.metadata?.include_in_context !== false);
 
-      return (
-        <div key={message.id} className="d-flex flex-row-reverse mb-3">
-          <div
-            className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
-            style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
+  return (
+    <>
+      {excludedMessages.length > 0 && (
+        <div className="mb-3">
+          <button
+            type="button"
+            className="btn btn-link btn-sm text-decoration-none text-muted p-0 d-flex align-items-center gap-1"
+            aria-expanded={showExcluded}
+            onClick={() => setShowExcluded(!showExcluded)}
           >
-            {textContent}
-          </div>
+            <i
+              className={clsx('bi small', {
+                'bi-chevron-right': !showExcluded,
+                'bi-chevron-down': showExcluded,
+              })}
+              aria-hidden="true"
+            />
+            <span>
+              {excludedMessages.length} earlier{' '}
+              {excludedMessages.length === 1 ? 'message' : 'messages'} excluded from context
+            </span>
+          </button>
+          {showExcluded && (
+            <div className="mt-2" style={{ opacity: 0.6 }}>
+              {excludedMessages.map((message) => (
+                <Message
+                  key={message.id}
+                  message={message}
+                  isLastMessage={false}
+                  showJobLogsLink={showJobLogsLink}
+                  showSpinner={false}
+                  urlPrefix={urlPrefix}
+                />
+              ))}
+            </div>
+          )}
+          {activeMessages.length > 0 && <hr className="my-2" />}
         </div>
-      );
-    }
-
-    const jobLogsUrl = run(() => {
-      if (!showJobLogsLink) return null;
-
-      const job_sequence_id = message.metadata?.job_sequence_id;
-      if (!job_sequence_id) return null;
-
-      return urlPrefix + '/jobSequence/' + job_sequence_id;
-    });
-
-    return (
-      <div key={message.id} className="d-flex flex-column gap-2 mb-3">
-        <MessageParts parts={message.parts} />
-        {message.metadata?.status === 'canceled' && (
-          <div className="small text-muted fst-italic">
-            <i className="bi bi-stop-circle me-1" aria-hidden="true" />
-            Generation was stopped
-          </div>
-        )}
-        {isLastMessage && showSpinner && (
-          <ProgressStatus state="streaming" statusText="Working..." />
-        )}
-        {jobLogsUrl && (
-          <a className="small" href={jobLogsUrl} target="_blank">
-            {' '}
-            View job logs{' '}
-          </a>
-        )}
-      </div>
-    );
-  });
+      )}
+      {activeMessages.map((message, index) => {
+        const isLastMessage = index === activeMessages.length - 1;
+        return (
+          <Message
+            key={message.id}
+            message={message}
+            isLastMessage={isLastMessage}
+            showJobLogsLink={showJobLogsLink}
+            showSpinner={showSpinner}
+            urlPrefix={urlPrefix}
+          />
+        );
+      })}
+    </>
+  );
 }
 
 class RateLimitError extends Error {}
@@ -518,6 +583,16 @@ export function AiQuestionGenerationChat({
     transport: new DefaultChatTransport({
       api: `${urlPrefix}/ai_generate_editor/${questionId}/chat`,
       headers: { 'X-CSRF-Token': chatCsrfToken },
+      prepareSendMessagesRequest: ({ messages, headers }) => {
+        // Only send the latest message to the server. The server sources
+        // conversation context from the database, so we don't need to
+        // send the full history.
+        const lastMessage = messages.at(-1);
+        return {
+          body: { message: lastMessage ?? null },
+          headers,
+        };
+      },
       prepareReconnectToStreamRequest: ({ id }) => {
         return {
           api: `${urlPrefix}/ai_generate_editor/${id}/chat/stream`,
@@ -633,9 +708,9 @@ export function AiQuestionGenerationChat({
     const onMouseDown = (e: MouseEvent) => {
       startX = e.clientX;
       const styles = getComputedStyle(container);
-      const current = styles.getPropertyValue('--chat-width').trim() || '400px';
+      const current = styles.getPropertyValue('--chat-width').trim() || '500px';
       startWidth =
-        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 400;
+        Number.parseInt(current) || containerRef.current?.getBoundingClientRect().width || 500;
       document.addEventListener('mousemove', onMouseMove);
       document.addEventListener('mouseup', onMouseUp);
       document.body.classList.add('user-select-none');

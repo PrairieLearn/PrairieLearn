@@ -13,6 +13,7 @@ columns
     usage_input_tokens_cache_write: integer not null default 0
     usage_output_tokens: integer not null default 0
     usage_output_tokens_reasoning: integer not null default 0
+    include_in_context: boolean not null default true
 
 indexes
     ai_question_generation_messages_pkey: PRIMARY KEY (id) USING btree (id)

@@ -23,6 +23,7 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
   usage_input_tokens_cache_write INT NOT NULL DEFAULT 0,
   usage_output_tokens INT NOT NULL DEFAULT 0,
   usage_output_tokens_reasoning INT NOT NULL DEFAULT 0,
+  include_in_context BOOLEAN NOT NULL DEFAULT TRUE,
   -- User messages never have a model. Assistant messages always have one.
   CONSTRAINT ai_question_generation_messages_model_check CHECK (
     (

@@ -68,7 +68,7 @@ export function PromptInput({
           <button
             type="button"
             aria-label="Stop generation"
-            className="btn btn-outline-danger btn-sm"
+            className="btn btn-outline-danger btn-sm text-nowrap"
             onClick={onStop}
           >
             <i className="bi bi-stop-fill me-1" />

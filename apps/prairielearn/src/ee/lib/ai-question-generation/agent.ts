@@ -39,6 +39,7 @@ import { DefaultMap } from '../../../lib/default-map.js';
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
+import { selectAiQuestionGenerationContextMessages } from '../../models/ai-question-generation-message.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   type QuestionGenerationModelId,
@@ -56,6 +57,7 @@ import {
 } from '../context-parsers/template-questions.js';
 import { SUPPORTED_ELEMENTS, validateHTML } from '../validateHTML.js';
 
+import { trimContextIfNeeded } from './context.js';
 import { getAiQuestionGenerationStreamContext } from './redis.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -64,6 +66,7 @@ const otherSql = loadSql(path.join(import.meta.dirname, '..', 'aiQuestionGenerat
 interface QuestionGenerationUIMessageMetadata {
   job_sequence_id: string | null;
   status: EnumAiQuestionGenerationMessageStatus;
+  include_in_context?: boolean;
 }
 
 const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
@@ -264,9 +267,12 @@ export async function createQuestionGenerationAgent({
     if (!file.endsWith('.md')) continue;
     const text = await fs.readFile(path.join(elementDocsPath, file), { encoding: 'utf-8' });
     const elementName = path.basename(file, '.md');
-    SUPPORTED_ELEMENTS.add(elementName);
-    const context = buildContextForSingleElementDoc(text, elementName);
-    if (context) elementDocs.push(context);
+
+    // Don't show agents documentation for unsupported elements.
+    if (SUPPORTED_ELEMENTS.has(elementName)) {
+      const context = buildContextForSingleElementDoc(text, elementName);
+      if (context) elementDocs.push(context);
+    }
   }
 
   // TODO: ditto, cache these?
@@ -473,7 +479,7 @@ export async function editQuestionWithAgent({
   authnUser,
   hasCoursePermissionEdit,
   prompt,
-  messages,
+  userMessageParts,
 }: {
   model: LanguageModel;
   modelId: QuestionGenerationModelId;
@@ -482,11 +488,17 @@ export async function editQuestionWithAgent({
   user: User;
   authnUser: User;
   hasCoursePermissionEdit: boolean;
+  /** Used for the initial question creation (no prior conversation). */
   prompt?: string;
-  messages?: UIMessage[];
+  /** The parts of the latest user message, used for continuing an existing conversation. */
+  userMessageParts?: UIMessage['parts'];
 }) {
-  if (prompt && messages) throw new Error('Cannot provide both prompt and messages');
-  if (!prompt && !messages) throw new Error('Either prompt or messages must be provided');
+  if (prompt && userMessageParts) {
+    throw new Error('Cannot provide both prompt and userMessageParts');
+  }
+  if (!prompt && !userMessageParts) {
+    throw new Error('Either prompt or userMessageParts must be provided');
+  }
 
   const serverJob = await createServerJob({
     courseId: course.id,
@@ -530,16 +542,7 @@ export async function editQuestionWithAgent({
   // Insert the prompt as a message.
   await execute(sql.insert_user_message, {
     question_id: question.id,
-    // TODO: use `UIMessage` always, instead of sometimes a string.
-    parts: run(() => {
-      if (typeof prompt === 'string') {
-        return JSON.stringify([{ type: 'text', text: prompt }]);
-      } else {
-        const parts = messages?.at(-1)?.parts;
-        assert(parts, 'No parts in last message');
-        return JSON.stringify(parts);
-      }
-    }),
+    parts: JSON.stringify(userMessageParts ?? [{ type: 'text' as const, text: prompt! }]),
   });
 
   // Insert the agent's message into the `messages` table.
@@ -556,6 +559,29 @@ export async function editQuestionWithAgent({
   const streamContext = await getAiQuestionGenerationStreamContext();
   await streamContext.createNewResumableStream(messageRow.id, () => sseStream.readable);
 
+  const args = await run(async () => {
+    if (userMessageParts) {
+      // Token-based context trimming: exclude older messages from context
+      // when the conversation grows too large, using the DB as the source
+      // of truth for which messages to include.
+      await trimContextIfNeeded(question.id);
+      const contextMessages = await selectAiQuestionGenerationContextMessages(question.id);
+      const uiMessages: UIMessage[] = contextMessages
+        .filter((m) => m.parts.length > 0)
+        .map((m) => ({
+          id: m.id,
+          role: m.role,
+          parts: m.parts,
+        }));
+
+      return { messages: await convertToModelMessages(uiMessages) };
+    } else if (prompt) {
+      return { prompt };
+    } else {
+      throw new Error('Either prompt or userMessageParts must be provided');
+    }
+  });
+
   serverJob.executeInBackground(async (job) => {
     const { agent, cancellationState } = await createQuestionGenerationAgent({
       model,
@@ -566,20 +592,6 @@ export async function editQuestionWithAgent({
       isExistingQuestion,
       hasCoursePermissionEdit,
       messageId: messageRow.id,
-    });
-
-    const args = await run(async () => {
-      if (messages) {
-        // Naive context management: keep the first message and the last 10 messages.
-        // This will probably result in cache misses - this is just a simple first implementation.
-        const trimmedMessages = [messages[0], ...messages.slice(Math.max(messages.length - 10, 1))];
-
-        return { messages: await convertToModelMessages(trimmedMessages) };
-      } else if (prompt) {
-        return { prompt };
-      } else {
-        throw new Error('Either prompt or messages must be provided');
-      }
     });
 
     const res = await agent.stream(args);
