@@ -11,9 +11,12 @@ INSERT INTO
     job_sequence_id,
     role,
     status,
+    model,
     usage_input_tokens,
+    usage_input_tokens_cache_read,
+    usage_input_tokens_cache_write,
     usage_output_tokens,
-    usage_total_tokens
+    usage_output_tokens_reasoning
   )
 VALUES
   (
@@ -21,6 +24,9 @@ VALUES
     $job_sequence_id,
     'assistant',
     'streaming',
+    $model,
+    0,
+    0,
     0,
     0,
     0
@@ -42,8 +48,11 @@ SET
   updated_at = NOW(),
   status = $status,
   parts = $parts::jsonb,
+  model = $model,
   usage_input_tokens = $usage_input_tokens,
+  usage_input_tokens_cache_read = $usage_input_tokens_cache_read,
+  usage_input_tokens_cache_write = $usage_input_tokens_cache_write,
   usage_output_tokens = $usage_output_tokens,
-  usage_total_tokens = $usage_total_tokens
+  usage_output_tokens_reasoning = $usage_output_tokens_reasoning
 WHERE
   id = $id;

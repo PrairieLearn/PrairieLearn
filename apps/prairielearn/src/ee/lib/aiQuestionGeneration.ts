@@ -21,7 +21,6 @@ import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  type OpenAIModelId,
   calculateResponseCost,
   emptyUsage,
   formatPrompt,
@@ -45,12 +44,13 @@ import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
+import type { QuestionGenerationModelId } from './ai-question-generation/agent.js';
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-5.2-2025-12-11' satisfies OpenAIModelId;
+export const QUESTION_GENERATION_OPENAI_MODEL: QuestionGenerationModelId = 'gpt-5.2-2025-12-11';
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -319,14 +319,13 @@ export async function getIntervalUsage(user: User) {
 export async function addCompletionCostToIntervalUsage({
   user,
   usage,
+  model = QUESTION_GENERATION_OPENAI_MODEL,
 }: {
   user: User;
   usage: LanguageModelUsage | undefined;
+  model?: keyof (typeof config)['costPerMillionTokens'];
 }) {
-  const completionCost = calculateResponseCost({
-    model: QUESTION_GENERATION_OPENAI_MODEL,
-    usage,
-  });
+  const completionCost = calculateResponseCost({ model, usage });
   await rateLimiter.addToIntervalUsage(getIntervalUsageKey(user), completionCost);
 }
 

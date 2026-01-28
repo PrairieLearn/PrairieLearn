@@ -275,14 +275,17 @@ export const AiQuestionGenerationMessageSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
   job_sequence_id: IdSchema.nullable(),
+  model: z.string().nullable(),
   parts: z.array(z.any()),
   question_id: IdSchema,
   role: EnumAiQuestionGenerationMessageRoleSchema,
   status: EnumAiQuestionGenerationMessageStatusSchema,
   updated_at: DateFromISOString,
   usage_input_tokens: z.number(),
+  usage_input_tokens_cache_read: z.number(),
+  usage_input_tokens_cache_write: z.number(),
   usage_output_tokens: z.number(),
-  usage_total_tokens: z.number(),
+  usage_output_tokens_reasoning: z.number(),
 });
 export type AiQuestionGenerationMessage = z.infer<typeof AiQuestionGenerationMessageSchema>;
 

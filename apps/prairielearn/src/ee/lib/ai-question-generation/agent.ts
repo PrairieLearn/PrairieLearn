@@ -212,14 +212,17 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
   ]);
 }
 
-export function getAgenticModel(): LanguageModel {
+export type QuestionGenerationModelId = keyof (typeof config)['costPerMillionTokens'];
+
+export function getAgenticModel(): { model: LanguageModel; modelId: QuestionGenerationModelId } {
   assert(config.aiQuestionGenerationOpenAiApiKey, 'OpenAI API key is not configured');
   assert(config.aiQuestionGenerationOpenAiOrganization, 'OpenAI organization is not configured');
   const openai = createOpenAI({
     apiKey: config.aiQuestionGenerationOpenAiApiKey,
     organization: config.aiQuestionGenerationOpenAiOrganization,
   });
-  return openai(QUESTION_GENERATION_OPENAI_MODEL);
+  const modelId = QUESTION_GENERATION_OPENAI_MODEL;
+  return { model: openai(modelId), modelId };
 }
 
 export async function createQuestionGenerationAgent({
@@ -413,7 +416,7 @@ export async function createQuestionGenerationAgent({
         ...QUESTION_GENERATION_TOOLS.saveAndValidateQuestion,
         execute: async () => {
           if (!files['question.html']) {
-            return { errors: ['You must generation a question.html file.'] };
+            return { errors: ['You must generate a question.html file.'] };
           }
 
           // TODO: we could possibly speed up the iteration loop by skipping the save if
@@ -465,6 +468,7 @@ export async function createQuestionGenerationAgent({
 
 export async function editQuestionWithAgent({
   model,
+  modelId,
   course,
   question,
   user,
@@ -474,6 +478,7 @@ export async function editQuestionWithAgent({
   messages,
 }: {
   model: LanguageModel;
+  modelId: QuestionGenerationModelId;
   course: Course;
   question?: Question;
   user: User;
@@ -542,7 +547,7 @@ export async function editQuestionWithAgent({
   // Insert the agent's message into the `messages` table.
   const messageRow = await queryRow(
     sql.insert_initial_assistant_message,
-    { question_id: question.id, job_sequence_id: serverJob.jobSequenceId },
+    { question_id: question.id, job_sequence_id: serverJob.jobSequenceId, model: modelId },
     AiQuestionGenerationMessageSchema,
   );
 
@@ -581,7 +586,7 @@ export async function editQuestionWithAgent({
 
     const res = await agent.stream(args);
 
-    let finalMessage = null as UIMessage<any, any> | null;
+    let finalMessage = null as QuestionGenerationUIMessage | null;
     const errorState: { hasError: boolean } = { hasError: false };
     const stream = res.toUIMessageStream<QuestionGenerationUIMessage>({
       generateMessageId: () => messageRow.id,
@@ -649,14 +654,18 @@ export async function editQuestionWithAgent({
       id: messageRow.id,
       status: finalStatus,
       parts: JSON.stringify(finalMessage?.parts ?? []),
+      model: modelId,
       usage_input_tokens: totalUsage.inputTokens,
+      usage_input_tokens_cache_read: totalUsage.inputTokenDetails.cacheReadTokens ?? 0,
+      usage_input_tokens_cache_write: totalUsage.inputTokenDetails.cacheWriteTokens ?? 0,
       usage_output_tokens: totalUsage.outputTokens,
-      usage_total_tokens: totalUsage.totalTokens,
+      usage_output_tokens_reasoning: totalUsage.outputTokenDetails.reasoningTokens ?? 0,
     });
 
     await addCompletionCostToIntervalUsage({
       user,
       usage: totalUsage,
+      model: modelId,
     });
   });
 

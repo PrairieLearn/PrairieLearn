@@ -241,8 +241,10 @@ export async function benchmarkAiQuestionGeneration({
 
     for (const benchmark of BENCHMARKS) {
       // Generate a single question.
+      const { model, modelId } = getAgenticModel();
       const result = await editQuestionWithAgent({
-        model: getAgenticModel(),
+        model,
+        modelId,
         course,
         user,
         authnUser: user,
@@ -255,7 +257,7 @@ export async function benchmarkAiQuestionGeneration({
         while (true) {
           const jobSequence = await getJobSequence(result.jobSequenceId, course.id);
           if (jobSequence.status !== 'Running') return jobSequence;
-          await sleep(10);
+          await sleep(100);
         }
       });
 

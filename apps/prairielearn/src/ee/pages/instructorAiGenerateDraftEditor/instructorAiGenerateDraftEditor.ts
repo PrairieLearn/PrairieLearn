@@ -269,8 +269,10 @@ router.post(
       return;
     }
 
+    const { model, modelId } = getAgenticModel();
     const { message } = await editQuestionWithAgent({
-      model: getAgenticModel(),
+      model,
+      modelId,
       course: res.locals.course,
       question: res.locals.question,
       user: res.locals.user,

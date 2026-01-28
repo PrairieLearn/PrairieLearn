@@ -27,14 +27,14 @@ export function logResponseUsage({
 }) {
   const usage = response.usage;
   logger.info(`Input tokens: ${usage.inputTokens ?? 0}`);
-  logger.info(`  Cached input tokens: ${usage.cachedInputTokens ?? 0}`);
+  logger.info(`  Cache read tokens: ${usage.inputTokenDetails.cacheReadTokens ?? 0}`);
+  logger.info(`  Cache write tokens: ${usage.inputTokenDetails.cacheWriteTokens ?? 0}`);
   logger.info(`Output tokens: ${usage.outputTokens ?? 0}`);
-  logger.info(`  Reasoning tokens: ${usage.reasoningTokens ?? 0}`);
-  logger.info(`Total tokens: ${usage.totalTokens ?? 0}`);
+  logger.info(`  Reasoning tokens: ${usage.outputTokenDetails.reasoningTokens ?? 0}`);
 }
 
 /**
- * Compute the cost of an OpenAI response, in US dollars.
+ * Compute the cost of an LLM response, in US dollars.
  */
 export function calculateResponseCost({
   model,
@@ -47,21 +47,17 @@ export function calculateResponseCost({
 
   const modelPricing = config.costPerMillionTokens[model];
 
-  // TODO: this doesn't take into account cache writes, which some providers
-  // (e.g. Anthropic) charge for.
-  const cachedInputTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
   const inputTokens = usage.inputTokenDetails.noCacheTokens ?? 0;
+  const cacheReadTokens = usage.inputTokenDetails.cacheReadTokens ?? 0;
+  const cacheWriteTokens = usage.inputTokenDetails.cacheWriteTokens ?? 0;
   const outputTokens = usage.outputTokens ?? 0;
 
-  const cachedInputTokenCost = modelPricing.cachedInput / 10 ** 6;
-  const inputTokenCost = modelPricing.input / 10 ** 6;
-  const outputTokenCost = modelPricing.output / 10 ** 6;
+  const inputCost = inputTokens * (modelPricing.input / 1e6);
+  const cacheReadCost = cacheReadTokens * (modelPricing.cachedInput / 1e6);
+  const cacheWriteCost = cacheWriteTokens * (modelPricing.cacheWrite / 1e6);
+  const outputCost = outputTokens * (modelPricing.output / 1e6);
 
-  const cachedInputCost = cachedInputTokens * cachedInputTokenCost;
-  const inputCost = inputTokens * inputTokenCost;
-  const outputCost = outputTokens * outputTokenCost;
-
-  return cachedInputCost + inputCost + outputCost;
+  return inputCost + cacheReadCost + cacheWriteCost + outputCost;
 }
 
 export function emptyUsage(): LanguageModelUsage {
