@@ -48,14 +48,14 @@ export function QRCodeModal({
     [content],
   );
   return (
-    <Modal show={show} size="lg" aria-labelledby={`${id}-title`} backdrop="static" onHide={onHide}>
+    <Modal show={show} size="lg" aria-labelledby={`${id}-title`} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title id={`${id}-title`}>{title}</Modal.Title>
       </Modal.Header>
       <Modal.Body>
         <div
-          className="d-flex"
-          style={{ maxHeight: '80vh' }}
+          className="d-flex justify-content-center"
+          style={{ maxHeight: '80vh', maxWidth: '100%', overflow: 'hidden' }}
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: svg }}
         />
