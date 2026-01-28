@@ -9,6 +9,7 @@ import {
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { StaffQuestionSchema } from '../../../lib/client/safe-db-types.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { config } from '../../../lib/config.js';
 import { type Question } from '../../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../../lib/res-locals.js';
@@ -93,6 +94,38 @@ export function InstructorAiGenerateDraftEditor({
           variantCsrfToken={variantCsrfToken}
         />
       </Hydrate>
+    ),
+  });
+}
+
+export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'course'> }) {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Draft question not found',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
+    content: (
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">Draft question not found</div>
+        <div className="card-body">
+          <p className="mb-0">
+            The draft question you're looking for could not be found. It may have been deleted or
+            already finalized.
+          </p>
+        </div>
+        <div className="card-footer">
+          <a
+            href={getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}
+            className="btn btn-primary"
+          >
+            <i className="fa fa-arrow-left" aria-hidden="true" />
+            Back to AI question drafts
+          </a>
+        </div>
+      </div>
     ),
   });
 }

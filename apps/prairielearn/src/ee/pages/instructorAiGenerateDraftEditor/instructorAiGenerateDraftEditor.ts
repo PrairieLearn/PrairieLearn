@@ -2,7 +2,6 @@ import { Readable } from 'node:stream';
 
 import { UI_MESSAGE_STREAM_HEADERS, validateUIMessages } from 'ai';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
@@ -29,7 +28,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectQuestionById } from '../../../models/question.js';
+import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
   type QuestionGenerationUIMessage,
   editQuestionWithAgent,
@@ -39,7 +38,10 @@ import { getAiQuestionGenerationStreamContext } from '../../lib/ai-question-gene
 import { getIntervalUsage } from '../../lib/aiQuestionGeneration.js';
 import { selectAiQuestionGenerationMessages } from '../../models/ai-question-generation-message.js';
 
-import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
+import {
+  DraftNotFound,
+  InstructorAiGenerateDraftEditor,
+} from './instructorAiGenerateDraftEditor.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -124,20 +126,38 @@ function assertCanCreateQuestion(resLocals: UntypedResLocals) {
 }
 
 router.use(
-  asyncHandler(async (req, res, next) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res, next) => {
     if (!(await features.enabledFromLocals('ai-question-generation', res.locals))) {
       throw new error.HttpStatusError(403, 'Feature not enabled');
     }
+    const question = await selectOptionalQuestionById(req.params.question_id);
 
-    res.locals.question = await selectQuestionById(req.params.question_id);
-
-    // Ensure the question belongs to this course and that it's a draft question.
     if (
-      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
-      !res.locals.question.draft
+      question == null ||
+      !idsEqual(question.course_id, res.locals.course.id) ||
+      question.deleted_at != null ||
+      !question.draft
     ) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
+      // If the question exists, belongs to this course, is non-deleted, but
+      // is no longer a draft (i.e. it was finalized), redirect to the question
+      // preview. This handles the common case of a user pressing the browser
+      // back button after finalizing a question.
+      if (
+        question != null &&
+        idsEqual(question.course_id, res.locals.course.id) &&
+        question.deleted_at == null &&
+        !question.draft
+      ) {
+        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+        return;
+      }
+
+      // Otherwise, show an informational page.
+      res.status(404).send(DraftNotFound({ resLocals: res.locals }));
+      return;
     }
+
+    res.locals.question = question;
 
     assertCanCreateQuestion(res.locals);
 
