@@ -6,7 +6,6 @@
   "number": "16",
   "shuffleQuestions": false,
   "groups": {
-    "enabled": true,
     "minMembers": 2,
     "maxMembers": 4,
     "roles": [

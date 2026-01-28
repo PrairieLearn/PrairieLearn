@@ -5,10 +5,8 @@
   "set": "Exam",
   "number": "14",
   "groups": {
-    "enabled": true,
     "minMembers": 2,
     "maxMembers": 2,
-    "roles": [],
     "studentPermissions": {
       "canCreateGroup": true,
       "canJoinGroup": true,

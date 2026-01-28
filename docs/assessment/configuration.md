@@ -20,33 +20,26 @@ Each assessment must set the following properties in their `infoAssessment.json`
 
 In addition to those properties, the following properties can be used to further configure how the assessment behaves. Most assessments will need to configure the [`allowAccess`](../assessment/accessControl.md) property to control access to the assessment, and the [`zones`](#question-specification) property, which breaks down the assessment into zones of questions. Each zone allows for additional configuration of the questions within the zone.
 
-| Property                                            | Type    | Description                                                                                                                 |
-| --------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
-| [`module`](#grouping-assessments-by-modules)        | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
-| [`allowAccess`](../assessment/accessControl.md)     | array   | List of access rules. (default: no student access)                                                                          |
-| [`zones`](#question-specification)                  | array   | Specification of zones and questions. (default: none)                                                                       |
-| `text`                                              | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
-| `multipleInstance`                                  | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
-| `maxPoints`                                         | number  | The maximum points that can be earned. (default: sum of zone max points)                                                    |
-| [`maxBonusPoints`](#assessment-points)              | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (default: 0)                                 |
-| [`shuffleQuestions`](#question-order-randomization) | boolean | Whether to randomize the question order. (default: `false` for Homework-type assessments, `true` for Exam-type assessments) |
-| `autoClose`                                         | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (default: `true`)                   |
-| `allowIssueReporting`                               | boolean | Whether to allow students to report question issues. (default: `true`)                                                      |
-| `allowPersonalNotes`                                | boolean | Whether to allow students to add personal notes. (default: `true`)                                                          |
-| `constantQuestionValue`                             | boolean | Whether to disable the question value boost on correct solutions (Homework only). (default: `false`)                        |
-| `allowRealTimeGrading`                              | boolean | Whether to grade questions in real time (Exams only). (default: `true`)                                                     |
-| `requireHonorCode`                                  | boolean | Whether to require students to agree to the honor code (Exams only). (default: `true`)                                      |
-| `honorCode`                                         | string  | Custom text to be specified for the honor code (Exams only). (default: none)                                                |
-| `advanceScorePerc`                                  | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
-| `gradeRateMinutes`                                  | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
-
-### Group work
-
-Group work allows multiple students to work together on the same assessment instance. The recommended way to configure group work is using the `groups` property.
-
-| Property                                                       | Type   | Description                                                |
-| -------------------------------------------------------------- | ------ | ---------------------------------------------------------- |
-| [`groups`](#enabling-group-work-for-collaborative-assessments) | object | Configuration for group-based assessments. (default: none) |
+| Property                                                       | Type    | Description                                                                                                                 |
+| -------------------------------------------------------------- | ------- | --------------------------------------------------------------------------------------------------------------------------- |
+| [`module`](#grouping-assessments-by-modules)                   | string  | The module that this assessment belongs to (e.g., `Chapter 3`). (default: `"Default"`)                                      |
+| [`allowAccess`](../assessment/accessControl.md)                | array   | List of access rules. (default: no student access)                                                                          |
+| [`zones`](#question-specification)                             | array   | Specification of zones and questions. (default: none)                                                                       |
+| `text`                                                         | string  | HTML text shown on the assessment overview page. (default: none)                                                            |
+| `multipleInstance`                                             | boolean | Whether to allow students to create whole new attempts at the entire assessment. (default: `false`)                         |
+| `maxPoints`                                                    | number  | The maximum points that can be earned. (default: sum of zone max points)                                                    |
+| [`maxBonusPoints`](#assessment-points)                         | number  | The maximum number of additional points that can be earned beyond `maxPoints`. (default: 0)                                 |
+| [`shuffleQuestions`](#question-order-randomization)            | boolean | Whether to randomize the question order. (default: `false` for Homework-type assessments, `true` for Exam-type assessments) |
+| `autoClose`                                                    | boolean | Whether to automatically close the assessment after 6 hours of inactivity (Exams only). (default: `true`)                   |
+| `allowIssueReporting`                                          | boolean | Whether to allow students to report question issues. (default: `true`)                                                      |
+| `allowPersonalNotes`                                           | boolean | Whether to allow students to add personal notes. (default: `true`)                                                          |
+| `constantQuestionValue`                                        | boolean | Whether to disable the question value boost on correct solutions (Homework only). (default: `false`)                        |
+| `allowRealTimeGrading`                                         | boolean | Whether to grade questions in real time (Exams only). (default: `true`)                                                     |
+| `requireHonorCode`                                             | boolean | Whether to require students to agree to the honor code (Exams only). (default: `true`)                                      |
+| `honorCode`                                                    | string  | Custom text to be specified for the honor code (Exams only). (default: none)                                                |
+| `advanceScorePerc`                                             | number  | Minimum score percentage require to advance to the next question (Exams only). (default: 0)                                 |
+| `gradeRateMinutes`                                             | number  | Minimum amount of time (in minutes) between graded submissions to the same question. (default: 0)                           |
+| [`groups`](#enabling-group-work-for-collaborative-assessments) | object  | Configuration for group-based assessments. (default: none)                                                                  |
 
 See the [reference for `infoAssessment.json`](../schemas/infoAssessment.md) for more information about what can be added to this file.
 

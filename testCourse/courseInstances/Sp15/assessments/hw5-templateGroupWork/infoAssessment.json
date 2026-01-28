@@ -6,7 +6,6 @@
   "number": "5",
   "module": "Module3",
   "groups": {
-    "enabled": true,
     "minMembers": 2,
     "maxMembers": 5,
     "roles": [
@@ -18,8 +17,7 @@
     "studentPermissions": {
       "canCreateGroup": true,
       "canJoinGroup": true,
-      "canLeaveGroup": true,
-      "canNameGroup": true
+      "canLeaveGroup": true
     },
     "rolePermissions": {
       "canAssignRoles": ["Manager"],

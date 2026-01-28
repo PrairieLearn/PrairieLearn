@@ -5,7 +5,6 @@
   "set": "Homework",
   "number": "6",
   "groups": {
-    "enabled": true,
     "minMembers": 3,
     "maxMembers": 3,
     "studentPermissions": {
