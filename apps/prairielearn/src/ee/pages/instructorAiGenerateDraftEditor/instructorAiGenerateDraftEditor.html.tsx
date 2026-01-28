@@ -8,6 +8,7 @@ import { run } from '@prairielearn/run';
 import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
 import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import {
@@ -17,6 +18,7 @@ import {
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 
@@ -185,6 +187,37 @@ export function InstructorAiGenerateDraftEditor({
       </body>
     </html>
   `.toString();
+}
+
+export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'course'> }) {
+  const draftsUrl = `${resLocals.urlPrefix}/ai_generate_question_drafts`;
+
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Draft question not found',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
+    content: html`
+      <div class="card mb-4">
+        <div class="card-header bg-primary text-white">Draft question not found</div>
+        <div class="card-body">
+          <p class="mb-0">
+            The draft question you're looking for could not be found. It may have been deleted or
+            already finalized.
+          </p>
+        </div>
+        <div class="card-footer">
+          <a href="${draftsUrl}" class="btn btn-primary">
+            <i class="fa fa-arrow-left" aria-hidden="true"></i>
+            Back to AI question drafts
+          </a>
+        </div>
+      </div>
+    `,
+  });
 }
 
 /**
