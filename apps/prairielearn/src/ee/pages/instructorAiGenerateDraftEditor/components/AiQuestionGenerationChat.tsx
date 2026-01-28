@@ -488,6 +488,10 @@ function Messages({
   );
 }
 
+/**
+ * This custom error is used to signal that a rate limit has been exceeded, which
+ * we'll know happens when we get a 429 response from the server.
+ */
 class RateLimitError extends Error {}
 
 function useShowSpinner({
