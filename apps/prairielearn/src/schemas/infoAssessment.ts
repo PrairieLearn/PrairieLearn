@@ -120,6 +120,7 @@ export const GroupsJsonSchema = z
   .describe('Configuration for group-based assessments.');
 
 export type GroupsJson = z.infer<typeof GroupsJsonSchema>;
+export type GroupsJsonInput = z.input<typeof GroupsJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .object({

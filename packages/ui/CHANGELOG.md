@@ -1,5 +1,11 @@
 # @prairielearn/ui
 
+## 3.1.0
+
+### Minor Changes
+
+- 3f7e76a: Add `<ComboBox>` and `<TagPicker>` components
+
 ## 3.0.0
 
 ### Major Changes

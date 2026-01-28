@@ -1470,6 +1470,7 @@ function validateAssessment({
   }
 
   // Convert legacy group properties to groups format for unified validation
+  const isLegacyGroups = assessment.groups == null;
   const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
 
   // Validate groups if we have roles defined
@@ -1488,14 +1489,16 @@ function validateAssessment({
 
     rolePerms.canAssignRoles.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
-        errors.push(`"canAssignRoles" contains non-existent role "${roleName}".`);
+        errors.push(
+          `${isLegacyGroups ? '"canAssignRoles"' : 'The "groups.rolePermissions.canAssignRoles" permission'} contains non-existent role "${roleName}".`,
+        );
       }
     });
 
     rolePerms.canView.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
-          `The assessment's "canView" permission contains non-existent role "${roleName}".`,
+          `${isLegacyGroups ? 'The assessment\'s "canView"' : 'The "groups.rolePermissions.canView"'} permission contains non-existent role "${roleName}".`,
         );
       }
     });
@@ -1503,7 +1506,7 @@ function validateAssessment({
     rolePerms.canSubmit.forEach((roleName) => {
       if (!validRoleNames.has(roleName)) {
         errors.push(
-          `The assessment's "canSubmit" permission contains non-existent role "${roleName}".`,
+          `${isLegacyGroups ? 'The assessment\'s "canSubmit"' : 'The "groups.rolePermissions.canSubmit"'} permission contains non-existent role "${roleName}".`,
         );
       }
     });
