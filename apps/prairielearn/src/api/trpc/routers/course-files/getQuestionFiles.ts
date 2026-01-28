@@ -2,7 +2,6 @@ import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { pathExists } from 'fs-extra';
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -42,16 +41,12 @@ export const getQuestionFiles = privateProcedure
 
     // In the future, we should support more than just these two files. For now,
     // this is sufficient.
-    if (await pathExists(path.join(questionPath, 'question.html'))) {
-      files['question.html'] = (
-        await fs.readFile(path.join(questionPath, 'question.html'))
-      ).toString('base64');
-    }
-
-    if (await pathExists(path.join(questionPath, 'server.py'))) {
-      files['server.py'] = (await fs.readFile(path.join(questionPath, 'server.py'))).toString(
-        'base64',
-      );
+    for (const filePath of ['question.html', 'server.py']) {
+      try {
+        files[filePath] = (await fs.readFile(path.join(questionPath, filePath))).toString('base64');
+      } catch (err: any) {
+        if (err.code !== 'ENOENT') throw err;
+      }
     }
 
     return { files };
