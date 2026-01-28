@@ -17,13 +17,15 @@ export function QRCodeModalHtml({
 }) {
   const qrCodeSvg = new QR({ content, container: 'svg-viewbox' })
     .svg()
-    .replace('<svg ', '<svg style="width:100%;height:100%;" ');
+    .replace('<svg ', '<svg style="width:100%;height:auto;" ');
 
   return HtmlModal({
     id,
     title,
     form: false,
-    body: html`<div class="d-flex" style="max-height: 80vh;">${unsafeHtml(qrCodeSvg)}</div>`,
+    body: html`<div class="d-flex justify-content-center" style="max-height: calc(100vh - 200px);">
+      ${unsafeHtml(qrCodeSvg)}
+    </div>`,
   });
 }
 
@@ -44,7 +46,7 @@ export function QRCodeModal({
     () =>
       new QR({ content, container: 'svg-viewbox' })
         .svg()
-        .replace('<svg ', '<svg style="width:100%;height:100%;" '),
+        .replace('<svg ', '<svg style="width:100%;height:auto;" '),
     [content],
   );
   return (
@@ -55,7 +57,7 @@ export function QRCodeModal({
       <Modal.Body>
         <div
           className="d-flex justify-content-center"
-          style={{ maxHeight: '80vh', maxWidth: '100%', overflow: 'hidden' }}
+          style={{ maxHeight: 'calc(100vh - 200px)' }}
           // eslint-disable-next-line @eslint-react/dom/no-dangerously-set-innerhtml
           dangerouslySetInnerHTML={{ __html: svg }}
         />
