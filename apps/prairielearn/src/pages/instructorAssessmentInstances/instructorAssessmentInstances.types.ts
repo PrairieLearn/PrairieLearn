@@ -4,8 +4,8 @@ import { IdSchema } from '@prairielearn/zod';
 
 import {
   AssessmentInstanceSchema,
+  GroupSchema,
   SprocUsersGetDisplayedRoleSchema,
-  TeamSchema,
   UserSchema,
 } from '../../lib/db-types.js';
 
@@ -19,9 +19,9 @@ export const AssessmentInstanceRowSchema = z.object({
   duration_mins: z.number(),
   duration_secs: z.number(),
   duration: z.string(),
-  team_id: AssessmentInstanceSchema.shape.team_id,
-  team_name: TeamSchema.shape.name.nullable(),
-  team_roles: z.array(z.string()).nullable(),
+  group_id: AssessmentInstanceSchema.shape.team_id,
+  group_name: GroupSchema.shape.name.nullable(),
+  group_roles: z.array(z.string()).nullable(),
   highest_score: z.boolean(),
   max_points: AssessmentInstanceSchema.shape.max_points,
   name: UserSchema.shape.name.nullable(),

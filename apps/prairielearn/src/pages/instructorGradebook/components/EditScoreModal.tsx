@@ -6,14 +6,14 @@ import { z } from 'zod';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import {
   AssessmentInstanceScoreResultSchema,
-  type OtherTeamUser,
+  type OtherGroupUser,
 } from '../instructorGradebook.types.js';
 
 interface EditScoreButtonProps {
   assessmentInstanceId: string;
   courseInstanceId: string;
   currentScore: number;
-  otherUsers: OtherTeamUser[];
+  otherUsers: OtherGroupUser[];
   csrfToken: string;
 }
 

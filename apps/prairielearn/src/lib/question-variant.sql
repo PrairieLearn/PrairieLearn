@@ -58,7 +58,7 @@ WITH
         $question_id,
         $course_instance_id,
         $user_id,
-        $team_id,
+        $group_id,
         $number,
         $variant_seed,
         $params,

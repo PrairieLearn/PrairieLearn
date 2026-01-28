@@ -622,6 +622,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

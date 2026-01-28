@@ -4,12 +4,15 @@
   "title": "Group Activity Template 2",
   "set": "Homework",
   "number": "6",
-  "groupWork": true,
-  "groupMaxSize": 3,
-  "groupMinSize": 3,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
+  "groups": {
+    "minMembers": 3,
+    "maxMembers": 3,
+    "studentPermissions": {
+      "canCreateGroup": true,
+      "canJoinGroup": true,
+      "canLeaveGroup": true
+    }
+  },
   "allowAccess": [
     {
       "credit": 100,
