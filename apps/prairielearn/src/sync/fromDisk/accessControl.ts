@@ -55,7 +55,7 @@ interface PreparedRule {
   hideScore: boolean | null;
   showScoreAgainDateOverridden: boolean;
   showScoreAgainDate: string | null;
-  /** Student group IDs to target with this rule */
+  /** Student label IDs to target with this rule */
   studentLabelIds: string[];
   /** Early deadline entries for this rule */
   earlyDeadlines: { date: string; credit: number }[];
@@ -82,14 +82,14 @@ export async function syncAccessControl(
     );
   }
 
-  // Load existing student groups to validate that group names exist
-  const existingGroups = await sqldb.queryRows(
+  // Load existing student labels to validate that label names exist
+  const existingLabels = await sqldb.queryRows(
     sql.select_student_labels,
     { course_instance_id: courseInstanceId },
     StudentLabelSchema,
   );
-  // Map by name since the JSON uses group names, not IDs
-  const validGroupIds = new Map(existingGroups.map((g) => [g.name, g.id]));
+  // Map by name since the JSON uses label names, not IDs
+  const validLabelIds = new Map(existingLabels.map((g) => [g.name, g.id]));
 
   // Collect all exam UUIDs for bulk validation
   const allExamUuids = new Set<string>();
@@ -113,13 +113,13 @@ export async function syncAccessControl(
     }
   }
 
-  // Check for invalid group targets - throw error if any groups don't exist
+  // Check for invalid label targets - throw error if any labels don't exist
   for (const rule of accessControlRules) {
-    const ruleGroups = rule.groups ?? [];
-    const invalidGroups = ruleGroups.filter((group) => !validGroupIds.has(group));
-    if (invalidGroups.length > 0) {
+    const ruleLabels = rule.labels ?? [];
+    const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
+    if (invalidLabels.length > 0) {
       throw new Error(
-        `Access control rule references non-existent student groups: ${JSON.stringify(invalidGroups)}. Available groups: ${JSON.stringify([...validGroupIds.keys()])}`,
+        `Access control rule references non-existent student labels: ${JSON.stringify(invalidLabels)}. Available labels: ${JSON.stringify([...validLabelIds.keys()])}`,
       );
     }
   }
@@ -164,10 +164,10 @@ export async function syncAccessControl(
     // prairietestControlOverridden is true if exams are defined
     const prairietestControlOverridden = rule.prairieTestControl?.exams !== undefined;
 
-    // Get valid student group IDs for this rule
-    const ruleGroups = rule.groups ?? [];
-    const studentLabelIds = ruleGroups
-      .map((g) => validGroupIds.get(g))
+    // Get valid student label IDs for this rule
+    const ruleLabels = rule.labels ?? [];
+    const studentLabelIds = ruleLabels
+      .map((label) => validLabelIds.get(label))
       .filter((id): id is string => id !== undefined);
 
     // Determine target_type: 'none' for main rule (number 0), 'student_label' for all others

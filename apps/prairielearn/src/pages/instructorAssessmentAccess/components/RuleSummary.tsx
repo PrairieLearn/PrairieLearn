@@ -264,7 +264,7 @@ interface RuleSummaryCardProps {
   title: string;
   editUrl: string;
   courseInstanceId: string;
-  onEditStudentGroups?: () => void;
+  onEditStudentLabels?: () => void;
   onRemove?: () => void;
   /** Verbosity level for summary display. Defaults to 'compact' for main rule, 'verbose' for overrides. */
   verbosity?: SummaryVerbosity;
@@ -277,7 +277,7 @@ export function RuleSummaryCard({
   onRemove,
   editUrl,
   courseInstanceId,
-  onEditStudentGroups,
+  onEditStudentLabels,
   verbosity,
 }: RuleSummaryCardProps) {
   // Default verbosity: compact for main rule, verbose for overrides
@@ -310,8 +310,8 @@ export function RuleSummaryCard({
           )}
         </div>
         <div className="d-flex gap-2">
-          {onEditStudentGroups && (
-            <Button variant="outline-secondary" size="sm" onClick={onEditStudentGroups}>
+          {onEditStudentLabels && (
+            <Button variant="outline-secondary" size="sm" onClick={onEditStudentLabels}>
               <i className="fa fa-users me-1" /> Groups
             </Button>
           )}

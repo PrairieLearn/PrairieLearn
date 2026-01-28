@@ -385,11 +385,11 @@ describe('Access control syncing', () => {
         dateControl: { releaseDate: '2024-03-14T00:01:00', durationMinutes: 60 },
       });
       const rule2 = makeAccessControlRule({
-        groups: [groupName1],
+        labels: [groupName1],
         dateControl: { durationMinutes: 90 },
       });
       const rule3 = makeAccessControlRule({
-        groups: [groupName2],
+        labels: [groupName2],
         dateControl: { durationMinutes: 120 },
       });
 
@@ -431,7 +431,7 @@ describe('Access control syncing', () => {
       // create 1 assignment-level rule and 1 group-level rule
       const rule1 = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
       const rule2 = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -477,11 +477,11 @@ describe('Access control syncing', () => {
       // create 1 assignment-level rule and 2 group-level rules
       const rule1 = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
       const rule2 = makeAccessControlRule({
-        groups: [groupName1],
+        labels: [groupName1],
         dateControl: { durationMinutes: 90 },
       });
       const rule3 = makeAccessControlRule({
-        groups: [groupName2],
+        labels: [groupName2],
         dateControl: { durationMinutes: 120 },
       });
 
@@ -523,11 +523,11 @@ describe('Access control syncing', () => {
 
       const assignmentRule = makeAccessControlRule({ dateControl: { durationMinutes: 60 } });
       const groupRule1 = makeAccessControlRule({
-        groups: [groupName1],
+        labels: [groupName1],
         dateControl: { durationMinutes: 90 },
       });
       const groupRule2 = makeAccessControlRule({
-        groups: [groupName2],
+        labels: [groupName2],
         dateControl: { durationMinutes: 120 },
       });
 
@@ -581,11 +581,11 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule1 = makeAccessControlRule({
-        groups: [groupName1],
+        labels: [groupName1],
         dateControl: { durationMinutes: 90 },
       });
       const groupRule2 = makeAccessControlRule({
-        groups: [groupName2],
+        labels: [groupName2],
         dateControl: { durationMinutes: 120 },
       });
 
@@ -714,7 +714,7 @@ describe('Access control syncing', () => {
 
       // add a group rule back and resync
       const groupRule3 = makeAccessControlRule({
-        groups: [groupName2], // reusing groupName2
+        labels: [groupName2], // reusing groupName2
         dateControl: { durationMinutes: 135 },
       });
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -763,7 +763,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -903,7 +903,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -934,7 +934,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const ruleWithInvalidTarget = makeAccessControlRule({
-        groups: ['nonexistent-group'],
+        labels: ['nonexistent-group'],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -1049,7 +1049,7 @@ describe('Access control syncing', () => {
 
       // try to create only group-level rules (no assignment-level)
       const groupRule = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
       courseData.courseInstances[util.COURSE_INSTANCE_ID].assessments[
@@ -1105,7 +1105,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRule = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
 
@@ -1157,7 +1157,7 @@ describe('Access control syncing', () => {
         dateControl: { durationMinutes: 60 },
       });
       const groupRuleWithPrairieTest = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
         prairieTestControl: {
           exams: [{ examUuid: '11e89892-3eff-4d7f-90a2-221372f14e5c' }],
@@ -1223,7 +1223,7 @@ describe('Access control syncing', () => {
         },
       });
       const groupRule = makeAccessControlRule({
-        groups: [groupName],
+        labels: [groupName],
         dateControl: { durationMinutes: 90 },
       });
 

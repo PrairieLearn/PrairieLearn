@@ -201,7 +201,7 @@ export interface IndividualTarget {
   name: string | null;
 }
 
-/** Student group target */
+/** Student label target */
 export interface GroupTarget {
   groupId: string;
   name: string;

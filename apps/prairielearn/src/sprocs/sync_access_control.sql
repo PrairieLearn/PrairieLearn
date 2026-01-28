@@ -143,7 +143,7 @@ BEGIN
         RETURNING id INTO new_rule_id;
 
         -- Insert child rows for this rule
-        -- Student groups
+        -- Student labels
         INSERT INTO assessment_access_control_student_labels (assessment_access_control_id, student_label_id)
         SELECT new_rule_id, (g ->> 1)::bigint
         FROM UNNEST(student_labels_data) AS g

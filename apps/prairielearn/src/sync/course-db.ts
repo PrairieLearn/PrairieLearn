@@ -1138,9 +1138,9 @@ export function validateAccessControlArray({
     return results;
   }
 
-  // An assignment-level rule has no `groups` property (applies to everyone)
+  // An assignment-level rule has no `labels` property (applies to everyone)
   const assignmentLevelRules = accessControlJsonArray.filter(
-    (rule) => rule.groups == null || rule.groups.length === 0,
+    (rule) => rule.labels == null || rule.labels.length === 0,
   );
 
   if (assignmentLevelRules.length === 0) {

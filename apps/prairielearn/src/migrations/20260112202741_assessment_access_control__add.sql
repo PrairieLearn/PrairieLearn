@@ -20,7 +20,7 @@ CREATE TABLE assessment_access_control (
   block_access boolean,
   list_before_release boolean,
   number INTEGER,
-  -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for groups
+  -- Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for student labels
   target_type TEXT NOT NULL CHECK (
     target_type IN ('none', 'enrollment', 'student_label')
   ),
@@ -77,7 +77,7 @@ CREATE INDEX assessment_access_control_enrollments_aac_id_idx ON assessment_acce
 
 CREATE INDEX assessment_access_control_enrollments_enrollment_id_idx ON assessment_access_control_enrollments (enrollment_id);
 
--- Student group targeting table (links access control rules to student groups)
+-- Student label targeting table (links access control rules to student labels)
 CREATE TABLE assessment_access_control_student_labels (
   id BIGSERIAL PRIMARY KEY,
   assessment_access_control_id BIGINT NOT NULL,
