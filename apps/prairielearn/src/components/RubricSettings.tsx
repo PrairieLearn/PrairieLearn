@@ -707,7 +707,7 @@ export function RubricSettings({
                 rows={5}
                 value={graderGuidelines}
                 disabled={!hasCourseInstancePermissionEdit}
-                onChange={(e) => setGraderGuidelines((e.target as HTMLTextAreaElement).value)}
+                onChange={(e) => setGraderGuidelines(e.currentTarget.value)}
               />
             </div>
           </div>
