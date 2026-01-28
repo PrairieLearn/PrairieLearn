@@ -32,7 +32,7 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
         type="checkbox"
         className="me-2"
         checked={field.isEnabled}
-        onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+        onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
       />
       <strong>Password</strong>
     </div>
@@ -46,7 +46,7 @@ export function PasswordField({ control, setValue, namePrefix }: PasswordFieldPr
             type={showPassword ? 'text' : 'password'}
             placeholder="Password"
             value={field.value}
-            onChange={(e) => setField({ value: (e.target as HTMLInputElement).value })}
+            onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
           />
           <Button variant="outline-secondary" onClick={() => setShowPassword(!showPassword)}>
             <i className={`bi ${showPassword ? 'bi-eye-slash' : 'bi-eye'}`} aria-hidden="true" />

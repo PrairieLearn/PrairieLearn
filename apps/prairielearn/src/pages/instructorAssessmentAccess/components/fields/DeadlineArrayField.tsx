@@ -227,7 +227,7 @@ export function DeadlineArrayField({
           type="checkbox"
           className="me-2"
           checked={field.isEnabled}
-          onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+          onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
         />
         <strong>{label}</strong>
       </div>

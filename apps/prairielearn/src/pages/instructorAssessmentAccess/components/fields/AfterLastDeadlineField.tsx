@@ -76,8 +76,8 @@ export function AfterLastDeadlineField({
           id={`${namePrefix}-after-deadline-no-submissions`}
           label="No submissions allowed"
           checked={mode === 'no_submissions'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: true, value: { allowSubmissions: false } });
             }
           }}
@@ -88,8 +88,8 @@ export function AfterLastDeadlineField({
           id={`${namePrefix}-after-deadline-practice-submissions`}
           label="Allow practice submissions"
           checked={mode === 'practice_submissions'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: true, value: { allowSubmissions: true } });
             }
           }}
@@ -104,8 +104,8 @@ export function AfterLastDeadlineField({
           id={`${namePrefix}-after-deadline-partial-credit`}
           label="Allow submissions for partial credit"
           checked={mode === 'partial_credit'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: true, value: { allowSubmissions: true, credit: 0 } });
             }
           }}
@@ -121,11 +121,11 @@ export function AfterLastDeadlineField({
               max="200"
               placeholder="Credit percentage"
               value={field.value.credit ?? 0}
-              onChange={(e) =>
+              onChange={({ currentTarget }) =>
                 setField({
                   value: {
                     allowSubmissions: true,
-                    credit: Number((e.target as HTMLInputElement).value) || 0,
+                    credit: Number(currentTarget.value) || 0,
                   },
                 })
               }

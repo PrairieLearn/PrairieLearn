@@ -202,15 +202,17 @@ export async function syncDiskToSqlWithLock(
           );
 
           // Sync access control for assessments that define the modern accessControl property
-          await timed(`Synced access control for ${ciid}`, async () => {
-            for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
-              const assessmentId = assessmentIds[tid];
-              const accessControlRules = assessment.data?.accessControl;
-              if (assessmentId && accessControlRules) {
-                await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+          if (assessmentIds) {
+            await timed(`Synced access control for ${ciid}`, async () => {
+              for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
+                const assessmentId = assessmentIds[tid];
+                const accessControlRules = assessment.data?.accessControl;
+                if (assessmentId && accessControlRules) {
+                  await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                }
               }
-            }
-          });
+            });
+          }
         },
       );
     });

@@ -22,17 +22,20 @@ find_tsconfig() {
     echo "tsconfig.json"
 }
 
-# Find all module augmentation files in the project
+# Find module augmentation files
 # These need to be included to ensure type augmentations are applied
 # Searches for both "declare module" and "declare global" patterns
 find_module_augmentation_files() {
-    # Search from project root for .ts and .d.ts files containing augmentations
-    # Exclude node_modules, dist, and build directories
-    grep -rlE "declare (module|global)" . \
+    # Search in the specified directory for .ts and .d.ts files containing augmentations
+    # Exclude node_modules, dist, build, and client directories
+    # (client directories contain DOM-dependent code that may not be compatible with server tsconfigs)
+    grep -rlE "declare (module|global)" \
         --include="*.ts" --include="*.d.ts" \
         --exclude-dir=node_modules \
         --exclude-dir=dist \
         --exclude-dir=build \
+        --exclude-dir=client \
+        --exclude-dir=assets \
         2> /dev/null || true
 }
 

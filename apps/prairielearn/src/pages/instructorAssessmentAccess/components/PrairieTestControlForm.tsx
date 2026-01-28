@@ -85,7 +85,7 @@ export function PrairieTestControlForm({
               {...control.register(getFieldName(namePrefix, 'prairieTestControl.enabled'), {
                 onChange: (e) => {
                   e.stopPropagation();
-                  const checked = (e.target as HTMLInputElement).checked;
+                  const { checked } = e.currentTarget;
                   // Just toggle enabled state, don't clear other fields
                   // The data remains in the form state for when they re-enable
                   setValue(getFieldName(namePrefix, 'prairieTestControl.enabled'), checked);

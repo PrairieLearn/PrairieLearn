@@ -1,4 +1,4 @@
-import { callRow, execute, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -109,22 +109,4 @@ export async function syncEnrollmentAccessControl(
  */
 export async function deleteEnrollmentAccessControl(accessControlId: string): Promise<void> {
   await execute(sql.delete_enrollment_rule, { id: accessControlId });
-}
-
-/**
- * Gets enrollment IDs for the given UIDs in a course instance.
- *
- * @param courseInstanceId The course instance ID
- * @param uids Array of user UIDs (emails)
- * @returns Array of enrollment IDs
- */
-export async function getEnrollmentIdsByUids(
-  courseInstanceId: string,
-  uids: string[],
-): Promise<string[]> {
-  return queryRows(
-    sql.select_enrollment_ids_by_uids,
-    { course_instance_id: courseInstanceId, uids },
-    IdSchema,
-  );
 }

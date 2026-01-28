@@ -182,7 +182,7 @@ export function StudentSearchInput({
             placeholder="Filter by name or UID..."
             type="text"
             value={searchQuery}
-            onChange={(e) => setSearchQuery((e.target as HTMLInputElement).value)}
+            onChange={({ currentTarget }) => setSearchQuery(currentTarget.value)}
           />
 
           {isLoadingStudents ? (
@@ -242,8 +242,8 @@ export function StudentSearchInput({
             placeholder="Paste UIDs (comma, space, or newline separated)"
             rows={3}
             value={uidInput}
-            onChange={(e) => {
-              setUidInput((e.target as HTMLTextAreaElement).value);
+            onChange={({ currentTarget }) => {
+              setUidInput(currentTarget.value);
               setValidatedUids([]);
             }}
           />

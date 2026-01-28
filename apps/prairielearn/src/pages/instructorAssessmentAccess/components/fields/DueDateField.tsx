@@ -88,8 +88,8 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
           id={`${namePrefix}-due-never`}
           label="No due date"
           checked={!field.isEnabled}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: false });
             }
           }}
@@ -100,8 +100,8 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
           id={`${namePrefix}-due-on-date`}
           label="Due on date"
           checked={field.isEnabled}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: true });
             }
           }}
@@ -112,7 +112,7 @@ export function DueDateField({ control, setValue, namePrefix }: DueDateFieldProp
           <Form.Control
             type="datetime-local"
             value={field.value}
-            onChange={(e) => setField({ value: (e.target as HTMLInputElement).value })}
+            onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
           />
           {field.value && <Form.Text className="text-muted">{getCreditPeriodText()}</Form.Text>}
         </>

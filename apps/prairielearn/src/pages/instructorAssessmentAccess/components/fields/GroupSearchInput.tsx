@@ -105,7 +105,7 @@ export function GroupSearchInput({
         placeholder="Filter groups..."
         type="text"
         value={filter}
-        onChange={(e) => setFilter((e.target as HTMLInputElement).value)}
+        onChange={({ currentTarget }) => setFilter(currentTarget.value)}
       />
 
       {isLoading ? (

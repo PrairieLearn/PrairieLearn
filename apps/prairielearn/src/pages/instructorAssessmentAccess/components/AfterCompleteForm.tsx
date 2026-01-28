@@ -120,8 +120,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-show-questions`}
           label="Show questions after completion"
           checked={hideQuestionsMode === 'show_questions'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setQuestionVisibility({ value: { hideQuestions: false } });
             }
           }}
@@ -136,8 +136,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-hide-questions-forever`}
           label="Hide questions permanently"
           checked={hideQuestionsMode === 'hide_questions_forever'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setQuestionVisibility({ value: { hideQuestions: true } });
             }
           }}
@@ -152,8 +152,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-hide-questions-until-date`}
           label="Hide questions until date"
           checked={hideQuestionsMode === 'hide_questions_until_date'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setQuestionVisibility({ value: { hideQuestions: true, showAgainDate: '' } });
             }
           }}
@@ -164,11 +164,11 @@ export function AfterCompleteForm({
             <Form.Control
               type="datetime-local"
               value={questionVisibility.value.showAgainDate ?? ''}
-              onChange={(e) =>
+              onChange={({ currentTarget }) =>
                 setQuestionVisibility({
                   value: {
                     hideQuestions: true,
-                    showAgainDate: (e.target as HTMLInputElement).value,
+                    showAgainDate: currentTarget.value,
                   },
                 })
               }
@@ -185,8 +185,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-hide-questions-between-dates`}
           label="Hide questions between dates"
           checked={hideQuestionsMode === 'hide_questions_between_dates'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setQuestionVisibility({
                 value: { hideQuestions: true, showAgainDate: '', hideAgainDate: '' },
               });
@@ -201,11 +201,11 @@ export function AfterCompleteForm({
                 <Form.Control
                   type="datetime-local"
                   value={questionVisibility.value.showAgainDate ?? ''}
-                  onChange={(e) =>
+                  onChange={({ currentTarget }) =>
                     setQuestionVisibility({
                       value: {
                         hideQuestions: true,
-                        showAgainDate: (e.target as HTMLInputElement).value,
+                        showAgainDate: currentTarget.value,
                         hideAgainDate: questionVisibility.value.hideAgainDate,
                       },
                     })
@@ -217,12 +217,12 @@ export function AfterCompleteForm({
                 <Form.Control
                   type="datetime-local"
                   value={questionVisibility.value.hideAgainDate ?? ''}
-                  onChange={(e) =>
+                  onChange={({ currentTarget }) =>
                     setQuestionVisibility({
                       value: {
                         hideQuestions: true,
                         showAgainDate: questionVisibility.value.showAgainDate,
-                        hideAgainDate: (e.target as HTMLInputElement).value,
+                        hideAgainDate: currentTarget.value,
                       },
                     })
                   }
@@ -248,8 +248,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-show-score`}
           label="Show score after completion"
           checked={hideScoreMode === 'show_score'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setScoreVisibility({ value: { hideScore: false } });
             }
           }}
@@ -264,8 +264,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-hide-score-forever`}
           label="Hide score permanently"
           checked={hideScoreMode === 'hide_score_forever'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setScoreVisibility({ value: { hideScore: true } });
             }
           }}
@@ -280,8 +280,8 @@ export function AfterCompleteForm({
           id={`${namePrefix}-hide-score-until-date`}
           label="Hide score until date"
           checked={hideScoreMode === 'hide_score_until_date'}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setScoreVisibility({ value: { hideScore: true, showAgainDate: '' } });
             }
           }}
@@ -292,11 +292,11 @@ export function AfterCompleteForm({
             <Form.Control
               type="datetime-local"
               value={scoreVisibility.value.showAgainDate ?? ''}
-              onChange={(e) =>
+              onChange={({ currentTarget }) =>
                 setScoreVisibility({
                   value: {
                     hideScore: true,
-                    showAgainDate: (e.target as HTMLInputElement).value,
+                    showAgainDate: currentTarget.value,
                   },
                 })
               }

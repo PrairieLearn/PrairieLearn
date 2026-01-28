@@ -31,8 +31,8 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
           id={`${namePrefix}-release-immediately`}
           label="Released immediately"
           checked={!field.isEnabled}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: false });
             }
           }}
@@ -43,8 +43,8 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
           id={`${namePrefix}-release-after-date`}
           label="Released after date"
           checked={field.isEnabled}
-          onChange={(e) => {
-            if ((e.target as HTMLInputElement).checked) {
+          onChange={({ currentTarget }) => {
+            if (currentTarget.checked) {
               setField({ isEnabled: true });
             }
           }}
@@ -54,7 +54,7 @@ export function ReleaseDateField({ control, setValue, namePrefix }: ReleaseDateF
         <Form.Control
           type="datetime-local"
           value={field.value}
-          onChange={(e) => setField({ value: (e.target as HTMLInputElement).value })}
+          onChange={({ currentTarget }) => setField({ value: currentTarget.value })}
         />
       )}
     </Form.Group>

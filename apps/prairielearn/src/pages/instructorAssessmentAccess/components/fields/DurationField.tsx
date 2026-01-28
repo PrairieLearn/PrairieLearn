@@ -29,7 +29,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
         type="checkbox"
         className="me-2"
         checked={field.isEnabled}
-        onChange={(e) => toggleEnabled((e.target as HTMLInputElement).checked)}
+        onChange={({ currentTarget }) => toggleEnabled(currentTarget.checked)}
       />
       <strong>Time limit</strong>
     </div>
@@ -44,9 +44,7 @@ export function DurationField({ control, setValue, namePrefix }: DurationFieldPr
             placeholder="Duration in minutes"
             min="1"
             value={field.value}
-            onChange={(e) =>
-              setField({ value: Number((e.target as HTMLInputElement).value) || 60 })
-            }
+            onChange={({ currentTarget }) => setField({ value: Number(currentTarget.value) || 60 })}
           />
           <InputGroup.Text>minutes</InputGroup.Text>
         </InputGroup>
