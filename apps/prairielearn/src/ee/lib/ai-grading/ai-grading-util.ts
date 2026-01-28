@@ -547,6 +547,7 @@ export async function addAiGradingCostToIntervalUsage({
   const responseCost = calculateResponseCost({ model, usage });
   await rateLimiter.addToIntervalUsage(getIntervalUsageKey(courseInstance), responseCost);
 }
+
 /**
  * Correct malformed AI rubric grading responses from Google Gemini by escaping backslashes in rubric item keys.
  *
