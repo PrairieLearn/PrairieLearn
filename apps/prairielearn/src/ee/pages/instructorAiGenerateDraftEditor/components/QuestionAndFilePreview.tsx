@@ -135,8 +135,7 @@ function useQuestionHtml({
 
   const handleNewVariantButtonClick = useCallback(
     (e: Event) => {
-      const target = e.target as HTMLElement;
-      if (target.classList.contains('js-new-variant-button')) {
+      if (e.target instanceof HTMLElement && e.target.classList.contains('js-new-variant-button')) {
         e.preventDefault();
         newVariant();
       }

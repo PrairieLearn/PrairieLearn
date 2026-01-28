@@ -245,20 +245,7 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
     return <span>{toolName}</span>;
   });
 
-  return (
-    <ToolCallStatus state={part.state} statusText={statusText}>
-      {/* <>
-        <pre>
-          <code>{JSON.stringify(part.input, null, 2)}</code>
-        </pre>
-        {part.output && (
-          <pre>
-            <code>{JSON.stringify(part.output, null, 2)}</code>
-          </pre>
-        )}
-      </> */}
-    </ToolCallStatus>
-  );
+  return <ToolCallStatus state={part.state} statusText={statusText} />;
 }
 
 function ReasoningBlock({ part }: { part: ReasoningUIPart }) {
