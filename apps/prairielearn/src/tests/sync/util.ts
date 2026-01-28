@@ -9,10 +9,6 @@ import { type z } from 'zod';
 import * as sqldb from '@prairielearn/postgres';
 
 import {
-  // AssessmentAccessControlEarlyDeadlineSchema,
-  // AssessmentAccessControlLateDeadlineSchema,
-  // AssessmentAccessControlSchema,
-  // AssessmentAccessControlTargetSchema,
   AlternativeGroupSchema,
   AssessmentAccessRuleSchema,
   AssessmentQuestionSchema,
@@ -105,6 +101,8 @@ export async function writeCourseToDirectory(courseData: CourseData, coursePath:
     const assessmentsPath = path.join(courseInstancePath, 'assessments');
     await fs.ensureDir(assessmentsPath);
     for (const assessmentName of Object.keys(courseInstance.assessments)) {
+      // Handle nested assessments - split on '/' and use components to construct
+      // the nested directory structure.
       const assessmentPath = path.join(assessmentsPath, ...assessmentName.split('/'));
       await fs.ensureDir(assessmentPath);
       const assessmentInfoPath = path.join(assessmentPath, 'infoAssessment.json');
@@ -121,7 +119,6 @@ export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
 const course = {
-  uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
   assessmentSets: [

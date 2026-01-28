@@ -1155,6 +1155,16 @@ export function validateAccessControlArray({
     );
   }
 
+  // Check for prairieTestControl on non-assignment-level rules
+  accessControlJsonArray.forEach((rule, index) => {
+    const isAssignmentLevel = rule.labels == null || rule.labels.length === 0;
+    if (!isAssignmentLevel && rule.prairieTestControl != null) {
+      results[index].errors.push(
+        'prairieTestControl can only be specified on assignment-level rules (rules without labels).',
+      );
+    }
+  });
+
   return results;
 }
 
@@ -1569,6 +1579,17 @@ function validateAssessment({
         );
       });
     });
+  }
+
+  // Validate access control rules if defined
+  if (assessment.accessControl) {
+    const accessControlValidation = validateAccessControlArray({
+      accessControlJsonArray: assessment.accessControl,
+    });
+    for (const result of accessControlValidation) {
+      errors.push(...result.errors);
+      warnings.push(...result.warnings);
+    }
   }
 
   return { warnings, errors };

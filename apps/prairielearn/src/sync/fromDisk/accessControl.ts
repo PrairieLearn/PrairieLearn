@@ -113,14 +113,19 @@ export async function syncAccessControl(
     }
   }
 
-  // Check for invalid label targets - throw error if any labels don't exist
+  // Check for invalid label targets - if any labels don't exist, skip syncing all rules
   for (const rule of accessControlRules) {
     const ruleLabels = rule.labels ?? [];
     const invalidLabels = ruleLabels.filter((label) => !validLabelIds.has(label));
     if (invalidLabels.length > 0) {
-      throw new Error(
-        `Access control rule references non-existent student labels: ${JSON.stringify(invalidLabels)}. Available labels: ${JSON.stringify([...validLabelIds.keys()])}`,
+      // Don't sync any rules if there are invalid labels
+      // Delete all existing rules for this assessment to reflect the invalid state
+      await sqldb.callRow(
+        'sync_access_control',
+        [courseInstanceId, assessmentId, [], [], [], [], []],
+        z.unknown(),
       );
+      return;
     }
   }
 
