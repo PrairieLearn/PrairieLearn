@@ -1,6 +1,7 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
+import { parse } from 'smol-toml';
 import { z } from 'zod';
 
 import { REPOSITORY_ROOT_PATH } from '../../../lib/paths.js';
@@ -20,7 +21,6 @@ export async function getPythonLibraries(): Promise<string[]> {
     encoding: 'utf-8',
   });
 
-  const { parse } = await import('smol-toml');
   const dependencies = PyProjectTomlSchema.parse(parse(data)).project.dependencies;
 
   // This is sort of an artificial dependency. It doesn't exist in `pyproject.toml`
