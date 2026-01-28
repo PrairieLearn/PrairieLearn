@@ -86,6 +86,11 @@ export async function aiGrade({
   instance_question_ids?: string[];
   model_id: AiGradingModelId;
 }): Promise<string> {
+  if (!assessment_question.max_manual_points) {
+    throw new error.HttpStatusError(400, 'AI grading is only available on assessment questions that use manual grading.');
+  }
+
+
   const provider = AI_GRADING_MODEL_PROVIDERS[model_id];
   const model = run(() => {
     if (provider === 'openai') {
@@ -174,10 +179,6 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
-    }
-
     job.info(`Using model ${model_id} for AI grading.`);
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 

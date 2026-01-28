@@ -723,10 +723,20 @@ export function AssessmentQuestionTable({
             aiGradingMode ? (
               <>
                 <Dropdown>
-                  <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
-                    <i className="bi bi-stars" aria-hidden="true" />
-                    <span>AI grading</span>
-                  </Dropdown.Toggle>
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'AI grading is only available on assessment questions that use manual grading.',
+                      props: { id: 'ai-grading-disabled-tooltip' },
+                    }}
+                    show={!assessmentQuestion.max_manual_points ? undefined : false}
+                  >
+                    <span>
+                      <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm" disabled={!assessmentQuestion.max_manual_points}>
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span>AI grading</span>
+                      </Dropdown.Toggle>
+                    </span>
+                  </OverlayTrigger>
                   <Dropdown.Menu align="end">
                     <AiGradingOption
                       text="Grade all human-graded"
@@ -799,10 +809,20 @@ export function AssessmentQuestionTable({
                   </Dropdown.Menu>
                 </Dropdown>
                 <Dropdown>
-                  <Dropdown.Toggle variant="light" size="sm">
-                    <i className="bi bi-stars" aria-hidden="true" />
-                    <span className="d-none d-sm-inline">AI submission grouping</span>
-                  </Dropdown.Toggle>
+                  <OverlayTrigger
+                    tooltip={{
+                      body: 'AI submission grouping is only available on assessment questions that use manual grading.',
+                      props: { id: 'ai-grouping-disabled-tooltip' },
+                    }}
+                    show={!assessmentQuestion.max_manual_points ? undefined : false}
+                  >
+                    <span>
+                      <Dropdown.Toggle variant="light" size="sm" disabled={!assessmentQuestion.max_manual_points}>
+                        <i className="bi bi-stars" aria-hidden="true" />
+                        <span className="d-none d-sm-inline">AI submission grouping</span>
+                      </Dropdown.Toggle>
+                    </span>
+                  </OverlayTrigger>
                   <Dropdown.Menu align="end">
                     <Dropdown.Item
                       disabled={selectedIds.length === 0}
