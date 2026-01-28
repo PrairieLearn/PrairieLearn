@@ -678,7 +678,11 @@ export function RubricSettings({
                       type="number"
                       value={minPoints ?? ''}
                       disabled={!hasCourseInstancePermissionEdit}
-                      onInput={(e: any) => setMinPoints(Number(e.target.value))}
+                      onInput={({ currentTarget }) =>
+                        setMinPoints(
+                          currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
+                        )
+                      }
                     />
                   </label>
                 </div>
