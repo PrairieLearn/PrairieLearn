@@ -474,7 +474,7 @@ Instructors can manage groups on the "Groups" tab of an assessment. This page al
 To create groups in bulk, upload a CSV file in the following format:
 
 ```csv
-groupName,UID
+group_name,uid
 groupA,one@example.com
 groupA,two@example.com
 groupB,three@example.com
