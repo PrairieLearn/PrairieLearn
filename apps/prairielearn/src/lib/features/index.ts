@@ -17,6 +17,8 @@ const featureNames = [
   'lti11',
   // Can be applied to any context.
   'rich-text-editor',
+  // Enhanced access control UI for assessments.
+  'enhanced-access-control',
 ] as const;
 
 const features = new FeatureManager(featureNames);

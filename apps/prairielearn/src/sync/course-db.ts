@@ -18,6 +18,7 @@ import { features } from '../lib/features/index.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
+  type AccessControlJson,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -1120,6 +1121,54 @@ function formatValues(qids: Set<string> | string[]) {
 }
 
 /**
+ * Validates an array of access control rules.
+ * Returns an array of validation results, one per rule.
+ */
+export function validateAccessControlArray({
+  accessControlJsonArray,
+}: {
+  accessControlJsonArray: AccessControlJson[];
+}): { warnings: string[]; errors: string[] }[] {
+  const results: { warnings: string[]; errors: string[] }[] = accessControlJsonArray.map(() => ({
+    warnings: [],
+    errors: [],
+  }));
+
+  if (accessControlJsonArray.length === 0) {
+    return results;
+  }
+
+  // An assignment-level rule has no `labels` property (applies to everyone)
+  const assignmentLevelRules = accessControlJsonArray.filter(
+    (rule) => rule.labels == null || rule.labels.length === 0,
+  );
+
+  if (assignmentLevelRules.length === 0) {
+    // Error on first rule if no assignment-level rule exists
+    results[0].errors.push(
+      'No assignment-level rule found. The first rule must apply to everyone.',
+    );
+  } else if (assignmentLevelRules.length > 1) {
+    // Error on first rule if multiple assignment-level rules exist
+    results[0].errors.push(
+      `Found ${assignmentLevelRules.length} assignment-level rules. Only one rule should apply to everyone.`,
+    );
+  }
+
+  // Check for prairieTestControl on non-assignment-level rules
+  accessControlJsonArray.forEach((rule, index) => {
+    const isAssignmentLevel = rule.labels == null || rule.labels.length === 0;
+    if (!isAssignmentLevel && rule.prairieTestControl != null) {
+      results[index].errors.push(
+        'prairieTestControl can only be specified on assignment-level rules (rules without labels).',
+      );
+    }
+  });
+
+  return results;
+}
+
+/**
  * Converts legacy group properties to the new groups format for unified handling.
  */
 export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
@@ -1530,6 +1579,17 @@ function validateAssessment({
         );
       });
     });
+  }
+
+  // Validate access control rules if defined
+  if (assessment.accessControl) {
+    const accessControlValidation = validateAccessControlArray({
+      accessControlJsonArray: assessment.accessControl,
+    });
+    for (const result of accessControlValidation) {
+      errors.push(...result.errors);
+      warnings.push(...result.warnings);
+    }
   }
 
   return { warnings, errors };

@@ -1,5 +1,6 @@
 import { type ZodSchema, z } from 'zod';
 
+import { AccessControlJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 
 function uniqueArray<T extends ZodSchema>(schema: T) {
@@ -402,6 +403,10 @@ export const AssessmentJsonSchema = z
       )
       .optional()
       .default([]),
+    accessControl: z
+      .array(AccessControlJsonSchema)
+      .describe('Access control settings for the assessment.')
+      .optional(),
     text: z.string().describe('HTML text shown on the assessment overview page.').optional(),
     maxPoints: z
       .number()

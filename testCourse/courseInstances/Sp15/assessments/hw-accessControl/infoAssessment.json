@@ -1,0 +1,30 @@
+{
+  "uuid": "f5b2c8d1-9a3e-4f7b-8c1d-2e5a6b9c0d1f",
+  "type": "Homework",
+  "title": "Access Control Test",
+  "set": "Homework",
+  "number": "14",
+  "accessControl": [
+    {
+      "enabled": true,
+      "blockAccess": false,
+      "listBeforeRelease": true,
+      "dateControl": {
+        "enabled": true,
+        "afterLastDeadline": { "allowSubmissions": true, "credit": 52 }
+      },
+      "prairieTestControl": { "enabled": false },
+      "afterComplete": { "hideQuestions": false, "hideScore": false }
+    },
+    {
+      "enabled": true,
+      "blockAccess": false,
+      "listBeforeRelease": true,
+      "labels": ["sectionA"],
+      "dateControl": { "enabled": true, "dueDate": "2026-01-28T18:14" }
+    }
+  ],
+  "zones": [
+    { "title": "Access Control Test Zone", "questions": [{ "id": "addNumbers", "points": 1 }] }
+  ]
+}
