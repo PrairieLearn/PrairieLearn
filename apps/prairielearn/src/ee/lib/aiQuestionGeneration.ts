@@ -44,11 +44,12 @@ import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
-import type { QuestionGenerationModelId } from './ai-question-generation/agent.js';
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
 import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
+
+export type QuestionGenerationModelId = keyof (typeof config)['costPerMillionTokens'];
 
 export const QUESTION_GENERATION_OPENAI_MODEL: QuestionGenerationModelId = 'gpt-5.2-2025-12-11';
 

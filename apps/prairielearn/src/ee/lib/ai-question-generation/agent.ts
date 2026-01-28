@@ -41,6 +41,7 @@ import { createServerJob } from '../../../lib/server-jobs.js';
 import { selectQuestionById } from '../../../models/question.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
+  type QuestionGenerationModelId,
   addCompletionCostToIntervalUsage,
   checkRender,
 } from '../aiQuestionGeneration.js';
@@ -210,8 +211,6 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
     ],
   ]);
 }
-
-export type QuestionGenerationModelId = keyof (typeof config)['costPerMillionTokens'];
 
 export function getAgenticModel(): { model: LanguageModel; modelId: QuestionGenerationModelId } {
   assert(config.aiQuestionGenerationOpenAiApiKey, 'OpenAI API key is not configured');
