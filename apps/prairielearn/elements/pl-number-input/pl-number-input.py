@@ -295,6 +295,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "show_score": show_score,
+            display.value: True,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -341,6 +342,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
                 "label": label,
                 "suffix": suffix,
                 "correct_answer": format_true_ans(element, data, name),
+                display.value: True,
             }
             return chevron.render(template, html_params).strip()
         return ""

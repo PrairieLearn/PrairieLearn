@@ -168,6 +168,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "parse_error": parse_error,
             "uuid": pl.get_uuid(),
             "multiline": multiline,
+            display.value: True,
         }
 
         if parse_error is None and name in data["submitted_answers"]:
@@ -205,6 +206,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "suffix": suffix,
             "multiline": multiline,
             "uuid": pl.get_uuid(),
+            display.value: True,
             # Some users were putting numbers into the correct answer. For
             # backwards compatibility, always convert the answer to a string.
             "escaped_correct_answer": html.escape(pl.escape_unicode_string(str(a_tru))),
