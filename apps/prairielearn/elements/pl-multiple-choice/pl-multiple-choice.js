@@ -95,3 +95,10 @@ window.PLMultipleChoice = function (uuid) {
   // when the control is clicked.
   select.control.addEventListener('click', () => select.open());
 };
+
+window.PLMultipleChoiceClearRadio = function (name) {
+  const radios = document.querySelectorAll(`input[type="radio"][name="${name}"]`);
+  radios.forEach((radio) => {
+    radio.checked = false;
+  });
+};

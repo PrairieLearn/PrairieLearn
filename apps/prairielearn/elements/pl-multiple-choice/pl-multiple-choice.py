@@ -542,6 +542,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             size = pl.get_integer_attrib(element, "size") * 8
 
         placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
         html_params = {
             "question": True,
@@ -550,6 +551,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "radio": display_radio,
             "size": size,
             "placeholder": placeholder,
+            "allow_blank": allow_blank,
             "uuid": pl.get_uuid(),
             "name": name,
             "editable": editable,
