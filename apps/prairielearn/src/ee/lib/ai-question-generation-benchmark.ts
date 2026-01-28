@@ -10,7 +10,7 @@ import { z } from 'zod';
 
 import { run } from '@prairielearn/run';
 
-import type { OpenAIModelId } from '../../lib/ai.js';
+import { type OpenAIModelId, formatPrompt } from '../../lib/ai.js';
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
@@ -352,38 +352,32 @@ async function evaluateGeneratedQuestion({
   html: string;
   python: string;
 }): Promise<QuestionGenerationEvaluation | null> {
-  const systemPrompt = [
+  const systemPrompt = formatPrompt([
     'Another LLM has generated a PrairieLearn question from the following prompt:',
-    '',
-    '<prompt>',
-    userMessageContents.trim(),
-    '</prompt>',
-    '',
-    'Please evaluate it for correctness and clarity.',
-    'If anything is incorrect or could be improved, please provide feedback.',
-    'If the question looks fine, please indicate that as well.',
-    '',
-    'Do not suggest ways the original prompt could have been improved.',
-    'You should evaluate the question based on the prompt as it is written.',
-    '',
-    'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
-    'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
-    'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
-    '',
+    `<prompt>\n${userMessageContents.trim()}\n</prompt>`,
+    [
+      'Please evaluate it for correctness and clarity.',
+      'If anything is incorrect or could be improved, please provide feedback.',
+      'If the question looks fine, please indicate that as well.',
+    ],
+    [
+      'Do not suggest ways the original prompt could have been improved.',
+      'You should evaluate the question based on the prompt as it is written.',
+    ],
+    [
+      'Remember that for pedagogical reasons, instructors may include extra information or distractors.',
+      'They may also choose to make students carefully consider unit conversions without explicitly prompting for them.',
+      'These are not considered errors unless they are factually incorrect or egregiously misleading; do not factor them into your evaluation.',
+    ],
     // This should include relevant documentation for the elements used in the
     // generated question, as well as our baseline context about how PrairieLearn
     // works and some example questions. This is a lot of tokens, but it's
     // important for accurate evaluation since it'll tell the LLM about which
     // elements/attributes are available and how elements behave.
     'The assistant generated the following response:',
-    '<response>',
-    assistantMessageContents.trim(),
-    '</response>',
-    '',
+    `<response>\n${assistantMessageContents.trim()}\n</response>`,
     'The user will now provide the question HTML and Python files that the LLM generated for this prompt.',
-  ]
-    .flat()
-    .join('\n');
+  ]);
 
   const generatedQuestion: string[] = ['```html', html.trim(), '```'];
   if (python) {
