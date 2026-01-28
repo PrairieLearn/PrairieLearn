@@ -8,6 +8,9 @@ import {
   zodToJsonSchema,
 } from 'zod-to-json-schema';
 
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+
+import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -15,8 +18,7 @@ import {
   type AssessmentJson,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
-  GroupsRoleJsonSchema,
-  LegacyGroupRoleJsonSchema,
+  GroupRoleJsonSchema,
   PointsJsonSchema,
   PointsListJsonSchema,
   PointsSingleJsonSchema,
@@ -55,11 +57,11 @@ import {
 import { type QuestionOptionsv3Json, QuestionOptionsv3JsonSchema } from './questionOptionsv3.js';
 
 /**
- * Override certain fields in the JSON schema.
+ * Rewrite the group role annotation for canView and canSubmit fields.
  * zod-to-json-schema doesn't support a concept of unique items in an array (only sets),
- * so we need to override the schema for canView, canSubmit, and roles fields.
+ * so we need to override the schema.
  */
-const schemaOverride = (
+const rewriteGroupRoleAnnotation = (
   def: ZodTypeDef,
   refs: Refs,
 ): JsonSchema7Type | undefined | typeof ignoreOverride => {
@@ -67,61 +69,15 @@ const schemaOverride = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
-    const inGroups = refs.currentPath.includes('groups');
-
-    // Skip fields inside groups.rolePermissions - let default handle them
-    if (inGroups) {
-      return ignoreOverride;
-    }
-
-    // Question level
-    if (inQuestion) {
-      return {
-        description: `A list of group role names that can ${action} the question. Only applicable for group assessments.`,
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-        uniqueItems: true,
-        default: [],
-      };
-    }
-
-    // Zone level
+    let annotation = `A list of group role names matching those in groupRoles that can ${action} the question. Only applicable for group assessments.`;
     if (inZone) {
-      return {
-        description: `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`,
-        type: 'array',
-        items: {
-          type: 'string',
-        },
-        uniqueItems: true,
-        default: [],
-      };
+      annotation = `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`;
     }
-
-    // Assessment level (deprecated legacy group properties)
-    // Note: `deprecated: true` is added automatically by the traverse function below
-    // because the description contains "DEPRECATED"
     return {
-      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.`,
+      description: annotation,
       type: 'array',
       items: {
         type: 'string',
-      },
-      uniqueItems: true,
-      default: [],
-    };
-  }
-
-  // Add uniqueItems to the roles array in groups
-  if (segment === 'roles' && refs.currentPath.includes('groups')) {
-    return {
-      description: 'Array of custom user roles in a group.',
-      type: 'array',
-      items: {
-        $ref: '#/definitions/GroupsRoleJsonSchema',
       },
       uniqueItems: true,
       default: [],
@@ -137,7 +93,7 @@ const prairielearnZodToJsonSchema = (
 ) => {
   const jsonSchema = zodToJsonSchema(schema, {
     ...options,
-    override: schemaOverride,
+    override: rewriteGroupRoleAnnotation,
     // Many people have done insane things in their JSON files that don't pass
     // strict validation. For now, we'll be lenient and avoid the use of `.strict()`
     // in our Zod schemas in places where that could cause problems. In the
@@ -186,10 +142,12 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
     ZoneQuestionJsonSchema,
-    LegacyGroupRoleJsonSchema,
-    GroupsRoleJsonSchema,
+    GroupRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
+    AccessControlJsonSchema,
+    DatetimeLocalStringSchema,
+    DeadlineEntryJsonSchema,
   },
 }) as JSONSchemaType<AssessmentJson>;
 

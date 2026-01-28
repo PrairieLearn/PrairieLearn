@@ -1436,10 +1436,6 @@
           "output": 25
         }
       }
-    },
-    "exampleCoursePath": {
-      "type": "string",
-      "default": "./exampleCourse"
     }
   }
 }

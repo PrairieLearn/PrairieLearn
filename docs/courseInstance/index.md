@@ -223,10 +223,6 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 
 ### Individual student management
 
-!!! warning "Not available with legacy access control"
-
-    Individual student management features are not available for courses using legacy access control (`allowAccess`). To use these features, you must [migrate to the new publishing system](#migrating-from-allowaccess).
-
 #### Inviting students
 
 Students can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage. If a student rejects an invitation, they can still join via a link to the course. However, the invitation will not show up on their homepage until they are re-invited. If an invited student accesses any link to the course (regardless of the current self-enrollment settings), they will automatically join the course.
@@ -234,6 +230,59 @@ Students can be invited to a course instance by an instructor. Instructors can i
 #### Blocking students
 
 If you want to remove students from a course instance, you can do this by visiting the individual student page and clicking the "Block" button. They will immediately be removed from the course instance and will no longer be able to enroll themselves in the course instance. If you later click "Unblock" on their page, they will be immediately re-enrolled in the course instance.
+
+## Student groups
+
+Student groups allow you to organize students within a course instance into named groups, such as discussion sections, lab sections, or any other grouping that makes sense for your course. Groups are displayed with a color-coded badge next to student names throughout the interface.
+
+!!! note "Student groups vs group work"
+
+    Student groups are for **organizing students** within your course (e.g., "Section A", "Lab 2"). They are separate from the [group work feature](../assessment/configuration.md#group-work) which allows students to collaborate on assessments together.
+
+### Defining student groups in JSON
+
+Student groups are defined in the `studentGroups` array in `infoCourseInstance.json`:
+
+```json title="infoCourseInstance.json"
+{
+  "uuid": "...",
+  "longName": "Fall 2025",
+  "studentGroups": [
+    { "name": "Section A", "color": "blue1" },
+    { "name": "Section B", "color": "green1" },
+    { "name": "Lab 1", "color": "purple1" },
+    { "name": "Lab 2", "color": "orange1" }
+  ]
+}
+```
+
+Each student group has the following properties:
+
+| Property | Description                                                                                        |
+| -------- | -------------------------------------------------------------------------------------------------- |
+| `name`   | The name of the group (1-255 characters). Must be unique within the course instance.               |
+| `color`  | A color for the group badge. See [Colors](../course/index.md#colors) for the list of valid colors. |
+
+### Managing student groups in the UI
+
+You can also create and manage student groups through the web interface:
+
+1. Navigate to **Course Instance > Students > Student groups**
+2. Click **Add group** to create a new group
+3. Enter the group name, select a color, and optionally add student UIDs
+4. Click **Save** to create the group
+
+From the student groups page, you can edit existing groups to change their name, color, or membership. You can also delete groups that are no longer needed.
+
+### Assigning students to groups
+
+Students can be assigned to groups in several ways:
+
+- **From the student groups page**: When creating or editing a group, enter student UIDs (one per line or comma-separated)
+- **From the students page**: Select multiple students and use bulk actions to add or remove them from groups
+- **From an individual student's page**: View and manage their group memberships directly
+
+Students can belong to multiple groups simultaneously (e.g., a student could be in both "Section A" and "Lab 2").
 
 ## Assessment page organization
 
@@ -258,27 +307,6 @@ The default timezone for course instances is the timezone of the course. This ca
 ```
 
 Allowable timezones are those in the TZ column in the [list of tz database time zones](https://en.wikipedia.org/wiki/List_of_tz_database_time_zones), which is a display version of the [IANA Time Zone Database](https://www.iana.org/time-zones).
-
-## Student labels
-
-Student labels let you organize students with colored badges. Use them for sections, TA assignments, accommodations, or any other grouping.
-
-To manage labels, go to **Students → Labels**. You can create labels with custom names and colors, then assign students by entering their UIDs. You can also assign labels from the main Students page using batch actions, or from an individual student's page.
-
-Labels appear in the student roster, gradebook, and student detail pages.
-
-??? note "Defining labels in JSON"
-
-    Labels can be defined in `infoCourseInstance.json`. Students must still be assigned to labels through the UI.
-
-    ```json title="infoCourseInstance.json"
-    {
-      "studentLabels": [
-        { "name": "Section A", "color": "blue1" },
-        { "name": "Section B", "color": "green1" }
-      ]
-    }
-    ```
 
 ## LTI support
 

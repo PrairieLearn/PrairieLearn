@@ -54,6 +54,13 @@
       },
       "default": []
     },
+    "accessControl": {
+      "description": "Access control settings for the assessment.",
+      "type": "array",
+      "items": {
+        "$ref": "#/definitions/AccessControlJsonSchema"
+      }
+    },
     "text": {
       "description": "HTML text shown on the assessment overview page.",
       "type": "string"
@@ -102,160 +109,63 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Whether the assessment will support group work.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "default": false
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
-      "type": "number",
-      "deprecated": true
+      "description": "Maximum number of students in a group.",
+      "type": "number"
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
-      "type": "number",
-      "deprecated": true
+      "description": "Minimum number of students in a group.",
+      "type": "number"
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Array of custom user roles in a group.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
+        "$ref": "#/definitions/GroupRoleJsonSchema"
       },
-      "default": [],
-      "deprecated": true
+      "default": []
     },
     "canSubmit": {
-      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
       "type": "array",
       "items": {
         "type": "string"
       },
       "uniqueItems": true,
-      "default": [],
-      "deprecated": true
+      "default": []
     },
     "canView": {
-      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
       "type": "array",
       "items": {
         "type": "string"
       },
       "uniqueItems": true,
-      "default": [],
-      "deprecated": true
+      "default": []
     },
     "studentGroupCreate": {
-      "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Whether students can create groups.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "default": false
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
       "type": "boolean",
-      "default": true,
-      "deprecated": true
+      "default": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Whether students can join groups.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
+      "default": false
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "description": "Whether students can leave groups.",
       "type": "boolean",
-      "default": false,
-      "deprecated": true
-    },
-    "groups": {
-      "description": "Configuration for group-based assessments.",
-      "type": "object",
-      "additionalProperties": false,
-      "properties": {
-        "enabled": {
-          "description": "Whether groups are enabled for this assessment.",
-          "type": "boolean",
-          "default": true
-        },
-        "minMembers": {
-          "description": "Minimum number of students in a group.",
-          "type": "number"
-        },
-        "maxMembers": {
-          "description": "Maximum number of students in a group.",
-          "type": "number"
-        },
-        "roles": {
-          "description": "Array of custom user roles in a group.",
-          "type": "array",
-          "items": {
-            "$ref": "#/definitions/GroupsRoleJsonSchema"
-          },
-          "uniqueItems": true,
-          "default": []
-        },
-        "studentPermissions": {
-          "description": "Student permissions for group management.",
-          "type": "object",
-          "properties": {
-            "canCreateGroup": {
-              "description": "Whether students can create groups.",
-              "type": "boolean",
-              "default": false
-            },
-            "canJoinGroup": {
-              "description": "Whether students can join groups.",
-              "type": "boolean",
-              "default": false
-            },
-            "canLeaveGroup": {
-              "description": "Whether students can leave groups.",
-              "type": "boolean",
-              "default": false
-            },
-            "canNameGroup": {
-              "description": "Whether students can choose a group name when creating a group.",
-              "type": "boolean",
-              "default": true
-            }
-          },
-          "default": {}
-        },
-        "rolePermissions": {
-          "description": "Role-based permissions for group assessments.",
-          "type": "object",
-          "properties": {
-            "canAssignRoles": {
-              "description": "Role names that can assign other users to roles.",
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "default": []
-            },
-            "canView": {
-              "description": "Role names that can view questions.",
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "default": []
-            },
-            "canSubmit": {
-              "description": "Role names that can submit questions.",
-              "type": "array",
-              "items": {
-                "type": "string"
-              },
-              "default": []
-            }
-          },
-          "default": {}
-        }
-      }
+      "default": false
     },
     "advanceScorePerc": {
       "description": "Minimum score percentage to unlock access to subsequent questions.",
@@ -277,6 +187,31 @@
     }
   },
   "definitions": {
+    "GroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
     "AssessmentAccessRuleJsonSchema": {
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
@@ -485,7 +420,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names that can submit the question. Only applicable for group assessments.",
+          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -494,7 +429,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names that can view the question. Only applicable for group assessments.",
+          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -595,51 +530,6 @@
       "minimum": 0,
       "maximum": 100
     },
-    "LegacyGroupRoleJsonSchema": {
-      "description": "A custom role for use in group assessments that allows control over certain permissions.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
-          "type": "string"
-        },
-        "minimum": {
-          "description": "The minimum number of users that should be in this role in a group.",
-          "type": "number",
-          "default": 0
-        },
-        "maximum": {
-          "description": "The maximum number of users that should be in this role in a group.",
-          "type": "number"
-        },
-        "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' group roles.",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
-    "GroupsRoleJsonSchema": {
-      "description": "A custom role for use in group assessments.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (e.g., Manager, Recorder).",
-          "type": "string"
-        },
-        "minMembers": {
-          "description": "The minimum number of users that should be in this role.",
-          "type": "number",
-          "default": 0
-        },
-        "maxMembers": {
-          "description": "The maximum number of users that should be in this role.",
-          "type": "number"
-        }
-      }
-    },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",
       "anyOf": [
@@ -655,6 +545,205 @@
           "properties": {}
         }
       ]
+    },
+    "AccessControlJsonSchema": {
+      "type": "object",
+      "properties": {
+        "name": {
+          "description": "Name for AccessControl rule",
+          "type": "string"
+        },
+        "groups": {
+          "description": "Array of student group names this set targets",
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "enabled": {
+          "description": "Whether this set of permissions is enabled",
+          "type": "boolean"
+        },
+        "blockAccess": {
+          "description": "Short circuit for whether the targets should have access to the assessment",
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "listBeforeRelease": {
+          "description": "Whether students can see the title and click into the assessment before release",
+          "anyOf": [
+            {
+              "anyOf": [
+                {
+                  "not": {}
+                },
+                {
+                  "type": "boolean"
+                }
+              ]
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "dateControl": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "description": "Whether dateControl is enabled or not",
+              "type": "boolean"
+            },
+            "releaseDate": {
+              "description": "Deadline date as ISO String",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
+            },
+            "dueDate": {
+              "description": "Due date as ISO String",
+              "anyOf": [
+                {
+                  "$ref": "#/definitions/DatetimeLocalStringSchema"
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "earlyDeadlines": {
+              "description": "Array of early deadlines with credit as percentages",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/DeadlineEntryJsonSchema"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "lateDeadlines": {
+              "description": "Array of late deadlines with credit as percentages",
+              "anyOf": [
+                {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/definitions/DeadlineEntryJsonSchema"
+                  }
+                },
+                {
+                  "type": "null"
+                }
+              ]
+            },
+            "afterLastDeadline": {
+              "description": "Controls for assessment behaviour after last deadline",
+              "type": "object",
+              "properties": {
+                "allowSubmissions": {
+                  "type": "boolean"
+                },
+                "credit": {
+                  "type": "number"
+                }
+              }
+            },
+            "durationMinutes": {
+              "description": "Desired duration limit for assessment",
+              "type": "integer",
+              "exclusiveMinimum": 0
+            },
+            "password": {
+              "description": "Password for assessment",
+              "type": ["string", "null"]
+            }
+          }
+        },
+        "prairieTestControl": {
+          "type": "object",
+          "properties": {
+            "enabled": {
+              "description": "Whether praireTestControl is enabled or not",
+              "type": "boolean"
+            },
+            "exams": {
+              "description": "Array of associated PrairieTest exam configs",
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": ["examUuid"],
+                "properties": {
+                  "examUuid": {
+                    "description": "UUID of associated PrairieTest exam",
+                    "type": "string"
+                  },
+                  "readOnly": {
+                    "description": "Whether the exam is read-only for students",
+                    "type": "boolean"
+                  }
+                }
+              }
+            }
+          }
+        },
+        "afterComplete": {
+          "type": "object",
+          "properties": {
+            "hideQuestions": {
+              "description": "Whether to enable settings controlling question visibility after assessment completion",
+              "type": "boolean"
+            },
+            "showQuestionsAgainDate": {
+              "description": "Date as ISO String for when to unhide questions to students after assessment completion",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
+            },
+            "hideQuestionsAgainDate": {
+              "description": "Date as ISO String for when to rehide questions to students after unhiding questions after assessment completion",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
+            },
+            "hideScore": {
+              "description": "Whether to enable settings controlling score visibility after assessment completion",
+              "type": "boolean"
+            },
+            "showScoreAgainDate": {
+              "description": "Date as ISO String for when to reveal hidden scores after assessment completion",
+              "$ref": "#/definitions/DatetimeLocalStringSchema"
+            }
+          }
+        }
+      }
+    },
+    "DatetimeLocalStringSchema": {
+      "type": "string",
+      "pattern": "^\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}(:\\d{2})?$"
+    },
+    "DeadlineEntryJsonSchema": {
+      "type": "object",
+      "required": ["date", "credit"],
+      "properties": {
+        "date": {
+          "description": "Date as ISO String for additional deadline",
+          "$ref": "#/definitions/DatetimeLocalStringSchema"
+        },
+        "credit": {
+          "description": "Amount of credit as a percent to allow",
+          "type": "number"
+        }
+      }
     }
   }
 }

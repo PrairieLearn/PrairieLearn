@@ -4,17 +4,16 @@
   "description": "The specification file for a course.",
   "type": "object",
   "additionalProperties": false,
-  "required": ["name", "title", "topics"],
+  "required": ["uuid", "name", "title", "topics"],
   "properties": {
     "comment": {
       "description": "Arbitrary comment for reference purposes.",
       "$ref": "#/definitions/CommentJsonSchema"
     },
     "uuid": {
-      "description": "[DEPRECATED, DO NOT USE] Unique identifier (UUID v4).",
+      "description": "Unique identifier (UUID v4).",
       "type": "string",
-      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$",
-      "deprecated": true
+      "pattern": "^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$"
     },
     "name": {
       "description": "The course name (e.g., 'TAM 212').",

@@ -27,7 +27,7 @@ import {
   getGroupRoleReassignmentsAfterLeave,
 } from '../lib/teams.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
-import { type LegacyGroupRoleJsonInput } from '../schemas/index.js';
+import { type GroupRoleJsonInput } from '../schemas/index.js';
 
 import { assertAlert } from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -1211,7 +1211,7 @@ describe(
 
 const changeGroupRolesConfig = async (
   courseDir: string,
-  groupRoles: LegacyGroupRoleJsonInput[],
+  groupRoles: GroupRoleJsonInput[],
 ) => {
   const infoAssessmentPath = path.join(
     courseDir,

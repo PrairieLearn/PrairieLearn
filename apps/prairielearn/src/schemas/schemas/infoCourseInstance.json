@@ -134,23 +134,23 @@
       "type": "boolean",
       "default": false
     },
-    "studentLabels": {
-      "description": "Student label definitions for this course instance.",
+    "studentGroups": {
+      "description": "Student group definitions for this course instance.",
       "type": "array",
       "items": {
-        "description": "A student label definition.",
+        "description": "A student group definition.",
         "type": "object",
         "additionalProperties": false,
         "required": ["name", "color"],
         "properties": {
           "name": {
-            "description": "The name of the student label.",
+            "description": "The name of the student group.",
             "type": "string",
             "minLength": 1,
             "maxLength": 255
           },
           "color": {
-            "description": "The color to display for this label.",
+            "description": "The color to display for this group.",
             "type": "string",
             "enum": [
               "red1",
