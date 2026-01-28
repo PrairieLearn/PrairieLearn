@@ -20,7 +20,7 @@
       "enabled": true,
       "blockAccess": false,
       "listBeforeRelease": true,
-      "groups": ["sectionA"],
+      "labels": ["sectionA"],
       "dateControl": { "enabled": true, "dueDate": "2026-01-28T18:14" }
     }
   ],

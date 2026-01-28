@@ -19,6 +19,7 @@ import {
   type AccessControlFormData,
   type AccessControlRuleFormData,
   createDefaultOverrideFormData,
+  makeOverridable,
 } from './types.js';
 
 /**
@@ -49,18 +50,6 @@ function dbRowToFormData(
   row: AccessControlWithGroups,
   isMainRule: boolean,
 ): AccessControlRuleFormData {
-  // For main rule: isOverridden is always true
-  // For override rules: isOverridden depends on whether the field has a value
-  const makeOverridable = <T,>(
-    hasValue: boolean,
-    isEnabled: boolean,
-    value: T,
-  ): { isOverridden: boolean; isEnabled: boolean; value: T } => ({
-    isOverridden: isMainRule || hasValue,
-    isEnabled,
-    value,
-  });
-
   // Convert groups and individual_targets to the appliesTo structure
   const groups = row.groups ?? ([] as { id: string; name: string }[]);
   const individualTargets =
@@ -99,26 +88,31 @@ function dbRowToFormData(
   const dateControl = {
     enabled: dateControlEnabled,
     releaseDate: makeOverridable(
+      isMainRule,
       row.date_control_release_date_overridden === true,
       row.date_control_release_date !== null,
       row.date_control_release_date ? toDatetimeLocalString(row.date_control_release_date) : '',
     ),
     dueDate: makeOverridable(
+      isMainRule,
       row.date_control_due_date_overridden === true,
       row.date_control_due_date !== null,
       row.date_control_due_date ? toDatetimeLocalString(row.date_control_due_date) : '',
     ),
     earlyDeadlines: makeOverridable(
+      isMainRule,
       row.date_control_early_deadlines_overridden === true,
       earlyDeadlines.length > 0,
       earlyDeadlines,
     ),
     lateDeadlines: makeOverridable(
+      isMainRule,
       row.date_control_late_deadlines_overridden === true,
       lateDeadlines.length > 0,
       lateDeadlines,
     ),
     afterLastDeadline: makeOverridable(
+      isMainRule,
       row.date_control_after_last_deadline_credit_overridden === true,
       row.date_control_after_last_deadline_credit !== null ||
         row.date_control_after_last_deadline_allow_submissions !== null,
@@ -128,11 +122,13 @@ function dbRowToFormData(
       },
     ),
     durationMinutes: makeOverridable(
+      isMainRule,
       row.date_control_duration_minutes_overridden === true,
       row.date_control_duration_minutes !== null,
       row.date_control_duration_minutes ?? 60,
     ),
     password: makeOverridable(
+      isMainRule,
       row.date_control_password_overridden === true,
       row.date_control_password !== null,
       row.date_control_password ?? '',
@@ -161,7 +157,7 @@ function dbRowToFormData(
     row.after_complete_show_score_again_date_overridden === true;
 
   const afterComplete = {
-    questionVisibility: makeOverridable(hasQuestionVisibility, true, {
+    questionVisibility: makeOverridable(isMainRule, hasQuestionVisibility, true, {
       hideQuestions: row.after_complete_hide_questions ?? false,
       showAgainDate: row.after_complete_show_questions_again_date
         ? toDatetimeLocalString(row.after_complete_show_questions_again_date)
@@ -170,7 +166,7 @@ function dbRowToFormData(
         ? toDatetimeLocalString(row.after_complete_hide_questions_again_date)
         : undefined,
     }),
-    scoreVisibility: makeOverridable(hasScoreVisibility, true, {
+    scoreVisibility: makeOverridable(isMainRule, hasScoreVisibility, true, {
       hideScore: row.after_complete_hide_score ?? false,
       showAgainDate: row.after_complete_show_score_again_date
         ? toDatetimeLocalString(row.after_complete_show_score_again_date)

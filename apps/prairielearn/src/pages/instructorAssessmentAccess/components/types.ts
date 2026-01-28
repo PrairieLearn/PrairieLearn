@@ -127,11 +127,9 @@ export const AccessControlFormDataSchema = z.object({
   overrides: z.array(AccessControlRuleFormDataSchema),
 });
 
-/** Navigation view state for access control form */
-export type AccessControlView =
-  | { type: 'summary' }
-  | { type: 'edit-main' }
-  | { type: 'edit-override'; index: number };
+// ============================================================================
+// Types derived from Zod schemas
+// ============================================================================
 
 /** Generic type for fields that can be overridden in override rules */
 export interface OverridableField<T> {
@@ -144,93 +142,75 @@ export interface OverridableField<T> {
 }
 
 /** Deadline entry for early/late deadlines */
-export interface DeadlineEntry {
-  date: string;
-  credit: number;
-}
+export type DeadlineEntry = z.infer<typeof DeadlineEntrySchema>;
 
 /** After last deadline settings */
-export interface AfterLastDeadlineValue {
-  allowSubmissions?: boolean;
-  credit?: number;
-}
+export type AfterLastDeadlineValue = z.infer<typeof AfterLastDeadlineValueSchema>;
 
-// Internal form data structure that maintains all field data even when disabled
-export interface DateControlFormData {
-  enabled: boolean;
-  releaseDate: OverridableField<string>;
-  dueDate: OverridableField<string>;
-  earlyDeadlines: OverridableField<DeadlineEntry[]>;
-  lateDeadlines: OverridableField<DeadlineEntry[]>;
-  afterLastDeadline: OverridableField<AfterLastDeadlineValue>;
-  durationMinutes: OverridableField<number>;
-  password: OverridableField<string>;
-}
+/** Date control form data */
+export type DateControlFormData = z.infer<typeof DateControlFormDataSchema>;
 
-export interface PrairieTestControlFormData {
-  enabled: boolean;
-  exams?: { examUuid: string; readOnly?: boolean }[];
-}
+/** PrairieTest control form data */
+export type PrairieTestControlFormData = z.infer<typeof PrairieTestControlFormDataSchema>;
 
 /** Question visibility settings after completion */
-export interface QuestionVisibilityValue {
-  hideQuestions: boolean;
-  showAgainDate?: string;
-  hideAgainDate?: string;
-}
+export type QuestionVisibilityValue = z.infer<typeof QuestionVisibilityValueSchema>;
 
 /** Score visibility settings after completion */
-export interface ScoreVisibilityValue {
-  hideScore: boolean;
-  showAgainDate?: string;
-}
+export type ScoreVisibilityValue = z.infer<typeof ScoreVisibilityValueSchema>;
 
 /** After completion form data with separate overridable sections */
-export interface AfterCompleteFormData {
-  questionVisibility: OverridableField<QuestionVisibilityValue>;
-  scoreVisibility: OverridableField<ScoreVisibilityValue>;
-}
+export type AfterCompleteFormData = z.infer<typeof AfterCompleteFormDataSchema>;
 
 /** Target type for access control rules */
-export type TargetType = 'individual' | 'group';
+export type TargetType = z.infer<typeof AppliesToSchema>['targetType'];
 
 /** Individual student in form */
-export interface IndividualTarget {
-  enrollmentId?: string;
-  uid: string;
-  name: string | null;
-}
+export type IndividualTarget = z.infer<typeof IndividualTargetSchema>;
 
 /** Student label target */
-export interface GroupTarget {
-  groupId: string;
-  name: string;
-}
+export type GroupTarget = z.infer<typeof GroupTargetSchema>;
 
 /** Applies to configuration for access control rules */
-export interface AppliesTo {
-  targetType: TargetType;
-  individuals: IndividualTarget[];
-  groups: GroupTarget[];
+export type AppliesTo = z.infer<typeof AppliesToSchema>;
+
+/** Single access control rule form data */
+export type AccessControlRuleFormData = z.infer<typeof AccessControlRuleFormDataSchema>;
+
+/** Complete access control form data */
+export type AccessControlFormData = z.infer<typeof AccessControlFormDataSchema>;
+
+/** Navigation view state for access control form */
+export type AccessControlView =
+  | { type: 'summary' }
+  | { type: 'edit-main' }
+  | { type: 'edit-override'; index: number };
+
+// ============================================================================
+// Shared utility functions
+// ============================================================================
+
+/**
+ * Creates an overridable field structure.
+ * For main rules, isOverridden is always true.
+ * For override rules, isOverridden depends on whether the field has a value.
+ */
+export function makeOverridable<T>(
+  isMainRule: boolean,
+  hasValue: boolean,
+  isEnabled: boolean,
+  value: T,
+): OverridableField<T> {
+  return {
+    isOverridden: isMainRule || hasValue,
+    isEnabled,
+    value,
+  };
 }
 
-export interface AccessControlRuleFormData {
-  /** Database ID (undefined for new/unsaved rules) */
-  id?: string;
-  enabled: boolean;
-  blockAccess?: boolean;
-  listBeforeRelease?: boolean;
-  appliesTo: AppliesTo;
-  dateControl: DateControlFormData;
-  prairieTestControl: PrairieTestControlFormData;
-  afterComplete: AfterCompleteFormData;
-}
-
-// Interface for the form data structure that includes nested paths
-export interface AccessControlFormData {
-  mainRule: AccessControlRuleFormData;
-  overrides: AccessControlRuleFormData[];
-}
+// ============================================================================
+// Transform functions
+// ============================================================================
 
 /** Helper function to transform form data to JSON output */
 export function formDataToJson(formData: AccessControlFormData): AccessControlJsonWithId[] {
@@ -358,18 +338,6 @@ export function jsonToFormData(
   const dc = json.dateControl;
   const ac = json.afterComplete;
 
-  // For main rule: isOverridden is always true
-  // For override rules: isOverridden depends on whether the field has a value in JSON
-  const makeOverridable = <T>(
-    hasValue: boolean,
-    isEnabled: boolean,
-    value: T,
-  ): OverridableField<T> => ({
-    isOverridden: isMainRule || hasValue,
-    isEnabled,
-    value,
-  });
-
   const hasQuestionVisibility = ac?.hideQuestions !== undefined;
   const hasScoreVisibility = ac?.hideScore !== undefined;
 
@@ -402,32 +370,43 @@ export function jsonToFormData(
     dateControl: {
       enabled: dc?.enabled ?? false,
       releaseDate: makeOverridable(
+        isMainRule,
         dc?.releaseDate !== undefined,
         dc?.releaseDate != null,
         dc?.releaseDate ?? '',
       ),
-      dueDate: makeOverridable(dc?.dueDate !== undefined, dc?.dueDate != null, dc?.dueDate ?? ''),
+      dueDate: makeOverridable(
+        isMainRule,
+        dc?.dueDate !== undefined,
+        dc?.dueDate != null,
+        dc?.dueDate ?? '',
+      ),
       earlyDeadlines: makeOverridable(
+        isMainRule,
         dc?.earlyDeadlines !== undefined,
         (dc?.earlyDeadlines?.length ?? 0) > 0,
         dc?.earlyDeadlines ?? [],
       ),
       lateDeadlines: makeOverridable(
+        isMainRule,
         dc?.lateDeadlines !== undefined,
         (dc?.lateDeadlines?.length ?? 0) > 0,
         dc?.lateDeadlines ?? [],
       ),
       afterLastDeadline: makeOverridable(
+        isMainRule,
         dc?.afterLastDeadline !== undefined,
         dc?.afterLastDeadline !== undefined,
         dc?.afterLastDeadline ?? {},
       ),
       durationMinutes: makeOverridable(
+        isMainRule,
         dc?.durationMinutes !== undefined,
         dc?.durationMinutes != null,
         dc?.durationMinutes ?? 60,
       ),
       password: makeOverridable(
+        isMainRule,
         dc?.password !== undefined,
         dc?.password != null,
         dc?.password ?? '',
@@ -438,12 +417,12 @@ export function jsonToFormData(
       exams: json.prairieTestControl?.exams,
     },
     afterComplete: {
-      questionVisibility: makeOverridable(hasQuestionVisibility, true, {
+      questionVisibility: makeOverridable(isMainRule, hasQuestionVisibility, true, {
         hideQuestions: ac?.hideQuestions ?? false,
         showAgainDate: ac?.showQuestionsAgainDate ? '' : undefined,
         hideAgainDate: ac?.hideQuestionsAgainDate ? '' : undefined,
       }),
-      scoreVisibility: makeOverridable(hasScoreVisibility, true, {
+      scoreVisibility: makeOverridable(isMainRule, hasScoreVisibility, true, {
         hideScore: ac?.hideScore ?? false,
         showAgainDate: ac?.showScoreAgainDate ? '' : undefined,
       }),
