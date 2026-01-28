@@ -601,9 +601,9 @@ The `groups.rolePermissions` object defines default permissions for the entire a
 {
   "groups": {
     "roles": [
-      { "name": "Manager", "minimum": 1, "maximum": 1 },
-      { "name": "Recorder", "minimum": 1, "maximum": 1 },
-      { "name": "Reflector", "minimum": 1, "maximum": 1 },
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
       { "name": "Contributor" }
     ],
     "rolePermissions": {
