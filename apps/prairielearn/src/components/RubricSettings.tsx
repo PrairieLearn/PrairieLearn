@@ -1079,11 +1079,11 @@ function RubricRow({
           aria-label="Points"
           disabled={!hasCourseInstancePermissionEdit}
           required
-          onInput={(e) =>
+          onInput={({ currentTarget }) =>
             updateRubricItem({
-              // e.currentTarget.value will be an empty string if the input is not valid yet
+              // currentTarget.value will be an empty string if the input is not valid yet
               // so we can use this to check for partially done inputs such as just a "-" as well
-              points: e.currentTarget.value.length > 0 ? Number(e.currentTarget.value) : null,
+              points: currentTarget.value.length > 0 ? Number(currentTarget.value) : null,
             })
           }
         />
