@@ -565,7 +565,7 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
-   * The hourly spending rate limit for AI grading, in US dollars.
+   * The hourly spending rate limit for AI grading per course instance, in US dollars.
    * Accounts for both input and output tokens.
    */
   aiGradingRateLimitDollars: z.number().default(10),
