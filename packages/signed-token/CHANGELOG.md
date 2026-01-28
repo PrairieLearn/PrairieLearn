@@ -1,5 +1,15 @@
 # @prairielearn/signed-token
 
+## 3.1.0
+
+### Minor Changes
+
+- 4cbe086: Add `generatePrefixCsrfToken()` and `checkSignedTokenPrefix()` functions for prefix-based CSRF token validation. These functions allow generating a single CSRF token that is valid for all URLs under a given prefix, which is useful for tRPC and similar APIs where multiple endpoints share a common base path.
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
 ## 3.0.0
 
 ### Major Changes

@@ -45,7 +45,6 @@ import {
   checkRender,
 } from '../aiQuestionGeneration.js';
 import {
-  ALLOWED_ELEMENTS,
   type DocumentChunk,
   buildContextForSingleElementDoc,
 } from '../context-parsers/documentation.js';
@@ -54,7 +53,7 @@ import {
   type QuestionContext,
   buildContextForQuestion,
 } from '../context-parsers/template-questions.js';
-import { validateHTML } from '../validateHTML.js';
+import { SUPPORTED_ELEMENTS, validateHTML } from '../validateHTML.js';
 
 import { getAiQuestionGenerationStreamContext } from './redis.js';
 
@@ -66,7 +65,7 @@ interface QuestionGenerationUIMessageMetadata {
   status: EnumAiQuestionGenerationMessageStatus;
 }
 
-const ALLOWED_ELEMENT_NAMES = Array.from(ALLOWED_ELEMENTS) as [string, ...string[]];
+const SUPPORTED_ELEMENT_NAMES = Array.from(SUPPORTED_ELEMENTS) as [string, ...string[]];
 
 const QUESTION_GENERATION_TOOLS = {
   readFile: tool({
@@ -83,13 +82,13 @@ const QUESTION_GENERATION_TOOLS = {
   }),
   getElementDocumentation: tool({
     inputSchema: z.object({
-      elementName: z.enum(ALLOWED_ELEMENT_NAMES),
+      elementName: z.enum(SUPPORTED_ELEMENT_NAMES),
     }),
     outputSchema: z.string(),
   }),
   listElementExamples: tool({
     inputSchema: z.object({
-      elementName: z.enum(ALLOWED_ELEMENT_NAMES),
+      elementName: z.enum(SUPPORTED_ELEMENT_NAMES),
     }),
     outputSchema: z.array(
       z.object({
@@ -143,7 +142,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       'It can also include PrairieLearn elements like `<pl-multiple-choice>` and `<pl-number-input>`.',
     ],
     'The following PrairieLearn elements are supported (and may be used in the generated question.html):',
-    Array.from(ALLOWED_ELEMENTS)
+    Array.from(SUPPORTED_ELEMENTS)
       .map((el) => `- \`<${el}>\``)
       .join('\n'),
     [
@@ -266,7 +265,7 @@ export async function createQuestionGenerationAgent({
     if (!file.endsWith('.md')) continue;
     const text = await fs.readFile(path.join(elementDocsPath, file), { encoding: 'utf-8' });
     const elementName = path.basename(file, '.md');
-    ALLOWED_ELEMENTS.add(elementName);
+    SUPPORTED_ELEMENTS.add(elementName);
     const context = buildContextForSingleElementDoc(text, elementName);
     if (context) elementDocs.push(context);
   }
@@ -293,7 +292,7 @@ export async function createQuestionGenerationAgent({
     exampleQuestions.set(qid, questionContext);
 
     // Dumb and dirty.
-    for (const elementName of ALLOWED_ELEMENT_NAMES) {
+    for (const elementName of SUPPORTED_ELEMENT_NAMES) {
       if (fileText.includes(`<${elementName}`)) {
         exampleQuestionsByElement.getOrCreate(elementName).push({
           ...questionContext,
