@@ -66,7 +66,7 @@ export function AiQuestionGenerationEditor({
         questionId={question.id}
         showJobLogsLink={showJobLogsLink}
         urlPrefix={urlPrefix}
-        loadNewVariant={() => newVariantRef.current?.newVariant()}
+        refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
         hasUnsavedChanges={hasUnsavedChanges}
         onGeneratingChange={setIsGenerating}
         onGenerationComplete={refreshFiles}

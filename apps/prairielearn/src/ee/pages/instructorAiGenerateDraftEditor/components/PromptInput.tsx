@@ -5,8 +5,8 @@ export function PromptInput({
   disabled,
   isGenerating,
   onStop,
-  loadNewVariantAfterChanges,
-  setLoadNewVariantAfterChanges,
+  refreshQuestionPreviewAfterChanges,
+  setRefreshQuestionPreviewAfterChanges,
 }: {
   value: string;
   onChange: (value: string) => void;
@@ -14,8 +14,8 @@ export function PromptInput({
   disabled: boolean;
   isGenerating: boolean;
   onStop: () => void;
-  loadNewVariantAfterChanges?: boolean;
-  setLoadNewVariantAfterChanges?: (value: boolean) => void;
+  refreshQuestionPreviewAfterChanges?: boolean;
+  setRefreshQuestionPreviewAfterChanges?: (value: boolean) => void;
 }) {
   return (
     <form
@@ -52,12 +52,15 @@ export function PromptInput({
           <input
             className="form-check-input"
             type="checkbox"
-            id="new-variant-after-changes"
-            checked={loadNewVariantAfterChanges}
-            onChange={(e) => setLoadNewVariantAfterChanges?.(e.currentTarget.checked)}
+            id="refresh-question-preview-after-changes"
+            checked={refreshQuestionPreviewAfterChanges}
+            onChange={(e) => setRefreshQuestionPreviewAfterChanges?.(e.currentTarget.checked)}
           />
-          <label className="form-check-label small text-muted" htmlFor="new-variant-after-changes">
-            Load new variant after changes
+          <label
+            className="form-check-label small text-muted"
+            htmlFor="refresh-question-preview-after-changes"
+          >
+            Refresh question preview after changes
           </label>
         </div>
 

@@ -483,7 +483,7 @@ export function AiQuestionGenerationChat({
   questionId,
   showJobLogsLink,
   urlPrefix,
-  loadNewVariant,
+  refreshQuestionPreview,
   onGeneratingChange,
   onGenerationComplete,
   hasUnsavedChanges,
@@ -493,12 +493,13 @@ export function AiQuestionGenerationChat({
   questionId: string;
   showJobLogsLink: boolean;
   urlPrefix: string;
-  loadNewVariant: () => void;
+  refreshQuestionPreview: () => void;
   onGeneratingChange?: (isGenerating: boolean) => void;
   onGenerationComplete?: () => void;
   hasUnsavedChanges?: boolean;
 }) {
-  const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
+  const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
+    useState(true);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
   const [promptInput, setPromptInput] = useState('');
   const prevIsGeneratingRef = useRef<boolean | null>(null);
@@ -543,8 +544,8 @@ export function AiQuestionGenerationChat({
         );
       });
 
-      if (didWriteFile && loadNewVariantAfterChanges) {
-        loadNewVariant();
+      if (didWriteFile && refreshQuestionPreviewAfterChanges) {
+        refreshQuestionPreview();
       }
     },
     onError(error) {
@@ -563,21 +564,20 @@ export function AiQuestionGenerationChat({
     if (prevIsGeneratingRef.current === null) {
       prevIsGeneratingRef.current = isGenerating;
       // If we're already generating on mount (e.g., resuming a stream), notify parent
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+
       if (isGenerating) {
         onGeneratingChange?.(true);
       }
       return;
     }
 
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent, react-you-might-not-need-an-effect/no-pass-data-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
+
       if (!isGenerating) {
         onGenerationComplete?.();
       }
@@ -688,8 +688,8 @@ export function AiQuestionGenerationChat({
             value={promptInput}
             disabled={status !== 'ready' && status !== 'error'}
             isGenerating={isGenerating}
-            loadNewVariantAfterChanges={loadNewVariantAfterChanges}
-            setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
+            refreshQuestionPreviewAfterChanges={refreshQuestionPreviewAfterChanges}
+            setRefreshQuestionPreviewAfterChanges={setRefreshQuestionPreviewAfterChanges}
             onChange={setPromptInput}
             onSubmit={(text) => {
               if (hasUnsavedChanges) {
