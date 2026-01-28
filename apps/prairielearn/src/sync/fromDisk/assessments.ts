@@ -7,7 +7,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { config } from '../../lib/config.js';
 import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { assertNever } from '../../lib/types.js';
+import { assertNever } from '@prairielearn/utils';
 import {
   type AssessmentJson,
   type QuestionAlternativeJson,

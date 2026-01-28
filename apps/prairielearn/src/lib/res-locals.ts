@@ -24,7 +24,7 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { IsUnion, MergeUnion, Prettify } from './types.js';
+import type { IsUnion, MergeUnion, Prettify } from '@prairielearn/utils';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
