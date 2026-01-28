@@ -108,7 +108,7 @@ export function prairielearn(
     // TypeScript config (scoped to JS/TS files)
     {
       files: jsFiles,
-      ...typescriptConfig(),
+      ...typescriptConfig()[0],
     },
     ...importsConfig(),
     ...stylisticConfig(),
