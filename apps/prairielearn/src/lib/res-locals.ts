@@ -2,6 +2,8 @@ import type express from 'express';
 import asyncHandler from 'express-async-handler';
 import type core from 'express-serve-static-core';
 
+import type { IsUnion, MergeUnion, Prettify } from '@prairielearn/utils';
+
 import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
@@ -24,7 +26,6 @@ import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { IsUnion, MergeUnion, Prettify } from '@prairielearn/utils';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;

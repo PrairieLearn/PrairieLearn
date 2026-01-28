@@ -117,7 +117,7 @@ describe('Valid configs', () => {
       },
       {
         // Individual override
-        groups: ['student3'],
+        labels: ['student3'],
         dateControl: {
           durationMinutes: 90,
         },
@@ -192,13 +192,13 @@ describe('Assignment-level rule requirement', () => {
   it('should fail validation when no assignment-level rule exists', () => {
     const rulesWithoutAssignmentLevel: AccessControlJsonInput[] = [
       {
-        groups: ['student1'],
+        labels: ['student1'],
         dateControl: {
           durationMinutes: 90,
         },
       },
       {
-        groups: ['student2'],
+        labels: ['student2'],
         dateControl: {
           durationMinutes: 120,
         },

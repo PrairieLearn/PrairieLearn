@@ -129,7 +129,7 @@ export function AppliesToField({
             type="radio"
             id={`${namePrefix}-target-group`}
             name={`${namePrefix}-target-type`}
-            label="Student groups"
+            label="Student labels"
             checked={currentTargetType === 'group'}
             onChange={() => handleTargetTypeChange('group')}
           />

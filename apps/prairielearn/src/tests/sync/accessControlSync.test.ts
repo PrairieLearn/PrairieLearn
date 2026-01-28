@@ -50,7 +50,7 @@ async function findSyncedAccessControlRules(assessmentId: string) {
 }
 
 /**
- * Helper to add a student group to the course instance JSON configuration.
+ * Helper to add a student label to the course instance JSON configuration.
  * Groups must be in the JSON config to persist through syncs, since
  * the syncStudentLabels function soft-deletes groups not in the config.
  */
@@ -376,7 +376,7 @@ describe('Access control syncing', () => {
       const groupName1 = 'Group A';
       const groupName2 = 'Group B';
 
-      // Add student groups to config
+      // Add student labels to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
 
@@ -425,7 +425,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // create 1 assignment-level rule and 1 group-level rule
@@ -470,7 +470,7 @@ describe('Access control syncing', () => {
       const groupName1 = 'Group A';
       const groupName2 = 'Group B';
 
-      // Add student groups to config
+      // Add student labels to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
 
@@ -517,7 +517,7 @@ describe('Access control syncing', () => {
       const groupName1 = 'Group A';
       const groupName2 = 'Group B';
 
-      // Add student groups to config
+      // Add student labels to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
 
@@ -572,7 +572,7 @@ describe('Access control syncing', () => {
       const groupName1 = 'Group A';
       const groupName2 = 'Group B';
 
-      // Add student groups to config
+      // Add student labels to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName1);
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName2);
 
@@ -756,7 +756,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       const assignmentRule = makeAccessControlRule({
@@ -895,7 +895,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to course instance config
+      // Add student label to course instance config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // Add an assignment-level rule and a group-level rule
@@ -915,7 +915,7 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 2);
 
-      // Verify student group target was created
+      // Verify student label target was created
       const allStudentLabels = await util.dumpTableWithSchema(
         'assessment_access_control_student_labels',
         AssessmentAccessControlStudentLabelSchema,
@@ -957,10 +957,10 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config so it exists in DB after sync
+      // Add student label to config so it exists in DB after sync
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
-      // Sync the course to get the assessment and student group in the database
+      // Sync the course to get the assessment and student label in the database
       await util.writeAndSyncCourseData(courseData);
 
       const syncedAssessments = await util.dumpTableWithSchema('assessments', AssessmentSchema);
@@ -998,7 +998,7 @@ describe('Access control syncing', () => {
         [ruleId, enrollmentId],
       );
 
-      // Get the student group ID
+      // Get the student label ID
       const syncedCourseInstances = await util.dumpTableWithSchema(
         'course_instances',
         CourseInstanceSchema,
@@ -1014,7 +1014,7 @@ describe('Access control syncing', () => {
         IdSchema,
       );
 
-      // Try to add a student group to the same rule (should fail due to FK constraint)
+      // Try to add a student label to the same rule (should fail due to FK constraint)
       // The parent rule has target_type='enrollment', but the student_labels table
       // requires target_type='student_label', so the FK constraint will fail
       let errorThrown = false;
@@ -1044,7 +1044,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // try to create only group-level rules (no assignment-level)
@@ -1097,7 +1097,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // create one assignment-level rule and one group-level rule
@@ -1148,7 +1148,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // create an assignment-level rule without prairieTestControl
@@ -1211,7 +1211,7 @@ describe('Access control syncing', () => {
       const courseData = util.getCourseData();
       const groupName = 'Test Group';
 
-      // Add student group to config
+      // Add student label to config
       addStudentLabelToConfig(courseData, util.COURSE_INSTANCE_ID, groupName);
 
       // create an assignment-level rule WITH prairieTestControl (should be valid)

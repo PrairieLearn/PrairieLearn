@@ -252,7 +252,7 @@ export function formRuleToJson(
   rule: AccessControlRuleFormData,
   isMainRule: boolean,
 ): AccessControlJsonWithId {
-  const groups =
+  const labels =
     rule.appliesTo.targetType === 'group' && rule.appliesTo.groups.length > 0
       ? rule.appliesTo.groups.map((g) => g.name)
       : undefined;
@@ -261,7 +261,7 @@ export function formRuleToJson(
     enabled: rule.enabled,
     blockAccess: rule.blockAccess,
     listBeforeRelease: rule.listBeforeRelease || true,
-    groups,
+    labels,
   };
 
   if (rule.dateControl.enabled) {
@@ -389,7 +389,7 @@ export function jsonToFormData(
     appliesTo = {
       targetType: 'group',
       individuals: [],
-      groups: (json.groups ?? []).map((name) => ({ groupId: '', name })),
+      groups: (json.labels ?? []).map((name: string) => ({ groupId: '', name })),
     };
   }
 

@@ -10,7 +10,7 @@ interface AccessControlSummaryProps {
   getOverrideName: (index: number) => string;
   onAddOverride: () => void;
   onRemoveOverride: (index: number) => void;
-  onEditStudentGroups?: (index: number) => void;
+  onEditStudentLabels?: (index: number) => void;
   /** Base URL for access control pages (e.g., /pl/course_instance/.../assessment/.../access) */
   baseUrl: string;
   /** Course instance ID for building URLs */
@@ -23,7 +23,7 @@ export function AccessControlSummary({
   getOverrideName,
   onAddOverride,
   onRemoveOverride,
-  onEditStudentGroups,
+  onEditStudentLabels,
   baseUrl,
   courseInstanceId,
 }: AccessControlSummaryProps) {
@@ -83,8 +83,8 @@ export function AccessControlSummary({
               title={getOverrideName(index)}
               editUrl={getOverrideEditUrl(index)}
               courseInstanceId={courseInstanceId}
-              onEditStudentGroups={
-                onEditStudentGroups ? () => onEditStudentGroups(index) : undefined
+              onEditStudentLabels={
+                onEditStudentLabels ? () => onEditStudentLabels(index) : undefined
               }
               onRemove={() => onRemoveOverride(index)}
             />
