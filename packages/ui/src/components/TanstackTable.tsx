@@ -521,10 +521,10 @@ export function TanstackTableCard<RowDataModel>({
   title: string;
   singularLabel: string;
   pluralLabel: string;
-  headerButtons?: JSX.Element;
+  headerButtons?: ReactNode;
   columnManager?: {
-    buttons?: JSX.Element;
-    topContent?: JSX.Element;
+    buttons?: ReactNode;
+    topContent?: ReactNode;
   };
   globalFilter: {
     placeholder: string;

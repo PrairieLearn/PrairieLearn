@@ -453,11 +453,13 @@ async function _inviteExistingEnrollment({
   pendingUid,
   authzData,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   lockedEnrollment: Enrollment;
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   requiredRole: ('Student Data Editor' | 'System')[];
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
   // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
@@ -473,7 +475,7 @@ async function _inviteExistingEnrollment({
   await insertAuditEvent({
     tableName: 'enrollments',
     action: 'update',
-    actionDetail: 'invited',
+    actionDetail,
     rowId: newEnrollment.id,
     oldRow: lockedEnrollment,
     newRow: newEnrollment,
@@ -490,11 +492,13 @@ async function inviteNewEnrollment({
   authzData,
   courseInstance,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   pendingUid: string;
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
   requiredRole: ('Student Data Editor' | 'System')[];
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }) {
   assertHasRole(authzData, requiredRole);
   const newEnrollment = await queryRow(
@@ -506,7 +510,7 @@ async function inviteNewEnrollment({
   await insertAuditEvent({
     tableName: 'enrollments',
     action: 'insert',
-    actionDetail: 'invited',
+    actionDetail,
     rowId: newEnrollment.id,
     newRow: newEnrollment,
     subjectUserId: null,
@@ -529,11 +533,13 @@ export async function inviteStudentByUid({
   authzData,
   courseInstance,
   requiredRole,
+  actionDetail = 'invited',
 }: {
   uid: string;
   requiredRole: ('Student Data Editor' | 'System')[];
   authzData: AuthzDataWithEffectiveUser;
   courseInstance: CourseInstanceContext;
+  actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const existingEnrollment = await selectOptionalEnrollmentByUid({
@@ -553,6 +559,7 @@ export async function inviteStudentByUid({
         pendingUid: uid,
         authzData,
         requiredRole,
+        actionDetail,
       });
     }
 
@@ -561,6 +568,7 @@ export async function inviteStudentByUid({
       authzData,
       courseInstance,
       requiredRole,
+      actionDetail,
     });
   });
 }
@@ -575,6 +583,14 @@ async function _selectAndLockEnrollment(id: string) {
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
  *
  * The function will lock the enrollment row and create an audit event based on the status change.
+ *
+ * This function enforces specific state transitions:
+ * - `blocked` → `joined` (unblock)
+ * - `joined` → `blocked` (block)
+ * - `joined` → `removed` (student self-removal)
+ * - `invited` → `rejected` (student rejects invitation)
+ *
+ * For roster sync operations that need to block from any status, use `blockEnrollmentFromSync` instead.
  */
 export async function setEnrollmentStatus({
   enrollment,
@@ -670,6 +686,70 @@ export async function setEnrollmentStatus({
       tableName: 'enrollments',
       action: 'update',
       actionDetail: transitionInformation.actionDetail,
+      rowId: newEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: newEnrollment,
+      agentUserId: authzData.user.id,
+      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+    });
+
+    return newEnrollment;
+  });
+}
+
+/**
+ * Removes an enrollment as part of a roster sync operation.
+ *
+ * Unlike `setEnrollmentStatus`, this function can remove enrollments from any "active" status
+ * (joined) because roster sync treats the provided roster as the source of truth and needs
+ * to remove anyone not on it who is currently enrolled.
+ *
+ * LTI-managed enrollments (lti13_pending) cannot be removed via roster sync.
+ */
+export async function removeEnrollmentFromSync({
+  enrollment,
+  authzData,
+}: {
+  enrollment: Enrollment;
+  authzData: AuthzData;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
+    if (lockedEnrollment.user_id) {
+      await selectAndLockUser(lockedEnrollment.user_id);
+    }
+
+    // Already removed - nothing to do.
+    if (lockedEnrollment.status === 'removed') {
+      return lockedEnrollment;
+    }
+
+    // LTI-managed enrollments cannot be removed via roster sync.
+    if (lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot remove LTI-managed enrollment');
+    }
+
+    // Can only remove joined enrollments via roster sync.
+    if (lockedEnrollment.status !== 'joined') {
+      throw new error.HttpStatusError(
+        400,
+        `Cannot remove enrollment with status "${lockedEnrollment.status}"`,
+      );
+    }
+
+    // Roster sync requires Student Data Editor permission.
+    assertHasRole(authzData, ['Student Data Editor']);
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id: lockedEnrollment.id, status: 'removed' },
+      EnrollmentSchema,
+    );
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail: 'removed_by_manual_sync',
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
