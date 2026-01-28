@@ -52,6 +52,7 @@ export function calculateResponseCost({
   const cacheWriteTokens = usage.inputTokenDetails.cacheWriteTokens ?? 0;
   const outputTokens = usage.outputTokens ?? 0;
 
+  // The prices are per million tokens, so divide by 1e6.
   const inputCost = inputTokens * (modelPricing.input / 1e6);
   const cacheReadCost = cacheReadTokens * (modelPricing.cachedInput / 1e6);
   const cacheWriteCost = cacheWriteTokens * (modelPricing.cacheWrite / 1e6);
