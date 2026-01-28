@@ -130,6 +130,7 @@ const testEditData: EditData[] = [
   {
     url: newQuestionUrl,
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestion2DeletePostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -148,6 +149,7 @@ const testEditData: EditData[] = [
     // Delete the question created from a template question
     url: newQuestionFromTemplateUrl,
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestion3DeletePostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -183,6 +185,7 @@ const testEditData: EditData[] = [
   },
   {
     formSelector: '#deleteQuestionModal',
+    dynamicPostInfo: getQuestionDeleteFromCurrentUrlPostInfo,
     action: 'delete_question',
     files: new Set([
       'README.md',
@@ -366,6 +369,47 @@ function getQuestionCopyPostInfo(_: cheerio.Cheerio<any>) {
   // the CSRF token directly instead of parsing it from data-bs-content.
   const csrfToken = generateCsrfToken({
     url: '/pl/course_instance/1/instructor/question/1/settings',
+    authnUserId,
+  });
+  return {
+    csrfToken,
+    url: undefined,
+  };
+}
+
+function getQuestion2DeletePostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // The delete modal is rendered by React and only contains content when shown.
+  const csrfToken = generateCsrfToken({
+    url: '/pl/course_instance/1/instructor/question/2/settings',
+    authnUserId,
+  });
+  return {
+    csrfToken,
+    url: undefined,
+  };
+}
+
+function getQuestion3DeletePostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // The delete modal is rendered by React and only contains content when shown.
+  const csrfToken = generateCsrfToken({
+    url: '/pl/course_instance/1/instructor/question/3/settings',
+    authnUserId,
+  });
+  return {
+    csrfToken,
+    url: undefined,
+  };
+}
+
+function getQuestionDeleteFromCurrentUrlPostInfo(_: cheerio.Cheerio<any>) {
+  const authnUserId = '1';
+  // The delete modal is rendered by React and only contains content when shown.
+  // Use currentUrl which was set by the previous test's POST response.
+  const url = new URL(currentUrl);
+  const csrfToken = generateCsrfToken({
+    url: url.pathname,
     authnUserId,
   });
   return {
