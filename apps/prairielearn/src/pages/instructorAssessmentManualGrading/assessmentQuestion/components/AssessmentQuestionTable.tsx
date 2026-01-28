@@ -728,10 +728,15 @@ export function AssessmentQuestionTable({
                       body: 'AI grading is only available on assessment questions that use manual grading.',
                       props: { id: 'ai-grading-disabled-tooltip' },
                     }}
-                    show={!assessmentQuestion.max_manual_points ? undefined : false}
+                    show={assessmentQuestion.max_manual_points ? false : undefined}
                   >
                     <span>
-                      <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm" disabled={!assessmentQuestion.max_manual_points}>
+                      <Dropdown.Toggle
+                        key="ai-grading-dropdown"
+                        variant="light"
+                        size="sm"
+                        disabled={!assessmentQuestion.max_manual_points}
+                      >
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span>AI grading</span>
                       </Dropdown.Toggle>
@@ -814,10 +819,14 @@ export function AssessmentQuestionTable({
                       body: 'AI submission grouping is only available on assessment questions that use manual grading.',
                       props: { id: 'ai-grouping-disabled-tooltip' },
                     }}
-                    show={!assessmentQuestion.max_manual_points ? undefined : false}
+                    show={assessmentQuestion.max_manual_points ? false : undefined}
                   >
                     <span>
-                      <Dropdown.Toggle variant="light" size="sm" disabled={!assessmentQuestion.max_manual_points}>
+                      <Dropdown.Toggle
+                        variant="light"
+                        size="sm"
+                        disabled={!assessmentQuestion.max_manual_points}
+                      >
                         <i className="bi bi-stars" aria-hidden="true" />
                         <span className="d-none d-sm-inline">AI submission grouping</span>
                       </Dropdown.Toggle>
