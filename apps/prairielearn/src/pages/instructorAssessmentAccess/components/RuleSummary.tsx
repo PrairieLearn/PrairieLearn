@@ -266,8 +266,6 @@ interface RuleSummaryCardProps {
   courseInstanceId: string;
   onEditStudentLabels?: () => void;
   onRemove?: () => void;
-  /** Verbosity level for summary display. Defaults to 'compact' for main rule, 'verbose' for overrides. */
-  verbosity?: SummaryVerbosity;
 }
 
 export function RuleSummaryCard({
@@ -278,10 +276,9 @@ export function RuleSummaryCard({
   editUrl,
   courseInstanceId,
   onEditStudentLabels,
-  verbosity,
 }: RuleSummaryCardProps) {
   // Default verbosity: compact for main rule, verbose for overrides
-  const effectiveVerbosity = verbosity ?? (isMainRule ? 'compact' : 'verbose');
+  const effectiveVerbosity: SummaryVerbosity = isMainRule ? 'compact' : 'verbose';
   const summaryLines = generateRuleSummary(rule, effectiveVerbosity);
   const dateTableRows = generateDateTableRows(rule, effectiveVerbosity);
 

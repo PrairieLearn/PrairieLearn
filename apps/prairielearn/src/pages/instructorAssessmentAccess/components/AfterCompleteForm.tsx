@@ -16,7 +16,6 @@ type NamePrefix = 'mainRule' | `overrides.${number}`;
 interface AfterCompleteFormProps {
   control: Control<AccessControlFormData>;
   namePrefix: NamePrefix;
-  assessmentType?: 'Exam' | 'Homework';
   setValue: UseFormSetValue<AccessControlFormData>;
   title?: string;
   description?: string;
@@ -32,7 +31,6 @@ type HideScoreMode = 'show_score' | 'hide_score_forever' | 'hide_score_until_dat
 export function AfterCompleteForm({
   control,
   namePrefix,
-  assessmentType,
   setValue,
   title = 'After completion behavior',
   description = 'Configure what happens after students complete the assessment',
@@ -354,15 +352,6 @@ export function AfterCompleteForm({
             </FieldWrapper>
           </Col>
         </Row>
-
-        {assessmentType === 'Exam' && (
-          <div className="alert alert-info mt-3">
-            <i className="bi bi-info-circle me-2" aria-hidden="true" />
-            <strong>Note for exams:</strong> Consider hiding questions and scores until after all
-            students have completed to maintain fairness. You can use the "until date" options to
-            reveal them after the exam window closes.
-          </div>
-        )}
       </Card.Body>
     </Card>
   );
