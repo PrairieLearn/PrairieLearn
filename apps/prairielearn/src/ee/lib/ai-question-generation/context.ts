@@ -41,8 +41,6 @@ export async function trimContextIfNeeded(questionId: string): Promise<void> {
   }));
   const totalEstimatedTokens = messageEstimates.reduce((sum, m) => sum + m.tokens, 0);
 
-  console.log('estimated tokens', totalEstimatedTokens);
-
   if (totalEstimatedTokens <= TRIM_TRIGGER_TOKENS) return;
 
   // Walk from oldest to newest, dropping messages until we're under the target.
@@ -53,7 +51,6 @@ export async function trimContextIfNeeded(questionId: string): Promise<void> {
     if (remainingTokens <= TRIM_TARGET_TOKENS) break;
 
     idsToExclude.push(id);
-    console.log('excluding message', id, 'with', tokens, 'tokens');
     remainingTokens -= tokens;
   }
 
