@@ -9,7 +9,7 @@ You can define a number of resources for the external grading process:
 - A Docker image to execute your tests in, which may be:
   - A PrairieLearn-provided image;
   - A custom version of a PrairieLearn-provided image that you've built and pushed to Docker Hub;
-  - A standard public image from Docker Hub (e.g., `python:3.9`, `node:16`, etc.) that is able to execute course-specific grading scripts;
+  - A standard public image from Docker Hub (e.g., `python:3.13`, `node:24`, etc.) that is able to execute course-specific grading scripts;
   - A completely custom image containing scripts and resources that you've built and pushed to Docker Hub.
 - Files, scripts and other resources that are shared between questions;
 - Files, scripts, tests and other resources that are specific to individual questions.
