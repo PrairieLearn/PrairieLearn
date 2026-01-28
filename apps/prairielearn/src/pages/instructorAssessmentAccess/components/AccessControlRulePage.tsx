@@ -179,9 +179,9 @@ function dbRowToFormData(
   };
 
   return {
-    enabled: row.enabled,
-    blockAccess: row.block_access,
-    listBeforeRelease: row.list_before_release,
+    enabled: row.enabled ?? true,
+    blockAccess: row.block_access ?? undefined,
+    listBeforeRelease: row.list_before_release ?? undefined,
     appliesTo,
     dateControl,
     prairieTestControl,

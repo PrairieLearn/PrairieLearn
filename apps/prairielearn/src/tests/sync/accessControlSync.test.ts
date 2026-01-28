@@ -403,7 +403,7 @@ describe('Access control syncing', () => {
       assert.equal(syncedRules.length, 3);
 
       // sort for stable numbering
-      syncedRules.sort((a, b) => a.number - b.number);
+      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
 
       // check each rule is in the correct number
       assert.equal(syncedRules[0].number, 0);
@@ -451,7 +451,7 @@ describe('Access control syncing', () => {
       await util.overwriteAndSyncCourseData(courseData, courseDir);
 
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => a.number - b.number);
+      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules.length, 2);
 
       // verify the updated rule1 is still at number 0
@@ -540,7 +540,7 @@ describe('Access control syncing', () => {
 
       // verify initial order: assignment (0), group1 (1), group2 (2)
       const initialRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      initialRules.sort((a, b) => a.number - b.number);
+      initialRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(initialRules[0].date_control_duration_minutes, 60);
       assert.equal(initialRules[1].date_control_duration_minutes, 90);
       assert.equal(initialRules[2].date_control_duration_minutes, 120);
@@ -553,7 +553,7 @@ describe('Access control syncing', () => {
 
       // verify the group rules were swapped in the database
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      syncedRules.sort((a, b) => a.number - b.number);
+      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules.length, 3);
       assert.equal(syncedRules[0].number, 0);
       assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment stays at 0
@@ -604,7 +604,7 @@ describe('Access control syncing', () => {
 
       // validate initial state: 3 rules with numbers 0, 1, 2
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 3);
       assert.equal(allRules[0].number, 0);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
@@ -671,7 +671,7 @@ describe('Access control syncing', () => {
 
       // validate we now have 5 rules
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 5);
       assert.equal(allRules[0].number, 0); // assignment
       assert.equal(allRules[1].number, 1); // group1
@@ -689,7 +689,7 @@ describe('Access control syncing', () => {
 
       // verify enrollment rules are preserved (still at 100, 101)
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 4);
       assert.equal(allRules[0].number, 0); // assignment
       assert.equal(allRules[0].date_control_duration_minutes, 60);
@@ -724,7 +724,7 @@ describe('Access control syncing', () => {
 
       // verify enrollment rules are still preserved
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 5);
       assert.equal(allRules[0].number, 0); // assignment
       assert.equal(allRules[0].date_control_duration_minutes, 60);
@@ -810,7 +810,7 @@ describe('Access control syncing', () => {
 
       // Verify initial state: assignment (number 0), group (number 1), enrollment (number 100)
       let allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 3);
       assert.equal(allRules[0].number, 0);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment
@@ -827,7 +827,7 @@ describe('Access control syncing', () => {
 
       // verify the group rule was deleted but enrollment rule preserved at 100
       allRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
-      allRules.sort((a, b) => a.number - b.number);
+      allRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(allRules.length, 2);
       assert.equal(allRules[0].number, 0);
       assert.equal(allRules[0].date_control_duration_minutes, 60); // assignment rule
@@ -1119,7 +1119,7 @@ describe('Access control syncing', () => {
       const syncedRules = await findSyncedAccessControlRules(util.ASSESSMENT_ID);
       assert.equal(syncedRules.length, 2, 'Should sync all rules when properly configured');
 
-      syncedRules.sort((a, b) => a.number - b.number);
+      syncedRules.sort((a, b) => (a.number ?? 0) - (b.number ?? 0));
       assert.equal(syncedRules[0].date_control_duration_minutes, 60); // assignment
       assert.equal(syncedRules[1].date_control_duration_minutes, 90); // group
     });

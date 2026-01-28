@@ -4,6 +4,8 @@ import asyncHandler from 'express-async-handler';
 import z from 'zod';
 
 import { AugmentedError, HttpStatusError } from '@prairielearn/error';
+// Import for side-effect: global Express.Request augmentation for session property
+import '@prairielearn/session';
 import { html } from '@prairielearn/html';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';

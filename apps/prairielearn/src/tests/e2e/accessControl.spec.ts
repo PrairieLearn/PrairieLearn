@@ -115,7 +115,7 @@ test.describe('Access control UI', () => {
 
     // Verify the override was persisted in the database
     const records = await getAccessControlRecords(assessmentId);
-    const overrides = records.filter((r) => r.number > 0);
+    const overrides = records.filter((r) => r.number != null && r.number > 0);
     expect(overrides.length).toBeGreaterThan(0);
     expect(overrides[0].enabled).toBe(true);
   });

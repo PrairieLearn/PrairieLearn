@@ -18,6 +18,7 @@ import { features } from '../lib/features/index.js';
 import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
+  type AccessControlJson,
   type AssessmentJson,
   type AssessmentJsonInput,
   type AssessmentSetJson,
@@ -1117,6 +1118,44 @@ function formatValues(qids: Set<string> | string[]) {
   return Array.from(qids)
     .map((qid) => `"${qid}"`)
     .join(', ');
+}
+
+/**
+ * Validates an array of access control rules.
+ * Returns an array of validation results, one per rule.
+ */
+export function validateAccessControlArray({
+  accessControlJsonArray,
+}: {
+  accessControlJsonArray: AccessControlJson[];
+}): { warnings: string[]; errors: string[] }[] {
+  const results: { warnings: string[]; errors: string[] }[] = accessControlJsonArray.map(() => ({
+    warnings: [],
+    errors: [],
+  }));
+
+  if (accessControlJsonArray.length === 0) {
+    return results;
+  }
+
+  // An assignment-level rule has no `groups` property (applies to everyone)
+  const assignmentLevelRules = accessControlJsonArray.filter(
+    (rule) => rule.groups == null || rule.groups.length === 0,
+  );
+
+  if (assignmentLevelRules.length === 0) {
+    // Error on first rule if no assignment-level rule exists
+    results[0].errors.push(
+      'No assignment-level rule found. The first rule must apply to everyone.',
+    );
+  } else if (assignmentLevelRules.length > 1) {
+    // Error on first rule if multiple assignment-level rules exist
+    results[0].errors.push(
+      `Found ${assignmentLevelRules.length} assignment-level rules. Only one rule should apply to everyone.`,
+    );
+  }
+
+  return results;
 }
 
 /**

@@ -27,7 +27,7 @@ import { idsEqual } from '../../lib/id.js';
 import type {
   AssessmentJsonInput,
   AssessmentSetJsonInput,
-  GroupRoleJsonInput,
+  LegacyGroupRoleJsonInput,
 } from '../../schemas/index.js';
 import * as helperDb from '../helperDb.js';
 import { withConfig } from '../utils/config.js';
@@ -71,7 +71,7 @@ function getTeamRoles() {
   return [
     { name: 'Recorder', minimum: 1, maximum: 4, canAssignRoles: true },
     { name: 'Contributor' },
-  ] satisfies GroupRoleJsonInput[];
+  ] satisfies LegacyGroupRoleJsonInput[];
 }
 
 function getPermission(
