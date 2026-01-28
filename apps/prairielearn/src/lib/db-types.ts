@@ -283,7 +283,9 @@ export const AssessmentAccessControlEnrollmentSchema = z.object({
   id: IdSchema,
   target_type: z.literal('enrollment'),
 });
-export type AssessmentAccessControlEnrollment = z.infer<typeof AssessmentAccessControlEnrollmentSchema>;
+export type AssessmentAccessControlEnrollment = z.infer<
+  typeof AssessmentAccessControlEnrollmentSchema
+>;
 
 export const AssessmentAccessControlLateDeadlineSchema = z.object({
   access_control_id: IdSchema,
@@ -305,7 +307,9 @@ export const AssessmentAccessControlStudentLabelSchema = z.object({
   student_label_id: IdSchema,
   target_type: z.literal('student_label'),
 });
-export type AssessmentAccessControlStudentLabel = z.infer<typeof AssessmentAccessControlStudentLabelSchema>;
+export type AssessmentAccessControlStudentLabel = z.infer<
+  typeof AssessmentAccessControlStudentLabelSchema
+>;
 
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,

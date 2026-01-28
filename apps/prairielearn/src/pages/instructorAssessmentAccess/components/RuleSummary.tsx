@@ -290,8 +290,7 @@ export function RuleSummaryCard({
     !isMainRule && rule.appliesTo.targetType === 'individual' ? rule.appliesTo.individuals : [];
 
   // Get groups for linking (only for group rules)
-  const groups =
-    !isMainRule && rule.appliesTo.targetType === 'group' ? rule.appliesTo.groups : [];
+  const groups = !isMainRule && rule.appliesTo.targetType === 'group' ? rule.appliesTo.groups : [];
 
   return (
     <Card className="mb-3">
