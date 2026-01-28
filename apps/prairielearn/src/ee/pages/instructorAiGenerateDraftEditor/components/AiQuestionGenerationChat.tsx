@@ -385,13 +385,20 @@ function Messages({
     const isLastMessage = index === messages.length - 1;
 
     if (message.role === 'user') {
+      // Extract text content from user message parts and render as plain text
+      // to avoid unexpected markdown formatting when users paste code/URLs/etc.
+      const textContent = message.parts
+        .filter((part): part is TextUIPart => part.type === 'text')
+        .map((part) => part.text)
+        .join('\n');
+
       return (
         <div key={message.id} className="d-flex flex-row-reverse mb-3">
           <div
             className="d-flex flex-column gap-2 p-3 rounded bg-secondary-subtle"
-            style={{ maxWidth: '90%' }}
+            style={{ maxWidth: '90%', whiteSpace: 'pre-wrap' }}
           >
-            <MessageParts parts={message.parts} />
+            {textContent}
           </div>
         </div>
       );
@@ -565,19 +572,22 @@ export function AiQuestionGenerationChat({
       prevIsGeneratingRef.current = isGenerating;
       // If we're already generating on mount (e.g., resuming a stream), notify parent
 
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (isGenerating) {
         onGeneratingChange?.(true);
       }
       return;
     }
 
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
     if (prevIsGeneratingRef.current !== isGenerating) {
       prevIsGeneratingRef.current = isGenerating;
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-pass-live-state-to-parent
       onGeneratingChange?.(isGenerating);
 
       // If generation just finished, call the completion callback
 
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-event-handler
       if (!isGenerating) {
         onGenerationComplete?.();
       }
