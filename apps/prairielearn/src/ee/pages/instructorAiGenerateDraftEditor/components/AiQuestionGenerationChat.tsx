@@ -502,7 +502,7 @@ export function AiQuestionGenerationChat({
 }) {
   const [loadNewVariantAfterChanges, setLoadNewVariantAfterChanges] = useState(true);
   const [showUnsavedChangesModal, setShowUnsavedChangesModal] = useState(false);
-  const [pendingMessage, setPendingMessage] = useState<{ text: string } | null>(null);
+  const [promptInput, setPromptInput] = useState('');
   const prevIsGeneratingRef = useRef<boolean | null>(null);
   const { messages, sendMessage, status, error } = useChat<QuestionGenerationUIMessage>({
     // Currently, we assume one chat per question. This should change in the future.
@@ -687,19 +687,21 @@ export function AiQuestionGenerationChat({
             </div>
           )}
           <PromptInput
+            value={promptInput}
             disabled={status !== 'ready' && status !== 'error'}
             isGenerating={isGenerating}
             loadNewVariantAfterChanges={loadNewVariantAfterChanges}
-            sendMessage={(message: { text: string }) => {
+            setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
+            onChange={setPromptInput}
+            onSubmit={(text) => {
               if (hasUnsavedChanges) {
-                setPendingMessage(message);
                 setShowUnsavedChangesModal(true);
               } else {
-                void sendMessage(message);
+                void sendMessage({ text });
                 void stickToBottom.scrollToBottom();
+                setPromptInput('');
               }
             }}
-            setLoadNewVariantAfterChanges={setLoadNewVariantAfterChanges}
             onStop={async () => {
               await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/chat/cancel`, {
                 method: 'POST',
@@ -739,10 +741,11 @@ export function AiQuestionGenerationChat({
             className="btn btn-primary"
             onClick={() => {
               setShowUnsavedChangesModal(false);
-              if (pendingMessage) {
-                void sendMessage(pendingMessage);
+              const text = promptInput.trim();
+              if (text) {
+                void sendMessage({ text });
                 void stickToBottom.scrollToBottom();
-                setPendingMessage(null);
+                setPromptInput('');
               }
             }}
           >

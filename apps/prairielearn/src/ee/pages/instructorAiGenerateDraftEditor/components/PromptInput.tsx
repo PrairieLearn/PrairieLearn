@@ -1,22 +1,22 @@
-import { useState } from 'react';
-
 export function PromptInput({
-  sendMessage,
+  value,
+  onChange,
+  onSubmit,
   disabled,
   isGenerating,
   onStop,
   loadNewVariantAfterChanges,
   setLoadNewVariantAfterChanges,
 }: {
-  sendMessage: (message: { text: string }) => void;
+  value: string;
+  onChange: (value: string) => void;
+  onSubmit: (text: string) => void;
   disabled: boolean;
   isGenerating: boolean;
   onStop: () => void;
   loadNewVariantAfterChanges?: boolean;
   setLoadNewVariantAfterChanges?: (value: boolean) => void;
 }) {
-  const [input, setInput] = useState('');
-
   return (
     <form
       onSubmit={(e) => {
@@ -26,10 +26,9 @@ export function PromptInput({
         // must hit "stop" first to stop generation.
         if (isGenerating) return;
 
-        const trimmedInput = input.trim();
+        const trimmedInput = value.trim();
         if (trimmedInput) {
-          sendMessage({ text: trimmedInput });
-          setInput('');
+          onSubmit(trimmedInput);
         }
       }}
     >
@@ -38,10 +37,10 @@ export function PromptInput({
         className="form-control mb-2"
         placeholder="Ask anything..."
         aria-label="Modification instructions"
-        value={input}
+        value={value}
         required
-        onInput={(e) => setInput((e.target as HTMLTextAreaElement).value)}
-        onKeyPress={(e) => {
+        onInput={(e) => onChange(e.currentTarget.value)}
+        onKeyDown={(e) => {
           if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
             e.currentTarget.closest('form')?.requestSubmit();
@@ -76,7 +75,7 @@ export function PromptInput({
           <button
             type="submit"
             className="btn btn-primary btn-sm"
-            disabled={disabled || input.trim().length === 0}
+            disabled={disabled || value.trim().length === 0}
             aria-label="Send prompt"
           >
             <i className="bi bi-send-fill" />
