@@ -1,6 +1,6 @@
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import type { AiQuestionGenerationMessage } from '../../../lib/db-types.js';
+import type { AiQuestionGenerationMessage, Question } from '../../../lib/db-types.js';
 import { selectAiQuestionGenerationContextMessages } from '../../models/ai-question-generation-message.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -31,8 +31,8 @@ function estimateMessageTokens(message: AiQuestionGenerationMessage): number {
  * cumulative sum across all tool-loop steps and doesn't represent the actual
  * context window size.
  */
-export async function trimContextIfNeeded(questionId: string): Promise<void> {
-  const contextMessages = await selectAiQuestionGenerationContextMessages(questionId);
+export async function trimContextIfNeeded(question: Question): Promise<void> {
+  const contextMessages = await selectAiQuestionGenerationContextMessages(question);
 
   // Estimate total context size from message content.
   const messageEstimates = contextMessages.map((m) => ({

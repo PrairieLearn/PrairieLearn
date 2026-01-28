@@ -148,7 +148,7 @@ router.use(
 router.get(
   '/',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
-    const messages = await selectAiQuestionGenerationMessages(res.locals.question.id);
+    const messages = await selectAiQuestionGenerationMessages(res.locals.question);
 
     const initialMessages = messages.map((message): QuestionGenerationUIMessage => {
       // Messages without parts will fail validation by `validateUIMessages()`.

@@ -564,8 +564,8 @@ export async function editQuestionWithAgent({
       // Token-based context trimming: exclude older messages from context
       // when the conversation grows too large, using the DB as the source
       // of truth for which messages to include.
-      await trimContextIfNeeded(question.id);
-      const contextMessages = await selectAiQuestionGenerationContextMessages(question.id);
+      await trimContextIfNeeded(question);
+      const contextMessages = await selectAiQuestionGenerationContextMessages(question);
       const uiMessages: UIMessage[] = contextMessages
         .filter((m) => m.parts.length > 0)
         .map((m) => ({

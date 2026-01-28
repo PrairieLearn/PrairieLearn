@@ -31,11 +31,7 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import {
-  type Issue,
-  QuestionGenerationContextEmbeddingSchema,
-  type User,
-} from '../../lib/db-types.js';
+import { QuestionGenerationContextEmbeddingSchema, type User } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
 import type { IssueRenderData } from '../../lib/question-render.types.js';
 import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';

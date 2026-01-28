@@ -261,7 +261,7 @@ export async function benchmarkAiQuestionGeneration({
         }
       });
 
-      const messages = await selectAiQuestionGenerationMessages(result.question.id);
+      const messages = await selectAiQuestionGenerationMessages(result.question);
       const userMessage = messages.at(0);
       const assistantMessage = messages.at(-1);
 
