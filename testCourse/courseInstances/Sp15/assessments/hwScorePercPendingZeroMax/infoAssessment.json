@@ -1,0 +1,13 @@
+{
+  "uuid": "04f1d3f6-b42b-40b9-a4d3-3a6cb5ffac42",
+  "type": "Homework",
+  "title": "Homework score_perc_pending zero max",
+  "set": "Homework",
+  "number": "99",
+  "allowAccess": [{ "credit": 100 }],
+  "zones": [
+    {
+      "questions": [{ "id": "addNumbers", "points": 0, "maxPoints": 0 }]
+    }
+  ]
+}

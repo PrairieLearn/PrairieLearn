@@ -325,6 +325,9 @@ describe('Homework assessment', { timeout: 60_000 }, function () {
         );
         locals.assessment_instance = result;
       });
+      it('should have score_perc_pending = 0', function () {
+        assert.equal(locals.assessment_instance.score_perc_pending, 0);
+      });
       it('should have the correct assessment_instance.assessment_id', function () {
         assert.equal(locals.assessment_instance.assessment_id, locals.assessment_id);
       });
