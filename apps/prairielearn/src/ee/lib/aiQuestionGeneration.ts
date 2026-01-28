@@ -37,6 +37,7 @@ import {
   type User,
 } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
+import type { IssueRenderData } from '../../lib/question-render.types.js';
 import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
@@ -132,6 +133,8 @@ export async function checkRender(
     user,
     authn_user: user, // We don't have a separate authn user in this case.
     is_administrator: false,
+    // This will be populated with any issues that occur during rendering.
+    issues: [] as IssueRenderData[],
   };
   await getAndRenderVariant(null, null, locals, {
     // Needed so that we can read the error output below.
@@ -140,7 +143,7 @@ export async function checkRender(
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
-  return ((locals as any).issues as Issue[])
+  return locals.issues
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
