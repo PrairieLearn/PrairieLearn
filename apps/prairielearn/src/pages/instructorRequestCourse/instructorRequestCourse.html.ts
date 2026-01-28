@@ -1,12 +1,12 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { assertNever } from '@prairielearn/utils';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { assertNever } from '../../lib/types.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 

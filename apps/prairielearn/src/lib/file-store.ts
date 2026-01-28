@@ -6,12 +6,12 @@ import { type Stream } from 'stream';
 import debugfn from 'debug';
 
 import * as sqldb from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { getFromS3, uploadToS3 } from './aws.js';
 import { config } from './config.js';
 import { type File, FileSchema } from './db-types.js';
-import { assertNever } from './types.js';
 
 const debug = debugfn('prairielearn:socket-server');
 const sql = sqldb.loadSqlEquiv(import.meta.url);

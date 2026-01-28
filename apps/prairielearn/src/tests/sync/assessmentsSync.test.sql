@@ -71,27 +71,27 @@ WITH
       assessment_questions.assessment_id = assessment.id
       AND questions.id = assessment_questions.question_id
   ),
-  team_roles_data AS (
+  group_roles_data AS (
     SELECT
-      coalesce(jsonb_agg(to_jsonb(tr)), '[]'::jsonb) AS team_roles
+      coalesce(jsonb_agg(to_jsonb(gr)), '[]'::jsonb) AS group_roles
     FROM
-      team_roles AS tr,
+      team_roles AS gr,
       assessment
     WHERE
-      tr.assessment_id = assessment.id
+      gr.assessment_id = assessment.id
   )
 SELECT
   assessment,
   zones,
   alternative_groups,
   assessment_questions,
-  team_roles
+  group_roles
 FROM
   assessment_data,
   zones_data,
   alternative_groups_data,
   assessment_questions_data,
-  team_roles_data;
+  group_roles_data;
 
 -- BLOCK insert_pt_exam
 INSERT INTO
