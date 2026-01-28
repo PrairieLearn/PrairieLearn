@@ -1,5 +1,11 @@
 # @prairielearn/formatter
 
+## 2.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
 ## 2.0.0
 
 ### Major Changes

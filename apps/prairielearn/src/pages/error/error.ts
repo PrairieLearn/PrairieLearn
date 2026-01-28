@@ -9,6 +9,31 @@ import { config } from '../../lib/config.js';
 import { ErrorPage } from './error.html.js';
 
 /**
+ * Maps HTTP status codes to tRPC error codes (JSON-RPC 2.0 format).
+ * These codes match tRPC's internal error code definitions.
+ * @see https://github.com/trpc/trpc/blob/main/packages/server/src/unstable-core-do-not-import/rpc/codes.ts
+ */
+const HTTP_TO_TRPC_CODE: Partial<Record<number, { code: number; name: string }>> = {
+  400: { code: -32600, name: 'BAD_REQUEST' },
+  401: { code: -32001, name: 'UNAUTHORIZED' },
+  403: { code: -32003, name: 'FORBIDDEN' },
+  404: { code: -32004, name: 'NOT_FOUND' },
+  405: { code: -32005, name: 'METHOD_NOT_SUPPORTED' },
+  408: { code: -32008, name: 'TIMEOUT' },
+  409: { code: -32009, name: 'CONFLICT' },
+  412: { code: -32012, name: 'PRECONDITION_FAILED' },
+  413: { code: -32013, name: 'PAYLOAD_TOO_LARGE' },
+  422: { code: -32022, name: 'UNPROCESSABLE_CONTENT' },
+  429: { code: -32029, name: 'TOO_MANY_REQUESTS' },
+  499: { code: -32099, name: 'CLIENT_CLOSED_REQUEST' },
+  500: { code: -32603, name: 'INTERNAL_SERVER_ERROR' },
+  501: { code: -32603, name: 'NOT_IMPLEMENTED' },
+  502: { code: -32603, name: 'BAD_GATEWAY' },
+  503: { code: -32603, name: 'SERVICE_UNAVAILABLE' },
+  504: { code: -32603, name: 'GATEWAY_TIMEOUT' },
+};
+
+/**
  * IMPORTANT: This must take four arguments for it to be identified as
  * error-handling middleware.
  *
@@ -34,6 +59,31 @@ export default (function (err, req, res, _next) {
     referrer,
     response_id: res.locals.response_id,
   });
+
+  // Handle errors for tRPC requests (e.g., CSRF failures before tRPC middleware runs).
+  // Format the response to match tRPC's expected JSON-RPC 2.0 error structure.
+  if (req.header('X-TRPC') === 'true') {
+    const trpcError = HTTP_TO_TRPC_CODE[err.status] ?? HTTP_TO_TRPC_CODE[500]!;
+
+    res.json({
+      error: {
+        // The nested `json` property here is needed because we use `superjson` to
+        // serialize and deserialize responses, and it expects the data to be under
+        // a `json` property.
+        json: {
+          message: err.message,
+          code: trpcError.code,
+          data: {
+            code: trpcError.name,
+            httpStatus: err.status,
+            // Only include stack trace in development mode
+            ...(config.devMode && { stack: err.stack }),
+          },
+        },
+      },
+    });
+    return;
+  }
 
   // Check if the client only accepts JSON
   if (req.accepts('application/json') && !req.accepts('html')) {

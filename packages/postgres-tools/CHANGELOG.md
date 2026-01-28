@@ -1,5 +1,13 @@
 # @prairielearn/postgres-tools
 
+## 3.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+- Updated dependencies [f929a68]
+  - @prairielearn/postgres@5.0.1
+
 ## 3.0.0
 
 ### Major Changes
