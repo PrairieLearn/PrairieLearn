@@ -223,3 +223,90 @@ def test_grade_default_weight_is_one() -> None:
     pl_drawing.grade(element_html, data)
 
     assert data["partial_scores"]["test"]["weight"] == 1
+
+
+# =============================================================================
+# Tests for submissions with only non-graded initial objects
+# =============================================================================
+
+
+def test_grade_only_initial_objects_without_allow_blank_sets_error() -> None:
+    """Submission with only non-graded initial objects should be treated as blank.
+
+    When a user interacts with the canvas (e.g., adds then removes an element),
+    the submission may contain initial objects with graded=False but no
+    student-placed graded objects. This should be treated as a blank submission.
+    """
+    element_html = build_element_html(allow_blank=False)
+    # Simulate submission with only initial (non-graded) objects
+    initial_objects = [
+        {
+            "id": 0,
+            "type": "pl-rectangle",
+            "gradingName": "pl-rectangle",
+            "graded": False,  # Initial object, not graded
+            "left": 100,
+            "top": 100,
+            "width": 50,
+            "height": 50,
+        }
+    ]
+    # Reference answer expects a graded point
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
+    data = make_question_data(
+        submitted_answers={"test": initial_objects},
+        correct_answers={"test": reference},
+    )
+
+    pl_drawing.grade(element_html, data)
+
+    assert "test" in data["format_errors"]
+    assert "test" not in data["partial_scores"]
+
+
+def test_grade_only_initial_objects_with_allow_blank_scores_zero() -> None:
+    """With allow-blank=true, submission with only initial objects should score 0."""
+    element_html = build_element_html(allow_blank=True)
+    # Simulate submission with only initial (non-graded) objects
+    initial_objects = [
+        {
+            "id": 0,
+            "type": "pl-rectangle",
+            "gradingName": "pl-rectangle",
+            "graded": False,  # Initial object, not graded
+            "left": 100,
+            "top": 100,
+            "width": 50,
+            "height": 50,
+        }
+    ]
+    # Reference answer expects a graded point
+    reference = [
+        {
+            "id": 0,
+            "type": "pl-point",
+            "gradingName": "pl-point",
+            "graded": True,
+            "x1": 100,
+            "y1": 100,
+        }
+    ]
+    data = make_question_data(
+        submitted_answers={"test": initial_objects},
+        correct_answers={"test": reference},
+    )
+
+    pl_drawing.grade(element_html, data)
+
+    assert "test" not in data["format_errors"]
+    assert "test" in data["partial_scores"]
+    assert data["partial_scores"]["test"]["score"] == 0.0

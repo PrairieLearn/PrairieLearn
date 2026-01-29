@@ -423,6 +423,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 return
 
             data["format_errors"][name] = defaults.no_submission_error
+            return
     except (json.JSONDecodeError, KeyError, TypeError):
         data["submitted_answers"][name] = None
 
@@ -541,6 +542,26 @@ def grade(element_html: str, data: pl.QuestionData) -> None:
 
                 matches[ref_element["id"]] = True
                 break
+
+    # Check if there are no graded student objects, and we
+    # expect at least one graded reference object.
+    if num_total_st == 0 and num_total_ref > 0:
+        if allow_blank:
+            data["partial_scores"][name] = {
+                "score": 0.0,
+                "weight": weight,
+                "feedback": {
+                    "correct": False,
+                    "partial": False,
+                    "incorrect": True,
+                    "missing": {},
+                    "matches": {},
+                },
+            }
+            return
+        else:
+            data["format_errors"][name] = defaults.no_submission_error
+            return
 
     extra_not_optional = num_total_st - (num_optional + num_correct)
 
