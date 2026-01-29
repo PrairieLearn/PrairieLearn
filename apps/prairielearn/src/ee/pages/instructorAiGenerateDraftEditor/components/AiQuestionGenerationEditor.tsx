@@ -130,7 +130,7 @@ function AiQuestionGenerationEditorInner({
           questionFiles={questionFiles}
           richTextEditorEnabled={richTextEditorEnabled}
           questionContainerHtml={questionContainerHtml}
-          csrfToken={variantCsrfToken}
+          csrfToken={csrfToken}
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
