@@ -1,5 +1,11 @@
 # @prairielearn/error
 
+## 3.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
 ## 3.0.0
 
 ### Major Changes
