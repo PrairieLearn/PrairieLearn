@@ -60,6 +60,7 @@ const RichTextEditor = ({
   isGenerating: boolean;
 }) => {
   const editor = useEditor({
+    editable: !isGenerating,
     parseOptions: {
       // TODO: we basically want the parser to collapse whitespace per HTML's rules, except in Raw HTML blocks
       preserveWhitespace: true, // 'full',
@@ -123,12 +124,6 @@ const RichTextEditor = ({
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
-
-  // Set read-only mode when generating
-  useEffect(() => {
-    // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-derived-state
-    editor?.setEditable(!isGenerating);
-  }, [editor, isGenerating]);
 
   if (htmlContents === null) {
     return null;
