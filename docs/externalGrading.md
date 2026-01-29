@@ -110,7 +110,7 @@ All question and student-submitted code will be present in various subdirectorie
 - Files submitted by the student will be copied to `/grade/student`;
 - The `data` object that would normally be provided to the `grade` method of your question's server file will be serialized to JSON at `/grade/data/data.json`.
 
-When your container starts up, the entrypoint script (either the default one set by the image or the one specified in the question settings) will be executed. This script can execute any suitable action. The only requirement is that by the time that script finished, it should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, the entrypoint script (either the default one set by the image or the one specified in the question settings) will be executed. This script can execute any suitable action. The only requirement is that by the time that script finishes, it should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
 
 !!! note
 
