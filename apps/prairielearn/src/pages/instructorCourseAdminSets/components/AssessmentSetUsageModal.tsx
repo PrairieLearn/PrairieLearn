@@ -61,7 +61,7 @@ export function AssessmentSetUsageModal({
                 {assessments.map((assessment) => (
                   <div
                     key={assessment.assessment_id}
-                    className="d-flex align-items-center gap-2 p-2 rounded"
+                    className="d-flex align-items-center gap-2 py-1 rounded"
                   >
                     <span className={`badge color-${assessment.color}`}>{assessment.label}</span>
                     <a
