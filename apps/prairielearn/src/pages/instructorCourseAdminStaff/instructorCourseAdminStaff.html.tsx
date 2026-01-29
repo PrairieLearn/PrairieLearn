@@ -62,6 +62,9 @@ export function InstructorCourseAdminStaff({
       page: 'course_admin',
       subPage: 'staff',
     },
+    options: {
+      fullWidth: true,
+    },
     content: html`
       <div class="card mb-4">
         <div class="card-header bg-primary text-white d-flex flex-wrap align-items-center">
