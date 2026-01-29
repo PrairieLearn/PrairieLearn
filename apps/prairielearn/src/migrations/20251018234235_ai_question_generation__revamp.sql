@@ -1,4 +1,4 @@
-CREATE TYPE enum_ai_question_generation_message_role AS ENUM('system', 'user', 'assistant');
+CREATE TYPE enum_ai_question_generation_message_role AS ENUM('user', 'assistant');
 
 CREATE TYPE enum_ai_question_generation_message_status AS ENUM(
   'pending',
