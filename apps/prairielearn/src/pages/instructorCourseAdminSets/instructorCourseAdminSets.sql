@@ -24,6 +24,29 @@ SELECT
             ci.long_name
           )
           ORDER BY
+            -- Use new publishing dates if available, otherwise fall back to legacy access rules
+            COALESCE(
+              ci.publishing_start_date,
+              (
+                SELECT
+                  min(ar.start_date)
+                FROM
+                  course_instance_access_rules AS ar
+                WHERE
+                  ar.course_instance_id = ci.id
+              )
+            ) DESC NULLS LAST,
+            COALESCE(
+              ci.publishing_end_date,
+              (
+                SELECT
+                  max(ar.end_date)
+                FROM
+                  course_instance_access_rules AS ar
+                WHERE
+                  ar.course_instance_id = ci.id
+              )
+            ) DESC NULLS LAST,
             ci.id DESC,
             a.order_by ASC,
             a.id ASC

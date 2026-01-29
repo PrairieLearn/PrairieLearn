@@ -34,7 +34,7 @@ export function AssessmentSetUsageModal({
       groups.get(key)!.push(assessment);
     }
 
-    // Convert to array (already sorted by ci.id DESC from SQL)
+    // Convert to array (already sorted by publishing dates DESC from SQL)
     return Array.from(groups.entries());
   }, [data]);
 
