@@ -35,9 +35,6 @@ router.get(
           page: 'course_admin',
           subPage: 'sets',
         },
-        options: {
-          fullWidth: true,
-        },
         content: <AssessmentSetsTable assessmentSets={assessmentSets} />,
       }),
     );
