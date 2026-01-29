@@ -857,12 +857,12 @@ export class AssessmentAddEditor extends Editor {
       allowAccess: [],
       zones: [],
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.assessmentsPath if it
+    // We use outputFile to create the directory assessmentPath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx'
     // to throw an error if `assessmentPath` already exists.
-    await fs.outputJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson, {
       flag: 'wx',
     });
 
@@ -1268,12 +1268,12 @@ export class CourseInstanceAddEditor extends Editor {
       longName: this.long_name,
       ...this.metadataOverrides,
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.courseInstancePath if it
+    // We use outputFile to create the directory courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
-    await fs.outputJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson, {
       flag: 'wx',
     });
 
