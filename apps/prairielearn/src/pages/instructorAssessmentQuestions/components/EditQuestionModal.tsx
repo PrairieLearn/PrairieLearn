@@ -196,7 +196,6 @@ export function EditQuestionModal({
         handleUpdateGroup={handleUpdateGroup!}
         assessmentType={assessmentType}
         onHide={onHide}
-        onExited={onExited}
       />
     );
   }
@@ -628,7 +627,6 @@ function EditAlternativeGroupForm({
   type,
   group,
   onHide,
-  onExited,
   handleUpdateGroup,
   assessmentType,
 }: {
@@ -636,7 +634,6 @@ function EditAlternativeGroupForm({
   type: 'create-group' | 'edit-group';
   group: ZoneQuestionBlockForm;
   onHide: () => void;
-  onExited: () => void;
   handleUpdateGroup: (group: ZoneQuestionBlockForm) => void;
   assessmentType: 'Homework' | 'Exam';
 }) {
@@ -680,7 +677,7 @@ function EditAlternativeGroupForm({
         : 'Update group';
 
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited}>
+    <Modal show={show} onHide={onHide}>
       <Modal.Header closeButton>
         <Modal.Title>{modalTitle}</Modal.Title>
       </Modal.Header>
