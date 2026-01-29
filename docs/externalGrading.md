@@ -7,22 +7,22 @@ PrairieLearn allows you to securely run custom grading scripts in environments t
 You can define a number of resources for the external grading process:
 
 - A Docker image to execute your tests in, which may be:
-  - A PrairieLearn-provided image;
-  - A custom version of a PrairieLearn-provided image that you've built and pushed to Docker Hub;
-  - A standard public image from Docker Hub (e.g., `python:3.13`, `node:24`, etc.) that can execute course-specific grading scripts;
+  - A PrairieLearn-provided image.
+  - A custom version of a PrairieLearn-provided image that you've built and pushed to Docker Hub.
+  - A standard public image from Docker Hub (e.g., `python:3.13`, `node:24`, etc.) that can execute course-specific grading scripts.
   - A completely custom image containing scripts and resources that you've built and pushed to Docker Hub.
-- Files, scripts and other resources that are shared between questions;
+- Files, scripts and other resources that are shared between questions.
 - Files, scripts, tests and other resources that are specific to individual questions.
 
-When a student clicks "Submit" on an externally-graded question, PrairieLearn will assemble all of those resources that you've defined into an archive. That archive will be submitted to be run as a job on AWS infrastructure inside the environment that you specify. Results are then sent back to PrairieLearn; once they are processed, the student will immediately be shown their score, individual test cases, `stdout`/`stderr`, and any information you want to show to them.
+When a student clicks "Submit" on an externally-graded question, PrairieLearn will assemble all of those resources that you've defined into an archive. That archive will be submitted to be run inside the environment that you specify. Results are then sent back to PrairieLearn; once they are processed, the student will immediately be shown their score, individual test cases, `stdout`/`stderr`, and any information you want to show to them.
 
 ## External grading timestamps and phases
 
-When a student submits to a question that uses external grading, a grading job is created to handle the submission. A pool of graders is available in the AWS infrastructure to handle these jobs. The grading job then follows a series of steps:
+When a student submits to a question that uses external grading, a grading job is created to handle the submission. A pool of graders is available to handle these jobs. The grading job then follows a series of steps:
 
-1. PrairieLearn creates the grading job, writes the grading information to S3, and puts the job on the grading queue.
+1. PrairieLearn creates the grading job and puts the job on the grading queue.
 2. The job waits on the grading queue until it is received by a grader.
-3. A grader from the pool receives the job, reads the grading information from S3, writes it to local disk, pulls the appropriate grading Docker image, and starts the grading container.
+3. A grader from the pool receives the job, reads the grading information, pulls the appropriate grading Docker image, and starts the grading container.
 4. The course grading code runs inside the Docker container.
 5. The grader sends the grading results back to PrairieLearn.
 6. PrairieLearn processes the results, records the grade, and shows the student their results.
@@ -40,7 +40,7 @@ External grading configuration is done on a per-question basis. The question nee
 Additional options are available for further customization:
 
 - `entrypoint`: The script or command line that will be run when your container starts. If this property is not provided, the default entrypoint of the Docker image will be used.
-  - This should be an absolute path to something that is executable in the Docker image; this could take the form of a shell script, a python script, a compiled executable, or anything else that can be run like that. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`).
+  - If specified, this should be an absolute path to something that is executable in the Docker image. This could be a shell script, a Python script, a compiled executable, or anything else that can be executed. This file can be built into your image, which must be executable in the image itself; or it can be one of the files that will be mounted into `/grade` (more on that later), in which case the entrypoint file is given executable permission by the grading process itself before running (i.e., `chmod +x /path/to/entrypoint && /path/to/entrypoint`).
   - The `entrypoint` may also be provided with additional command line arguments. If set via `info.json`, these may be provided either as a string (e.g., `"/path/to/entrypoint -h"`) or as an array, with each element corresponding to an argument (e.g., `["/path/to/entrypoint", "-h"]`).
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share standard resources, such as scripts, libraries, and data files, between many questions. This property is optional.
@@ -66,10 +66,10 @@ Here's an example of a complete `externalGradingOptions` portion of a question's
 
 This config file specifies the following things:
 
-- External grading is enabled;
-- The `prairielearn/grader-python` image will be used;
-- The files/directories under `serverFilesCourse/my_libraries` will be copied into your image while grading;
-- The default entrypoint script set by the image will be executed when your container starts up;
+- External grading is enabled.
+- The `prairielearn/grader-python` image will be used.
+- The files/directories under `serverFilesCourse/my_libraries` will be copied into your image while grading.
+- The default entrypoint script set by the image will be executed when your container starts up.
 - If grading takes longer than 5 seconds, the container will be killed.
 
 !!! info
@@ -85,9 +85,9 @@ There are multiple ways to allow students to submit files for external grading:
 - The [`pl-order-blocks` element](./elements/pl-order-blocks.md), using the `grading-method="external"` attribute, allows students to submit code by arranging pre-defined blocks of code in the correct order.
 - The [`pl-rich-text-editor` element](./elements/pl-rich-text-editor.md) allows students to create HTML documents.
 - The [`pl-image-capture` element](./elements/pl-image-capture.md) allows students to submit images taken with their device's camera.
-- For questions using workspaces, [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
+- For questions using [workspaces](./workspaces/index.md), [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
 
-For examples of questions that allow student submissions, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
+For examples of questions that allow student submissions, you can look at [`PrairieLearn/exampleCourse/questions/demo/autograder/codeEditor`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeEditor) and [`PrairieLearn/exampleCourse/questions/demo/autograder/codeUpload`](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/codeUpload).
 
 If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. Files may be submitted to external graders by including them in a `_files` array on the `submitted_answers` dict. This can be done by [calling `pl.add_submitted_file()`](./python-reference/prairielearn/question_utils.md#prairielearn.question_utils.add_submitted_file) in the `parse()` method of your question or custom element. For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
 
@@ -99,18 +99,18 @@ Additionally, as listed above, you can specify files or directories in `serverFi
 
 !!! warning
 
-    Any files included in `tests` or in the specified `serverFilesCourse` directories will be copied to the grading job every time a submission is made. If you include large files or directories, this may slow down the grading process significantly. We recommend only including files that are necessary for grading. If you have large files that are shared between many questions, consider building them into [a custom Docker image instead](./dockerImages.md#custom-variations-of-maintained-images).
+    Any files included in `tests` or in the specified `serverFilesCourse` directories will be copied to the grading job every time a submission is made. If you include large files or directories, this may slow down the grading process significantly. We recommend only including files that are necessary for grading. If you have large files that are shared between many questions, consider [building them into a custom Docker image](./dockerImages.md#custom-variations-of-maintained-images) instead.
 
 ## The Grading Process
 
 All question and student-submitted code will be present in various subdirectories in `/grade` inside your container.
 
-- If you specify any files or directories in `serverFilesCourse`, they will be copied to `/grade/serverFilesCourse`;
-- If your question has a `tests` directory, it will be copied to `/grade/tests`;
-- Files submitted by the student will be copied to `/grade/student`;
+- If you specify any files or directories in `serverFilesCourse`, they will be copied to `/grade/serverFilesCourse`.
+- If your question has a `tests` directory, it will be copied to `/grade/tests`.
+- Files submitted by the student will be copied to `/grade/student`.
 - The `data` object that would normally be provided to the `grade` method of your question's server file will be serialized to JSON at `/grade/data/data.json`.
 
-When your container starts up, the entrypoint script (either the default one set by the image or the one specified in the question settings) will be executed. This script can execute any suitable action. The only requirement is that by the time that script finishes, it should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
+When your container starts up, the entrypoint script (either the default one set by the image or the one specified in the question settings) will be executed. The only requirement is that by the time that script finishes, it should have written results for the grading job to `/grade/results/results.json`. The format for this file is specified below. The contents of that file will be sent back to PrairieLearn to record a grade and possibly be shown to students.
 
 !!! note
 
@@ -145,7 +145,7 @@ In particular, the file system structure of the grader looks like:
 Your grading process must write its results to `/grade/results/results.json`.
 
 - If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating-point number in the range [0.0, 1.0]. The field `gradable` may be optionally included and set to `true` to indicate that the submission was gradable, though this is not required, as the omission of this field is equivalent to assuming that the input was gradable.
-- If the submission is not gradable, the field `gradable` is required, and must be set to `false`. In this case, the `score` field is not needed. This indicates that the submission could not be graded, for example due to a syntax error, or if the input was missing, invalid or formatted incorrectly. In this case, the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.
+- If the submission is not gradable, the field `gradable` is required, and must be set to `false`. In this case, the `score` field is not needed. This indicates that the submission could not be graded, for example due to a syntax error, or if the input was missing, invalid, or formatted incorrectly. In this case, the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.
 
 Other than `score` and `gradable`, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1 MB, so you must ensure any extensive use of data takes this limit into account.
 
@@ -200,9 +200,9 @@ The [`<pl-external-grader-results>` element](./elements/pl-external-grader-resul
 }
 ```
 
-Plots or images can be added to either individual test cases or to the main output by adding `base64` encoded images to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1 MB listed above. Each element of the array is expected to be an object containing the following keys:
+Plots or images can be added to either individual test cases or to the main output by adding [base64-encoded data URLs](https://developer.mozilla.org/en-US/docs/Web/URI/Reference/Schemes/data) to their respective `images` array, as listed in the examples above, provided the resulting file respects the size limit of 1 MB listed above. Each element of the array is expected to be an object containing the following keys:
 
-- `url`: The source of the image, typically formatted as standard HTML base64 image like `"data:[mimetype];base64,[contents]"`;
+- `url`: The source of the image, typically formatted as standard data URL like `"data:[mimetype];base64,[contents]"`.
 - `label`: An optional label for the image (defaults to "Figure").
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
