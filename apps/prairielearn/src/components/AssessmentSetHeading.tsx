@@ -30,8 +30,7 @@ export function AssessmentSetHeading({
       {assessmentSet.name}
       <span className="text-muted">
         {' '}
-        (Auto-generated from use in an assessment; add this assessment set to your infoCourse.json
-        file to customize)
+        (Auto-generated from use in an assessment; edit this assessment set to customize)
       </span>
     </>
   );
