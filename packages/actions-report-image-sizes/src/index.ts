@@ -53,11 +53,15 @@ function getImages(): string[] {
   return images.split('\n').flatMap((line) => line.split(',').map((s) => s.trim()));
 }
 
-async function getDockerHubToken(
-  image: string,
-  username: string | null,
-  password: string | null,
-): Promise<string> {
+async function getDockerHubToken({
+  image,
+  username,
+  password,
+}: {
+  image: string;
+  username: string | null;
+  password: string | null;
+}): Promise<string> {
   const headers: Record<string, string> = {};
 
   // Use Basic auth if credentials are provided to increase rate limits.
@@ -125,13 +129,22 @@ async function getImageManifest(
   return { manifest, digest };
 }
 
-async function getAllImagesFromRegistry(
-  image: string,
-  sha: string,
-  dockerUsername: string | null,
-  dockerPassword: string | null,
-): Promise<{ platform: string | null; digest: string; size: number }[] | null> {
-  const token = await getDockerHubToken(image, dockerUsername, dockerPassword);
+async function getAllImagesFromRegistry({
+  image,
+  sha,
+  dockerUsername,
+  dockerPassword,
+}: {
+  image: string;
+  sha: string;
+  dockerUsername: string | null;
+  dockerPassword: string | null;
+}): Promise<{ platform: string | null; digest: string; size: number }[] | null> {
+  const token = await getDockerHubToken({
+    image,
+    username: dockerUsername,
+    password: dockerPassword,
+  });
   const manifestResult = await getImageManifest(token, image, sha);
   if (!manifestResult) {
     return null;
@@ -327,7 +340,12 @@ async function main() {
   const changedImages: ChangedImage[] = [];
 
   for (const image of images) {
-    const newImages = await getAllImagesFromRegistry(image, sha, dockerUsername, dockerPassword);
+    const newImages = await getAllImagesFromRegistry({
+      image,
+      sha,
+      dockerUsername,
+      dockerPassword,
+    });
 
     // If there's no build for this SHA, there's nothing to compare against.
     if (!newImages) {
@@ -336,12 +354,12 @@ async function main() {
 
     // If there's no previous build, we can't compare sizes, but we can still
     // report the size of the new images.
-    const oldImages = await getAllImagesFromRegistry(
+    const oldImages = await getAllImagesFromRegistry({
       image,
-      'latest',
+      sha: 'latest',
       dockerUsername,
       dockerPassword,
-    );
+    });
 
     for (const newImage of newImages) {
       // Find the old image with the same platform. If there isn't a match
