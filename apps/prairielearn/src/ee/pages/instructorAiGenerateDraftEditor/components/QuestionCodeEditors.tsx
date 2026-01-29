@@ -9,12 +9,16 @@ export function QuestionCodeEditors({
   csrfToken,
   isGenerating,
   onHasChangesChange,
+  filesError,
+  onRetryFiles,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
   csrfToken: string;
   isGenerating: boolean;
   onHasChangesChange?: (hasChanges: boolean) => void;
+  filesError?: Error | null;
+  onRetryFiles?: () => void;
 }) {
   const htmlEditorRef = useRef<HTMLDivElement>(null);
   const pythonEditorRef = useRef<HTMLDivElement>(null);
@@ -104,10 +108,7 @@ export function QuestionCodeEditors({
     };
   }, [htmlContents, pythonContents]);
 
-  // Set read-only mode when generating
-  // TODO: If the user has unsaved changes when generation starts, we should
-  // warn them or offer to save first. Currently, their changes will be
-  // silently discarded when the new content is loaded.
+  // Set read-only mode when generating.
   useEffect(() => {
     htmlEditorInstanceRef.current?.setReadOnly(isGenerating);
     pythonEditorInstanceRef.current?.setReadOnly(isGenerating);
@@ -115,9 +116,27 @@ export function QuestionCodeEditors({
 
   return (
     <div className="editor-panes p-2 gap-2">
-      {/* TODO: Move this to a more sensible location */}
       <div className="editor-pane-status">
-        {isGenerating ? (
+        {filesError ? (
+          <div
+            className="alert alert-danger mb-0 py-2 d-flex align-items-center justify-content-between"
+            role="alert"
+          >
+            <span>
+              <strong>Error loading files:</strong> {filesError.message}
+            </span>
+            {onRetryFiles && (
+              <button
+                type="button"
+                className="btn btn-sm btn-outline-danger"
+                onClick={onRetryFiles}
+              >
+                <i className="fa fa-refresh me-1" aria-hidden="true" />
+                Retry
+              </button>
+            )}
+          </div>
+        ) : isGenerating ? (
           <div className="alert alert-info mb-0 py-2 d-flex align-items-center" role="alert">
             <div className="spinner-border spinner-border-sm me-2" role="status">
               <span className="visually-hidden">Loading...</span>

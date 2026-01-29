@@ -1,25 +1,27 @@
-import { useCallback, useRef, useState } from 'react';
+import { QueryClient, useQuery } from '@tanstack/react-query';
+import { useRef, useState } from 'react';
 
 import type { StaffQuestion } from '../../../../lib/client/safe-db-types.js';
+import { QueryClientProviderDebug } from '../../../../lib/client/tanstackQuery.js';
 import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-generation/agent.js';
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';
 import { type NewVariantHandle, QuestionAndFilePreview } from './QuestionAndFilePreview.js';
 
-export function AiQuestionGenerationEditor({
-  chatCsrfToken,
-  question,
-  initialMessages,
-  questionFiles: initialQuestionFiles,
-  richTextEditorEnabled,
-  urlPrefix,
-  csrfToken,
-  questionContainerHtml,
-  showJobLogsLink,
-  variantUrl,
-  variantCsrfToken,
-}: {
+async function fetchQuestionFiles(
+  urlPrefix: string,
+  questionId: string,
+): Promise<Record<string, string>> {
+  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files`);
+  if (!response.ok) {
+    throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
+  }
+  const data = await response.json();
+  return data.files;
+}
+
+interface AiQuestionGenerationEditorProps {
   chatCsrfToken: string;
   question: StaffQuestion;
   initialMessages: QuestionGenerationUIMessage[];
@@ -31,26 +33,38 @@ export function AiQuestionGenerationEditor({
   showJobLogsLink: boolean;
   variantUrl: string;
   variantCsrfToken: string;
-}) {
+}
+
+function AiQuestionGenerationEditorInner({
+  chatCsrfToken,
+  question,
+  initialMessages,
+  questionFiles: initialQuestionFiles,
+  richTextEditorEnabled,
+  urlPrefix,
+  csrfToken,
+  questionContainerHtml,
+  showJobLogsLink,
+  variantUrl,
+  variantCsrfToken,
+}: AiQuestionGenerationEditorProps) {
   const [showFinalizeModal, setShowFinalizeModal] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
-  const [questionFiles, setQuestionFiles] = useState(initialQuestionFiles);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const newVariantRef = useRef<NewVariantHandle>(null);
 
-  const refreshFiles = useCallback(async () => {
-    try {
-      const response = await fetch(`${urlPrefix}/ai_generate_editor/${question.id}/files`);
-      if (!response.ok) {
-        console.error('Failed to fetch files:', response.status);
-        return;
-      }
-      const data = await response.json();
-      setQuestionFiles(data.files);
-    } catch (err) {
-      console.error('Error refreshing files:', err);
-    }
-  }, [urlPrefix, question.id]);
+  const {
+    data: questionFiles,
+    error: filesError,
+    refetch: refetchFiles,
+  } = useQuery({
+    queryKey: ['question-files', urlPrefix, question.id],
+    queryFn: () => fetchQuestionFiles(urlPrefix, question.id),
+    staleTime: Infinity,
+    initialData: initialQuestionFiles,
+    retry: 2,
+    retryDelay: (attemptIndex) => Math.min(1000 * 2 ** attemptIndex, 5000),
+  });
 
   return (
     <div className="app-content">
@@ -69,7 +83,7 @@ export function AiQuestionGenerationEditor({
         refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
         hasUnsavedChanges={hasUnsavedChanges}
         onGeneratingChange={setIsGenerating}
-        onGenerationComplete={refreshFiles}
+        onGenerationComplete={() => refetchFiles()}
       />
 
       <div className="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
@@ -121,7 +135,9 @@ export function AiQuestionGenerationEditor({
           variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
           isGenerating={isGenerating}
+          filesError={filesError}
           onHasUnsavedChanges={setHasUnsavedChanges}
+          onRetryFiles={() => refetchFiles()}
         />
       </div>
       <FinalizeModal
@@ -130,6 +146,16 @@ export function AiQuestionGenerationEditor({
         onHide={() => setShowFinalizeModal(false)}
       />
     </div>
+  );
+}
+
+export function AiQuestionGenerationEditor(props: AiQuestionGenerationEditorProps) {
+  const [queryClient] = useState(() => new QueryClient());
+
+  return (
+    <QueryClientProviderDebug client={queryClient}>
+      <AiQuestionGenerationEditorInner {...props} />
+    </QueryClientProviderDebug>
   );
 }
 
