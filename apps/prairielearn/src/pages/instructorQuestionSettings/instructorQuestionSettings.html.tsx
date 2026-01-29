@@ -4,12 +4,12 @@ import { html } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
 import { Hydrate } from '@prairielearn/react/server';
 
-import { GitHubButtonHtml } from '../../components/GitHubButton.js';
+import { GitHubButton } from '../../components/GitHubButton.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { TagBadgeList } from '../../components/TagBadge.js';
 import { TagDescription } from '../../components/TagDescription.js';
-import { TopicBadgeHtml } from '../../components/TopicBadge.js';
+import { TopicBadge } from '../../components/TopicBadge.js';
 import { TopicDescription } from '../../components/TopicDescription.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import { type Tag, type Topic } from '../../lib/db-types.js';
@@ -108,7 +108,7 @@ export function InstructorQuestionSettings({
           class="card-header bg-primary text-white d-flex align-items-center justify-content-between"
         >
           <h1>Question Settings</h1>
-          ${GitHubButtonHtml(questionGHLink)}
+          ${renderHtml(<GitHubButton gitHubLink={questionGHLink} />)}
         </div>
         <div class="card-body">
           <form name="edit-question-settings-form" method="POST">
@@ -191,7 +191,7 @@ export function InstructorQuestionSettings({
                               })}
                             </select>
                           `
-                        : TopicBadgeHtml(resLocals.topic)}
+                        : renderHtml(<TopicBadge topic={resLocals.topic} />)}
                     </td>
                   </tr>
                   <tr>
@@ -232,10 +232,12 @@ export function InstructorQuestionSettings({
                     ? html`<tr>
                         <th class="align-middle">Assessments</th>
                         <td>
-                          ${AssessmentBadges({
-                            assessmentsWithQuestion,
-                            courseInstanceId: resLocals.course_instance.id,
-                          })}
+                          ${renderHtml(
+                            <AssessmentBadges
+                              assessmentsWithQuestion={assessmentsWithQuestion}
+                              courseInstanceId={resLocals.course_instance.id}
+                            />,
+                          )}
                         </td>
                       </tr>`
                     : ''}
@@ -686,21 +688,22 @@ function AssessmentBadges({
     !assessmentsInCourseInstance?.assessments ||
     assessmentsInCourseInstance.assessments.length === 0
   ) {
-    return html`
-      <small class="text-muted text-center">
+    return (
+      <small className="text-muted text-center">
         This question is not included in any assessments in this course instance.
       </small>
-    `;
+    );
   }
 
   return assessmentsInCourseInstance.assessments.map((assessment) => {
-    return html`
+    return (
       <a
-        href="/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}"
-        class="btn btn-badge color-${assessment.color}"
+        key={assessment.assessment_id}
+        href={`/pl/course_instance/${assessmentsInCourseInstance.course_instance_id}/instructor/assessment/${assessment.assessment_id}`}
+        className={`btn btn-badge color-${assessment.color}`}
       >
-        ${assessment.label}
+        {assessment.label}
       </a>
-    `;
+    );
   });
 }
