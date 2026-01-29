@@ -3,6 +3,7 @@ import { type HtmlSafeString, html } from '@prairielearn/html';
 import { hydrateHtml } from '@prairielearn/react/server';
 
 import { compiledScriptTag, compiledStylesheetTag, nodeModulesAssetPath } from '../lib/assets.js';
+import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 import { type CourseInstance } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
 import { type QuestionsPageData } from '../models/questions.js';
@@ -265,7 +266,7 @@ export function QuestionsTable({
                         ? html`
                             <a
                               class="btn btn-sm btn-primary"
-                              href="${urlPrefix}/ai_generate_question_drafts"
+                              href="${getAiQuestionGenerationDraftsUrl({ urlPrefix })}"
                             >
                               <i class="fa fa-wand-magic-sparkles" aria-hidden="true"></i>
                               Generate question with AI
