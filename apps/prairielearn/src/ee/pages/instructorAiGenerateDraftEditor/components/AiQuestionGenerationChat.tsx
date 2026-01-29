@@ -5,6 +5,7 @@ import {
   type TextUIPart,
   type ToolUIPart,
   type UIMessage,
+  type UIToolInvocation,
 } from 'ai';
 import clsx from 'clsx';
 import { type ReactNode, useEffect, useRef, useState } from 'react';
@@ -93,6 +94,22 @@ function ToolCallStatus({
   );
 }
 
+function getStatusForState(
+  state: UIToolInvocation<any>['state'],
+  messages: { streaming: ReactNode; pending: ReactNode; done: ReactNode; error: ReactNode },
+): ReactNode {
+  switch (state) {
+    case 'input-streaming':
+      return messages.streaming;
+    case 'input-available':
+      return messages.pending;
+    case 'output-available':
+      return messages.done;
+    case 'output-error':
+      return messages.error;
+  }
+}
+
 function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   const toolName = part.type.slice('tool-'.length);
 
@@ -106,143 +123,81 @@ function ToolCall({ part }: { part: QuestionGenerationToolUIPart }) {
   }
 
   const statusText = run(() => {
-    if (part.type === 'tool-getElementDocumentation') {
-      if (part.state === 'input-streaming') {
-        return <span>Getting element documentation...</span>;
-      } else if (part.state === 'input-available') {
-        return (
-          <span>
-            Reading documentation for <code>&lt;{part.input.elementName}&gt;</code>...
-          </span>
-        );
-      } else if (part.state === 'output-available') {
-        return (
-          <span>
-            Read documentation for <code>&lt;{part.input.elementName}&gt;</code>
-          </span>
-        );
-      } else {
-        return <span>Error getting element documentation</span>;
+    switch (part.type) {
+      case 'tool-getElementDocumentation': {
+        const elementCode = <code>&lt;{part.input?.elementName}&gt;</code>;
+        return getStatusForState(part.state, {
+          streaming: 'Getting element documentation...',
+          pending: <>Reading documentation for {elementCode}...</>,
+          done: <>Read documentation for {elementCode}</>,
+          error: 'Error getting element documentation',
+        });
       }
-    }
 
-    if (part.type === 'tool-listElementExamples') {
-      if (part.state === 'input-streaming') {
-        return <span>Listing element examples...</span>;
-      } else if (part.state === 'input-available') {
-        return (
-          <span>
-            Listing examples for <code>&lt;{part.input.elementName}&gt;</code>...
-          </span>
-        );
-      } else if (part.state === 'output-available') {
-        return (
-          <span>
-            Listed examples for <code>&lt;{part.input.elementName}&gt;</code>
-          </span>
-        );
-      } else {
-        return <span>Error listing element examples</span>;
+      case 'tool-listElementExamples': {
+        const elementCode = <code>&lt;{part.input?.elementName}&gt;</code>;
+        return getStatusForState(part.state, {
+          streaming: 'Listing element examples...',
+          pending: <>Listing examples for {elementCode}...</>,
+          done: <>Listed examples for {elementCode}</>,
+          error: 'Error listing element examples',
+        });
       }
-    }
 
-    if (part.type === 'tool-getExampleQuestions') {
-      const questionCount = part.input?.qids?.length || 0;
-      const pluralQuestions = questionCount === 1 ? 'question' : 'questions';
-      if (part.state === 'input-streaming') {
-        return <span>Getting example questions...</span>;
-      } else if (part.state === 'input-available') {
-        return (
-          <span>
-            Reading {questionCount} example {pluralQuestions}...
-          </span>
-        );
-      } else if (part.state === 'output-available') {
-        return (
-          <span>
-            Read {questionCount} example {pluralQuestions}
-          </span>
-        );
-      } else {
-        return <span>Error getting example questions</span>;
+      case 'tool-getExampleQuestions': {
+        const questionCount = part.input?.qids?.length || 0;
+        const pluralQuestions = questionCount === 1 ? 'question' : 'questions';
+        return getStatusForState(part.state, {
+          streaming: 'Getting example questions...',
+          pending: `Reading ${questionCount} example ${pluralQuestions}...`,
+          done: `Read ${questionCount} example ${pluralQuestions}`,
+          error: 'Error getting example questions',
+        });
       }
-    }
 
-    if (part.type === 'tool-writeFile') {
-      if (part.state === 'input-streaming') {
-        return <span>Writing file...</span>;
-      } else if (part.state === 'input-available') {
-        return (
-          <span>
-            Writing file <code>{part.input.path}</code>...
-          </span>
-        );
-      } else if (part.state === 'output-available') {
-        return (
-          <span>
-            Wrote file <code>{part.input.path}</code>
-          </span>
-        );
-      } else {
-        return (
-          <span>
-            Error writing file <code>{part.input?.path}</code>
-          </span>
-        );
+      case 'tool-writeFile': {
+        const pathCode = <code>{part.input?.path}</code>;
+        return getStatusForState(part.state, {
+          streaming: 'Writing file...',
+          pending: <>Writing file {pathCode}...</>,
+          done: <>Wrote file {pathCode}</>,
+          error: <>Error writing file {pathCode}</>,
+        });
       }
-    }
 
-    if (part.type === 'tool-readFile') {
-      if (part.state === 'input-streaming') {
-        return <span>Reading file...</span>;
-      } else if (part.state === 'input-available') {
-        return (
-          <span>
-            Reading file <code>{part.input.path}</code>...
-          </span>
-        );
-      } else if (part.state === 'output-available') {
-        return (
-          <span>
-            Read file <code>{part.input.path}</code>
-          </span>
-        );
-      } else {
-        return (
-          <span>
-            Error reading file <code>{part.input?.path}</code>
-          </span>
-        );
+      case 'tool-readFile': {
+        const pathCode = <code>{part.input?.path}</code>;
+        return getStatusForState(part.state, {
+          streaming: 'Reading file...',
+          pending: <>Reading file {pathCode}...</>,
+          done: <>Read file {pathCode}</>,
+          error: <>Error reading file {pathCode}</>,
+        });
       }
-    }
 
-    if (part.type === 'tool-saveAndValidateQuestion') {
-      if (part.state === 'input-streaming') {
-        return <span>Saving and validating question...</span>;
-      } else if (part.state === 'input-available') {
-        return <span>Saving and validating question...</span>;
-      } else if (part.state === 'output-available') {
+      case 'tool-saveAndValidateQuestion': {
         // TODO: check output for validation results.
-        return <span>Saved and validated question</span>;
-      } else {
-        return <span>Error saving and validating question</span>;
+        return getStatusForState(part.state, {
+          streaming: 'Saving and validating question...',
+          pending: 'Saving and validating question...',
+          done: 'Saved and validated question',
+          error: 'Error saving and validating question',
+        });
+      }
+
+      case 'tool-getPythonLibraries': {
+        return getStatusForState(part.state, {
+          streaming: 'Reading available Python libraries...',
+          pending: 'Reading available Python libraries...',
+          done: 'Read available Python libraries',
+          error: 'Error reading available Python libraries',
+        });
+      }
+
+      default: {
+        return toolName;
       }
     }
-
-    // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
-    if (part.type === 'tool-getPythonLibraries') {
-      if (part.state === 'input-streaming') {
-        return <span>Reading available Python libraries...</span>;
-      } else if (part.state === 'input-available') {
-        return <span>Reading available Python libraries...</span>;
-      } else if (part.state === 'output-available') {
-        return <span>Read available Python libraries</span>;
-      } else {
-        return <span>Error reading available Python libraries</span>;
-      }
-    }
-
-    return <span>{toolName}</span>;
   });
 
   return <ToolCallStatus state={part.state} statusText={statusText} />;
