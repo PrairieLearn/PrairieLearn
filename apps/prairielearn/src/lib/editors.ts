@@ -1638,6 +1638,85 @@ export class QuestionRenameEditor extends Editor {
     this.question = question;
   }
 
+  private async moveQuestion({
+    oldPath,
+    newPath,
+    existingQid,
+    questionsPath,
+  }: {
+    oldPath: string;
+    newPath: string;
+    existingQid: string;
+    questionsPath: string;
+  }) {
+    const pathsToAdd: string[] = [];
+
+    debug(`Move files from ${oldPath} to ${newPath}`);
+    await fs.move(oldPath, newPath, { overwrite: false });
+    await this.removeEmptyPrecedingSubfolders(questionsPath, existingQid);
+
+    pathsToAdd.push(oldPath, newPath);
+
+    debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_question,
+      { question_id: this.question.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+
+    debug(
+      `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
+    );
+    for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_directory,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json',
+      );
+      pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson: any = await fs.readJson(infoPath);
+
+      debug(`Find/replace QID in ${infoPath}`);
+      let found = false as boolean;
+      infoJson.zones?.forEach((zone: any) => {
+        zone.questions?.forEach((question: any) => {
+          if (question.alternatives) {
+            question.alternatives?.forEach((alternative: any) => {
+              if (alternative.id === this.question.qid) {
+                alternative.id = this.qid_new;
+                found = true;
+              }
+            });
+          } else if (question.id === this.question.qid) {
+            question.id = this.qid_new;
+            found = true;
+          }
+        });
+      });
+      if (!found) {
+        logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
+      }
+      debug(`Write ${infoPath}`);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+    }
+
+    return pathsToAdd;
+  }
+
   async write() {
     assert(this.question.qid, 'question.qid is required');
 
@@ -1671,68 +1750,14 @@ export class QuestionRenameEditor extends Editor {
     const pathsToAdd: string[] = [];
 
     if (qidChanging) {
-      debug(`Move files from ${oldPath} to ${newPath}`);
-      await fs.move(oldPath, newPath, { overwrite: false });
-      await this.removeEmptyPrecedingSubfolders(questionsPath, this.question.qid);
-
-      pathsToAdd.push(oldPath, newPath);
-
-      debug(`Find all assessments (in all course instances) that contain ${this.question.qid}`);
-      const assessments = await sqldb.queryRows(
-        sql.select_assessments_with_question,
-        { question_id: this.question.id },
-        z.object({
-          course_instance_directory: CourseInstanceSchema.shape.short_name,
-          assessment_directory: AssessmentSchema.shape.tid,
-        }),
+      pathsToAdd.push(
+        ...(await this.moveQuestion({
+          oldPath,
+          newPath,
+          questionsPath,
+          existingQid: this.question.qid,
+        })),
       );
-
-      debug(
-        `For each assessment, read/write infoAssessment.json to replace ${this.question.qid} with ${this.qid_new}`,
-      );
-      for (const assessment of assessments) {
-        assert(
-          assessment.course_instance_directory !== null,
-          'course_instance_directory is required',
-        );
-        assert(assessment.assessment_directory !== null, 'assessment_directory is required');
-        const infoPath = path.join(
-          this.course.path,
-          'courseInstances',
-          assessment.course_instance_directory,
-          'assessments',
-          assessment.assessment_directory,
-          'infoAssessment.json',
-        );
-        pathsToAdd.push(infoPath);
-
-        debug(`Read ${infoPath}`);
-        const infoJson: any = await fs.readJson(infoPath);
-
-        debug(`Find/replace QID in ${infoPath}`);
-        let found = false as boolean;
-        infoJson.zones?.forEach((zone: any) => {
-          zone.questions?.forEach((question: any) => {
-            if (question.alternatives) {
-              question.alternatives?.forEach((alternative: any) => {
-                if (alternative.id === this.question.qid) {
-                  alternative.id = this.qid_new;
-                  found = true;
-                }
-              });
-            } else if (question.id === this.question.qid) {
-              question.id = this.qid_new;
-              found = true;
-            }
-          });
-        });
-        if (!found) {
-          logger.info(`Should have but did not find ${this.question.qid} in ${infoPath}`);
-        }
-        debug(`Write ${infoPath}`);
-        const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
-        await fs.writeFile(infoPath, formattedJson);
-      }
     }
 
     // Update the question title in info.json if a new title was provided.

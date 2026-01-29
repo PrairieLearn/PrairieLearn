@@ -262,15 +262,23 @@ export async function benchmarkAiQuestionGeneration({
       });
 
       const messages = await selectAiQuestionGenerationMessages(result.question);
-      const userMessage = messages.at(0);
-      const assistantMessage = messages.at(-1);
 
-      if (userMessage?.role !== 'user') {
+      if (messages.length !== 2) {
+        job.error(
+          `Expected exactly two messages for question ${result.question.id}, got ${messages.length}`,
+        );
+        continue;
+      }
+
+      const userMessage = messages[0];
+      const assistantMessage = messages[1];
+
+      if (userMessage.role !== 'user') {
         job.error(`No user message found for question ${result.question.id}`);
         continue;
       }
 
-      if (assistantMessage?.role !== 'assistant') {
+      if (assistantMessage.role !== 'assistant') {
         job.error(`No assistant message found for question ${result.question.id}`);
         continue;
       }
