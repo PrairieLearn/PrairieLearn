@@ -22,8 +22,9 @@ import z from 'zod';
 
 import { execute, loadSql, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 
-import { emptyUsage, formatPrompt, mergeUsage } from '../../../lib/ai.js';
+import { emptyUsage, formatPrompt } from '../../../lib/ai.js';
 import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';
@@ -640,14 +641,29 @@ export async function editQuestionWithAgent({
 
     const steps = await res.steps.then(
       (steps) => steps,
-      () => [],
+      (err) => {
+        job.error('Failed to get steps');
+        job.error(err);
+        Sentry.captureException(err, {
+          tags: {
+            job_sequence_id: serverJob.jobSequenceId,
+          },
+        });
+        return [];
+      },
     );
-    const totalUsage = mergeUsage(
-      emptyUsage(),
-      await res.totalUsage.then(
-        (usage) => usage,
-        () => emptyUsage(),
-      ),
+    const totalUsage = await res.totalUsage.then(
+      (usage) => usage,
+      (err) => {
+        job.error('Failed to get usage');
+        job.error(err);
+        Sentry.captureException(err, {
+          tags: {
+            job_sequence_id: serverJob.jobSequenceId,
+          },
+        });
+        return emptyUsage();
+      },
     );
 
     job.info('Finish reason: ' + (await res.finishReason));
