@@ -1270,7 +1270,7 @@ export class CourseInstanceAddEditor extends Editor {
     };
     const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.courseInstancePath if it
+    // We use outputFile to create the directory this.courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
     await fs.outputFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson, {
