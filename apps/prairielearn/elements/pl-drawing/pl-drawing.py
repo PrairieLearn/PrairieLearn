@@ -80,7 +80,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
 
     load_extensions(data)
 
-    # Some preparation for elements with grading componenet
+    # Some preparation for elements with grading component
     if gradable:
         name = pl.get_string_attrib(element, "answers-name", None)
         if name is None:
@@ -145,7 +145,7 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
         ans, n_id = render_drawing_items(answer_child, n_id)
 
         # Makes sure that all objects in pl-drawing-answer are graded
-        # and all the objects in pl-drawing--initial are not graded
+        # and all the objects in pl-drawing-initial are not graded
 
         for obj in ans:
             obj["graded"] = True
@@ -423,7 +423,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
                 return
 
             data["format_errors"][name] = defaults.no_submission_error
-    except (json.JSONDecodeError, KeyError):
+    except (json.JSONDecodeError, KeyError, TypeError):
         data["submitted_answers"][name] = None
 
         # This shouldn't happen, but we will handle it just in case
