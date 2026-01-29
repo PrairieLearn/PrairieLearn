@@ -44,12 +44,12 @@ import { selectQuestionByUuid } from '../../models/question.js';
 import { selectTagsByCourseId, selectTagsByQuestionId } from '../../models/tags.js';
 import { selectTopicsByCourseId } from '../../models/topics.js';
 
+import { InstructorQuestionSettings } from './instructorQuestionSettings.html.js';
 import {
-  InstructorQuestionSettings,
   SelectedAssessmentsSchema,
   type SharingSetRow,
   SharingSetRowSchema,
-} from './instructorQuestionSettings.html.js';
+} from './instructorQuestionSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
