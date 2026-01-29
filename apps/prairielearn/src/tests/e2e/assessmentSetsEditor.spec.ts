@@ -1,7 +1,5 @@
 import type { Locator, Page } from '@playwright/test';
 
-import { selectCourseByShortName } from '../../models/course.js';
-
 import { expect, test } from './fixtures.js';
 
 function getRowIndex(row: Locator) {
@@ -16,15 +14,13 @@ async function syncAllCourses(page: Page) {
   await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
 }
 
-let courseId: string;
+const courseId = '1';
 
 test.describe('Assessment sets editor', () => {
   test.beforeAll(async ({ browser, workerPort }) => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
     await syncAllCourses(page);
     await page.close();
-    const course = await selectCourseByShortName('QA 101');
-    courseId = course.id;
   });
 
   test('can create assessment sets and persist changes after save', async ({ page }) => {
