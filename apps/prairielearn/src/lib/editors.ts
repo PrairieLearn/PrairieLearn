@@ -1743,13 +1743,11 @@ export class QuestionRenameEditor extends Editor {
 export class AssessmentSetRenameEditor extends Editor {
   private oldName: string;
   private newName: string;
-  private courseId: string;
 
   constructor(
     params: BaseEditorOptions & {
       oldName: string;
       newName: string;
-      courseId: string;
     },
   ) {
     super({
@@ -1758,7 +1756,6 @@ export class AssessmentSetRenameEditor extends Editor {
     });
     this.oldName = params.oldName;
     this.newName = params.newName;
-    this.courseId = params.courseId;
   }
 
   async write() {
@@ -1768,7 +1765,7 @@ export class AssessmentSetRenameEditor extends Editor {
 
     const assessments = await sqldb.queryRows(
       sql.select_assessments_with_assessment_set,
-      { assessment_set_name: this.oldName, course_id: this.courseId },
+      { assessment_set_name: this.oldName, course_id: this.course.id },
       z.object({
         course_instance_directory: CourseInstanceSchema.shape.short_name,
         assessment_directory: AssessmentSchema.shape.tid,

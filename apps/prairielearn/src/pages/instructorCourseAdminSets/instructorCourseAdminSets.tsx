@@ -12,7 +12,6 @@ import { run } from '@prairielearn/run';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
-import { extractPageContext } from '../../lib/client/page-context.js';
 import {
   AssessmentSetRenameEditor,
   FileModifyEditor,
@@ -35,15 +34,10 @@ const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 router.get(
   '/',
-  typedAsyncHandler<'course'>(async (req, res) => {
-    const pageContext = extractPageContext(res.locals, {
-      pageType: 'course',
-      accessType: 'instructor',
-    });
-
+  typedAsyncHandler<'course'>(async (_req, res) => {
     const assessmentSets = await sqldb.queryRows(
       sql.select_assessment_sets,
-      { course_id: pageContext.course.id },
+      { course_id: res.locals.course.id },
       InstructorCourseAdminSetRowSchema,
     );
 
@@ -52,10 +46,10 @@ router.get(
       trackingId: crypto.randomUUID(),
     }));
 
-    const origHash = await getOriginalHash(path.join(pageContext.course.path, 'infoCourse.json'));
+    const origHash = await getOriginalHash(path.join(res.locals.course.path, 'infoCourse.json'));
 
     const allowEdit =
-      pageContext.authz_data.has_course_permission_edit && !pageContext.course.example_course;
+      res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
 
     res.send(
       PageLayout({
@@ -66,16 +60,13 @@ router.get(
           page: 'course_admin',
           subPage: 'sets',
         },
-        options: {
-          fullWidth: true,
-        },
         content: (
           <Hydrate>
             <AssessmentSetsPage
               assessmentSets={assessmentSetFormState}
               allowEdit={allowEdit}
               origHash={origHash}
-              csrfToken={pageContext.__csrf_token}
+              csrfToken={res.locals.__csrf_token}
             />
           </Hydrate>
         ),
@@ -87,27 +78,22 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'course'>(async (req, res) => {
-    const pageContext = extractPageContext(res.locals, {
-      pageType: 'course',
-      accessType: 'instructor',
-    });
-
-    if (!pageContext.authz_data.has_course_permission_edit) {
+    if (!res.locals.authz_data.has_course_permission_edit) {
       throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
     }
 
-    if (pageContext.course.example_course) {
+    if (res.locals.course.example_course) {
       throw new error.HttpStatusError(403, 'Access denied. Cannot make changes to example course.');
     }
 
     if (req.body.__action === 'save_assessment_sets') {
-      if (!(await fs.pathExists(path.join(pageContext.course.path, 'infoCourse.json')))) {
+      if (!(await fs.pathExists(path.join(res.locals.course.path, 'infoCourse.json')))) {
         throw new error.HttpStatusError(400, 'infoCourse.json does not exist');
       }
       const paths = getPaths(undefined, res.locals);
 
       const courseInfo = JSON.parse(
-        await fs.readFile(path.join(pageContext.course.path, 'infoCourse.json'), 'utf8'),
+        await fs.readFile(path.join(res.locals.course.path, 'infoCourse.json'), 'utf8'),
       );
 
       const body = z
@@ -136,6 +122,13 @@ router.post(
         })
         .filter(Boolean);
 
+      // When default/implicit assessment sets are in play,
+      // this will write them to the infoCourse.json file, and the course will cease to use the defaults.
+      // This is intentional, as this makes them more discoverable.
+
+      // In the UI, default/implicit assessment sets aren't synced/displayed if they aren't referenced
+      // by anything. The UI already enforces this referenced-by check, so instructors using this UI
+      // won't notice any difference when deleting default/implicit assessment sets.
       courseInfo.assessmentSets = propertyValueWithDefault(
         courseInfo.assessmentSets,
         resolveAssessmentSets,
@@ -146,7 +139,7 @@ router.post(
 
       const currentSets = await sqldb.queryRows(
         sql.select_assessment_sets,
-        { course_id: pageContext.course.id },
+        { course_id: res.locals.course.id },
         InstructorCourseAdminSetRowSchema,
       );
 
@@ -175,7 +168,7 @@ router.post(
           rootPath: paths.rootPath,
           invalidRootPaths: paths.invalidRootPaths,
         },
-        filePath: path.join(pageContext.course.path, 'infoCourse.json'),
+        filePath: path.join(res.locals.course.path, 'infoCourse.json'),
         editContents: b64EncodeUnicode(formattedJson),
         origHash,
       });
@@ -192,7 +185,6 @@ router.post(
                 locals: res.locals,
                 oldName: r.oldName,
                 newName: r.newName,
-                courseId: pageContext.course.id,
               }),
           ),
           fileModifyEditor,
@@ -203,7 +195,7 @@ router.post(
       try {
         await editor.executeWithServerJob(serverJob);
       } catch {
-        return res.redirect(pageContext.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
+        return res.redirect(res.locals.urlPrefix + '/edit_error/' + serverJob.jobSequenceId);
       }
       flash('success', 'Assessment sets updated successfully');
       return res.redirect(req.originalUrl);

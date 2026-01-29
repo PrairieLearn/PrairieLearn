@@ -96,7 +96,6 @@ describe('AssessmentSetRenameEditor', () => {
       locals: createMockLocals(courseDir, syncResults.courseId),
       oldName: 'Labs',
       newName: 'Laboratory Exercises',
-      courseId: syncResults.courseId,
     });
 
     const result = await editor.write();

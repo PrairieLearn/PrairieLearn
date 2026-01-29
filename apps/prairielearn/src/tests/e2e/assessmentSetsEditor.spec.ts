@@ -4,9 +4,7 @@ import path from 'node:path';
 import type { Locator, Page } from '@playwright/test';
 
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
-import { insertCoursePermissionsByUserUid } from '../../models/course-permissions.js';
 import { selectCourseByShortName } from '../../models/course.js';
-import { selectOrInsertUserByUid } from '../../models/user.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -24,14 +22,6 @@ let courseId: string;
 async function setupTestData() {
   const course = await selectCourseByShortName('QA 101');
   courseId = course.id;
-
-  const devUser = await selectOrInsertUserByUid('dev@example.com');
-  await insertCoursePermissionsByUserUid({
-    course_id: courseId,
-    uid: 'dev@example.com',
-    course_role: 'Editor',
-    authn_user_id: devUser.id,
-  });
 }
 
 function getRowIndex(row: Locator) {
