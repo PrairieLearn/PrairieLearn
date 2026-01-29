@@ -210,10 +210,6 @@ export async function aiGrade({
       return;
     }
 
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
-    }
-
     job.info(`Using model ${model_id} for AI grading.`);
     job.info(`Found ${instance_questions.length} submissions to grade!`);
 
