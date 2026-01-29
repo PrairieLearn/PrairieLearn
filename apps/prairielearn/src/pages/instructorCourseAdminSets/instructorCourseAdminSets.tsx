@@ -28,7 +28,7 @@ import { AssessmentSetsPage } from './components/AssessmentSetsTable.js';
 import {
   InstructorCourseAdminSetFormRowSchema,
   InstructorCourseAdminSetRowSchema,
-} from './instructorCourseAdminSets.shared.js';
+} from './instructorCourseAdminSets.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

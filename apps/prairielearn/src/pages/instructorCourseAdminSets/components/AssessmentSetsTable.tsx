@@ -22,7 +22,7 @@ import { OverlayTrigger, useModalState } from '@prairielearn/ui';
 
 import { AssessmentSetHeading } from '../../../components/AssessmentSetHeading.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
-import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
+import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.types.js';
 
 import {
   AssessmentSetUsageModal,

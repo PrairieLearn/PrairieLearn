@@ -3,7 +3,7 @@ import { Modal } from 'react-bootstrap';
 
 import { ColorSwatch } from '../../../components/ColorSwatch.js';
 import { ColorJsonSchema } from '../../../schemas/index.js';
-import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.shared.js';
+import type { InstructorCourseAdminSetFormRow } from '../instructorCourseAdminSets.types.js';
 
 export interface EditAssessmentSetModalData {
   mode: 'create' | 'edit';

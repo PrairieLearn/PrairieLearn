@@ -4,7 +4,7 @@ import { Modal } from 'react-bootstrap';
 import type {
   AssessmentForSet,
   InstructorCourseAdminSetFormRow,
-} from '../instructorCourseAdminSets.shared.js';
+} from '../instructorCourseAdminSets.types.js';
 
 export type AssessmentSetUsageModalData = InstructorCourseAdminSetFormRow;
 
@@ -47,10 +47,10 @@ export function AssessmentSetUsageModal({
         {data?.assessments.length === 0 ? (
           <p className="text-muted mb-0">No assessments use this assessment set.</p>
         ) : (
-          <div className="d-flex flex-column">
-            {groupedAssessments.map(([courseInstanceId, assessments], groupIndex) => (
+          <div className="d-flex flex-column gap-3">
+            {groupedAssessments.map(([courseInstanceId, assessments]) => (
               <div key={courseInstanceId}>
-                <div className={`fw-bold ${groupIndex === 0 ? 'mt-0' : 'mt-3'}`}>
+                <div className="fw-bold">
                   {assessments[0].course_instance_long_name || 'Unnamed instance'}
                   {assessments[0].course_instance_short_name && (
                     <span className="text-muted ms-1">

@@ -72,12 +72,7 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
-    const infoAssessmentPathExists = await fs.pathExists(fullInfoAssessmentPath);
-
-    let origHash = '';
-    if (infoAssessmentPathExists) {
-      origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
-    }
+    const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
     const assessmentGHLink = courseRepoContentUrl(
       res.locals.course,
