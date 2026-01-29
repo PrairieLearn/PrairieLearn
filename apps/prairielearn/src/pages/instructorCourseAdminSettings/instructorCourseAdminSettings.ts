@@ -30,11 +30,8 @@ router.get(
 
     const courseGHLink = courseRepoContentUrl(res.locals.course);
 
-    let origHash = '';
-    if (courseInfoExists) {
-      origHash =
-        (await getOriginalHash(path.join(res.locals.course.path, 'infoCourse.json'))) ?? '';
-    }
+    const origHash =
+      (await getOriginalHash(path.join(res.locals.course.path, 'infoCourse.json'))) ?? '';
 
     const aiQuestionGenerationEnabled = await features.enabled('ai-question-generation', {
       course_id: res.locals.course.id,

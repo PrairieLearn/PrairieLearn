@@ -490,12 +490,8 @@ router.get(
     });
     const infoPath = path.join('questions', res.locals.question.qid!, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
-    const questionInfoExists = await fs.pathExists(fullInfoPath);
 
-    let origHash = '';
-    if (questionInfoExists) {
-      origHash = (await getOriginalHash(fullInfoPath)) ?? '';
-    }
+    const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
 
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;

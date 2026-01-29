@@ -175,11 +175,7 @@ router.get(
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
-    let origHash: string | null = null;
-    if (infoCourseInstancePathExists) {
-      origHash = await getOriginalHash(infoCourseInstancePath);
-    }
+    const origHash = await getOriginalHash(infoCourseInstancePath);
 
     const accessRules = await queryRows(
       sql.course_instance_access_rules,

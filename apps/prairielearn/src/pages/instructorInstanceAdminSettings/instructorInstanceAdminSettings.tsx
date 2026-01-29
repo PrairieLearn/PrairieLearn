@@ -91,11 +91,7 @@ router.get(
       'infoCourseInstance.json',
     );
     const fullInfoCourseInstancePath = path.join(course.path, infoCourseInstancePath);
-    const infoCourseInfoPathExists = await fs.pathExists(fullInfoCourseInstancePath);
-    let origHash = '';
-    if (infoCourseInfoPathExists) {
-      origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
-    }
+    const origHash = (await getOriginalHash(fullInfoCourseInstancePath)) ?? '';
 
     const instanceGHLink = courseRepoContentUrl(
       course,
