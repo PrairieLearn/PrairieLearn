@@ -1797,7 +1797,7 @@ export class AssessmentSetRenameEditor extends Editor {
       pathsToAdd.push(infoPath);
 
       debug(`Read ${infoPath}`);
-      const infoJson: any = await fs.readJson(infoPath);
+      const infoJson = await fs.readJson(infoPath);
 
       debug(`Replace assessment set name in ${infoPath}`);
       infoJson.set = this.newName;
