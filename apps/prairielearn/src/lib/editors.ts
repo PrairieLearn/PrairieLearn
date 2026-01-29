@@ -1740,6 +1740,11 @@ export class QuestionRenameEditor extends Editor {
   }
 }
 
+/**
+ * This rename editor is used to rename an assessment set referenced by assessments.
+ *
+ * It does not rename the assessment set at the course level (infoCourse.json).
+ */
 export class AssessmentSetRenameEditor extends Editor {
   private oldName: string;
   private newName: string;
