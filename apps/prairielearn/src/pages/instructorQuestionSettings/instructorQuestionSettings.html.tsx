@@ -658,7 +658,6 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                   editableCourses={z.array(EditableCourseSchema).parse(editableCourses)}
                   courseId={resLocals.course.id}
                   qid={resLocals.question.qid!}
-                  // eslint-disable-next-line @prairielearn/safe-db-types
                   assessmentsWithQuestion={z
                     .array(SelectedAssessmentsSchema)
                     .parse(assessmentsWithQuestion)}

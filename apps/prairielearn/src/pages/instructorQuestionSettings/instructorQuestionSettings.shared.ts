@@ -2,19 +2,23 @@ import z from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
 
-import { AssessmentSchema, AssessmentSetSchema, CourseInstanceSchema } from '../../lib/db-types.js';
+import {
+  RawStaffAssessmentSchema,
+  RawStaffAssessmentSetSchema,
+  RawStaffCourseInstanceSchema,
+} from '../../lib/client/safe-db-types.js';
 
 export const SelectedAssessmentsSchema = z.object({
-  short_name: CourseInstanceSchema.shape.short_name,
-  long_name: CourseInstanceSchema.shape.long_name,
+  short_name: RawStaffCourseInstanceSchema.shape.short_name,
+  long_name: RawStaffCourseInstanceSchema.shape.long_name,
   course_instance_id: IdSchema,
   assessments: z.array(
     z.object({
       assessment_id: IdSchema,
-      color: AssessmentSetSchema.shape.color,
-      label: AssessmentSetSchema.shape.abbreviation,
-      title: AssessmentSchema.shape.title,
-      type: AssessmentSchema.shape.type,
+      color: RawStaffAssessmentSetSchema.shape.color,
+      label: RawStaffAssessmentSetSchema.shape.abbreviation,
+      title: RawStaffAssessmentSchema.shape.title,
+      type: RawStaffAssessmentSchema.shape.type,
     }),
   ),
 });
