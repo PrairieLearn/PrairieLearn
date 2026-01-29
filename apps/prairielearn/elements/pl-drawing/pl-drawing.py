@@ -13,7 +13,7 @@ import prairielearn as pl
 
 WEIGHT_DEFAULT = 1
 ALLOW_BLANK_DEFAULT = False
-SHOW_SCORE_DEFAULT = False  # for backwards-compatibility
+SHOW_SCORE_DEFAULT = False
 
 
 def union_drawing_items(e1: list[dict] | None, e2: list[dict] | None) -> list[dict]:
