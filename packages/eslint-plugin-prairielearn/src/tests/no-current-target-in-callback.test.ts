@@ -1,7 +1,7 @@
 import { RuleTester } from '@typescript-eslint/rule-tester';
 import { afterAll, describe, it } from 'vitest';
 
-import rule from '../rules/no-current-target-in-callback';
+import rule from '../rules/no-current-target-in-callback.js';
 
 RuleTester.afterAll = afterAll;
 RuleTester.describe = describe;
