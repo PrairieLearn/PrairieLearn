@@ -65,11 +65,11 @@ WITH
         FROM
           team_configs
         WHERE
-          id = t.team_config_id
+          id = g.team_config_id
       ) AS assessment_id,
       course_instance_id
     FROM
-      teams AS t
+      teams AS g
     WHERE
       id = coalesce(
         $team_id,

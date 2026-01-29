@@ -1,7 +1,16 @@
-import type { GenerateObjectResult, GenerateTextResult, ModelMessage, UserContent } from 'ai';
+import type {
+  GenerateObjectResult,
+  GenerateTextResult,
+  LanguageModelUsage,
+  ModelMessage,
+  UserContent,
+} from 'ai';
 import * as cheerio from 'cheerio';
+import { Redis } from 'ioredis';
+import mustache from 'mustache';
 import { z } from 'zod';
 
+import { logger } from '@prairielearn/logger';
 import {
   callRow,
   execute,
@@ -11,11 +20,14 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
+  type CourseInstance,
   GradingJobSchema,
   type InstanceQuestion,
   InstanceQuestionSchema,
@@ -28,6 +40,7 @@ import {
   VariantSchema,
 } from '../../../lib/db-types.js';
 import * as ltiOutcomes from '../../../lib/ltiOutcomes.js';
+import { RedisRateLimiter } from '../../../lib/redis-rate-limiter.js';
 
 import type { AiGradingModelId } from './ai-grading-models.shared.js';
 
@@ -57,6 +70,8 @@ export async function generatePrompt({
   submitted_answer,
   rubric_items,
   grader_guidelines,
+  params,
+  true_answer,
   model_id,
 }: {
   questionPrompt: string;
@@ -65,6 +80,8 @@ export async function generatePrompt({
   submitted_answer: Record<string, any> | null;
   rubric_items: RubricItem[];
   grader_guidelines: string | null;
+  params: Record<string, any>;
+  true_answer: Record<string, any>;
   model_id: AiGradingModelId;
 }): Promise<ModelMessage[]> {
   const input: ModelMessage[] = [];
@@ -81,7 +98,11 @@ export async function generatePrompt({
         },
         {
           role: 'user',
-          content: grader_guidelines,
+          content: mustache.render(grader_guidelines, {
+            submitted_answers: submitted_answer,
+            correct_answers: true_answer,
+            params,
+          }),
         },
       ] satisfies ModelMessage[])
     : [];
@@ -468,6 +489,63 @@ export async function toggleAiGradingMode(assessment_question_id: string): Promi
 
 export async function setAiGradingMode(assessment_question_id: string, ai_grading_mode: boolean) {
   await execute(sql.set_ai_grading_mode, { assessment_question_id, ai_grading_mode });
+}
+
+const rateLimiter = new RedisRateLimiter({
+  redis: () => {
+    if (!config.nonVolatileRedisUrl) {
+      // Redis is a hard requirement for AI grading. We don't attempt
+      // to operate without it.
+      throw new Error('nonVolatileRedisUrl must be set in config');
+    }
+
+    const redis = new Redis(config.nonVolatileRedisUrl);
+
+    redis.on('error', (err) => {
+      logger.error('AI grading Redis error', err);
+
+      // This error could happen during a specific request, but we shouldn't
+      // associate it with that request - we just happened to try to set up
+      // Redis during a given request. We'll use a fresh scope to capture this.
+      Sentry.withScope((scope) => {
+        scope.clear();
+        Sentry.captureException(err);
+      });
+    });
+    return redis;
+  },
+  keyPrefix: () => config.cacheKeyPrefix + 'ai-grading-usage:',
+  intervalSeconds: 3600,
+});
+
+/**
+ * Retrieve the Redis key for the current AI grading interval usage of a course instance
+ */
+function getIntervalUsageKey(courseInstance: CourseInstance) {
+  return `course-instance:${courseInstance.id}`;
+}
+
+/**
+ * Retrieve the AI grading usage for the course instance in the last hour interval, in US dollars
+ */
+export async function getIntervalUsage(courseInstance: CourseInstance) {
+  return rateLimiter.getIntervalUsage(getIntervalUsageKey(courseInstance));
+}
+
+/**
+ * Add the cost of an AI grading to the usage of the course instance for the current interval.
+ */
+export async function addAiGradingCostToIntervalUsage({
+  courseInstance,
+  model,
+  usage,
+}: {
+  courseInstance: CourseInstance;
+  model: keyof (typeof config)['costPerMillionTokens'];
+  usage: LanguageModelUsage;
+}) {
+  const responseCost = calculateResponseCost({ model, usage });
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(courseInstance), responseCost);
 }
 
 /**

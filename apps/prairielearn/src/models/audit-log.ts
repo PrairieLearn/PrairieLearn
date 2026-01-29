@@ -22,7 +22,7 @@ export async function insertAuditLog(auditLog: NewAuditLog): Promise<AuditLog> {
       column_name: auditLog.column_name ?? null,
       course_id: auditLog.course_id ?? null,
       course_instance_id: auditLog.course_instance_id ?? null,
-      team_id: auditLog.team_id ?? null,
+      group_id: auditLog.team_id ?? null,
       institution_id: auditLog.institution_id ?? null,
       new_state: auditLog.new_state ?? null,
       old_state: auditLog.old_state ?? null,

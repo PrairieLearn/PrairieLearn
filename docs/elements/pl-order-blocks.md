@@ -26,6 +26,7 @@ Element to arrange given blocks of code or text that are displayed initially in 
 | `allow-blank`         | boolean                                                        | false                            | Whether an empty solution area is allowed. By default, an empty solution area with no dropped blocks will not be graded (invalid format).                                                                                                                                                                                                                                                                                                                                    |
 | `file-name`           | string                                                         | `"user_code.py"`                 | Name of the file where the information from the blocks will be saved, to be used by the external grader.                                                                                                                                                                                                                                                                                                                                                                     |
 | `source-blocks-order` | `"random"`, `"ordered"`, or `"alphabetized"`                   | `"random"`                       | The order of the blocks in the source area. See more details below.                                                                                                                                                                                                                                                                                                                                                                                                          |
+| `distractor-order`    | `"random"` or `"inherit"`                                      | `"inherit"`                      | Controls whether distractors are shuffled with their associated correct block. `"random"` shuffles each correct block together with its distractors (blocks with matching `distractor-for`). `"inherit"` keeps distractors in the order determined by `source-blocks-order`. Cannot be used with `source-blocks-order="random"`. When using `"random"` with `source-blocks-order="alphabetized"`, the overall list will not be strictly alphabetical.                        |
 | `indentation`         | boolean                                                        | false                            | Enable both the ability for indentation in the solution area and the grading of the expected indentation (set by `indent` in `pl-answer`, as described below).                                                                                                                                                                                                                                                                                                               |
 | `max-incorrect`       | integer                                                        | See description                  | The maximum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                                                                                                 |
 | `min-incorrect`       | integer                                                        | See description                  | The minimum number of incorrect answers to be displayed in the source area. The incorrect answers are set using `<pl-answer correct="false">`. Defaults to displaying all incorrect answers.                                                                                                                                                                                                                                                                                 |
@@ -51,7 +52,7 @@ Within the `pl-order-blocks` element, each element must either be a `pl-answer` 
 | `distractor-for`      | string             | —       | Optional attribute on blocks where `correct=false`. Used to visually group a distractor block with a correct block that it is similar to, should match the `tag` attribute of the block that it should be visually paired with.                                                                                                                                                                                                                                                      |
 | `distractor-feedback` | string             | —       | Optional attribute, used when `correct=false` that indicates why a given block is incorrect or should not be included in the solution. Shown to the student after all attempts at a problem are exhausted, or if `feedback="first-wrong"` and the first incorrect line in their submission has `distractor-feedback`.                                                                                                                                                                |
 | `ordering-feedback`   | string             | —       | Optional attribute used when `grading-method="dag"` or `grading-method="ranking"` and `correct=true`. Used to provide specific feedback when the block is placed in the wrong position relative to other blocks. This feedback is shown to the student after submission to help clarify ordering errors.                                                                                                                                                                             |
-| `final`               | boolean            | —       | Required on exactly one `pl-answer` tag when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                                     |
+| `final`               | boolean            | —       | Required to be `true` on one or more `pl-answer` tags when `grading-method="dag"` and a <code>&vert;</code> is used to denote optional blocks.                                                                                                                                                                                                                                                                                                                                       |
 
 !!! note
 
@@ -76,11 +77,11 @@ Different ordering of the blocks in the source area defined via the attribute `s
 
 ## Optional Blocks
 
-This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings that must include the same final block. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
+This feature allows users to write `pl-order-blocks` questions using the `dag` grading method to have multiple correct orderings. This can extend existing questions utilizing the `dag` grading method to include blocks that can be either included or excluded in the final solution while still being correct. You can denote an "or" relationship between dependencies in the `depends` attribute by using the `|` operator, e.g., `depends="A|B"`.
 
 !!! note
 
-    When using optional blocks, the question must contain one block that serves as the final block in every ordering. The `pl-answer` tag that declares this block must have the attribute `final` set to `true`.
+    When using optional blocks, each correct ordering must end with one block labeled final. The `pl-answer` tags that declares these blocks must have the attribute `final` set to `true`.
     A question cannot include block groups with optional blocks.
 
 ## Optional Blocks Example
@@ -108,6 +109,11 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 ## Example implementations
 
 - [element/orderBlocks]
+- [element/orderBlocksOrdered]
+- [element/orderBlocksCode]
+- [element/orderBlocksDag]
+- [element/orderBlocksAlphabetized]
+- [element/orderBlocksInline]
 - [element/orderBlocksOptional]
 - [demo/proofBlocks]
 - [demo/autograder/python/orderBlocksRandomParams]
@@ -119,4 +125,9 @@ This feature allows users to write `pl-order-blocks` questions using the `dag` g
 [demo/autograder/python/orderblocksrandomparams]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/python/orderBlocksRandomParams
 [demo/proofblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/proofBlocks
 [element/orderblocks]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocks
+[element/orderblocksalphabetized]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksAlphabetized
+[element/orderblockscode]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksCode
+[element/orderblocksdag]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksDag
+[element/orderblocksinline]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksInline
 [element/orderblocksoptional]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOptional
+[element/orderblocksordered]: https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/element/orderBlocksOrdered

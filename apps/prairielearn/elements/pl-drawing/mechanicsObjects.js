@@ -981,7 +981,7 @@ mechanicsObjects.LatexText = fabric.util.createClass(fabric.Object, {
         use.parentNode.replaceChild(replacement, use);
       });
 
-    const exScale = 1 - MathJax.config.svg.font.params.x_height;
+    const exScale = 1 - MathJax.config.svg.fontData.defaultParams.x_height;
 
     // Convert width/height from `ex` units to `px` units. This ensures that
     // the image renders consistently regardless of the browser's configured

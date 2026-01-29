@@ -148,10 +148,10 @@ def render(element_html: str, data: pl.QuestionData) -> str:
         with open(file_path, encoding="utf-8") as f:
             text_display = f.read()
     else:
-        text_display = "" if element.text is None else str(element.text)
+        text_display = "" if element.text is None else str(element.text).strip()
 
     html_params["original_file_contents"] = base64.b64encode(
-        text_display.encode("UTF-8").strip()
+        text_display.encode("UTF-8")
     ).decode()
 
     submitted_files = data["submitted_answers"].get("_files", [])
@@ -193,9 +193,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         try:
             decoded_contents = base64.b64decode(file_contents).decode("utf-8")
             normalized = unidecode(decoded_contents)
-            file_contents = base64.b64encode(
-                normalized.encode("UTF-8").strip()
-            ).decode()
+            file_contents = base64.b64encode(normalized.encode("UTF-8")).decode()
         except UnicodeError:
             pl.add_files_format_error(
                 data, "Submitted answer is not a valid UTF-8 string."

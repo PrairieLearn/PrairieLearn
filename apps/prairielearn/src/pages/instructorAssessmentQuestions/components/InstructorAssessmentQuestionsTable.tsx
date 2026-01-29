@@ -1,7 +1,8 @@
 import clsx from 'clsx';
-import { useState } from 'preact/hooks';
-import { Fragment } from 'preact/jsx-runtime';
+import { Fragment, useState } from 'react';
 import { Dropdown } from 'react-bootstrap';
+
+import { assertNever } from '@prairielearn/utils';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import {
@@ -16,7 +17,6 @@ import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
-import { assertNever } from '../../../lib/types.js';
 
 import { ExamResetNotSupportedModal } from './ExamResetNotSupportedModal.js';
 import { ResetQuestionVariantsModal } from './ResetQuestionVariantsModal.js';
