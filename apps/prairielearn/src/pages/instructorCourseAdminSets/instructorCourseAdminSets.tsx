@@ -127,10 +127,10 @@ router.post(
             return;
           }
           return {
-            name: assessmentSet.name,
-            color: assessmentSet.color,
-            heading: assessmentSet.heading,
             abbreviation: assessmentSet.abbreviation,
+            name: assessmentSet.name,
+            heading: assessmentSet.heading,
+            color: assessmentSet.color,
             comment: assessmentSet.json_comment || undefined,
           };
         })
