@@ -76,6 +76,21 @@ This config file specifies the following things:
 
     See the [`externalGradingOptions` schema for a question `info.json` file](./schemas/infoQuestion.md/#properties/externalGradingOptions) for more information about how to set these fields in the `info.json` file.
 
+### Writing questions
+
+There are multiple ways to allow students to submit files for external grading:
+
+- The [`pl-file-editor` element](./elements/pl-file-editor.md) gives students an in-browser editor that they can use to write code.
+- The [`pl-file-upload` element](./elements/pl-file-upload.md) allows students to upload files from their own computer.
+- The [`pl-order-blocks` element](./elements/pl-order-blocks.md), using the `grading-method="external"` attribute, allows students to submit code by arranging pre-defined blocks of code in the correct order.
+- The [`pl-rich-text-editor` element](./elements/pl-rich-text-editor.md) allows students to create HTML documents.
+- The [`pl-image-capture` element](./elements/pl-image-capture.md) allows students to submit images taken with their device's camera.
+- For questions using workspaces, [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
+
+For examples of questions that allow student submissions, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
+
+If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. Files may be submitted to external graders by including them in a `_files` array on the `submitted_answers` dict. This can be done by [calling `pl.add_submitted_file()`](./python-reference/prairielearn/question_utils.md#prairielearn.question_utils.add_submitted_file) in the `parse()` method of your question or custom element. For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
+
 ### Special directories
 
 Inside the question directory, you can create a `tests` directory containing any question-specific files that you want to make available to the external grading container. These may be individual tests, input files, code files or library files that will be used during the grading process. The format of these files may vary depending on the grading image you are using.
@@ -125,7 +140,7 @@ In particular, the file system structure of the grader looks like:
 |   `-- test2
 ```
 
-## Grading results
+### Grading results
 
 Your grading process must write its results to `/grade/results/results.json`.
 
@@ -191,21 +206,6 @@ Plots or images can be added to either individual test cases or to the main outp
 - `label`: An optional label for the image (defaults to "Figure").
 
 For compatibility with older versions of external graders, the object may be replaced with a string containing only the URL.
-
-## Writing questions
-
-There are multiple ways to allow students to submit files for external grading:
-
-- The [`pl-file-editor` element](./elements/pl-file-editor.md) gives students an in-browser editor that they can use to write code.
-- The [`pl-file-upload` element](./elements/pl-file-upload.md) allows students to upload files from their own computer.
-- The [`pl-order-blocks` element](./elements/pl-order-blocks.md), using the `grading-method="external"` attribute, allows students to submit code by arranging pre-defined blocks of code in the correct order.
-- The [`pl-rich-text-editor` element](./elements/pl-rich-text-editor.md) allows students to create HTML documents.
-- The [`pl-image-capture` element](./elements/pl-image-capture.md) allows students to submit images taken with their device's camera.
-- For questions using workspaces, [the `gradedFiles` option](workspaces/index.md#infojson-for-externally-graded-workspace) identifies workspace files that will be made available to the external grader.
-
-For examples of questions that allow student submissions, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
-
-If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. Files may be submitted to external graders by including them in a `_files` array on the `submitted_answers` dict. This can be done by [calling `pl.add_submitted_file()`](./python-reference/prairielearn/question_utils.md#prairielearn.question_utils.add_submitted_file) in the `parse()` method of your question or custom element. For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
 
 ## Running locally for development
 
