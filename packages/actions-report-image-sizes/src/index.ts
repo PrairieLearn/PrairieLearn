@@ -336,7 +336,12 @@ async function main() {
 
     // If there's no previous build, we can't compare sizes, but we can still
     // report the size of the new images.
-    const oldImages = await getAllImagesFromRegistry(image, 'latest', dockerUsername, dockerPassword);
+    const oldImages = await getAllImagesFromRegistry(
+      image,
+      'latest',
+      dockerUsername,
+      dockerPassword,
+    );
 
     for (const newImage of newImages) {
       // Find the old image with the same platform. If there isn't a match
