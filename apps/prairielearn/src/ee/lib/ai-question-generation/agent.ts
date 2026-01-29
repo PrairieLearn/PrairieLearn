@@ -188,7 +188,7 @@ function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean 
       ? [
           'You are editing an existing question.',
           'This means that an existing `server.py` and `question.html` already exist.',
-          'You MUST read the contents of the existing files using the `readFiles` tool first.',
+          'You MUST read the contents of the existing files using the `readFile` tool first.',
           'This is VERY IMPORTANT: the instructor may have edited the files since you last saw them.',
           'You MUST ONLY make necessary changes to the existing files to satisfy the user requirements.',
           'You MUST NOT otherwise change the structure, style, or content of the existing files unless explicitly asked.',
