@@ -1,5 +1,3 @@
-import clsx from 'clsx';
-
 import { renderHtml } from '@prairielearn/react';
 
 import { type AssessmentInstanceUrlParts, getAssessmentInstanceUrl } from '../lib/client/url.js';
@@ -10,12 +8,10 @@ export function AssessmentBadge({
   urlPrefix,
   courseInstanceId,
   publicURL = false,
-  className,
 }: {
   assessment: { assessment_id: string; color: string; label: string };
   hideLink?: boolean;
   publicURL?: boolean;
-  className?: string;
 } & AssessmentInstanceUrlParts) {
   if (hideLink) {
     return <span className={`badge color-${assessment.color}`}>{assessment.label}</span>;
@@ -37,7 +33,7 @@ export function AssessmentBadge({
   );
 
   return (
-    <a href={link} className={clsx(`btn btn-badge color-${assessment.color}`, className)}>
+    <a href={link} className={`btn btn-badge color-${assessment.color}`}>
       {assessment.label}
     </a>
   );

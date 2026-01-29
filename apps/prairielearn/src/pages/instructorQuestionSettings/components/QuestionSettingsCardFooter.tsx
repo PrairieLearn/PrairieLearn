@@ -4,7 +4,7 @@ import { Modal } from 'react-bootstrap';
 import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
-import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.shared.js';
+import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.types.js';
 
 function CopyQuestionPopover({
   editableCourses,
@@ -158,8 +158,7 @@ export function QuestionSettingsCardFooter({
           onToggle={setShowCopyPopover}
         >
           <button type="button" className="btn btn-sm btn-primary" id="copyQuestionButton">
-            <i className="fa fa-clone" />
-            <span> Make a copy of this question</span>
+            <i className="fa fa-clone" aria-hidden="true" /> Make a copy of this question
           </button>
         </OverlayTrigger>
       )}

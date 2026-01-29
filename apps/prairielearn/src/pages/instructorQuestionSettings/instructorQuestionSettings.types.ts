@@ -6,6 +6,7 @@ import {
   RawStaffAssessmentSchema,
   RawStaffAssessmentSetSchema,
   RawStaffCourseInstanceSchema,
+  RawStaffCourseSchema,
 } from '../../lib/client/safe-db-types.js';
 
 export const SelectedAssessmentsSchema = z.object({
@@ -32,7 +33,7 @@ export const SharingSetRowSchema = z.object({
 export type SharingSetRow = z.infer<typeof SharingSetRowSchema>;
 
 export const EditableCourseSchema = z.object({
-  id: IdSchema,
-  short_name: z.string(),
+  id: RawStaffCourseSchema.shape.id,
+  short_name: RawStaffCourseSchema.shape.short_name,
 });
 export type EditableCourse = z.infer<typeof EditableCourseSchema>;

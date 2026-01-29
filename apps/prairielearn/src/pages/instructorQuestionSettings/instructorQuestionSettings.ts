@@ -49,7 +49,7 @@ import {
   SelectedAssessmentsSchema,
   type SharingSetRow,
   SharingSetRowSchema,
-} from './instructorQuestionSettings.shared.js';
+} from './instructorQuestionSettings.types.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);

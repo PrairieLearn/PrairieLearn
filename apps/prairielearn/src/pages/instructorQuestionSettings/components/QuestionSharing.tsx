@@ -1,4 +1,4 @@
-import type { SharingSetRow } from '../instructorQuestionSettings.shared.js';
+import type { SharingSetRow } from '../instructorQuestionSettings.types.js';
 
 export function QuestionSharing({
   sharePublicly,

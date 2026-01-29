@@ -27,7 +27,7 @@ import {
   type SelectedAssessments,
   SelectedAssessmentsSchema,
   type SharingSetRow,
-} from './instructorQuestionSettings.shared.js';
+} from './instructorQuestionSettings.types.js';
 
 export function InstructorQuestionSettings({
   resLocals,
