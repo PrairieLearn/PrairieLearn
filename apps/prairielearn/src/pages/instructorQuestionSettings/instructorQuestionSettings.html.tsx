@@ -653,6 +653,7 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
         </div>
         ${showFooter
           ? renderHtml(
+              // TODO: Pass full course/question objects when the whole page is hydrated.
               <Hydrate>
                 <QuestionSettingsCardFooter
                   canEdit={canEdit}
