@@ -13,11 +13,11 @@ async function fetchQuestionFiles(
   urlPrefix: string,
   questionId: string,
 ): Promise<Record<string, string>> {
-  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files`);
-  if (!response.ok) {
-    throw new Error(`Failed to fetch files: ${response.status} ${response.statusText}`);
-  }
+  const response = await fetch(`${urlPrefix}/ai_generate_editor/${questionId}/files`, {
+    headers: { Accept: 'application/json' },
+  });
   const data = await response.json();
+  if (!response.ok) throw new Error(data.error);
   return data.files;
 }
 
