@@ -456,43 +456,32 @@ function useShowSpinner({
   status: string;
   messages: QuestionGenerationUIMessage[];
 }) {
-  const [showSpinner, setShowSpinner] = useState(false);
+  const [timerElapsed, setTimerElapsed] = useState(false);
 
-  // Queue a show of the spinner after a delay when messages change.
+  const isActive = status === 'streaming' || status === 'submitted';
+
+  // The effect manages the timeout: it resets and starts a new timer when dependencies change.
   useEffect(() => {
-    if (status !== 'streaming' && status !== 'submitted') {
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-      setShowSpinner(false);
-      return;
-    }
+    // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
+    setTimerElapsed(false);
 
-    // We sometimes get empty thinking parts. We don't want to hide the spinner
-    // until we know that we're actually streaming thinking text.
-    const lastMessage = messages.at(-1);
-    const lastPart = lastMessage?.parts.at(-1);
-    if (!lastPart || lastPart.type !== 'reasoning' || lastPart.text) {
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-      setShowSpinner(false);
-    }
+    if (!isActive) return;
 
-    // If we're in a tool part that's not yet ready, we don't want to show the spinner.
-    if (
-      lastPart &&
-      isToolPart(lastPart) &&
-      ['input-streaming', 'input-available'].includes(lastPart.state)
-    ) {
-      // eslint-disable-next-line react-you-might-not-need-an-effect/no-adjust-state-on-prop-change, @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-      setShowSpinner(false);
-    }
-
-    const id = setTimeout(() => {
-      setShowSpinner(true);
-    }, 800);
-
+    const id = setTimeout(() => setTimerElapsed(true), 800);
     return () => clearTimeout(id);
-  }, [status, messages]);
+  }, [isActive, messages]);
 
-  return showSpinner;
+  // Derive whether to show the spinner from current state.
+  if (!isActive || !timerElapsed) return false;
+
+  const lastMessage = messages.at(-1);
+  const lastPart = lastMessage?.parts.at(-1);
+
+  // Show spinner when:
+  // 1. We have no parts yet (waiting for first response), or
+  // 2. We have an empty reasoning part (thinking started but no text yet)
+  // In all other cases, we have visible content so no spinner needed.
+  return !lastPart || (lastPart.type === 'reasoning' && !lastPart.text);
 }
 
 export function AiQuestionGenerationChat({
