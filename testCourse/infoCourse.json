@@ -2,8 +2,8 @@
   "name": "QA 101",
   "title": "Test Course",
   "assessmentSets": [
-    { "name": "Homework", "color": "green1", "heading": "Homeworks", "abbreviation": "HW" },
-    { "name": "Exam", "color": "brown1", "heading": "Exams", "abbreviation": "E" }
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" }
   ],
   "assessmentModules": [
     { "name": "Module1", "heading": "Module 1" },
