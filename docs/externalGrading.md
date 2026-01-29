@@ -9,7 +9,7 @@ You can define a number of resources for the external grading process:
 - A Docker image to execute your tests in, which may be:
   - A PrairieLearn-provided image;
   - A custom version of a PrairieLearn-provided image that you've built and pushed to Docker Hub;
-  - A standard public image from Docker Hub (e.g., `python:3.13`, `node:24`, etc.) that is able to execute course-specific grading scripts;
+  - A standard public image from Docker Hub (e.g., `python:3.13`, `node:24`, etc.) that can execute course-specific grading scripts;
   - A completely custom image containing scripts and resources that you've built and pushed to Docker Hub.
 - Files, scripts and other resources that are shared between questions;
 - Files, scripts, tests and other resources that are specific to individual questions.
@@ -31,11 +31,11 @@ The timestamps for each individual phase of the grading process are recorded and
 
 ## Configuring and enabling external grader support
 
-External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. The following two options are required:
+External grading configuration is done on a per-question basis. The question needs to be set to use the 'External' grading method. All configuration may be done using the question settings page, or via the `externalGradingOptions` object in a question's `info.json`. A minimal configuration for an externally-graded question includes the following two options:
 
 - `enabled`: Whether external grading is enabled for the question. Setting this value to `false` can be used as a kill switch if things start breaking.
 
-- `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is in use.
+- `image`: The Docker image that should be used for the question. This can be any image hosted publicly on Docker Hub. This property is required when external grading is enabled.
 
 Additional options are available for further customization:
 
@@ -45,7 +45,7 @@ Additional options are available for further customization:
 
 - `serverFilesCourse`: Specifies a list of files or directories that will be copied from a course's `serverFilesCourse` into the grading job. This can be useful if you want to share standard resources, such as scripts, libraries, and data files, between many questions. This property is optional.
 
-- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This is optional and defaults to 30 seconds. This should be as small as is reasonable for your jobs. This value cannot exceed 600 seconds (10 minutes).
+- `timeout`: Specifies a timeout for the grading job in seconds. If grading has not completed after that time has elapsed, the job will be killed and reported as a failure to the student. This property is optional and defaults to 30 seconds. It should be as small as is reasonable for your jobs, and cannot exceed 600 seconds (10 minutes).
 
 - `enableNetworking`: Allows the container to access the public internet. This is disabled by default to make secure, isolated execution the default behavior.
 
@@ -129,7 +129,7 @@ In particular, the file system structure of the grader looks like:
 
 Your grading process must write its results to `/grade/results/results.json`.
 
-- If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating point number in the range [0.0, 1.0]. The field `gradable` may be optionally included and set to `true` to indicate that the submission was gradable, though this is not required, as the omission of this field is equivalent to assuming that the input was gradable.
+- If the submission is gradable, the result only has one mandatory field: `score`, which is the score for the submitted attempt, and should be a floating-point number in the range [0.0, 1.0]. The field `gradable` may be optionally included and set to `true` to indicate that the submission was gradable, though this is not required, as the omission of this field is equivalent to assuming that the input was gradable.
 - If the submission is not gradable, the field `gradable` is required, and must be set to `false`. In this case, the `score` field is not needed. This indicates that the submission could not be graded, for example due to a syntax error, or if the input was missing, invalid or formatted incorrectly. In this case, the submission will be marked as "invalid, not gradable", no points will be awarded or lost, and the student will not be penalized an attempt on the question.
 
 Other than `score` and `gradable`, you may add any additional data to that object that you want. This could include information like detailed test results, stdout/stderr, compiler errors, rendered plots, and so on. Note, though, that this file should be limited to 1 MB, so you must ensure any extensive use of data takes this limit into account.
@@ -205,7 +205,7 @@ There are multiple ways to allow students to submit files for external grading:
 
 For examples of questions that allow student submissions, you can look at `PrairieLearn/exampleCourse/questions/fibonacciEditor` and `PrairieLearn/exampleCourse/questions/fibonacciUpload`.
 
-If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. Files may be submitted to external graders by including them in a `_files` array on the `submitted_answers` dict. This can be done by [calling `pl.add_submitted_file()`](./python-reference/question_utils.md#prairielearn.question_utils.add_submitted_file) in the `parse()` method of your question or custom element. For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
+If you want to write your own submission mechanism (as a custom element, for instance), you can do that as well. Files may be submitted to external graders by including them in a `_files` array on the `submitted_answers` dict. This can be done by [calling `pl.add_submitted_file()`](./python-reference/prairielearn/question_utils.md#prairielearn.question_utils.add_submitted_file) in the `parse()` method of your question or custom element. For a working example of this, see [the implementation of `pl-file-upload`](https://github.com/PrairieLearn/PrairieLearn/blob/master/apps/prairielearn/elements/pl-file-upload/pl-file-upload.py).
 
 ## Running locally for development
 
