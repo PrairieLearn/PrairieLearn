@@ -52,6 +52,13 @@ export function jsdocConfig(): TSESLint.FlatConfig.ConfigArray {
         'jsdoc/require-param': 'off',
         'jsdoc/require-returns': 'off',
         'jsdoc/tag-lines': 'off',
+        'no-restricted-syntax': [
+          'error',
+          {
+            message: 'module.exports should not be used in TypeScript files',
+            selector: 'MemberExpression[object.name="module"][property.name="exports"]',
+          },
+        ],
       },
     },
     // JavaScript files
@@ -66,19 +73,6 @@ export function jsdocConfig(): TSESLint.FlatConfig.ConfigArray {
         'jsdoc/require-param-description': 'off',
         'jsdoc/require-returns': 'off',
         'jsdoc/tag-lines': 'off',
-      },
-    },
-    // TypeScript-only: module.exports restriction
-    {
-      files: ['**/*.{ts,tsx}'],
-      rules: {
-        'no-restricted-syntax': [
-          'error',
-          {
-            message: 'module.exports should not be used in TypeScript files',
-            selector: 'MemberExpression[object.name="module"][property.name="exports"]',
-          },
-        ],
       },
     },
   ];

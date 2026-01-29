@@ -3,7 +3,8 @@ import perfectionist from 'eslint-plugin-perfectionist';
 
 /**
  * Perfectionist sorting rules.
- * All rules are off by default but pre-configured for convenient inline enabling.
+ * Most rules are off by default but pre-configured for convenient inline enabling.
+ * `sort-jsx-props` is enabled by default with callback grouping.
  */
 export function perfectionistConfig(): TSESLint.FlatConfig.ConfigArray {
   return [

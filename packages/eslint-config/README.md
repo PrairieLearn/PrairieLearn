@@ -33,7 +33,7 @@ export default [
 | `typeAwareFiles`      | `string[]` | `['**/*.{ts,tsx}']`                                   | Glob patterns for files to apply type-aware rules to    |
 | `allowDefaultProject` | `string[]` | `['*.config.ts', '*.config.mts', 'vitest.config.ts']` | Files to allow in defaultProject for type-aware linting |
 | `prairielearn`        | `boolean`  | `true`                                                | Enable `@prairielearn/eslint-plugin` rules              |
-| `prairieLearnOptions` | `object`   | `{}`                                                  | Options for the `@prairielearn/eslint-plugin` rules     |
+| `prairieLearnOptions` | `object`   | `{}`                                                  | Options for `@prairielearn/eslint-plugin` (see below)   |
 | `ignores`             | `string[]` | `[]`                                                  | Additional global ignores                               |
 | `disable`             | `object`   | `{}`                                                  | Disable specific config modules                         |
 
@@ -52,6 +52,25 @@ You can disable specific config modules:
     jsdoc: true,      // Disable JSDoc rules
     tanstack: true,   // Disable TanStack Query rules
     lodash: true,     // Disable lodash replacement rules
+  },
+});
+```
+
+### PrairieLearn Plugin Options
+
+The `prairieLearnOptions` object accepts:
+
+| Option         | Type       | Default | Description                                     |
+| -------------- | ---------- | ------- | ----------------------------------------------- |
+| `allowDbTypes` | `string[]` | `[]`    | Type names to allow in the `safe-db-types` rule |
+
+Example:
+
+```js
+...prairielearn({
+  tsconfigRootDir: import.meta.dirname,
+  prairieLearnOptions: {
+    allowDbTypes: ['SprocUsersGetDisplayedRoleSchema'],
   },
 });
 ```
@@ -75,7 +94,7 @@ This config includes rules from:
 
 ## Advanced Usage
 
-For advanced customization, you can import individual config functions:
+For advanced customization, you can import individual config functions. Note that type-aware linting requires the `tsconfigRootDir` option which is only configured by the main `prairielearn()` function:
 
 ```js
 import {

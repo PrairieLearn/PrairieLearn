@@ -1,4 +1,5 @@
 ---
+'@prairielearn/eslint-config': minor
 ---
 
 Add new shared ESLint configuration package for PrairieLearn projects.
