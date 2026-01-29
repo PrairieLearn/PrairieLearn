@@ -7,7 +7,10 @@ import { SortableContext, useSortable, verticalListSortingStrategy } from '@dnd-
 import type { CSSProperties, Dispatch } from 'react';
 
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
+import type {
+  ZoneAssessmentForm,
+  ZoneQuestionBlockForm,
+} from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
   type EditorAction,
@@ -29,7 +32,9 @@ export function AssessmentZone({
   zoneNumber,
   assessmentState,
   handleAddQuestion,
+  handleAddAlternativeGroup,
   handleEditQuestion,
+  handleEditGroup,
   handleDeleteQuestion,
   handleResetButtonClick,
   handleEditZone,
@@ -38,12 +43,15 @@ export function AssessmentZone({
   collapsedGroups,
   collapsedZones,
   dispatch,
+  targetGroupTrackingId,
 }: {
   zone: ZoneAssessmentForm;
   zoneNumber: number;
   assessmentState: AssessmentState;
   handleAddQuestion: (zoneTrackingId: string) => void;
+  handleAddAlternativeGroup: (zoneTrackingId: string) => void;
   handleEditQuestion: HandleEditQuestion;
+  handleEditGroup: (group: ZoneQuestionBlockForm) => void;
   handleDeleteQuestion: HandleDeleteQuestion;
   handleResetButtonClick: (questionId: string) => void;
   handleEditZone: (zoneTrackingId: string) => void;
@@ -52,6 +60,7 @@ export function AssessmentZone({
   collapsedGroups: Set<string>;
   collapsedZones: Set<string>;
   dispatch: Dispatch<EditorAction>;
+  targetGroupTrackingId: string | null;
 }) {
   const { editMode } = assessmentState;
   const nTableCols = getTableColumnCount(assessmentState);
@@ -114,12 +123,14 @@ export function AssessmentZone({
               zoneQuestionBlock={zoneQuestionBlock}
               assessmentState={assessmentState}
               handleEditQuestion={handleEditQuestion}
+              handleEditGroup={handleEditGroup}
               handleDeleteQuestion={handleDeleteQuestion}
               handleResetButtonClick={handleResetButtonClick}
               questionNumber={startingQuestionNumber + index}
               sortableId={zoneQuestionBlock.trackingId}
               collapsedGroups={collapsedGroups}
               dispatch={dispatch}
+              isTargetGroup={targetGroupTrackingId === zoneQuestionBlock.trackingId}
             />
           ))}
           {/* Empty zone warning - now also serves as a droppable target */}
@@ -152,12 +163,20 @@ export function AssessmentZone({
             <tr>
               <td colSpan={nTableCols} className="py-2">
                 <button
-                  className="btn btn-sm btn-outline-primary"
+                  className="btn btn-sm btn-outline-primary me-2"
                   type="button"
                   onClick={() => handleAddQuestion(zone.trackingId)}
                 >
                   <i className="fa fa-plus me-1" aria-hidden="true" />
-                  Add question in zone {zoneNumber}
+                  Add question
+                </button>
+                <button
+                  className="btn btn-sm btn-outline-secondary"
+                  type="button"
+                  onClick={() => handleAddAlternativeGroup(zone.trackingId)}
+                >
+                  <i className="fa fa-layer-group me-1" aria-hidden="true" />
+                  Add alternative group
                 </button>
               </td>
             </tr>
