@@ -1,20 +1,10 @@
 import { useState } from 'react';
 import { Modal } from 'react-bootstrap';
 
-import { OverlayTrigger, useModalState } from '@prairielearn/ui';
+import { OverlayTrigger } from '@prairielearn/ui';
 
 import { AssessmentBadge } from '../../../components/AssessmentBadge.js';
 import type { EditableCourse, SelectedAssessments } from '../instructorQuestionSettings.shared.js';
-
-export interface QuestionSettingsCardFooterProps {
-  canEdit: boolean;
-  canCopy: boolean;
-  editableCourses: EditableCourse[];
-  courseId: string;
-  qid: string;
-  assessmentsWithQuestion: SelectedAssessments[];
-  csrfToken: string;
-}
 
 function CopyQuestionPopover({
   editableCourses,
@@ -61,78 +51,67 @@ function CopyQuestionPopover({
   );
 }
 
-interface DeleteQuestionModalData {
-  qid: string;
-  assessmentsWithQuestion: SelectedAssessments[];
-}
-
 function DeleteQuestionModal({
-  data,
+  qid,
+  assessmentsWithQuestion,
   csrfToken,
   show,
   onHide,
-  onExited,
 }: {
-  data: DeleteQuestionModalData | null;
+  qid: string;
+  assessmentsWithQuestion: SelectedAssessments[];
   csrfToken: string;
   show: boolean;
   onHide: () => void;
-  onExited: () => void;
 }) {
   return (
-    <Modal show={show} onHide={onHide} onExited={onExited}>
-      <form method="POST">
-        <Modal.Header closeButton>
-          <Modal.Title>Delete question</Modal.Title>
-        </Modal.Header>
-        <Modal.Body>
-          {data && (
-            <>
-              <p>
-                Are you sure you want to delete the question <strong>{data.qid}</strong>?
-              </p>
-              {data.assessmentsWithQuestion.length > 0 && (
-                <>
-                  <p>It is included by these assessments:</p>
-                  <ul className="list-group my-4">
-                    {data.assessmentsWithQuestion.map((aWithQ) => (
-                      <li key={aWithQ.course_instance_id} className="list-group-item">
-                        <div className="h6">
-                          {aWithQ.short_name ?? <i>Unknown</i>} (
-                          {aWithQ.long_name ?? <i>Unknown</i>})
-                        </div>
-                        {aWithQ.assessments.map((assessment) => (
-                          <AssessmentBadge
-                            key={assessment.assessment_id}
-                            courseInstanceId={aWithQ.course_instance_id}
-                            assessment={assessment}
-                            className="btn"
-                          />
-                        ))}
-                      </li>
-                    ))}
-                  </ul>
-                  <p>
-                    So, if you delete it, you will be unable to sync your course content to the
-                    database until you either remove the question from these assessments or create a
-                    new question with the same QID.
-                  </p>
-                </>
-              )}
-            </>
-          )}
-        </Modal.Body>
-        <Modal.Footer>
+    <Modal show={show} onHide={onHide}>
+      <Modal.Header closeButton>
+        <Modal.Title>Delete question</Modal.Title>
+      </Modal.Header>
+      <Modal.Body>
+        <p>
+          Are you sure you want to delete the question <strong>{qid}</strong>?
+        </p>
+        {assessmentsWithQuestion.length > 0 && (
+          <>
+            <p>It is included by these assessments:</p>
+            <ul className="list-group my-4">
+              {assessmentsWithQuestion.map((aWithQ) => (
+                <li key={aWithQ.course_instance_id} className="list-group-item">
+                  <div className="h6">
+                    {aWithQ.short_name ?? <i>Unknown</i>} ({aWithQ.long_name ?? <i>Unknown</i>})
+                  </div>
+                  {aWithQ.assessments.map((assessment) => (
+                    <AssessmentBadge
+                      key={assessment.assessment_id}
+                      courseInstanceId={aWithQ.course_instance_id}
+                      assessment={assessment}
+                    />
+                  ))}
+                </li>
+              ))}
+            </ul>
+            <p>
+              So, if you delete it, you will be unable to sync your course content to the database
+              until you either remove the question from these assessments or create a new question
+              with the same QID.
+            </p>
+          </>
+        )}
+      </Modal.Body>
+      <Modal.Footer>
+        <form method="POST">
           <input type="hidden" name="__action" value="delete_question" />
           <input type="hidden" name="__csrf_token" value={csrfToken} />
-          <button type="button" className="btn btn-secondary" onClick={onHide}>
+          <button type="button" className="btn btn-secondary me-2" onClick={onHide}>
             Cancel
           </button>
           <button type="submit" className="btn btn-danger">
             Delete
           </button>
-        </Modal.Footer>
-      </form>
+        </form>
+      </Modal.Footer>
     </Modal>
   );
 }
@@ -145,13 +124,17 @@ export function QuestionSettingsCardFooter({
   qid,
   assessmentsWithQuestion,
   csrfToken,
-}: QuestionSettingsCardFooterProps) {
+}: {
+  canEdit: boolean;
+  canCopy: boolean;
+  editableCourses: EditableCourse[];
+  courseId: string;
+  qid: string;
+  assessmentsWithQuestion: SelectedAssessments[];
+  csrfToken: string;
+}) {
   const [showCopyPopover, setShowCopyPopover] = useState(false);
-  const deleteModalState = useModalState<DeleteQuestionModalData>(null);
-
-  const handleCancelCopy = () => {
-    setShowCopyPopover(false);
-  };
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   return (
     <div className="card-footer d-flex flex-wrap gap-2">
@@ -168,11 +151,11 @@ export function QuestionSettingsCardFooter({
                 editableCourses={editableCourses}
                 courseId={courseId}
                 csrfToken={csrfToken}
-                onCancel={handleCancelCopy}
+                onCancel={() => setShowCopyPopover(false)}
               />
             ),
           }}
-          onToggle={(nextShow) => setShowCopyPopover(nextShow)}
+          onToggle={setShowCopyPopover}
         >
           <button type="button" className="btn btn-sm btn-primary" id="copyQuestionButton">
             <i className="fa fa-clone" />
@@ -185,11 +168,17 @@ export function QuestionSettingsCardFooter({
           <button
             type="button"
             className="btn btn-sm btn-primary"
-            onClick={() => deleteModalState.showWithData({ qid, assessmentsWithQuestion })}
+            onClick={() => setShowDeleteModal(true)}
           >
             <i className="fa fa-times" aria-hidden="true" /> Delete this question
           </button>
-          <DeleteQuestionModal {...deleteModalState} csrfToken={csrfToken} />
+          <DeleteQuestionModal
+            qid={qid}
+            assessmentsWithQuestion={assessmentsWithQuestion}
+            csrfToken={csrfToken}
+            show={showDeleteModal}
+            onHide={() => setShowDeleteModal(false)}
+          />
         </>
       )}
     </div>
