@@ -1,3 +1,7 @@
+// This file defines a tool-calling agentic loop that can create/edit questions.
+// Is supports streaming responses via SSE, cancellation, error handling, usage
+// tracking, and message persistence.
+
 import assert from 'node:assert';
 import fs from 'node:fs/promises';
 import path from 'node:path';
