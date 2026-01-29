@@ -74,6 +74,7 @@
     "vitest": "^4.0.17"
   },
   "resolutions": {
-    "notebookjs/jsdom": "^25.0.0"
+    "notebookjs/jsdom": "^25.0.0",
+    "typescript-cp/tar": "*"
   }
 }

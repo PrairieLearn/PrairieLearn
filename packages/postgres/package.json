@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/postgres",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,8 +18,8 @@
   },
   "dependencies": {
     "@types/debug": "^4.1.12",
-    "@types/lodash": "^4.17.23",
     "@types/pg-cursor": "^2.7.2",
+    "es-toolkit": "^1.43.0",
     "multipipe": "^4.0.0",
     "pg": "^8.17.0",
     "pg-cursor": "^2.16.0",

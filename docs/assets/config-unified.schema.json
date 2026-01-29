@@ -1267,6 +1267,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
@@ -1436,6 +1440,10 @@
           "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }
