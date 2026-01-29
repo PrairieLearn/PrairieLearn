@@ -659,12 +659,10 @@ ${Object.keys(resLocals.question.external_grading_environment).length > 0 &&
                 `
             : ''}
         </div>
-        ${
-          // TODO: Switch to passing full course/question objects when the page is fully hydrated.
-          (editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
-            ? html`
-                <div class="card-footer d-flex flex-wrap gap-2">
-                  ${editableCourses.length > 0 &&
+        ${(editableCourses.length > 0 && resLocals.authz_data.has_course_permission_view) || canEdit
+          ? html`
+              <div class="card-footer d-flex flex-wrap gap-2">
+                ${editableCourses.length > 0 &&
                 resLocals.authz_data.has_course_permission_view &&
                 resLocals.question.course_id === resLocals.course.id
                   ? html`
