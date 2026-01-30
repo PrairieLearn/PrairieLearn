@@ -175,8 +175,7 @@ BEGIN
             json_comment = (valid_assessment.data->'comment'),
             share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings,
-            preferences = (valid_assessment.data->preferences)
+            sync_warnings = valid_assessment.warnings
         FROM
             (
                 SELECT
@@ -491,7 +490,8 @@ BEGIN
                         json_max_points,
                         json_max_auto_points,
                         json_force_max_points,
-                        json_tries_per_variant
+                        json_tries_per_variant,
+                        preferences
                     ) VALUES (
                         (assessment_question->>'number')::integer,
                         COALESCE(computed_manual_points, 0) + COALESCE(computed_max_auto_points, 0),
@@ -519,7 +519,8 @@ BEGIN
                         (assessment_question->>'json_max_points')::double precision,
                         (assessment_question->>'json_max_auto_points')::double precision,
                         (assessment_question->>'json_force_max_points')::boolean,
-                        (assessment_question->>'json_tries_per_variant')::integer
+                        (assessment_question->>'json_tries_per_variant')::integer,
+                        (assessment_question->'preferences')
                     )                     ON CONFLICT (question_id, assessment_id) DO UPDATE
                     SET
                         number = EXCLUDED.number,
@@ -547,7 +548,8 @@ BEGIN
                         json_max_points = EXCLUDED.json_max_points,
                         json_max_auto_points = EXCLUDED.json_max_auto_points,
                         json_force_max_points = EXCLUDED.json_force_max_points,
-                        json_tries_per_variant = EXCLUDED.json_tries_per_variant
+                        json_tries_per_variant = EXCLUDED.json_tries_per_variant,
+                        preferences = EXCLUDED.preferences
                     RETURNING aq.id INTO new_assessment_question_id;
                     new_assessment_question_ids := array_append(new_assessment_question_ids, new_assessment_question_id);
 
