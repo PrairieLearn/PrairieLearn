@@ -195,8 +195,8 @@ router.get(
       authorizedEdit: false,
       // Score panels are never rendered on the instructor question preview page.
       renderScorePanels: false,
-      // Team role permissions are not used in this context.
-      teamRolePermissions: null,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
 
     res.json(panels);

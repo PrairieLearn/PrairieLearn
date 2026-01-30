@@ -7,7 +7,7 @@ import type { ResLocalsForPage } from '../../lib/res-locals.js';
 export interface StudentGradebookTableRow {
   assessment_id: string;
   assessment_instance_id: string;
-  assessment_team_work: boolean;
+  assessment_group_work: boolean;
   title: string;
   assessment_set_heading: string;
   assessment_set_color: string;
@@ -81,7 +81,7 @@ export function StudentGradebook({
                       </td>
                       <td className="align-middle">
                         {row.title}{' '}
-                        {row.assessment_team_work && (
+                        {row.assessment_group_work && (
                           <i className="fas fa-users" aria-hidden="true" />
                         )}
                       </td>

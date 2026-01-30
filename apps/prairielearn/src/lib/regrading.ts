@@ -17,7 +17,7 @@ const sql = loadSqlEquiv(import.meta.url);
 const RegradeAssessmentInstanceInfoSchema = z.object({
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  team_name: z.string().nullable(),
+  group_name: z.string().nullable(),
   assessment_id: IdSchema,
   course_instance_id: IdSchema,
   course_id: IdSchema,
@@ -26,7 +26,7 @@ const RegradeAssessmentInstancesSchema = z.object({
   assessment_instance_id: IdSchema,
   assessment_instance_label: z.string(),
   user_uid: z.string().nullable(),
-  team_name: z.string().nullable(),
+  group_name: z.string().nullable(),
 });
 
 /**
@@ -43,10 +43,10 @@ export async function regradeAssessmentInstance(
     RegradeAssessmentInstanceInfoSchema,
   );
   const assessment_instance_label = assessmentInstance.assessment_instance_label;
-  const userOrTeam = assessmentInstance.user_uid || `group "${assessmentInstance.team_name}"`;
+  const userOrGroup = assessmentInstance.user_uid || `group "${assessmentInstance.group_name}"`;
   const serverJob = await createServerJob({
     type: 'regrade_assessment_instance',
-    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrTeam,
+    description: 'Regrade ' + assessment_instance_label + ' for ' + userOrGroup,
     userId: user_id,
     authnUserId: authn_user_id,
     courseId: assessmentInstance.course_id,
@@ -58,7 +58,7 @@ export async function regradeAssessmentInstance(
   // continue executing below to launch the jobs themselves.
 
   serverJob.executeInBackground(async (job) => {
-    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrTeam);
+    job.info('Regrading ' + assessment_instance_label + ' for ' + userOrGroup);
     const regrade = await regradeSingleAssessmentInstance({
       assessment_instance_id,
       authn_user_id,
@@ -121,13 +121,13 @@ export async function regradeAllAssessmentInstances(
     let output_count = 0;
     for (const row of assessment_instances) {
       let msg: string;
-      const userOrTeam = row.user_uid || `group "${row.team_name}"`;
+      const userOrGroup = row.user_uid || `group "${row.group_name}"`;
       try {
         const regrade = await regradeSingleAssessmentInstance({
           assessment_instance_id: row.assessment_instance_id,
           authn_user_id,
         });
-        msg = `Regraded ${row.assessment_instance_label} for ${userOrTeam}: `;
+        msg = `Regraded ${row.assessment_instance_label} for ${userOrGroup}: `;
         if (regrade.updated) {
           updated_count++;
           msg += `New score: ${Math.floor(
@@ -140,7 +140,7 @@ export async function regradeAllAssessmentInstances(
       } catch (err) {
         logger.error('error while regrading', { row, err });
         error_count++;
-        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrTeam}`;
+        msg = `ERROR updating ${row.assessment_instance_label} for ${userOrGroup}`;
       }
       output = (output == null ? '' : `${output}\n`) + msg;
 

@@ -10,16 +10,16 @@ import type { AuthzData } from './authz-data-lib.js';
 import { createCsvParser } from './csv.js';
 import { type Assessment, type CourseInstance, UserSchema } from './db-types.js';
 import { createServerJob } from './server-jobs.js';
-import { TeamOperationError, createOrAddToTeam, createTeam } from './teams.js';
+import { GroupOperationError, createGroup, createOrAddToGroup } from './teams.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-function teamUpdateLockName(assessment_id: string): string {
-  return `assessment:${assessment_id}:teams`;
+function groupUpdateLockName(assessment_id: string): string {
+  return `assessment:${assessment_id}:groups`;
 }
 
 /**
- * Update teams from a CSV file.
+ * Update groups from a CSV file.
  *
  * @param params
  * @param params.course_instance - The course instance in which the assessment exists.
@@ -30,7 +30,7 @@ function teamUpdateLockName(assessment_id: string): string {
  * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function uploadInstanceTeams({
+export async function uploadInstanceGroups({
   course_instance,
   assessment,
   csvFile,
@@ -52,7 +52,7 @@ export async function uploadInstanceTeams({
   const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    type: 'upload_teams',
+    type: 'upload_groups',
     description: `Upload group settings for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
@@ -62,7 +62,7 @@ export async function uploadInstanceTeams({
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = teamUpdateLockName(assessment.id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -85,21 +85,30 @@ export async function uploadInstanceTeams({
           totalCount = 0;
         await runInTransactionAsync(async () => {
           for await (const { record } of csvParser) {
-            const { uid, groupname: team_name } = record;
-            if (!uid || !team_name) continue;
+            const uid = record.uid;
+            // `groupname` is supported for backwards compatibility. `group_name` is preferred.
+            const group_name = record.group_name ?? record.groupname;
+
+            if (!uid) {
+              throw new Error('Missing required "uid" value in CSV row.');
+            }
+            if (!group_name) {
+              throw new Error('Missing required "group_name" value in CSV row.');
+            }
+
             totalCount++;
-            await createOrAddToTeam({
+            await createOrAddToGroup({
               course_instance,
               assessment,
-              team_name,
+              group_name,
               uids: [uid],
               authn_user_id,
               authzData,
             }).then(
               () => successCount++,
               (err) => {
-                if (err instanceof TeamOperationError) {
-                  job.error(`Error adding ${uid} to group ${team_name}: ${err.message}`);
+                if (err instanceof GroupOperationError) {
+                  job.error(`Error adding ${uid} to group ${group_name}: ${err.message}`);
                 } else {
                   throw err;
                 }
@@ -124,43 +133,43 @@ export async function uploadInstanceTeams({
 }
 
 /**
- * Randomly assign students to teams.
+ * Randomly assign students to groups.
  *
  * @param params
  * @param params.course_instance - The course instance in which the assessment exists.
  * @param params.assessment - The assessment to update.
  * @param params.user_id - The current user performing the update.
  * @param params.authn_user_id - The current authenticated user.
- * @param params.max_team_size - max size of the team
- * @param params.min_team_size - min size of the team
+ * @param params.max_group_size - max size of the group
+ * @param params.min_group_size - min size of the group
  * @param params.authzData - The authorization data for the current user.
  * @returns The job sequence ID.
  */
-export async function randomTeams({
+export async function randomGroups({
   course_instance,
   assessment,
   user_id,
   authn_user_id,
-  max_team_size,
-  min_team_size,
+  max_group_size,
+  min_group_size,
   authzData,
 }: {
   course_instance: CourseInstance;
   assessment: Assessment;
   user_id: string;
   authn_user_id: string;
-  max_team_size: number;
-  min_team_size: number;
+  max_group_size: number;
+  min_group_size: number;
   authzData: AuthzData;
 }): Promise<string> {
-  if (max_team_size < 2 || min_team_size < 1 || max_team_size < min_team_size) {
+  if (max_group_size < 2 || min_group_size < 1 || max_group_size < min_group_size) {
     throw new Error('Group Setting Requirements: max > 1; min > 0; max >= min');
   }
 
   const { assessment_label } = await selectAssessmentInfoForJob(assessment.id);
 
   const serverJob = await createServerJob({
-    type: 'random_generate_teams',
+    type: 'random_generate_groups',
     description: `Randomly generate groups for ${assessment_label}`,
     userId: user_id,
     authnUserId: authn_user_id,
@@ -170,7 +179,7 @@ export async function randomTeams({
   });
 
   serverJob.executeInBackground(async (job) => {
-    const lockName = teamUpdateLockName(assessment.id);
+    const lockName = groupUpdateLockName(assessment.id);
     job.verbose(`Trying lock ${lockName}`);
     await namedLocks.doWithLock(
       lockName,
@@ -185,58 +194,58 @@ export async function randomTeams({
         job.verbose('Randomly generate groups for ' + assessment_label);
         job.verbose('----------------------------------------');
         job.verbose('Fetching the enrollment lists...');
-        const studentsWithoutTeam = await queryRows(
-          sql.select_enrolled_students_without_team,
+        const studentsWithoutGroup = await queryRows(
+          sql.select_enrolled_students_without_group,
           { assessment_id: assessment.id },
           UserSchema,
         );
-        const numStudents = studentsWithoutTeam.length;
+        const numStudents = studentsWithoutGroup.length;
         job.verbose(
           `There are ${numStudents} students enrolled in ${assessment_label} without a group`,
         );
         job.verbose('----------------------------------------');
-        job.verbose(`Creating groups with a size between ${min_team_size} and ${max_team_size}`);
+        job.verbose(`Creating groups with a size between ${min_group_size} and ${max_group_size}`);
 
-        let teamsCreated = 0,
-          studentsInTeam = 0;
+        let groupsCreated = 0,
+          studentsGrouped = 0;
         await runInTransactionAsync(async () => {
           // Create random teams using the maximum size where possible
-          const userTeams = chunk(
-            shuffle(studentsWithoutTeam.map((user) => user.uid)),
-            max_team_size,
+          const userGroups = chunk(
+            shuffle(studentsWithoutGroup.map((user) => user.uid)),
+            max_group_size,
           );
-          // If the last team is too small, move students from larger teams to the last team
-          const smallTeam = userTeams.at(-1);
-          while (smallTeam && smallTeam.length < min_team_size) {
-            // Take one student from each large team and add them to the small team
-            const usersToMove = userTeams
-              .filter((team) => team.length > min_team_size)
-              .slice(smallTeam.length - min_team_size) // This will be negative (get the last n teams)
-              .map((team) => team.pop()!);
+          // If the last group is too small, move students from larger groups to the last group
+          const smallGroup = userGroups.at(-1);
+          while (smallGroup && smallGroup.length < min_group_size) {
+            // Take one student from each large group and add them to the small group
+            const usersToMove = userGroups
+              .filter((group) => group.length > min_group_size)
+              .slice(smallGroup.length - min_group_size) // This will be negative (get the last n groups)
+              .map((group) => group.pop()!);
             if (usersToMove.length === 0) {
               job.warn(
-                `Could not create groups with the desired sizes. One group will have a size of ${smallTeam.length}`,
+                `Could not create groups with the desired sizes. One group will have a size of ${smallGroup.length}`,
               );
               break;
             }
-            smallTeam.push(...usersToMove);
+            smallGroup.push(...usersToMove);
           }
 
-          for (const users of userTeams) {
-            await createTeam({
+          for (const users of userGroups) {
+            await createGroup({
               course_instance,
               assessment,
-              team_name: null,
+              group_name: null,
               uids: users,
               authn_user_id,
               authzData,
             }).then(
               () => {
-                teamsCreated++;
-                studentsInTeam += users.length;
+                groupsCreated++;
+                studentsGrouped += users.length;
               },
               (err) => {
-                if (err instanceof TeamOperationError) {
+                if (err instanceof GroupOperationError) {
                   job.error(err.message);
                 } else {
                   throw err;
@@ -245,11 +254,11 @@ export async function randomTeams({
             );
           }
         });
-        const errorCount = numStudents - studentsInTeam;
+        const errorCount = numStudents - studentsGrouped;
         job.verbose('----------------------------------------');
-        if (studentsInTeam !== 0) {
+        if (studentsGrouped !== 0) {
           job.verbose(
-            `Successfully grouped ${studentsInTeam} students into ${teamsCreated} groups`,
+            `Successfully grouped ${studentsGrouped} students into ${groupsCreated} groups`,
           );
         }
         if (errorCount !== 0) {

@@ -5,18 +5,25 @@
   "set": "Homework",
   "number": "5",
   "module": "Module3",
-  "groupWork": true,
-  "groupMaxSize": 5,
-  "groupMinSize": 2,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
-  "groupRoles": [
-    { "name": "Manager", "minimum": 1, "maximum": 1, "canAssignRoles": true },
-    { "name": "Recorder", "minimum": 1, "maximum": 1 },
-    { "name": "Reflector", "minimum": 1, "maximum": 1 },
-    { "name": "Contributor" }
-  ],
+  "groups": {
+    "minMembers": 2,
+    "maxMembers": 5,
+    "roles": [
+      { "name": "Manager", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Recorder", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Reflector", "minMembers": 1, "maxMembers": 1 },
+      { "name": "Contributor" }
+    ],
+    "studentPermissions": {
+      "canCreateGroup": true,
+      "canJoinGroup": true,
+      "canLeaveGroup": true
+    },
+    "rolePermissions": {
+      "canAssignRoles": ["Manager"],
+      "canView": ["Manager", "Reflector", "Recorder", "Contributor"]
+    }
+  },
   "allowAccess": [
     {
       "credit": 100,
@@ -30,7 +37,6 @@
     },
     { "credit": 0, "startDate": "2019-01-30T00:00:01" }
   ],
-  "canView": ["Manager", "Reflector", "Recorder", "Contributor"],
   "zones": [
     {
       "canSubmit": ["Recorder"],
