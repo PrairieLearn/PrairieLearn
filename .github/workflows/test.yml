@@ -243,7 +243,7 @@ jobs:
           pattern: playwright-blob-report-*
           merge-multiple: true
       - name: Merge Playwright reports
-        run: yarn playwright merge-reports --reporter dot,html,github apps/prairielearn/test-results/blob-report
+        run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
         uses: codecov/codecov-action@v5.5.2
         with:
@@ -255,3 +255,8 @@ jobs:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report
           retention-days: 7
+      # The merge-reports command always exits with 0, so we need to check if
+      # the test job succeeded and fail this job if it didn't.
+      - name: Fail if tests failed
+        if: ${{ needs.test-prairielearn-native.result != 'success' }}
+        run: exit 1
