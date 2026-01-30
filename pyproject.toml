@@ -59,16 +59,16 @@ dev = [
 
 docs = [
   "jsonschema2md==1.7.0",
-  "mdx_truly_sane_lists==1.3",
+  "mdx-truly-sane-lists==1.3",
+  "mkdocs==1.6.1",
   "mkdocs-d2-plugin==1.6.0",
   "mkdocs-exclude==1.0.2",
   "mkdocs-gen-files==0.6.0",
   "mkdocs-literate-nav==0.6.2",
   "mkdocs-material==9.7.1",
-  "mkdocs==1.6.1",
+  "mkdocstrings==1.0.2",
   "mkdocstrings-python==2.0.1",
-  "mkdocstrings==1.0.0",
-  "pymdown-extensions==10.20",
+  "pymdown-extensions==10.20.1",
   # mkdocstrings-python will format the docstrings using ruff
   # https://mkdocstrings.github.io/python/usage/configuration/signatures/#line_length
   "ruff==0.14.10",
