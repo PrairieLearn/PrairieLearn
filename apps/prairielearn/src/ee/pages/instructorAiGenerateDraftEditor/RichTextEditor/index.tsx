@@ -21,7 +21,7 @@ import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, Form } from 'react-bootstrap';
 
 import { DragHandleMenu } from './components/DragHandleMenu.js';
@@ -124,6 +124,16 @@ const RichTextEditor = ({
   const [formattedHtml, setFormattedHtml] = useState<string | null>(null);
   const [rawHtml, setRawHtml] = useState<string | null>(null);
   const [debugMode, setDebugMode] = useState<boolean>(false);
+
+  // Sync `isGenerating` to editor editable state.
+  useEffect(() => {
+    if (editor) {
+      // Shut up linter. This is how we have to do this. `useEditor` doesn't react
+      // to changes in the `editable` option after initialization.
+      // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-data-to-parent, react-you-might-not-need-an-effect/no-derived-state
+      editor.setEditable(!isGenerating);
+    }
+  }, [editor, isGenerating]);
 
   if (htmlContents === null) {
     return null;
