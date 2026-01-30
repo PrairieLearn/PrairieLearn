@@ -511,6 +511,9 @@ export async function editQuestionWithAgent({
     description: `${question ? 'Edit' : 'Generate'} a question with AI`,
     userId: user.id,
     authnUserId: authnUser.id,
+    // We never expect there to be errors during agent execution, so if there are,
+    // we want to know about them.
+    reportErrorsToSentry: true,
   });
 
   const isExistingQuestion = !!question;
