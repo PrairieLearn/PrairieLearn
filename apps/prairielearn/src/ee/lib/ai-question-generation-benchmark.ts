@@ -13,7 +13,7 @@ import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createServerJob } from '../../lib/server-jobs.js';
+import { createServerJob, getJobSequence } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 import { selectAiQuestionGenerationMessages } from '../models/ai-question-generation-message.js';
@@ -280,6 +280,7 @@ export async function benchmarkAiQuestionGeneration({
       job.info(JSON.stringify(assistantMessage, null, 2));
       job.info('\n');
 
+      const jobSequence = await getJobSequence(result.jobSequenceId, course.id);
       if (jobSequence.status === 'Error') {
         job.error(`Job sequence ${result.jobSequenceId} failed`);
       }
