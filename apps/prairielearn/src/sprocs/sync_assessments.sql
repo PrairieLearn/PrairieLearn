@@ -175,7 +175,8 @@ BEGIN
             json_comment = (valid_assessment.data->'comment'),
             share_source_publicly = (valid_assessment.data->>'share_source_publicly')::boolean,
             sync_errors = NULL,
-            sync_warnings = valid_assessment.warnings
+            sync_warnings = valid_assessment.warnings,
+            preferences = (valid_assessment.data->preferences)
         FROM
             (
                 SELECT

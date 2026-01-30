@@ -345,6 +345,95 @@
       "description": "Whether this question's source code is publicly shared.",
       "type": "boolean",
       "default": false
+    },
+    "preferences": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["type", "properties"],
+      "properties": {
+        "additionalProperties": {
+          "type": "boolean",
+          "const": false,
+          "default": false
+        },
+        "required": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "maxItems": 0,
+          "default": []
+        },
+        "type": {
+          "type": "string",
+          "const": "object"
+        },
+        "properties": {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "default"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "string"
+                  },
+                  "default": {
+                    "type": "string"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "default"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "number"
+                  },
+                  "default": {
+                    "type": "number"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["type", "default"],
+                "properties": {
+                  "type": {
+                    "type": "string",
+                    "const": "boolean"
+                  },
+                  "default": {
+                    "type": "boolean"
+                  }
+                }
+              },
+              {
+                "type": "object",
+                "additionalProperties": false,
+                "required": ["enum", "default"],
+                "properties": {
+                  "enum": {
+                    "type": "array",
+                    "items": {
+                      "type": ["string", "number"]
+                    }
+                  },
+                  "default": {
+                    "type": ["string", "number"]
+                  }
+                }
+              }
+            ]
+          },
+          "type": "object"
+        }
+      }
     }
   },
   "definitions": {

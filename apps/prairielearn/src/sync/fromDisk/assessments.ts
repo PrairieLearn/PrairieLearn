@@ -176,6 +176,7 @@ function getParamsForAssessment(
             jsonMaxPoints: alternative.maxPoints ?? null,
             jsonPoints: alternative.points ?? null,
             jsonTriesPerVariant: alternative.triesPerVariant ?? null,
+            preferences: alternative.preferences
           };
         });
       } else if (question.id) {
@@ -208,6 +209,7 @@ function getParamsForAssessment(
             jsonMaxAutoPoints: question.maxAutoPoints ?? null,
             jsonPoints: question.points ?? null,
             jsonTriesPerVariant: question.triesPerVariant ?? null,
+            preferences: question.preferences
           },
         ];
       }
@@ -292,6 +294,7 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
+          preferences: alternative.preferences
         };
       });
 

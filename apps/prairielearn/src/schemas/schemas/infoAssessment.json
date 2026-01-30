@@ -501,6 +501,16 @@
           },
           "uniqueItems": true,
           "default": []
+        },
+        "preferences": {
+          "description": "The parameters passed to the question to customize its behavior.",
+          "type": "object",
+          "additionalProperties": {
+            "$ref": "#/definitions/QuestionAlternativeJsonSchema/properties/preferences/additionalProperties"
+          },
+          "propertyNames": {
+            "minLength": 1
+          }
         }
       }
     },
@@ -554,6 +564,16 @@
         "allowRealTimeGrading": {
           "description": "Whether to allow real-time grading for this question alternative. If not specified, inherits from the question level.",
           "type": "boolean"
+        },
+        "preferences": {
+          "description": "The parameters passed to the question to customize its behavior.",
+          "type": "object",
+          "additionalProperties": {
+            "type": ["string", "number", "boolean"]
+          },
+          "propertyNames": {
+            "minLength": 1
+          }
         }
       }
     },

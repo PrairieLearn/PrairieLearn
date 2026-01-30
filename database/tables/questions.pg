@@ -41,6 +41,7 @@ columns
     workspace_image: text
     workspace_port: integer
     workspace_url_rewrite: boolean default true
+    preferences: jsonb
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)
