@@ -1,4 +1,4 @@
-import { z } from "zod";
+import { z } from 'zod';
 
 // These types are the valid types which a preference key can be
 const StringType = z.object({
