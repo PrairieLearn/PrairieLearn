@@ -6,8 +6,7 @@ import path from 'node:path';
 import { test as base } from '@playwright/test';
 import * as tmp from 'tmp-promise';
 
-import { STANDARD_COURSE_DIRS } from '../../lib/config.js';
-import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../../lib/paths.js';
+import { TEST_COURSE_PATH } from '../../lib/paths.js';
 
 import { setupWorkerServer } from './serverUtils.js';
 
@@ -48,7 +47,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
       await fs.cp(TEST_COURSE_PATH, tempTestCoursePath, { recursive: true });
 
       // The file editor requires git
-      execSync('git init', { cwd: tempTestCoursePath });
+      execSync('git init -b master', { cwd: tempTestCoursePath });
       execSync('git add -A', { cwd: tempTestCoursePath });
       execSync('git config user.name "Dev User"', { cwd: tempTestCoursePath });
       execSync('git config user.email "dev@example.com"', { cwd: tempTestCoursePath });
@@ -64,7 +63,7 @@ export const test = base.extend<TestFixtures, WorkerFixtures>({
   workerPort: [
     async ({ testCoursePath }, use, workerInfo) => {
       await setupWorkerServer(workerInfo, use, {
-        courseDirs: [...STANDARD_COURSE_DIRS, EXAMPLE_COURSE_PATH, testCoursePath],
+        courseDirs: [testCoursePath],
       });
     },
     { scope: 'worker' },
