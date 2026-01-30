@@ -8,9 +8,9 @@ BEGIN
     SELECT array_agg(u.uid ORDER BY u.uid)
     INTO uid_list
     FROM
-        team_users AS tu
-        JOIN users AS u ON (u.id = tu.user_id)
-    WHERE tu.team_id = teams_uid_list.team_id;
+        team_users AS gu
+        JOIN users AS u ON (u.id = gu.user_id)
+    WHERE gu.team_id = teams_uid_list.team_id;
 
     uid_list := coalesce(uid_list, '{}');
 END

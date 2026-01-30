@@ -82,6 +82,8 @@ Prefer interacting with the database using model functions in `apps/prairielearn
 
 Course content repositories use JSON files like `infoCourse.json`, `infoCourseInstance.json`, and `infoAssessment.json` to configure different parts of the course. The schemas for these files are stored as Zod schemas in `schemas/`. If you make a change to a schema file in `schemas/`, make sure to update the JSON schema with `make update-jsonschema`.
 
+When working with assessment "groups" / "teams", see the [`groups-and-teams` skill](./.agents/skills/groups-and-teams/SKILL.md).
+
 ## TypeScript guidance
 
 ### Library usage conventions
@@ -132,6 +134,7 @@ The PrairieLearn web application renders HTML in one of two ways:
 
 - A file at `./foo.tsx` should be imported as `./foo.js` from other files.
 - Use `clsx` in React components.
+- Inline prop definitions for components if they are not used outside of the component.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
 
