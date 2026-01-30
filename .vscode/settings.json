@@ -83,6 +83,6 @@
   "java.project.sourcePaths": ["graders/java"],
   "files.associations": {
     "**/exampleCourse/**/*.html": "htmlmustache",
-    "**/testCourse/**/*.html": "html"
+    "**/testCourse/**/*.html": "htmlmustache"
   }
 }
