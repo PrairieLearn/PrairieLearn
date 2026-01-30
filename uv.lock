@@ -145,11 +145,11 @@ wheels = [
 
 [[package]]
 name = "coloraide"
-version = "6.2"
+version = "6.2.1"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/eb/13/9fd9619da8ee25ddfeab393066f7a718c2a4c336c128488f10f99b45bcb9/coloraide-6.2.tar.gz", hash = "sha256:27482593c874af42f25559323c7b4ee4e1fe808cb4083cc3de321f6aec11a351", size = 19346427, upload-time = "2025-12-20T14:37:03.145Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/ef/0f/6e87a966e46a902e1bf4dc9542cf1e13bd430df4bdd7d735e02c190fe934/coloraide-6.2.1.tar.gz", hash = "sha256:01342bb20999f14d63706d36cd33ae325b991a4a7e6fd921183bc45841968f17", size = 19348068, upload-time = "2026-01-09T03:24:05.336Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/8e/4e/d0b537ad50c6c60181ce05cc2e06d1d30572cb60258f484096d1c36516b9/coloraide-6.2-py3-none-any.whl", hash = "sha256:bde9bfe3b05fbe641bf752912eb3ff48b1ca8b7e25db77f473e5ece86d639346", size = 272419, upload-time = "2025-12-20T14:37:01.102Z" },
+    { url = "https://files.pythonhosted.org/packages/0e/5d/682e87af9085070925b93e1f8bce774624850f8675f3128d165898041bd5/coloraide-6.2.1-py3-none-any.whl", hash = "sha256:6eb962379a8e6bf04d2f0b9aa7a6b03a89fa6f5862219bad5f286f2db6b1479f", size = 272422, upload-time = "2026-01-09T03:24:03.251Z" },
 ]
 
 [[package]]
@@ -1018,7 +1018,7 @@ requires-dist = [
     { name = "ansi2html", specifier = "==1.9.2" },
     { name = "automata-lib", specifier = "==9.2.0" },
     { name = "chevron", specifier = "==0.14.0" },
-    { name = "coloraide", specifier = "==6.2" },
+    { name = "coloraide", specifier = "==6.2.1" },
     { name = "faker", specifier = "==40.1.2" },
     { name = "jinja2", specifier = "==3.1.6" },
     { name = "lxml", specifier = "==6.0.2" },
