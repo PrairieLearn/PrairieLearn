@@ -144,7 +144,6 @@ export async function startServerSubprocess(
       // Kill the entire process group (yarn + tsx + server) using negative PID
       // This ensures SIGTERM reaches the actual server process for graceful shutdown
       if (serverProcess.pid) {
-        console.log('Sending SIGTERM...');
         process.kill(-serverProcess.pid, 'SIGTERM');
       }
 
@@ -152,15 +151,11 @@ export async function startServerSubprocess(
       setTimeout(() => {
         if (!serverProcess.killed && serverProcess.pid) {
           try {
-            console.log('Sending SIGKILL...');
             process.kill(-serverProcess.pid, 'SIGKILL');
           } catch {
             // Process may have already exited
           }
         }
-        // Resolve immediately after SIGKILL - the process cannot ignore it
-        console.log('Resolving after SIGKILL timeout...');
-        resolve();
       }, 10000);
     });
   };
