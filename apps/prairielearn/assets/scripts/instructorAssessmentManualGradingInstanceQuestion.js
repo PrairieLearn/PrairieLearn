@@ -214,7 +214,9 @@ function computePointsFromRubric(sourceInput = null) {
       if (!manualInput) return;
       const replaceAutoPoints = form.dataset.rubricReplaceAutoPoints === 'true';
       const startingPoints = Number(form.dataset.rubricStartingPoints ?? 0);
-      const itemsSum = Array.from(form.querySelectorAll('.js-selectable-rubric-item:checked'))
+      const itemsSum = Array.from(
+        form.querySelectorAll('.js-selectable-rubric-item:checked:not(.js-ai-rubric-item)'),
+      )
         .map((item) => Number(item.dataset.rubricItemPoints))
         .reduce((a, b) => a + b, startingPoints);
       const rubricValue =
