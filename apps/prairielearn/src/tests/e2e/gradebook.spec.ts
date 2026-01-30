@@ -67,11 +67,6 @@ async function createTestData(): Promise<string> {
   return assessment.label;
 }
 
-// TODO: Remove this test - it's here to test CI failure behavior
-test('intentionally failing test', async () => {
-  expect(1).toBe(2);
-});
-
 test.describe('Gradebook numeric filter', () => {
   // Request baseURL to ensure the worker fixture (and database) is initialized
   test.beforeAll(async () => {
