@@ -587,7 +587,7 @@ export async function editQuestionWithAgent({
     }
   });
 
-  serverJob.executeInBackground(async (job) => {
+  const promise = serverJob.execute(async (job) => {
     const { agent, cancellationState } = await createQuestionGenerationAgent({
       model,
       course,
@@ -703,5 +703,6 @@ export async function editQuestionWithAgent({
     question,
     message: messageRow,
     jobSequenceId: serverJob.jobSequenceId,
+    promise,
   };
 }

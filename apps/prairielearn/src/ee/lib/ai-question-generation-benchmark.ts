@@ -1,5 +1,4 @@
 import path from 'node:path';
-import { setTimeout as sleep } from 'node:timers/promises';
 
 import type { OpenAIResponsesProviderOptions } from '@ai-sdk/openai';
 import { type LanguageModel, generateObject } from 'ai';
@@ -8,15 +7,13 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
-import { run } from '@prairielearn/run';
-
 import { type OpenAIModelId, formatPrompt } from '../../lib/ai.js';
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { createServerJob, getJobSequence } from '../../lib/server-jobs.js';
+import { createServerJob } from '../../lib/server-jobs.js';
 import { insertCourse } from '../../models/course.js';
 import { syncDiskToSql } from '../../sync/syncFromDisk.js';
 import { selectAiQuestionGenerationMessages } from '../models/ai-question-generation-message.js';
@@ -253,13 +250,7 @@ export async function benchmarkAiQuestionGeneration({
       });
 
       // Wait for the job sequence to complete.
-      const jobSequence = await run(async () => {
-        while (true) {
-          const jobSequence = await getJobSequence(result.jobSequenceId, course.id);
-          if (jobSequence.status !== 'Running') return jobSequence;
-          await sleep(100);
-        }
-      });
+      await result.promise;
 
       const messages = await selectAiQuestionGenerationMessages(result.question);
 
