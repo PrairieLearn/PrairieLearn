@@ -20,6 +20,7 @@ columns
     number: integer
     options: jsonb
     partial_credit: boolean default true
+    preferences_schema: jsonb
     qid: text
     share_publicly: boolean not null default false
     share_source_publicly: boolean not null default false
@@ -41,7 +42,6 @@ columns
     workspace_image: text
     workspace_port: integer
     workspace_url_rewrite: boolean default true
-    preferences: jsonb
 
 indexes
     questions_pkey: PRIMARY KEY (id) USING btree (id)

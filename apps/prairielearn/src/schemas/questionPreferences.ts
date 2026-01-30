@@ -2,17 +2,17 @@ import { z } from "zod";
 
 // These types are the valid types which a preference key can be
 const StringType = z.object({
-  type: z.literal("string"),
+  type: z.literal('string'),
   default: z.string(),
 }).strict();
 
 const NumberType = z.object({
-  type: z.literal("number"),
+  type: z.literal('number'),
   default: z.number(),
 }).strict();
 
 const BooleanType = z.object({
-  type: z.literal("boolean"),
+  type: z.literal('boolean'),
   default: z.boolean(),
 }).strict();
 
@@ -22,14 +22,14 @@ const EnumType = z.object({
   default: z.union([z.string(), z.number()]),
 }).strict()
   .refine((data) => data.enum.includes(data.default), {
-    message: "Default value must be present in the enum options",
-    path: ["default"],
+    message: 'Default value must be present in the enum options',
+    path: ['default'],
   });
 
 const FieldSchema = z.union([StringType, NumberType, BooleanType, EnumType]);
 
 export const QuestionParameterJsonSchema = z.object({
-  type: z.literal("object"),
+  type: z.literal('object'),
   properties: z.record(z.string(), FieldSchema),
   required: z.array(z.string()).max(0).optional().default([]),
   additionalProperties: z.literal(false).optional().default(false)

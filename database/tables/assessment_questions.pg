@@ -49,6 +49,7 @@ columns
     number_submissions_hist: double precision[]
     number_submissions_variance: double precision
     points_list: double precision[]
+    preferences: jsonb
     question_id: bigint not null
     question_score_variance: double precision
     quintile_question_scores: double precision[]
@@ -58,7 +59,6 @@ columns
     submission_score_array_averages: double precision[]
     submission_score_array_variances: double precision[]
     tries_per_variant: integer default 1
-    preferences: jsonb
 
 indexes
     assessment_questions_pkey: PRIMARY KEY (id) USING btree (id)

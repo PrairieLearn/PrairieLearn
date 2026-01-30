@@ -448,6 +448,7 @@ export const AssessmentQuestionSchema = z.object({
   number_submissions_hist: z.array(z.number()).nullable(),
   number_submissions_variance: z.number().nullable(),
   points_list: z.array(z.number()).nullable(),
+  preferences: z.any().nullable(),
   question_id: IdSchema,
   question_score_variance: z.number().nullable(),
   quintile_question_scores: z.array(z.number()).nullable(),
@@ -457,7 +458,6 @@ export const AssessmentQuestionSchema = z.object({
   submission_score_array_averages: z.array(z.number()).nullable(),
   submission_score_array_variances: z.array(z.number()).nullable(),
   tries_per_variant: z.number().nullable(),
-  preferences: z.any().nullable(),
 });
 export type AssessmentQuestion = z.infer<typeof AssessmentQuestionSchema>;
 
@@ -1268,6 +1268,7 @@ export const QuestionSchema = z.object({
   number: z.number().nullable(),
   options: z.any().nullable(),
   partial_credit: z.boolean().nullable(),
+  preferences_schema: z.any().nullable(),
   qid: z.string().nullable(),
   share_publicly: z.boolean(),
   share_source_publicly: z.boolean(),
@@ -1289,7 +1290,6 @@ export const QuestionSchema = z.object({
   workspace_image: z.string().nullable(),
   workspace_port: z.number().nullable(),
   workspace_url_rewrite: z.boolean().nullable(),
-  preferences: z.any().nullable()
 });
 export type Question = z.infer<typeof QuestionSchema>;
 export const QuestionScoreLogSchema = null;
