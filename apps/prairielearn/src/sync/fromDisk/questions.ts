@@ -70,7 +70,7 @@ function getParamsForQuestion(qid: string, q: QuestionJson | null | undefined) {
     workspace_comment: workspaceOptions.comment,
     share_publicly: q.sharePublicly,
     share_source_publicly: q.shareSourcePublicly,
-    preferences_schema: q.preferences
+    preferences_schema: q.preferences,
   };
 }
 
