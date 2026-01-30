@@ -22,11 +22,11 @@ import { EnumGradingMethodSchema } from '../../lib/db-types.js';
 import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   FileModifyEditor,
-  getOriginalHash,
   MultiEditor,
   QuestionCopyEditor,
   QuestionDeleteEditor,
   QuestionRenameEditor,
+  getOriginalHash,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
 import { courseRepoContentUrl } from '../../lib/github.js';

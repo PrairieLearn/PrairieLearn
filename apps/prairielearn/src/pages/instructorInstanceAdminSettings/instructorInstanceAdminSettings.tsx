@@ -23,8 +23,8 @@ import {
   CourseInstanceDeleteEditor,
   CourseInstanceRenameEditor,
   FileModifyEditor,
-  getOriginalHash,
   MultiEditor,
+  getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';

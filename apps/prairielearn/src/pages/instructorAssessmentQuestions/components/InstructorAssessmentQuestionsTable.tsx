@@ -218,7 +218,7 @@ export function InstructorAssessmentQuestionsTable({
     setShowResetModal(true);
   };
 
-  const assessmentType = assessment.type!;
+  const assessmentType = assessment.type;
 
   const handleEditQuestion = ({
     question,
