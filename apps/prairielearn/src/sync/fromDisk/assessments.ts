@@ -14,7 +14,7 @@ import {
   type QuestionPointsJson,
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData, convertLegacyGroupsToTeams } from '../course-db.js';
+import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -105,12 +105,12 @@ function getParamsForAssessment(
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
 
-  const teams = assessment.teams ?? convertLegacyGroupsToTeams(assessment);
-  const allRoleNames = teams.roles.map((role) => role.name);
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const allRoleNames = groups.roles.map((role) => role.name);
   const assessmentCanView =
-    teams.rolePermissions.canView.length > 0 ? teams.rolePermissions.canView : allRoleNames;
+    groups.rolePermissions.canView.length > 0 ? groups.rolePermissions.canView : allRoleNames;
   const assessmentCanSubmit =
-    teams.rolePermissions.canSubmit.length > 0 ? teams.rolePermissions.canSubmit : allRoleNames;
+    groups.rolePermissions.canSubmit.length > 0 ? groups.rolePermissions.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
@@ -319,11 +319,11 @@ function getParamsForAssessment(
     });
   });
 
-  const teamRoles = teams.roles.map((role) => ({
+  const groupRoles = groups.roles.map((role) => ({
     role_name: role.name,
     minimum: role.minMembers,
     maximum: role.maxMembers,
-    can_assign_roles: teams.rolePermissions.canAssignRoles.includes(role.name),
+    can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
   }));
 
   return {
@@ -353,25 +353,25 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    team_work: teams.enabled,
-    team_max_size: teams.maxMembers ?? null,
-    team_min_size: teams.minMembers ?? null,
-    student_team_create: teams.studentPermissions.canCreateTeam,
-    student_team_choose_name: teams.studentPermissions.canNameTeam,
-    student_team_join: teams.studentPermissions.canJoinTeam,
-    student_team_leave: teams.studentPermissions.canLeaveTeam,
+    team_work: groups.enabled,
+    group_max_size: groups.maxMembers ?? null,
+    group_min_size: groups.minMembers ?? null,
+    student_group_create: groups.studentPermissions.canCreateGroup,
+    student_group_choose_name: groups.studentPermissions.canNameGroup,
+    student_group_join: groups.studentPermissions.canJoinGroup,
+    student_group_leave: groups.studentPermissions.canLeaveGroup,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: teamRoles.length > 0,
-    json_can_view: teams.rolePermissions.canView,
-    json_can_submit: teams.rolePermissions.canSubmit,
+    has_roles: groupRoles.length > 0,
+    json_can_view: groups.rolePermissions.canView,
+    json_can_submit: groups.rolePermissions.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
     modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
-    teamRoles,
+    groupRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,

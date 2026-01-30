@@ -1,5 +1,11 @@
 # @prairielearn/config
 
+## 4.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
 ## 4.0.0
 
 ### Major Changes

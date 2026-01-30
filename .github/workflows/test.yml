@@ -255,3 +255,8 @@ jobs:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report
           retention-days: 7
+      # The merge-reports command always exits with 0, so we need to check if
+      # the test job succeeded and fail this job if it didn't.
+      - name: Fail if tests failed
+        if: ${{ needs.test-prairielearn-native.result != 'success' }}
+        run: exit 1
