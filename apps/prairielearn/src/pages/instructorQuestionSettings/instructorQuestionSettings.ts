@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
@@ -26,6 +25,7 @@ import {
   QuestionCopyEditor,
   QuestionDeleteEditor,
   QuestionRenameEditor,
+  getOriginalHash,
   propertyValueWithDefault,
 } from '../../lib/editors.js';
 import { features } from '../../lib/features/index.js';
@@ -490,12 +490,8 @@ router.get(
     });
     const infoPath = path.join('questions', res.locals.question.qid!, 'info.json');
     const fullInfoPath = path.join(res.locals.course.path, infoPath);
-    const questionInfoExists = await fs.pathExists(fullInfoPath);
 
-    let origHash = '';
-    if (questionInfoExists) {
-      origHash = sha256(b64EncodeUnicode(await fs.readFile(fullInfoPath, 'utf8'))).toString();
-    }
+    const origHash = (await getOriginalHash(fullInfoPath)) ?? '';
 
     const canEdit =
       res.locals.authz_data.has_course_permission_edit && !res.locals.course.example_course;
