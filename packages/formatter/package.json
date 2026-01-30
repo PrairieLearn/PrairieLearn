@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/formatter",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -18,7 +18,7 @@
   },
   "dependencies": {
     "@js-temporal/polyfill": "^0.5.1",
-    "lodash": "^4.17.23"
+    "es-toolkit": "^1.43.0"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",

@@ -47,7 +47,6 @@ This file specifies basic information about the course:
 
 ```json title="infoCourse.json"
 {
-  "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
   "name": "TAM 212",
   "title": "Introductory Dynamics",
   "assessmentSets": [],
@@ -62,7 +61,6 @@ This file specifies basic information about the course:
 
     ```json title="infoCourse.json"
     {
-      "uuid": "cef0cbf3-6458-4f13-a418-ee4d7e7505dd",
       "name": "TAM 212",
       "title": "Introductory Dynamics",
       "assessmentSets": [

@@ -24,6 +24,8 @@ export function AdministratorInstitutionCourseInstance({
   planGrants: PlanGrant[];
   resLocals: ResLocalsForPage<'plain'>;
 }) {
+  const isDeleted = course_instance.deleted_at !== null;
+
   return PageLayout({
     resLocals: { ...resLocals, institution },
     pageTitle: `${course.short_name}, ${course_instance.short_name} - Institution Admin`,
@@ -33,8 +35,8 @@ export function AdministratorInstitutionCourseInstance({
       page: 'administrator_institution',
       subPage: 'courses',
     },
-    preContent: html`
-      <nav class="container" aria-label="Breadcrumbs">
+    content: html`
+      <nav aria-label="Breadcrumbs">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
             <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
@@ -49,11 +51,13 @@ export function AdministratorInstitutionCourseInstance({
           </li>
         </ol>
       </nav>
-    `,
-    content: html`
-      <p>
-        <a href="/pl/course_instance/${course_instance.id}/instructor">View as instructor</a>
-      </p>
+      ${isDeleted
+        ? html`<div class="alert alert-danger" role="alert">
+            <strong>This course instance has been deleted.</strong> You cannot make changes to it.
+          </div>`
+        : html`<p>
+            <a href="/pl/course_instance/${course_instance.id}/instructor">View as instructor</a>
+          </p>`}
 
       <h2 class="h4">Limits</h2>
       <form method="POST" class="mb-3">
@@ -97,21 +101,26 @@ export function AdministratorInstitutionCourseInstance({
             id="enrollment_limit"
             name="enrollment_limit"
             value="${course_instance.enrollment_limit}"
+            ${isDeleted ? 'disabled' : ''}
           />
           <small class="form-text text-muted">
             This limit overrides any course-wide or institution-wide limits. If no override is set,
             the enrollment limit from either the course or the institution (if any) will be used.
           </small>
         </div>
-        <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
-        <button
-          type="submit"
-          name="__action"
-          value="update_enrollment_limit"
-          class="btn btn-primary"
-        >
-          Save
-        </button>
+        ${isDeleted
+          ? ''
+          : html`
+              <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+              <button
+                type="submit"
+                name="__action"
+                value="update_enrollment_limit"
+                class="btn btn-primary"
+              >
+                Save
+              </button>
+            `}
       </form>
 
       <h2 class="h4">Plans</h2>
@@ -121,6 +130,7 @@ export function AdministratorInstitutionCourseInstance({
         // used for student billing for enrollments.
         excludedPlanNames: ['basic'],
         csrfToken: resLocals.__csrf_token,
+        disabled: isDeleted,
       })}
     `,
   });

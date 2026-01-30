@@ -565,6 +565,12 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
+   * The hourly spending rate limit for AI grading, in US dollars.
+   * This is applied per course instance.
+   * Accounts for both input and output tokens.
+   */
+  aiGradingRateLimitDollars: z.number().default(10),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
@@ -617,6 +623,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

@@ -1972,6 +1972,17 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dnd-kit/abstract@npm:^0.2.3":
+  version: 0.2.3
+  resolution: "@dnd-kit/abstract@npm:0.2.3"
+  dependencies:
+    "@dnd-kit/geometry": "npm:^0.2.3"
+    "@dnd-kit/state": "npm:^0.2.3"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/6ccf069533a2c07b63ff40e35b6c1e358c293c34ef863cf6853d25b6248ff6d2e50f07a0170af46318053892477742a20c94154e283b774a132a8253fc8f3f23
+  languageName: node
+  linkType: hard
+
 "@dnd-kit/accessibility@npm:^3.1.1":
   version: 3.1.1
   resolution: "@dnd-kit/accessibility@npm:3.1.1"
@@ -1980,6 +1991,17 @@ __metadata:
   peerDependencies:
     react: ">=16.8.0"
   checksum: 10c0/be0bf41716dc58f9386bc36906ec1ce72b7b42b6d1d0e631d347afe9bd8714a829bd6f58a346dd089b1519e93918ae2f94497411a61a4f5e4d9247c6cfd1fef8
+  languageName: node
+  linkType: hard
+
+"@dnd-kit/collision@npm:^0.2.3":
+  version: 0.2.3
+  resolution: "@dnd-kit/collision@npm:0.2.3"
+  dependencies:
+    "@dnd-kit/abstract": "npm:^0.2.3"
+    "@dnd-kit/geometry": "npm:^0.2.3"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/3dd696b818a192bfc1023fc5e2e3c58b981be300c4836a1fdb6f8db7637c483aacf09a7b952b5bb41f2cc2af22db84ec0a46873445a26f603ec7dc54106c8f29
   languageName: node
   linkType: hard
 
@@ -1997,6 +2019,44 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@dnd-kit/dom@npm:^0.2.3":
+  version: 0.2.3
+  resolution: "@dnd-kit/dom@npm:0.2.3"
+  dependencies:
+    "@dnd-kit/abstract": "npm:^0.2.3"
+    "@dnd-kit/collision": "npm:^0.2.3"
+    "@dnd-kit/geometry": "npm:^0.2.3"
+    "@dnd-kit/state": "npm:^0.2.3"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/6ef7f25f62320c23c753f228f03fc4f1f0c6f5532a7f46a29e51e93b7ed37f4766a972dc8b6948ffc80ae599da76cd7a89bcdcee6df3c518d55f372cca6e9899
+  languageName: node
+  linkType: hard
+
+"@dnd-kit/geometry@npm:^0.2.3":
+  version: 0.2.3
+  resolution: "@dnd-kit/geometry@npm:0.2.3"
+  dependencies:
+    "@dnd-kit/state": "npm:^0.2.3"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/5ae7135228a4095c10dfbd757495e3b5334d0d03c62aeb2380339475a86fca78a2c7a7192023cf73b0969d15435fc46f5d89fd7c5ca13ffd87d3cbeb19da18ed
+  languageName: node
+  linkType: hard
+
+"@dnd-kit/react@npm:^0.2.1":
+  version: 0.2.3
+  resolution: "@dnd-kit/react@npm:0.2.3"
+  dependencies:
+    "@dnd-kit/abstract": "npm:^0.2.3"
+    "@dnd-kit/dom": "npm:^0.2.3"
+    "@dnd-kit/state": "npm:^0.2.3"
+    tslib: "npm:^2.6.2"
+  peerDependencies:
+    react: ^18.0.0 || ^19.0.0
+    react-dom: ^18.0.0 || ^19.0.0
+  checksum: 10c0/7399853aadae4dfcdf729b66b2832477711e20c0bc59171c01afbd80dcaf0145dcd94620616a7a73b9aeb43e12a0a0789cf518aaf1aa062dfbe1ad38629654f4
+  languageName: node
+  linkType: hard
+
 "@dnd-kit/sortable@npm:^10.0.0":
   version: 10.0.0
   resolution: "@dnd-kit/sortable@npm:10.0.0"
@@ -2007,6 +2067,16 @@ __metadata:
     "@dnd-kit/core": ^6.3.0
     react: ">=16.8.0"
   checksum: 10c0/37ee48bc6789fb512dc0e4c374a96d19abe5b2b76dc34856a5883aaa96c3297891b94cc77bbc409e074dcce70967ebcb9feb40cd9abadb8716fc280b4c7f99af
+  languageName: node
+  linkType: hard
+
+"@dnd-kit/state@npm:^0.2.3":
+  version: 0.2.3
+  resolution: "@dnd-kit/state@npm:0.2.3"
+  dependencies:
+    "@preact/signals-core": "npm:^1.10.0"
+    tslib: "npm:^2.6.2"
+  checksum: 10c0/35cb52497a5109e6f4b0a0e35e482a81f5d85fb0ea40373b8c178e748eaf586ef74306faa01ea444376036a52ec2493bc7d4fc35c8c2e9be2eae09bc499fd033
   languageName: node
   linkType: hard
 
@@ -4039,12 +4109,11 @@ __metadata:
     "@prairielearn/aws-imds": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.23"
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
+    es-toolkit: "npm:^1.43.0"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.23"
     tmp-promise: "npm:^3.0.3"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4097,7 +4166,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4177,7 +4246,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
@@ -4401,15 +4470,14 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
-    "@types/lodash": "npm:^4.17.23"
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
     commander: "npm:^14.0.2"
     diff: "npm:^8.0.3"
+    es-toolkit: "npm:^1.43.0"
     fs-extra: "npm:^11.3.3"
-    lodash: "npm:^4.17.23"
     postgres-array: "npm:^3.0.4"
     typescript: "npm:^5.9.3"
     typescript-cp: "npm:^0.1.9"
@@ -4425,12 +4493,12 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
-    "@types/lodash": "npm:^4.17.23"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^24.10.9"
     "@types/pg-cursor": "npm:^2.7.2"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260106.1"
     "@vitest/coverage-v8": "npm:^4.0.17"
+    es-toolkit: "npm:^1.43.0"
     multipipe: "npm:^4.0.0"
     pg: "npm:^8.17.0"
     pg-cursor: "npm:^2.16.0"
@@ -4459,6 +4527,7 @@ __metadata:
     "@aws-sdk/credential-providers": "npm:^3.969.0"
     "@aws-sdk/lib-storage": "npm:^3.969.0"
     "@dnd-kit/core": "npm:^6.3.1"
+    "@dnd-kit/react": "npm:^0.2.1"
     "@dnd-kit/sortable": "npm:^10.0.0"
     "@dnd-kit/utilities": "npm:^3.2.2"
     "@fortawesome/fontawesome-free": "npm:^7.1.0"
@@ -4630,6 +4699,7 @@ __metadata:
     dompurify: "npm:^3.3.1"
     dropzone: "npm:^5.9.3"
     es-main: "npm:^1.4.0"
+    es-toolkit: "npm:^1.43.0"
     execa: "npm:^9.6.1"
     express: "npm:^4.22.1"
     express-async-handler: "npm:^1.2.0"
@@ -4654,7 +4724,6 @@ __metadata:
     http-proxy-middleware: "npm:^3.0.5"
     http-status: "npm:^2.1.0"
     ioredis: "npm:^5.9.1"
-    is-plain-obj: "npm:^4.1.0"
     isbinaryfile: "npm:^6.0.0"
     jju: "npm:^1.4.0"
     jose: "npm:^6.1.3"
@@ -4723,7 +4792,7 @@ __metadata:
     stripe: "npm:^20.1.2"
     superjson: "npm:^2.2.6"
     tablesorter: "npm:^2.32.0"
-    tar: "npm:^7.5.5"
+    tar: "npm:^7.5.7"
     three: "npm:0.160.1"
     tmp: "npm:^0.2.5"
     tmp-promise: "npm:^3.0.3"
@@ -4855,7 +4924,7 @@ __metadata:
     "@vitest/coverage-v8": "npm:^4.0.17"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
-    lodash: "npm:^4.17.23"
+    es-toolkit: "npm:^1.43.0"
     typescript: "npm:^5.9.3"
     vitest: "npm:^4.0.17"
   languageName: unknown
@@ -4958,7 +5027,6 @@ __metadata:
     express-async-handler: "npm:^1.2.0"
     fast-glob: "npm:^3.3.3"
     ioredis: "npm:^5.9.1"
-    lodash: "npm:^4.17.23"
     minimist: "npm:^1.2.8"
     node-fetch: "npm:3.3.2"
     nodemon: "npm:^3.1.11"
@@ -5005,6 +5073,13 @@ __metadata:
     zod: "npm:^3.25.76"
   languageName: unknown
   linkType: soft
+
+"@preact/signals-core@npm:^1.10.0":
+  version: 1.12.2
+  resolution: "@preact/signals-core@npm:1.12.2"
+  checksum: 10c0/25ccf7639522179452ee4636290cd70573048c613bc1fffaa5f5deecd0a750611c170c954769ba3c71fca97aa4b951edcdd3a2b2c96b172c87e4ba3bc81ddccd
+  languageName: node
+  linkType: hard
 
 "@protobufjs/aspromise@npm:^1.1.1, @protobufjs/aspromise@npm:^1.1.2":
   version: 1.1.2
@@ -12428,6 +12503,18 @@ __metadata:
   languageName: node
   linkType: hard
 
+"es-toolkit@npm:^1.43.0":
+  version: 1.44.0
+  resolution: "es-toolkit@npm:1.44.0"
+  dependenciesMeta:
+    "@trivago/prettier-plugin-sort-imports@4.3.0":
+      unplugged: true
+    prettier-plugin-sort-re-exports@0.0.1:
+      unplugged: true
+  checksum: 10c0/b80ff52ddc85ba26914cda57c9d4e46379ccc38c60dc097ef0d065cc0b20f95a16cf8d537969eea600b51c6687b5900a6cce67489db16d5ccc14d47597a29c34
+  languageName: node
+  linkType: hard
+
 "es6-promise@npm:^4.2.8":
   version: 4.2.8
   resolution: "es6-promise@npm:4.2.8"
@@ -19708,16 +19795,16 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:*, tar@npm:^7.5.2, tar@npm:^7.5.5":
-  version: 7.5.6
-  resolution: "tar@npm:7.5.6"
+"tar@npm:*, tar@npm:^7.5.2, tar@npm:^7.5.7":
+  version: 7.5.7
+  resolution: "tar@npm:7.5.7"
   dependencies:
     "@isaacs/fs-minipass": "npm:^4.0.0"
     chownr: "npm:^3.0.0"
     minipass: "npm:^7.1.2"
     minizlib: "npm:^3.1.0"
     yallist: "npm:^5.0.0"
-  checksum: 10c0/08af3807035957650ad5f2a300c49ca4fe0566ac0ea5a23741a5b5103c6da42891a9eeaed39bc1fbcf21c5cac4dc846828a004727fb08b9d946322d3144d1fd2
+  checksum: 10c0/51f261afc437e1112c3e7919478d6176ea83f7f7727864d8c2cce10f0b03a631d1911644a567348c3063c45abdae39718ba97abb073d22aa3538b9a53ae1e31c
   languageName: node
   linkType: hard
 

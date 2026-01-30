@@ -7,53 +7,53 @@ WHERE
   assessment_id = $assessment_id
   AND deleted_at IS NULL;
 
--- BLOCK select_team_users
+-- BLOCK select_group_users
 WITH
-  assessment_teams AS (
+  assessment_groups AS (
     SELECT
-      t.id,
-      t.name
+      g.id,
+      g.name
     FROM
-      teams AS t
+      teams AS g
     WHERE
-      t.deleted_at IS NULL
-      AND t.team_config_id = $team_config_id
+      g.deleted_at IS NULL
+      AND g.team_config_id = $group_config_id
   ),
-  assessment_team_users AS (
+  assessment_group_users AS (
     SELECT
-      t.id AS team_id,
+      g.id AS team_id,
       COUNT(u.uid)::integer AS size,
       jsonb_agg(jsonb_build_object('uid', u.uid, 'id', u.id)) AS users
     FROM
-      assessment_teams AS t
-      JOIN team_users AS tu ON (tu.team_id = t.id)
-      JOIN users AS u ON (u.id = tu.user_id)
+      assessment_groups AS g
+      JOIN team_users AS gu ON (gu.team_id = g.id)
+      JOIN users AS u ON (u.id = gu.user_id)
     GROUP BY
-      t.id
+      g.id
   )
 SELECT
-  at.id AS team_id,
-  at.name,
-  COALESCE(atu.size, 0) AS size,
-  COALESCE(atu.users, '[]'::jsonb) AS users
+  ag.id AS group_id,
+  ag.name,
+  COALESCE(agu.size, 0) AS size,
+  COALESCE(agu.users, '[]'::jsonb) AS users
 FROM
-  assessment_teams AS at
-  LEFT JOIN assessment_team_users AS atu ON (atu.team_id = at.id)
+  assessment_groups AS ag
+  LEFT JOIN assessment_group_users AS agu ON (agu.team_id = ag.id)
 ORDER BY
-  at.id;
+  ag.id;
 
--- BLOCK select_not_in_team
+-- BLOCK select_not_in_group
 SELECT
   u.uid
 FROM
-  teams AS t
-  JOIN team_users AS tu ON tu.team_id = t.id
-  AND t.team_config_id = $team_config_id
-  AND t.deleted_at IS NULL
-  RIGHT JOIN enrollments AS e ON e.user_id = tu.user_id -- noqa: CV08
+  teams AS g
+  JOIN team_users AS gu ON gu.team_id = g.id
+  AND g.team_config_id = $group_config_id
+  AND g.deleted_at IS NULL
+  RIGHT JOIN enrollments AS e ON e.user_id = gu.user_id -- noqa: CV08
   JOIN users AS u ON u.id = e.user_id
 WHERE
-  t.id IS NULL
+  g.id IS NULL
   AND e.course_instance_id = $course_instance_id
   AND NOT users_is_instructor_in_course_instance (e.user_id, e.course_instance_id)
 ORDER BY
