@@ -264,6 +264,7 @@ export async function aiGrade({
         params: variant.params ?? {},
         true_answer: variant.true_answer ?? {},
         model_id,
+        hasImage
       });
 
       // If the submission contains images, prompt the model to transcribe any relevant information
