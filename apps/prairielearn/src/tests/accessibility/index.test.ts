@@ -8,13 +8,13 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import expressListEndpoints, { type Endpoint } from '@prairielearn/express-list-endpoints';
 import * as sqldb from '@prairielearn/postgres';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { config } from '../../lib/config.js';
 import { features } from '../../lib/features/index.js';
 import { TEST_COURSE_PATH } from '../../lib/paths.js';
-import { assertNever } from '../../lib/types.js';
 import { selectCourseInstanceById } from '../../models/course-instances.js';
 import { ensureUncheckedEnrollment } from '../../models/enrollment.js';
 import * as server from '../../server.js';
@@ -89,6 +89,9 @@ async function checkPage(url: string) {
   const validationResults = await validator.validateString(text, {
     plugins: [Bootstrap4ConstructPlugin],
     rules: {
+      // React 19's renderToString outputs camelCase attribute names (e.g., colSpan
+      // instead of colspan). HTML is case-insensitive, so we accept both.
+      'attr-case': ['error', { style: ['lowercase', 'camelcase'] }],
       'bootstrap4-construct': 'error',
       'attribute-boolean-style': 'off',
       'attribute-empty-style': 'off',
@@ -101,6 +104,9 @@ async function checkPage(url: string) {
       'no-trailing-whitespace': 'off',
       'script-type': 'off',
       'unique-landmark': 'off',
+      // React 19's useId() generates IDs like "_R_1lc_" which don't begin with a
+      // letter. We use relaxed mode to allow any non-empty ID without whitespace.
+      'valid-id': ['error', { relaxed: true }],
       'void-style': 'off',
       'wcag/h63': 'off',
       // We use `role="radiogroup"` and `role="radio"` for custom radio buttons.

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';

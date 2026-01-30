@@ -15,11 +15,13 @@ import {
   CourseInstanceSelfEnrollmentForm,
   type SelfEnrollmentFormValues,
 } from '../../../components/CourseInstanceSelfEnrollmentForm.js';
+import { CourseInstanceShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import {
   getCourseInstanceEditErrorUrl,
   getCourseInstanceSettingsUrl,
 } from '../../../lib/client/url.js';
+import { validateShortName } from '../../../lib/short-name.js';
 
 interface CopyFormValues
   extends PublishingFormValues, SelfEnrollmentFormValues, PermissionsFormValues {
@@ -104,8 +106,7 @@ export function CopyCourseInstanceModal({
     },
   });
 
-  const onFormSubmit = async (data: CopyFormValues, event?: React.FormEvent) => {
-    event?.preventDefault();
+  const onFormSubmit = async (data: CopyFormValues) => {
     void copyMutation.mutate(data);
   };
 
@@ -133,7 +134,7 @@ export function CopyCourseInstanceModal({
             )}
 
             <div className="mb-3">
-              <label className="form-label" for="copy-long-name">
+              <label className="form-label" htmlFor="copy-long-name">
                 Long name
               </label>
               <input
@@ -161,7 +162,7 @@ export function CopyCourseInstanceModal({
             </div>
 
             <div className="mb-3">
-              <label className="form-label" for="copy-short-name">
+              <label className="form-label" htmlFor="copy-short-name">
                 Short name
               </label>
               <input
@@ -174,16 +175,14 @@ export function CopyCourseInstanceModal({
                 placeholder={courseInstance.short_name}
                 {...register('short_name', {
                   required: 'Short name is required',
-                  pattern: {
-                    value: /^[-A-Za-z0-9_/]+$/,
-                    message: 'Use only letters, numbers, dashes, and underscores, with no spaces',
+                  validate: (value) => {
+                    const result = validateShortName(value);
+                    return result.valid || result.message;
                   },
                 })}
               />
               <small id="copy-short-name-help" className="form-text text-muted">
-                A short name, such as &quot;Fa25&quot; or &quot;W25b&quot;. This is used in menus
-                and headers where a short description is required. Use only letters, numbers,
-                dashes, and underscores, with no spaces.
+                <CourseInstanceShortNameDescription />
               </small>
               {errors.short_name && (
                 <div className="invalid-feedback" id="copy-short-name-error">

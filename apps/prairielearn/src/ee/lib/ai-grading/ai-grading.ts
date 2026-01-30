@@ -5,11 +5,13 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { logResponseUsage } from '../../../lib/ai.js';
@@ -28,7 +30,6 @@ import { getQuestionCourse } from '../../../lib/question-variant.js';
 import { createServerJob } from '../../../lib/server-jobs.js';
 import { emitServerJobProgressUpdate } from '../../../lib/serverJobProgressSocket.js';
 import { JobItemStatus } from '../../../lib/serverJobProgressSocket.shared.js';
-import { assertNever } from '../../../lib/types.js';
 import { updateCourseInstanceUsagesForAiGrading } from '../../../models/course-instance-usages.js';
 import { selectCompleteRubric } from '../../../models/rubrics.js';
 import * as questionServers from '../../../question-servers/index.js';
@@ -36,9 +37,11 @@ import * as questionServers from '../../../question-servers/index.js';
 import { AI_GRADING_MODEL_PROVIDERS, type AiGradingModelId } from './ai-grading-models.shared.js';
 import { selectGradingJobsInfo } from './ai-grading-stats.js';
 import {
+  addAiGradingCostToIntervalUsage,
   containsImageCapture,
   correctGeminiMalformedRubricGradingJson,
   generatePrompt,
+  getIntervalUsage,
   insertAiGradingJob,
   parseAiRubricItems,
   selectInstanceQuestionsForAssessmentQuestion,
@@ -49,6 +52,7 @@ import type { AIGradingLog, AIGradingLogger } from './types.js';
 const sql = loadSqlEquiv(import.meta.url);
 
 const PARALLEL_SUBMISSION_GRADING_LIMIT = 20;
+const HOURLY_USAGE_CAP_REACHED_MESSAGE = 'Hourly usage cap reached. Try again later.';
 
 /**
  * Grade instance questions using AI.
@@ -156,7 +160,7 @@ export async function aiGrade({
     }
   });
 
-  const item_statuses = instance_questions.reduce(
+  let item_statuses = instance_questions.reduce(
     (acc, instance_question) => {
       acc[instance_question.id] = JobItemStatus.queued;
       return acc;
@@ -173,6 +177,32 @@ export async function aiGrade({
   });
 
   serverJob.executeInBackground(async (job) => {
+    let rateLimitExceeded =
+      (await getIntervalUsage(course_instance)) > config.aiGradingRateLimitDollars;
+
+    // If the rate limit has already been exceeded, log it and exit early.
+    if (rateLimitExceeded) {
+      job.error("You've reached the hourly usage cap for AI grading. Please try again later.");
+
+      item_statuses = instance_questions.reduce(
+        (acc, instance_question) => {
+          acc[instance_question.id] = JobItemStatus.failed;
+          return acc;
+        },
+        {} as Record<string, JobItemStatus>,
+      );
+
+      await emitServerJobProgressUpdate({
+        job_sequence_id: serverJob.jobSequenceId,
+        num_complete: instance_questions.length,
+        num_failed: instance_questions.length,
+        num_total: instance_questions.length,
+        job_failure_message: HOURLY_USAGE_CAP_REACHED_MESSAGE,
+        item_statuses,
+      });
+      return;
+    }
+
     if (!assessment_question.max_manual_points) {
       job.fail('The assessment question has no manual grading');
     }
@@ -193,6 +223,28 @@ export async function aiGrade({
       instance_question: InstanceQuestion,
       logger: AIGradingLogger,
     ): Promise<boolean> => {
+      if (rateLimitExceeded) {
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        return false;
+      }
+
+      // Since other jobs may be concurrently running, we could exceed the rate limit
+      // by 19 requests worth of usage. We are okay with this potential race condition.
+      const intervalCost = await getIntervalUsage(course_instance);
+
+      if (intervalCost > config.aiGradingRateLimitDollars) {
+        logger.error(
+          "You've reached the hourly usage cap for AI grading. Please try again later. AI grading jobs that are still in progress will continue to completion.",
+        );
+        logger.error(
+          `Skipping instance question ${instance_question.id} since the rate limit has been exceeded.`,
+        );
+        rateLimitExceeded = true;
+        return false;
+      }
+
       // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
       const shouldUpdateScore = !instanceQuestionGradingJobs[instance_question.id]?.some(
         (job) => job.grading_method === 'Manual',
@@ -238,6 +290,21 @@ export async function aiGrade({
 
       const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
+      const mustacheParams = {
+        correct_answers: submission.true_answer ?? {},
+        params: submission.params ?? {},
+        submitted_answers: submission.submitted_answer,
+      };
+      for (const rubric_item of rubric_items) {
+        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
+        rubric_item.explanation = rubric_item.explanation
+          ? mustache.render(rubric_item.explanation, mustacheParams)
+          : null;
+        rubric_item.grader_note = rubric_item.grader_note
+          ? mustache.render(rubric_item.grader_note, mustacheParams)
+          : null;
+      }
+
       const input = await generatePrompt({
         questionPrompt,
         questionAnswer,
@@ -245,6 +312,8 @@ export async function aiGrade({
         submitted_answer: submission.submitted_answer,
         rubric_items,
         grader_guidelines: rubric?.grader_guidelines ?? null,
+        params: variant.params ?? {},
+        true_answer: variant.true_answer ?? {},
         model_id,
       });
 
@@ -417,6 +486,12 @@ export async function aiGrade({
           });
         }
 
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: model_id,
+          usage: response.usage,
+        });
+
         logger.info('AI rubric items:');
 
         for (const item of appliedRubricDescription) {
@@ -515,6 +590,12 @@ export async function aiGrade({
           });
         }
 
+        await addAiGradingCostToIntervalUsage({
+          courseInstance: course_instance,
+          model: model_id,
+          usage: response.usage,
+        });
+
         logger.info(`AI score: ${response.object.score}`);
       }
 
@@ -554,6 +635,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
 
           const gradingSuccessful = await gradeInstanceQuestion(instance_question, logger);
@@ -580,6 +662,7 @@ export async function aiGrade({
             num_failed,
             num_total: instance_questions.length,
             item_statuses,
+            job_failure_message: rateLimitExceeded ? HOURLY_USAGE_CAP_REACHED_MESSAGE : undefined,
           });
           for (const log of logs) {
             switch (log.messageType) {

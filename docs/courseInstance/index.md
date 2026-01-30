@@ -100,6 +100,10 @@ By default, only students that belong to the course's institution can access the
 
     Most users will not need to migrate from `allowAccess` to publishing manually. Copying or creating a course instance in the UI will automatically switch to the new publishing system. If you would like to migrate manually, you can follow the steps below.
 
+!!! warning "LTI 1.1 courses should not migrate"
+
+    Courses using LTI 1.1 should not migrate to the new publishing system. LTI 1.1 requires an `allowAccess` rule with `"institution": "LTI"` to function properly.
+
 To migrate from `allowAccess` to publishing extensions:
 
 ??? example "Sample old `allowAccess` configuration"
@@ -165,10 +169,6 @@ Students can enroll in a course instance through a few different ways:
 
 3. They can be invited to a course instance by an instructor. Instructors can invite students to a course instance by visiting the "Students" tab of the course instance and clicking the "Invite" button. Invites will show up on the student's PrairieLearn homepage.
 
-!!! tip "Course listing page has been removed"
-
-    The courses listing page was removed in January 2026 in favor of the new self-enrollment system. Instructors should provide their students with either an enrollment code or a direct link to their course instance. Both of these can be found on the course instance settings page.
-
 ### Enrollment security
 
 There are a few settings that can be changed to control who can enroll in a course instance, and when they can enroll.
@@ -218,6 +218,10 @@ If you want to disable self-enrollment completely, you can set the `enabled` pro
 ```
 
 ### Individual student management
+
+!!! warning "Not available with legacy access control"
+
+    Individual student management features are not available for courses using legacy access control (`allowAccess`). To use these features, you must [migrate to the new publishing system](#migrating-from-allowaccess).
 
 #### Inviting students
 

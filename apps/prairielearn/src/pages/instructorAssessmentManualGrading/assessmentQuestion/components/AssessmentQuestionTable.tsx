@@ -12,9 +12,8 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useEffect, useMemo, useRef, useState } from 'preact/compat';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Button, Dropdown, Modal } from 'react-bootstrap';
-import { z } from 'zod';
 
 import {
   OverlayTrigger,
@@ -47,16 +46,17 @@ import {
   GRADING_STATUS_VALUES,
   type GradingStatusValue,
   type InstanceQuestionRowWithAIGradingStats as InstanceQuestionRow,
-  InstanceQuestionRowWithAIGradingStatsSchema as InstanceQuestionRowSchema,
   type InstanceQuestionRowWithAIGradingStats,
 } from '../assessmentQuestion.types.js';
 import { type ColumnId, createColumns } from '../utils/columnDefinitions.js';
 import { createColumnFilters } from '../utils/columnFilters.js';
 import { generateAiGraderName } from '../utils/columnUtils.js';
+import type { ManualGradingTrpcClient } from '../utils/trpc-client.js';
 import { type useManualGradingActions } from '../utils/useManualGradingActions.js';
 
 import type { ConflictModalState } from './GradingConflictModal.js';
 import type { GroupInfoModalState } from './GroupInfoModal.js';
+import { QueryErrors } from './QueryErrors.js';
 import { RubricItemsFilter } from './RubricItemsFilter.js';
 
 const DEFAULT_SORT: SortingState = [];
@@ -72,6 +72,7 @@ export interface AssessmentQuestionTableProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  trpcClient: ManualGradingTrpcClient;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -86,16 +87,7 @@ export interface AssessmentQuestionTableProps {
   initialOngoingJobSequenceTokens: Record<string, string> | null;
   onSetGroupInfoModalState: (modalState: GroupInfoModalState) => void;
   onSetConflictModalState: (modalState: ConflictModalState) => void;
-  mutations: {
-    batchActionMutation: ReturnType<typeof useManualGradingActions>['batchActionMutation'];
-    handleBatchAction: ReturnType<typeof useManualGradingActions>['handleBatchAction'];
-    deleteAiGradingJobsMutation: ReturnType<
-      typeof useManualGradingActions
-    >['deleteAiGradingJobsMutation'];
-    deleteAiGroupingsMutation: ReturnType<
-      typeof useManualGradingActions
-    >['deleteAiGroupingsMutation'];
-  };
+  mutations: ReturnType<typeof useManualGradingActions>;
 }
 
 function AiGradingOptionContent({ text, numToGrade }: { text: string; numToGrade: number }) {
@@ -150,6 +142,7 @@ function AiGradingOption({
 export function AssessmentQuestionTable({
   hasCourseInstancePermissionEdit,
   csrfToken,
+  trpcClient,
   instanceQuestionsInfo: initialInstanceQuestionsInfo,
   urlPrefix,
   assessment,
@@ -240,21 +233,7 @@ export function AssessmentQuestionTable({
     isError: isInstanceQuestionsError,
   } = useQuery<InstanceQuestionRow[]>({
     queryKey: ['instance-questions'],
-    queryFn: async () => {
-      const res = await fetch(window.location.pathname + '/instances.json', {
-        headers: {
-          Accept: 'application/json',
-        },
-      });
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error);
-      }
-      if (!data.instance_questions) throw new Error('Invalid response format');
-      const parsedData = z.array(InstanceQuestionRowSchema).safeParse(data.instance_questions);
-      if (!parsedData.success) throw new Error('Failed to parse instance questions');
-      return parsedData.data;
-    },
+    queryFn: async () => await trpcClient.instances.query(),
     staleTime: Infinity,
     initialData: initialInstanceQuestionsInfo,
   });
@@ -360,7 +339,7 @@ export function AssessmentQuestionTable({
       rubric_grading_item_ids: setRubricItemsFilter,
       ai_grading_status: undefined,
       uid: undefined,
-      user_or_team_name: undefined,
+      user_or_group_name: undefined,
       select: undefined,
       index: undefined,
     };
@@ -463,7 +442,7 @@ export function AssessmentQuestionTable({
           return [col.id, aiGradingMode];
         }
         // Some columns are always hidden by default.
-        if (['user_or_team_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
+        if (['user_or_group_name', 'uid', 'points', 'rubric_grading_item_ids'].includes(col.id!)) {
           return [col.id, false];
         }
 
@@ -545,7 +524,7 @@ export function AssessmentQuestionTable({
   // Determine student info checkbox state based on column visibility
   const studentInfoCheckboxState = useMemo(() => {
     const visibility = columnVisibility;
-    const nameVisible = visibility.user_or_team_name;
+    const nameVisible = visibility.user_or_group_name;
     const uidVisible = visibility.uid;
 
     if (nameVisible && uidVisible) return 'checked';
@@ -553,8 +532,16 @@ export function AssessmentQuestionTable({
     return 'unchecked';
   }, [columnVisibility]);
 
+  // Ref for the student info checkbox to handle indeterminate state
+  const studentInfoCheckboxRef = useRef<HTMLInputElement>(null);
+  useEffect(() => {
+    if (studentInfoCheckboxRef.current) {
+      studentInfoCheckboxRef.current.indeterminate = studentInfoCheckboxState === 'indeterminate';
+    }
+  }, [studentInfoCheckboxState]);
+
   // Handle student info checkbox click - toggles between checked (both visible) and unchecked (both hidden)
-  const handleStudentInfoCheckboxClick = () => {
+  const handleStudentInfoCheckboxClick = useCallback(() => {
     const currentState = studentInfoCheckboxState;
     const currentVisibility = table.getState().columnVisibility;
 
@@ -563,20 +550,20 @@ export function AssessmentQuestionTable({
       // Checked -> Unchecked (hide both)
       newVisibility = {
         ...currentVisibility,
-        user_or_team_name: false,
+        user_or_group_name: false,
         uid: false,
       };
     } else {
       // Unchecked or Indeterminate -> Checked (show both)
       newVisibility = {
         ...currentVisibility,
-        user_or_team_name: true,
+        user_or_group_name: true,
         uid: true,
       };
     }
 
     void setColumnVisibility(newVisibility);
-  };
+  }, [studentInfoCheckboxState, table, setColumnVisibility]);
 
   const selectedRows = table.getSelectedRowModel().rows;
   const selectedIds = selectedRows.map((row) => row.original.instance_question.id);
@@ -612,10 +599,12 @@ export function AssessmentQuestionTable({
   }, [instanceQuestionsInfo, selectedIds]);
 
   const {
-    batchActionMutation,
-    handleBatchAction,
     deleteAiGradingJobsMutation,
     deleteAiGroupingsMutation,
+    setRequiresManualGradingMutation,
+    setAssignedGraderMutation,
+    gradeSubmissionsMutation,
+    groupSubmissionMutation,
   } = mutations;
 
   const columnFiltersComponents = createColumnFilters({
@@ -657,36 +646,16 @@ export function AssessmentQuestionTable({
           onDismissCompleteJobSequence={serverJobProgress.handleDismissCompleteJobSequence}
         />
       )}
-      {batchActionMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => batchActionMutation.reset()}
-        >
-          <strong>Error:</strong> {batchActionMutation.error.message}
-        </Alert>
-      )}
-      {deleteAiGradingJobsMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => deleteAiGradingJobsMutation.reset()}
-        >
-          <strong>Error:</strong> {deleteAiGradingJobsMutation.error.message}
-        </Alert>
-      )}
-      {deleteAiGroupingsMutation.isError && (
-        <Alert
-          variant="danger"
-          className="mb-3"
-          dismissible
-          onClose={() => deleteAiGroupingsMutation.reset()}
-        >
-          <strong>Error:</strong> {deleteAiGroupingsMutation.error.message}
-        </Alert>
-      )}
+      <QueryErrors
+        queries={[
+          deleteAiGradingJobsMutation,
+          deleteAiGroupingsMutation,
+          gradeSubmissionsMutation,
+          groupSubmissionMutation,
+          setAssignedGraderMutation,
+          setRequiresManualGradingMutation,
+        ]}
+      />
       {deleteAiGradingJobsMutation.isSuccess && (
         <Alert
           variant="success"
@@ -730,9 +699,9 @@ export function AssessmentQuestionTable({
             <div className="px-2 py-1 d-flex align-items-center">
               <label className="form-check text-nowrap d-flex align-items-stretch">
                 <input
+                  ref={studentInfoCheckboxRef}
                   type="checkbox"
                   checked={studentInfoCheckboxState === 'checked'}
-                  indeterminate={studentInfoCheckboxState === 'indeterminate'}
                   className="form-check-input"
                   onChange={handleStudentInfoCheckboxClick}
                 />
@@ -764,19 +733,17 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.humanGraded}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate(
+                        gradeSubmissionsMutation.mutate(
                           {
-                            action: 'ai_grade_assessment_graded',
-                            modelId,
+                            selection: 'human_graded',
+                            model_id: modelId,
                           },
                           {
                             onSuccess: (data) => {
-                              if (data && 'job_sequence_token' in data) {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                              }
+                              serverJobProgress.handleAddOngoingJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token,
+                              );
                             },
                           },
                         );
@@ -787,19 +754,21 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.selected}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        handleBatchAction(
-                          { batch_action: 'ai_grade_assessment_selected', model_id: modelId },
-                          selectedIds,
-                          (data) => {
-                            if (data && 'job_sequence_token' in data) {
+                        gradeSubmissionsMutation.mutate(
+                          {
+                            selection: selectedIds,
+                            model_id: modelId,
+                          },
+                          {
+                            onSuccess: (data) => {
                               serverJobProgress.handleAddOngoingJobSequence(
                                 data.job_sequence_id,
                                 data.job_sequence_token,
                               );
-                            }
+                              table.resetRowSelection();
+                            },
                           },
                         );
-                        table.resetRowSelection();
                       }}
                     />
                     <AiGradingOption
@@ -807,19 +776,17 @@ export function AssessmentQuestionTable({
                       numToGrade={aiGradingCounts.all}
                       aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
                       onSelectModel={(modelId) => {
-                        batchActionMutation.mutate(
+                        gradeSubmissionsMutation.mutate(
                           {
-                            action: 'ai_grade_assessment_all',
-                            modelId,
+                            selection: 'all',
+                            model_id: modelId,
                           },
                           {
                             onSuccess: (data) => {
-                              if (data && 'job_sequence_token' in data) {
-                                serverJobProgress.handleAddOngoingJobSequence(
-                                  data.job_sequence_id,
-                                  data.job_sequence_token,
-                                );
-                              }
+                              serverJobProgress.handleAddOngoingJobSequence(
+                                data.job_sequence_id,
+                                data.job_sequence_token,
+                              );
                             },
                           },
                         );
@@ -897,7 +864,12 @@ export function AssessmentQuestionTable({
                   {courseStaff.map((grader) => (
                     <Dropdown.Item
                       key={grader.id}
-                      onClick={() => handleBatchAction({ assigned_grader: grader.id }, selectedIds)}
+                      onClick={() =>
+                        setAssignedGraderMutation.mutate({
+                          assigned_grader: grader.id,
+                          instance_question_ids: selectedIds,
+                        })
+                      }
                     >
                       <i className="fas fa-user-tag" /> Assign to: {grader.name || ''} ({grader.uid}
                       )
@@ -905,7 +877,12 @@ export function AssessmentQuestionTable({
                   ))}
                   <Dropdown.Item
                     key="remove-grader-assignment"
-                    onClick={() => handleBatchAction({ assigned_grader: null }, selectedIds)}
+                    onClick={() =>
+                      setAssignedGraderMutation.mutate({
+                        assigned_grader: null,
+                        instance_question_ids: selectedIds,
+                      })
+                    }
                   >
                     <i className="fas fa-user-slash" /> Remove grader assignment
                   </Dropdown.Item>
@@ -913,7 +890,10 @@ export function AssessmentQuestionTable({
                   <Dropdown.Item
                     key="tag-as-required-grading"
                     onClick={() =>
-                      handleBatchAction({ requires_manual_grading: true }, selectedIds)
+                      setRequiresManualGradingMutation.mutate({
+                        requires_manual_grading: true,
+                        instance_question_ids: selectedIds,
+                      })
                     }
                   >
                     <i className="fas fa-tag" /> Tag as required grading
@@ -921,7 +901,10 @@ export function AssessmentQuestionTable({
                   <Dropdown.Item
                     key="tag-as-graded"
                     onClick={() =>
-                      handleBatchAction({ requires_manual_grading: false }, selectedIds)
+                      setRequiresManualGradingMutation.mutate({
+                        requires_manual_grading: false,
+                        instance_question_ids: selectedIds,
+                      })
                     }
                   >
                     <i className="fas fa-check-square" /> Tag as graded
@@ -952,7 +935,7 @@ export function AssessmentQuestionTable({
             },
             {
               name: assessment.team_work ? 'Group Name' : 'Name',
-              value: row.user_or_team_name || '',
+              value: row.user_or_group_name || '',
             },
             { name: assessment.team_work ? 'UIDs' : 'UID', value: row.uid || '' },
             {

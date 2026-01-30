@@ -97,6 +97,8 @@ check-dependencies:
 
 check-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts check
+check-npm-packages:
+	@node scripts/check-npm-packages.mjs
 update-jsonschema:
 	@yarn dlx tsx scripts/gen-jsonschema.mts && yarn prettier --write "apps/prairielearn/src/schemas/**/*.json" && yarn prettier --write "docs/assets/*.schema.json"
 
@@ -120,7 +122,7 @@ lint-docs-links: build-docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
+	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" --ignore "**/test-results/**" --ignore .claude "**/*.md"
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
@@ -155,11 +157,14 @@ format-python:
 	@uv run ruff check --fix ./
 	@uv run ruff format ./
 
+format-changed:
+	@node scripts/format-changed.mjs
+
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:
-	@yarn tsc -p contrib
+	@yarn tsgo -p contrib --noEmit
 typecheck-scripts:
-	@yarn tsc -p scripts
+	@yarn tsgo -p scripts --noEmit
 typecheck-js:
 	@yarn turbo run build
 typecheck-python: python-deps

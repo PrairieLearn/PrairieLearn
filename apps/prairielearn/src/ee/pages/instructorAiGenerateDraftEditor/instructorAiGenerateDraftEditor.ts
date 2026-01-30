@@ -24,7 +24,7 @@ import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectQuestionById } from '../../../models/question.js';
+import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
@@ -37,7 +37,10 @@ import {
   RateLimitExceeded,
 } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
-import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
+import {
+  DraftNotFound,
+  InstructorAiGenerateDraftEditor,
+} from './instructorAiGenerateDraftEditor.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -171,16 +174,35 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
-    res.locals.question = await selectQuestionById(req.params.question_id);
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const question = await selectOptionalQuestionById(req.params.question_id);
 
-    // Ensure the question belongs to this course and that it's a draft question.
     if (
-      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
-      !res.locals.question.draft
+      question == null ||
+      !idsEqual(question.course_id, res.locals.course.id) ||
+      question.deleted_at != null ||
+      !question.draft
     ) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
+      // If the question exists, belongs to this course, is non-deleted, but
+      // is no longer a draft (i.e. it was finalized), redirect to the question
+      // preview. This handles the common case of a user pressing the browser
+      // back button after finalizing a question.
+      if (
+        question != null &&
+        idsEqual(question.course_id, res.locals.course.id) &&
+        question.deleted_at == null &&
+        !question.draft
+      ) {
+        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+        return;
+      }
+
+      // Otherwise, show an informational page.
+      res.status(404).send(DraftNotFound({ resLocals: res.locals }));
+      return;
     }
+
+    res.locals.question = question;
 
     assertCanCreateQuestion(res.locals);
 
@@ -232,7 +254,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -268,9 +290,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.id,
-      });
+      const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
       const approxPromptCost = approximatePromptCost({
         model: QUESTION_GENERATION_OPENAI_MODEL,
@@ -306,9 +326,8 @@ router.post(
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.id,
+        user: res.locals.authn_user,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {

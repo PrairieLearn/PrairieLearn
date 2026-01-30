@@ -525,7 +525,7 @@ describe('audit-event', () => {
         assessmentId: '1',
         assessmentInstanceId: '1',
         assessmentQuestionId: '1',
-        teamId: '1',
+        groupId: '1',
       });
       const result = await selectAuditEvents({
         subject_user_id: user.id,

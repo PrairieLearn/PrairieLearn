@@ -128,10 +128,10 @@ SELECT
         SELECT
           1
         FROM
-          team_users AS tu
+          team_users AS gu
         WHERE
-          tu.team_id = ai.team_id
-          AND tu.user_id = $user_id
+          gu.team_id = ai.team_id
+          AND gu.user_id = $user_id
       )
       ELSE (v.user_id = $user_id)
     END

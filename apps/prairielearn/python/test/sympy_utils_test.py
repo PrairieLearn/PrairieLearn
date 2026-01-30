@@ -194,6 +194,58 @@ class TestSympy:
             a_sub, ["i", "j"], allow_complex=False
         )
 
+    @pytest.mark.parametrize(
+        ("a_sub", "variables", "allow_complex", "expected", "expected_error"),
+        [
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/13661 for additional details.
+            ("3j", ["j"], False, 3 * sympy.Symbol("j"), None),
+            ("3J", ["J"], False, 3 * sympy.Symbol("J"), None),  # Uppercase
+            (
+                "3j",
+                ["n"],
+                True,
+                3 * sympy.I,
+                None,
+            ),  # Ensure complex numbers still work when allowed
+            ("3j", ["x"], False, None, psu.HasInvalidSymbolError),  # j not declared
+            ("3e5j", ["j"], False, None, psu.HasFloatError),  # Scientific notation
+        ],
+    )
+    def test_j_complex_literal_handling(
+        self,
+        a_sub: str,
+        variables: list[str],
+        allow_complex: bool,  # noqa: FBT001
+        expected: sympy.Expr | None,
+        expected_error: type[psu.BaseSympyError] | None,
+    ) -> None:
+        if expected_error is not None:
+            with pytest.raises(expected_error):
+                psu.convert_string_to_sympy(
+                    a_sub, variables, allow_complex=allow_complex
+                )
+        else:
+            result = psu.convert_string_to_sympy(
+                a_sub, variables, allow_complex=allow_complex
+            )
+            assert result == expected
+
+    @pytest.mark.parametrize(
+        ("a_sub", "variables", "expected"),
+        [
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/11709 for additional details.
+            ("2e+3", None, 2 * sympy.E + 3),
+            ("2e-3", None, 2 * sympy.E - 3),
+            ("2E+3", ["E"], 2 * sympy.Symbol("E") + 3),
+            ("2E-3", ["E"], 2 * sympy.Symbol("E") - 3),
+        ],
+    )
+    def test_scientific_notation_with_sign_as_euler(
+        self, a_sub: str, variables: list[str] | None, expected: sympy.Expr
+    ) -> None:
+        result = psu.convert_string_to_sympy(a_sub, variables, allow_complex=True)
+        assert result == expected
+
     def test_string_conversion_complex_conflict(self) -> None:
         """
         Check for no issues in the case where complex is not
@@ -371,7 +423,7 @@ class TestExceptions:
 
     @pytest.mark.parametrize("a_sub", INVALID_ESCAPE_CASES)
     def test_escape_error(self, a_sub: str) -> None:
-        with pytest.raises(psu.HasEscapeError):
+        with pytest.raises(psu.HasParseError):
             psu.convert_string_to_sympy(a_sub, self.VARIABLES)
 
     @pytest.mark.parametrize("a_sub", INVALID_COMMENT_CASES)
@@ -389,7 +441,7 @@ class TestExceptions:
             (INVALID_FUNCTION_CASES, "invalid", ()),
             (INVALID_VARIABLE_CASES, "invalid symbol", ()),
             (INVALID_PARSE_CASES, "syntax error", ()),
-            (INVALID_ESCAPE_CASES, 'must not contain the character "\\"', ()),
+            (INVALID_ESCAPE_CASES, "syntax error", ()),
             (INVALID_COMMENT_CASES, 'must not contain the character "#"', ()),
             # TODO: not handled
             # (COMPLEX_CASES, "must be expressed as integers", ("i",)),
@@ -407,6 +459,21 @@ class TestExceptions:
             )
             assert format_error is not None
             assert target_string in format_error
+
+    def test_invalid_function_with_simplify_false(self) -> None:
+        """Test that invalid function calls are caught with simplify_expression=False.
+
+        This is a regression test for https://github.com/PrairieLearn/PrairieLearn/issues/13084
+        where using display-simplified-expression="false" would cause an unhandled exception
+        when students submitted expressions like "m(0)" where "m" is not a valid function.
+        """
+        error_msg = psu.validate_string_as_sympy(
+            "m(0)",
+            ["x"],
+            simplify_expression=False,
+        )
+        assert error_msg is not None
+        assert 'invalid symbol "m"' in error_msg
 
 
 @pytest.mark.parametrize(
@@ -426,3 +493,76 @@ def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
 )
 def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
     assert psu.get_items_list(items_string) == expected_output
+
+
+class TestValidateNamesForConflicts:
+    """Tests for validate_names_for_conflicts()."""
+
+    def test_no_conflicts(self) -> None:
+        # Should not raise when there are no conflicts
+        psu.validate_names_for_conflicts("test", ["x", "y"], ["f", "g"])
+
+    @pytest.mark.parametrize("conflicting_name", ["e", "pi", "infty"])
+    def test_variable_conflicts_with_constant(self, conflicting_name: str) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name, "x"], [])
+
+    def test_variable_conflicts_with_function(self) -> None:
+        with pytest.raises(ValueError, match="sin"):
+            psu.validate_names_for_conflicts("test", ["sin"], [])
+
+    def test_custom_function_conflicts_with_builtin(self) -> None:
+        with pytest.raises(ValueError, match="cos"):
+            psu.validate_names_for_conflicts("test", [], ["cos"])
+
+    @pytest.mark.parametrize("conflicting_name", ["i", "j"])
+    def test_complex_constants_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_complex=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_complex=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_complex=True
+            )
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [], [conflicting_name], allow_complex=True
+            )
+
+    @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
+    def test_trig_functions_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_trig_functions=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_trig_functions=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name], [])
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [], [conflicting_name])
+
+
+class TestValidateStringConfigurationErrors:
+    """Tests for configuration error messages in validate_string_as_sympy()."""
+
+    def test_conflicting_variable_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy("x + 1", ["pi", "x"])
+        assert error_msg is not None
+        assert "conflicts with a built-in constant" in error_msg
+
+    def test_conflicting_function_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "x + 1", ["x"], custom_functions=["sin"]
+        )
+        assert error_msg is not None
+        assert "conflicts with a built-in function" in error_msg

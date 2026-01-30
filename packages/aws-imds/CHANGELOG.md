@@ -1,5 +1,17 @@
 # @prairielearn/aws-imds
 
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 2.0.24
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.23
 
 ### Patch Changes

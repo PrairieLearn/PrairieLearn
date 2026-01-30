@@ -131,6 +131,14 @@ make format-js-cached
 make format-python
 ```
 
+To format all changed files (staged + unstaged + untracked) compared to HEAD:
+
+```sh
+make format-changed
+```
+
+This is faster than formatting the entire codebase since it only processes files you've modified.
+
 If you develop code with VSCode, running these shouldn't be necessary, as we provide a set of recommended extensions and configuration defaults that will format files on save.
 
 ## Updating dependencies

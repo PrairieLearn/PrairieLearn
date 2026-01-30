@@ -6,12 +6,12 @@ import { type Pool, createPool } from 'generic-pool';
 import { logger } from '@prairielearn/logger';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 
 import * as chunks from '../chunks.js';
 import { config } from '../config.js';
 import { type Course } from '../db-types.js';
 import * as load from '../load.js';
-import { assertNever } from '../types.js';
 
 import { CodeCallerContainer, init as initCodeCallerDocker } from './code-caller-container.js';
 import { CodeCallerNative } from './code-caller-native.js';
@@ -58,7 +58,7 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
 
   if (workersExecutionMode === 'native') {
     // Try to fetch the venv. This will throw an error if no venv is found.
-    await getPythonPath(config.pythonVenvSearchPaths);
+    await getPythonPath();
   }
 
   const numWorkers = config.workersCount ?? Math.ceil(config.workersPerCpu * os.cpus().length);
@@ -78,7 +78,6 @@ export async function init({ lazyWorkers = false }: CodeCallerInitOptions = {}) 
             case 'native':
               return await CodeCallerNative.create({
                 ...codeCallerOptions,
-                pythonVenvSearchPaths: config.pythonVenvSearchPaths,
                 errorLogger: logger.error.bind(logger),
                 // We can only drop privileges if this code caller is running in a container.
                 dropPrivileges: false,

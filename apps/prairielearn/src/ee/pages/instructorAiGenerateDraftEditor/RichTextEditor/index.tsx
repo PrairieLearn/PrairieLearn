@@ -19,9 +19,9 @@ import { Underline } from '@tiptap/extension-underline';
 import { Focus, Selection, UndoRedo } from '@tiptap/extensions';
 import { EditorContent, useEditor } from '@tiptap/react';
 // import { BubbleMenu, FloatingMenu } from '@tiptap/react/menus';
-import { useState } from 'preact/compat';
 import prettierHtmlPlugin from 'prettier/plugins/html';
 import prettier from 'prettier/standalone';
+import { useState } from 'react';
 import { Card, Form } from 'react-bootstrap';
 
 import { DragHandleMenu } from './components/DragHandleMenu.js';
