@@ -40,7 +40,6 @@ export const QuestionParameterJsonSchema = z
   .object({
     type: z.literal('object'),
     properties: z.record(z.string(), FieldSchema),
-    required: z.array(z.string()).max(0).optional().default([]),
     additionalProperties: z.literal(false).optional().default(false),
   })
   .strict();
