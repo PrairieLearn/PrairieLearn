@@ -112,7 +112,7 @@ export async function generatePrompt({
             'You MUST NOT infer, reconstruct, or assume student work based on the reference solution, rubric, or common solution patterns.',
             ...(hasImage
               ? [
-                  'If the image is blurry, unreadable, incomplete, or ambiguous, you must say so explicitly, and just not use that for grading.',
+                  'If the image is blurry, unreadable, incomplete, or ambiguous, you must say so explicitly, and just not use that for grading.', // TRY IN CAPS
                 ]
               : []),
             'Follow any special instructions given by the instructor in the question.',
