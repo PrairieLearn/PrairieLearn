@@ -168,8 +168,8 @@ describe('BatchedMigrationExecutor', () => {
       assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data', 'status']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
-      assert.equal(jobData.error.data.start, job.min_value.toString());
-      assert.equal(jobData.error.data.end, job.max_value.toString());
+      assert.equal(jobData.error.data.start, String(job.min_value));
+      assert.equal(jobData.error.data.end, String(job.max_value));
     });
 
     const failedMigration = await getBatchedMigration(migration.id);
