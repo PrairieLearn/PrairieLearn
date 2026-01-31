@@ -7,7 +7,7 @@
   "preferences": {
     "gravitationalConstant": {
       "type": "number",
-      "default": 9.89
+      "default": 9.8
     }
   }
 }
