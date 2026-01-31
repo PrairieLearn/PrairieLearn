@@ -1,4 +1,5 @@
 ---
+'@prairielearn/actions-report-image-sizes': patch
 '@prairielearn/eslint-plugin': patch
 '@prairielearn/express-list-endpoints': patch
 '@prairielearn/vite-plugin-express': patch
