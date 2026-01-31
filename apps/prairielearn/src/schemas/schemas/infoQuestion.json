@@ -356,14 +356,6 @@
           "const": false,
           "default": false
         },
-        "required": {
-          "type": "array",
-          "items": {
-            "type": "string"
-          },
-          "maxItems": 0,
-          "default": []
-        },
         "type": {
           "type": "string",
           "const": "object"
