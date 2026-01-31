@@ -2661,9 +2661,9 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@html-eslint/eslint-plugin@npm:^0.54.0":
-  version: 0.54.0
-  resolution: "@html-eslint/eslint-plugin@npm:0.54.0"
+"@html-eslint/eslint-plugin@npm:^0.54.2":
+  version: 0.54.2
+  resolution: "@html-eslint/eslint-plugin@npm:0.54.2"
   dependencies:
     "@eslint/plugin-kit": "npm:^0.4.1"
     "@html-eslint/parser": "npm:^0.54.0"
@@ -2671,8 +2671,8 @@ __metadata:
     "@html-eslint/template-syntax-parser": "npm:^0.54.0"
     "@html-eslint/types": "npm:^0.54.0"
   peerDependencies:
-    eslint: ^8.0.0 || ^9.0.0
-  checksum: 10c0/aa57c09945a6ff375c7fa8496d6e3309e216ec5a71dd7925fa598b8353125834e6f5cf4cf6c5c855394c08c61505f227864c2c8f43c10515a3b98b462bc97dc7
+    eslint: ">=8.0.0 || ^10.0.0-0"
+  checksum: 10c0/d3220be92d13123f0d9fa47aea9d75327c2d6849893302e4c230679264e0991099a140c30bafa7c23bb114de398be63cdb0e8b8834722bd7dbf700b0ad06eaa8
   languageName: node
   linkType: hard
 
@@ -3956,7 +3956,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260130.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
-    commander: "npm:^14.0.2"
+    commander: "npm:^14.0.3"
     esbuild: "npm:^0.27.2"
     express: "npm:^4.22.1"
     express-static-gzip: "npm:^2.2.0"
@@ -4348,7 +4348,7 @@ __metadata:
     "@typescript/native-preview": "npm:^7.0.0-dev.20260130.1"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
-    commander: "npm:^14.0.2"
+    commander: "npm:^14.0.3"
     diff: "npm:^8.0.3"
     es-toolkit: "npm:^1.44.0"
     fs-extra: "npm:^11.3.3"
@@ -10992,7 +10992,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"commander@npm:14.0.2, commander@npm:^14.0.2, commander@npm:~14.0.2":
+"commander@npm:14.0.2":
   version: 14.0.2
   resolution: "commander@npm:14.0.2"
   checksum: 10c0/245abd1349dbad5414cb6517b7b5c584895c02c4f7836ff5395f301192b8566f9796c82d7bd6c92d07eba8775fe4df86602fca5d86d8d10bcc2aded1e21c2aeb
@@ -11010,6 +11010,13 @@ __metadata:
   version: 10.0.1
   resolution: "commander@npm:10.0.1"
   checksum: 10c0/53f33d8927758a911094adadda4b2cbac111a5b377d8706700587650fd8f45b0bbe336de4b5c3fe47fd61f420a3d9bd452b6e0e6e5600a7e74d7bf0174f6efe3
+  languageName: node
+  linkType: hard
+
+"commander@npm:^14.0.3, commander@npm:~14.0.2":
+  version: 14.0.3
+  resolution: "commander@npm:14.0.3"
+  checksum: 10c0/755652564bbf56ff2ff083313912b326450d3f8d8c85f4b71416539c9a05c3c67dbd206821ca72635bf6b160e2afdefcb458e86b317827d5cb333b69ce7f1a24
   languageName: node
   linkType: hard
 
@@ -16571,7 +16578,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"node-gyp@npm:^12.2.0":
+"node-gyp@npm:^12.2.0, node-gyp@npm:latest":
   version: 12.2.0
   resolution: "node-gyp@npm:12.2.0"
   dependencies:
@@ -16588,26 +16595,6 @@ __metadata:
   bin:
     node-gyp: bin/node-gyp.js
   checksum: 10c0/3ed046746a5a7d90950cd8b0547332b06598443f31fe213ef4332a7174c7b7d259e1704835feda79b87d3f02e59d7791842aac60642ede4396ab25fdf0f8f759
-  languageName: node
-  linkType: hard
-
-"node-gyp@npm:latest":
-  version: 12.1.0
-  resolution: "node-gyp@npm:12.1.0"
-  dependencies:
-    env-paths: "npm:^2.2.0"
-    exponential-backoff: "npm:^3.1.1"
-    graceful-fs: "npm:^4.2.6"
-    make-fetch-happen: "npm:^15.0.0"
-    nopt: "npm:^9.0.0"
-    proc-log: "npm:^6.0.0"
-    semver: "npm:^7.3.5"
-    tar: "npm:^7.5.2"
-    tinyglobby: "npm:^0.2.12"
-    which: "npm:^6.0.0"
-  bin:
-    node-gyp: bin/node-gyp.js
-  checksum: 10c0/f43efea8aaf0beb6b2f6184e533edad779b2ae38062953e21951f46221dd104006cc574154f2ad4a135467a5aae92c49e84ef289311a82e08481c5df0e8dc495
   languageName: node
   linkType: hard
 
@@ -17539,7 +17526,7 @@ __metadata:
   dependencies:
     "@changesets/cli": "npm:^2.29.8"
     "@eslint-react/eslint-plugin": "npm:^2.8.1"
-    "@html-eslint/eslint-plugin": "npm:^0.54.0"
+    "@html-eslint/eslint-plugin": "npm:^0.54.2"
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
     "@stylistic/eslint-plugin": "npm:^5.7.1"
@@ -19707,7 +19694,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"tar@npm:*, tar@npm:^7.5.2, tar@npm:^7.5.4, tar@npm:^7.5.7":
+"tar@npm:*, tar@npm:^7.5.4, tar@npm:^7.5.7":
   version: 7.5.7
   resolution: "tar@npm:7.5.7"
   dependencies:

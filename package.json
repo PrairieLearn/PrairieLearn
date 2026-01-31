@@ -37,7 +37,7 @@
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
     "@eslint-react/eslint-plugin": "^2.8.1",
-    "@html-eslint/eslint-plugin": "^0.54.0",
+    "@html-eslint/eslint-plugin": "^0.54.2",
     "@playwright/test": "^1.58.1",
     "@postgres-language-server/cli": "^0.19.0",
     "@stylistic/eslint-plugin": "^5.7.1",
