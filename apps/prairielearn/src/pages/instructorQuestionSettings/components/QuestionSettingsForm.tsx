@@ -1,9 +1,10 @@
 import clsx from 'clsx';
-import { type FormEvent, type ReactNode, useMemo, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
 
+import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import { TagBadge } from '../../../components/TagBadge.js';
 import { TagDescription } from '../../../components/TagDescription.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
@@ -15,6 +16,7 @@ import type {
   StaffTopic,
 } from '../../../lib/client/safe-db-types.js';
 import { idsEqual } from '../../../lib/id.js';
+import { validateShortName } from '../../../lib/short-name.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
 
 function AssessmentBadges({
@@ -79,22 +81,7 @@ interface QuestionSettingsFormValues {
   external_grading_environment: string;
 }
 
-export interface QuestionSettingsFormProps {
-  question: StaffQuestion;
-  courseInstance: StaffCourseInstance | null;
-  assessmentsWithQuestion: SelectedAssessments[];
-  topic: StaffTopic;
-  courseTopics: StaffTopic[];
-  courseTags: StaffTag[];
-  questionTags: StaffTag[];
-  qids: string[];
-  origHash: string;
-  csrfToken: string;
-  canEdit: boolean;
-  assessmentsContent?: ReactNode;
-}
-
-function validateJson(value: string): string | true {
+export function validateJson(value: string): string | true {
   if (!value || value.trim() === '' || value.trim() === '{}') return true;
   try {
     const parsed = JSON.parse(value);
@@ -119,7 +106,19 @@ export const QuestionSettingsForm = ({
   origHash,
   csrfToken,
   canEdit,
-}: QuestionSettingsFormProps) => {
+}: {
+  question: StaffQuestion;
+  courseInstance: StaffCourseInstance | null;
+  assessmentsWithQuestion: SelectedAssessments[];
+  topic: StaffTopic;
+  courseTopics: StaffTopic[];
+  courseTags: StaffTag[];
+  questionTags: StaffTag[];
+  qids: string[];
+  origHash: string;
+  csrfToken: string;
+  canEdit: boolean;
+}) => {
   const [showWorkspaceOptions, setShowWorkspaceOptions] = useState(!!question.workspace_image);
   const [showExternalGradingOptions, setShowExternalGradingOptions] = useState(
     !!question.external_grading_image,
@@ -197,7 +196,7 @@ export const QuestionSettingsForm = ({
 
   const otherQids = new Set(qids.filter((q) => q !== defaultValues.qid));
 
-  const handleFormSubmit = async (e: FormEvent<HTMLFormElement>) => {
+  const handleFormSubmit = async (e: React.SubmitEvent<HTMLFormElement>) => {
     const isValid = await trigger();
     if (!isValid) {
       e.preventDefault();
@@ -243,12 +242,11 @@ export const QuestionSettingsForm = ({
           disabled={!canEdit}
           {...register('qid', {
             required: 'QID is required',
-            pattern: {
-              value: /^[-A-Za-z0-9_/]+$/,
-              message:
-                'Use only letters, numbers, dashes, underscores, and forward slashes, with no spaces',
-            },
             validate: {
+              shortName: (value) => {
+                const result = validateShortName(value, defaultValues.qid);
+                return result.valid || result.message;
+              },
               duplicate: (value) => {
                 if (otherQids.has(value)) {
                   return 'This QID is already in use';
@@ -260,9 +258,7 @@ export const QuestionSettingsForm = ({
         />
         {errors.qid && <div className="invalid-feedback">{errors.qid.message}</div>}
         <small className="form-text text-muted">
-          This is a unique identifier for the question, e.g. "addNumbers". Use only letters,
-          numbers, dashes, and underscores, with no spaces. You may use forward slashes to separate
-          directories.
+          <QuestionShortNameDescription />
         </small>
       </div>
 
@@ -284,7 +280,10 @@ export const QuestionSettingsForm = ({
       </div>
 
       <div className="table-responsive card mb-3 overflow-visible">
-        <table className="table two-column-description" aria-label="Question topic and tags">
+        <table
+          className="table two-column-description"
+          aria-label="Question topic, tags, and assessments"
+        >
           <tbody>
             <tr>
               <th className="align-middle">
