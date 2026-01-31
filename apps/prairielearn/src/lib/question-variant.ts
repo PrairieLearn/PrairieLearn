@@ -258,7 +258,6 @@ async function makeAndInsertVariant(
   let preferences: Record<string, string | number | boolean> = { ...defaults };
 
   if (assessment_id && question_id) {
-    console.log('gen for ids', assessment_id, question_id);
     const result = await sqldb.queryOptionalRow(
       sql.select_preferences_for_assessment_question,
       { assessment_id, question_id },
@@ -341,7 +340,6 @@ async function makeAndInsertVariant(
     if (question.workspace_image !== null) {
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
     }
-    console.log('VARIANT DATA WE ABOUT TO INSERT', variantData);
 
     return await sqldb.queryRow(
       sql.insert_variant,
@@ -410,12 +408,10 @@ export async function ensureVariant(
     // generate/prepare overhead in the most common cases.
     const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
     if (variant != null) {
-      console.log('returning cached variant', variant);
       return variant;
     }
   }
   // if we don't have instance_question_id or if it's not open, just make a new variant
-  console.log('making new variant');
   return await makeAndInsertVariant(
     question_id,
     instance_question_id,
