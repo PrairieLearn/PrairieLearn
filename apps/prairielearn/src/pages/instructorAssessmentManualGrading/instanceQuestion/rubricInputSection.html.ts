@@ -175,7 +175,6 @@ function RubricItem({
                 type="checkbox"
                 style="margin-left: 3px; margin-right: 8px;"
                 name="rubric_item_selected_ai"
-                class="js-selectable-rubric-item"
                 value="${item.rubric_item.id}"
                 ${ai_checked ? 'checked' : ''}
                 disabled
