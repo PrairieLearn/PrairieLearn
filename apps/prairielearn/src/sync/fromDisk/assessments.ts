@@ -130,7 +130,7 @@ function getParamsForAssessment(
     // and their schemas are not available at sync time
     if (qid.startsWith('@')) return null;
     const questionInfo = questions[qid];
-    if (!questionInfo?.data?.preferences) return null;
+    if (!questionInfo.data?.preferences) return null;
     return questionInfo.data.preferences;
   };
 
@@ -385,7 +385,6 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
-          // Store only the instructor's overrides; defaults are merged at runtime
           preferences: alternative.preferences ?? {},
         };
       });
