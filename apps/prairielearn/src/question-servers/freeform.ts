@@ -93,12 +93,10 @@ function getPreferences(
 
   // Otherwise, extract defaults from question's preferences schema (for generate phase)
   if (question?.preferences_schema) {
-    const schema = question.preferences_schema as {
-      properties?: Record<string, { default: string | number | boolean }>;
-    };
-    if (schema.properties) {
+    const schema = question.preferences_schema as Record<string, { default: string | number | boolean }> | undefined;
+    if (schema) {
       const defaults: Record<string, string | number | boolean> = {};
-      for (const [key, prop] of Object.entries(schema.properties)) {
+      for (const [key, prop] of Object.entries(schema)) {
         if ('default' in prop) {
           defaults[key] = prop.default;
         }

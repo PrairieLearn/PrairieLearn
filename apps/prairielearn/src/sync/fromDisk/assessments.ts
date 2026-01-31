@@ -60,11 +60,10 @@ function mergeAndValidatePreferences(
     return { preferences: {}, errors };
   }
 
-  const properties = schema.properties;
 
   // Extract defaults from schema
   const merged: QuestionPreferences = {};
-  for (const [key, prop] of Object.entries(properties)) {
+  for (const [key, prop] of Object.entries(schema)) {
     merged[key] = prop.default;
   }
 
@@ -74,7 +73,7 @@ function mergeAndValidatePreferences(
   }
 
   // Validate merged preferences against the JSON schema using AJV
-  const validate = ajv.compile(schema);
+  const validate = ajv.compile({ type: "object", properties: schema, });
   const valid = validate(merged);
 
   if (!valid && validate.errors) {

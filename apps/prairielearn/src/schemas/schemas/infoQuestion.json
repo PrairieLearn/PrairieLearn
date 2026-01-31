@@ -348,83 +348,67 @@
     },
     "preferences": {
       "type": "object",
-      "additionalProperties": false,
-      "required": ["type", "properties"],
-      "properties": {
-        "additionalProperties": {
-          "type": "boolean",
-          "const": false,
-          "default": false
-        },
-        "type": {
-          "type": "string",
-          "const": "object"
-        },
-        "properties": {
-          "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["type", "default"],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "string"
-                  },
-                  "default": {
-                    "type": "string"
-                  }
-                }
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "string"
               },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["type", "default"],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "number"
-                  },
-                  "default": {
-                    "type": "number"
-                  }
-                }
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["type", "default"],
-                "properties": {
-                  "type": {
-                    "type": "string",
-                    "const": "boolean"
-                  },
-                  "default": {
-                    "type": "boolean"
-                  }
-                }
-              },
-              {
-                "type": "object",
-                "additionalProperties": false,
-                "required": ["enum", "default"],
-                "properties": {
-                  "enum": {
-                    "type": "array",
-                    "items": {
-                      "type": ["string", "number"]
-                    }
-                  },
-                  "default": {
-                    "type": ["string", "number"]
-                  }
-                }
+              "default": {
+                "type": "string"
               }
-            ]
+            }
           },
-          "type": "object"
-        }
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "number"
+              },
+              "default": {
+                "type": "number"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["type", "default"],
+            "properties": {
+              "type": {
+                "type": "string",
+                "const": "boolean"
+              },
+              "default": {
+                "type": "boolean"
+              }
+            }
+          },
+          {
+            "type": "object",
+            "additionalProperties": false,
+            "required": ["enum", "default"],
+            "properties": {
+              "enum": {
+                "type": "array",
+                "items": {
+                  "type": ["string", "number"]
+                }
+              },
+              "default": {
+                "type": ["string", "number"]
+              }
+            }
+          }
+        ]
       }
     }
   },

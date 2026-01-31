@@ -57,7 +57,7 @@ function extractDefaultPreferences(
 ): Record<string, string | number | boolean> {
   if (!preferencesSchema) return {};
 
-  const properties = preferencesSchema.properties as
+  const properties = preferencesSchema as
     | Record<string, { default: string | number | boolean }>
     | undefined;
   if (!properties) return {};

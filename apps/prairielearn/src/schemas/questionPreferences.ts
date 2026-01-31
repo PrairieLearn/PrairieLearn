@@ -36,12 +36,6 @@ const EnumType = z
 
 const FieldSchema = z.union([StringType, NumberType, BooleanType, EnumType]);
 
-export const QuestionParameterJsonSchema = z
-  .object({
-    type: z.literal('object'),
-    properties: z.record(z.string(), FieldSchema),
-    additionalProperties: z.literal(false).optional().default(false),
-  })
-  .strict();
+export const QuestionParameterJsonSchema = z.record(z.string(), FieldSchema);
 
 export type QuestionParameterJson = z.infer<typeof QuestionParameterJsonSchema>;

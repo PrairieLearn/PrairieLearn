@@ -5,12 +5,9 @@
   "type": "v3",
   "tags": ["Sp26", "mfsilva"],
   "preferences": {
-    "type": "object",
-    "properties": {
-      "gravitationalConstant": {
-        "type": "number",
-        "default": 9.89
-      }
+    "gravitationalConstant": {
+      "type": "number",
+      "default": 9.89
     }
   }
 }
