@@ -137,6 +137,7 @@ export interface ExecutionData {
     server_files_course_path: string;
     course_extensions_path: string;
   };
+  preferences: Record<string, string | number | boolean>;
   answers_names?: Record<string, string>;
   submitted_answers?: Record<string, unknown>;
   format_errors?: Record<string, unknown>;

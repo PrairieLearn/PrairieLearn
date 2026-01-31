@@ -48,16 +48,42 @@ interface VariantCreationData {
 }
 
 /**
+ * Extracts default preference values from a question's preferences schema.
+ * @param preferencesSchema - The JSON schema defining preferences (from question.preferences_schema)
+ * @returns An object with default values for each preference key
+ */
+function extractDefaultPreferences(
+  preferencesSchema: Record<string, unknown> | null,
+): Record<string, string | number | boolean> {
+  if (!preferencesSchema) return {};
+
+  const properties = preferencesSchema.properties as
+    | Record<string, { default: string | number | boolean }>
+    | undefined;
+  if (!properties) return {};
+
+  const defaults: Record<string, string | number | boolean> = {};
+  for (const [key, prop] of Object.entries(properties)) {
+    if (prop && 'default' in prop) {
+      defaults[key] = prop.default;
+    }
+  }
+  return defaults;
+}
+
+/**
  * Internal function, do not call directly. Create a variant object, do not write to DB.
  * @param question - The question for the variant.
  * @param course - The course for the question.
  * @param options - Options controlling the creation.
  * @param options.variant_seed - The seed for the variant.
+ * @param preferences - The merged preferences for this question instance (defaults merged with assessment overrides).
  */
 export async function makeVariant(
   question: Question,
   course: Course,
   options: { variant_seed?: string | null },
+  preferences: Record<string, string | number | boolean> = {},
 ): Promise<{
   courseIssues: (Error & { fatal?: boolean; data?: any })[];
   variant: VariantCreationData;
@@ -76,7 +102,7 @@ export async function makeVariant(
     variant_seed,
     params: data.params || {},
     true_answer: data.true_answer || {},
-    options: data.options || {},
+    options: { ...data.options, preferences },
     broken: hasFatalIssue,
   };
 
@@ -105,7 +131,7 @@ export async function makeVariant(
       variant_seed,
       params: data.params,
       true_answer: data.true_answer,
-      options: data.options || {},
+      options: { ...data.options, preferences },
       broken: hasFatalIssue,
     };
   }
@@ -223,12 +249,31 @@ async function makeAndInsertVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  assessment_id: string | null,
 ): Promise<VariantWithFormattedDate> {
   const question = await selectQuestion(question_id, instance_question_id);
+
+  // Look up preferences for this question instance
+  const defaults = extractDefaultPreferences(question.preferences_schema);
+  let preferences: Record<string, string | number | boolean> = { ...defaults };
+
+  if (assessment_id && question_id) {
+    console.log('gen for ids', assessment_id, question_id);
+    const result = await sqldb.queryOptionalRow(
+      sql.select_preferences_for_assessment_question,
+      { assessment_id, question_id },
+      z.record(z.union([z.string(), z.number(), z.boolean()])).nullish(),
+    );
+    if (result) {
+      preferences = { ...defaults, ...result };
+    }
+  }
+
   const { courseIssues, variant: variantData } = await makeVariant(
     question,
     question_course,
     options,
+    preferences,
   );
 
   const variant = await sqldb.runInTransactionAsync(async () => {
@@ -296,6 +341,7 @@ async function makeAndInsertVariant(
     if (question.workspace_image !== null) {
       workspace_id = await sqldb.queryOptionalRow(sql.insert_workspace, IdSchema);
     }
+    console.log('VARIANT DATA WE ABOUT TO INSERT', variantData);
 
     return await sqldb.queryRow(
       sql.insert_variant,
@@ -355,6 +401,7 @@ export async function ensureVariant(
   options: { variant_seed?: string | null },
   require_open: boolean,
   client_fingerprint_id: string | null,
+  assessment_id: string | null,
 ): Promise<VariantWithFormattedDate> {
   if (instance_question_id != null) {
     // See if we have a useable existing variant, otherwise make a new one. This
@@ -363,10 +410,12 @@ export async function ensureVariant(
     // generate/prepare overhead in the most common cases.
     const variant = await selectVariantForInstanceQuestion(instance_question_id, require_open);
     if (variant != null) {
+      console.log('returning cached variant', variant);
       return variant;
     }
   }
   // if we don't have instance_question_id or if it's not open, just make a new variant
+  console.log('making new variant');
   return await makeAndInsertVariant(
     question_id,
     instance_question_id,
@@ -378,6 +427,7 @@ export async function ensureVariant(
     options,
     require_open,
     client_fingerprint_id,
+    assessment_id,
   );
 }
 

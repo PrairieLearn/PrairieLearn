@@ -8,23 +8,51 @@
     {
       "title": "Checkbox Input",
       "questions": [
-        { "id": "gallery/checkbox/simple", "points": 1 },
-        { "id": "gallery/checkbox/complex", "points": 1 }
+        {
+          "id": "gallery/checkbox/simple",
+          "points": 1
+        },
+        {
+          "id": "gallery/checkbox/complex",
+          "points": 1
+        }
       ]
     },
     {
       "title": "Include Figure",
       "questions": [
-        { "id": "gallery/includeFigure/simple", "points": 1 },
-        { "id": "gallery/includeFigure/complex", "points": 1 }
+        {
+          "id": "gallery/includeFigure/simple",
+          "points": 1
+        },
+        {
+          "id": "gallery/includeFigure/complex",
+          "points": 1
+        }
       ]
     },
     {
       "title": "Multiple-choice Input",
       "questions": [
-        { "id": "gallery/multipleChoice/simple", "points": 1 },
-        { "id": "gallery/multipleChoice/complex", "points": 1 },
-        { "id": "gallery/multipleChoice/advanced", "points": 1 }
+        {
+          "id": "gallery/multipleChoice/simple",
+          "points": 1
+        },
+        {
+          "id": "gallery/multipleChoice/complex",
+          "points": 1
+        },
+        {
+          "id": "gallery/multipleChoice/advanced",
+          "points": 1
+        },
+        {
+          "id": "gallery/multipleChoice/withParameters",
+          "points": 1,
+          "preferences": {
+            "gravitationalConstant": 13
+          }
+        }
       ]
     }
   ],

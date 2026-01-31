@@ -1,3 +1,4 @@
+import { Ajv } from 'ajv';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
@@ -11,16 +12,80 @@ import { features } from '../../lib/features/index.js';
 import {
   type AssessmentJson,
   type QuestionAlternativeJson,
+  type QuestionJson,
+  type QuestionParameterJson,
   type QuestionPointsJson,
+  type QuestionPreferences,
   type ZoneQuestionJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
+import { type InfoFile } from '../infofile.js';
+
+// We use a single global instance so that schemas aren't recompiled every time they're used
+const ajv = new Ajv({ allErrors: true });
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
+
+interface MergePreferencesResult {
+  preferences: QuestionPreferences;
+  errors: string[];
+}
+
+/**
+ * Merges instructor-provided preferences with question defaults and validates against schema.
+ *
+ * @param qid - The question ID (for error messages)
+ * @param schema - The question's preferences schema (from info.json)
+ * @param overrides - The instructor's preferences overrides (from infoAssessment.json)
+ * @returns The merged preferences and any validation errors
+ */
+function mergeAndValidatePreferences(
+  qid: string,
+  schema: QuestionParameterJson | null | undefined,
+  overrides: QuestionPreferences | undefined,
+): MergePreferencesResult {
+  const errors: string[] = [];
+  // If the question has no preferences schema
+  if (!schema) {
+    // If overrides were provided but the question doesn't support preferences, that's an error
+    if (overrides && Object.keys(overrides).length > 0) {
+      errors.push(
+        `Question "${qid}" does not define a preferences schema, but preferences were provided in the assessment`,
+      );
+    }
+    return { preferences: {}, errors };
+  }
+
+  const properties = schema.properties;
+
+  // Extract defaults from schema
+  const merged: QuestionPreferences = {};
+  for (const [key, prop] of Object.entries(properties)) {
+    merged[key] = prop.default;
+  }
+
+  // Merge overrides into defaults
+  if (overrides) {
+    Object.assign(merged, overrides);
+  }
+
+  // Validate merged preferences against the JSON schema using AJV
+  const validate = ajv.compile(schema);
+  const valid = validate(merged);
+
+  if (!valid && validate.errors) {
+    for (const error of validate.errors) {
+      const path = error.instancePath || '/';
+      errors.push(`Question "${qid}": preferences${path} ${error.message}`);
+    }
+  }
+
+  return { preferences: merged, errors };
+}
 
 /**
  * SYNCING PROCESS:
@@ -53,10 +118,21 @@ type AssessmentInfoFile = infofile.InfoFile<AssessmentJson>;
 function getParamsForAssessment(
   assessmentInfoFile: AssessmentInfoFile,
   questionIds: Record<string, any>,
+  questions: Record<string, InfoFile<QuestionJson>>,
 ) {
   if (infofile.hasErrors(assessmentInfoFile)) return null;
   const assessment = assessmentInfoFile.data;
   if (!assessment) throw new Error(`Missing assessment data for ${assessmentInfoFile.uuid}`);
+
+  // Helper to get preferences schema for a question
+  const getPreferencesSchema = (qid: string): QuestionParameterJson | null => {
+    // Handle shared questions (starting with @) - they are resolved later
+    // and their schemas are not available at sync time
+    if (qid.startsWith('@')) return null;
+    const questionInfo = questions[qid];
+    if (!questionInfo?.data?.preferences) return null;
+    return questionInfo.data.preferences;
+  };
 
   // It used to be the case that assessment access rules could be associated with a
   // particular user role, e.g., Student, TA, or Instructor. Now, all access rules
@@ -259,6 +335,21 @@ function getParamsForAssessment(
       const questions = normalizedAlternatives.map((alternative, alternativeIndex) => {
         assessmentQuestionNumber++;
         const questionId = questionIds[alternative.qid];
+
+        // Validate preferences overrides against schema (if available)
+        // We only store the overrides here; defaults are merged at runtime
+        const preferencesSchema = getPreferencesSchema(alternative.qid);
+        const { errors: preferenceErrors } = mergeAndValidatePreferences(
+          alternative.qid,
+          preferencesSchema,
+          alternative.preferences,
+        );
+
+        // Record any validation errors
+        for (const error of preferenceErrors) {
+          infofile.addError(assessmentInfoFile, error);
+        }
+
         return {
           number: assessmentQuestionNumber,
           has_split_points: alternative.hasSplitPoints,
@@ -294,7 +385,8 @@ function getParamsForAssessment(
           json_max_points: alternative.jsonMaxPoints,
           json_max_auto_points: alternative.jsonMaxAutoPoints,
           json_tries_per_variant: alternative.jsonTriesPerVariant,
-          preferences: alternative.preferences,
+          // Store only the instructor's overrides; defaults are merged at runtime
+          preferences: alternative.preferences ?? {},
         };
       });
 
@@ -431,6 +523,7 @@ export async function sync(
   courseInstanceId: string,
   courseInstanceData: CourseInstanceData,
   questionIds: Record<string, any>,
+  questions: Record<string, InfoFile<QuestionJson>>,
 ) {
   const assessments = courseInstanceData.assessments;
 
@@ -485,7 +578,7 @@ export async function sync(
       assessment.uuid,
       infofile.stringifyErrors(assessment),
       infofile.stringifyWarnings(assessment),
-      getParamsForAssessment(assessment, questionIds),
+      getParamsForAssessment(assessment, questionIds, questions),
     ]);
   });
 

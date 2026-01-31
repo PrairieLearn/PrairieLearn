@@ -43,3 +43,5 @@ export const QuestionParameterJsonSchema = z
     additionalProperties: z.literal(false).optional().default(false),
   })
   .strict();
+
+export type QuestionParameterJson = z.infer<typeof QuestionParameterJsonSchema>;
