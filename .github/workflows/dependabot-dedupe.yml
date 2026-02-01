@@ -1,14 +1,17 @@
 name: 'Dedupe Dependabot PRs'
 
 on:
-  push:
+  pull_request_target:
     branches:
-      - 'dependabot/**'
+      - master
+    paths:
+      - 'yarn.lock'
 
 jobs:
   dedupe:
     name: 'Dedupe dependencies'
     runs-on: ubuntu-latest
+    if: github.actor == 'dependabot[bot]'
     steps:
       - name: Generate token
         id: generate-token
@@ -20,6 +23,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           token: ${{ steps.generate-token.outputs.token }}
+          ref: ${{ github.head_ref }}
 
       - uses: actions/setup-node@v4
         with:
