@@ -23,7 +23,7 @@ Libraries live in `packages/`. If you update a package, you MUST add a changeset
 
 ```markdown
 ---
-"@prairielearn/package-name": patch
+'@prairielearn/package-name': patch
 ---
 
 Description of the change
