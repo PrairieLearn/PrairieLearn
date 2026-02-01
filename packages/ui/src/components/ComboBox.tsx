@@ -15,7 +15,6 @@ import {
   Popover,
   SearchField,
   Select,
-  SelectValue,
   Tag,
   TagGroup,
   TagList,
@@ -234,6 +233,8 @@ export function TagPicker<T = void>({
   const { contains } = useFilter({ sensitivity: 'base' });
   const [isOpen, setIsOpen] = useState(false);
 
+  const selectedItems = items.filter((item) => value.includes(item.id));
+
   return (
     <div className="position-relative">
       {name &&
@@ -242,6 +243,46 @@ export function TagPicker<T = void>({
         ) : (
           <input name={name} type="hidden" value="" />
         ))}
+
+      {/* Render selected tags outside the Select trigger button. The HTML spec prohibits
+          interactive content (buttons) inside buttons: https://adrianroselli.com/2016/12/be-wary-of-nesting-roles.html */}
+      {selectedItems.length > 0 && (
+        <TagGroup
+          aria-label="Selected items"
+          className="mb-2"
+          onRemove={!disabled ? (keys) => onChange(value.filter((v) => !keys.has(v))) : undefined}
+        >
+          <TagList items={selectedItems} className="d-flex flex-wrap align-items-center gap-1">
+            {(item) => (
+              <Tag
+                id={item.id}
+                className={clsx(
+                  tagClassName(item.data as T),
+                  'd-inline-flex align-items-center gap-1',
+                )}
+                style={{ lineHeight: 1.2 }}
+                textValue={item.label}
+              >
+                {renderTagContent(item.data as T) ?? item.label}
+                {!disabled && (
+                  <Button
+                    aria-label={`Remove ${item.label}`}
+                    className="border-0 bg-transparent p-0 lh-1"
+                    slot="remove"
+                    style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
+                  >
+                    <i
+                      className="bi bi-x-lg d-flex align-items-center justify-content-center"
+                      aria-hidden="true"
+                      style={{ width: '1.25em', height: '1.25em' }}
+                    />
+                  </Button>
+                )}
+              </Tag>
+            )}
+          </TagList>
+        </TagGroup>
+      )}
 
       <Select<ComboBoxItem<T>, 'multiple'>
         aria-labelledby={ariaLabelledby}
@@ -257,70 +298,14 @@ export function TagPicker<T = void>({
         <Button
           id={id}
           className={clsx(
-            'form-control d-flex flex-wrap align-items-center gap-1 text-start',
+            'form-control d-flex align-items-center text-start',
             disabled && 'bg-body-secondary',
             isOpen && 'border-primary shadow-sm',
             errorMessage && 'is-invalid',
           )}
           style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'pointer' }}
         >
-          <SelectValue<
-            ComboBoxItem<T>
-          > className="flex-grow-1 d-flex flex-wrap align-items-center gap-1">
-            {({ selectedItems: selectItems, state }) => {
-              const selectedItems = selectItems.filter(
-                (item): item is ComboBoxItem<T> => item != null,
-              );
-              if (selectedItems.length === 0) {
-                return <span className="text-muted">{placeholder}</span>;
-              }
-              return (
-                <TagGroup
-                  aria-label="Selected items"
-                  style={{ display: 'contents' }}
-                  onRemove={
-                    !disabled
-                      ? (keys) => {
-                          if (Array.isArray(state.value)) {
-                            state.setValue(state.value.filter((k) => !keys.has(k)));
-                          }
-                        }
-                      : undefined
-                  }
-                >
-                  <TagList items={selectedItems} style={{ display: 'contents' }}>
-                    {(item) => (
-                      <Tag
-                        id={item.id}
-                        className={clsx(
-                          tagClassName(item.data as T),
-                          'd-inline-flex align-items-center gap-1',
-                        )}
-                        style={{ lineHeight: 1.2 }}
-                        textValue={item.label}
-                      >
-                        {renderTagContent(item.data as T) ?? item.label}
-                        {!disabled && (
-                          <Button
-                            aria-label={`Remove ${item.label}`}
-                            className="border-0 bg-transparent p-0 lh-1"
-                            slot="remove"
-                            style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
-                          >
-                            <i
-                              className="bi bi-x-lg d-flex align-items-center justify-content-center"
-                              aria-hidden="true"
-                              style={{ width: '1.25em', height: '1.25em' }}
-                            />
-                          </Button>
-                        )}
-                      </Tag>
-                    )}
-                  </TagList>
-                </TagGroup>
-              );
-            }}
-          </SelectValue>
+          <span className="flex-grow-1 text-muted">{placeholder}</span>
           <i
             aria-hidden="true"
             className={clsx(

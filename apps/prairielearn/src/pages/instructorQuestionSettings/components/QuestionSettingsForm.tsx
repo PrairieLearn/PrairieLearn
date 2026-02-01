@@ -37,21 +37,23 @@ function CollapsibleSection({
   return (
     <div className="mb-3">
       {collapsible ? (
-        <button
-          type="button"
-          className="btn btn-link p-0 text-start text-decoration-none text-body w-100"
-          aria-expanded={isOpen}
-          onClick={onToggle}
-        >
-          <div className="d-flex align-items-center">
-            <i
-              className={clsx('bi me-2', isOpen ? 'bi-chevron-down' : 'bi-chevron-right')}
-              aria-hidden="true"
-            />
-            <h2 className="h4 mb-0">{title}</h2>
-          </div>
+        <div>
+          <button
+            type="button"
+            className="btn btn-link p-0 text-start text-decoration-none text-body w-100"
+            aria-expanded={isOpen}
+            onClick={onToggle}
+          >
+            <span className="d-flex align-items-center">
+              <i
+                className={clsx('bi me-2', isOpen ? 'bi-chevron-down' : 'bi-chevron-right')}
+                aria-hidden="true"
+              />
+              <span className="h4 mb-0">{title}</span>
+            </span>
+          </button>
           <small className="text-muted ps-4">{description}</small>
-        </button>
+        </div>
       ) : (
         <div>
           <h2 className="h4 mb-0">{title}</h2>
