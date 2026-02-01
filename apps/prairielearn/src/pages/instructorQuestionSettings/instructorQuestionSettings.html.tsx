@@ -61,7 +61,7 @@ export function InstructorQuestionSettings({
   courseTopics: Topic[];
   courseTags: Tag[];
 }) {
-  const courseInstance = StaffCourseInstanceSchema.nullable().parse(resLocals.course_instance);
+  const courseInstance = StaffCourseInstanceSchema.nullish().parse(resLocals.course_instance);
 
   const canCopy =
     editableCourses.length > 0 &&

@@ -152,7 +152,7 @@ export const QuestionSettingsForm = ({
   canEdit,
 }: {
   question: StaffQuestion;
-  courseInstance: StaffCourseInstance | null;
+  courseInstance?: StaffCourseInstance | null;
   assessmentsWithQuestion: SelectedAssessments[];
   topic: StaffTopic;
   courseTopics: StaffTopic[];
