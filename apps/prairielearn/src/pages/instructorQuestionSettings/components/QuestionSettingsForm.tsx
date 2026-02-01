@@ -359,7 +359,8 @@ export const QuestionSettingsForm = ({
                     placeholder="Select a topic"
                     aria-labelledby="topic-label"
                     renderItem={(item) => (
-                      <div>
+                      // Override Bootstrap's dropdown-item white-space: nowrap to allow description text to wrap.
+                      <div style={{ whiteSpace: 'normal' }}>
                         <TopicBadge topic={item.data!} />
                         {item.data!.description && (
                           <div>
@@ -393,7 +394,8 @@ export const QuestionSettingsForm = ({
                     placeholder="Select tags"
                     aria-labelledby="tags-label"
                     renderItem={(item) => (
-                      <div>
+                      // Override Bootstrap's dropdown-item white-space: nowrap to allow description text to wrap.
+                      <div style={{ whiteSpace: 'normal' }}>
                         <TagBadge tag={item.data!} />
                         {!item.data!.implicit && item.data!.description && (
                           <div>
