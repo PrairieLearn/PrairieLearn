@@ -178,6 +178,7 @@ export function ComboBox<T = void>({
               className="dropdown-menu show py-0 overflow-auto"
               offset={2}
               placement="bottom"
+              shouldFlip={false}
               style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
             >
               <ListBox
@@ -327,7 +328,8 @@ export function TagPicker<T = void>({
         <Popover
           className="dropdown-menu show py-0 overflow-auto"
           offset={2}
-          placement="bottom start"
+          placement="bottom"
+          shouldFlip={false}
           style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
         >
           <Autocomplete filter={contains}>
