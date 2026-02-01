@@ -312,7 +312,10 @@ export function StudentAssessmentInstance({
             <tbody>
               ${instance_question_rows.map(
                 (instance_question_row) => html`
-                  ${instance_question_row.start_new_zone
+                  ${instance_question_row.start_new_zone &&
+                  (instance_question_row.zone_title ||
+                    instance_question_row.zone_has_max_points ||
+                    instance_question_row.zone_has_best_questions)
                     ? html`
                         <tr>
                           <th colspan="${zoneTitleColspan}">

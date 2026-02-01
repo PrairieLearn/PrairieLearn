@@ -330,7 +330,10 @@ export function InstructorAssessmentInstance({
             <tbody>
               ${instance_questions.map((instance_question) => {
                 return html`
-                  ${instance_question.start_new_zone
+                  ${instance_question.start_new_zone &&
+                  (instance_question.zone_title ||
+                    instance_question.zone_has_max_points ||
+                    instance_question.zone_has_best_questions)
                     ? html`
                         <tr>
                           <th colspan="9">
