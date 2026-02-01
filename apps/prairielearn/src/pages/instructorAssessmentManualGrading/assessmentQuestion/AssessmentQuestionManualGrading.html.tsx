@@ -92,6 +92,7 @@ function AssessmentQuestionManualGradingInner({
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
+  // AI grading is available only if the question uses manual grading.
   const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
   const mutations = useManualGradingActions(trpcClient);
