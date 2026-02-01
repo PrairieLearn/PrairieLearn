@@ -1,9 +1,10 @@
 import clsx from 'clsx';
-import { type Key, type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useState } from 'react';
 import { useFilter } from 'react-aria';
 import {
   ComboBox as AriaComboBox,
   type ComboBoxProps as AriaComboBoxProps,
+  Autocomplete,
   Button,
   FieldError,
   Group,
@@ -12,6 +13,9 @@ import {
   ListBox,
   ListBoxItem,
   Popover,
+  SearchField,
+  Select,
+  SelectValue,
   Tag,
   TagGroup,
   TagList,
@@ -62,10 +66,7 @@ export interface ComboBoxProps<T = void> extends Omit<
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
 }
 
-export interface TagPickerProps<T = void> extends Omit<
-  AriaComboBoxProps<ComboBoxItem<T>>,
-  ManagedAriaProps
-> {
+export interface TagPickerProps<T = void> {
   items: ComboBoxItem<T>[];
   value: string[];
   onChange: (value: string[]) => void;
@@ -75,19 +76,28 @@ export interface TagPickerProps<T = void> extends Omit<
   name?: string;
   /** ID for the input element. */
   id?: string;
+  /** Accessible label for the component. */
+  'aria-labelledby'?: string;
   label?: string;
   description?: string;
   errorMessage?: string;
   renderItem?: (item: ComboBoxItem<T>) => ReactNode;
-  renderTag?: (item: ComboBoxItem<T>) => ReactNode;
+  /** Renders just the content inside the tag (text/icon). The badge styling is applied by tagClassName. */
+  renderTagContent?: (data: T) => ReactNode;
+  /** Returns the class name for the tag badge wrapper. Defaults to "badge bg-secondary". */
+  tagClassName?: (data: T) => string;
 }
 
 function defaultRenderItem<T>(item: ComboBoxItem<T>) {
   return <span>{item.label}</span>;
 }
 
-function defaultRenderTag<T>(item: ComboBoxItem<T>) {
-  return <span className="badge bg-secondary">{item.label}</span>;
+function defaultRenderTagContent(_data: unknown) {
+  return null; // Will be overridden by label fallback in component
+}
+
+function defaultTagClassName(_data: unknown) {
+  return 'badge bg-secondary';
 }
 
 /**
@@ -108,47 +118,12 @@ export function ComboBox<T = void>({
   ...props
 }: ComboBoxProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
-  const [isOpen, setIsOpen] = useState(false);
   const [filterText, setFilterText] = useState('');
 
-  const selectedItem = useMemo(
-    () => items.find((item) => item.id === value) ?? null,
-    [items, value],
+  // Filter by searchableText while textValue (label) controls display
+  const filteredItems = items.filter((item) =>
+    contains(item.searchableText ?? item.label, filterText),
   );
-
-  // Input value is derived: show filter text when open, selected label when closed
-  const inputValue = isOpen ? filterText : (selectedItem?.label ?? '');
-
-  const filteredItems = useMemo(() => {
-    if (!inputValue.trim()) return items;
-    return items.filter((item) => {
-      const searchable = item.searchableText ?? item.label;
-      return contains(searchable, inputValue);
-    });
-  }, [items, inputValue, contains]);
-
-  const handleSelectionChange = (key: Key | null) => {
-    const stringKey = typeof key === 'string' ? key : null;
-    const newSelectedItem = stringKey ? items.find((item) => item.id === stringKey) : null;
-    onChange(stringKey);
-    // Set filter text to new label for immediate display before props update
-    setFilterText(newSelectedItem?.label ?? '');
-  };
-
-  const handleInputChange = (inputVal: string) => {
-    setFilterText(inputVal);
-    if (inputVal === '' && value !== null) {
-      onChange(null);
-    }
-  };
-
-  const handleOpenChange = (open: boolean, trigger?: 'focus' | 'input' | 'manual') => {
-    setIsOpen(open);
-    // Initialize filter text to selected label when opening via focus
-    if (open && trigger === 'focus') {
-      setFilterText(selectedItem?.label ?? '');
-    }
-  };
 
   return (
     <div className="position-relative">
@@ -156,86 +131,89 @@ export function ComboBox<T = void>({
 
       <AriaComboBox
         {...props}
+        items={filteredItems}
         selectedKey={value}
-        inputValue={inputValue}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
         menuTrigger="focus"
         allowsEmptyCollection
-        onSelectionChange={handleSelectionChange}
-        onInputChange={handleInputChange}
-        onOpenChange={handleOpenChange}
+        onInputChange={setFilterText}
+        onSelectionChange={(key) => onChange(key as string | null)}
       >
-        {label && <Label className="form-label">{label}</Label>}
+        {({ isOpen }) => (
+          <>
+            {label && <Label className="form-label">{label}</Label>}
 
-        <Group
-          className={clsx(
-            'form-control d-flex align-items-center gap-1',
-            disabled && 'bg-body-secondary',
-            isOpen && 'border-primary shadow-sm',
-            errorMessage && 'is-invalid',
-          )}
-          style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
-        >
-          <Input
-            className="border-0 flex-grow-1 bg-transparent"
-            id={id}
-            placeholder={placeholder}
-            style={{ outline: 'none' }}
-          />
-          <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
-            <i
-              aria-hidden="true"
-              className={clsx('bi', isOpen ? 'bi-chevron-up' : 'bi-chevron-down', 'text-muted')}
-            />
-          </Button>
-        </Group>
+            <Group
+              className={clsx(
+                'form-control d-flex align-items-center gap-1',
+                disabled && 'bg-body-secondary',
+                isOpen && 'border-primary shadow-sm',
+                errorMessage && 'is-invalid',
+              )}
+              style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
+            >
+              <Input
+                className="border-0 flex-grow-1 bg-transparent"
+                id={id}
+                placeholder={placeholder}
+                style={{ outline: 'none' }}
+              />
+              <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
+                <i
+                  aria-hidden="true"
+                  className={clsx('bi', isOpen ? 'bi-chevron-up' : 'bi-chevron-down', 'text-muted')}
+                />
+              </Button>
+            </Group>
 
-        {description && (
-          <Text className="form-text text-muted" slot="description">
-            {description}
-          </Text>
-        )}
-
-        <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
-
-        <Popover
-          className="dropdown-menu show py-0 overflow-auto"
-          offset={2}
-          style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
-        >
-          <ListBox
-            className="list-unstyled m-0"
-            items={filteredItems}
-            renderEmptyState={() => (
-              <div className="dropdown-item text-muted">No options found</div>
+            {description && (
+              <Text className="form-text text-muted" slot="description">
+                {description}
+              </Text>
             )}
-          >
-            {(item) => (
-              <ListBoxItem
-                id={item.id}
-                className={({ isFocused, isSelected }) =>
-                  clsx(
-                    'dropdown-item d-flex align-items-center gap-2',
-                    isFocused && 'active',
-                    isSelected && 'fw-semibold',
-                  )
-                }
-                style={{ cursor: 'pointer' }}
-                textValue={item.label}
+
+            <FieldError className="invalid-feedback d-block">{errorMessage}</FieldError>
+
+            <Popover
+              className="dropdown-menu show py-0 overflow-auto"
+              offset={2}
+              placement="bottom"
+              style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
+            >
+              <ListBox
+                className="list-unstyled m-0"
+                renderEmptyState={() => (
+                  <div className="dropdown-item text-muted">No options found</div>
+                )}
               >
-                <span className="flex-grow-1">{renderItem(item)}</span>
-              </ListBoxItem>
-            )}
-          </ListBox>
-        </Popover>
+                {(item: ComboBoxItem<T>) => (
+                  <ListBoxItem
+                    id={item.id}
+                    className={({ isFocused, isSelected }) =>
+                      clsx(
+                        'dropdown-item d-flex align-items-center gap-2',
+                        isFocused && 'active',
+                        isSelected && 'fw-semibold',
+                      )
+                    }
+                    style={{ cursor: 'pointer' }}
+                    textValue={item.label}
+                  >
+                    <span className="flex-grow-1">{renderItem(item)}</span>
+                  </ListBoxItem>
+                )}
+              </ListBox>
+            </Popover>
+          </>
+        )}
       </AriaComboBox>
     </div>
   );
 }
 
 /**
- * Multi-selection combobox with removable tags.
+ * Multi-selection picker with removable tags using Select with selectionMode="multiple".
  */
 export function TagPicker<T = void>({
   items,
@@ -245,124 +223,113 @@ export function TagPicker<T = void>({
   disabled = false,
   name,
   id,
+  'aria-labelledby': ariaLabelledby,
   label,
   description,
   errorMessage,
   renderItem = defaultRenderItem,
-  renderTag = defaultRenderTag,
-  ...props
+  renderTagContent = defaultRenderTagContent,
+  tagClassName = defaultTagClassName,
 }: TagPickerProps<T>) {
   const { contains } = useFilter({ sensitivity: 'base' });
-  const [inputValue, setInputValue] = useState('');
   const [isOpen, setIsOpen] = useState(false);
-
-  const selectedItems = useMemo(
-    () => items.filter((item) => value.includes(item.id)),
-    [items, value],
-  );
-
-  const filteredItems = useMemo(() => {
-    if (!inputValue.trim()) return items;
-    return items.filter((item) => {
-      const searchable = item.searchableText ?? item.label;
-      return contains(searchable, inputValue);
-    });
-  }, [items, inputValue, contains]);
-
-  const handleRemoveTag = (keys: Set<Key>) => {
-    const newValue = value.filter((v) => !keys.has(v));
-    onChange(newValue);
-  };
-
-  const handleSelect = (key: Key | null) => {
-    const itemId = typeof key === 'string' ? key : null;
-    if (!itemId) return;
-    if (value.includes(itemId)) {
-      onChange(value.filter((v) => v !== itemId));
-    } else {
-      onChange([...value, itemId]);
-    }
-    setInputValue('');
-  };
 
   return (
     <div className="position-relative">
       {name &&
-        (selectedItems.length > 0 ? (
-          selectedItems.map((item) => (
-            <input key={item.id} name={name} type="hidden" value={item.id} />
-          ))
+        (value.length > 0 ? (
+          value.map((v) => <input key={v} name={name} type="hidden" value={v} />)
         ) : (
           <input name={name} type="hidden" value="" />
         ))}
 
-      <AriaComboBox
-        {...props}
-        inputValue={inputValue}
+      <Select<ComboBoxItem<T>, 'multiple'>
+        aria-labelledby={ariaLabelledby}
+        selectionMode="multiple"
+        value={value}
         isDisabled={disabled}
         isInvalid={!!errorMessage}
-        menuTrigger="focus"
-        selectedKey={null}
-        allowsEmptyCollection
-        onInputChange={setInputValue}
+        onChange={(keys) => onChange(keys as string[])}
         onOpenChange={setIsOpen}
-        onSelectionChange={handleSelect}
       >
         {label && <Label className="form-label">{label}</Label>}
 
-        <Group
+        <Button
+          id={id}
           className={clsx(
-            'form-control d-flex flex-wrap align-items-center gap-1',
+            'form-control d-flex flex-wrap align-items-center gap-1 text-start',
             disabled && 'bg-body-secondary',
             isOpen && 'border-primary shadow-sm',
             errorMessage && 'is-invalid',
           )}
-          style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'text' }}
+          style={{ minHeight: '38px', cursor: disabled ? 'not-allowed' : 'pointer' }}
         >
-          {selectedItems.length > 0 && (
-            <TagGroup
-              aria-label="Selected items"
-              onRemove={!disabled ? handleRemoveTag : undefined}
-            >
-              <TagList>
-                {selectedItems.map((item) => (
-                  <Tag
-                    key={item.id}
-                    id={item.id}
-                    className="d-inline-flex align-items-center"
-                    style={{ lineHeight: 1.2 }}
-                    textValue={item.label}
-                  >
-                    {renderTag(item)}
-                    {!disabled && (
-                      <Button
-                        aria-label={`Remove ${item.label}`}
-                        className="btn-close btn-close-sm ms-1 p-0 border-0 bg-transparent"
-                        slot="remove"
-                        style={{ fontSize: '0.6rem' }}
-                      />
+          <SelectValue<
+            ComboBoxItem<T>
+          > className="flex-grow-1 d-flex flex-wrap align-items-center gap-1">
+            {({ selectedItems: selectItems, state }) => {
+              const selectedItems = selectItems.filter(
+                (item): item is ComboBoxItem<T> => item != null,
+              );
+              if (selectedItems.length === 0) {
+                return <span className="text-muted">{placeholder}</span>;
+              }
+              return (
+                <TagGroup
+                  aria-label="Selected items"
+                  style={{ display: 'contents' }}
+                  onRemove={
+                    !disabled
+                      ? (keys) => {
+                          if (Array.isArray(state.value)) {
+                            state.setValue(state.value.filter((k) => !keys.has(k)));
+                          }
+                        }
+                      : undefined
+                  }
+                >
+                  <TagList items={selectedItems} style={{ display: 'contents' }}>
+                    {(item) => (
+                      <Tag
+                        id={item.id}
+                        className={clsx(
+                          tagClassName(item.data as T),
+                          'd-inline-flex align-items-center gap-1',
+                        )}
+                        style={{ lineHeight: 1.2 }}
+                        textValue={item.label}
+                      >
+                        {renderTagContent(item.data as T) ?? item.label}
+                        {!disabled && (
+                          <Button
+                            aria-label={`Remove ${item.label}`}
+                            className="border-0 bg-transparent p-0 lh-1"
+                            slot="remove"
+                            style={{ fontSize: '0.75em', marginRight: '-0.25em' }}
+                          >
+                            <i
+                              className="bi bi-x-lg d-flex align-items-center justify-content-center"
+                              aria-hidden="true"
+                              style={{ width: '1.25em', height: '1.25em' }}
+                            />
+                          </Button>
+                        )}
+                      </Tag>
                     )}
-                  </Tag>
-                ))}
-              </TagList>
-            </TagGroup>
-          )}
-
-          <div className="flex-grow-1 d-flex align-items-center">
-            <Input
-              className="border-0 flex-grow-1 bg-transparent"
-              id={id}
-              placeholder={selectedItems.length === 0 ? placeholder : ''}
-              style={{ outline: 'none', minWidth: '60px' }}
-            />
-            <Button aria-label="Show suggestions" className="border-0 bg-transparent p-0 ms-auto">
-              <i
-                aria-hidden="true"
-                className={clsx('bi', isOpen ? 'bi-chevron-up' : 'bi-chevron-down', 'text-muted')}
-              />
-            </Button>
-          </div>
-        </Group>
+                  </TagList>
+                </TagGroup>
+              );
+            }}
+          </SelectValue>
+          <i
+            aria-hidden="true"
+            className={clsx(
+              'bi ms-auto',
+              isOpen ? 'bi-chevron-up' : 'bi-chevron-down',
+              'text-muted',
+            )}
+          />
+        </Button>
 
         {description && (
           <Text className="form-text text-muted" slot="description">
@@ -375,40 +342,47 @@ export function TagPicker<T = void>({
         <Popover
           className="dropdown-menu show py-0 overflow-auto"
           offset={2}
+          placement="bottom start"
           style={{ maxHeight: '300px', width: 'var(--trigger-width)' }}
         >
-          <ListBox
-            className="list-unstyled m-0"
-            items={filteredItems}
-            renderEmptyState={() => (
-              <div className="dropdown-item text-muted">No options found</div>
-            )}
-          >
-            {(item) => {
-              const isSelected = value.includes(item.id);
-              return (
+          <Autocomplete filter={contains}>
+            <SearchField aria-label="Search" className="p-2 border-bottom">
+              <Input className="form-control form-control-sm" placeholder="Search..." />
+            </SearchField>
+            <ListBox
+              className="list-unstyled m-0"
+              items={items}
+              renderEmptyState={() => (
+                <div className="dropdown-item text-muted">No options found</div>
+              )}
+            >
+              {(item: ComboBoxItem<T>) => (
                 <ListBoxItem
                   id={item.id}
                   className={({ isFocused }) =>
                     clsx('dropdown-item d-flex align-items-center gap-2', isFocused && 'active')
                   }
                   style={{ cursor: 'pointer' }}
-                  textValue={item.label}
+                  textValue={item.searchableText ?? item.label}
                 >
-                  <input
-                    checked={isSelected}
-                    className="form-check-input m-0"
-                    tabIndex={-1}
-                    type="checkbox"
-                    readOnly
-                  />
-                  <div className="flex-grow-1">{renderItem(item)}</div>
+                  {({ isSelected }) => (
+                    <>
+                      <input
+                        checked={isSelected}
+                        className="form-check-input m-0"
+                        tabIndex={-1}
+                        type="checkbox"
+                        readOnly
+                      />
+                      <div className="flex-grow-1">{renderItem(item)}</div>
+                    </>
+                  )}
                 </ListBoxItem>
-              );
-            }}
-          </ListBox>
+              )}
+            </ListBox>
+          </Autocomplete>
         </Popover>
-      </AriaComboBox>
+      </Select>
     </div>
   );
 }

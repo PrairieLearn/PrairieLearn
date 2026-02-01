@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useMemo, useState } from 'react';
+import { type ReactNode, useMemo, useState } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
@@ -18,6 +18,50 @@ import type {
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
+
+function CollapsibleSection({
+  title,
+  description,
+  isOpen,
+  onToggle,
+  collapsible = true,
+  children,
+}: {
+  title: string;
+  description: ReactNode;
+  isOpen: boolean;
+  onToggle: () => void;
+  collapsible?: boolean;
+  children: ReactNode;
+}) {
+  return (
+    <div className="mb-3">
+      {collapsible ? (
+        <button
+          type="button"
+          className="btn btn-link p-0 text-start text-decoration-none text-body w-100"
+          aria-expanded={isOpen}
+          onClick={onToggle}
+        >
+          <div className="d-flex align-items-center">
+            <i
+              className={clsx('bi me-2', isOpen ? 'bi-chevron-down' : 'bi-chevron-right')}
+              aria-hidden="true"
+            />
+            <h2 className="h4 mb-0">{title}</h2>
+          </div>
+          <small className="text-muted ps-4">{description}</small>
+        </button>
+      ) : (
+        <div>
+          <h2 className="h4 mb-0">{title}</h2>
+          <small className="text-muted">{description}</small>
+        </div>
+      )}
+      {isOpen && <div className={clsx('mt-3', collapsible && 'ps-4')}>{children}</div>}
+    </div>
+  );
+}
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -42,7 +86,7 @@ function AssessmentBadges({
   }
 
   return (
-    <>
+    <div className="d-flex flex-wrap gap-1">
       {assessmentsInCourseInstance.assessments.map((assessment) => (
         <a
           key={assessment.assessment_id}
@@ -52,7 +96,7 @@ function AssessmentBadges({
           {assessment.label}
         </a>
       ))}
-    </>
+    </div>
   );
 }
 
@@ -160,6 +204,7 @@ export const QuestionSettingsForm = ({
     watch,
     setValue,
     trigger,
+    clearErrors,
     formState: { errors, isDirty },
   } = useForm<QuestionSettingsFormValues>({
     mode: 'onChange',
@@ -168,6 +213,9 @@ export const QuestionSettingsForm = ({
 
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
+  const selectedGradingMethod = watch('grading_method');
+
+  const isExternalGrading = selectedGradingMethod === 'External';
 
   const topicItems: ComboBoxItem<StaffTopic>[] = useMemo(
     () =>
@@ -182,12 +230,20 @@ export const QuestionSettingsForm = ({
 
   const tagItems: ComboBoxItem<StaffTag>[] = useMemo(
     () =>
-      courseTags.map((t) => ({
-        id: t.name,
-        data: t,
-        label: t.name,
-        searchableText: `${t.name} ${t.description}`,
-      })),
+      [...courseTags]
+        .sort((a, b) => {
+          // Sort explicit tags above implicit tags, then by name
+          if (a.implicit !== b.implicit) {
+            return a.implicit ? 1 : -1;
+          }
+          return a.name.localeCompare(b.name);
+        })
+        .map((t) => ({
+          id: t.name,
+          data: t,
+          label: t.name,
+          searchableText: `${t.name} ${t.description}`,
+        })),
     [courseTags],
   );
 
@@ -303,7 +359,7 @@ export const QuestionSettingsForm = ({
                     renderItem={(item) => (
                       <div>
                         <TopicBadge topic={item.data!} />
-                        {!item.data!.implicit && item.data!.description && (
+                        {item.data!.description && (
                           <div>
                             <small className="text-muted">
                               <TopicDescription topic={item.data!} />
@@ -346,7 +402,8 @@ export const QuestionSettingsForm = ({
                         )}
                       </div>
                     )}
-                    renderTag={(item) => <TagBadge tag={item.data!} />}
+                    renderTagContent={(data) => data.name}
+                    tagClassName={(data) => `badge color-${data.color}`}
                     onChange={(value) => setValue('tags', value, { shouldDirty: true })}
                   />
                 ) : (
@@ -381,7 +438,19 @@ export const QuestionSettingsForm = ({
           className="form-select"
           id="grading_method"
           disabled={!canEdit}
-          {...register('grading_method')}
+          {...register('grading_method', {
+            onChange: (e) => {
+              if (e.target.value === 'External') {
+                // Auto-enable external grading when selecting External mode (if not already configured)
+                if (question.external_grading_enabled == null) {
+                  setValue('external_grading_enabled', true);
+                }
+              } else {
+                // Clear external grading validation errors when switching away from External
+                clearErrors('external_grading_image');
+              }
+            },
+          })}
         >
           <option value="Internal">Internal</option>
           <option value="External">External</option>
@@ -424,29 +493,23 @@ export const QuestionSettingsForm = ({
         </div>
       </div>
 
-      <div className="d-flex align-items-center mb-3">
-        <h2 className="h4 mb-0 me-2">Workspace</h2>
-        {!showWorkspaceOptions && (
-          <button
-            className="btn btn-sm btn-light"
-            type="button"
-            onClick={() => setShowWorkspaceOptions(true)}
-          >
-            Configure workspace
-          </button>
-        )}
-        {showWorkspaceOptions && canEdit && (
-          <button
-            className="btn btn-sm btn-outline-danger"
-            type="button"
-            onClick={handleRemoveWorkspaceConfiguration}
-          >
-            Remove workspace configuration
-          </button>
-        )}
-      </div>
-
-      {showWorkspaceOptions && (
+      <CollapsibleSection
+        title="Workspace"
+        description={
+          <>
+            Configure a{' '}
+            <a
+              href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+              onClick={(e) => e.stopPropagation()}
+            >
+              remote development environment
+            </a>{' '}
+            for students.
+          </>
+        }
+        isOpen={showWorkspaceOptions}
+        onToggle={() => setShowWorkspaceOptions(!showWorkspaceOptions)}
+      >
         <div id="workspace-options">
           <div className="mb-3">
             <label className="form-label" htmlFor="workspace_image">
@@ -458,7 +521,7 @@ export const QuestionSettingsForm = ({
               id="workspace_image"
               disabled={!canEdit}
               {...register('workspace_image', {
-                required: 'Image is required for workspace',
+                required: showWorkspaceOptions && 'Image is required for workspace',
               })}
             />
             {errors.workspace_image && (
@@ -479,8 +542,10 @@ export const QuestionSettingsForm = ({
               className={clsx('form-control', errors.workspace_port && 'is-invalid')}
               id="workspace_port"
               disabled={!canEdit}
+              // Disable default behavior of incrementing/decrementing the value when scrolling
+              onWheel={(e) => e.currentTarget.blur()}
               {...register('workspace_port', {
-                required: 'Port is required for workspace',
+                required: showWorkspaceOptions && 'Port is required for workspace',
               })}
             />
             {errors.workspace_port && (
@@ -501,7 +566,7 @@ export const QuestionSettingsForm = ({
               id="workspace_home"
               disabled={!canEdit}
               {...register('workspace_home', {
-                required: 'Home is required for workspace',
+                required: showWorkspaceOptions && 'Home is required for workspace',
               })}
             />
             {errors.workspace_home && (
@@ -600,32 +665,36 @@ export const QuestionSettingsForm = ({
               requests as originating from "/".
             </div>
           </div>
+          {canEdit && (
+            <button
+              className="btn btn-sm btn-outline-danger"
+              type="button"
+              onClick={handleRemoveWorkspaceConfiguration}
+            >
+              Remove workspace configuration
+            </button>
+          )}
         </div>
-      )}
+      </CollapsibleSection>
 
-      <div className="d-flex align-items-center mb-3">
-        <h2 className="h4 mb-0 me-2">External Grading</h2>
-        {!showExternalGradingOptions && (
-          <button
-            className="btn btn-sm btn-light"
-            type="button"
-            onClick={() => setShowExternalGradingOptions(true)}
-          >
-            Configure external grading
-          </button>
-        )}
-        {showExternalGradingOptions && canEdit && (
-          <button
-            className="btn btn-sm btn-outline-danger"
-            type="button"
-            onClick={handleRemoveExternalGradingConfiguration}
-          >
-            Remove external grading
-          </button>
-        )}
-      </div>
-
-      {showExternalGradingOptions && (
+      <CollapsibleSection
+        title="External grading"
+        description={
+          <>
+            Configure{' '}
+            <a
+              href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+              onClick={(e) => e.stopPropagation()}
+            >
+              grading using a Docker container
+            </a>
+            .
+          </>
+        }
+        isOpen={isExternalGrading || showExternalGradingOptions}
+        collapsible={!isExternalGrading}
+        onToggle={() => setShowExternalGradingOptions(!showExternalGradingOptions)}
+      >
         <div id="external-grading-options">
           <div className="mb-3 form-check">
             <input
@@ -654,7 +723,7 @@ export const QuestionSettingsForm = ({
               id="external_grading_image"
               disabled={!canEdit}
               {...register('external_grading_image', {
-                required: 'Image is required for external grading',
+                required: isExternalGrading && 'Image is required for external grading',
               })}
             />
             {errors.external_grading_image && (
@@ -711,6 +780,8 @@ export const QuestionSettingsForm = ({
               id="external_grading_timeout"
               min="0"
               disabled={!canEdit}
+              // Disable default behavior of incrementing/decrementing the value when scrolling
+              onWheel={(e) => e.currentTarget.blur()}
               {...register('external_grading_timeout')}
             />
             <small className="form-text text-muted">
@@ -755,8 +826,17 @@ export const QuestionSettingsForm = ({
               default.
             </div>
           </div>
+          {canEdit && (
+            <button
+              className="btn btn-sm btn-outline-danger"
+              type="button"
+              onClick={handleRemoveExternalGradingConfiguration}
+            >
+              Remove external grading configuration
+            </button>
+          )}
         </div>
-      )}
+      </CollapsibleSection>
 
       {canEdit && (
         <>

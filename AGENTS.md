@@ -137,6 +137,7 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Inline prop definitions for components if they are not used outside of the component.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
+- Avoid unnecessary `useEffect` when using `react-hook-form`. The `watch()` function returns reactive values that trigger re-renders automatically, so derived state can be computed directly without `useEffect`.
 
 ## Python guidance
 
