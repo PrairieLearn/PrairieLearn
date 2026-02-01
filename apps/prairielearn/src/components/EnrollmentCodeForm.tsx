@@ -1,4 +1,4 @@
-import { useRef } from 'preact/compat';
+import React, { useRef } from 'react';
 import { Alert, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
@@ -36,7 +36,7 @@ export function EnrollmentCodeForm({
       show?: undefined;
       onHide?: undefined;
       courseInstanceId?: string;
-      leadingContent?: preact.ComponentChildren;
+      leadingContent?: React.ReactNode;
       showInstructorHelp?: boolean;
     }
   | {
@@ -44,7 +44,7 @@ export function EnrollmentCodeForm({
       show: boolean;
       onHide: () => void;
       courseInstanceId?: string;
-      leadingContent?: preact.ComponentChildren;
+      leadingContent?: React.ReactNode;
       showInstructorHelp?: boolean;
     }) {
   const {
@@ -122,14 +122,13 @@ export function EnrollmentCodeForm({
   ];
 
   // Handle paste event
-  const handlePaste = (e: ClipboardEvent) => {
+  const handlePaste = (e: React.ClipboardEvent<HTMLInputElement>) => {
     e.preventDefault();
-    const target = e.target as HTMLInputElement;
-    const pastedText = e.clipboardData?.getData('text') || '';
+    const pastedText = e.clipboardData.getData('text') || '';
     const formatted = formatInput(pastedText);
-    const currentField = fields.find((f) => f.field === target.name);
+    const currentField = fields.find((f) => f.field === e.currentTarget.name);
     const cursorPosition = run(() => {
-      const cursorPosition = target.selectionStart ?? 0;
+      const cursorPosition = e.currentTarget.selectionStart ?? 0;
       if (!currentField) {
         return cursorPosition;
       }
@@ -170,10 +169,12 @@ export function EnrollmentCodeForm({
   };
 
   // Handle key navigation
-  const handleKeyDown = (e: KeyboardEvent, field: keyof EnrollmentCodeFormData) => {
-    const target = e.target as HTMLInputElement;
-    const cursorPosition = target.selectionStart ?? 0;
-    const valueLength = target.value.length;
+  const handleKeyDown = (
+    e: React.KeyboardEvent<HTMLInputElement>,
+    field: keyof EnrollmentCodeFormData,
+  ) => {
+    const cursorPosition = e.currentTarget.selectionStart ?? 0;
+    const valueLength = e.currentTarget.value.length;
 
     const fieldIndex = fields.findIndex((f) => f.field === field);
     const prevField = fieldIndex > 0 ? fields[fieldIndex - 1] : null;
@@ -290,7 +291,7 @@ export function EnrollmentCodeForm({
             <input
               type="text"
               className="form-control text-center"
-              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
               maxLength={3}
               placeholder="ABC"
               {...code1Props}
@@ -305,7 +306,7 @@ export function EnrollmentCodeForm({
             <input
               type="text"
               className="form-control text-center"
-              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
               maxLength={3}
               placeholder="DEF"
               {...code2Props}
@@ -320,7 +321,7 @@ export function EnrollmentCodeForm({
             <input
               type="text"
               className="form-control text-center"
-              style="font-family: monospace; font-size: 1.2em; letter-spacing: 0.1em;"
+              style={{ fontFamily: 'monospace', fontSize: '1.2em', letterSpacing: '0.1em' }}
               maxLength={4}
               placeholder="GHIJ"
               {...code3Props}

@@ -77,19 +77,6 @@ export function OverviewCard({
                   </button>
                 </form>
               )}
-              {enrollment.status === 'blocked' && (
-                <form method="POST">
-                  <input type="hidden" name="__csrf_token" value={csrfToken} />
-                  <input type="hidden" name="__action" value="unblock_student" />
-                  <button
-                    type="submit"
-                    className="btn btn-sm btn-outline-success d-flex flex-row align-items-center gap-1"
-                  >
-                    <i className="fas fa-user-check" aria-hidden="true" />
-                    <span>Remove block</span>
-                  </button>
-                </form>
-              )}
               {(enrollment.status === 'invited' || enrollment.status === 'rejected') && (
                 <button
                   type="button"
@@ -101,7 +88,7 @@ export function OverviewCard({
                   <span>Cancel invitation</span>
                 </button>
               )}
-              {enrollment.status === 'removed' && (
+              {enrollment.status === 'left' && (
                 <form method="POST">
                   <input type="hidden" name="__csrf_token" value={csrfToken} />
                   <input type="hidden" name="__action" value="invite_student" />
@@ -124,6 +111,19 @@ export function OverviewCard({
                   >
                     <i className="fas fa-user-plus" aria-hidden="true" />
                     <span>Re-invite student</span>
+                  </button>
+                </form>
+              )}
+              {(enrollment.status === 'removed' || enrollment.status === 'blocked') && (
+                <form method="POST">
+                  <input type="hidden" name="__csrf_token" value={csrfToken} />
+                  <input type="hidden" name="__action" value="reenroll_student" />
+                  <button
+                    type="submit"
+                    className="btn btn-sm btn-outline-primary d-flex flex-row align-items-center gap-1"
+                  >
+                    <i className="fas fa-user-plus" aria-hidden="true" />
+                    <span>Re-enroll student</span>
                   </button>
                 </form>
               )}

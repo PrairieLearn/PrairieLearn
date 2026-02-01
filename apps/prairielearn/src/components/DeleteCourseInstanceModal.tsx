@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useEffect, useRef, useState } from 'preact/hooks';
+import { useEffect, useRef, useState } from 'react';
 
 export function DeleteCourseInstanceModal({
   shortName,
@@ -76,9 +76,11 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="impact"
                     checked={checks.impact}
-                    onChange={(e) => setChecks((c) => ({ ...c, impact: e.currentTarget.checked }))}
+                    onChange={({ currentTarget }) => {
+                      setChecks((c) => ({ ...c, impact: currentTarget.checked }));
+                    }}
                   />
-                  <label className="form-check-label" for="impact">
+                  <label className="form-check-label" htmlFor="impact">
                     I understand that <strong>{enrolledCount}</strong> enrolled{' '}
                     {enrolledCount === 1 ? 'student' : 'students'} will lose access to this course
                     instance.
@@ -90,11 +92,11 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="irreversible"
                     checked={checks.irreversible}
-                    onChange={(e) =>
-                      setChecks((c) => ({ ...c, irreversible: e.currentTarget.checked }))
-                    }
+                    onChange={({ currentTarget }) => {
+                      setChecks((c) => ({ ...c, irreversible: currentTarget.checked }));
+                    }}
                   />
-                  <label className="form-check-label" for="irreversible">
+                  <label className="form-check-label" htmlFor="irreversible">
                     I understand that once deleted, this course instance cannot be restored through
                     the PrairieLearn web interface.
                   </label>
@@ -105,11 +107,11 @@ export function DeleteCourseInstanceModal({
                     type="checkbox"
                     id="recovery"
                     checked={checks.recovery}
-                    onChange={(e) =>
-                      setChecks((c) => ({ ...c, recovery: e.currentTarget.checked }))
+                    onChange={({ currentTarget }) =>
+                      setChecks((c) => ({ ...c, recovery: currentTarget.checked }))
                     }
                   />
-                  <label className="form-check-label" for="recovery">
+                  <label className="form-check-label" htmlFor="recovery">
                     I understand data recovery requires manual Git operations on the course
                     repository.
                   </label>
@@ -133,7 +135,7 @@ export function DeleteCourseInstanceModal({
                   </div>
                 </div>
                 <div>
-                  <label for="confirmShortName" className="form-label">
+                  <label htmlFor="confirmShortName" className="form-label">
                     Type <strong>{shortName}</strong> to confirm deletion:
                   </label>
                   <input

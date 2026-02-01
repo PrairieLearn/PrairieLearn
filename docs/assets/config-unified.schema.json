@@ -1267,6 +1267,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
@@ -1320,13 +1324,6 @@
     "courseFilesApiUrl": {
       "type": ["string", "null"],
       "default": null
-    },
-    "pythonVenvSearchPaths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [".venv"]
     },
     "costPerMillionTokens": {
       "type": "object",
@@ -1443,6 +1440,10 @@
           "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }

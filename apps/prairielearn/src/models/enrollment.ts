@@ -9,6 +9,7 @@ import {
   runInTransactionAsync,
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import {
   PotentialEnrollmentStatus,
@@ -38,7 +39,6 @@ import {
 } from '../lib/db-types.js';
 import { isEnterprise } from '../lib/license.js';
 import { HttpRedirect } from '../lib/redirect.js';
-import { assertNever } from '../lib/types.js';
 
 import { insertAuditEvent } from './audit-event.js';
 import type { SupportedActionsForTable } from './audit-event.types.js';
@@ -107,7 +107,7 @@ async function _enrollUserInCourseInstance({
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
 
-  assertEnrollmentStatus(lockedEnrollment, ['invited', 'removed', 'rejected']);
+  assertEnrollmentStatus(lockedEnrollment, ['invited', 'left', 'removed', 'rejected']);
 
   const newEnrollment = await queryRow(
     sql.enroll_user,
@@ -137,7 +137,7 @@ async function _enrollUserInCourseInstance({
  * enrollment already exists, this is a no-op. This function does not check
  * enterprise enrollment eligibility, and should not be used directly outside of tests.
  *
- * If the user was in the 'removed', 'invited' or 'rejected' status, this will set the
+ * If the user was in the 'left', 'removed', 'invited' or 'rejected' status, this will set the
  * enrollment status to 'joined'.
  *
  * If the user was 'blocked', this will throw an error.
@@ -460,7 +460,9 @@ async function _inviteExistingEnrollment({
   requiredRole: ('Student Data Editor' | 'System')[];
 }): Promise<Enrollment> {
   assertHasRole(authzData, requiredRole);
-  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'removed', 'blocked']);
+  // We intentionally don't allow instructors to re-invite removed/blocked enrollments.
+  // They can only transition them directly back to `joined`.
+  assertEnrollmentStatus(lockedEnrollment, ['rejected', 'left']);
 
   const newEnrollment = await queryRow(
     sql.invite_existing_enrollment,
@@ -520,7 +522,7 @@ async function inviteNewEnrollment({
  * If there is an existing enrollment with the given uid, it will be updated to a invitation.
  * If there is no existing enrollment, a new enrollment will be created.
  *
- * Transitions users in the 'blocked', 'rejected' or 'removed' status to 'invited'.
+ * Transitions users in the 'rejected' or 'left' status to 'invited'.
  */
 export async function inviteStudentByUid({
   uid,
@@ -581,52 +583,71 @@ export async function setEnrollmentStatus({
   requiredRole,
 }: {
   enrollment: Enrollment;
-  status: 'rejected' | 'blocked' | 'removed' | 'joined';
+  status: 'rejected' | 'blocked' | 'left' | 'removed' | 'joined';
   authzData: AuthzData;
   requiredRole: CourseInstanceRole[];
 }): Promise<Enrollment> {
-  const transitionInformation: {
-    previousStatus: EnumEnrollmentStatus;
-    actionDetail: SupportedActionsForTable<'enrollments'>;
-    permittedRoles: CourseInstanceRole[];
-  } = run(() => {
-    switch (status) {
-      case 'joined':
-        return {
-          previousStatus: 'blocked',
-          actionDetail: 'unblocked',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      case 'removed':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'removed',
-          permittedRoles: ['Student'],
-        };
-      case 'rejected':
-        return {
-          previousStatus: 'invited',
-          actionDetail: 'invitation_rejected',
-          permittedRoles: ['Student'],
-        };
-      case 'blocked':
-        return {
-          previousStatus: 'joined',
-          actionDetail: 'blocked',
-          permittedRoles: ['Student Data Viewer', 'Student Data Editor'],
-        };
-      default:
-        assertNever(status);
-    }
-  });
-
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
     if (lockedEnrollment.user_id) {
       await selectAndLockUser(lockedEnrollment.user_id);
     }
-    // The enrollment is already in the desired status, so we can return early.
-    if (lockedEnrollment.status === status) {
+
+    interface EnrollmentStatusTransitionInformation {
+      equivalentStatuses?: EnumEnrollmentStatus[];
+      previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
+      actionDetail: SupportedActionsForTable<'enrollments'>;
+      permittedRoles: CourseInstanceRole[];
+    }
+
+    const transitionInformation = run((): EnrollmentStatusTransitionInformation => {
+      switch (status) {
+        case 'joined':
+          return {
+            previousStatus: ['blocked', 'removed'],
+            // TODO: when we add support for re-enrolling via manual and LTI sync,
+            // we'll need to differentiate those action details here.
+            actionDetail:
+              lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
+            permittedRoles: ['Student Data Editor'],
+          };
+        case 'left':
+          return {
+            // If a student tries to leave a course but has already been removed by
+            // an instructor, we will treat this as a no-op.
+            equivalentStatuses: ['removed'],
+            previousStatus: 'joined',
+            actionDetail: 'left',
+            permittedRoles: ['Student'],
+          };
+        case 'removed':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'removed',
+            permittedRoles: ['Student Data Editor'],
+          };
+        case 'rejected':
+          return {
+            previousStatus: 'invited',
+            actionDetail: 'invitation_rejected',
+            permittedRoles: ['Student'],
+          };
+        case 'blocked':
+          return {
+            previousStatus: 'joined',
+            actionDetail: 'blocked',
+            permittedRoles: ['Student Data Editor'],
+          };
+        default:
+          assertNever(status);
+      }
+    });
+
+    if (
+      lockedEnrollment.status === status ||
+      transitionInformation.equivalentStatuses?.includes(lockedEnrollment.status)
+    ) {
+      // The enrollment is already in the desired status, so we can return early.
       return lockedEnrollment;
     }
 

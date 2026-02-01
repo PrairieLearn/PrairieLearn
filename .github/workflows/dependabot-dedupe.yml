@@ -1,0 +1,44 @@
+name: 'Dedupe Dependabot PRs'
+
+on:
+  push:
+    branches:
+      - 'dependabot/**'
+
+jobs:
+  dedupe:
+    name: 'Dedupe dependencies'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Generate token
+        id: generate-token
+        uses: actions/create-github-app-token@v1
+        with:
+          app-id: ${{ secrets.CI_BOT_APP_ID }}
+          private-key: ${{ secrets.CI_BOT_APP_PRIVATE_KEY }}
+
+      - uses: actions/checkout@v4
+        with:
+          token: ${{ steps.generate-token.outputs.token }}
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - run: corepack enable
+
+      - name: 'Configure Git'
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email 'github-actions[bot]@users.noreply.github.com'
+
+      - name: 'Dedupe dependencies'
+        run: yarn dedupe
+        env:
+          HUSKY: 0
+
+      - name: 'Commit and push changes'
+        run: |
+          git add .
+          git commit -m 'Dedupe dependencies' || true
+          git push

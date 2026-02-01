@@ -41,7 +41,7 @@ import {
 } from './db-types.js';
 import { getNamesForCopy } from './editorUtil.shared.js';
 import { idsEqual } from './id.js';
-import { EXAMPLE_COURSE_PATH } from './paths.js';
+import { EXAMPLE_COURSE_PATH, REPOSITORY_ROOT_PATH } from './paths.js';
 import { formatJsonWithPrettier } from './prettier.js';
 import { type ServerJob, type ServerJobExecutor, createServerJob } from './server-jobs.js';
 
@@ -182,6 +182,15 @@ export function getUniqueNames({
   }
 }
 
+export async function getOriginalHash(path: string) {
+  try {
+    return sha256(b64EncodeUnicode(await fs.readFile(path, 'utf8'))).toString();
+  } catch (err: any) {
+    if (err.code === 'ENOENT') return null;
+    throw err;
+  }
+}
+
 /**
  * Returns the new value if it differs from the default value. Otherwise, returns undefined.
  * This is helpful for setting JSON properties that we only want to write to if they are different
@@ -309,6 +318,16 @@ export abstract class Editor {
           await syncCourseFromDisk(this.course, startGitHash, job);
           job.data.syncSucceeded = true;
 
+          return;
+        }
+
+        // Safety check: refuse to perform git operations if the course is a
+        // subdirectory of the PrairieLearn repository. Otherwise the `git clean`
+        // and `git reset` commands could delete or modify files with pending changes.
+        if (contains(REPOSITORY_ROOT_PATH, this.course.path)) {
+          job.fail(
+            'Cannot perform git operations on courses inside the PrairieLearn repository. Exiting...',
+          );
           return;
         }
 
@@ -847,12 +866,12 @@ export class AssessmentAddEditor extends Editor {
       allowAccess: [],
       zones: [],
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.assessmentsPath if it
+    // We use outputFile to create the directory assessmentPath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx'
     // to throw an error if `assessmentPath` already exists.
-    await fs.outputJson(path.join(assessmentPath, 'infoAssessment.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(assessmentPath, 'infoAssessment.json'), formattedJson, {
       flag: 'wx',
     });
 
@@ -1230,7 +1249,7 @@ export class CourseInstanceAddEditor extends Editor {
     const courseInstancesPath = path.join(this.course.path, 'courseInstances');
 
     // At this point, upstream code should have already validated
-    // the short name to match a regex like /^[-A-Za-z0-9_/]+$/.
+    // the short name using `validateShortName` from `short-name.ts`.
 
     // If upstream code has not done this, that could lead to a path traversal attack.
     const courseInstancePath = path.join(courseInstancesPath, this.short_name);
@@ -1258,12 +1277,12 @@ export class CourseInstanceAddEditor extends Editor {
       longName: this.long_name,
       ...this.metadataOverrides,
     };
+    const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
 
-    // We use outputJson to create the directory this.courseInstancePath if it
+    // We use outputFile to create the directory courseInstancePath if it
     // does not exist (which it shouldn't). We use the file system flag 'wx' to
     // throw an error if this.courseInstancePath already exists.
-    await fs.outputJson(path.join(courseInstancePath, 'infoCourseInstance.json'), infoJson, {
-      spaces: 4,
+    await fs.outputFile(path.join(courseInstancePath, 'infoCourseInstance.json'), formattedJson, {
       flag: 'wx',
     });
 
@@ -1717,6 +1736,82 @@ export class QuestionRenameEditor extends Editor {
     return {
       pathsToAdd,
       commitMessage: `rename question ${this.question.qid} to ${this.qid_new}`,
+    };
+  }
+}
+
+/**
+ * This rename editor is used to rename an assessment set referenced by assessments.
+ *
+ * It does not rename the assessment set at the course level (infoCourse.json).
+ */
+export class AssessmentSetRenameEditor extends Editor {
+  private oldName: string;
+  private newName: string;
+
+  constructor(
+    params: BaseEditorOptions & {
+      oldName: string;
+      newName: string;
+    },
+  ) {
+    super({
+      ...params,
+      description: `Rename assessment set ${params.oldName} to ${params.newName}`,
+    });
+    this.oldName = params.oldName;
+    this.newName = params.newName;
+  }
+
+  async write() {
+    if (this.oldName === this.newName) return null;
+
+    debug('AssessmentSetRenameEditor: write()');
+
+    const assessments = await sqldb.queryRows(
+      sql.select_assessments_with_assessment_set,
+      { assessment_set_name: this.oldName, course_id: this.course.id },
+      z.object({
+        course_instance_directory: CourseInstanceSchema.shape.short_name,
+        assessment_directory: AssessmentSchema.shape.tid,
+      }),
+    );
+
+    if (assessments.length === 0) return null;
+
+    const pathsToAdd: string[] = [];
+
+    for (const assessment of assessments) {
+      assert(
+        assessment.course_instance_directory !== null,
+        'course_instance_directory is required',
+      );
+      assert(assessment.assessment_directory !== null, 'assessment_directory is required');
+
+      const infoPath = path.join(
+        this.course.path,
+        'courseInstances',
+        assessment.course_instance_directory,
+        'assessments',
+        assessment.assessment_directory,
+        'infoAssessment.json',
+      );
+      pathsToAdd.push(infoPath);
+
+      debug(`Read ${infoPath}`);
+      const infoJson = await fs.readJson(infoPath);
+
+      debug(`Replace assessment set name in ${infoPath}`);
+      infoJson.set = this.newName;
+
+      debug(`Write ${infoPath}`);
+      const formattedJson = await formatJsonWithPrettier(JSON.stringify(infoJson));
+      await fs.writeFile(infoPath, formattedJson);
+    }
+
+    return {
+      pathsToAdd,
+      commitMessage: `rename assessment set ${this.oldName} to ${this.newName}`,
     };
   }
 }

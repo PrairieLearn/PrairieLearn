@@ -1,7 +1,7 @@
 import { DescribeTagsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { mergeWith } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
@@ -25,6 +25,33 @@ export function makeFileConfigSource(path: string): ConfigSource {
 
       const config = await fs.readJson(path);
       return z.record(z.string(), z.any()).parse(config);
+    },
+  };
+}
+
+/**
+ * Extracts keys from T where string is assignable to the value type.
+ * This ensures we only map environment variables to fields that accept strings.
+ */
+type StringAssignableKeys<T> = {
+  [K in keyof T]: string extends T[K] ? K : never;
+}[keyof T];
+
+export function makeEnvConfigSource<Schema extends z.ZodTypeAny>(
+  mapping: Partial<Record<StringAssignableKeys<z.infer<Schema>>, string>>,
+): ConfigSource {
+  return {
+    load: async () => {
+      const config: Record<string, string> = {};
+
+      for (const [key, envVar] of Object.entries(mapping) as [string, string][]) {
+        const value = process.env[envVar];
+        if (value !== undefined) {
+          config[key] = value;
+        }
+      }
+
+      return config;
     },
   };
 }
@@ -105,11 +132,11 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
     for (const source of sources) {
-      config = _.mergeWith(config, await source.load(config), mergeRule);
+      config = mergeWith(config, await source.load(config), mergeRule);
     }
 
     const parsedConfig = this.schema.parse(config);
-    _.mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
+    mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
   }
 
   reset() {

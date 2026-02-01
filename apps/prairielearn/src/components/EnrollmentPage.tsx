@@ -17,12 +17,12 @@ function BlockedEnrollment() {
       <div className="row justify-content-center">
         <div className="col-lg-8 col-xl-6">
           <div className="card">
-            <div className="card-header bg-danger text-white">
+            <div className="card-header bg-primary text-white">
               <h4 className="mb-0">Enrollment blocked</h4>
             </div>
             <div className="card-body">
               <p>
-                You were blocked from accessing this course. If you believe you were blocked by
+                You are blocked from accessing this course. If you believe you were blocked by
                 mistake, contact your instructor.
               </p>
               <a href="/pl" className="btn btn-primary">
@@ -42,7 +42,7 @@ function SelfEnrollmentDisabled() {
       <div className="row justify-content-center">
         <div className="col-lg-8 col-xl-6">
           <div className="card">
-            <div className="card-header bg-danger text-white">
+            <div className="card-header bg-primary text-white">
               <h4 className="mb-0">Self-enrollment not available</h4>
             </div>
             <div className="card-body">
@@ -67,7 +67,7 @@ function SelfEnrollmentExpired() {
       <div className="row justify-content-center">
         <div className="col-lg-8 col-xl-6">
           <div className="card">
-            <div className="card-header bg-danger text-white">
+            <div className="card-header bg-primary text-white">
               <h4 className="mb-0">Self-enrollment expired</h4>
             </div>
             <div className="card-body">
@@ -92,7 +92,7 @@ function InstitutionRestriction() {
       <div className="row justify-content-center">
         <div className="col-lg-8 col-xl-6">
           <div className="card">
-            <div className="card-header bg-danger text-white">
+            <div className="card-header bg-primary text-white">
               <h4 className="mb-0">Institution restriction</h4>
             </div>
             <div className="card-body">

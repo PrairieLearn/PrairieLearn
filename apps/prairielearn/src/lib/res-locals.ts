@@ -2,6 +2,8 @@ import type express from 'express';
 import asyncHandler from 'express-async-handler';
 import type core from 'express-serve-static-core';
 
+import type { IsUnion, MergeUnion, Prettify } from '@prairielearn/utils';
+
 import type {
   ResLocalsCourse,
   ResLocalsCourseInstance,
@@ -19,11 +21,11 @@ import type { ResLocalsCourseIssueCount } from '../middlewares/selectOpenIssueCo
 
 import type { ResLocalsAuthnUser } from './authn.types.js';
 import type { ResLocalsConfig } from './config.js';
+import type { Course, CourseInstance } from './db-types.js';
 import type {
   ResLocalsInstanceQuestionRender,
   ResLocalsQuestionRender,
 } from './question-render.types.js';
-import type { IsUnion, MergeUnion, Prettify } from './types.js';
 
 export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocalsDate {
   __csrf_token: string;
@@ -32,8 +34,14 @@ export interface ResLocals extends ResLocalsAuthnUser, ResLocalsConfig, ResLocal
 interface ResLocalsForPageLookup {
   plain: ResLocals;
   course: ResLocals & ResLocalsCourse & ResLocalsCourseIssueCount;
+  'public-course': ResLocals & { course: Course };
   'course-instance': ResLocals & ResLocalsCourseInstance;
+  'public-course-instance': ResLocals & {
+    course: Course;
+    course_instance: CourseInstance;
+  };
   'instructor-instance-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestionWithCourseInstance &
     ResLocalsInstanceQuestion &
@@ -44,10 +52,12 @@ interface ResLocalsForPageLookup {
     };
   'instructor-question': ResLocals &
     ResLocalsCourse &
+    ResLocalsCourseIssueCount &
     Partial<ResLocalsCourseInstance> &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender;
   'instructor-assessment-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender &

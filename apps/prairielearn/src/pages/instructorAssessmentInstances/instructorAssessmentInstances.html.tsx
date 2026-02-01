@@ -45,7 +45,7 @@ export function InstructorAssessmentInstances({
             ${DeleteAssessmentInstanceModal({
               assessmentSetName: resLocals.assessment_set.name,
               assessmentNumber: resLocals.assessment.number,
-              assessmentTeamWork: resLocals.assessment.team_work,
+              assessmentGroupWork: resLocals.assessment.team_work,
               csrfToken: resLocals.__csrf_token,
             })}
             ${DeleteAllAssessmentInstancesModal({
@@ -155,7 +155,7 @@ export function InstructorAssessmentInstances({
           data-smart-display="false"
           data-show-extended-pagination="true"
           data-sticky-header="true"
-          data-assessment-team-work="${resLocals.assessment.team_work}"
+          data-assessment-group-work="${resLocals.assessment.team_work}"
           data-assessment-multiple-instance="${resLocals.assessment.multiple_instance}"
           data-assessment-number="${resLocals.assessment.number}"
           data-url-prefix="${resLocals.urlPrefix}"
@@ -315,12 +315,12 @@ function TimeRemainingHelpModal() {
 function DeleteAssessmentInstanceModal({
   assessmentSetName,
   assessmentNumber,
-  assessmentTeamWork,
+  assessmentGroupWork,
   csrfToken,
 }: {
   assessmentSetName: string;
   assessmentNumber: string;
-  assessmentTeamWork: boolean;
+  assessmentGroupWork: boolean;
   csrfToken: string;
 }) {
   return Modal({
@@ -331,9 +331,9 @@ function DeleteAssessmentInstanceModal({
       <span class="modal-number"></span> of
       <strong> ${assessmentSetName} ${assessmentNumber} </strong>
       for
-      ${assessmentTeamWork
+      ${assessmentGroupWork
         ? html`
-            <strong><span class="modal-team-name"></span></strong>
+            <strong><span class="modal-group-name"></span></strong>
             (<span class="modal-uid-list"></span>)
           `
         : html`

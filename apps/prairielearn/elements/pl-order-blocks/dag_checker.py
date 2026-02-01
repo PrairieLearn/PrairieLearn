@@ -67,7 +67,7 @@ def solve_dag(
 
 def solve_multigraph(
     depends_multi_graph: Multigraph,
-    final: str,
+    final_blocks: list[str],
 ) -> list[list[str]]:
     """Solve the given problem
 
@@ -80,7 +80,7 @@ def solve_multigraph(
     """
     graphs = [
         dag_to_nx(graph, {})
-        for graph in collapse_multigraph(depends_multi_graph, final)
+        for graph in collapse_multigraph(depends_multi_graph, final_blocks)
     ]
     sort = [list(nx.topological_sort(graph)) for graph in graphs]
     return sort
@@ -218,11 +218,10 @@ def grade_dag(
 def grade_multigraph(
     submission: list[str],
     multigraph: Multigraph,
-    final: str,
+    final_blocks: list[str],
 ) -> tuple[int, int, Dag]:
     top_sort_correctness = []
-    collapsed_dags = list(collapse_multigraph(multigraph, final))
-
+    collapsed_dags = list(collapse_multigraph(multigraph, final_blocks))
     graphs = [dag_to_nx(graph, {}) for graph in collapsed_dags]
     for graph in graphs:
         sub = [x if x in graph.nodes() else None for x in submission]
@@ -383,7 +382,7 @@ def dfs_until(
 
 def collapse_multigraph(
     multigraph: Multigraph,
-    final: str,
+    final_blocks: list[str],
 ) -> Generator[Dag]:
     """
     This algorithm takes a directed multigraph structure where multiple edges
@@ -408,23 +407,29 @@ def collapse_multigraph(
 
     Yields:
         - yields a "fully collapsed" DAG once a DAG has been found.
+
+    NOTE: This isn't the most performant implementation becuase it is not
+    memoizing the returned position from dfs_until in already traversed graphs.
+    Work is being redone, however, most graphs will have very few nodes and the
+    tradeoff for the extra code complexity does not seem worth it at this time.
     """
-    collapsing_graphs: list[Multigraph] = [multigraph]
-    while collapsing_graphs:
-        graph = collapsing_graphs.pop(0)
-        reason, dag = dfs_until(graph, final)
+    for final in final_blocks:
+        collapsing_graphs: list[Multigraph] = [multigraph]
+        while collapsing_graphs:
+            graph = collapsing_graphs.pop(0)
+            reason, dag = dfs_until(graph, final)
 
-        # DFS halted because source was reached
-        if reason is None:
-            yield dag
-            continue
+            # DFS halted because source was reached
+            if reason is None:
+                yield dag
+                continue
 
-        # DFS halted for _has_colored_edges, split graph into their respective partially collapsed graphs
-        node, edges = reason
-        for color in edges:
-            partially_collapsed = deepcopy(graph)
-            partially_collapsed[node] = color
-            collapsing_graphs.append(partially_collapsed)
+            # DFS halted for has_colored_edges, split graph into their respective partially collapsed graphs
+            node, edges = reason
+            for color in edges:
+                partially_collapsed = deepcopy(graph)
+                partially_collapsed[node] = color
+                collapsing_graphs.append(partially_collapsed)
 
 
 def has_colored_edges(edges: Edges | ColoredEdges) -> TypeIs[ColoredEdges]:
