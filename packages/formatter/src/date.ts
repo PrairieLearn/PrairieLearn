@@ -1,5 +1,5 @@
 import { Temporal, toTemporalInstant } from '@js-temporal/polyfill';
-import keyBy from 'lodash/keyBy.js';
+import { keyBy } from 'es-toolkit';
 
 type TimePrecision = 'hour' | 'minute' | 'second';
 

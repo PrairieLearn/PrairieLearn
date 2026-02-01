@@ -97,7 +97,7 @@
     },
     "nonVolatileRedisUrl": {
       "type": ["string", "null"],
-      "default": null
+      "default": "redis://localhost:6379"
     },
     "logFilename": {
       "type": "string",
@@ -672,7 +672,7 @@
     "nonVolatileCacheType": {
       "type": "string",
       "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "redis"
     },
     "cacheKeyPrefix": {
       "type": "string",
@@ -1079,6 +1079,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
@@ -1248,6 +1252,10 @@
           "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }

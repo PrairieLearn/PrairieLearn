@@ -148,6 +148,14 @@ export function useServerJobProgress({
       const { [jobSequenceId]: _removed, ...newJobsProgress } = prev;
       return newJobsProgress;
     });
+
+    setOngoingJobSequenceTokens((prev) => {
+      if (!prev) {
+        return prev;
+      }
+      const { [jobSequenceId]: _removed, ...newTokens } = prev;
+      return newTokens;
+    });
   }
 
   return {

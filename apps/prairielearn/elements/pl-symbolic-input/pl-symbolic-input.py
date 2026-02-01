@@ -77,6 +77,28 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+
+    # Validate that user-specified variables/functions don't conflict with built-ins
+    variables = psu.get_items_list(
+        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    )
+    allow_complex = pl.get_boolean_attrib(
+        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+    )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    psu.validate_names_for_conflicts(
+        name,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig,
+    )
+
     pl.check_answers_names(data, name)
 
     if pl.has_attrib(element, "correct-answer"):

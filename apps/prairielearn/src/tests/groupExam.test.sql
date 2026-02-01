@@ -1,4 +1,4 @@
--- BLOCK select_team_config
+-- BLOCK select_group_config
 SELECT
   minimum,
   maximum

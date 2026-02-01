@@ -5,11 +5,11 @@ SELECT
   u.uid,
   u.name,
   users_get_displayed_role (u.id, ci.id) AS role,
-  ti.id AS team_id,
-  ti.name AS team_name,
-  ti.uid_list,
-  ti.user_name_list,
-  ti.user_roles_list AS team_roles,
+  gi.id AS group_id,
+  gi.name AS group_name,
+  gi.uid_list,
+  gi.user_name_list,
+  gi.user_roles_list AS group_roles,
   substring(
     u.uid
     FROM
@@ -90,7 +90,7 @@ FROM
   JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
   JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
   JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-  LEFT JOIN team_info ($assessment_id) AS ti ON (ti.id = ai.team_id)
+  LEFT JOIN team_info ($assessment_id) AS gi ON (gi.id = ai.team_id)
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id

@@ -12,6 +12,10 @@ inputs:
     required: true
   token:
     description: 'GitHub token to use for commenting'
+  docker_username:
+    description: 'Docker Hub username for authenticated API requests (increases rate limits)'
+  docker_password:
+    description: 'Docker Hub password or access token for authenticated API requests'
 runs:
-  using: 'node20'
+  using: 'node24'
   main: 'dist/index.js'
