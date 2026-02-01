@@ -42,7 +42,6 @@ interface BatchedMigrationStartOptions {
 
 interface BatchedMigrationFinalizeOptions {
   logProgress?: boolean;
-  logError?: boolean;
 }
 
 export class BatchedMigrationsRunner extends EventEmitter {
@@ -151,7 +150,7 @@ export class BatchedMigrationsRunner extends EventEmitter {
 
       // Because we don't give any arguments to `run()`, it will run until it
       // has attempted every job.
-      await runner.run({ logError: options?.logError ?? true });
+      await runner.run();
     });
 
     migration = await selectBatchedMigrationForTimestamp(this.options.project, timestamp);

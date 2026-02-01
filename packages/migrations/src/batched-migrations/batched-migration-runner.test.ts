@@ -1,6 +1,7 @@
 import { afterAll, assert, beforeAll, beforeEach, describe, it } from 'vitest';
 
 import * as error from '@prairielearn/error';
+import { withoutLogging } from '@prairielearn/logger';
 import * as namedLocks from '@prairielearn/named-locks';
 import { execute, makePostgresTestUtils, queryRow, queryRows } from '@prairielearn/postgres';
 
@@ -151,7 +152,7 @@ describe('BatchedMigrationExecutor', () => {
     const migrationImplementation = makeTestBatchMigration();
     migrationImplementation.setFailingIds([1n, 5010n]);
     const runner = new BatchedMigrationRunner(migration, migrationImplementation);
-    await runner.run({ logError: false });
+    await withoutLogging(() => runner.run());
 
     const jobs = await getBatchedMigrationJobs(migration.id);
     const failedJobs = jobs.filter((job) => job.status === 'failed');

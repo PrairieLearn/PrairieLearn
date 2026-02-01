@@ -1,6 +1,7 @@
-import { logger } from '@prairielearn/logger';
-
 import { type Config, config } from '../../lib/config.js';
+
+// Re-export withoutLogging from @prairielearn/logger for convenience.
+export { withoutLogging } from '@prairielearn/logger';
 
 export async function withConfig<T>(
   overrides: Partial<Config>,
@@ -12,21 +13,5 @@ export async function withConfig<T>(
     return await fn();
   } finally {
     Object.assign(config, originalConfig);
-  }
-}
-
-/**
- * Temporarily set the logger to silent.
- *
- * @param fn - The function to run with the logger set to silent.
- * @returns The result of the function.
- */
-export async function withoutLogging<T>(fn: () => T | Promise<T>): Promise<T> {
-  const originalSilent = logger.silent;
-  logger.silent = true;
-  try {
-    return await fn();
-  } finally {
-    logger.silent = originalSilent;
   }
 }
