@@ -16,7 +16,7 @@
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260131.1",
     "@vitest/coverage-v8": "^4.0.18",
     "marked": "^17.0.1",
     "mathjax": "^4.1.0",
