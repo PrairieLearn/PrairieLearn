@@ -9,6 +9,8 @@ import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { PageLayout } from '../../components/PageLayout.js';
+import { compiledStylesheetTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { idsEqual } from '../../lib/id.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -125,7 +127,12 @@ router.get(
   typedAsyncHandler<'course' | 'course-instance'>(async (req, res) => {
     const filterQuery = typeof req.query.q === 'string' ? req.query.q : 'is:open';
 
-    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+    const {
+      authz_data: authzData,
+      course,
+      __csrf_token,
+      urlPrefix,
+    } = extractPageContext(res.locals, {
       pageType: 'course',
       accessType: 'instructor',
     });
@@ -210,14 +217,31 @@ router.get(
     const openFilteredIssuesCount = issueRows.reduce((acc, row) => (row.open ? acc + 1 : acc), 0);
 
     res.send(
-      InstructorIssues({
+      PageLayout({
         resLocals: res.locals,
-        issues,
-        filterQuery,
-        openFilteredIssuesCount,
-        openCount,
-        closedCount,
-        chosenPage: queryPageNumber,
+        pageTitle: 'Issues',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'issues',
+        },
+        options: {
+          fullWidth: true,
+        },
+        headContent: compiledStylesheetTag('instructorIssues.css'),
+        content: (
+          <InstructorIssues
+            issues={issues}
+            filterQuery={filterQuery}
+            openFilteredIssuesCount={openFilteredIssuesCount}
+            openCount={openCount}
+            closedCount={closedCount}
+            chosenPage={queryPageNumber}
+            urlPrefix={urlPrefix}
+            csrfToken={__csrf_token}
+            hasCoursePermissionEdit={authzData.has_course_permission_edit}
+          />
+        ),
       }),
     );
   }),
