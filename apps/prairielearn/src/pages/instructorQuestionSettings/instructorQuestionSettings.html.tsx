@@ -103,7 +103,6 @@ export function InstructorQuestionSettings({
                 csrfToken={resLocals.__csrf_token}
                 canEdit={canEdit}
                 courseInstance={courseInstance}
-                // eslint-disable-next-line @prairielearn/safe-db-types
                 assessmentsWithQuestion={assessmentsWithQuestion}
               />
             </Hydrate>,
