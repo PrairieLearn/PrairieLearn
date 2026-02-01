@@ -1,27 +1,35 @@
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
-import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
-import { syncCourse } from '../helperCourse.js';
+import type { Page } from '@playwright/test';
+
+import { selectQuestionByQid } from '../../models/question.js';
 
 import { expect, test } from './fixtures.js';
 
+async function syncAllCourses(page: Page) {
+  await page.goto('/pl/loadFromDisk');
+  await expect(page).toHaveURL(/\/jobSequence\//);
+  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
+}
+
+// Tests in this suite modify the same question file, so they must run serially
+test.describe.configure({ mode: 'serial' });
+
 test.describe('Question settings', () => {
-  test.beforeAll(async () => {
-    // Sync the example course to ensure it's available
-    await syncCourse(EXAMPLE_COURSE_PATH);
+  let questionId: string;
+
+  test.beforeAll(async ({ browser, workerPort }) => {
+    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
+    await syncAllCourses(page);
+    await page.close();
+
+    // Get question ID after sync
+    questionId = (await selectQuestionByQid({ qid: 'addNumbers', course_id: '1' })).id;
   });
 
   test('edits title and verifies persistence to disk', async ({ page, testCoursePath }) => {
-    // Sync the test course for this specific test
-    await syncCourse(testCoursePath);
-
-    // Navigate to questions list to find the question ID
-    await page.goto('/pl/course/1/admin/questions');
-    await page.getByRole('link', { name: 'addNumbers' }).click();
-    await page.locator('a.nav-link', { hasText: 'Settings' }).click();
-    await expect(page).toHaveURL(/\/question\/\d+\/settings$/);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`/pl/course/1/question/${questionId}/settings`);
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
@@ -59,12 +67,7 @@ test.describe('Question settings', () => {
   });
 
   test('edits topic using ComboBox and verifies persistence', async ({ page, testCoursePath }) => {
-    await syncCourse(testCoursePath);
-    await page.goto('/pl/course/1/admin/questions');
-    await page.getByRole('link', { name: 'addNumbers' }).click();
-    await page.locator('a.nav-link', { hasText: 'Settings' }).click();
-    await expect(page).toHaveURL(/\/question\/\d+\/settings$/);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`/pl/course/1/question/${questionId}/settings`);
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
 
@@ -102,12 +105,7 @@ test.describe('Question settings', () => {
     page,
     testCoursePath,
   }) => {
-    await syncCourse(testCoursePath);
-    await page.goto('/pl/course/1/admin/questions');
-    await page.getByRole('link', { name: 'addNumbers' }).click();
-    await page.locator('a.nav-link', { hasText: 'Settings' }).click();
-    await expect(page).toHaveURL(/\/question\/\d+\/settings$/);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`/pl/course/1/question/${questionId}/settings`);
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
     const originalInfo = JSON.parse(await fs.readFile(infoJsonPath, 'utf8'));
@@ -146,12 +144,7 @@ test.describe('Question settings', () => {
     page,
     testCoursePath,
   }) => {
-    await syncCourse(testCoursePath);
-    await page.goto('/pl/course/1/admin/questions');
-    await page.getByRole('link', { name: 'addNumbers' }).click();
-    await page.locator('a.nav-link', { hasText: 'Settings' }).click();
-    await expect(page).toHaveURL(/\/question\/\d+\/settings$/);
-    await page.waitForLoadState('networkidle');
+    await page.goto(`/pl/course/1/question/${questionId}/settings`);
 
     const infoJsonPath = path.join(testCoursePath, 'questions', 'addNumbers', 'info.json');
 
