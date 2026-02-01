@@ -142,3 +142,29 @@ FROM
   LEFT JOIN assessment_instances AS ai ON (ai.id = iq.assessment_instance_id)
 WHERE
   v.id = $variant_id;
+
+-- BLOCK insert_test_variant
+INSERT INTO
+  variants (
+    question_id,
+    course_id,
+    authn_user_id,
+    user_id,
+    variant_seed,
+    params,
+    true_answer,
+    options
+  )
+VALUES
+  (
+    $question_id,
+    $course_id,
+    $authn_user_id,
+    $user_id,
+    $variant_seed,
+    '{}',
+    '{}',
+    '{}'
+  )
+RETURNING
+  id;
