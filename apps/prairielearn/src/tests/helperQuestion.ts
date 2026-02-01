@@ -5,6 +5,7 @@ import fetch, { FormData } from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
 
+import { withoutLogging } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
@@ -18,8 +19,6 @@ import {
   VariantSchema,
 } from '../lib/db-types.js';
 import { selectQuestionByQid } from '../models/question.js';
-
-import { withoutLogging } from './utils/config.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

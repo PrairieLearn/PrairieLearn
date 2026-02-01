@@ -1,8 +1,5 @@
 import { type Config, config } from '../../lib/config.js';
 
-// Re-export withoutLogging from @prairielearn/logger for convenience.
-export { withoutLogging } from '@prairielearn/logger';
-
 export async function withConfig<T>(
   overrides: Partial<Config>,
   fn: () => T | Promise<T>,

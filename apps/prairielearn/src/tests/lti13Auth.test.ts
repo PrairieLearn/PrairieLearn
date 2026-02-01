@@ -7,6 +7,7 @@ import getPort from 'get-port';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
+import { withoutLogging } from '@prairielearn/logger';
 import { execute, queryOptionalRow } from '@prairielearn/postgres';
 
 import { getAccessToken } from '../ee/lib/lti13.js';
@@ -22,7 +23,6 @@ import {
   makeLoginExecutor,
   withServer,
 } from './lti13TestHelpers.js';
-import { withoutLogging } from './utils/config.js';
 
 const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
 const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
