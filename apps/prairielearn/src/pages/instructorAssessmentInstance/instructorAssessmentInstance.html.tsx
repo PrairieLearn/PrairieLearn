@@ -56,6 +56,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_has_max_points: z.boolean(),
   zone_id: IdSchema,
   zone_max_points: z.number().nullable(),
+  zone_number: z.number(),
   zone_title: z.string().nullable(),
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
@@ -329,11 +330,12 @@ export function InstructorAssessmentInstance({
             <tbody>
               ${instance_questions.map((instance_question) => {
                 return html`
-                  ${instance_question.start_new_zone && instance_question.zone_title
+                  ${instance_question.start_new_zone
                     ? html`
                         <tr>
                           <th colspan="9">
-                            ${instance_question.zone_title}
+                            Zone ${instance_question.zone_number}.
+                            ${instance_question.zone_title ?? ''}
                             ${instance_question.zone_has_max_points
                               ? html`(maximum ${instance_question.zone_max_points} points)`
                               : ''}

@@ -38,6 +38,7 @@ import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
+  zone_number: z.number(),
   zone_title: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
@@ -311,12 +312,15 @@ export function StudentAssessmentInstance({
             <tbody>
               ${instance_question_rows.map(
                 (instance_question_row) => html`
-                  ${instance_question_row.start_new_zone && instance_question_row.zone_title
+                  ${instance_question_row.start_new_zone
                     ? html`
                         <tr>
                           <th colspan="${zoneTitleColspan}">
                             <div class="d-flex align-items-center">
-                              <span class="me-2">${instance_question_row.zone_title}</span>
+                              <span class="me-2"
+                                >Zone ${instance_question_row.zone_number}.
+                                ${instance_question_row.zone_title ?? ''}</span
+                              >
                               ${instance_question_row.zone_has_max_points
                                 ? ZoneInfoPopover({
                                     label: `Maximum ${instance_question_row.zone_max_points} points`,

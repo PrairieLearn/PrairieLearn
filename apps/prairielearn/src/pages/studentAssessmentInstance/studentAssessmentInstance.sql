@@ -11,6 +11,7 @@ SELECT
   iq.*,
   ((lag(z.id) OVER w) IS DISTINCT FROM z.id) AS start_new_zone,
   z.id AS zone_id,
+  z.number AS zone_number,
   z.title AS zone_title,
   q.title AS question_title,
   aq.max_points,
