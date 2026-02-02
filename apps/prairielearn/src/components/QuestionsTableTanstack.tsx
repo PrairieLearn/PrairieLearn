@@ -170,17 +170,11 @@ function QuestionsTableCard({
   );
 
   // Assessment filters per course instance (URL-persisted)
-  const courseInstanceIds = useMemo(
-    () => courseInstances.map((ci) => ci.id),
-    [courseInstances],
-  );
+  const courseInstanceIds = useMemo(() => courseInstances.map((ci) => ci.id), [courseInstances]);
 
   const defaultAssessmentFilterParsers = useMemo(() => {
     return Object.fromEntries(
-      courseInstanceIds.map((id) => [
-        `ci_${id}`,
-        parseAsArrayOf(parseAsString).withDefault([]),
-      ]),
+      courseInstanceIds.map((id) => [`ci_${id}`, parseAsArrayOf(parseAsString).withDefault([])]),
     );
   }, [courseInstanceIds]);
 
@@ -283,7 +277,7 @@ function QuestionsTableCard({
 
     // Add assessment filters (map from URL key ci_${id} to column ID ci_${id}_assessments)
     for (const [urlKey, values] of Object.entries(assessmentFilters)) {
-      if (values && values.length > 0) {
+      if (values.length > 0) {
         filters.push({ id: `${urlKey}_assessments`, value: values });
       }
     }
@@ -314,8 +308,7 @@ function QuestionsTableCard({
       grading_method: (_columnId: string, value: string[]) => void setGradingMethodFilter(value),
       external_grading_image: (_columnId: string, value: string[]) =>
         void setExternalGradingImageFilter(value),
-      workspace_image: (_columnId: string, value: string[]) =>
-        void setWorkspaceImageFilter(value),
+      workspace_image: (_columnId: string, value: string[]) => void setWorkspaceImageFilter(value),
       // Assessment filter setters (column ID ci_${id}_assessments -> URL key ci_${id})
       ...Object.fromEntries(
         courseInstanceIds.map((id) => [
@@ -485,11 +478,13 @@ function QuestionsTableCard({
                       </span>,
                     );
                   }
-                  question.sharing_sets?.forEach((s) => (
-                    <span key={s.name} className="badge color-gray1 me-1">
-                      {s.name}
-                    </span>
-                  ));
+                  question.sharing_sets?.forEach((s) =>
+                    items.push(
+                      <span key={s.name} className="badge color-gray1 me-1">
+                        {s.name}
+                      </span>,
+                    ),
+                  );
 
                   return <span className="text-nowrap">{items}</span>;
                 },
