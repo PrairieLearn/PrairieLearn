@@ -1,9 +1,11 @@
-import type {
-  GenerateObjectResult,
-  GenerateTextResult,
-  LanguageModelUsage,
-  ModelMessage,
-  UserContent,
+import {
+  type GenerateObjectResult,
+  type GenerateTextResult,
+  type LanguageModel,
+  type LanguageModelUsage,
+  type ModelMessage,
+  type UserContent,
+  generateObject,
 } from 'ai';
 import * as cheerio from 'cheerio';
 import { Redis } from 'ioredis';
@@ -22,9 +24,10 @@ import {
 } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { calculateResponseCost, formatPrompt } from '../../../lib/ai.js';
+import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
