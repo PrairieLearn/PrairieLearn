@@ -24,6 +24,7 @@ from dag_checker import (
 )
 from order_blocks_options_parsing import (
     LCS_GRADABLE_TYPES,
+    DisplayType,
     DistractorOrderType,
     FeedbackType,
     FormatType,
@@ -301,7 +302,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
     element = lxml.html.fragment_fromstring(element_html)
     order_blocks_options = OrderBlocksOptions(element)
     answer_name = order_blocks_options.answers_name
-    inline = order_blocks_options.inline
+    inline = order_blocks_options.display_type is DisplayType.INLINE
     dropzone_layout = order_blocks_options.solution_placement
     correct_answers = data["correct_answers"][answer_name]
     has_optional_blocks = order_blocks_options.has_optional_blocks
