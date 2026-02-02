@@ -413,7 +413,13 @@ export async function aiGrade({
             return correctGeminiMalformedRubricGradingJson(options.text);
           };
 
-          if (!hasImage || !submission.submitted_answer) {
+          if (
+            !hasImage ||
+            !submission.submitted_answer ||
+            // Empirical testing demonstrated that rotation correction
+            // was highly effective only for Gemini models.
+            provider !== 'google'
+          ) {
             return {
               finalGradingResponse: await generateObject({
                 model,
@@ -693,7 +699,13 @@ export async function aiGrade({
           gradingResponseWithRotationIssue,
           rotationCorrections,
         } = (await run(async () => {
-          if (!hasImage || !submission.submitted_answer) {
+          if (
+            !hasImage ||
+            !submission.submitted_answer ||
+            // Empirical testing demonstrated that rotation correction
+            // was highly effective only for Gemini models.
+            provider !== 'google'
+          ) {
             return {
               finalGradingResponse: await generateObject({
                 model,
