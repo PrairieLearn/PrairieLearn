@@ -705,3 +705,73 @@ def test_grade_coverage_with_duplicates() -> None:
     # n = 3 (total submitted after set: a, b, d)
     # score = (2/3) * (2/3) = 4/9 ≈ 0.4444
     assert math.isclose(data["partial_scores"]["test"]["score"], 4 / 9, rel_tol=1e-9)
+
+
+def test_max_correct_respected_without_number_answers() -> None:
+    """Test that max-correct is respected when number-answers is not specified.
+
+    Regression test for https://github.com/PrairieLearn/PrairieLearn/issues/4430
+
+    When max-correct is specified but number-answers is not, the element should
+    adjust number-answers to ensure at most max-correct correct answers are shown.
+    Previously, all answers would be shown, which could force more correct answers
+    than max-correct allows.
+    """
+    # Build an element with 5 correct and 4 incorrect options
+    # max-correct=4 means at most 4 correct should be shown
+    element_html = """
+    <pl-checkbox answers-name="ans" min-correct="2" max-correct="4">
+        <pl-answer correct="true">Correct 1</pl-answer>
+        <pl-answer correct="true">Correct 2</pl-answer>
+        <pl-answer correct="true">Correct 3</pl-answer>
+        <pl-answer correct="true">Correct 4</pl-answer>
+        <pl-answer correct="true">Correct 5</pl-answer>
+        <pl-answer>Incorrect 1</pl-answer>
+        <pl-answer>Incorrect 2</pl-answer>
+        <pl-answer>Incorrect 3</pl-answer>
+        <pl-answer>Incorrect 4</pl-answer>
+    </pl-checkbox>
+    """
+
+    data: dict[str, Any] = {
+        "params": {},
+        "correct_answers": {},
+        "submitted_answers": {},
+        "format_errors": {},
+        "partial_scores": {},
+        "score": 0,
+        "feedback": {},
+        "variant_seed": "12345",
+        "options": {},
+        "raw_submitted_answers": {},
+        "editable": True,
+        "panel": "question",
+        "extensions": {},
+        "num_valid_submissions": 0,
+        "manual_points": 0,
+        "auto_points": 0,
+        "answers_names": {},
+    }
+
+    # Run prepare multiple times to check that max-correct is always respected
+    for _ in range(10):
+        # Reset data for each run
+        data["params"] = {}
+        data["correct_answers"] = {}
+        data["answers_names"] = {}
+
+        pl_checkbox.prepare(element_html, data)
+
+        # Count how many correct answers were selected
+        correct_answer_list = data["correct_answers"]["ans"]
+        num_correct = len(correct_answer_list)
+
+        # The bug would cause 5 correct answers to be shown
+        # The fix ensures at most 4 are shown
+        assert num_correct <= 4, (
+            f"max-correct=4 was specified but {num_correct} correct answers were shown. "
+            "This is the bug from issue #4430."
+        )
+        assert num_correct >= 2, (
+            f"min-correct=2 was specified but only {num_correct} correct answers were shown."
+        )
