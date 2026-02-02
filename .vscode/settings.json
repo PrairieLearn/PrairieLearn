@@ -82,7 +82,7 @@
   "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
   "java.project.sourcePaths": ["graders/java"],
   "files.associations": {
-    "**/exampleCourse/**/*.html": "htmlmustache",
-    "**/testCourse/**/*.html": "htmlmustache"
+    "**/exampleCourse/questions/**/question.html": "htmlmustache",
+    "**/testCourse/questions/**/question.html": "htmlmustache"
   }
 }
