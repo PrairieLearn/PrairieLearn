@@ -2458,8 +2458,18 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     }
     canvas.add(obj);
 
-    const groupOffsetX = options.left - obj.left;
-    const groupOffsetY = options.top - obj.top;
+    // Calculate the offset from the Fabric group position to the origin point.
+    // This offset must be calculated at "angle 0" for the update_labels formula to work.
+    // When reloading a rotated object, obj is already rotated, so we need to un-rotate
+    // the offset calculation. See: https://github.com/PrairieLearn/PrairieLearn/issues/6104
+    const theta_rad = (Math.PI / 180) * obj.angle;
+    const cos_t = Math.cos(theta_rad);
+    const sin_t = Math.sin(theta_rad);
+    const dx = options.left - obj.left;
+    const dy = options.top - obj.top;
+    // Apply R(-θ) to get the offset as if angle were 0
+    const groupOffsetX = cos_t * dx + sin_t * dy;
+    const groupOffsetY = -sin_t * dx + cos_t * dy;
 
     const textObj = new mechanicsObjects.LatexText(options.label, {
       fontSize: 20,
@@ -2484,12 +2494,14 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     canvas.add(textObj3);
 
     const modify = function (subObj) {
-      // Apply rotation transformation to get the true origin position.
+      // Calculate and store the true origin position (with rotation correction).
+      // This matches the calculation used in update_labels below.
+      // See: https://github.com/PrairieLearn/PrairieLearn/issues/6104
       const angle_rad = (Math.PI / 180) * (360 - obj.angle);
-      const x = obj.left + Math.cos(angle_rad) * groupOffsetX + Math.sin(angle_rad) * groupOffsetY;
-      const y = obj.top + Math.cos(angle_rad) * groupOffsetY - Math.sin(angle_rad) * groupOffsetX;
-      subObj.left = x;
-      subObj.top = y;
+      subObj.left =
+        obj.left + Math.cos(angle_rad) * groupOffsetX + Math.sin(angle_rad) * groupOffsetY;
+      subObj.top =
+        obj.top + Math.cos(angle_rad) * groupOffsetY - Math.sin(angle_rad) * groupOffsetX;
       subObj.angle = obj.angle;
     };
     submittedAnswer.registerAnswerObject(options, obj, modify);

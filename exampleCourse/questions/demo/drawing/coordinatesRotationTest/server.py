@@ -1,6 +1,3 @@
-import json
-
-
 def generate(data):
     # Reference coordinate system position and angle
     # Using a rotated coordinate system to test the fix
@@ -10,12 +7,9 @@ def generate(data):
 
 
 def grade(data):
-    # Parse the submitted answer to extract coordinate values
-    coords_json = data["submitted_answers"].get("coords", "[]")
-
-    try:
-        coords_list = json.loads(coords_json)
-    except json.JSONDecodeError:
+    # Get the submitted answer - it's already parsed as a list
+    coords_list = data["submitted_answers"].get("coords", [])
+    if not isinstance(coords_list, list):
         coords_list = []
 
     # Find the pl-coordinates element placed by the user
@@ -26,6 +20,8 @@ def grade(data):
             break
 
     if user_coords:
+        # left/top now correctly represent the origin position even under rotation
+        # See: https://github.com/PrairieLearn/PrairieLearn/issues/6104
         left = user_coords.get("left", 0)
         top = user_coords.get("top", 0)
         angle = user_coords.get("angle", 0)

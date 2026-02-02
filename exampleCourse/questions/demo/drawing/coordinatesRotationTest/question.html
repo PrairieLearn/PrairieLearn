@@ -10,7 +10,9 @@
 <p><strong>After submitting:</strong> Check the "Submitted Answer" panel below to see if the reported <code>left</code> and <code>top</code> values match the reference origin position.</p>
 </pl-question-panel>
 
-<pl-drawing grid-size="20" gradable="false" answers-name="coords" width="400" height="400">
+<pl-drawing grid-size="20" gradable="true" answers-name="coords" width="400" height="400">
+    <pl-drawing-answer></pl-drawing-answer>
+
     <pl-drawing-initial>
         <!-- Reference coordinate system (red) - this is what the student should match -->
         <pl-coordinates x1="{{params.ref_x}}" y1="{{params.ref_y}}" width="80" angle="{{params.ref_angle}}" color="red" label="REF"></pl-coordinates>
@@ -21,7 +23,7 @@
 
     <pl-controls>
         <pl-controls-group label="Place coordinate system:">
-            <pl-drawing-button type="pl-coordinates" stroke="#268bd2" width="80"></pl-drawing-button>
+            <pl-drawing-button type="pl-coordinates" color="blue"></pl-drawing-button>
         </pl-controls-group>
         <pl-controls-group label="Tools:">
             <pl-drawing-button type="delete"></pl-drawing-button>
@@ -43,9 +45,9 @@
         <hr>
         <p><strong>Parsed values:</strong></p>
         <ul>
-            <li>left (x): {{feedback.parsed_coords.left}} (expected: {{params.ref_x}}, error: {{feedback.error_x}})</li>
-            <li>top (y): {{feedback.parsed_coords.top}} (expected: {{params.ref_y}}, error: {{feedback.error_y}})</li>
-            <li>angle: {{feedback.parsed_coords.angle}}&deg; (expected: {{params.ref_angle}}&deg;)</li>
+            <li><strong>left:</strong> {{feedback.parsed_coords.left}} (expected: {{params.ref_x}}, error: {{feedback.error_x}})</li>
+            <li><strong>top:</strong> {{feedback.parsed_coords.top}} (expected: {{params.ref_y}}, error: {{feedback.error_y}})</li>
+            <li><strong>angle:</strong> {{feedback.parsed_coords.angle}}&deg; (expected: {{params.ref_angle}}&deg;)</li>
         </ul>
         <p><strong>Position accuracy:</strong>
             {{#feedback.position_ok}}<span class="badge bg-success">GOOD (within 5px tolerance)</span>{{/feedback.position_ok}}
