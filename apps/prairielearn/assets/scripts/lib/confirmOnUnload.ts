@@ -91,16 +91,21 @@ export function confirmOnUnload(form: HTMLFormElement): () => void {
   // https://html.spec.whatwg.org/multipage/input.html#hidden-state-(type=hidden)
   // https://html.spec.whatwg.org/multipage/input.html#dom-input-value-default
   const observers: MutationObserver[] = [];
-  form.querySelectorAll<HTMLInputElement>('[data-deferred-initial-value]').forEach((input) => {
-    // Elements without a name cannot contribute to form data
-    if (!input.name) return;
-    const observer = new MutationObserver(() => {
-      updateQuestionFormData(form, input);
-      observer.disconnect();
-    });
-    observer.observe(input, { attributes: true, attributeFilter: ['value'] });
-    observers.push(observer);
-  });
+  form.querySelectorAll('[data-deferred-initial-value]').forEach((context) =>
+    // the `data-deferred-initial-value` attribute may be on the input itself or a parent element
+    context
+      .querySelectorAll<HTMLInputElement>(':scope, input, select, textarea')
+      .forEach((input) => {
+        // Elements without a name cannot contribute to form data
+        if (!input.name) return;
+        const observer = new MutationObserver(() => {
+          updateQuestionFormData(form, input);
+          observer.disconnect();
+        });
+        observer.observe(input, { attributes: true, attributeFilter: ['value'] });
+        observers.push(observer);
+      }),
+  );
 
   // Check form state on unload
   const handleBeforeUnload = (event: BeforeUnloadEvent) => {
