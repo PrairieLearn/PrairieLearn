@@ -1,8 +1,12 @@
+import { useState } from 'react';
+
 import {
   type CourseInstance,
   QuestionsTable,
   type SafeQuestionsPageData,
 } from '../../components/QuestionsTableTanstack.js';
+
+import { CreateQuestionModal, type TemplateQuestion } from './CreateQuestionModal.js';
 
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
@@ -15,6 +19,8 @@ export interface InstructorQuestionsTableProps {
   qidPrefix?: string;
   search: string;
   isDevMode: boolean;
+  templateQuestions: TemplateQuestion[];
+  csrfToken: string;
 }
 
 export function InstructorQuestionsTable({
@@ -28,32 +34,35 @@ export function InstructorQuestionsTable({
   qidPrefix,
   search,
   isDevMode,
+  templateQuestions,
+  csrfToken,
 }: InstructorQuestionsTableProps) {
-  const handleAddQuestion = () => {
-    // Open the modal using Bootstrap's Modal API
-    const modal = document.getElementById('createQuestionModal');
-    if (modal) {
-      // Use dynamic import to avoid SSR issues
-      void import('bootstrap').then(({ Modal }) => {
-        Modal.getOrCreateInstance(modal).show();
-      });
-    }
-  };
+  const [showCreateModal, setShowCreateModal] = useState(false);
 
   return (
-    <QuestionsTable
-      questions={questions}
-      courseInstances={courseInstances}
-      currentCourseInstanceId={currentCourseInstanceId}
-      showAddQuestionButton={showAddQuestionButton}
-      showAiGenerateQuestionButton={showAiGenerateQuestionButton}
-      showSharingSets={showSharingSets}
-      urlPrefix={urlPrefix}
-      qidPrefix={qidPrefix}
-      search={search}
-      isDevMode={isDevMode}
-      onAddQuestion={handleAddQuestion}
-    />
+    <>
+      <QuestionsTable
+        questions={questions}
+        courseInstances={courseInstances}
+        currentCourseInstanceId={currentCourseInstanceId}
+        showAddQuestionButton={showAddQuestionButton}
+        showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+        showSharingSets={showSharingSets}
+        urlPrefix={urlPrefix}
+        qidPrefix={qidPrefix}
+        search={search}
+        isDevMode={isDevMode}
+        onAddQuestion={() => setShowCreateModal(true)}
+      />
+      {showAddQuestionButton && (
+        <CreateQuestionModal
+          show={showCreateModal}
+          templateQuestions={templateQuestions}
+          csrfToken={csrfToken}
+          onHide={() => setShowCreateModal(false)}
+        />
+      )}
+    </>
   );
 }
 

@@ -78,7 +78,8 @@ function getCourseInstanceCreatePostInfo(page: cheerio.Cheerio<any>) {
 const testEditData: EditData[] = [
   {
     url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_question',
     info: 'questions/New_1/info.json',
     data: {
@@ -102,7 +103,8 @@ const testEditData: EditData[] = [
   {
     // Create a question with a template question as the starting point
     url: questionsUrl,
-    formSelector: '#createQuestionModal',
+    formSelector: 'body',
+    dynamicPostInfo: getCourseInstanceCreatePostInfo,
     action: 'add_question',
     info: 'questions/custom_id/info.json',
     data: {
