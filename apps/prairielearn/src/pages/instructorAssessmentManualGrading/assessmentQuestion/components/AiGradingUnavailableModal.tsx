@@ -8,11 +8,11 @@ export function AiGradingUnavailableModal({ show, onHide }: { show: boolean; onH
       </Modal.Header>
       <Modal.Body>
         <p>
-          AI grading is specifically for questions that use manual grading. Currently, this question
-          does not: <code>max_manual_points</code> is 0.
+          AI grading is only supported for questions with a manually graded portion. To enable
+          manual grading, set <code>manualPoints</code> to a non-zero value.
         </p>
         <p className="mb-0">
-          To use AI grading, add manual points in the assessment configuration. See the{' '}
+          See the{' '}
           <a
             href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#configuring-a-question-for-manual-grading"
             target="_blank"

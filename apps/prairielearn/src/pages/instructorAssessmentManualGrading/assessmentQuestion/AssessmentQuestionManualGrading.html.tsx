@@ -123,7 +123,9 @@ function AssessmentQuestionManualGradingInner({
         </nav>
         {aiGradingEnabled && (
           <div className="card px-3 py-2 mb-0">
-            <div className="form-check form-switch mb-0">
+            <div
+              className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-50'}`}
+            >
               <input
                 className="form-check-input"
                 type="checkbox"
