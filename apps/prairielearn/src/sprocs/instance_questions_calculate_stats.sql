@@ -3,24 +3,32 @@ CREATE FUNCTION
         instance_question_id_param bigint
     ) RETURNS void
 AS $$
-WITH first_calculation AS (
-    SELECT
-        count(s.id) > 0 AS some_submission_var,
-        coalesce(bool_or(s.score = 1), FALSE) AS some_perfect_submission_var,
-        coalesce(bool_or(s.score != 0), FALSE) AS some_nonzero_submission_var,
-        array_agg(s.score ORDER BY s.date) AS submission_score_array_var,
-        array_agg(s.score ORDER BY s.date) FILTER (WHERE s.score IS NOT NULL) AS submission_non_null_score_array_var,
-        max(s.score) AS max_submission_score_var,
-        avg(s.score) AS average_submission_score_var
+-- We use a separate CTE for graded_submissions so that first_calculation
+-- always returns exactly one row (with NULL/empty aggregates) even when
+-- there are no graded submissions.
+WITH graded_submissions AS (
+    SELECT s.*
     FROM
         variants AS v
         JOIN submissions AS s ON (s.variant_id = v.id)
     WHERE
         v.instance_question_id = instance_question_id_param
         AND s.gradable IS TRUE
+        AND s.graded_at IS NOT NULL -- Exclude saved submissions
+),
+first_calculation AS (
+    SELECT
+        count(id) > 0 AS some_submission_var,
+        coalesce(bool_or(score = 1), FALSE) AS some_perfect_submission_var,
+        coalesce(bool_or(score != 0), FALSE) AS some_nonzero_submission_var,
+        coalesce(array_agg(score ORDER BY date), '{}'::double precision[]) AS submission_score_array_var,
+        coalesce(array_agg(score ORDER BY date) FILTER (WHERE score IS NOT NULL), '{}'::double precision[]) AS submission_non_null_score_array_var,
+        max(score) AS max_submission_score_var,
+        avg(score) AS average_submission_score_var
+    FROM graded_submissions
 ),
 second_calculation AS (
-    SELECT array_increments_above_max(submission_score_array_var) AS incremental_submission_score_array_var
+    SELECT coalesce(array_increments_above_max(submission_score_array_var), '{}'::double precision[]) AS incremental_submission_score_array_var
     FROM first_calculation
 )
 UPDATE instance_questions AS iq
@@ -34,7 +42,7 @@ SET
     average_submission_score = average_submission_score_var,
     submission_score_array = submission_score_array_var,
     incremental_submission_score_array = incremental_submission_score_array_var,
-    incremental_submission_points_array = scores_to_points_array(incremental_submission_score_array_var, iq.points_list_original)
+    incremental_submission_points_array = coalesce(scores_to_points_array(incremental_submission_score_array_var, iq.points_list_original), '{}'::double precision[])
 FROM
     first_calculation,
     second_calculation
