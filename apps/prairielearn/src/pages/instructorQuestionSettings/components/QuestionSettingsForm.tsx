@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ReactNode, useMemo, useState } from 'react';
+import { type ReactNode, useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
@@ -19,48 +19,40 @@ import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
 
-function CollapsibleSection({
+function ToggleableSection({
   title,
   description,
-  isOpen,
+  checkboxId,
+  checked,
+  disabled,
   onToggle,
-  collapsible = true,
   children,
 }: {
   title: string;
   description: ReactNode;
-  isOpen: boolean;
+  checkboxId: string;
+  checked: boolean;
+  disabled?: boolean;
   onToggle: () => void;
-  collapsible?: boolean;
   children: ReactNode;
 }) {
   return (
     <div className="mb-3">
-      {collapsible ? (
-        <div>
-          <button
-            type="button"
-            className="btn btn-link p-0 text-start text-decoration-none text-body w-100"
-            aria-expanded={isOpen}
-            onClick={onToggle}
-          >
-            <span className="d-flex align-items-center">
-              <i
-                className={clsx('bi me-2', isOpen ? 'bi-chevron-down' : 'bi-chevron-right')}
-                aria-hidden="true"
-              />
-              <span className="h4 mb-0">{title}</span>
-            </span>
-          </button>
-          <small className="text-muted ps-4">{description}</small>
-        </div>
-      ) : (
-        <div>
-          <h2 className="h4 mb-0">{title}</h2>
-          <small className="text-muted">{description}</small>
-        </div>
-      )}
-      {isOpen && <div className={clsx('mt-3', collapsible && 'ps-4')}>{children}</div>}
+      <div className="form-check">
+        <input
+          className="form-check-input"
+          type="checkbox"
+          id={checkboxId}
+          checked={checked}
+          disabled={disabled}
+          onChange={onToggle}
+        />
+        <label className="form-check-label h4 mb-0" htmlFor={checkboxId}>
+          {title}
+        </label>
+      </div>
+      <small className="text-muted ps-4">{description}</small>
+      {checked && <div className="mt-3 ps-4">{children}</div>}
     </div>
   );
 }
@@ -110,6 +102,7 @@ interface QuestionSettingsFormValues {
   grading_method: 'Internal' | 'External' | 'Manual';
   single_variant: boolean;
   show_correct_answer: boolean;
+  workspace_enabled: boolean;
   workspace_image: string;
   workspace_port: string;
   workspace_home: string;
@@ -165,11 +158,6 @@ export const QuestionSettingsForm = ({
   csrfToken: string;
   canEdit: boolean;
 }) => {
-  const [showWorkspaceOptions, setShowWorkspaceOptions] = useState(!!question.workspace_image);
-  const [showExternalGradingOptions, setShowExternalGradingOptions] = useState(
-    !!question.external_grading_image,
-  );
-
   const defaultValues: QuestionSettingsFormValues = {
     qid: question.qid ?? '',
     title: question.title ?? '',
@@ -178,6 +166,7 @@ export const QuestionSettingsForm = ({
     grading_method: question.grading_method,
     single_variant: question.single_variant ?? false,
     show_correct_answer: question.show_correct_answer ?? true,
+    workspace_enabled: !!question.workspace_image,
     workspace_image: question.workspace_image ?? '',
     workspace_port: question.workspace_port?.toString() ?? '',
     workspace_home: question.workspace_home ?? '',
@@ -189,7 +178,7 @@ export const QuestionSettingsForm = ({
         : '{}',
     workspace_enable_networking: question.workspace_enable_networking ?? false,
     workspace_rewrite_url: question.workspace_url_rewrite ?? true,
-    external_grading_enabled: question.external_grading_enabled ?? false,
+    external_grading_enabled: !!question.external_grading_image,
     external_grading_image: question.external_grading_image ?? '',
     external_grading_entrypoint: question.external_grading_entrypoint ?? '',
     external_grading_files: question.external_grading_files?.join(', ') ?? '',
@@ -216,6 +205,8 @@ export const QuestionSettingsForm = ({
   const selectedTopic = watch('topic');
   const selectedTags = watch('tags');
   const selectedGradingMethod = watch('grading_method');
+  const workspaceEnabled = watch('workspace_enabled');
+  const externalGradingEnabled = watch('external_grading_enabled');
 
   const isExternalGrading = selectedGradingMethod === 'External';
 
@@ -259,29 +250,6 @@ export const QuestionSettingsForm = ({
     if (!isValid) {
       e.preventDefault();
     }
-  };
-
-  const handleRemoveWorkspaceConfiguration = () => {
-    setValue('workspace_image', '', { shouldDirty: true });
-    setValue('workspace_port', '', { shouldDirty: true });
-    setValue('workspace_home', '', { shouldDirty: true });
-    setValue('workspace_graded_files', '', { shouldDirty: true });
-    setValue('workspace_args', '', { shouldDirty: true });
-    setValue('workspace_environment', '{}', { shouldDirty: true });
-    setValue('workspace_enable_networking', false, { shouldDirty: true });
-    setValue('workspace_rewrite_url', true, { shouldDirty: true });
-    setShowWorkspaceOptions(false);
-  };
-
-  const handleRemoveExternalGradingConfiguration = () => {
-    setValue('external_grading_enabled', false, { shouldDirty: true });
-    setValue('external_grading_image', '', { shouldDirty: true });
-    setValue('external_grading_entrypoint', '', { shouldDirty: true });
-    setValue('external_grading_files', '', { shouldDirty: true });
-    setValue('external_grading_timeout', '', { shouldDirty: true });
-    setValue('external_grading_enable_networking', false, { shouldDirty: true });
-    setValue('external_grading_environment', '{}', { shouldDirty: true });
-    setShowExternalGradingOptions(false);
   };
 
   return (
@@ -445,13 +413,7 @@ export const QuestionSettingsForm = ({
           {...register('grading_method', {
             onChange: (e) => {
               if (e.target.value === 'External') {
-                // Auto-enable external grading when selecting External mode (if not already configured)
-                if (question.external_grading_enabled == null) {
-                  setValue('external_grading_enabled', true);
-                }
-              } else {
-                // Clear external grading validation errors when switching away from External
-                clearErrors('external_grading_image');
+                setValue('external_grading_enabled', true, { shouldDirty: true });
               }
             },
           })}
@@ -497,22 +459,32 @@ export const QuestionSettingsForm = ({
         </div>
       </div>
 
-      <CollapsibleSection
+      <ToggleableSection
         title="Workspace"
         description={
           <>
             Configure a{' '}
-            <a
-              href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
               remote development environment
             </a>{' '}
             for students.
           </>
         }
-        isOpen={showWorkspaceOptions}
-        onToggle={() => setShowWorkspaceOptions(!showWorkspaceOptions)}
+        checkboxId="workspaceEnabled"
+        checked={workspaceEnabled}
+        disabled={!canEdit}
+        onToggle={() => {
+          if (workspaceEnabled) {
+            // Clear validation errors when hiding workspace options
+            clearErrors([
+              'workspace_image',
+              'workspace_port',
+              'workspace_home',
+              'workspace_environment',
+            ]);
+          }
+          setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
+        }}
       >
         <div id="workspace-options">
           <div className="mb-3">
@@ -525,7 +497,7 @@ export const QuestionSettingsForm = ({
               id="workspace_image"
               disabled={!canEdit}
               {...register('workspace_image', {
-                required: showWorkspaceOptions && 'Image is required for workspace',
+                required: workspaceEnabled && 'Image is required for workspace',
               })}
             />
             {errors.workspace_image && (
@@ -549,7 +521,7 @@ export const QuestionSettingsForm = ({
               // Disable default behavior of incrementing/decrementing the value when scrolling
               onWheel={(e) => e.currentTarget.blur()}
               {...register('workspace_port', {
-                required: showWorkspaceOptions && 'Port is required for workspace',
+                required: workspaceEnabled && 'Port is required for workspace',
               })}
             />
             {errors.workspace_port && (
@@ -570,7 +542,7 @@ export const QuestionSettingsForm = ({
               id="workspace_home"
               disabled={!canEdit}
               {...register('workspace_home', {
-                required: showWorkspaceOptions && 'Home is required for workspace',
+                required: workspaceEnabled && 'Home is required for workspace',
               })}
             />
             {errors.workspace_home && (
@@ -669,54 +641,32 @@ export const QuestionSettingsForm = ({
               requests as originating from "/".
             </div>
           </div>
-          {canEdit && (
-            <button
-              className="btn btn-sm btn-outline-danger"
-              type="button"
-              onClick={handleRemoveWorkspaceConfiguration}
-            >
-              Remove workspace configuration
-            </button>
-          )}
         </div>
-      </CollapsibleSection>
+      </ToggleableSection>
 
-      <CollapsibleSection
+      <ToggleableSection
         title="External grading"
         description={
           <>
             Configure{' '}
-            <a
-              href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
-              onClick={(e) => e.stopPropagation()}
-            >
+            <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
               grading using a Docker container
             </a>
             .
           </>
         }
-        isOpen={isExternalGrading || showExternalGradingOptions}
-        collapsible={!isExternalGrading}
-        onToggle={() => setShowExternalGradingOptions(!showExternalGradingOptions)}
+        checkboxId="externalGradingEnabled"
+        checked={isExternalGrading || externalGradingEnabled}
+        disabled={!canEdit || isExternalGrading}
+        onToggle={() => {
+          if (externalGradingEnabled) {
+            // Clear validation errors when hiding external grading options
+            clearErrors(['external_grading_image', 'external_grading_environment']);
+          }
+          setValue('external_grading_enabled', !externalGradingEnabled, { shouldDirty: true });
+        }}
       >
         <div id="external-grading-options">
-          <div className="mb-3 form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="external_grading_enabled"
-              disabled={!canEdit}
-              {...register('external_grading_enabled')}
-            />
-            <label className="form-check-label" htmlFor="external_grading_enabled">
-              Enabled
-            </label>
-            <div className="small text-muted">
-              Whether the external grader is currently enabled. Useful for troubleshooting external
-              grader failures, for instance.
-            </div>
-          </div>
-
           <div className="mb-3">
             <label className="form-label" htmlFor="external_grading_image">
               Image
@@ -727,7 +677,7 @@ export const QuestionSettingsForm = ({
               id="external_grading_image"
               disabled={!canEdit}
               {...register('external_grading_image', {
-                required: isExternalGrading && 'Image is required for external grading',
+                required: externalGradingEnabled && 'Image is required for external grading',
               })}
             />
             {errors.external_grading_image && (
@@ -830,17 +780,8 @@ export const QuestionSettingsForm = ({
               default.
             </div>
           </div>
-          {canEdit && (
-            <button
-              className="btn btn-sm btn-outline-danger"
-              type="button"
-              onClick={handleRemoveExternalGradingConfiguration}
-            >
-              Remove external grading configuration
-            </button>
-          )}
         </div>
-      </CollapsibleSection>
+      </ToggleableSection>
 
       {canEdit && (
         <>
