@@ -67,10 +67,12 @@ function ColumnLeafItem<RowDataModel>({
 
 function ColumnGroupItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -93,10 +95,15 @@ function ColumnGroupItem<RowDataModel>({
     e.preventDefault();
     e.stopPropagation();
     const targetVisibility = !isAllVisible;
-    leafColumns.forEach((col) => {
-      if (col.getCanHide()) {
-        col.toggleVisibility(targetVisibility);
-      }
+    // Batch all visibility changes into a single update
+    table.setColumnVisibility((old) => {
+      const newVisibility = { ...old };
+      leafColumns.forEach((col) => {
+        if (col.getCanHide()) {
+          newVisibility[col.id] = targetVisibility;
+        }
+      });
+      return newVisibility;
     });
   };
 
@@ -143,6 +150,7 @@ function ColumnGroupItem<RowDataModel>({
             <ColumnItem
               key={childCol.id}
               column={childCol}
+              table={table}
               getIsOnPinningBoundary={getIsOnPinningBoundary}
               onTogglePin={onTogglePin}
             />
@@ -155,10 +163,12 @@ function ColumnGroupItem<RowDataModel>({
 
 function ColumnItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -166,6 +176,7 @@ function ColumnItem<RowDataModel>({
     return (
       <ColumnGroupItem
         column={column}
+        table={table}
         getIsOnPinningBoundary={getIsOnPinningBoundary}
         onTogglePin={onTogglePin}
       />
@@ -357,6 +368,7 @@ export function ColumnManager<RowDataModel>({
                   <ColumnItem
                     key={column.id}
                     column={column}
+                    table={table}
                     getIsOnPinningBoundary={getIsOnPinningBoundary}
                     onTogglePin={handleTogglePin}
                   />

@@ -405,6 +405,7 @@ function QuestionsTableCard({
           );
         },
         size: 250,
+        maxSize: 800,
       }),
 
       columnHelper.accessor('title', {
@@ -412,6 +413,7 @@ function QuestionsTableCard({
         header: 'Title',
         cell: (info) => <div className="text-wrap">{info.getValue()}</div>,
         size: 300,
+        maxSize: 800,
       }),
 
       columnHelper.accessor('topic', {
