@@ -338,11 +338,13 @@ function parseSubmission({
           (file: { name: string; contents: string }) => file.name === fileName,
         );
 
-        segments.push({
-          type: 'image',
-          fileName: fileData.name,
-          fileData: fileData?.contents,
-        });
+        if (fileData) {
+          segments.push({
+            type: 'image',
+            fileName: fileData.name,
+            fileData: fileData.contents,
+          });
+        }
       } else {
         submissionTextSegment += $submission_html(node).text();
       }
@@ -832,7 +834,7 @@ export async function correctImagesOrientation({
 
   const rotatedSubmittedAnswer = {
     ...submittedAnswer,
-    _files: [...submittedAnswer._files],
+    _files: submittedAnswer._files.map((file: { name: string; contents: string }) => ({ ...file })),
   };
 
   const rotationCorrections: Record<

@@ -3,12 +3,7 @@ import assert from 'node:assert';
 import { createAnthropic } from '@ai-sdk/anthropic';
 import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
-import {
-  type GenerateObjectResult,
-  type JSONParseError,
-  type TypeValidationError,
-  generateObject,
-} from 'ai';
+import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
 import mustache from 'mustache';
 import { z } from 'zod';
@@ -19,7 +14,11 @@ import { run } from '@prairielearn/run';
 import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
-import { logResponseUsage, logResponsesUsage } from '../../../lib/ai-util.js';
+import {
+  type AiImageGradingResponses,
+  logResponseUsage,
+  logResponsesUsage,
+} from '../../../lib/ai-util.js';
 import { config } from '../../../lib/config.js';
 import {
   type Assessment,
@@ -58,7 +57,6 @@ import {
 import {
   type AIGradingLog,
   type AIGradingLogger,
-  type CounterClockwiseRotationDegrees,
   HandwritingOrientationsOutputSchema,
 } from './types.js';
 
@@ -494,23 +492,7 @@ export async function aiGrade({
             rotationCorrections,
             finalGradingResponse: finalResponse,
           };
-        })) satisfies
-          | {
-              rotationCorrectionApplied: false;
-              finalGradingResponse: GenerateObjectResult<any>;
-            }
-          | {
-              rotationCorrectionApplied: true;
-              finalGradingResponse: GenerateObjectResult<any>;
-              rotationCorrections: Record<
-                string,
-                {
-                  degreesRotated: CounterClockwiseRotationDegrees;
-                  response: GenerateObjectResult<any>;
-                }
-              >;
-              gradingResponseWithRotationIssue: GenerateObjectResult<any>;
-            };
+        })) satisfies AiImageGradingResponses;
 
         if (rotationCorrectionApplied) {
           logResponsesUsage({
@@ -772,23 +754,7 @@ export async function aiGrade({
             rotationCorrections,
             finalGradingResponse: finalResponse,
           };
-        })) satisfies
-          | {
-              rotationCorrectionApplied: false;
-              finalGradingResponse: GenerateObjectResult<any>;
-            }
-          | {
-              rotationCorrectionApplied: true;
-              finalGradingResponse: GenerateObjectResult<any>;
-              rotationCorrections: Record<
-                string,
-                {
-                  degreesRotated: CounterClockwiseRotationDegrees;
-                  response: GenerateObjectResult<any>;
-                }
-              >;
-              gradingResponseWithRotationIssue: GenerateObjectResult<any>;
-            };
+        })) satisfies AiImageGradingResponses;
 
         if (rotationCorrectionApplied) {
           logResponsesUsage({
@@ -924,12 +890,6 @@ export async function aiGrade({
             });
           });
         }
-
-        await addAiGradingCostToIntervalUsage({
-          courseInstance: course_instance,
-          model: model_id,
-          usage: finalGradingResponse.usage,
-        });
 
         logger.info(`AI score: ${finalGradingResponse.object.score}`);
       }

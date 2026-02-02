@@ -1,11 +1,34 @@
 import { type OpenAIProvider } from '@ai-sdk/openai';
 import type { GenerateObjectResult, GenerateTextResult, LanguageModelUsage } from 'ai';
 
+import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
+
 import { config } from './config.js';
 
 export type OpenAIModelId = Parameters<OpenAIProvider['languageModel']>[0];
 
 type Prompt = (string | string[])[];
+
+/**
+ * AI image grading response and, if rotation correction occurred, associated rotation correction responses.
+ */
+export type AiImageGradingResponses =
+  | {
+      rotationCorrectionApplied: false;
+      finalGradingResponse: GenerateObjectResult<any>;
+    }
+  | {
+      rotationCorrectionApplied: true;
+      finalGradingResponse: GenerateObjectResult<any>;
+      rotationCorrections: Record<
+        string,
+        {
+          degreesRotated: CounterClockwiseRotationDegrees;
+          response: GenerateObjectResult<any>;
+        }
+      >;
+      gradingResponseWithRotationIssue: GenerateObjectResult<any>;
+    };
 
 /**
  * Utility function to format a prompt from an array of strings and/or string arrays.
