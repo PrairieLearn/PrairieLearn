@@ -56,7 +56,6 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_has_max_points: z.boolean(),
   zone_id: IdSchema,
   zone_max_points: z.number().nullable(),
-  zone_number: z.number(),
   zone_title: z.string().nullable(),
 });
 type InstanceQuestionRow = z.infer<typeof InstanceQuestionRowSchema>;
@@ -337,14 +336,27 @@ export function InstructorAssessmentInstance({
                     ? html`
                         <tr>
                           <th colspan="9">
-                            Zone ${instance_question.zone_number}.
-                            ${instance_question.zone_title ?? ''}
-                            ${instance_question.zone_has_max_points
-                              ? html`(maximum ${instance_question.zone_max_points} points)`
-                              : ''}
-                            ${instance_question.zone_has_best_questions
-                              ? html`(best ${instance_question.zone_best_questions} questions)`
-                              : ''}
+                            ${(() => {
+                              const constraints = [
+                                instance_question.zone_has_max_points
+                                  ? `maximum ${instance_question.zone_max_points} points`
+                                  : null,
+                                instance_question.zone_has_best_questions
+                                  ? `best ${instance_question.zone_best_questions} questions`
+                                  : null,
+                              ].filter(Boolean);
+
+                              if (instance_question.zone_title) {
+                                // Title with optional constraints in parentheses
+                                return constraints.length > 0
+                                  ? `${instance_question.zone_title} (${constraints.join(', ')})`
+                                  : instance_question.zone_title;
+                              } else {
+                                // No title - capitalize the first constraint
+                                const text = constraints.join(', ');
+                                return text.charAt(0).toUpperCase() + text.slice(1);
+                              }
+                            })()}
                           </th>
                         </tr>
                       `

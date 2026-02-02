@@ -38,7 +38,6 @@ import { SimpleVariantWithScoreSchema } from '../../models/variant.js';
 export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   start_new_zone: z.boolean(),
   zone_id: IdSchema,
-  zone_number: z.number(),
   zone_title: z.string().nullable(),
   question_title: z.string(),
   max_points: z.number().nullable(),
@@ -320,19 +319,26 @@ export function StudentAssessmentInstance({
                         <tr>
                           <th colspan="${zoneTitleColspan}">
                             <div class="d-flex align-items-center">
-                              <span class="me-2"
-                                >Zone ${instance_question_row.zone_number}.
-                                ${instance_question_row.zone_title ?? ''}</span
-                              >
+                              ${instance_question_row.zone_title
+                                ? html`<span class="me-2"
+                                    >${instance_question_row.zone_title}</span
+                                  >`
+                                : ''}
                               ${instance_question_row.zone_has_max_points
                                 ? ZoneInfoPopover({
-                                    label: `Maximum ${instance_question_row.zone_max_points} points`,
+                                    label: instance_question_row.zone_title
+                                      ? `maximum ${instance_question_row.zone_max_points} points`
+                                      : `Maximum ${instance_question_row.zone_max_points} points`,
                                     content: `Of the points that you are awarded for answering these questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
                                   })
                                 : ''}
                               ${instance_question_row.zone_has_best_questions
                                 ? ZoneInfoPopover({
-                                    label: `Best ${instance_question_row.zone_best_questions} questions`,
+                                    label:
+                                      instance_question_row.zone_title ||
+                                      instance_question_row.zone_has_max_points
+                                        ? `best ${instance_question_row.zone_best_questions} questions`
+                                        : `Best ${instance_question_row.zone_best_questions} questions`,
                                     content: `Of these questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
                                   })
                                 : ''}
