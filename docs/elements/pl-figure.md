@@ -27,7 +27,6 @@ Display a statically or dynamically generated image. Supports many image file fo
 | `directory` | string                    | `"clientFilesQuestion"` | The directory that contains the file, either `"clientFilesQuestion"` or `clientFilesCourse` (see [client and server files](../clientServerFiles.md)). A directory cannot be specified if `type="dynamic"`. |
 | `width`     | number                    | —                       | Width of the image in pixels, e.g. `250`.                                                                                                                                                                  |
 | `display`   | `"block"` or `"inline"`   | `"block"`               | Display figure inline with text (`"inline"`) or on a separate line (`"block"`).                                                                                                                            |
-| `inline`    | boolean                   | false                   | **Deprecated.** Use `display="inline"` instead. Display figure inline with text (true) or on a separate line (false).                                                                                      |
 | `alt`       | string                    | ""                      | Provide alt (alternative) text to improve accessibility of figures by describing the image or the purpose of the image. Default is an empty string.                                                        |
 
 ## Dynamically generated figures
