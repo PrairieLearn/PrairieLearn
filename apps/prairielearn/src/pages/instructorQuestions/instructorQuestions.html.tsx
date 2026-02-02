@@ -1,46 +1,51 @@
-import { PageLayout } from '../../components/PageLayout.js';
-import { QuestionsTable, QuestionsTableHead } from '../../components/QuestionsTable.js';
 import { type CourseInstance } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
 import { type QuestionsPageData } from '../../models/questions.js';
 
-export const QuestionsPage = ({
-  questions,
-  templateQuestions = [],
-  course_instances,
-  showAddQuestionButton,
-  showAiGenerateQuestionButton,
-  resLocals,
-}: {
+import { InstructorQuestionsPage } from './InstructorQuestionsPage.js';
+
+export interface QuestionsPageProps {
   questions: QuestionsPageData[];
-  templateQuestions?: { example_course: boolean; qid: string; title: string }[];
-  course_instances: CourseInstance[];
+  templateQuestions: { example_course: boolean; qid: string; title: string }[];
+  courseInstances: CourseInstance[];
   showAddQuestionButton: boolean;
   showAiGenerateQuestionButton: boolean;
+  showSharingSets: boolean;
+  currentCourseInstanceId?: string;
+  urlPrefix: string;
+  csrfToken: string;
+  search: string;
+  isDevMode: boolean;
+}
+
+export function QuestionsPage({
+  questions,
+  templateQuestions,
+  courseInstances,
+  showAddQuestionButton,
+  showAiGenerateQuestionButton,
+  showSharingSets,
+  currentCourseInstanceId,
+  urlPrefix,
+  csrfToken,
+  search,
+  isDevMode,
+  resLocals,
+}: QuestionsPageProps & {
   resLocals: ResLocalsForPage<'course' | 'course-instance'>;
-}) => {
-  return PageLayout({
+}) {
+  return InstructorQuestionsPage({
+    questions,
+    templateQuestions,
+    courseInstances,
+    showAddQuestionButton,
+    showAiGenerateQuestionButton,
+    showSharingSets,
+    currentCourseInstanceId,
+    urlPrefix,
+    csrfToken,
+    search,
+    isDevMode,
     resLocals,
-    pageTitle: 'Questions',
-    navContext: {
-      type: 'instructor',
-      page: 'course_admin',
-      subPage: 'questions',
-    },
-    options: {
-      fullWidth: true,
-    },
-    headContent: QuestionsTableHead(),
-    content: QuestionsTable({
-      questions,
-      templateQuestions,
-      course_instances,
-      showAddQuestionButton,
-      showAiGenerateQuestionButton,
-      showSharingSets: resLocals.question_sharing_enabled,
-      current_course_instance: resLocals.course_instance,
-      urlPrefix: resLocals.urlPrefix,
-      __csrf_token: resLocals.__csrf_token,
-    }),
   });
-};
+}

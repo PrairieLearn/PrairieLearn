@@ -1,4 +1,3 @@
-import * as cheerio from 'cheerio';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
@@ -87,14 +86,14 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   });
 
   describe('GET ' + questionsUrlCourse, function () {
-    let parsedPage: cheerio.CheerioAPI;
-    it('should load successfully and contain question data', async () => {
+    it('should load successfully', async () => {
       const res = await fetch(questionsUrlCourse);
       assert.equal(res.status, 200);
-      parsedPage = cheerio.load(await res.text());
     });
-    it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data') as {
+    it('should contain question data via data.json endpoint', async () => {
+      const res = await fetch(`${questionsUrlCourse}/data.json`);
+      assert.equal(res.status, 200);
+      questionData = (await res.json()) as {
         id: string;
         qid: string;
         title: string;
@@ -114,15 +113,14 @@ describe('Instructor questions', { timeout: 60_000 }, function () {
   });
 
   describe('GET ' + questionsUrl, function () {
-    let parsedPage: cheerio.CheerioAPI;
     it('should load successfully', async () => {
       const res = await fetch(questionsUrl);
       assert.equal(res.status, 200);
-      const page = await res.text();
-      parsedPage = cheerio.load(page);
     });
-    it('should contain question data', function () {
-      questionData = parsedPage('#questionsTable').data('data') as {
+    it('should contain question data via data.json endpoint', async () => {
+      const res = await fetch(`${questionsUrl}/data.json`);
+      assert.equal(res.status, 200);
+      questionData = (await res.json()) as {
         id: string;
         qid: string;
         title: string;

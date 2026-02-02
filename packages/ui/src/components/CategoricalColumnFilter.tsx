@@ -147,6 +147,8 @@ export function CategoricalColumnFilter<TData, TValue extends string = string>({
               // This is needed to prevent the last item's background from covering
               // the dropdown's border radius.
               '--bs-list-group-bg': 'transparent',
+              maxHeight: '500px',
+              overflowY: 'auto',
             } as React.CSSProperties
           }
         >

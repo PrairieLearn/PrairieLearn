@@ -1,6 +1,7 @@
 import * as url from 'node:url';
 
 import { Router } from 'express';
+import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -16,7 +17,7 @@ import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
-import { getSearchParams } from '../../lib/url.js';
+import { getSearchParams, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
@@ -91,6 +92,34 @@ async function getTemplateQuestions(questions: QuestionsPageData[]) {
   ];
 }
 
+// Supports client-side table refresh
+router.get(
+  '/data.json',
+  createAuthzMiddleware({
+    oneOfPermissions: ['has_course_permission_preview'],
+    unauthorizedUsers: 'block',
+  }),
+  asyncHandler(async (_req, res) => {
+    const { authz_data: authzData, course } = extractPageContext(res.locals, {
+      pageType: 'course',
+      accessType: 'instructor',
+    });
+
+    const courseInstances = await selectCourseInstancesWithStaffAccess({
+      course,
+      authzData,
+      requiredRole: ['Previewer'],
+    });
+
+    const questions = await selectQuestionsForCourse(
+      course.id,
+      courseInstances.map((ci) => ci.id),
+    );
+
+    res.json(questions);
+  }),
+);
+
 router.get(
   '/',
   createAuthzMiddleware({
@@ -137,11 +166,13 @@ router.get(
     const templateQuestions = await getTemplateQuestions(questions);
 
     const courseDirExists = await fs.pathExists(course.path);
+    const search = getUrl(req).search;
+
     res.send(
       QuestionsPage({
         questions,
         templateQuestions,
-        course_instances: courseInstances,
+        courseInstances,
         showAddQuestionButton:
           authzData.has_course_permission_edit && !course.example_course && courseDirExists,
         showAiGenerateQuestionButton:
@@ -149,6 +180,12 @@ router.get(
           !course.example_course &&
           isEnterprise() &&
           (await features.enabledFromLocals('ai-question-generation', res.locals)),
+        showSharingSets: res.locals.question_sharing_enabled,
+        currentCourseInstanceId: res.locals.course_instance?.id,
+        urlPrefix: res.locals.urlPrefix,
+        csrfToken: res.locals.__csrf_token,
+        search,
+        isDevMode: config.devMode,
         resLocals: res.locals,
       }),
     );
