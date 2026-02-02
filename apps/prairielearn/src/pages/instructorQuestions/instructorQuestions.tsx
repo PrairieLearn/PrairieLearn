@@ -6,8 +6,15 @@ import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
+import { html } from '@prairielearn/html';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate, hydrateHtml } from '@prairielearn/react/server';
 
+import { CreateQuestionModalContents } from '../../components/CreateQuestionModalContents.js';
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
+import { Modal } from '../../components/Modal.js';
+import { PageLayout } from '../../components/PageLayout.js';
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
@@ -21,10 +28,11 @@ import { getSearchParams, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
 import { selectOptionalQuestionByQid } from '../../models/question.js';
-import { type QuestionsPageData, selectQuestionsForCourse } from '../../models/questions.js';
+import { selectQuestionsForCourse } from '../../models/questions.js';
+import { type QuestionsPageData } from '../../models/questions.types.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
-import { QuestionsPage } from './instructorQuestions.html.js';
+import { InstructorQuestionsTable } from './InstructorQuestionsTable.js';
 
 const router = Router();
 
@@ -158,35 +166,80 @@ router.get(
       requiredRole: ['Previewer'],
     });
 
-    const questions = await selectQuestionsForCourse(
+    const rawQuestions = await selectQuestionsForCourse(
       course.id,
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateQuestions(questions);
+    const templateQuestions = await getTemplateQuestions(rawQuestions);
+    const questions = rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
 
     const courseDirExists = await fs.pathExists(course.path);
     const search = getUrl(req).search;
 
+    const showAddQuestionButton =
+      authzData.has_course_permission_edit && !course.example_course && courseDirExists;
+    const showAiGenerateQuestionButton =
+      authzData.has_course_permission_edit &&
+      !course.example_course &&
+      isEnterprise() &&
+      (await features.enabledFromLocals('ai-question-generation', res.locals));
+
+    const mappedCourseInstances = courseInstances.map((ci) => ({
+      id: ci.id,
+      short_name: ci.short_name ?? '',
+    }));
+
     res.send(
-      QuestionsPage({
-        questions,
-        templateQuestions,
-        courseInstances,
-        showAddQuestionButton:
-          authzData.has_course_permission_edit && !course.example_course && courseDirExists,
-        showAiGenerateQuestionButton:
-          authzData.has_course_permission_edit &&
-          !course.example_course &&
-          isEnterprise() &&
-          (await features.enabledFromLocals('ai-question-generation', res.locals)),
-        showSharingSets: res.locals.question_sharing_enabled,
-        currentCourseInstanceId: res.locals.course_instance?.id,
-        urlPrefix: res.locals.urlPrefix,
-        csrfToken: res.locals.__csrf_token,
-        search,
-        isDevMode: config.devMode,
+      PageLayout({
         resLocals: res.locals,
+        pageTitle: 'Questions',
+        navContext: {
+          type: 'instructor',
+          page: 'course_admin',
+          subPage: 'questions',
+        },
+        options: {
+          fullWidth: true,
+          fullHeight: true,
+        },
+        content: [
+          ...(showAddQuestionButton
+            ? [
+                Modal({
+                  id: 'createQuestionModal',
+                  title: 'Create question',
+                  formMethod: 'POST',
+                  body: hydrateHtml(
+                    <CreateQuestionModalContents templateQuestions={templateQuestions} />,
+                  ),
+                  footer: html`
+                    <input type="hidden" name="__action" value="add_question" />
+                    <input type="hidden" name="__csrf_token" value="${res.locals.__csrf_token}" />
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                      Cancel
+                    </button>
+                    <button type="submit" class="btn btn-primary">Create</button>
+                  `,
+                }),
+              ]
+            : []),
+          renderHtml(
+            <Hydrate fullHeight>
+              <InstructorQuestionsTable
+                questions={questions}
+                courseInstances={mappedCourseInstances}
+                currentCourseInstanceId={res.locals.course_instance?.id}
+                showAddQuestionButton={showAddQuestionButton}
+                showAiGenerateQuestionButton={showAiGenerateQuestionButton}
+                showSharingSets={res.locals.question_sharing_enabled}
+                urlPrefix={res.locals.urlPrefix}
+                search={search}
+                isDevMode={config.devMode}
+              />
+            </Hydrate>,
+          ),
+        ],
       }),
     );
   }),

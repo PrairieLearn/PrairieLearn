@@ -14,7 +14,7 @@ import {
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
-import { Button } from 'react-bootstrap';
+import { Alert, Button } from 'react-bootstrap';
 import { z } from 'zod';
 
 import {
@@ -35,29 +35,34 @@ import { AssessmentBadgeList } from './AssessmentBadge.js';
 import { IssueBadge } from './IssueBadge.js';
 import {
   type CourseInstance,
-  type QuestionsPageData,
-  QuestionsPageDataSchema,
+  type SafeQuestionsPageData,
+  SafeQuestionsPageDataSchema,
 } from './QuestionsTable.shared.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
 
-export type { CourseInstance, QuestionsPageData } from './QuestionsTable.shared.js';
+export type { CourseInstance, SafeQuestionsPageData } from './QuestionsTable.shared.js';
 
 const DEFAULT_SORT: SortingState = [];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['qid'], right: [] };
 
-const columnHelper = createColumnHelper<QuestionsPageData>();
+const columnHelper = createColumnHelper<SafeQuestionsPageData>();
+
+interface ColumnWithOptionalChildren {
+  id?: string;
+  columns?: ColumnWithOptionalChildren[];
+}
 
 /**
  * Recursively extracts leaf column IDs from column definitions.
  * Group columns are skipped, only actual data columns are included.
  */
-function extractLeafColumnIds(columns: { id?: string | null; columns?: unknown[] }[]): string[] {
+function extractLeafColumnIds(columns: ColumnWithOptionalChildren[]): string[] {
   const leafIds: string[] = [];
   for (const col of columns) {
-    if (col.columns && Array.isArray(col.columns) && col.columns.length > 0) {
-      leafIds.push(...extractLeafColumnIds(col.columns as typeof columns));
+    if (col.columns && col.columns.length > 0) {
+      leafIds.push(...extractLeafColumnIds(col.columns));
     } else if (col.id) {
       leafIds.push(col.id);
     }
@@ -95,7 +100,7 @@ function CopyQidButton({ qid, qidPrefix }: { qid: string; qidPrefix: string }) {
 }
 
 interface QuestionsTableCardProps {
-  questions: QuestionsPageData[];
+  questions: SafeQuestionsPageData[];
   courseInstances: CourseInstance[];
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
@@ -103,7 +108,8 @@ interface QuestionsTableCardProps {
   showSharingSets: boolean;
   urlPrefix: string;
   qidPrefix?: string;
-  onAddQuestion: () => void;
+  /** Required when showAddQuestionButton is true */
+  onAddQuestion?: () => void;
 }
 
 function QuestionsTableCard({
@@ -356,16 +362,28 @@ function QuestionsTableCard({
 
   const [columnSizing, setColumnSizing] = useState<ColumnSizingState>({});
 
-  const { data: questions } = useQuery<QuestionsPageData[]>({
+  const {
+    data: questions,
+    error: questionsError,
+    isError: isQuestionsError,
+  } = useQuery<SafeQuestionsPageData[], Error>({
     queryKey: ['questions', urlPrefix],
     queryFn: async () => {
       const res = await fetch(`${window.location.pathname}/data.json`, {
         headers: { Accept: 'application/json' },
       });
-      if (!res.ok) throw new Error('Failed to fetch questions');
+      if (!res.ok) {
+        throw new Error(`Failed to fetch questions: HTTP ${res.status} ${res.statusText}`);
+      }
       const data = await res.json();
-      const parsedData = z.array(QuestionsPageDataSchema).safeParse(data);
-      if (!parsedData.success) throw new Error('Failed to parse questions');
+      const parsedData = z.array(SafeQuestionsPageDataSchema).safeParse(data);
+      if (!parsedData.success) {
+        const errorDetails = parsedData.error.errors
+          .slice(0, 3)
+          .map((e) => `${e.path.join('.')}: ${e.message}`)
+          .join('; ');
+        throw new Error(`Failed to parse questions: ${errorDetails}`);
+      }
       return parsedData.data;
     },
     staleTime: Infinity,
@@ -657,44 +675,44 @@ function QuestionsTableCard({
   const filters = useMemo(() => {
     const filterMap: Record<
       string,
-      (props: { header: Header<QuestionsPageData, unknown> }) => React.JSX.Element
+      (props: { header: Header<SafeQuestionsPageData, unknown> }) => React.JSX.Element
     > = {
-      topic: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      topic: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allTopics}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      tags: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      tags: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allTags}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      display_type: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      display_type: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allVersions}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      grading_method: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      grading_method: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allGradingMethods}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      external_grading_image: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      external_grading_image: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allExternalGradingImages}
           renderValueLabel={({ value }) => <span>{value}</span>}
         />
       ),
-      workspace_image: ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      workspace_image: ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allWorkspaceImages}
@@ -704,7 +722,7 @@ function QuestionsTableCard({
     };
 
     if (showSharingSets) {
-      filterMap.sharing_sets = ({ header }: { header: Header<QuestionsPageData, unknown> }) => (
+      filterMap.sharing_sets = ({ header }: { header: Header<SafeQuestionsPageData, unknown> }) => (
         <CategoricalColumnFilter
           column={header.column}
           allColumnValues={allSharingSets}
@@ -724,7 +742,7 @@ function QuestionsTableCard({
       filterMap[`ci_${ci.id}_assessments`] = ({
         header,
       }: {
-        header: Header<QuestionsPageData, unknown>;
+        header: Header<SafeQuestionsPageData, unknown>;
       }) => (
         <CategoricalColumnFilter
           column={header.column}
@@ -787,83 +805,90 @@ function QuestionsTableCard({
   const aiGenerateUrl = getAiQuestionGenerationDraftsUrl({ urlPrefix });
 
   return (
-    <TanstackTableCard
-      table={table}
-      title="Questions"
-      className="h-100"
-      singularLabel="question"
-      pluralLabel="questions"
-      headerButtons={
-        showAddQuestionButton ? (
-          <>
-            <Button variant="light" size="sm" onClick={onAddQuestion}>
-              <i className="fa fa-plus me-2" aria-hidden="true" />
-              Add question
-            </Button>
-            {showAiGenerateQuestionButton && (
-              <Button variant="light" size="sm" as="a" href={aiGenerateUrl}>
-                <i className="bi bi-stars me-2" aria-hidden="true" />
-                Generate with AI
+    <>
+      {isQuestionsError && (
+        <Alert variant="danger" className="mb-3">
+          <strong>Error loading questions:</strong> {questionsError.message}
+        </Alert>
+      )}
+      <TanstackTableCard
+        table={table}
+        title="Questions"
+        className={isQuestionsError ? undefined : 'h-100'}
+        singularLabel="question"
+        pluralLabel="questions"
+        headerButtons={
+          showAddQuestionButton ? (
+            <>
+              <Button variant="light" size="sm" onClick={onAddQuestion}>
+                <i className="fa fa-plus me-2" aria-hidden="true" />
+                Add question
               </Button>
-            )}
-          </>
-        ) : undefined
-      }
-      globalFilter={{
-        placeholder: 'Search by QID, title...',
-      }}
-      tableOptions={{
-        filters,
-        emptyState: (
-          <TanstackTableEmptyState iconName="bi-file-earmark-code">
-            <div className="d-flex flex-column align-items-center gap-3">
-              <div className="text-center">
-                <h5 className="mb-2">No questions found</h5>
-                <p className="text-muted mb-0" style={{ textWrap: 'balance' }}>
-                  A question is a problem or task that tests a student's understanding of a specific
-                  concept.
-                </p>
-                <p className="text-muted">
-                  Learn more in the{' '}
-                  <a
-                    href="https://prairielearn.readthedocs.io/en/latest/question/"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    question documentation
-                  </a>
-                  .
-                </p>
-              </div>
-              {showAddQuestionButton && (
-                <div className="d-flex gap-2">
-                  <Button variant="primary" onClick={onAddQuestion}>
-                    <i className="fa fa-plus me-2" aria-hidden="true" />
-                    Add question
-                  </Button>
-                  {showAiGenerateQuestionButton && (
-                    <Button variant="outline-primary" as="a" href={aiGenerateUrl}>
-                      <i className="bi bi-stars me-2" aria-hidden="true" />
-                      Generate with AI
-                    </Button>
-                  )}
-                </div>
+              {showAiGenerateQuestionButton && (
+                <Button variant="light" size="sm" as="a" href={aiGenerateUrl}>
+                  <i className="bi bi-stars me-2" aria-hidden="true" />
+                  Generate with AI
+                </Button>
               )}
-            </div>
-          </TanstackTableEmptyState>
-        ),
-        noResultsState: (
-          <TanstackTableEmptyState iconName="bi-search">
-            No questions found matching your search criteria.
-          </TanstackTableEmptyState>
-        ),
-      }}
-    />
+            </>
+          ) : undefined
+        }
+        globalFilter={{
+          placeholder: 'Search by QID, title...',
+        }}
+        tableOptions={{
+          filters,
+          emptyState: (
+            <TanstackTableEmptyState iconName="bi-file-earmark-code">
+              <div className="d-flex flex-column align-items-center gap-3">
+                <div className="text-center">
+                  <h5 className="mb-2">No questions found</h5>
+                  <p className="text-muted mb-0" style={{ textWrap: 'balance' }}>
+                    A question is a problem or task that tests a student's understanding of a
+                    specific concept.
+                  </p>
+                  <p className="text-muted">
+                    Learn more in the{' '}
+                    <a
+                      href="https://prairielearn.readthedocs.io/en/latest/question/"
+                      target="_blank"
+                      rel="noreferrer"
+                    >
+                      question documentation
+                    </a>
+                    .
+                  </p>
+                </div>
+                {showAddQuestionButton && (
+                  <div className="d-flex gap-2">
+                    <Button variant="primary" onClick={onAddQuestion}>
+                      <i className="fa fa-plus me-2" aria-hidden="true" />
+                      Add question
+                    </Button>
+                    {showAiGenerateQuestionButton && (
+                      <Button variant="outline-primary" as="a" href={aiGenerateUrl}>
+                        <i className="bi bi-stars me-2" aria-hidden="true" />
+                        Generate with AI
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </div>
+            </TanstackTableEmptyState>
+          ),
+          noResultsState: (
+            <TanstackTableEmptyState iconName="bi-search">
+              No questions found matching your search criteria.
+            </TanstackTableEmptyState>
+          ),
+        }}
+      />
+    </>
   );
 }
 
 export interface QuestionsTableProps {
-  questions: QuestionsPageData[];
+  questions: SafeQuestionsPageData[];
   courseInstances: CourseInstance[];
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;
@@ -873,7 +898,8 @@ export interface QuestionsTableProps {
   qidPrefix?: string;
   search: string;
   isDevMode: boolean;
-  onAddQuestion: () => void;
+  /** Required when showAddQuestionButton is true */
+  onAddQuestion?: () => void;
 }
 
 export function QuestionsTable({

@@ -1,10 +1,9 @@
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 
-import { renderHtml } from '@prairielearn/react';
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import { QuestionsTable } from '../../components/QuestionsTableTanstack.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -16,7 +15,7 @@ const router = Router({ mergeParams: true });
 // Supports client-side table refresh
 router.get(
   '/data.json',
-  asyncHandler(async (_req, res) => {
+  typedAsyncHandler<'public-course'>(async (_req, res) => {
     const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
     res.json(questions);
   }),
@@ -25,7 +24,8 @@ router.get(
 router.get(
   '/',
   typedAsyncHandler<'public-course'>(async function (req, res) {
-    const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
+    const rawQuestions = await selectPublicQuestionsForCourse(res.locals.course.id);
+    const questions = rawQuestions.map((q) => SafeQuestionsPageDataSchema.parse(q));
 
     // Example course questions can be publicly shared, but we don't allow them to
     // be imported into courses, so we won't show the sharing name in the QID.
@@ -45,7 +45,7 @@ router.get(
           fullWidth: true,
           fullHeight: true,
         },
-        content: renderHtml(
+        content: (
           <Hydrate fullHeight>
             <QuestionsTable
               questions={questions}
@@ -57,9 +57,8 @@ router.get(
               qidPrefix={qidPrefix}
               search={search}
               isDevMode={config.devMode}
-              onAddQuestion={() => {}}
             />
-          </Hydrate>,
+          </Hydrate>
         ),
       }),
     );

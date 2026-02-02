@@ -1,11 +1,11 @@
 import {
   type CourseInstance,
-  type QuestionsPageData,
   QuestionsTable,
+  type SafeQuestionsPageData,
 } from '../../components/QuestionsTableTanstack.js';
 
 export interface InstructorQuestionsTableProps {
-  questions: QuestionsPageData[];
+  questions: SafeQuestionsPageData[];
   courseInstances: CourseInstance[];
   currentCourseInstanceId?: string;
   showAddQuestionButton: boolean;

@@ -408,6 +408,8 @@ export default tseslint.config([
           allowDbTypes: [
             // This is innocuous, it's just a string enum.
             'SprocUsersGetDisplayedRoleSchema',
+            // This has all safe db types in it.
+            'SprocAssessmentsFormatForQuestionSchema',
           ],
         },
       ],
