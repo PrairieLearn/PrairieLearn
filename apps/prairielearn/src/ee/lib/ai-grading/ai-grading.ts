@@ -515,8 +515,24 @@ export async function aiGrade({
             ],
             logger,
           });
+          for (const response of [
+            ...Object.values(rotationCorrections).map((r) => r.response),
+            gradingResponseWithRotationIssue,
+            finalGradingResponse,
+          ]) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: response.usage,
+            });
+          }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
+          await addAiGradingCostToIntervalUsage({
+            courseInstance: course_instance,
+            model: model_id,
+            usage: finalGradingResponse.usage,
+          });
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
@@ -641,12 +657,6 @@ export async function aiGrade({
             });
           });
         }
-
-        await addAiGradingCostToIntervalUsage({
-          courseInstance: course_instance,
-          model: model_id,
-          usage: response.usage,
-        });
 
         logger.info('AI rubric items:');
 
@@ -777,8 +787,24 @@ export async function aiGrade({
             ],
             logger,
           });
+          for (const response of [
+            ...Object.values(rotationCorrections).map((r) => r.response),
+            gradingResponseWithRotationIssue,
+            finalGradingResponse,
+          ]) {
+            await addAiGradingCostToIntervalUsage({
+              courseInstance: course_instance,
+              model: model_id,
+              usage: response.usage,
+            });
+          }
         } else {
           logResponseUsage({ response: finalGradingResponse, logger });
+          await addAiGradingCostToIntervalUsage({
+            courseInstance: course_instance,
+            model: model_id,
+            usage: finalGradingResponse.usage,
+          });
         }
 
         logger.info(`Parsed response: ${JSON.stringify(finalGradingResponse.object, null, 2)}`);
