@@ -543,7 +543,7 @@ def test_get_display_type_backward_compatibility(case: DisplayTypeTestCase) -> N
     if case.should_raise_error:
         with pytest.raises(
             ValueError,
-            match='Setting display should be done with the "display" attribute',
+            match="Cannot set both 'display' and 'inline' attributes",
         ):
             pl_checkbox.get_display_type(element)
     else:

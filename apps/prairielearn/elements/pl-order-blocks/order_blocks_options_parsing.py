@@ -52,11 +52,6 @@ class FormatType(Enum):
     CODE = "code"
 
 
-class DisplayType(Enum):
-    INLINE = "inline"
-    BLOCK = "block"
-
-
 LCS_GRADABLE_TYPES = frozenset([
     GradingMethodType.RANKING,
     GradingMethodType.DAG,
@@ -72,7 +67,7 @@ ANSWER_CORRECT_DEFAULT = True
 ANSWER_INDENT_DEFAULT = None
 ALLOW_BLANK_DEFAULT = False
 INDENTATION_DEFAULT = False
-DISPLAY_DEFAULT = DisplayType.BLOCK
+INLINE_DEFAULT = False
 FILE_NAME_DEFAULT = "user_code.py"
 ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
@@ -95,30 +90,6 @@ def is_multigraph(element: lxml.html.HtmlElement) -> bool:
         if has_colors:
             return True
     return False
-
-
-def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
-    """Convert external display attribute to internal enum.
-
-    Supports backward compatibility with the deprecated boolean `inline` attribute.
-
-    Args:
-        element: The pl-order-blocks HTML element
-
-    Returns:
-        DisplayType enum value
-
-    Raises:
-        ValueError: If both display and inline attributes are set
-    """
-    if pl.has_attrib(element, "display") and pl.has_attrib(element, "inline"):
-        raise ValueError('Setting display should be done with the "display" attribute.')
-
-    inline_default = False
-    inline = pl.get_boolean_attrib(element, "inline", inline_default)
-    display_type_default = DisplayType.INLINE if inline else DISPLAY_DEFAULT
-
-    return pl.get_enum_attrib(element, "display", DisplayType, display_type_default)
 
 
 def get_graph_info(
@@ -277,7 +248,7 @@ class OrderBlocksOptions:
     feedback: FeedbackType
     format: FormatType
     code_language: str | None
-    display_type: DisplayType
+    inline: bool
     answer_options: list[AnswerOptions]
     correct_answers: list[AnswerOptions]
     incorrect_answers: list[AnswerOptions]
@@ -337,7 +308,7 @@ class OrderBlocksOptions:
             html_element, "format", FormatType, FormatType.DEFAULT
         )
         self.code_language = pl.get_string_attrib(html_element, "code-language", None)
-        self.display_type = get_display_type(html_element)
+        self.inline = pl.get_boolean_attrib(html_element, "inline", INLINE_DEFAULT)
         self.has_optional_blocks = is_multigraph(html_element)
 
         # All necessary properties are initialized for collect_answer_options
@@ -374,7 +345,6 @@ class OrderBlocksOptions:
             "min-incorrect",
             "weight",
             "inline",
-            "display",
             "max-indent",
             "feedback",
             "partial-credit",
@@ -448,9 +418,9 @@ class OrderBlocksOptions:
                 "The attribute min-incorrect must be smaller than max-incorrect."
             )
 
-        if self.display_type is DisplayType.INLINE and self.indentation:
+        if self.inline and self.indentation:
             raise ValueError(
-                "The indentation attribute may not be used when display is inline."
+                "The indentation attribute may not be used when inline is true."
             )
 
         if (
