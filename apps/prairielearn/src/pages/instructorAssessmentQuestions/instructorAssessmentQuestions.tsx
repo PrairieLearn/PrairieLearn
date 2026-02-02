@@ -29,6 +29,7 @@ import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 import { ZoneAssessmentJsonSchema } from '../../schemas/infoAssessment.js';
 
 import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 import { stripZoneDefaults } from './utils/dataTransform.js';
 import { buildHierarchicalAssessment } from './utils/questions.js';
 
@@ -110,19 +111,35 @@ router.get(
         },
         content: (
           <Hydrate>
-            <InstructorAssessmentQuestionsTable
-              course={pageContext.course}
-              questionRows={questionRows}
-              jsonZones={jsonZones}
-              urlPrefix={pageContext.urlPrefix}
-              assessment={pageContext.assessment}
-              assessmentSetName={pageContext.assessment_set.name}
-              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-              canEdit={canEdit ?? false}
-              csrfToken={res.locals.__csrf_token}
-              origHash={origHash}
-              editorEnabled={editorEnabled}
-            />
+            {editorEnabled ? (
+              <InstructorAssessmentQuestionsTable
+                course={pageContext.course}
+                questionRows={questionRows}
+                jsonZones={jsonZones}
+                urlPrefix={pageContext.urlPrefix}
+                assessment={pageContext.assessment}
+                assessmentSetName={pageContext.assessment_set.name}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+                canEdit={canEdit ?? false}
+                csrfToken={res.locals.__csrf_token}
+                origHash={origHash}
+                editorEnabled={editorEnabled}
+              />
+            ) : (
+              <InstructorAssessmentQuestionsTableLegacy
+                course={pageContext.course}
+                questionRows={questionRows}
+                urlPrefix={pageContext.urlPrefix}
+                assessmentType={pageContext.assessment.type}
+                assessmentSetName={pageContext.assessment_set.name}
+                assessmentNumber={pageContext.assessment.number}
+                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+                hasCourseInstancePermissionEdit={
+                  pageContext.authz_data.has_course_instance_permission_edit ?? false
+                }
+                csrfToken={res.locals.__csrf_token}
+              />
+            )}
           </Hydrate>
         ),
       }),
