@@ -393,9 +393,6 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     if len_correct == 0:
         raise ValueError("At least one option must be true.")
 
-    has_number_answers = pl.has_attrib(element, "number-answers")
-    has_max_correct = pl.has_attrib(element, "max-correct")
-
     min_correct = pl.get_integer_attrib(element, "min-correct", MIN_CORRECT_DEFAULT)
     max_correct = pl.get_integer_attrib(element, "max-correct", len_correct)
 
@@ -407,9 +404,9 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     # Calculate number_answers based on what attributes are explicitly specified.
     # When max-correct is specified but number-answers is not, we should honor
     # max-correct by adjusting the total number of answers shown.
-    if has_number_answers:
+    if pl.has_attrib(element, "number-answers"):
         number_answers = pl.get_integer_attrib(element, "number-answers")
-    elif has_max_correct:
+    elif pl.has_attrib(element, "max-correct"):
         number_answers = min(len_total, max_correct + len_incorrect)
     else:
         number_answers = len_total
