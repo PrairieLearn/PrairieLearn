@@ -1,3 +1,12 @@
+# This workflow uses `pull_request_target` to run in the base repository context,
+# which grants access to secrets needed for the GitHub App token. This is necessary
+# because Dependabot-triggered workflows have restricted secret access.
+#
+# Security considerations:
+# - Only runs when github.actor is dependabot[bot], preventing abuse from forks
+# - Uses YARN_ENABLE_SCRIPTS=0 to disable postinstall scripts, preventing any
+#   untrusted code execution from dependencies
+
 name: 'Dedupe Dependabot PRs'
 
 on:
@@ -39,7 +48,7 @@ jobs:
       - name: 'Dedupe dependencies'
         run: yarn dedupe
         env:
-          HUSKY: 0
+          YARN_ENABLE_SCRIPTS: 0
 
       - name: 'Commit and push changes'
         run: |
