@@ -1,0 +1,58 @@
+<p>DO NOT COMMIT AS PART OF THE PR IN FINAL STATE!</p>
+
+<pl-question-panel>
+<p>This question tests the fix for <a href="https://github.com/PrairieLearn/PrairieLearn/issues/6104">issue #6104</a>: pl-coordinates left/top values under rotation.</p>
+
+<p><strong>Instructions:</strong> Place your coordinate system (blue) on top of the reference coordinate system (red) as closely as possible. You can rotate it using the rotation handle.</p>
+
+<p><strong>Reference position:</strong> origin at ({{params.ref_x}}, {{params.ref_y}}) with angle {{params.ref_angle}}&deg;</p>
+
+<p><strong>After submitting:</strong> Check the "Submitted Answer" panel below to see if the reported <code>left</code> and <code>top</code> values match the reference origin position.</p>
+</pl-question-panel>
+
+<pl-drawing grid-size="20" gradable="false" answers-name="coords" width="400" height="400">
+    <pl-drawing-initial>
+        <!-- Reference coordinate system (red) - this is what the student should match -->
+        <pl-coordinates x1="{{params.ref_x}}" y1="{{params.ref_y}}" width="80" angle="{{params.ref_angle}}" color="red" label="REF"></pl-coordinates>
+
+        <!-- Grid reference point -->
+        <pl-point x1="{{params.ref_x}}" y1="{{params.ref_y}}" radius="3" color="red"></pl-point>
+    </pl-drawing-initial>
+
+    <pl-controls>
+        <pl-controls-group label="Place coordinate system:">
+            <pl-drawing-button type="pl-coordinates" stroke="#268bd2" width="80"></pl-drawing-button>
+        </pl-controls-group>
+        <pl-controls-group label="Tools:">
+            <pl-drawing-button type="delete"></pl-drawing-button>
+        </pl-controls-group>
+    </pl-controls>
+</pl-drawing>
+
+<pl-submission-panel>
+{{#submitted_answers.coords}}
+<div class="card mb-3">
+    <div class="card-header">Submitted Coordinate System Values</div>
+    <div class="card-body">
+        <p><strong>Expected origin:</strong> x={{params.ref_x}}, y={{params.ref_y}}</p>
+        <p><strong>Expected angle:</strong> {{params.ref_angle}}&deg;</p>
+        <hr>
+        <p><strong>Your submitted values (raw JSON):</strong></p>
+        <pre>{{submitted_answers.coords}}</pre>
+        {{#feedback.parsed_coords}}
+        <hr>
+        <p><strong>Parsed values:</strong></p>
+        <ul>
+            <li>left (x): {{feedback.parsed_coords.left}} (expected: {{params.ref_x}}, error: {{feedback.error_x}})</li>
+            <li>top (y): {{feedback.parsed_coords.top}} (expected: {{params.ref_y}}, error: {{feedback.error_y}})</li>
+            <li>angle: {{feedback.parsed_coords.angle}}&deg; (expected: {{params.ref_angle}}&deg;)</li>
+        </ul>
+        <p><strong>Position accuracy:</strong>
+            {{#feedback.position_ok}}<span class="badge bg-success">GOOD (within 5px tolerance)</span>{{/feedback.position_ok}}
+            {{^feedback.position_ok}}<span class="badge bg-danger">OFF (error > 5px)</span>{{/feedback.position_ok}}
+        </p>
+        {{/feedback.parsed_coords}}
+    </div>
+</div>
+{{/submitted_answers.coords}}
+</pl-submission-panel>

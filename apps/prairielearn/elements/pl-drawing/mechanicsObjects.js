@@ -2484,8 +2484,10 @@ mechanicsObjects.byType['pl-coordinates'] = class extends PLDrawingBaseElement {
     canvas.add(textObj3);
 
     const modify = function (subObj) {
-      const x = obj.left + groupOffsetX;
-      const y = obj.top + groupOffsetY;
+      // Apply rotation transformation to get the true origin position.
+      const angle_rad = (Math.PI / 180) * (360 - obj.angle);
+      const x = obj.left + Math.cos(angle_rad) * groupOffsetX + Math.sin(angle_rad) * groupOffsetY;
+      const y = obj.top + Math.cos(angle_rad) * groupOffsetY - Math.sin(angle_rad) * groupOffsetX;
       subObj.left = x;
       subObj.top = y;
       subObj.angle = obj.angle;
