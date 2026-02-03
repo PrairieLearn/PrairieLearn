@@ -23,7 +23,7 @@
     "typescript": "^5.0.0"
   },
   "dependencies": {
-    "@eslint-react/eslint-plugin": "^2.6.4",
+    "@eslint-react/eslint-plugin": "^2.9.4",
     "@eslint/eslintrc": "^3.0.0",
     "@eslint/js": "^9.29.0",
     "@prairielearn/eslint-plugin": "workspace:^",

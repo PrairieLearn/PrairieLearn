@@ -16,7 +16,7 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@aws-sdk/client-cloudwatch": "^3.980.0",
+    "@aws-sdk/client-cloudwatch": "^3.981.0",
     "loopbench": "^2.0.0"
   },
   "devDependencies": {
