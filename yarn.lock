@@ -4274,7 +4274,7 @@ __metadata:
   languageName: unknown
   linkType: soft
 
-"@prairielearn/eslint-config@workspace:packages/eslint-config":
+"@prairielearn/eslint-config@workspace:^, @prairielearn/eslint-config@workspace:packages/eslint-config":
   version: 0.0.0-use.local
   resolution: "@prairielearn/eslint-config@workspace:packages/eslint-config"
   dependencies:
@@ -18057,6 +18057,7 @@ __metadata:
     "@html-eslint/eslint-plugin": "npm:^0.54.2"
     "@playwright/test": "npm:^1.58.1"
     "@postgres-language-server/cli": "npm:^0.19.0"
+    "@prairielearn/eslint-config": "workspace:^"
     "@types/tar-stream": "npm:^3.1.4"
     "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
