@@ -34,7 +34,7 @@
     "@types/on-headers": "^1.0.4",
     "@types/set-cookie-parser": "^2.4.10",
     "@types/uid-safe": "^2.1.5",
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260131.1",
     "@vitest/coverage-v8": "^4.0.18",
     "express": "^4.22.1",
     "fetch-cookie": "^3.2.0",

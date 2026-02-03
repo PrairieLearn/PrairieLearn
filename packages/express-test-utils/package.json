@@ -16,6 +16,6 @@
     "@types/express": "^4.17.25"
   },
   "devDependencies": {
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1"
+    "@typescript/native-preview": "^7.0.0-dev.20260131.1"
   }
 }

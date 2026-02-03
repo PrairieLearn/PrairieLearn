@@ -19,7 +19,17 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset using `yarn changeset`.
+Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+
+```markdown
+---
+'@prairielearn/package-name': patch
+---
+
+Description of the change
+```
+
+Use `patch` for bug fixes, `minor` for new features, and `major` for breaking changes.
 
 Frequently used packages:
 
@@ -141,6 +151,8 @@ The PrairieLearn web application renders HTML in one of two ways:
 ## Python guidance
 
 Elements (similar to React components, used to build interactive questions) are written in Python and are located in `apps/prairielearn/elements/`.
+
+When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
 
 ### Testing
 
