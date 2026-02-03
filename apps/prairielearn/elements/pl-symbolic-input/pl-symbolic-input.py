@@ -380,9 +380,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
+
+    # See https://github.com/PrairieLearn/PrairieLearn/issues/12053
+    has_variables = pl.has_attrib(element, "variables")
+    if not has_variables:
+        a_tru = data["correct_answers"].get(name, {})
+        # If no variables attribute was specified but we have a correct answer dict,
+        # use the correct answer's variables for parsing.
+        if isinstance(a_tru, dict) and "_variables" in a_tru:
+            variables = a_tru["_variables"]
+
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
