@@ -1,6 +1,10 @@
 import { assert, describe, it } from 'vitest';
 
-import { extractMustacheTemplateNames, isValidMustacheTemplateName } from './validateHTML.js';
+import {
+  extractMustacheTemplateNames,
+  isValidMustacheTemplateName,
+  validateHTML,
+} from './validateHTML.js';
 
 function assertExtractsNames(input: string, expectedNames: string[]) {
   assert.deepEqual(extractMustacheTemplateNames(input), new Set(expectedNames));
@@ -97,5 +101,207 @@ describe('isValidMustacheTemplateName', () => {
   it('rejects name with operators and spaces', () => {
     assert.isFalse(isValidMustacheTemplateName('foo + bar'));
     assert.isFalse(isValidMustacheTemplateName('foo == bar'));
+  });
+});
+
+describe('validateHTML integer attributes', () => {
+  // Test integer validation via pl-integer-input's weight attribute
+  function validateIntegerAttr(value: string): string[] {
+    return validateHTML(
+      `<pl-integer-input answers-name="x" weight="${value}"></pl-integer-input>`,
+      true,
+    );
+  }
+
+  it('accepts positive integers', () => {
+    assert.deepEqual(validateIntegerAttr('1'), []);
+    assert.deepEqual(validateIntegerAttr('42'), []);
+    assert.deepEqual(validateIntegerAttr('12345'), []);
+  });
+
+  it('accepts zero', () => {
+    assert.deepEqual(validateIntegerAttr('0'), []);
+  });
+
+  it('accepts negative integers', () => {
+    assert.deepEqual(validateIntegerAttr('-1'), []);
+    assert.deepEqual(validateIntegerAttr('-42'), []);
+    assert.deepEqual(validateIntegerAttr('-12345'), []);
+  });
+
+  it('accepts mustache templates', () => {
+    assert.deepEqual(validateIntegerAttr('{{weight}}'), []);
+    assert.deepEqual(validateIntegerAttr('{{params.weight}}'), []);
+  });
+
+  it('rejects floating-point numbers', () => {
+    const errors = validateIntegerAttr('1.5');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an integer')));
+  });
+
+  it('rejects scientific notation', () => {
+    const errors = validateIntegerAttr('1e5');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an integer')));
+  });
+
+  it('rejects non-numeric strings', () => {
+    const errors = validateIntegerAttr('abc');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an integer')));
+  });
+
+  it('rejects empty string', () => {
+    const errors = validateIntegerAttr('');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an integer')));
+  });
+});
+
+describe('validateHTML float attributes', () => {
+  // Test float validation via pl-number-input's rtol attribute
+  // (correct-answer specifically forbids mustache templates, so we use rtol instead)
+  function validateFloatAttr(value: string): string[] {
+    return validateHTML(
+      `<pl-number-input answers-name="x" rtol="${value}"></pl-number-input>`,
+      true,
+    );
+  }
+
+  it('accepts positive integers', () => {
+    assert.deepEqual(validateFloatAttr('1'), []);
+    assert.deepEqual(validateFloatAttr('42'), []);
+  });
+
+  it('accepts zero', () => {
+    assert.deepEqual(validateFloatAttr('0'), []);
+  });
+
+  it('accepts negative integers', () => {
+    assert.deepEqual(validateFloatAttr('-1'), []);
+    assert.deepEqual(validateFloatAttr('-42'), []);
+  });
+
+  it('accepts positive decimals', () => {
+    assert.deepEqual(validateFloatAttr('1.5'), []);
+    assert.deepEqual(validateFloatAttr('3.14159'), []);
+    assert.deepEqual(validateFloatAttr('0.5'), []);
+  });
+
+  it('accepts negative decimals', () => {
+    assert.deepEqual(validateFloatAttr('-1.5'), []);
+    assert.deepEqual(validateFloatAttr('-3.14159'), []);
+    assert.deepEqual(validateFloatAttr('-0.5'), []);
+  });
+
+  it('accepts numbers starting with decimal point', () => {
+    assert.deepEqual(validateFloatAttr('.5'), []);
+    assert.deepEqual(validateFloatAttr('.123'), []);
+    assert.deepEqual(validateFloatAttr('-.5'), []);
+  });
+
+  it('accepts scientific notation with positive exponent', () => {
+    assert.deepEqual(validateFloatAttr('1e5'), []);
+    assert.deepEqual(validateFloatAttr('1E5'), []);
+    assert.deepEqual(validateFloatAttr('1e+5'), []);
+    assert.deepEqual(validateFloatAttr('2.5e10'), []);
+  });
+
+  it('accepts scientific notation with negative exponent', () => {
+    assert.deepEqual(validateFloatAttr('1e-5'), []);
+    assert.deepEqual(validateFloatAttr('1E-5'), []);
+    assert.deepEqual(validateFloatAttr('2.5e-10'), []);
+  });
+
+  it('accepts negative numbers with scientific notation', () => {
+    assert.deepEqual(validateFloatAttr('-1e5'), []);
+    assert.deepEqual(validateFloatAttr('-2.5e-10'), []);
+  });
+
+  it('accepts mustache templates', () => {
+    assert.deepEqual(validateFloatAttr('{{answer}}'), []);
+    assert.deepEqual(validateFloatAttr('{{params.answer}}'), []);
+  });
+
+  it('rejects non-numeric strings', () => {
+    const errors = validateFloatAttr('abc');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an floating-point number')));
+  });
+
+  it('rejects empty string', () => {
+    const errors = validateFloatAttr('');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be an floating-point number')));
+  });
+
+  it('rejects malformed scientific notation', () => {
+    const errors1 = validateFloatAttr('1e');
+    assert.isNotEmpty(errors1);
+    assert.isTrue(errors1.some((e) => e.includes('must be an floating-point number')));
+
+    const errors2 = validateFloatAttr('e5');
+    assert.isNotEmpty(errors2);
+    assert.isTrue(errors2.some((e) => e.includes('must be an floating-point number')));
+  });
+});
+
+describe('validateHTML pl-checkbox partial-credit', () => {
+  function validateCheckbox(partialCredit: string, partialCreditMethod?: string): string[] {
+    const methodAttr = partialCreditMethod ? ` partial-credit-method="${partialCreditMethod}"` : '';
+    return validateHTML(
+      `<pl-checkbox answers-name="x" partial-credit="${partialCredit}"${methodAttr}><pl-answer>A</pl-answer></pl-checkbox>`,
+      true,
+    );
+  }
+
+  it('accepts old-style boolean true values', () => {
+    assert.deepEqual(validateCheckbox('true'), []);
+    assert.deepEqual(validateCheckbox('True'), []);
+    assert.deepEqual(validateCheckbox('TRUE'), []);
+    assert.deepEqual(validateCheckbox('t'), []);
+    assert.deepEqual(validateCheckbox('1'), []);
+    assert.deepEqual(validateCheckbox('yes'), []);
+  });
+
+  it('accepts old-style boolean false values', () => {
+    assert.deepEqual(validateCheckbox('false'), []);
+    assert.deepEqual(validateCheckbox('False'), []);
+    assert.deepEqual(validateCheckbox('FALSE'), []);
+    assert.deepEqual(validateCheckbox('f'), []);
+    assert.deepEqual(validateCheckbox('0'), []);
+    assert.deepEqual(validateCheckbox('no'), []);
+  });
+
+  it('accepts new-style enum values', () => {
+    assert.deepEqual(validateCheckbox('off'), []);
+    assert.deepEqual(validateCheckbox('coverage'), []);
+    assert.deepEqual(validateCheckbox('each-answer'), []);
+    assert.deepEqual(validateCheckbox('net-correct'), []);
+  });
+
+  it('accepts old-style boolean with partial-credit-method', () => {
+    assert.deepEqual(validateCheckbox('true', 'COV'), []);
+    assert.deepEqual(validateCheckbox('true', 'EDC'), []);
+    assert.deepEqual(validateCheckbox('true', 'PC'), []);
+  });
+
+  it('rejects partial-credit-method with new-style enum values', () => {
+    const errors = validateCheckbox('coverage', 'COV');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('partial-credit-method cannot be used')));
+  });
+
+  it('allows partial-credit-method with partial-credit=false (method is ignored)', () => {
+    // When partial-credit is false, the method attribute is simply ignored
+    // This is consistent with the Python implementation
+    assert.deepEqual(validateCheckbox('false', 'COV'), []);
+  });
+
+  it('rejects invalid partial-credit values', () => {
+    const errors = validateCheckbox('invalid');
+    assert.isNotEmpty(errors);
+    assert.isTrue(errors.some((e) => e.includes('must be in')));
   });
 });
