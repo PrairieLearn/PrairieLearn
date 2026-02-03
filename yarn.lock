@@ -3872,7 +3872,7 @@ __metadata:
     "@actions/github": "npm:^9.0.0"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     typescript: "npm:^5.9.3"
     zod: "npm:^3.25.76"
   languageName: unknown
@@ -3884,7 +3884,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     node-fetch: "npm:^3.3.2"
     typescript: "npm:^5.9.3"
     zod: "npm:^3.25.76"
@@ -3899,7 +3899,7 @@ __metadata:
     "@smithy/property-provider": "npm:^4.2.8"
     "@smithy/types": "npm:^4.12.0"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     typescript: "npm:^5.9.3"
   languageName: unknown
   linkType: soft
@@ -3911,7 +3911,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/bindings": "npm:^1.5.5"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     bindings: "npm:^1.5.0"
     nan: "npm:^2.25.0"
     node-gyp: "npm:^12.2.0"
@@ -3925,7 +3925,7 @@ __metadata:
   dependencies:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     csv-stringify: "npm:^6.6.0"
     js-base64: "npm:^3.7.8"
     typescript: "npm:^5.9.3"
@@ -3939,7 +3939,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/sentry": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     ioredis: "npm:^5.9.2"
     lru-cache: "npm:^11.2.5"
     typescript: "npm:^5.9.3"
@@ -3954,7 +3954,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     commander: "npm:^14.0.3"
     esbuild: "npm:^0.27.2"
@@ -3984,7 +3984,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     es-toolkit: "npm:^1.44.0"
     fs-extra: "npm:^11.3.3"
@@ -4003,7 +4003,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     csv-stringify: "npm:^6.6.0"
     multipipe: "npm:^4.0.0"
@@ -4022,7 +4022,7 @@ __metadata:
     "@prairielearn/logger": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     date-fns: "npm:^4.1.0"
     tsx: "npm:^4.21.0"
@@ -4038,7 +4038,7 @@ __metadata:
     "@prairielearn/html": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     es-toolkit: "npm:^1.44.0"
     tsx: "npm:^4.21.0"
@@ -4056,7 +4056,7 @@ __metadata:
     "@typescript-eslint/rule-tester": "npm:^8.54.0"
     "@typescript-eslint/types": "npm:^8.54.0"
     "@typescript-eslint/utils": "npm:^8.54.0"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4077,7 +4077,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     express: "npm:^4.22.1"
     tsx: "npm:^4.21.0"
@@ -4091,7 +4091,7 @@ __metadata:
   resolution: "@prairielearn/express-test-utils@workspace:packages/express-test-utils"
   dependencies:
     "@types/express": "npm:^4.17.25"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
   languageName: unknown
   linkType: soft
 
@@ -4103,7 +4103,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/express": "npm:^4.17.25"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4118,7 +4118,7 @@ __metadata:
     "@js-temporal/polyfill": "npm:^0.5.1"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     es-toolkit: "npm:^1.44.0"
     tsx: "npm:^4.21.0"
@@ -4151,7 +4151,7 @@ __metadata:
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^24.10.9"
     "@types/tmp": "npm:^0.2.6"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     async: "npm:^3.2.6"
     byline: "npm:^5.0.0"
@@ -4178,7 +4178,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4192,7 +4192,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     logform: "npm:^2.7.0"
     typescript: "npm:^5.9.3"
     winston: "npm:^3.19.0"
@@ -4208,7 +4208,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/jsdom": "npm:^27.0.0"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     dompurify: "npm:^3.3.1"
     jsdom: "npm:^27.4.0"
@@ -4225,7 +4225,7 @@ __metadata:
   resolution: "@prairielearn/marked-mathjax@workspace:packages/marked-mathjax"
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     marked: "npm:^17.0.1"
     mathjax: "npm:^4.1.0"
@@ -4246,7 +4246,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     fs-extra: "npm:^11.3.3"
     serialize-error: "npm:^13.0.1"
@@ -4266,7 +4266,7 @@ __metadata:
     "@prairielearn/postgres": "workspace:^"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     pg: "npm:^8.18.0"
     typescript: "npm:^5.9.3"
   languageName: unknown
@@ -4280,7 +4280,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/loopbench": "npm:^1.2.4"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     loopbench: "npm:^2.0.0"
     typescript: "npm:^5.9.3"
   languageName: unknown
@@ -4315,7 +4315,7 @@ __metadata:
     "@opentelemetry/semantic-conventions": "npm:^1.39.0"
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4329,7 +4329,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4345,7 +4345,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/fs-extra": "npm:^11.0.4"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     async: "npm:^3.2.6"
     chalk: "npm:^5.6.2"
     commander: "npm:^14.0.3"
@@ -4370,7 +4370,7 @@ __metadata:
     "@types/multipipe": "npm:^3.0.5"
     "@types/node": "npm:^24.10.9"
     "@types/pg-cursor": "npm:^2.7.2"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     es-toolkit: "npm:^1.44.0"
     multipipe: "npm:^4.0.0"
@@ -4532,7 +4532,7 @@ __metadata:
     "@types/tmp": "npm:^0.2.6"
     "@types/ua-parser-js": "npm:^0.7.39"
     "@types/unzipper": "npm:^0.10.11"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     "@viz-js/viz": "npm:^3.24.0"
     "@web3-storage/parse-link-header": "npm:^3.1.0"
@@ -4702,7 +4702,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@types/react": "npm:^19.2.10"
     "@types/react-dom": "npm:^19.2.3"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     clsx: "npm:^2.1.1"
     react: "npm:^19.2.4"
     react-dom: "npm:^19.2.4"
@@ -4718,7 +4718,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4732,7 +4732,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4748,7 +4748,7 @@ __metadata:
     "@sentry/core": "npm:^10.38.0"
     "@sentry/node-core": "npm:^10.38.0"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     execa: "npm:^9.6.1"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4769,7 +4769,7 @@ __metadata:
     "@types/on-headers": "npm:^1.0.4"
     "@types/set-cookie-parser": "npm:^2.4.10"
     "@types/uid-safe": "npm:^2.1.5"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     cookie: "npm:^0.7.2"
     cookie-signature: "npm:^1.2.2"
@@ -4794,7 +4794,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/debug": "npm:^4.1.12"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     base64url: "npm:^3.0.1"
     debug: "npm:^4.4.3"
@@ -4822,7 +4822,7 @@ __metadata:
     "@types/node": "npm:^24.10.9"
     "@types/react": "npm:^19.2.10"
     "@types/react-dom": "npm:^19.2.3"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     clsx: "npm:^2.1.1"
     nuqs: "npm:^2.8.7"
     react: "npm:^19.2.4"
@@ -4843,7 +4843,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     tsx: "npm:^4.21.0"
     typescript: "npm:^5.9.3"
@@ -4858,7 +4858,7 @@ __metadata:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
     "@types/picomatch": "npm:^4.0.2"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     debounce: "npm:^3.0.0"
     picomatch: "npm:^4.0.3"
     strip-ansi: "npm:^7.1.2"
@@ -4889,7 +4889,7 @@ __metadata:
     "@socket.io/redis-emitter": "npm:^5.1.0"
     "@types/minimist": "npm:^1.2.5"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     archiver: "npm:^7.0.1"
     async: "npm:^3.2.6"
@@ -4923,7 +4923,7 @@ __metadata:
     "@prairielearn/zod": "workspace:^"
     "@socket.io/redis-emitter": "npm:^5.1.0"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     fast-glob: "npm:^3.3.3"
     filesize: "npm:^11.0.13"
     socket.io: "npm:^4.8.3"
@@ -4938,7 +4938,7 @@ __metadata:
   dependencies:
     "@prairielearn/tsconfig": "workspace:^"
     "@types/node": "npm:^24.10.9"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     postgres-interval: "npm:^4.0.2"
     tsx: "npm:^4.21.0"
@@ -9463,66 +9463,66 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-darwin-arm64@npm:7.0.0-dev.20260203.1"
   conditions: os=darwin & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-darwin-x64@npm:7.0.0-dev.20260203.1"
   conditions: os=darwin & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-linux-arm64@npm:7.0.0-dev.20260203.1"
   conditions: os=linux & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-linux-arm@npm:7.0.0-dev.20260203.1"
   conditions: os=linux & cpu=arm
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-linux-x64@npm:7.0.0-dev.20260203.1"
   conditions: os=linux & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-win32-arm64@npm:7.0.0-dev.20260203.1"
   conditions: os=win32 & cpu=arm64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview-win32-x64@npm:7.0.0-dev.20260203.1"
   conditions: os=win32 & cpu=x64
   languageName: node
   linkType: hard
 
-"@typescript/native-preview@npm:^7.0.0-dev.20260131.1":
-  version: 7.0.0-dev.20260131.1
-  resolution: "@typescript/native-preview@npm:7.0.0-dev.20260131.1"
+"@typescript/native-preview@npm:^7.0.0-dev.20260203.1":
+  version: 7.0.0-dev.20260203.1
+  resolution: "@typescript/native-preview@npm:7.0.0-dev.20260203.1"
   dependencies:
-    "@typescript/native-preview-darwin-arm64": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-darwin-x64": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-linux-arm": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-linux-arm64": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-linux-x64": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-win32-arm64": "npm:7.0.0-dev.20260131.1"
-    "@typescript/native-preview-win32-x64": "npm:7.0.0-dev.20260131.1"
+    "@typescript/native-preview-darwin-arm64": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-darwin-x64": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-linux-arm": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-linux-arm64": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-linux-x64": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-win32-arm64": "npm:7.0.0-dev.20260203.1"
+    "@typescript/native-preview-win32-x64": "npm:7.0.0-dev.20260203.1"
   dependenciesMeta:
     "@typescript/native-preview-darwin-arm64":
       optional: true
@@ -9540,7 +9540,7 @@ __metadata:
       optional: true
   bin:
     tsgo: bin/tsgo.js
-  checksum: 10c0/06c351abc2ad97c09c1c5dafb710a7a91728579196abaabcb5d6fa76b9384f44548cf086f325359809d597d8b1fb1a09b13bd3ca2453d6c5109e54c1d33fb5d9
+  checksum: 10c0/91d44378a3395d1c88b9f4e2ed29bfbbfb1e686da0596fb6c9c63e123edb9da1d1c359385d8d3aaef95cfa09cc3af8d1c0f96126e4974238515342c63f2b3495
   languageName: node
   linkType: hard
 
@@ -17532,7 +17532,7 @@ __metadata:
     "@stylistic/eslint-plugin": "npm:^5.7.1"
     "@tanstack/eslint-plugin-query": "npm:^5.91.4"
     "@types/tar-stream": "npm:^3.1.4"
-    "@typescript/native-preview": "npm:^7.0.0-dev.20260131.1"
+    "@typescript/native-preview": "npm:^7.0.0-dev.20260203.1"
     "@vitest/coverage-v8": "npm:^4.0.18"
     "@vitest/eslint-plugin": "npm:^1.6.6"
     dependency-cruiser: "npm:^17.3.7"
