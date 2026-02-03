@@ -79,16 +79,12 @@ export default [
       '@html-eslint/quotes': ['error', 'double', { enforceTemplatedAttrValue: true }],
     },
   },
-
-  // Syntax restrictions (JS only - TypeScript gets these plus module.exports below)
   {
     files: ['**/*.{js,jsx,mjs,cjs}'],
     rules: {
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     },
   },
-
-  // TypeScript syntax restrictions (base rules + module.exports)
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
     rules: {
