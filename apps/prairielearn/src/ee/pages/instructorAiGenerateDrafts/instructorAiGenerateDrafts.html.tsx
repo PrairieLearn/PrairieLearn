@@ -9,6 +9,7 @@ import { IdSchema } from '@prairielearn/zod';
 import { Modal } from '../../../components/Modal.js';
 import { PageLayout } from '../../../components/PageLayout.js';
 import { nodeModulesAssetPath } from '../../../lib/assets.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
@@ -38,6 +39,10 @@ export function InstructorAIGenerateDrafts({
     resLocals,
     pageTitle: resLocals.pageTitle,
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledStylesheetTag('instructorAiGenerateDrafts.css')}
       ${compiledScriptTag('mathjaxSetup.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
@@ -74,7 +79,7 @@ export function InstructorAIGenerateDrafts({
           <form
             id="add-question-form"
             name="add-question-form"
-            hx-post="${resLocals.urlPrefix}/ai_generate_question_drafts"
+            hx-post="${getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}"
             hx-target="#generation-results"
             hx-swap="outerHTML"
             hx-disabled-elt="button"

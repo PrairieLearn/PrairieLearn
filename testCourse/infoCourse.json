@@ -1,8 +1,10 @@
 {
-  "uuid": "28760b11-beb1-4507-bb0a-a15bc8eaf091",
   "name": "QA 101",
   "title": "Test Course",
-  "assessmentSets": [],
+  "assessmentSets": [
+    { "abbreviation": "HW", "name": "Homework", "heading": "Homeworks", "color": "green1" },
+    { "abbreviation": "E", "name": "Exam", "heading": "Exams", "color": "brown1" }
+  ],
   "assessmentModules": [
     { "name": "Module1", "heading": "Module 1" },
     { "name": "Module2", "heading": "Module 2" },

@@ -31,8 +31,8 @@ export function AdministratorInstitutionCourse({
       page: 'administrator_institution',
       subPage: 'courses',
     },
-    preContent: html`
-      <nav class="container" aria-label="Breadcrumbs">
+    content: html`
+      <nav aria-label="Breadcrumbs">
         <ol class="breadcrumb">
           <li class="breadcrumb-item">
             <a href="/pl/administrator/institution/${institution.id}/courses">Courses</a>
@@ -42,8 +42,7 @@ export function AdministratorInstitutionCourse({
           </li>
         </ol>
       </nav>
-    `,
-    content: html`
+
       <p><a href="/pl/course/${course.id}">View as instructor</a></p>
 
       <h2 class="h4">Limits</h2>
@@ -137,14 +136,20 @@ export function AdministratorInstitutionCourse({
           </thead>
           <tbody>
             ${rows.map(({ course_instance, enrollment_count }) => {
+              const isDeleted = course_instance.deleted_at !== null;
               return html`
                 <tr>
                   <td>
-                    <a
-                      href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
-                    >
-                      ${course_instance.short_name ?? '—'}: ${course_instance.long_name ?? '—'}
-                    </a>
+                    <div class="d-flex align-items-center">
+                      <a
+                        href="/pl/administrator/institution/${institution.id}/course_instance/${course_instance.id}"
+                        >${course_instance.short_name ?? '—'}:
+                        ${course_instance.long_name ?? '—'}</a
+                      >
+                      ${isDeleted
+                        ? html`<span class="badge text-bg-danger ms-2">Deleted</span>`
+                        : ''}
+                    </div>
                   </td>
                   <td>${enrollment_count}</td>
                   <td>

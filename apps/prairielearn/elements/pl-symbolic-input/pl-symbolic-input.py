@@ -77,6 +77,28 @@ def prepare(element_html: str, data: pl.QuestionData) -> None:
     ]
     pl.check_attribs(element, required_attribs, optional_attribs)
     name = pl.get_string_attrib(element, "answers-name")
+
+    # Validate that user-specified variables/functions don't conflict with built-ins
+    variables = psu.get_items_list(
+        pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
+    )
+    custom_functions = psu.get_items_list(
+        pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
+    )
+    allow_complex = pl.get_boolean_attrib(
+        element, "allow-complex", ALLOW_COMPLEX_DEFAULT
+    )
+    allow_trig = pl.get_boolean_attrib(
+        element, "allow-trig-functions", ALLOW_TRIG_FUNCTIONS_DEFAULT
+    )
+    psu.validate_names_for_conflicts(
+        name,
+        variables,
+        custom_functions,
+        allow_complex=allow_complex,
+        allow_trig_functions=allow_trig,
+    )
+
     pl.check_answers_names(data, name)
 
     if pl.has_attrib(element, "correct-answer"):
@@ -357,9 +379,20 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     formula_editor = pl.get_boolean_attrib(
         element, "formula-editor", SHOW_FORMULA_EDITOR_DEFAULT
     )
+
     variables = psu.get_items_list(
         pl.get_string_attrib(element, "variables", VARIABLES_DEFAULT)
     )
+
+    # See https://github.com/PrairieLearn/PrairieLearn/issues/12053
+    has_variables = pl.has_attrib(element, "variables")
+    if not has_variables:
+        a_tru = data["correct_answers"].get(name, {})
+        # If no variables attribute was specified but we have a correct answer dict,
+        # use the correct answer's variables for parsing.
+        if isinstance(a_tru, dict) and "_variables" in a_tru:
+            variables = a_tru["_variables"]
+
     custom_functions = psu.get_items_list(
         pl.get_string_attrib(element, "custom-functions", CUSTOM_FUNCTIONS_DEFAULT)
     )
@@ -419,6 +452,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
         allow_trig_functions=allow_trig,
         imaginary_unit=imaginary_unit,
         custom_functions=custom_functions,
+        simplify_expression=simplify_expression,
     )
 
     if error_msg is not None:

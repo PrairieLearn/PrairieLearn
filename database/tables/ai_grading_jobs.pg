@@ -10,6 +10,7 @@ columns
     model: text not null
     prompt: jsonb not null
     prompt_tokens: integer not null
+    rotation_correction_degrees: jsonb
 
 indexes
     ai_grading_jobs_pkey: PRIMARY KEY (id) USING btree (id)

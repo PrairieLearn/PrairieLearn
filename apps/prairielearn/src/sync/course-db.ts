@@ -4,9 +4,9 @@ import { Ajv, type JSONSchemaType } from 'ajv';
 import * as async from 'async';
 import betterAjvErrors from 'better-ajv-errors';
 import { isAfter, isFuture, isPast, isValid, parseISO } from 'date-fns';
+import { isEmptyObject } from 'es-toolkit';
 import fs from 'fs-extra';
 import jju from 'jju';
-import _ from 'lodash';
 import { type ZodSchema, z } from 'zod';
 
 import { run } from '@prairielearn/run';
@@ -19,9 +19,11 @@ import { findCoursesBySharingNames } from '../models/course.js';
 import { selectInstitutionForCourse } from '../models/institution.js';
 import {
   type AssessmentJson,
+  type AssessmentJsonInput,
   type AssessmentSetJson,
   type CourseInstanceJson,
   type CourseJson,
+  type GroupsJson,
   type QuestionJson,
   type QuestionPointsJson,
   type TagJson,
@@ -430,11 +432,19 @@ export async function loadInfoFile<T extends { uuid: string }>({
     // fail to parse, we'll take the hit and reparse with jju to generate
     // a better error report for users.
     const json = JSON.parse(contents);
-    if (!json.uuid) {
-      return infofile.makeError('UUID is missing');
-    }
-    if (!UUID_REGEX.test(json.uuid)) {
-      return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+
+    // The UUID is required in all files except infoCourse.json. Since this file
+    // used to require a UUID, we allow it to be parsed without a warning. In
+    // the future, once we're confident that most courses have removed the UUID
+    // from infoCourse.json, we can add a warning for unnecessary UUIDs in that
+    // file. Also, see https://github.com/PrairieLearn/PrairieLearn/issues/13709
+    if (filePath !== 'infoCourse.json') {
+      if (!json.uuid) {
+        return infofile.makeError('UUID is missing');
+      }
+      if (!UUID_REGEX.test(json.uuid)) {
+        return infofile.makeError(`UUID "${json.uuid}" is not a valid v4 UUID`);
+      }
     }
 
     if (!schema) {
@@ -476,27 +486,30 @@ export async function loadInfoFile<T extends { uuid: string }>({
       result = infofile.makeError(`Error parsing JSON: ${e.message}`);
     }
 
-    // The document was still valid JSON, but we may still be able to
-    // extract a UUID from the raw files contents with a regex.
-    const match = (contents || '').match(FILE_UUID_REGEX);
-    if (!match) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-    if (match.length > 1) {
-      infofile.addError(result, 'More than one UUID found in file');
-      return result;
+    if (filePath !== 'infoCourse.json') {
+      // The document was still valid JSON, but we may still be able to
+      // extract a UUID from the raw files contents with a regex.
+      const match = (contents || '').match(FILE_UUID_REGEX);
+      if (!match) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+      if (match.length > 1) {
+        infofile.addError(result, 'More than one UUID found in file');
+        return result;
+      }
+
+      // Extract and store UUID. Checking for a falsy value isn't technically
+      // required, but it keeps TypeScript happy.
+      const uuid = match[0].match(UUID_REGEX);
+      if (!uuid) {
+        infofile.addError(result, 'UUID not found in file');
+        return result;
+      }
+
+      result.uuid = uuid[0];
     }
 
-    // Extract and store UUID. Checking for a falsy value isn't technically
-    // required, but it keeps TypeScript happy.
-    const uuid = match[0].match(UUID_REGEX);
-    if (!uuid) {
-      infofile.addError(result, 'UUID not found in file');
-      return result;
-    }
-
-    result.uuid = uuid[0];
     return result;
   }
 }
@@ -662,7 +675,6 @@ export async function loadCourseInfo({
   }
 
   const course = {
-    uuid: info.uuid.toLowerCase(),
     path: coursePath,
     name: info.name,
     title: info.title,
@@ -696,7 +708,7 @@ async function loadAndValidateJson<T extends ZodSchema>({
   zodSchema: T;
   /** Whether or not a missing file constitutes an error */
   tolerateMissing?: boolean;
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
 }): Promise<InfoFile<z.infer<T>> | null> {
   const loadedJson: InfoFile<z.infer<T>> | null = await loadInfoFile({
     coursePath,
@@ -729,11 +741,11 @@ async function loadAndValidateJson<T extends ZodSchema>({
     return loadedJson;
   }
 
-  loadedJson.data = result.data;
-
-  const validationResult = validate(loadedJson.data);
+  const validationResult = validate(result.data, loadedJson.data);
   infofile.addErrors(loadedJson, validationResult.errors);
   infofile.addWarnings(loadedJson, validationResult.warnings);
+
+  loadedJson.data = result.data;
 
   return loadedJson;
 }
@@ -758,7 +770,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
   schema: any;
   zodSchema: T;
   /** A function that validates the info file and returns warnings and errors. It should not contact the database. */
-  validate: (info: z.infer<T>) => { warnings: string[]; errors: string[] };
+  validate: (info: z.infer<T>, rawInfo: z.input<T>) => { warnings: string[]; errors: string[] };
   /** Whether or not info files should be searched for recursively */
   recursive?: boolean;
 }): Promise<Record<string, InfoFile<z.infer<T>>>> {
@@ -791,7 +803,7 @@ async function loadInfoForDirectory<T extends ZodSchema>({
       } else if (recursive) {
         try {
           const subInfoFiles = await walk(path.join(relativeDir, dir));
-          if (_.isEmpty(subInfoFiles)) {
+          if (isEmptyObject(subInfoFiles)) {
             infoFiles[path.join(relativeDir, dir)] = infofile.makeError(
               `Missing JSON file: ${infoFilePath}. Either create the file or delete the ${infoFileDir} directory.`,
             );
@@ -1107,13 +1119,46 @@ function formatValues(qids: Set<string> | string[]) {
     .join(', ');
 }
 
+/**
+ * Converts legacy group properties to the new groups format for unified handling.
+ */
+export function convertLegacyGroupsToGroupsConfig(assessment: AssessmentJson): GroupsJson {
+  const canAssignRoles = assessment.groupRoles
+    .filter((role) => role.canAssignRoles)
+    .map((role) => role.name);
+
+  return {
+    enabled: assessment.groupWork,
+    minMembers: assessment.groupMinSize,
+    maxMembers: assessment.groupMaxSize,
+    roles: assessment.groupRoles.map((role) => ({
+      name: role.name,
+      minMembers: role.minimum,
+      maxMembers: role.maximum,
+    })),
+    studentPermissions: {
+      canCreateGroup: assessment.studentGroupCreate,
+      canJoinGroup: assessment.studentGroupJoin,
+      canLeaveGroup: assessment.studentGroupLeave,
+      canNameGroup: assessment.studentGroupChooseName,
+    },
+    rolePermissions: {
+      canAssignRoles,
+      canView: assessment.canView,
+      canSubmit: assessment.canSubmit,
+    },
+  };
+}
+
 function validateAssessment({
   assessment,
+  rawAssessment,
   questions,
   sharingEnabled,
   courseInstanceExpired,
 }: {
   assessment: AssessmentJson;
+  rawAssessment: AssessmentJsonInput;
   questions: Record<string, InfoFile<QuestionJson>>;
   sharingEnabled: boolean;
   courseInstanceExpired: boolean;
@@ -1125,6 +1170,38 @@ function validateAssessment({
     errors.push(
       '"shareSourcePublicly" cannot be used because sharing is not enabled for this course',
     );
+  }
+
+  // Check for conflict between legacy group properties and new groups schema
+  if (assessment.groups != null) {
+    const usedLegacyProps: string[] = [];
+
+    // We need to use `rawAssessment` here to check if the user specified any
+    // legacy properties in their JSON. `assessment` has already had default values
+    // filled in by Zod.
+    for (const prop of [
+      'groupWork',
+      'groupMaxSize',
+      'groupMinSize',
+      'groupRoles',
+      'canView',
+      'canSubmit',
+      'studentGroupCreate',
+      'studentGroupJoin',
+      'studentGroupLeave',
+      'studentGroupChooseName',
+    ]) {
+      if (prop in rawAssessment) {
+        usedLegacyProps.push(prop);
+      }
+    }
+
+    if (usedLegacyProps.length > 0) {
+      const stringifiedProps = usedLegacyProps.map((p) => `"${p}"`).join(', ');
+      errors.push(
+        `Cannot use both "groups" and legacy group properties (${stringifiedProps}) in the same assessment.`,
+      );
+    }
   }
 
   const allowRealTimeGrading = assessment.allowRealTimeGrading ?? true;
@@ -1353,58 +1430,82 @@ function validateAssessment({
     );
   }
 
-  if (assessment.groupRoles.length > 0) {
-    // Ensure at least one mandatory role can assign roles
-    const foundCanAssignRoles = assessment.groupRoles.some(
-      (role) => role.canAssignRoles && role.minimum >= 1,
-    );
+  // Convert legacy group properties to groups format for unified validation
+  const isLegacyGroups = assessment.groups == null;
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
 
-    if (!foundCanAssignRoles) {
-      errors.push('Could not find a role with minimum >= 1 and "canAssignRoles" set to "true".');
+  // Validate groups if we have roles defined
+  if (groups.roles.length > 0) {
+    const rolePerms = groups.rolePermissions;
+
+    const canAssignRolesSet = new Set(rolePerms.canAssignRoles);
+    const hasAssigner = groups.roles.some(
+      (role) => canAssignRolesSet.has(role.name) && role.minMembers >= 1,
+    );
+    if (!hasAssigner) {
+      errors.push('Could not find a role with minMembers >= 1 that can assign roles.');
     }
 
-    // Ensure values for role minimum and maximum are within bounds
-    assessment.groupRoles.forEach((role) => {
-      if (assessment.groupMinSize != null && role.minimum > assessment.groupMinSize) {
-        warnings.push(
-          `Group role "${role.name}" has a minimum greater than the group's minimum size.`,
-        );
-      }
-      if (assessment.groupMaxSize != null && role.minimum > assessment.groupMaxSize) {
+    const validRoleNames = new Set(groups.roles.map((r) => r.name));
+
+    rolePerms.canAssignRoles.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
         errors.push(
-          `Group role "${role.name}" contains an invalid minimum. (Expected at most ${assessment.groupMaxSize}, found ${role.minimum}).`,
-        );
-      }
-      if (
-        role.maximum != null &&
-        assessment.groupMaxSize != null &&
-        role.maximum > assessment.groupMaxSize
-      ) {
-        errors.push(
-          `Group role "${role.name}" contains an invalid maximum. (Expected at most ${assessment.groupMaxSize}, found ${role.maximum}).`,
-        );
-      }
-      if (role.maximum != null && role.minimum > role.maximum) {
-        errors.push(
-          `Group role "${role.name}" must have a minimum <= maximum. (Expected minimum <= ${role.maximum}, found minimum = ${role.minimum}).`,
+          `${isLegacyGroups ? '"canAssignRoles"' : 'The "groups.rolePermissions.canAssignRoles" permission'} contains non-existent role "${roleName}".`,
         );
       }
     });
 
-    const validRoleNames = new Set();
-    assessment.groupRoles.forEach((role) => {
-      validRoleNames.add(role.name);
+    rolePerms.canView.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(
+          `${isLegacyGroups ? 'The assessment\'s "canView"' : 'The "groups.rolePermissions.canView"'} permission contains non-existent role "${roleName}".`,
+        );
+      }
+    });
+
+    rolePerms.canSubmit.forEach((roleName) => {
+      if (!validRoleNames.has(roleName)) {
+        errors.push(
+          `${isLegacyGroups ? 'The assessment\'s "canSubmit"' : 'The "groups.rolePermissions.canSubmit"'} permission contains non-existent role "${roleName}".`,
+        );
+      }
+    });
+
+    groups.roles.forEach((role) => {
+      if (groups.minMembers != null && role.minMembers > groups.minMembers) {
+        warnings.push(`Role "${role.name}" has a minMembers greater than the group's minMembers.`);
+      }
+      if (groups.maxMembers != null && role.minMembers > groups.maxMembers) {
+        errors.push(
+          `Role "${role.name}" contains an invalid minMembers. (Expected at most ${groups.maxMembers}, found ${role.minMembers}).`,
+        );
+      }
+      if (
+        role.maxMembers != null &&
+        groups.maxMembers != null &&
+        role.maxMembers > groups.maxMembers
+      ) {
+        errors.push(
+          `Role "${role.name}" contains an invalid maxMembers. (Expected at most ${groups.maxMembers}, found ${role.maxMembers}).`,
+        );
+      }
+      if (role.maxMembers != null && role.minMembers > role.maxMembers) {
+        errors.push(
+          `Role "${role.name}" must have minMembers <= maxMembers. (Expected minMembers <= ${role.maxMembers}, found minMembers = ${role.minMembers}).`,
+        );
+      }
     });
 
     const validateViewAndSubmitRolePermissions = (
       canView: string[],
       canSubmit: string[],
-      area: string,
+      area: 'zone' | 'zone question',
     ): void => {
       canView.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canView" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canView" permission contains non-existent role "${roleName}".`,
           );
         }
       });
@@ -1412,19 +1513,15 @@ function validateAssessment({
       canSubmit.forEach((roleName) => {
         if (!validRoleNames.has(roleName)) {
           errors.push(
-            `The ${area}'s "canSubmit" permission contains the non-existent group role name "${roleName}".`,
+            `The ${area}'s "canSubmit" permission contains non-existent role "${roleName}".`,
           );
         }
       });
     };
 
-    // Validate role names at the assessment level
-    validateViewAndSubmitRolePermissions(assessment.canView, assessment.canSubmit, 'assessment');
-
-    // Validate role names for each zone
+    // Validate role names for each zone and question
     assessment.zones.forEach((zone) => {
       validateViewAndSubmitRolePermissions(zone.canView, zone.canSubmit, 'zone');
-      // Validate role names for each question
       zone.questions.forEach((zoneQuestion) => {
         validateViewAndSubmitRolePermissions(
           zoneQuestion.canView,
@@ -1657,8 +1754,14 @@ export async function loadAssessments({
     infoFilename: 'infoAssessment.json',
     schema: schemas.infoAssessment,
     zodSchema: schemas.AssessmentJsonSchema,
-    validate: (assessment: AssessmentJson) =>
-      validateAssessment({ assessment, questions, sharingEnabled, courseInstanceExpired }),
+    validate: (assessment: AssessmentJson, rawAssessment: AssessmentJsonInput) =>
+      validateAssessment({
+        assessment,
+        rawAssessment,
+        questions,
+        sharingEnabled,
+        courseInstanceExpired,
+      }),
     recursive: true,
   });
   checkDuplicateUUIDs(

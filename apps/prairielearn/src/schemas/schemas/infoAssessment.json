@@ -102,63 +102,160 @@
       "type": "string"
     },
     "groupWork": {
-      "description": "Whether the assessment will support group work.",
+      "description": "Whether the assessment will support group work. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "groupMaxSize": {
-      "description": "Maximum number of students in a group.",
-      "type": "number"
+      "description": "Maximum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "type": "number",
+      "deprecated": true
     },
     "groupMinSize": {
-      "description": "Minimum number of students in a group.",
-      "type": "number"
+      "description": "Minimum number of students in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
+      "type": "number",
+      "deprecated": true
     },
     "groupRoles": {
-      "description": "Array of custom user roles in a group.",
+      "description": "Array of custom user roles in a group. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
-        "$ref": "#/definitions/GroupRoleJsonSchema"
+        "$ref": "#/definitions/LegacyGroupRoleJsonSchema"
       },
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canSubmit": {
-      "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+      "description": "A list of group role names that can submit questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
       },
       "uniqueItems": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "canView": {
-      "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+      "description": "A list of group role names that can view questions. Only applicable for group assessments. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "array",
       "items": {
         "type": "string"
       },
       "uniqueItems": true,
-      "default": []
+      "default": [],
+      "deprecated": true
     },
     "studentGroupCreate": {
-      "description": "Whether students can create groups.",
+      "description": "Whether students can create groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupChooseName": {
-      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true.",
+      "description": "Whether students can choose a group name when creating a group. Only applicable if studentGroupCreate is true. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": true
+      "default": true,
+      "deprecated": true
     },
     "studentGroupJoin": {
-      "description": "Whether students can join groups.",
+      "description": "Whether students can join groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
     },
     "studentGroupLeave": {
-      "description": "Whether students can leave groups.",
+      "description": "Whether students can leave groups. DEPRECATED -- prefer using the \"groups\" property instead.",
       "type": "boolean",
-      "default": false
+      "default": false,
+      "deprecated": true
+    },
+    "groups": {
+      "description": "Configuration for group-based assessments.",
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "enabled": {
+          "description": "Whether groups are enabled for this assessment.",
+          "type": "boolean",
+          "default": true
+        },
+        "minMembers": {
+          "description": "Minimum number of students in a group.",
+          "type": "number"
+        },
+        "maxMembers": {
+          "description": "Maximum number of students in a group.",
+          "type": "number"
+        },
+        "roles": {
+          "description": "Array of custom user roles in a group.",
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/GroupsRoleJsonSchema"
+          },
+          "uniqueItems": true,
+          "default": []
+        },
+        "studentPermissions": {
+          "description": "Student permissions for group management.",
+          "type": "object",
+          "properties": {
+            "canCreateGroup": {
+              "description": "Whether students can create groups.",
+              "type": "boolean",
+              "default": false
+            },
+            "canJoinGroup": {
+              "description": "Whether students can join groups.",
+              "type": "boolean",
+              "default": false
+            },
+            "canLeaveGroup": {
+              "description": "Whether students can leave groups.",
+              "type": "boolean",
+              "default": false
+            },
+            "canNameGroup": {
+              "description": "Whether students can choose a group name when creating a group.",
+              "type": "boolean",
+              "default": true
+            }
+          },
+          "default": {}
+        },
+        "rolePermissions": {
+          "description": "Role-based permissions for group assessments.",
+          "type": "object",
+          "properties": {
+            "canAssignRoles": {
+              "description": "Role names that can assign other users to roles.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            },
+            "canView": {
+              "description": "Role names that can view questions.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            },
+            "canSubmit": {
+              "description": "Role names that can submit questions.",
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "default": []
+            }
+          },
+          "default": {}
+        }
+      }
     },
     "advanceScorePerc": {
       "description": "Minimum score percentage to unlock access to subsequent questions.",
@@ -180,31 +277,6 @@
     }
   },
   "definitions": {
-    "GroupRoleJsonSchema": {
-      "description": "A custom role for use in group assessments that allows control over certain permissions.",
-      "type": "object",
-      "required": ["name"],
-      "properties": {
-        "name": {
-          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
-          "type": "string"
-        },
-        "minimum": {
-          "description": "The minimum number of users that should be in this role in a group.",
-          "type": "number",
-          "default": 0
-        },
-        "maximum": {
-          "description": "The maximum number of users that should be in this role in a group.",
-          "type": "number"
-        },
-        "canAssignRoles": {
-          "description": "Whether users with this role can assign other users' group roles.",
-          "type": "boolean",
-          "default": false
-        }
-      }
-    },
     "AssessmentAccessRuleJsonSchema": {
       "description": "An access rule that permits people to access this assessment. All restrictions in the rule must be satisfied for the rule to allow access.",
       "type": "object",
@@ -413,7 +485,7 @@
           "type": "boolean"
         },
         "canSubmit": {
-          "description": "A list of group role names matching those in groupRoles that can submit the question. Only applicable for group assessments.",
+          "description": "A list of group role names that can submit the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -422,7 +494,7 @@
           "default": []
         },
         "canView": {
-          "description": "A list of group role names matching those in groupRoles that can view the question. Only applicable for group assessments.",
+          "description": "A list of group role names that can view the question. Only applicable for group assessments.",
           "type": "array",
           "items": {
             "type": "string"
@@ -522,6 +594,51 @@
       "type": "number",
       "minimum": 0,
       "maximum": 100
+    },
+    "LegacyGroupRoleJsonSchema": {
+      "description": "A custom role for use in group assessments that allows control over certain permissions.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (i.e. Manager, Reflector, Recorder).",
+          "type": "string"
+        },
+        "minimum": {
+          "description": "The minimum number of users that should be in this role in a group.",
+          "type": "number",
+          "default": 0
+        },
+        "maximum": {
+          "description": "The maximum number of users that should be in this role in a group.",
+          "type": "number"
+        },
+        "canAssignRoles": {
+          "description": "Whether users with this role can assign other users' group roles.",
+          "type": "boolean",
+          "default": false
+        }
+      }
+    },
+    "GroupsRoleJsonSchema": {
+      "description": "A custom role for use in group assessments.",
+      "type": "object",
+      "required": ["name"],
+      "properties": {
+        "name": {
+          "description": "The group role's name (e.g., Manager, Recorder).",
+          "type": "string"
+        },
+        "minMembers": {
+          "description": "The minimum number of users that should be in this role.",
+          "type": "number",
+          "default": 0
+        },
+        "maxMembers": {
+          "description": "The maximum number of users that should be in this role.",
+          "type": "number"
+        }
+      }
     },
     "CommentJsonSchema": {
       "description": "Arbitrary comment for reference purposes.",

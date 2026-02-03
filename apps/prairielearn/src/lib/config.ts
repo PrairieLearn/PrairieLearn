@@ -89,7 +89,7 @@ export const ConfigSchema = z.object({
    * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
-  nonVolatileRedisUrl: z.string().nullable().default(null),
+  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -323,8 +323,13 @@ export const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('redis'),
+  cacheKeyPrefix: z
+    .string()
+    .default('prairielearn-cache:')
+    .refine((s) => s.endsWith(':'), {
+      message: 'must end with a colon (:)',
+    }),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
@@ -561,6 +566,12 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
+   * The hourly spending rate limit for AI grading, in US dollars.
+   * This is applied per course instance.
+   * Accounts for both input and output tokens.
+   */
+  aiGradingRateLimitDollars: z.number().default(10),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
@@ -620,6 +631,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;

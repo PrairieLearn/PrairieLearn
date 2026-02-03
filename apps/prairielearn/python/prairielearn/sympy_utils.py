@@ -8,6 +8,7 @@ from prairielearn.sympy_utils import ...
 import ast
 import copy
 import html
+import re
 from collections import deque
 from collections.abc import Callable, Iterable
 from dataclasses import dataclass
@@ -454,6 +455,21 @@ def evaluate_with_source(
     # for exponentiation. In Python, only the latter can be used.
     expr = full_unidecode(greek_unicode_transform(expr)).replace("^", "**")
 
+    # Prevent Python from interpreting patterns like "2e+3" or "2e-3" as scientific
+    # notation floats. When users write "2e+3", they likely mean "2*e + 3" (2 times
+    # Euler's number plus 3), not 2000.0.
+    expr = re.sub(r"(\d)([eE])([+-])", r"\1*\2\3", expr)
+
+    # When complex numbers are not allowed, prevent Python from interpreting
+    # patterns like "3j" or "3J" as complex literals. Convert "<digits>j" to "<digits>*j"
+    # so that 'j' is treated as a variable instead. This fixes issue #13661.
+    #
+    # The negative lookahead (?![a-zA-Z0-9]) ensures we only match standalone "j"/"J".
+    # Patterns like "3jn" are NOT transformed because Python tokenizes "3jn" as "3j"
+    # (complex) + "n" regardless - they will still fail with HasComplexError.
+    if not allow_complex:
+        expr = re.sub(r"(\d)([jJ])(?![a-zA-Z0-9])", r"\1*\2", expr)
+
     local_dict = {
         k: v
         for inner_dict in locals_for_eval.values()
@@ -770,6 +786,7 @@ def validate_string_as_sympy(
     allow_trig_functions: bool = True,
     custom_functions: list[str] | None = None,
     imaginary_unit: str | None = None,
+    simplify_expression: bool = True,
 ) -> str | None:
     """Try to parse expr as a SymPy expression. If it fails, return a string with an appropriate error message for display on the frontend.
 
@@ -784,6 +801,7 @@ def validate_string_as_sympy(
             allow_complex=allow_complex,
             allow_trig_functions=allow_trig_functions,
             custom_functions=custom_functions,
+            simplify_expression=simplify_expression,
         )
     except HasFloatError as exc:
         return (
@@ -859,8 +877,22 @@ def validate_string_as_sympy(
             f"<br><br><pre>{point_to_error(expr, exc.offset)}</pre>"
             "Note that the location of the syntax error is approximate."
         )
-    except Exception:
-        return "Invalid format."
+    except HasConflictingVariableError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The variable list contains a name that conflicts with a built-in constant. "
+            "Please contact the course staff."
+        )
+    except HasConflictingFunctionError as exc:
+        return (
+            f"Question configuration error: {exc}. "
+            "The custom function list contains a name that conflicts with a built-in function. "
+            "Please contact the course staff."
+        )
+    except HasInvalidAssumptionError as exc:
+        return f"Question configuration error: {exc}. Please contact the course staff."
+    except Exception as exc:
+        return f"Unexpected error: {exc}. Please contact the course staff."
 
     # If complex numbers are not allowed, raise error if expression has the imaginary unit
     if (
@@ -883,6 +915,70 @@ def get_items_list(items_string: str | None) -> list[str]:
         return []
 
     return list(map(str.strip, items_string.split(",")))
+
+
+def get_builtin_constants(*, allow_complex: bool = False) -> set[str]:
+    """Return the set of built-in constant names.
+
+    Parameters:
+        allow_complex: Whether to include complex number constants (i, j).
+
+    Returns:
+        A set of built-in constant names.
+    """
+    const = _Constants()
+    names = set(const.variables.keys())
+    if allow_complex:
+        names |= const.complex_variables.keys()
+    return names
+
+
+def get_builtin_functions(*, allow_trig_functions: bool = True) -> set[str]:
+    """Return the set of built-in function names.
+
+    Parameters:
+        allow_trig_functions: Whether to include trigonometric functions.
+
+    Returns:
+        A set of built-in function names.
+    """
+    const = _Constants()
+    names = set(const.functions.keys())
+    if allow_trig_functions:
+        names |= const.trig_functions.keys()
+    return names
+
+
+def validate_names_for_conflicts(
+    element_name: str,
+    variables: list[str],
+    custom_functions: list[str],
+    *,
+    allow_complex: bool = False,
+    allow_trig_functions: bool = True,
+) -> None:
+    """Validate that user-specified names don't conflict with built-in constants or functions.
+
+    Parameters:
+        element_name: Name of the element (for error messages).
+        variables: User-specified variable names.
+        custom_functions: User-specified custom function names.
+        allow_complex: Whether complex constants (i, j) are available.
+        allow_trig_functions: Whether trig functions are available.
+
+    Raises:
+        ValueError: If any names conflict with built-ins.
+    """
+    builtins = get_builtin_constants(
+        allow_complex=allow_complex
+    ) | get_builtin_functions(allow_trig_functions=allow_trig_functions)
+
+    conflicts = [name for name in variables + custom_functions if name in builtins]
+    if conflicts:
+        raise ValueError(
+            f'Element "{element_name}" specifies names that conflict with built-ins: '
+            f"{', '.join(conflicts)}. These are automatically available and should not be listed."
+        )
 
 
 # From https://gist.github.com/beniwohli/765262, with a typo fix for lambda/Lambda

@@ -1,12 +1,12 @@
 import { EncodedData } from '@prairielearn/browser-utils';
 import { type HtmlValue, html } from '@prairielearn/html';
+import { assertNever } from '@prairielearn/utils';
 
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type CourseRequest } from '../../lib/db-types.js';
 import type { ResLocalsForPage } from '../../lib/res-locals.js';
-import { assertNever } from '../../lib/types.js';
 
 import type { CourseRequestRow, Lti13CourseRequestInput } from './instructorRequestCourse.types.js';
 
@@ -117,10 +117,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
         <div class="card-body">
           <p>
             This form is for instructors who want to create a new course on PrairieLearn. Students
-            should <strong>not</strong> submit this form and should instead use the "Add or remove
-            courses" button on the PrairieLearn homepage. Teaching assistants and course staff are
-            granted access by the owner of their course and should <strong>not</strong> submit this
-            form.
+            should <strong>not</strong> submit this form and should instead enroll in a course using
+            an enrollment code or direct link provided by their instructor. Teaching assistants and
+            course staff are granted access by the owner of their course and should
+            <strong>not</strong> submit this form.
           </p>
 
           <div class="row">
