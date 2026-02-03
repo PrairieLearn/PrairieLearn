@@ -96,6 +96,8 @@ function ColumnGroupItem<RowDataModel>({
     e.stopPropagation();
     const targetVisibility = !isAllVisible;
     // Batch all visibility changes into a single update
+    // Doing rapid state updates caused the state updates to not be applied correctly.
+    // See https://github.com/PrairieLearn/PrairieLearn/pull/13989
     table.setColumnVisibility((old) => {
       const newVisibility = { ...old };
       leafColumns.forEach((col) => {

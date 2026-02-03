@@ -122,7 +122,7 @@
 {{/question}}
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#a_sub}}<code>{{a_sub}}</code>{{/a_sub}}
@@ -243,10 +243,11 @@
 </span>
 {{/multiline}}
 
-{{#inline}}</span>{{/inline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     <code>{{a_tru}}</code>
@@ -309,4 +310,5 @@
 {{#multiline}}
 </span>
 {{/multiline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}
