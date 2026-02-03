@@ -25,6 +25,11 @@ Frequently used packages:
 
 - `@prairielearn/ui`: UI components for the PrairieLearn web application.
 
+## Git
+
+- NEVER amend commits or force push unless specifically requested.
+- NEVER rebase unless specifically requested, always use merge commits.
+
 ## Building, type checking, and linting
 
 When working on a task, you should typecheck / lint / format individual files as you go. When you are done, you should typecheck / lint / format all changed files.
