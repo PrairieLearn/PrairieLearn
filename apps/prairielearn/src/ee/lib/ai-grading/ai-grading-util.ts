@@ -36,6 +36,7 @@ import {
   SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
+  UserSchema,
   type Variant,
   VariantSchema,
 } from '../../../lib/db-types.js';
@@ -589,4 +590,11 @@ export function correctGeminiMalformedRubricGradingJson(rawResponseText: string)
   );
 
   return `${charactersBeforeRubricItemsObject} ${correctedRubricItems}`;
+}
+
+export async function selectAuthUser(instanceQuestion: InstanceQuestion) {
+  const authUser = await queryRow(sql.select_authn_user, {
+    id: instanceQuestion.id
+  }, UserSchema);
+  return authUser;
 }

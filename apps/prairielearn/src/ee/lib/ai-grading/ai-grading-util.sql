@@ -280,3 +280,13 @@ SET
   ai_grading_mode = $ai_grading_mode
 WHERE
   id = $assessment_question_id;
+
+-- BLOCK select_authn_user
+SELECT 
+  u.*
+FROM
+  instance_questions AS iq 
+  JOIN assessment_instances AS ai ON ai.id = iq.assessment_instance_id
+  JOIN users AS u ON u.id = ai.user_id
+WHERE
+  iq.id=$id;

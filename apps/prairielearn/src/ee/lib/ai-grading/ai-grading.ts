@@ -5,6 +5,7 @@ import { createGoogleGenerativeAI } from '@ai-sdk/google';
 import { type OpenAIResponsesProviderOptions, createOpenAI } from '@ai-sdk/openai';
 import { type JSONParseError, type TypeValidationError, generateObject } from 'ai';
 import * as async from 'async';
+import fs from 'fs-extra';
 import mustache from 'mustache';
 import { z } from 'zod';
 
@@ -44,8 +45,9 @@ import {
   getIntervalUsage,
   insertAiGradingJob,
   parseAiRubricItems,
+  selectAuthUser,
   selectInstanceQuestionsForAssessmentQuestion,
-  selectLastVariantAndSubmission,
+  selectLastVariantAndSubmission
 } from './ai-grading-util.js';
 import type { AIGradingLog, AIGradingLogger } from './types.js';
 
@@ -124,6 +126,9 @@ export async function aiGrade({
       return anthropic(model_id);
     }
   });
+
+  const questionHtml: Record<string, string> = {};
+  const answerHtml: Record<string, string> = {};
 
   const question_course = await getQuestionCourse(question, course);
 
@@ -275,329 +280,337 @@ export async function aiGrade({
       const questionPrompt = render_question_results.data.questionHtml;
       const questionAnswer = render_question_results.data.answerHtml;
 
-      const render_submission_results = await questionModule.render(
-        { question: false, submissions: true, answer: false },
-        variant,
-        question,
-        submission,
-        [submission],
-        question_course,
-        locals,
-      );
-      const submission_text = render_submission_results.data.submissionHtmls[0];
-
-      const hasImage = containsImageCapture(submission_text);
-
-      const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
-
-      const mustacheParams = {
-        correct_answers: submission.true_answer ?? {},
-        params: submission.params ?? {},
-        submitted_answers: submission.submitted_answer,
-      };
-      for (const rubric_item of rubric_items) {
-        rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
-        rubric_item.explanation = rubric_item.explanation
-          ? mustache.render(rubric_item.explanation, mustacheParams)
-          : null;
-        rubric_item.grader_note = rubric_item.grader_note
-          ? mustache.render(rubric_item.grader_note, mustacheParams)
-          : null;
+      if (submission.auth_user_id) {
+        const authUser = await selectAuthUser(instance_question);
+        console.log('authUser', authUser);
+        if (authUser.uid) {
+          questionHtml[authUser.uid] = questionPrompt;
+          answerHtml[authUser.uid] = questionAnswer;
+        }
       }
 
-      const input = await generatePrompt({
-        questionPrompt,
-        questionAnswer,
-        submission_text,
-        submitted_answer: submission.submitted_answer,
-        rubric_items,
-        grader_guidelines: rubric?.grader_guidelines ?? null,
-        params: variant.params ?? {},
-        true_answer: variant.true_answer ?? {},
-        model_id,
-      });
+      // const render_submission_results = await questionModule.render(
+      //   { question: false, submissions: true, answer: false },
+      //   variant,
+      //   question,
+      //   submission,
+      //   [submission],
+      //   question_course,
+      //   locals,
+      // );
+      // const submission_text = render_submission_results.data.submissionHtmls[0];
 
-      // If the submission contains images, prompt the model to transcribe any relevant information
-      // out of the image.
-      const explanationDescription = run(() => {
-        const parts = ['Instructor-facing explanation of the grading decision.'];
-        if (hasImage) {
-          parts.push(
-            'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
-            'You MUST transcribe the final answer(s) from the images.',
-            'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
-            'You MUST wrap inline LaTeX in dollar signs ($).',
-            'You MUST wrap block LaTeX in double dollar signs ($$).',
-          );
-        }
-        return parts.join(' ');
-      });
+      // const hasImage = containsImageCapture(submission_text);
 
-      const openaiProviderOptions: OpenAIResponsesProviderOptions = {
-        strictJsonSchema: true,
-        metadata: {
-          course_id: course.id,
-          course_instance_id: course_instance.id,
-          assessment_id: assessment.id,
-          assessment_question_id: assessment_question.id,
-          instance_question_id: instance_question.id,
-        },
-        promptCacheKey: `assessment_question_${assessment_question.id}`,
-        safetyIdentifier: `course_${course.id}`,
-      };
+      // const { rubric, rubric_items } = await selectCompleteRubric(assessment_question.id);
 
-      if (rubric_items.length > 0) {
-        // Dynamically generate the rubric schema based on the rubric items.
-        let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
-        for (const item of rubric_items) {
-          RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
-            z.object({
-              [item.description]: z.boolean(),
-            }),
-          );
-        }
+      // const mustacheParams = {
+      //   correct_answers: submission.true_answer ?? {},
+      //   params: submission.params ?? {},
+      //   submitted_answers: submission.submitted_answer,
+      // };
+      // for (const rubric_item of rubric_items) {
+      //   rubric_item.description = mustache.render(rubric_item.description, mustacheParams);
+      //   rubric_item.explanation = rubric_item.explanation
+      //     ? mustache.render(rubric_item.explanation, mustacheParams)
+      //     : null;
+      //   rubric_item.grader_note = rubric_item.grader_note
+      //     ? mustache.render(rubric_item.grader_note, mustacheParams)
+      //     : null;
+      // }
+      // const input = await generatePrompt({
+      //   questionPrompt,
+      //   questionAnswer,
+      //   submission_text,
+      //   submitted_answer: submission.submitted_answer,
+      //   rubric_items,
+      //   grader_guidelines: rubric?.grader_guidelines ?? null,
+      //   params: variant.params ?? {},
+      //   true_answer: variant.true_answer ?? {},
+      //   model_id,
+      // });
 
-        // OpenAI will take the property descriptions into account. See the
-        // examples here: https://platform.openai.com/docs/guides/structured-outputs
-        const RubricGradingResultSchema = z.object({
-          explanation: z.string().describe(explanationDescription),
-          // rubric_items must be the last property in the schema.
-          // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
-          // the function that attempts to repair the JSON, depends on rubric_items being at the end of
-          // generated response.
-          rubric_items: RubricGradingItemsSchema,
-        });
+      // // If the submission contains images, prompt the model to transcribe any relevant information
+      // // out of the image.
+      // const explanationDescription = run(() => {
+      //   const parts = ['Instructor-facing explanation of the grading decision.'];
+      //   if (hasImage) {
+      //     parts.push(
+      //       'You MUST include a complete transcription of all relevant text, numbers, and information from any images the student submitted.',
+      //       'You MUST transcribe the final answer(s) from the images.',
+      //       'You MUST use LaTeX formatting for mathematical expressions, equations, and formulas.',
+      //       'You MUST wrap inline LaTeX in dollar signs ($).',
+      //       'You MUST wrap block LaTeX in double dollar signs ($$).',
+      //     );
+      //   }
+      //   return parts.join(' ');
+      // });
 
-        const response = await generateObject({
-          model,
-          schema: RubricGradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-          experimental_repairText: async (options: {
-            text: string;
-            error: JSONParseError | TypeValidationError;
-          }) => {
-            if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
-              return null;
-            }
-            // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
-            // unescaped backslashes in the rubric item keys of the response.
+      // const openaiProviderOptions: OpenAIResponsesProviderOptions = {
+      //   strictJsonSchema: true,
+      //   metadata: {
+      //     course_id: course.id,
+      //     course_instance_id: course_instance.id,
+      //     assessment_id: assessment.id,
+      //     assessment_question_id: assessment_question.id,
+      //     instance_question_id: instance_question.id,
+      //   },
+      //   promptCacheKey: `assessment_question_${assessment_question.id}`,
+      //   safetyIdentifier: `course_${course.id}`,
+      // };
 
-            // TODO: Remove this temporary fix once Google fixes the underlying issue.
-            // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
-            return correctGeminiMalformedRubricGradingJson(options.text);
-          },
-        });
+      // if (rubric_items.length > 0) {
+      //   // Dynamically generate the rubric schema based on the rubric items.
+      //   let RubricGradingItemsSchema = z.object({}) as z.ZodObject<Record<string, z.ZodBoolean>>;
+      //   for (const item of rubric_items) {
+      //     RubricGradingItemsSchema = RubricGradingItemsSchema.merge(
+      //       z.object({
+      //         [item.description]: z.boolean(),
+      //       }),
+      //     );
+      //   }
 
-        logResponseUsage({ response, logger });
+      //   // OpenAI will take the property descriptions into account. See the
+      //   // examples here: https://platform.openai.com/docs/guides/structured-outputs
+      //   const RubricGradingResultSchema = z.object({
+      //     explanation: z.string().describe(explanationDescription),
+      //     // rubric_items must be the last property in the schema.
+      //     // Google Gemini models may output malformed JSON. correctGeminiMalformedRubricGradingJson,
+      //     // the function that attempts to repair the JSON, depends on rubric_items being at the end of
+      //     // generated response.
+      //     rubric_items: RubricGradingItemsSchema,
+      //   });
 
-        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
-        const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
-          ai_rubric_items: response.object.rubric_items,
-          rubric_items,
-        });
+      //   const response = await generateObject({
+      //     model,
+      //     schema: RubricGradingResultSchema,
+      //     messages: input,
+      //     providerOptions: {
+      //       openai: openaiProviderOptions,
+      //     },
+      //     experimental_repairText: async (options: {
+      //       text: string;
+      //       error: JSONParseError | TypeValidationError;
+      //     }) => {
+      //       if (provider !== 'google' || options.error.name !== 'AI_JSONParseError') {
+      //         return null;
+      //       }
+      //       // If a JSON parse error occurs with a Google Gemini model, we attempt to correct
+      //       // unescaped backslashes in the rubric item keys of the response.
 
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const manual_rubric_data = {
-            rubric_id: rubric_items[0].rubric_id,
-            applied_rubric_items: appliedRubricItems,
-          };
-          await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                // TODO: consider asking for and recording freeform feedback.
-                manual_rubric_data,
-                feedback: { manual: '' },
-              },
-              user_id,
-              true, // is_ai_graded
-            );
-            assert(grading_job_id);
+      //       // TODO: Remove this temporary fix once Google fixes the underlying issue.
+      //       // Issue on the Google GenAI repository: https://github.com/googleapis/js-genai/issues/1226#issue-3783507624
+      //       return correctGeminiMalformedRubricGradingJson(options.text);
+      //     },
+      //   });
 
-            await insertAiGradingJob({
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              response,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            });
+      //   logResponseUsage({ response, logger });
 
-            await updateCourseInstanceUsagesForAiGrading({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              usage: response.usage,
-            });
-          });
-        } else {
-          // Does not require grading: only create grading job and rubric grading
-          await runInTransactionAsync(async () => {
-            assert(assessment_question.max_manual_points);
-            const manual_rubric_grading = await manualGrading.insertRubricGrading(
-              rubric_items[0].rubric_id,
-              assessment_question.max_points ?? 0,
-              assessment_question.max_manual_points,
-              appliedRubricItems,
-              0,
-            );
-            const score =
-              manual_rubric_grading.computed_points / assessment_question.max_manual_points;
-            const grading_job_id = await queryRow(
-              sql.insert_grading_job,
-              {
-                submission_id: submission.id,
-                authn_user_id: user_id,
-                grading_method: 'AI',
-                correct: null,
-                score,
-                auto_points: 0,
-                manual_points: manual_rubric_grading.computed_points,
-                manual_rubric_grading_id: manual_rubric_grading.id,
-                feedback: null,
-              },
-              IdSchema,
-            );
+      //   logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+      //   const { appliedRubricItems, appliedRubricDescription } = parseAiRubricItems({
+      //     ai_rubric_items: response.object.rubric_items,
+      //     rubric_items,
+      //   });
 
-            await insertAiGradingJob({
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              response,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            });
+      //   if (shouldUpdateScore) {
+      //     // Requires grading: update instance question score
+      //     const manual_rubric_data = {
+      //       rubric_id: rubric_items[0].rubric_id,
+      //       applied_rubric_items: appliedRubricItems,
+      //     };
+      //     await runInTransactionAsync(async () => {
+      //       const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+      //         assessment,
+      //         instance_question.id,
+      //         submission.id,
+      //         null, // check_modified_at
+      //         {
+      //           // TODO: consider asking for and recording freeform feedback.
+      //           manual_rubric_data,
+      //           feedback: { manual: '' },
+      //         },
+      //         user_id,
+      //         true, // is_ai_graded
+      //       );
+      //       assert(grading_job_id);
 
-            await updateCourseInstanceUsagesForAiGrading({
-              gradingJobId: grading_job_id,
-              authnUserId: authn_user_id,
-              model: model_id,
-              usage: response.usage,
-            });
-          });
-        }
+      //       await insertAiGradingJob({
+      //         grading_job_id,
+      //         job_sequence_id: serverJob.jobSequenceId,
+      //         model_id,
+      //         prompt: input,
+      //         response,
+      //         course_id: course.id,
+      //         course_instance_id: course_instance.id,
+      //       });
 
-        await addAiGradingCostToIntervalUsage({
-          courseInstance: course_instance,
-          model: model_id,
-          usage: response.usage,
-        });
+      //       await updateCourseInstanceUsagesForAiGrading({
+      //         gradingJobId: grading_job_id,
+      //         authnUserId: authn_user_id,
+      //         model: model_id,
+      //         usage: response.usage,
+      //       });
+      //     });
+      //   } else {
+      //     // Does not require grading: only create grading job and rubric grading
+      //     await runInTransactionAsync(async () => {
+      //       assert(assessment_question.max_manual_points);
+      //       const manual_rubric_grading = await manualGrading.insertRubricGrading(
+      //         rubric_items[0].rubric_id,
+      //         assessment_question.max_points ?? 0,
+      //         assessment_question.max_manual_points,
+      //         appliedRubricItems,
+      //         0,
+      //       );
+      //       const score =
+      //         manual_rubric_grading.computed_points / assessment_question.max_manual_points;
+      //       const grading_job_id = await queryRow(
+      //         sql.insert_grading_job,
+      //         {
+      //           submission_id: submission.id,
+      //           authn_user_id: user_id,
+      //           grading_method: 'AI',
+      //           correct: null,
+      //           score,
+      //           auto_points: 0,
+      //           manual_points: manual_rubric_grading.computed_points,
+      //           manual_rubric_grading_id: manual_rubric_grading.id,
+      //           feedback: null,
+      //         },
+      //         IdSchema,
+      //       );
 
-        logger.info('AI rubric items:');
+      //       await insertAiGradingJob({
+      //         grading_job_id,
+      //         job_sequence_id: serverJob.jobSequenceId,
+      //         model_id,
+      //         prompt: input,
+      //         response,
+      //         course_id: course.id,
+      //         course_instance_id: course_instance.id,
+      //       });
 
-        for (const item of appliedRubricDescription) {
-          logger.info(`- ${item}`);
-        }
-      } else {
-        // OpenAI will take the property descriptions into account. See the
-        // examples here: https://platform.openai.com/docs/guides/structured-outputs
-        const GradingResultSchema = z.object({
-          explanation: z.string().describe(explanationDescription),
-          feedback: z
-            .string()
-            .describe(
-              'Student-facing feedback on their submission. Address the student as "you". Use an empty string if the student\'s response is entirely correct.',
-            ),
-          score: z
-            .number()
-            .int()
-            .min(0)
-            .max(100)
-            .describe(
-              'Score as an integer between 0 and 100, where 0 is the lowest and 100 is the highest.',
-            ),
-        });
+      //       await updateCourseInstanceUsagesForAiGrading({
+      //         gradingJobId: grading_job_id,
+      //         authnUserId: authn_user_id,
+      //         model: model_id,
+      //         usage: response.usage,
+      //       });
+      //     });
+      //   }
 
-        const response = await generateObject({
-          model,
-          schema: GradingResultSchema,
-          messages: input,
-          providerOptions: {
-            openai: openaiProviderOptions,
-          },
-        });
+      //   await addAiGradingCostToIntervalUsage({
+      //     courseInstance: course_instance,
+      //     model: model_id,
+      //     usage: response.usage,
+      //   });
 
-        logResponseUsage({ response, logger });
+      //   logger.info('AI rubric items:');
 
-        logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
-        const score = response.object.score;
+      //   for (const item of appliedRubricDescription) {
+      //     logger.info(`- ${item}`);
+      //   }
+      // } else {
+      //   // OpenAI will take the property descriptions into account. See the
+      //   // examples here: https://platform.openai.com/docs/guides/structured-outputs
+      //   const GradingResultSchema = z.object({
+      //     explanation: z.string().describe(explanationDescription),
+      //     feedback: z
+      //       .string()
+      //       .describe(
+      //         'Student-facing feedback on their submission. Address the student as "you". Use an empty string if the student\'s response is entirely correct.',
+      //       ),
+      //     score: z
+      //       .number()
+      //       .int()
+      //       .min(0)
+      //       .max(100)
+      //       .describe(
+      //         'Score as an integer between 0 and 100, where 0 is the lowest and 100 is the highest.',
+      //       ),
+      //   });
 
-        if (shouldUpdateScore) {
-          // Requires grading: update instance question score
-          const feedback = response.object.feedback;
-          await runInTransactionAsync(async () => {
-            const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
-              assessment,
-              instance_question.id,
-              submission.id,
-              null, // check_modified_at
-              {
-                manual_score_perc: score,
-                feedback: { manual: feedback },
-              },
-              user_id,
-              true, // is_ai_graded
-            );
-            assert(grading_job_id);
+      //   const response = await generateObject({
+      //     model,
+      //     schema: GradingResultSchema,
+      //     messages: input,
+      //     providerOptions: {
+      //       openai: openaiProviderOptions,
+      //     },
+      //   });
 
-            await insertAiGradingJob({
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              response,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            });
-          });
-        } else {
-          // Does not require grading: only create grading job and rubric grading
-          await runInTransactionAsync(async () => {
-            assert(assessment_question.max_manual_points);
-            const grading_job_id = await queryRow(
-              sql.insert_grading_job,
-              {
-                submission_id: submission.id,
-                authn_user_id: user_id,
-                grading_method: 'AI',
-                correct: null,
-                score: score / 100,
-                auto_points: 0,
-                manual_points: (score * assessment_question.max_manual_points) / 100,
-                manual_rubric_grading_id: null,
-                feedback: null,
-              },
-              IdSchema,
-            );
-            await insertAiGradingJob({
-              grading_job_id,
-              job_sequence_id: serverJob.jobSequenceId,
-              model_id,
-              prompt: input,
-              response,
-              course_id: course.id,
-              course_instance_id: course_instance.id,
-            });
-          });
-        }
+      //   logResponseUsage({ response, logger });
 
-        await addAiGradingCostToIntervalUsage({
-          courseInstance: course_instance,
-          model: model_id,
-          usage: response.usage,
-        });
+      //   logger.info(`Parsed response: ${JSON.stringify(response.object, null, 2)}`);
+      //   const score = response.object.score;
 
-        logger.info(`AI score: ${response.object.score}`);
-      }
+      //   if (shouldUpdateScore) {
+      //     // Requires grading: update instance question score
+      //     const feedback = response.object.feedback;
+      //     await runInTransactionAsync(async () => {
+      //       const { grading_job_id } = await manualGrading.updateInstanceQuestionScore(
+      //         assessment,
+      //         instance_question.id,
+      //         submission.id,
+      //         null, // check_modified_at
+      //         {
+      //           manual_score_perc: score,
+      //           feedback: { manual: feedback },
+      //         },
+      //         user_id,
+      //         true, // is_ai_graded
+      //       );
+      //       assert(grading_job_id);
+
+      //       await insertAiGradingJob({
+      //         grading_job_id,
+      //         job_sequence_id: serverJob.jobSequenceId,
+      //         model_id,
+      //         prompt: input,
+      //         response,
+      //         course_id: course.id,
+      //         course_instance_id: course_instance.id,
+      //       });
+      //     });
+      //   } else {
+      //     // Does not require grading: only create grading job and rubric grading
+      //     await runInTransactionAsync(async () => {
+      //       assert(assessment_question.max_manual_points);
+      //       const grading_job_id = await queryRow(
+      //         sql.insert_grading_job,
+      //         {
+      //           submission_id: submission.id,
+      //           authn_user_id: user_id,
+      //           grading_method: 'AI',
+      //           correct: null,
+      //           score: score / 100,
+      //           auto_points: 0,
+      //           manual_points: (score * assessment_question.max_manual_points) / 100,
+      //           manual_rubric_grading_id: null,
+      //           feedback: null,
+      //         },
+      //         IdSchema,
+      //       );
+      //       await insertAiGradingJob({
+      //         grading_job_id,
+      //         job_sequence_id: serverJob.jobSequenceId,
+      //         model_id,
+      //         prompt: input,
+      //         response,
+      //         course_id: course.id,
+      //         course_instance_id: course_instance.id,
+      //       });
+      //     });
+      //   }
+
+      //   await addAiGradingCostToIntervalUsage({
+      //     courseInstance: course_instance,
+      //     model: model_id,
+      //     usage: response.usage,
+      //   });
+
+      //   logger.info(`AI score: ${response.object.score}`);
+      // }
 
       return true;
     };
@@ -686,6 +699,20 @@ export async function aiGrade({
       job.error('\nNumber of errors: ' + error_count);
       job.fail('Errors occurred while AI grading, see output for details');
     }
+
+    await fs.writeFile(
+      'questionHtml.json',
+      JSON.stringify(questionHtml, null, 2),
+      'utf-8',
+    );
+    await fs.writeFile(
+      'answerHtml.json',
+      JSON.stringify(answerHtml, null, 2),
+      'utf-8',
+    );
   });
+
+  // Write questionHtml and answerHtml as JSON files locally.
+
   return serverJob.jobSequenceId;
 }
