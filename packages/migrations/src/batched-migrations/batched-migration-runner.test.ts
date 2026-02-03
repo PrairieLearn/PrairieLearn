@@ -168,8 +168,9 @@ describe('BatchedMigrationExecutor', () => {
       assert.hasAllKeys(jobData.error, ['name', 'message', 'stack', 'data', 'status']);
       assert.equal(jobData.error.name, 'Error');
       assert.equal(jobData.error.message, 'Execution failure');
-      assert.equal(jobData.error.data.start, job.min_value.toString());
-      assert.equal(jobData.error.data.end, job.max_value.toString());
+      // serialize-error converts BigInts to strings with 'n' suffix
+      assert.equal(jobData.error.data.start, `${job.min_value}n`);
+      assert.equal(jobData.error.data.end, `${job.max_value}n`);
     });
 
     const failedMigration = await getBatchedMigration(migration.id);
