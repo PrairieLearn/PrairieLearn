@@ -43,7 +43,6 @@
     "@vitest/coverage-v8": "^4.0.18",
     "dependency-cruiser": "^17.3.7",
     "eslint": "^9.39.2",
-    "eslint-import-resolver-typescript": "^4.4.4",
     "globby": "^16.1.0",
     "htmlhint": "^1.8.0",
     "linkinator": "^7.5.3",
