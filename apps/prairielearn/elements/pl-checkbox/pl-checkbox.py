@@ -165,7 +165,10 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
         ValueError: If both display and inline attributes are set
     """
     if pl.has_attrib(element, "display") and pl.has_attrib(element, "inline"):
-        raise ValueError('Setting display should be done with the "display" attribute.')
+        raise ValueError(
+            "Cannot set both 'display' and 'inline' attributes. "
+            "Use only 'display'; the 'inline' attribute is deprecated."
+        )
 
     inline_default = False
     inline = pl.get_boolean_attrib(element, "inline", inline_default)
