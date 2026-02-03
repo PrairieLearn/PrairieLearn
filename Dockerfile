@@ -58,7 +58,6 @@ COPY \
   exampleCourse/ \
   testCourse/ \
   Makefile \
-  tsconfig.json \
   turbo.json \
   vitest.config.ts \
   /PrairieLearn/
