@@ -25,7 +25,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.10.9",
     "@types/picomatch": "^4.0.2",
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260131.1",
     "typescript": "^5.9.3"
   }
 }
