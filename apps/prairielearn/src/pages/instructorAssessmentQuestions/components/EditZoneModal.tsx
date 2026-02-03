@@ -3,7 +3,7 @@ import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
-import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
+import type { ZoneAssessmentForm } from '../types.js';
 
 export type EditZoneModalData =
   | { type: 'create' }

@@ -9,7 +9,7 @@ import type {
   TrackingId,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
+} from '../types.js';
 
 /**
  * Creates a new TrackingId (branded UUID).
@@ -78,9 +78,10 @@ export function createZoneWithTrackingId(
 /**
  * Creates a new question with a trackingId.
  * New trackingIds are always generated (this is for new questions, not existing ones).
+ * Accepts a partial question for creating new empty questions.
  */
 export function createQuestionWithTrackingId(
-  question: ZoneQuestionBlockJson,
+  question: Partial<ZoneQuestionBlockJson> & { id: string },
 ): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
@@ -101,12 +102,12 @@ function omitUndefined<T extends Record<string, unknown>>(obj: T): T {
 /** Helper to check if a value is an empty array (for canSubmit/canView defaults). */
 const isEmptyArray = (v: unknown) => !v || (Array.isArray(v) && v.length === 0);
 
-/** Strips a question alternative to remove default values. */
-function stripQuestionAlternative(alternative: QuestionAlternativeJson) {
-  // We cannot do any stripping here.
-  // If we strip, some of the fields will be inherited from the question itself.
-  // Thus, we should always write the value we got to prevent stripping,
-  // because in the future, if the question values change, we don't want to inherit them.
+/**
+ * Prepares a question alternative for JSON output.
+ * Only removes undefined values, NOT default values - we preserve all explicit values
+ * to prevent unintended inheritance from the parent question block.
+ */
+function serializeQuestionAlternative(alternative: QuestionAlternativeJson) {
   return omitUndefined({
     id: alternative.id,
     points: alternative.points,
@@ -123,14 +124,14 @@ function stripQuestionAlternative(alternative: QuestionAlternativeJson) {
   });
 }
 
-/** Strips a question to remove default values. */
-function stripQuestionBlock(question: ZoneQuestionBlockJson) {
+/** Serializes a question block for JSON output, stripping default values where appropriate. */
+function serializeQuestionBlock(question: ZoneQuestionBlockJson) {
   const isAlternativeGroup = 'alternatives' in question && question.alternatives;
 
   return omitUndefined({
     id: isAlternativeGroup ? undefined : question.id,
     alternatives: isAlternativeGroup
-      ? question.alternatives!.map(stripQuestionAlternative)
+      ? question.alternatives!.map(serializeQuestionAlternative)
       : undefined,
     numberChoose: question.numberChoose,
     comment: question.comment,
@@ -153,8 +154,8 @@ function stripQuestionBlock(question: ZoneQuestionBlockJson) {
   });
 }
 
-/** Strips default values from zones before saving to JSON */
-export function stripZoneDefaults(zones: ZoneAssessmentJson[]): ZoneAssessmentJson[] {
+/** Serializes zones for JSON output, stripping default values where appropriate. */
+export function serializeZonesForJson(zones: ZoneAssessmentJson[]): ZoneAssessmentJson[] {
   return zones.map((zone) => {
     return omitUndefined({
       title: zone.title,
@@ -167,7 +168,7 @@ export function stripZoneDefaults(zones: ZoneAssessmentJson[]): ZoneAssessmentJs
       comment: zone.comment,
       canSubmit: propertyValueWithDefault(undefined, zone.canSubmit, isEmptyArray),
       canView: propertyValueWithDefault(undefined, zone.canView, isEmptyArray),
-      questions: zone.questions.map(stripQuestionBlock),
+      questions: zone.questions.map(serializeQuestionBlock),
     });
   });
 }

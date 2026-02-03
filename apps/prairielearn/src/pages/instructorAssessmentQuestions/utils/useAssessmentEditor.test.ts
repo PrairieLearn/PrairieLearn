@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
-import type { ZoneAssessmentForm } from '../instructorAssessmentQuestions.shared.js';
+import type { ZoneAssessmentForm } from '../types.js';
 
 import { addTrackingIds, stripTrackingIds } from './useAssessmentEditor.js';
 

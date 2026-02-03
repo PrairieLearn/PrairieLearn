@@ -9,6 +9,7 @@ import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { b64EncodeUnicode } from '../lib/base64-util.js';
 import { config } from '../lib/config.js';
+import { getOriginalHash } from '../lib/editors.js';
 import { features } from '../lib/features/index.js';
 import { insertCoursePermissionsByUserUid } from '../models/course-permissions.js';
 
@@ -42,8 +43,7 @@ describe('Editing assessment questions', () => {
       `${siteUrl}/pl/course_instance/1/instructor/assessment/1/questions`,
     );
     const csrfToken = questionsPageResponse.$('#test_csrf_token').text();
-    const assessmentContent = await fs.readFile(assessmentLiveInfoPath, 'utf8');
-    const origHash = sha256(b64EncodeUnicode(assessmentContent)).toString();
+    const origHash = (await getOriginalHash(assessmentLiveInfoPath))!;
     return { csrfToken, origHash };
   }
 
@@ -183,9 +183,8 @@ describe('Editing assessment questions', () => {
       response.url,
       /\/pl\/course_instance\/1\/instructor\/(assessment\/1\/questions|edit_error\/\d+)$/,
     );
-  });
 
-  test.sequential('verify new question was added', async () => {
+    // Verify new question was added
     const assessmentInfo = JSON.parse(await fs.readFile(assessmentLiveInfoPath, 'utf8'));
     assert.equal(assessmentInfo.zones[0].questions.length, 2);
     assert.equal(assessmentInfo.zones[0].questions[0].id, 'test/question');

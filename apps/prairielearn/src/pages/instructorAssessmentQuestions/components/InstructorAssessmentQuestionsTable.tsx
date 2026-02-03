@@ -24,7 +24,7 @@ import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
+} from '../types.js';
 import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
@@ -129,7 +129,6 @@ export function InstructorAssessmentQuestionsTable({
   canEdit,
   csrfToken,
   origHash,
-  editorEnabled,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -141,7 +140,6 @@ export function InstructorAssessmentQuestionsTable({
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  editorEnabled: boolean;
 }) {
   // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
@@ -246,7 +244,7 @@ export function InstructorAssessmentQuestionsTable({
   const handleAddQuestion = (zoneTrackingId: string) => {
     editQuestionModal.showWithData({
       type: 'create',
-      question: { id: '', trackingId: '' } as ZoneQuestionBlockForm,
+      question: createQuestionWithTrackingId({ id: '' }),
       existingQids: Object.keys(questionMetadata),
     });
     setSelectedQuestionIds({
@@ -288,7 +286,7 @@ export function InstructorAssessmentQuestionsTable({
       dispatch({
         type: 'ADD_QUESTION',
         zoneTrackingId: selectedQuestionIds.zoneTrackingId,
-        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
+        question: normalizedQuestion as ZoneQuestionBlockForm,
         questionData: preparedQuestionData,
       });
     } else {
@@ -507,7 +505,7 @@ export function InstructorAssessmentQuestionsTable({
             {assessmentSetName} {assessment.number}: Questions
           </h1>
           <div className="ms-auto">
-            {editorEnabled && canEdit && origHash ? (
+            {canEdit && origHash ? (
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}
@@ -551,7 +549,7 @@ export function InstructorAssessmentQuestionsTable({
             strategy={verticalListSortingStrategy}
           >
             <div style={{ overflowX: 'auto' }}>
-              <table className="table table-sm table-hover" aria-label="Assessment questions">
+              <table className="table table-sm table-hover mb-0" aria-label="Assessment questions">
                 <thead>
                   <tr>
                     {editMode && (

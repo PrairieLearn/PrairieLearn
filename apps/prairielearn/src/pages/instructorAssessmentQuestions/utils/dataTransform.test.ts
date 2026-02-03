@@ -7,9 +7,9 @@ import { EXAMPLE_COURSE_PATH } from '../../../lib/paths.js';
 import { ZoneAssessmentJsonSchema } from '../../../schemas/infoAssessment.js';
 import * as courseDB from '../../../sync/course-db.js';
 
-import { stripZoneDefaults } from './dataTransform.js';
+import { serializeZonesForJson } from './dataTransform.js';
 
-describe('stripZoneDefaults', () => {
+describe('serializeZonesForJson', () => {
   test('should strip defaults while preserving structure for all example course assessments', async () => {
     // Load course structure to find assessment file paths
     const courseData = await courseDB.loadFullCourse(null, EXAMPLE_COURSE_PATH);
@@ -40,9 +40,9 @@ describe('stripZoneDefaults', () => {
           ZoneAssessmentJsonSchema.parse(zone),
         );
 
-        // stripZoneDefaults should strip defaults while preserving semantic meaning.
+        // serializeZonesForJson should strip defaults while preserving semantic meaning.
         // Verify that key properties are preserved and output is valid.
-        const filteredZones = stripZoneDefaults(parsedZones);
+        const filteredZones = serializeZonesForJson(parsedZones);
 
         // The output should be parseable
         const reparsedFiltered = filteredZones.map((zone: unknown) =>

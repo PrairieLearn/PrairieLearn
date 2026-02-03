@@ -1,11 +1,12 @@
-import { useMemo, useReducer } from 'react';
+import { useReducer, useState } from 'react';
 
 import type {
+  EditorAction,
+  EditorState,
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
-import type { EditorAction, EditorState } from '../types.js';
+} from '../types.js';
 
 export {
   addTrackingIds,
@@ -405,8 +406,7 @@ function createEditorReducer(initialState: EditorState) {
  */
 export function useAssessmentEditor(initialState: EditorState) {
   // Memoize the reducer so it captures the initial state for RESET
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  const reducer = useMemo(() => createEditorReducer(initialState), []);
+  const [reducer] = useState(() => createEditorReducer(initialState));
   const [state, dispatch] = useReducer(reducer, initialState);
 
   return {

@@ -1,7 +1,7 @@
 import * as fs from 'node:fs/promises';
 import * as path from 'node:path';
 
-import { type Locator, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
 
 import { features } from '../../lib/features/index.js';
 import { selectAssessmentByTid } from '../../models/assessment.js';
@@ -11,41 +11,6 @@ import { syncCourse } from '../helperCourse.js';
 
 import { expect, test } from './fixtures.js';
 
-/**
- * Performs a drag operation using manual mouse events.
- * dnd-kit requires intermediate mouse moves to trigger dragOver events.
- */
-async function performDrag(page: Page, source: Locator, target: Locator): Promise<void> {
-  const sourceBox = await source.boundingBox();
-  const targetBox = await target.boundingBox();
-  if (!sourceBox || !targetBox) {
-    throw new Error('Could not get bounding boxes for drag elements');
-  }
-
-  const sourceCenter = {
-    x: sourceBox.x + sourceBox.width / 2,
-    y: sourceBox.y + sourceBox.height / 2,
-  };
-  const targetCenter = {
-    x: targetBox.x + targetBox.width / 2,
-    y: targetBox.y + targetBox.height / 2,
-  };
-
-  await page.mouse.move(sourceCenter.x, sourceCenter.y);
-  await page.mouse.down();
-
-  // Move in steps to trigger dragOver events (dnd-kit requirement)
-  const steps = 10;
-  for (let i = 1; i <= steps; i++) {
-    await page.mouse.move(
-      sourceCenter.x + ((targetCenter.x - sourceCenter.x) * i) / steps,
-      sourceCenter.y + ((targetCenter.y - sourceCenter.y) * i) / steps,
-    );
-  }
-
-  await page.mouse.up();
-}
-
 async function enterEditMode(page: Page, ciId: string, aId: string): Promise<void> {
   await page.goto(`/pl/course_instance/${ciId}/instructor/assessment/${aId}/questions`);
   await page.getByRole('button', { name: 'Edit questions' }).click();
@@ -54,10 +19,8 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
 
 test.describe('Assessment questions', () => {
   let courseInstanceId: string;
-  let coursePath: string;
 
   test.beforeAll(async ({ testCoursePath }) => {
-    coursePath = testCoursePath;
     await syncCourse(testCoursePath);
     await features.enable('assessment-questions-editor');
 
@@ -69,7 +32,7 @@ test.describe('Assessment questions', () => {
   // Test assessment has 2 zones:
   // Zone 1: "Questions to test maxPoints" - 1 question (partialCredit1)
   // Zone 2: "Questions to test maxPoints and bestQuestions together" - 3 questions (partialCredit2, partialCredit3, partialCredit4_v2)
-  test('can drag a question between zones and save', async ({ page }) => {
+  test('can drag a question between zones and save', async ({ page, testCoursePath }) => {
     const assessmentTid = 'exam5-perZoneGrading';
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstanceId,
@@ -81,8 +44,15 @@ test.describe('Assessment questions', () => {
     const dragHandles = page.locator('[aria-label="Drag to reorder"]');
     await expect(dragHandles).toHaveCount(4);
 
-    // Drag second question (partialCredit2 from zone 2) to first question position (zone 1)
-    await performDrag(page, dragHandles.nth(1), dragHandles.nth(0));
+    // Move second question (partialCredit2 from zone 2) to first question position (zone 1)
+    // Using keyboard: Space to pick up, Arrow to move, Space to drop
+    await dragHandles.nth(1).focus();
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(200);
+    await page.keyboard.press('ArrowUp');
+    await page.waitForTimeout(100);
+    await page.keyboard.press('Space');
+    await page.waitForTimeout(300);
 
     // Verify all questions still present after reorder
     await expect(dragHandles).toHaveCount(4);
@@ -95,7 +65,7 @@ test.describe('Assessment questions', () => {
 
     // Read the saved file from disk
     const infoAssessmentPath = path.join(
-      coursePath,
+      testCoursePath,
       'courseInstances/Sp15/assessments',
       assessmentTid,
       'infoAssessment.json',
@@ -131,7 +101,7 @@ test.describe('Assessment questions', () => {
   // Test assessment has 2 zones:
   // Zone 1: "Questions to test maxPoints" - 1 question (partialCredit4_v2)
   // Zone 2: "Questions to test bestQuestions" - 3 questions (partialCredit1, partialCredit2, partialCredit3)
-  test('can edit question points and zone settings', async ({ page }) => {
+  test('can edit question points and zone settings', async ({ page, testCoursePath }) => {
     const assessmentTid = 'hw4-perzonegrading';
     const assessment = await selectAssessmentByTid({
       course_instance_id: courseInstanceId,
@@ -193,7 +163,7 @@ test.describe('Assessment questions', () => {
 
     // Read the saved file from disk
     const infoAssessmentPath = path.join(
-      coursePath,
+      testCoursePath,
       'courseInstances/Sp15/assessments',
       assessmentTid,
       'infoAssessment.json',

@@ -4,23 +4,23 @@ import type { CSSProperties, Dispatch } from 'react';
 
 import { run } from '@prairielearn/run';
 
+import { CommentPopover } from '../../../components/CommentPopover.js';
 import { TopicBadge } from '../../../components/TopicBadge.js';
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type {
   QuestionAlternativeJson,
   ZoneQuestionBlockJson,
 } from '../../../schemas/infoAssessment.js';
-import type { ZoneQuestionBlockForm } from '../instructorAssessmentQuestions.shared.js';
 import {
   type AssessmentState,
   type EditorAction,
   type HandleDeleteQuestion,
   type HandleEditQuestion,
+  type ZoneQuestionBlockForm,
   getTableColumnCount,
 } from '../types.js';
 
 import { AssessmentQuestion } from './AssessmentQuestion.js';
-import { CommentIcon } from './CommentIcon.js';
 import { QuestionNumberTitleCell } from './QuestionNumberTitleCell.js';
 
 /**
@@ -232,7 +232,7 @@ export function ZoneQuestionBlockHeader({
                 </span>
               ))}
               {alternatives.length > 2 && <span className="small text-muted">, ...</span>}
-              <CommentIcon comment={zoneQuestionBlock.comment} />
+              <CommentPopover comment={zoneQuestionBlock.comment} />
             </>
           }
         />
