@@ -19,8 +19,9 @@ COPY --parents pyproject.toml Makefile /PrairieLearn/
 
 RUN make python-deps-core
 
-# This copies in all the `package.json` files in `apps` and `packages`, which
-# Yarn needs to correctly install all dependencies in our workspaces.
+# This copies in the root `package.json` file (which defines Yarn workspaces)
+# and all `package.json` files in `apps` and `packages`, which Yarn needs to
+# correctly install all dependencies in our workspaces.
 # The `--parents` flag is used to preserve parent directories for the sources.
 #
 # We also need to copy both the `.yarn` directory and the `.yarnrc.yml` file,
@@ -28,7 +29,7 @@ RUN make python-deps-core
 #
 # Finally, we copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml apps/**/package.json packages/**/package.json packages/bind-mount/ /PrairieLearn/
+COPY --parents .yarn/ yarn.lock .yarnrc.yml package.json apps/**/package.json packages/**/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
 #
