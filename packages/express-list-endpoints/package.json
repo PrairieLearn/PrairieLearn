@@ -20,7 +20,7 @@
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260131.1",
     "@vitest/coverage-v8": "^4.0.18",
     "express": "^4.22.1",
     "tsx": "^4.21.0",
