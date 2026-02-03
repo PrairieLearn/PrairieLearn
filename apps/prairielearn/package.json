@@ -315,7 +315,7 @@
     "@vitest/coverage-v8": "^4.0.18",
     "axe-core": "^4.11.1",
     "get-port": "^7.1.0",
-    "jsdom": "^27.4.0",
+    "jsdom": "^28.0.0",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3",
     "typescript-cp": "^0.1.9",
