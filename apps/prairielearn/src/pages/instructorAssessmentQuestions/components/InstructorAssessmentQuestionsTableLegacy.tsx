@@ -274,4 +274,4 @@ export function InstructorAssessmentQuestionsTableLegacy({
   );
 }
 
-InstructorAssessmentQuestionsTableLegacy.displayName = 'InstructorAssessmentQuestionsTable';
+InstructorAssessmentQuestionsTableLegacy.displayName = 'InstructorAssessmentQuestionsTableLegacy';
