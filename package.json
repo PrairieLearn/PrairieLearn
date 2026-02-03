@@ -36,7 +36,7 @@
   },
   "devDependencies": {
     "@changesets/cli": "^2.29.8",
-    "@eslint-react/eslint-plugin": "^2.8.1",
+    "@eslint-react/eslint-plugin": "^2.9.4",
     "@html-eslint/eslint-plugin": "^0.54.2",
     "@playwright/test": "^1.58.1",
     "@postgres-language-server/cli": "^0.19.0",
@@ -68,7 +68,7 @@
     "prettier-plugin-toml": "^2.0.6",
     "pyright": "^1.1.408",
     "s3rver": "^3.7.1",
-    "turbo": "^2.8.1",
+    "turbo": "^2.8.2",
     "typescript": "^5.9.3",
     "typescript-eslint": "^8.54.0",
     "vitest": "^4.0.18"
