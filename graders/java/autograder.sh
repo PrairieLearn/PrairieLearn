@@ -42,9 +42,11 @@ Make sure all classes, properties, methods, and other elements in your class mat
 In particular, ensure method parameters, thrown exceptions, visibility modifiers, property types, and other definitions are correct."
 fi
 
-cp -r /grade/tests/studentFiles/* /home/sbuser 2> /dev/null
-chown -R sbuser:sbuser /home/sbuser 2> /dev/null
-chmod -R a+rX /home/sbuser 2> /dev/null
+if [ -d /grade/tests/studentFiles ]; then
+    cp -r /grade/tests/studentFiles/. /home/sbuser 2> /dev/null
+    chown -R sbuser:sbuser /home/sbuser 2> /dev/null
+    chmod -R a+rX /home/sbuser 2> /dev/null
+fi
 
 RESULTS_TEMP_DIR=$(mktemp -d -p /grade/results)
 RESULTS_TEMP_FILE="$RESULTS_TEMP_DIR/$RANDOM.json"
