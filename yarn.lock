@@ -2527,7 +2527,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@exodus/bytes@npm:^1.11.0":
+"@exodus/bytes@npm:^1.11.0, @exodus/bytes@npm:^1.6.0":
   version: 1.11.0
   resolution: "@exodus/bytes@npm:1.11.0"
   peerDependencies:
@@ -2536,18 +2536,6 @@ __metadata:
     "@noble/hashes":
       optional: true
   checksum: 10c0/85d0b296cef91ee90f89f17b3a2cd23fa33bda4ae7b96545e9b8e2e68d64c0280eb3cefb77fc3f59f82377379ee7a52a5a5b3a9f99e45fca4166e5e2fa4c0939
-  languageName: node
-  linkType: hard
-
-"@exodus/bytes@npm:^1.6.0":
-  version: 1.7.0
-  resolution: "@exodus/bytes@npm:1.7.0"
-  peerDependencies:
-    "@exodus/crypto": ^1.0.0-rc.4
-  peerDependenciesMeta:
-    "@exodus/crypto":
-      optional: true
-  checksum: 10c0/f919d7d26c44a31ae71a280baf821b38826bdca97ac6c6dbe7d02bf6952104ef2106534cb5566c17f7a1dc1ae627a78f2fabce3a09d6bbc65a9b1bdaeaeebfc5
   languageName: node
   linkType: hard
 
@@ -20277,14 +20265,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^7.16.0, undici@npm:^7.19.0":
-  version: 7.19.2
-  resolution: "undici@npm:7.19.2"
-  checksum: 10c0/2fdd9a2f6f2cf4c333531c631844350a6b1dbbd4b91022a2a7c293db5aea470ce293ea888987912f1cb2e896a99a4fae5dca9987ea71661cdcf7555f57ed2975
-  languageName: node
-  linkType: hard
-
-"undici@npm:^7.20.0":
+"undici@npm:^7.16.0, undici@npm:^7.19.0, undici@npm:^7.20.0":
   version: 7.20.0
   resolution: "undici@npm:7.20.0"
   checksum: 10c0/99054958a07b4105e1461bf5f38550746a15e01d6807e7a2b0849f18e1bc3f481c1ad080ea87b255a39264cec5d80ebf2b3bc82c3e732d81e6a0cc3c920c05c6
