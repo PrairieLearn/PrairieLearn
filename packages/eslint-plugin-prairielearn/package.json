@@ -24,7 +24,7 @@
     "@types/node": "^24.10.9",
     "@typescript-eslint/rule-tester": "^8.54.0",
     "@typescript-eslint/types": "^8.54.0",
-    "@typescript/native-preview": "^7.0.0-dev.20260131.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "@vitest/coverage-v8": "^4.0.18",
     "tsx": "^4.21.0",
     "vitest": "^4.0.18"
