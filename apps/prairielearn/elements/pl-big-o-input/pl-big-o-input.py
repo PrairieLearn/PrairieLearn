@@ -234,6 +234,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "answer": True,
             "a_tru": sympy.latex(a_tru),
             "type": bigo_type,
+            display.value: True,
         }
 
         return chevron.render(template, html_params).strip()
