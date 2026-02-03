@@ -12,6 +12,7 @@
     "ms-python.python",
     "ms-python.vscode-pylance",
     "redhat.vscode-yaml",
+    "reteps.htmlmustache-lsp",
     "supabase.postgrestools",
     "tamasfe.even-better-toml",
     "vitest.explorer"
