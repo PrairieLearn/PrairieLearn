@@ -19,7 +19,17 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset using `yarn changeset`.
+Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+
+```markdown
+---
+'@prairielearn/package-name': patch
+---
+
+Description of the change
+```
+
+Use `patch` for bug fixes, `minor` for new features, and `major` for breaking changes.
 
 Frequently used packages:
 
