@@ -220,7 +220,7 @@ export default [
     'docs/*',
     'node_modules/*',
     'testCourse',
-    'exampleCourse/**/*.js',
+    'exampleCourse/**/*.{js,html}',
     'coverage/*',
     'out/*',
     'workspaces/*',
