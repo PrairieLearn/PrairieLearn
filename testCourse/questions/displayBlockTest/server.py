@@ -7,9 +7,9 @@ def generate(data):
 
     # Number inputs
     data["correct_answers"]["number_block"] = 42.5
-    data["correct_answers"]["number_block2"] = 3.14
+    data["correct_answers"]["number_block2"] = 99.9
     data["correct_answers"]["number_inline"] = 100.0
-    data["correct_answers"]["number_inline2"] = 2.718
+    data["correct_answers"]["number_inline2"] = 55.5
 
     # Integer inputs
     data["correct_answers"]["integer_block"] = 42
