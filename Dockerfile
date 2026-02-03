@@ -47,7 +47,7 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml apps/**/package.json packages/**/pac
 # https://github.com/yarnpkg/berry/issues/6339
 RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
-# NOTE: Also modify .dockerignore to allowlist files/directories to copy.
+# NOTE: Also modify .dockerignore to ignore files/directories that are not needed to build the image.
 COPY \
   apps/ \
   packages/ \
