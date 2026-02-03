@@ -26,7 +26,7 @@ RUN apt-get update \
     # which would be the case if we installed libclang-dev, but since that
     # package is too large and mostly unnecessary, we add a symlink to the
     # existing libclang.so.1.
-    && ln -s /usr/lib/llvm-18/lib/libclang.so.1 /usr/lib/libclang.so \
+    && ln -s /usr/lib/llvm-21/lib/libclang.so.1 /usr/lib/libclang.so \
     && groupadd sbuser && useradd -g sbuser sbuser \
     # Install uv and Python
     && curl -LO https://astral.sh/uv/install.sh \
