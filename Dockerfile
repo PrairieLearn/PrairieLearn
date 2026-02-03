@@ -49,7 +49,7 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml package.json apps/**/package.json pa
 RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
 # NOTE: Also modify .dockerignore to ignore files/directories that are not needed to build the image.
-COPY \
+COPY --parents \
   apps/ \
   packages/ \
   scripts/ \
