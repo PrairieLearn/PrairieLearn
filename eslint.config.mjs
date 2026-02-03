@@ -80,15 +80,15 @@ export default [
     },
   },
 
-  // Syntax restriction
+  // Syntax restrictions (JS only - TypeScript gets these plus module.exports below)
   {
-    files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
+    files: ['**/*.{js,jsx,mjs,cjs}'],
     rules: {
       'no-restricted-syntax': ['error', ...NO_RESTRICTED_SYNTAX],
     },
   },
 
-  // TypeScript-only syntax restrictions
+  // TypeScript syntax restrictions (base rules + module.exports)
   {
     files: ['**/*.{ts,tsx,mts,cts}'],
     rules: {
