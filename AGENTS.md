@@ -143,6 +143,8 @@ The PrairieLearn web application renders HTML in one of two ways:
 
 Elements (similar to React components, used to build interactive questions) are written in Python and are located in `apps/prairielearn/elements/`.
 
+When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
+
 ### Testing
 
 - For Python tests, use `uv run pytest path/to/testfile.py` from the root directory.
