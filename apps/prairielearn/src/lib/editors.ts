@@ -300,7 +300,7 @@ export abstract class Editor {
           const sharingConfigurationValid = await syncFromDisk.checkSharingConfigurationValid(
             this.course.id,
             possibleCourseData,
-            logger,
+            job,
           );
           if (!sharingConfigurationValid) {
             await cleanAndResetRepository(this.course, startGitHash, gitEnv, job);
