@@ -29,7 +29,7 @@
     "@prairielearn/tsconfig": "workspace:^",
     "@types/fs-extra": "^11.0.4",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260130.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "@vitest/coverage-v8": "^4.0.18",
     "tmp-promise": "^3.0.3",
     "tsx": "^4.21.0",

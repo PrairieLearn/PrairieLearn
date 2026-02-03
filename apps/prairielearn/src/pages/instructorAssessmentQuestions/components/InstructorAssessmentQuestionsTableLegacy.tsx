@@ -47,7 +47,7 @@ function Title({
   return title;
 }
 
-export function InstructorAssessmentQuestionsTable({
+export function InstructorAssessmentQuestionsTableLegacy({
   course,
   questionRows,
   urlPrefix,
@@ -274,4 +274,4 @@ export function InstructorAssessmentQuestionsTable({
   );
 }
 
-InstructorAssessmentQuestionsTable.displayName = 'InstructorAssessmentQuestionsTable';
+InstructorAssessmentQuestionsTableLegacy.displayName = 'InstructorAssessmentQuestionsTableLegacy';
