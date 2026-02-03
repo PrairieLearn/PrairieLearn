@@ -15,11 +15,7 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
-<<<<<<< HEAD
 import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { assertNever } from '../../lib/types.js';
-=======
->>>>>>> master
 import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
