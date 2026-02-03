@@ -88,6 +88,21 @@ export default [
     },
   },
 
+  // TypeScript-only syntax restrictions
+  {
+    files: ['**/*.{ts,tsx,mts,cts}'],
+    rules: {
+      'no-restricted-syntax': [
+        'error',
+        ...NO_RESTRICTED_SYNTAX,
+        {
+          message: 'module.exports should not be used in TypeScript files',
+          selector: 'MemberExpression[object.name="module"][property.name="exports"]',
+        },
+      ],
+    },
+  },
+
   // HTML rules in JS/TS files
   {
     files: ['**/*.{js,jsx,ts,tsx,mjs,cjs,mts,cts}'],
