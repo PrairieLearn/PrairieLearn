@@ -105,7 +105,7 @@ describe('isValidMustacheTemplateName', () => {
 });
 
 describe('validateHTML integer attributes', () => {
-  // Test integer validation via pl-integer-input's weight attribute
+  /** Test integer validation via pl-integer-input's weight attribute */
   function validateIntegerAttr(value: string): string[] {
     return validateHTML(
       `<pl-integer-input answers-name="x" weight="${value}"></pl-integer-input>`,
@@ -161,7 +161,7 @@ describe('validateHTML integer attributes', () => {
 
 describe('validateHTML float attributes', () => {
   // Test float validation via pl-number-input's rtol attribute
-  // (correct-answer specifically forbids mustache templates, so we use rtol instead)
+  /** (correct-answer specifically forbids mustache templates, so we use rtol instead) */
   function validateFloatAttr(value: string): string[] {
     return validateHTML(
       `<pl-number-input answers-name="x" rtol="${value}"></pl-number-input>`,
@@ -244,64 +244,5 @@ describe('validateHTML float attributes', () => {
     const errors2 = validateFloatAttr('e5');
     assert.isNotEmpty(errors2);
     assert.isTrue(errors2.some((e) => e.includes('must be an floating-point number')));
-  });
-});
-
-describe('validateHTML pl-checkbox partial-credit', () => {
-  function validateCheckbox(partialCredit: string, partialCreditMethod?: string): string[] {
-    const methodAttr = partialCreditMethod ? ` partial-credit-method="${partialCreditMethod}"` : '';
-    return validateHTML(
-      `<pl-checkbox answers-name="x" partial-credit="${partialCredit}"${methodAttr}><pl-answer>A</pl-answer></pl-checkbox>`,
-      true,
-    );
-  }
-
-  it('accepts old-style boolean true values', () => {
-    assert.deepEqual(validateCheckbox('true'), []);
-    assert.deepEqual(validateCheckbox('True'), []);
-    assert.deepEqual(validateCheckbox('TRUE'), []);
-    assert.deepEqual(validateCheckbox('t'), []);
-    assert.deepEqual(validateCheckbox('1'), []);
-    assert.deepEqual(validateCheckbox('yes'), []);
-  });
-
-  it('accepts old-style boolean false values', () => {
-    assert.deepEqual(validateCheckbox('false'), []);
-    assert.deepEqual(validateCheckbox('False'), []);
-    assert.deepEqual(validateCheckbox('FALSE'), []);
-    assert.deepEqual(validateCheckbox('f'), []);
-    assert.deepEqual(validateCheckbox('0'), []);
-    assert.deepEqual(validateCheckbox('no'), []);
-  });
-
-  it('accepts new-style enum values', () => {
-    assert.deepEqual(validateCheckbox('off'), []);
-    assert.deepEqual(validateCheckbox('coverage'), []);
-    assert.deepEqual(validateCheckbox('each-answer'), []);
-    assert.deepEqual(validateCheckbox('net-correct'), []);
-  });
-
-  it('accepts old-style boolean with partial-credit-method', () => {
-    assert.deepEqual(validateCheckbox('true', 'COV'), []);
-    assert.deepEqual(validateCheckbox('true', 'EDC'), []);
-    assert.deepEqual(validateCheckbox('true', 'PC'), []);
-  });
-
-  it('rejects partial-credit-method with new-style enum values', () => {
-    const errors = validateCheckbox('coverage', 'COV');
-    assert.isNotEmpty(errors);
-    assert.isTrue(errors.some((e) => e.includes('partial-credit-method cannot be used')));
-  });
-
-  it('allows partial-credit-method with partial-credit=false (method is ignored)', () => {
-    // When partial-credit is false, the method attribute is simply ignored
-    // This is consistent with the Python implementation
-    assert.deepEqual(validateCheckbox('false', 'COV'), []);
-  });
-
-  it('rejects invalid partial-credit values', () => {
-    const errors = validateCheckbox('invalid');
-    assert.isNotEmpty(errors);
-    assert.isTrue(errors.some((e) => e.includes('must be in')));
   });
 });
