@@ -28,7 +28,7 @@ RUN make python-deps-core
 #
 # Finally, we copy `packages/bind-mount/` since this package contains native
 # code that will be built during the install process.
-COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/ /PrairieLearn/
+COPY --parents .yarn/ yarn.lock .yarnrc.yml apps/**/package.json packages/**/package.json packages/bind-mount/ /PrairieLearn/
 
 # Install Node dependencies.
 #
@@ -47,8 +47,21 @@ COPY --parents .yarn/ yarn.lock .yarnrc.yml **/package.json packages/bind-mount/
 # https://github.com/yarnpkg/berry/issues/6339
 RUN yarn dlx node-gyp install && yarn install --immutable --inline-builds && yarn cache clean
 
-# NOTE: Modify .dockerignore to allowlist files/directories to copy.
-COPY . .
+# NOTE: Also modify .dockerignore to allowlist files/directories to copy.
+COPY \
+  apps/ \
+  packages/ \
+  scripts/ \
+  contrib/ \
+  database/ \
+  docs/ \
+  exampleCourse/ \
+  testCourse/ \
+  Makefile \
+  tsconfig.json \
+  turbo.json \
+  vitest.config.ts \
+  /PrairieLearn/
 
 # set up PrairieLearn and run migrations to initialize the DB
 # hadolint ignore=SC3009
