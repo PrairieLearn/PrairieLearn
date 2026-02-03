@@ -137,9 +137,6 @@ export function InstructorCourseAdminSharing({
       page: 'course_admin',
       subPage: 'sharing',
     },
-    options: {
-      fullWidth: true,
-    },
     headContent: html`${compiledScriptTag('instructorCourseAdminSharingClient.ts')}`,
     content: html`
       <div class="card mb-4">

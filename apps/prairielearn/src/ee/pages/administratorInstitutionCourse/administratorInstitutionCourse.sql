@@ -20,21 +20,6 @@ WITH
       LEFT JOIN enrollments AS e ON (ci.id = e.course_instance_id)
     WHERE
       ci.course_id = $course_id
-      AND ci.deleted_at IS NULL
-    GROUP BY
-      ci.id
-  ),
-  course_instance_dates AS (
-    SELECT
-      ci.id AS course_instance_id,
-      MIN(ciar.start_date) AS min_start_date,
-      MAX(ciar.end_date) AS max_end_date
-    FROM
-      course_instances AS ci
-      LEFT JOIN course_instance_access_rules AS ciar ON (ci.id = ciar.course_instance_id)
-    WHERE
-      ci.course_id = $course_id
-      AND ci.deleted_at IS NULL
     GROUP BY
       ci.id
   )
@@ -43,11 +28,19 @@ SELECT
   cia.enrollment_count
 FROM
   course_instance_enrollments AS cia
-  JOIN course_instance_dates AS cid ON (cia.course_instance_id = cid.course_instance_id)
-  JOIN course_instances AS ci ON (cia.course_instance_id = ci.id)
+  JOIN course_instances AS ci ON (cia.course_instance_id = ci.id),
+  LATERAL (
+    SELECT
+      COALESCE(ci.publishing_start_date, min(ar.start_date)) AS start_date,
+      COALESCE(ci.publishing_end_date, max(ar.end_date)) AS end_date
+    FROM
+      course_instance_access_rules AS ar
+    WHERE
+      ar.course_instance_id = ci.id
+  ) AS d
 ORDER BY
-  cid.min_start_date DESC NULLS LAST,
-  cid.max_end_date DESC NULLS LAST,
+  d.start_date DESC NULLS LAST,
+  d.end_date DESC NULLS LAST,
   ci.id DESC;
 
 -- BLOCK update_enrollment_limits

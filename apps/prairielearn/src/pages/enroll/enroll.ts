@@ -6,11 +6,6 @@ import { EnrollmentLimitExceededMessage } from './enroll.html.js';
 
 const router = Router();
 
-router.get('/', (_req, res) => {
-  // Open the "Join a course" modal on the home page
-  res.redirect('/?join=true');
-});
-
 router.get(
   '/limit_exceeded',
   typedAsyncHandler<'plain'>((_req, res) => {
