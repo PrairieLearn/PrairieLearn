@@ -112,7 +112,7 @@ function AiQuestionGenerationEditorInner({
           {richTextEditorEnabled ? (
             <li className="nav-item">
               <a className="nav-link" data-bs-toggle="tab" href="#question-rich-text-editor">
-                Rich Text Editor
+                Rich text editor
               </a>
             </li>
           ) : null}

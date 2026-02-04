@@ -148,7 +148,7 @@ const RichTextEditor = ({
       <Card className="m-3">
         <Card.Header>
           <div className="d-flex align-items-center justify-content-between">
-            Rich Text Editor
+            Rich text editor
             <Form.Check
               type="switch"
               id="rich-text-editor-debug-mode"
