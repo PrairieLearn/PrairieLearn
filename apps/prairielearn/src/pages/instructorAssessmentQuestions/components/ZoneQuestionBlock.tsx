@@ -183,6 +183,7 @@ export function ZoneQuestionBlockHeader({
       {editMode && (
         <td className="align-content-center">
           {sortableListeners ? (
+            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
             <span
               {...sortableAttributes}
               {...sortableListeners}
@@ -191,7 +192,7 @@ export function ZoneQuestionBlockHeader({
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
                 // Call dnd-kit's keyboard handler first
-                sortableListeners.onKeyDown?.(e);
+                sortableListeners.onKeyDown(e);
                 // Stop propagation to prevent the row from collapsing when using keyboard navigation
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
