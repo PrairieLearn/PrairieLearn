@@ -48,6 +48,7 @@ export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
  * Only includes fields needed for display and selection.
  */
 export interface CourseQuestionForPicker {
+  id: string;
   qid: string;
   title: string;
   topic: { id: string; name: string; color: string };

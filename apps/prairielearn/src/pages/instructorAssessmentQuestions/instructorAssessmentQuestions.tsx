@@ -85,6 +85,7 @@ router.get(
 
     // Transform course questions to the simpler type needed for the picker
     const courseQuestionsForPicker: CourseQuestionForPicker[] = courseQuestions.map((q) => ({
+      id: q.id,
       qid: q.qid,
       title: q.title,
       topic: { id: String(q.topic.id), name: q.topic.name, color: q.topic.color },

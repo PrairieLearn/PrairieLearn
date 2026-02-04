@@ -318,7 +318,7 @@ export function InstructorAssessmentQuestionsTable({
     openPickerForNew(zoneTrackingId);
   };
 
-const handleQuestionPicked = (qid: string) => {
+  const handleQuestionPicked = (qid: string) => {
     if (questionEditState.status !== 'picking') return;
 
     if (questionEditState.returnToEdit) {
@@ -775,6 +775,7 @@ const handleQuestionPicked = (qid: string) => {
           show={showPicker}
           courseQuestions={courseQuestions}
           questionsInAssessment={questionsInAssessment}
+          urlPrefix={urlPrefix}
           currentQid={
             questionEditState.status === 'picking'
               ? (questionEditState.returnToEdit?.question.id ?? null)

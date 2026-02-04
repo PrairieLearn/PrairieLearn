@@ -5,6 +5,7 @@ import { Modal } from 'react-bootstrap';
 
 import { FilterDropdown, type FilterItem } from '@prairielearn/ui';
 
+import { getQuestionUrl } from '../../../lib/client/url.js';
 import type { CourseQuestionForPicker } from '../types.js';
 
 export interface QuestionPickerModalProps {
@@ -13,6 +14,7 @@ export interface QuestionPickerModalProps {
   onQuestionSelected: (qid: string) => void;
   courseQuestions: CourseQuestionForPicker[];
   questionsInAssessment: Set<string>;
+  urlPrefix: string;
   /** The QID of the currently selected question (when editing/changing a question) */
   currentQid?: string | null;
 }
@@ -27,6 +29,7 @@ export function QuestionPickerModal({
   onQuestionSelected,
   courseQuestions,
   questionsInAssessment,
+  urlPrefix,
   currentQid,
 }: QuestionPickerModalProps) {
   const [searchQuery, setSearchQuery] = useState('');
@@ -211,7 +214,15 @@ export function QuestionPickerModal({
                   >
                     <div className="flex-grow-1 min-width-0">
                       <div className="d-flex align-items-center gap-2">
-                        <code className="text-nowrap">{qid}</code>
+                        <a
+                          href={getQuestionUrl({ urlPrefix, questionId: question.id })}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          onClick={(e) => e.stopPropagation()}
+                          className="text-nowrap"
+                        >
+                          <code>{qid}</code>
+                        </a>
                         {isCurrentSelection && (
                           <span className="badge bg-primary">Current selection</span>
                         )}
