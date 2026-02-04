@@ -1,3 +1,5 @@
+import assert from 'node:assert';
+
 import { z } from 'zod';
 
 import { IdSchema } from '@prairielearn/zod';
@@ -31,6 +33,8 @@ export const renameQuestion = privateProcedure
   .mutation(async (opts) => {
     const course = await selectCourseById(opts.input.course_id);
     const question = await selectQuestionById(opts.input.question_id);
+
+    assert(question.course_id === course.id);
 
     const { user, authn_user } = await selectUsers({
       user_id: opts.input.user_id,

@@ -1,5 +1,7 @@
 import { Modal } from 'react-bootstrap';
 
+import { SHORT_NAME_PATTERN } from '../../../../lib/short-name.js';
+
 export function FinalizeModal({
   csrfToken,
   show,
@@ -39,7 +41,7 @@ export function FinalizeModal({
               className="form-control"
               id="question-qid"
               name="qid"
-              pattern="[\-A-Za-z0-9_\/]+"
+              pattern={SHORT_NAME_PATTERN}
               required
             />
             <div className="form-text text-muted">
