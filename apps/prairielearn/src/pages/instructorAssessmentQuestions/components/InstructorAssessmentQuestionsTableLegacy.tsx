@@ -34,9 +34,9 @@ function Title({
   const title = (
     <>
       <AssessmentQuestionNumber
-        assessmentQuestion={assessment_question}
-        alternativeGroup={alternative_group}
         alternativeGroupSize={alternative_group_size}
+        alternativeGroupNumber={alternative_group.number ?? 1}
+        numberInAlternativeGroup={assessment_question.number_in_alternative_group}
       />
       {question.title}
     </>
