@@ -9,6 +9,11 @@ export interface NewVariantHandle {
   newVariant: () => void;
 }
 
+interface VariantResponse {
+  questionContainerHtml: string;
+  extraHeadersHtml: string;
+}
+
 function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string) {
   // Find and replace the existing .question-container
   const oldQuestionContainer = wrapper.querySelector('.question-container');
@@ -36,10 +41,7 @@ function executeScripts(container: Element) {
   scripts.forEach((oldScript) => {
     const newScript = document.createElement('script');
 
-    // Copy all attributes
-    Array.from(oldScript.attributes).forEach((attr) => {
-      newScript.setAttribute(attr.name, attr.value);
-    });
+    copyAttributes(oldScript, newScript);
 
     // Copy script content
     newScript.textContent = oldScript.textContent;
@@ -47,6 +49,109 @@ function executeScripts(container: Element) {
     // Replace the old script with the new one to trigger execution
     oldScript.replaceWith(newScript);
   });
+}
+
+function copyAttributes(source: Element, target: Element) {
+  Array.from(source.attributes).forEach((attr) => {
+    target.setAttribute(attr.name, attr.value);
+  });
+}
+
+function getVariantAssetKey(value: string) {
+  if (typeof CSS !== 'undefined' && 'escape' in CSS) {
+    return CSS.escape(value);
+  }
+  // Fallback: escape characters that are special in CSS attribute selectors
+  return value.replaceAll(/["\\[\]]/g, '\\$&');
+}
+
+async function syncQuestionAssets(extraHeadersHtml: string): Promise<void> {
+  const trimmed = extraHeadersHtml.trim();
+  if (!trimmed) return;
+
+  const template = document.createElement('template');
+  template.innerHTML = trimmed;
+
+  const loadPromises: Promise<void>[] = [];
+
+  template.content.childNodes.forEach((node) => {
+    if (node instanceof HTMLLinkElement) {
+      const href = node.getAttribute('href');
+      if (!href || node.getAttribute('rel') !== 'stylesheet') return;
+
+      const existing = document.head.querySelector<HTMLLinkElement>(
+        `link[rel="stylesheet"][href="${getVariantAssetKey(href)}"]`,
+      );
+
+      if (existing) {
+        existing.setAttribute('data-pl-question-asset', 'true');
+        return;
+      }
+
+      const link = document.createElement('link');
+      copyAttributes(node, link);
+      link.setAttribute('data-pl-question-asset', 'true');
+      document.head.append(link);
+      return;
+    }
+
+    if (node instanceof HTMLScriptElement) {
+      if (node.type === 'importmap') {
+        const newText = node.textContent.trim();
+        if (!newText) return;
+
+        const existing =
+          document.head.querySelector<HTMLScriptElement>(
+            'script[type="importmap"][data-pl-question-importmap="true"]',
+          ) ?? document.head.querySelector<HTMLScriptElement>('script[type="importmap"]');
+
+        if (existing?.textContent.trim() === newText) {
+          existing.setAttribute('data-pl-question-importmap', 'true');
+          return;
+        }
+
+        const script = document.createElement('script');
+        copyAttributes(node, script);
+        script.textContent = node.textContent;
+        script.setAttribute('data-pl-question-importmap', 'true');
+
+        if (existing) {
+          existing.replaceWith(script);
+        } else {
+          document.head.append(script);
+        }
+        return;
+      }
+
+      const src = node.getAttribute('src');
+      if (!src) return;
+
+      const existing = document.head.querySelector<HTMLScriptElement>(
+        `script[src="${getVariantAssetKey(src)}"]`,
+      );
+      if (existing) {
+        existing.setAttribute('data-pl-question-asset', 'true');
+        return;
+      }
+
+      const script = document.createElement('script');
+      copyAttributes(node, script);
+      if (!node.hasAttribute('async') && !node.hasAttribute('defer')) {
+        script.async = false;
+      }
+      script.setAttribute('data-pl-question-asset', 'true');
+      const loadPromise = new Promise<void>((resolve) => {
+        script.addEventListener('load', () => resolve());
+        script.addEventListener('error', () => resolve());
+      });
+      document.head.append(script);
+      loadPromises.push(loadPromise);
+    }
+  });
+
+  if (loadPromises.length > 0) {
+    await Promise.all(loadPromises);
+  }
 }
 
 function useQuestionHtml({
@@ -110,7 +215,11 @@ function useQuestionHtml({
           if (!res.ok) throw new Error(`Server returned status ${res.status}`);
           if (!wrapperRef.current) return;
 
-          replaceQuestionContainer(wrapperRef.current, await res.text());
+          const { questionContainerHtml, extraHeadersHtml } =
+            (await res.json()) as VariantResponse;
+          // Inject question-specific assets before executing inline scripts in the new container.
+          await syncQuestionAssets(extraHeadersHtml);
+          replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
 
           // TODO: we should update the URL with the new variant ID.
         })
@@ -128,7 +237,11 @@ function useQuestionHtml({
         if (!res.ok) throw new Error(`Server returned status ${res.status}`);
         if (!wrapperRef.current) return;
 
-        replaceQuestionContainer(wrapperRef.current, await res.text());
+        const { questionContainerHtml, extraHeadersHtml } =
+          (await res.json()) as VariantResponse;
+        // Inject question-specific assets before executing inline scripts in the new container.
+        await syncQuestionAssets(extraHeadersHtml);
+        replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
       })
       .catch((err) => {
         // TODO: better error handling?

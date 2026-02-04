@@ -396,6 +396,7 @@ router.post(
 router.get(
   '/variant',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    // This endpoint is JSON-only; the client patches the preview without a full page reload.
     const variant_id = req.query.variant_id ? IdSchema.parse(req.query.variant_id) : null;
 
     // Render the preview.
@@ -413,7 +414,10 @@ router.get(
       questionContext: 'instructor',
     });
 
-    res.send(questionContainerHtml.toString());
+    res.json({
+      questionContainerHtml: questionContainerHtml.toString(),
+      extraHeadersHtml: res.locals.extraHeadersHtml,
+    });
   }),
 );
 
@@ -421,10 +425,24 @@ router.post(
   '/variant',
   typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (req.body.__action === 'grade' || req.body.__action === 'save') {
+      // This endpoint is JSON-only; the client patches the preview without a full page reload.
       const variantId = await processSubmission(req, res);
-      res.redirect(
-        `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}/variant?variant_id=${variantId}`,
-      );
+
+      await getAndRenderVariant(variantId, null, res.locals, {
+        urlOverrides: {
+          newVariantUrl: `${res.locals.urlPrefix}/ai_generate_editor/${res.locals.question.id}`,
+        },
+      });
+
+      const questionContainerHtml = QuestionContainer({
+        resLocals: res.locals,
+        questionContext: 'instructor',
+      });
+
+      res.json({
+        questionContainerHtml: questionContainerHtml.toString(),
+        extraHeadersHtml: res.locals.extraHeadersHtml,
+      });
     } else {
       throw new error.HttpStatusError(400, `Unknown action: ${req.body.__action}`);
     }
