@@ -81,7 +81,7 @@ const QUESTION_GENERATION_TOOLS = {
     inputSchema: z.object({
       path: z.enum(['question.html', 'server.py']),
     }),
-    outputSchema: z.string(),
+    outputSchema: z.string().nullable(),
   }),
   writeFile: tool({
     inputSchema: z.object({
@@ -364,7 +364,7 @@ export async function createQuestionGenerationAgent({
         description: 'Read a file from the filesystem.',
         ...QUESTION_GENERATION_TOOLS.readFile,
         execute: ({ path }) => {
-          return files[path];
+          return files[path] ?? null;
         },
       }),
       writeFile: tool({
