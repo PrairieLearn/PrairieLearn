@@ -4,7 +4,7 @@ import {
   type DragOverEvent,
   KeyboardSensor,
   PointerSensor,
-  pointerWithin,
+  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -540,7 +540,8 @@ export function InstructorAssessmentQuestionsTable({
         </div>
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          // TODO: Explore using pointerWithin instead of closestCenter
+          collisionDetection={closestCenter}
           autoScroll={false}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
