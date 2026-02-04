@@ -364,7 +364,7 @@ function Message({
       {isLastMessage && showSpinner && <ProgressStatus state="streaming" statusText="Working..." />}
       {jobLogsUrl && (
         <a className="small" href={jobLogsUrl} target="_blank">
-          View job logs
+          View job logs (link only visible to administrators)
         </a>
       )}
     </div>
