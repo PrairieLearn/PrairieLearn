@@ -19,14 +19,23 @@ async function enterEditMode(page: Page, ciId: string, aId: string): Promise<voi
 
 test.describe('Assessment questions', () => {
   let courseInstanceId: string;
+  let wasFeatureEnabled: boolean;
 
   test.beforeAll(async ({ testCoursePath }) => {
     await syncCourse(testCoursePath);
+
+    wasFeatureEnabled = await features.enabled('assessment-questions-editor');
     await features.enable('assessment-questions-editor');
 
     const course = await selectCourseByShortName('QA 101');
     const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
     courseInstanceId = courseInstance.id;
+  });
+
+  test.afterAll(async () => {
+    if (!wasFeatureEnabled) {
+      await features.disable('assessment-questions-editor');
+    }
   });
 
   // Test assessment has 2 zones:
@@ -44,15 +53,18 @@ test.describe('Assessment questions', () => {
     const dragHandles = page.locator('[aria-label="Drag to reorder"]');
     await expect(dragHandles).toHaveCount(4);
 
-    // Move second question (partialCredit2 from zone 2) to first question position (zone 1)
-    // Using keyboard: Space to pick up, Arrow to move, Space to drop
-    await dragHandles.nth(1).focus();
+    // Move third question (partialCredit3) up within zone 2
+    // Zone 2 has: partialCredit2 (index 1), partialCredit3 (index 2), partialCredit4_v2 (index 3)
+    // Using keyboard: focus element, Space to pick up, Arrow to move, Space to drop
+    const dragHandle = dragHandles.nth(2);
+    await dragHandle.focus();
+    await expect(dragHandle).toBeFocused();
     await page.keyboard.press('Space');
-    await page.waitForTimeout(200);
+    await page.waitForTimeout(100);
     await page.keyboard.press('ArrowUp');
     await page.waitForTimeout(100);
     await page.keyboard.press('Space');
-    await page.waitForTimeout(300);
+    await page.waitForTimeout(100);
 
     // Verify all questions still present after reorder
     await expect(dragHandles).toHaveCount(4);
@@ -79,9 +91,7 @@ test.describe('Assessment questions', () => {
         title: 'Questions to test maxPoints',
         maxPoints: 5,
         questions: [
-          // partialCredit2 was dragged here from zone 2
-          { id: 'partialCredit2', points: [10, 5, 1] },
-          // partialCredit1 was originally here
+          // Zone 1 unchanged
           { id: 'partialCredit1', points: [10, 5, 1] },
         ],
       },
@@ -90,8 +100,9 @@ test.describe('Assessment questions', () => {
         bestQuestions: 2,
         maxPoints: 15,
         questions: [
-          // partialCredit2 was moved out, so only these remain
+          // partialCredit3 moved up above partialCredit2 within zone 2
           { id: 'partialCredit3', points: [15, 10, 5, 1] },
+          { id: 'partialCredit2', points: [10, 5, 1] },
           { id: 'partialCredit4_v2', points: [20, 15, 10, 5, 1] },
         ],
       },

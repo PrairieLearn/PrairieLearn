@@ -3,6 +3,15 @@ import type { StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js';
 
+export function validatePositiveInteger(value: number | undefined, fieldName: string) {
+  if (value !== undefined && value < 1) {
+    return `${fieldName} must be at least 1.`;
+  }
+  if (value !== undefined && !Number.isInteger(value)) {
+    return `${fieldName} must be an integer.`;
+  }
+}
+
 /**
  * Normalizes point fields based on whether manualPoints is set.
  * When manualPoints is defined or both points/autoPoints exist, we convert
@@ -55,8 +64,6 @@ export function buildHierarchicalAssessment(
   const zoneAlternativeGroupCounts: Record<number, number> = {};
 
   for (const row of rows) {
-    if (row.zone.number == null) throw new Error('Zone number required');
-
     zones[row.zone.number - 1] ??= {
       title: row.zone.title ?? undefined,
       comment: row.zone.json_comment ?? undefined,

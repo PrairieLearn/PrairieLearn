@@ -8,13 +8,6 @@ import type {
   ZoneQuestionBlockForm,
 } from '../types.js';
 
-export {
-  addTrackingIds,
-  createQuestionWithTrackingId,
-  createZoneWithTrackingId,
-  stripTrackingIds,
-} from './dataTransform.js';
-
 /**
  * Finds a zone by its trackingId.
  * Returns the zone and its index, or null if not found.

@@ -134,8 +134,8 @@ export function AssessmentQuestion({
       <td key="grab-handle" className="align-content-center">
         {sortableListeners ? (
           <span
-            {...sortableListeners}
             {...sortableAttributes}
+            {...sortableListeners}
             style={{ cursor: 'grab', touchAction: 'none' }}
             aria-label="Drag to reorder"
           >
@@ -245,7 +245,7 @@ export function AssessmentQuestion({
       </td>
     ) : null,
     <td key="mean-score">
-      {questionData.assessment_question.mean_question_score
+      {questionData.assessment_question.mean_question_score != null
         ? `${questionData.assessment_question.mean_question_score.toFixed(3)} %`
         : null}
     </td>,

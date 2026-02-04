@@ -183,15 +183,16 @@ export function ZoneQuestionBlockHeader({
       {editMode && (
         <td className="align-content-center">
           {sortableListeners ? (
-            // Accessible roles are provided via sortableAttributes
-            // eslint-disable-next-line jsx-a11y-x/no-static-element-interactions
             <span
-              {...sortableListeners}
               {...sortableAttributes}
+              {...sortableListeners}
               style={{ cursor: 'grab', touchAction: 'none' }}
               aria-label="Drag to reorder"
               onClick={(e) => e.stopPropagation()}
               onKeyDown={(e) => {
+                // Call dnd-kit's keyboard handler first
+                sortableListeners.onKeyDown?.(e);
+                // Stop propagation to prevent the row from collapsing when using keyboard navigation
                 if (e.key === 'Enter' || e.key === ' ') {
                   e.stopPropagation();
                 }

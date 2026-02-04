@@ -25,14 +25,14 @@ import type {
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
-import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
   stripTrackingIds,
-  useAssessmentEditor,
-} from '../utils/useAssessmentEditor.js';
+} from '../utils/dataTransform.js';
+import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
 import { EditQuestionModal, type EditQuestionModalData } from './EditQuestionModal.js';
@@ -244,7 +244,7 @@ export function InstructorAssessmentQuestionsTable({
   const handleAddQuestion = (zoneTrackingId: string) => {
     editQuestionModal.showWithData({
       type: 'create',
-      question: createQuestionWithTrackingId({ id: '' }),
+      question: createQuestionWithTrackingId(),
       existingQids: Object.keys(questionMetadata),
     });
     setSelectedQuestionIds({
@@ -255,7 +255,8 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleUpdateQuestion = (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionData?: StaffAssessmentQuestionRow,
+    // This will only be provided if the QID changed
+    newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => {
     if (!updatedQuestion.id) return;
     if (!selectedQuestionIds) return;

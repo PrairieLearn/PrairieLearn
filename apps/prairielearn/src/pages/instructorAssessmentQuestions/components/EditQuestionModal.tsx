@@ -6,6 +6,7 @@ import { run } from '@prairielearn/run';
 
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
 import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js';
+import { validatePositiveInteger } from '../utils/questions.js';
 
 export type EditQuestionModalData =
   | {
@@ -20,27 +21,15 @@ export type EditQuestionModalData =
       zoneQuestionBlock?: ZoneQuestionBlockForm;
     };
 
-/**
- * Helper function to check if a value on an alternative question is inherited from the parent group.
- */
-function validatePositiveInteger(value: number | undefined, fieldName: string) {
-  if (value !== undefined && value < 1) {
-    return `${fieldName} must be at least 1.`;
-  }
-  if (value !== undefined && !Number.isInteger(value)) {
-    return `${fieldName} must be an integer.`;
-  }
-}
-
 function isInherited(
-  fieldName: keyof ZoneQuestionBlockForm | keyof QuestionAlternativeForm,
+  fieldName: keyof ZoneQuestionBlockForm & keyof QuestionAlternativeForm,
   isAlternative: boolean,
   question: ZoneQuestionBlockForm | QuestionAlternativeForm,
   zoneQuestionBlock?: ZoneQuestionBlockForm,
 ): boolean {
   if (!isAlternative || !zoneQuestionBlock) return false;
   return (
-    (!(fieldName in question) || (question as any)[fieldName] === undefined) &&
+    (!(fieldName in question) || question[fieldName] === undefined) &&
     fieldName in zoneQuestionBlock &&
     zoneQuestionBlock[fieldName] !== undefined
   );
@@ -74,7 +63,7 @@ export function EditQuestionModal({
   onExited: () => void;
   handleUpdateQuestion: (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionDataRef?: StaffAssessmentQuestionRow,
+    newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
 }) {
@@ -416,7 +405,7 @@ export function EditQuestionModal({
             ) : (
               <>
                 <div className="mb-3">
-                  <label htmlFor="autoPoints">Points list</label>
+                  <label htmlFor="autoPointsInput">Points list</label>
                   <input
                     type="text"
                     className={clsx(
@@ -477,7 +466,7 @@ export function EditQuestionModal({
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="manualPoints">Manual points</label>
+                  <label htmlFor="manualPointsInput">Manual points</label>
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}

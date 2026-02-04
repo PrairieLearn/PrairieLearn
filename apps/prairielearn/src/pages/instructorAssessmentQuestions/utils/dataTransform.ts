@@ -80,17 +80,10 @@ export function createZoneWithTrackingId(
  * New trackingIds are always generated (this is for new questions, not existing ones).
  * Accepts a partial question for creating new empty questions.
  */
-export function createQuestionWithTrackingId(
-  question: Partial<ZoneQuestionBlockJson> & { id: string },
-): ZoneQuestionBlockForm {
+export function createQuestionWithTrackingId(): ZoneQuestionBlockForm {
   // Cast needed for TypeScript spread inference with union types
   return {
-    ...question,
     trackingId: createTrackingId(),
-    alternatives: question.alternatives?.map((alt) => ({
-      ...alt,
-      trackingId: createTrackingId(),
-    })),
   } as ZoneQuestionBlockForm;
 }
 
