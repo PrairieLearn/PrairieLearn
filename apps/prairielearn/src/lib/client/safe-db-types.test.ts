@@ -227,7 +227,7 @@ const minimalStaffAssessmentInstance: z.input<typeof StaffAssessmentInstanceSche
   max_points: null,
   mode: null,
   modified_at: new Date(),
-  number: null,
+  number: 1,
   open: null,
   points: null,
   score_perc: null,
@@ -250,7 +250,7 @@ const minimalStudentAssessmentInstance: z.input<typeof StudentAssessmentInstance
   max_points: null,
   mode: null,
   modified_at: new Date(),
-  number: null,
+  number: 1,
   open: null,
   points: null,
   score_perc: null,
@@ -348,7 +348,7 @@ const minimalStaffAlternativeGroup: z.input<typeof StaffAlternativeGroupSchema> 
   json_max_points: null,
   json_points: null,
   json_tries_per_variant: null,
-  number: null,
+  number: 1,
   number_choose: null,
   zone_id: '6',
 };
@@ -457,7 +457,7 @@ const minimalStaffQuestion: z.input<typeof StaffQuestionSchema> = {
   json_comment: null,
   json_external_grading_comment: null,
   json_workspace_comment: null,
-  number: null,
+  number: 1,
   options: null,
   partial_credit: null,
   qid: null,
@@ -491,7 +491,7 @@ const minimalStaffTag: z.input<typeof StaffTagSchema> = {
   implicit: false,
   json_comment: null,
   name: 'Test Tag',
-  number: null,
+  number: 1,
 };
 
 const minimalStaffTopic: z.input<typeof StaffTopicSchema> = {
@@ -502,7 +502,7 @@ const minimalStaffTopic: z.input<typeof StaffTopicSchema> = {
   implicit: false,
   json_comment: null,
   name: 'Test Topic',
-  number: null,
+  number: 1,
 };
 
 const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
