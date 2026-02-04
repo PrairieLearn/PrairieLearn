@@ -936,4 +936,4 @@ export function QuestionsTable({
   );
 }
 
-QuestionsTable.displayName = 'QuestionsTable';
+QuestionsTable.displayName = 'QuestionsTableTanstack';
