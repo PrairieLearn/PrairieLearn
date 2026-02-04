@@ -37,7 +37,7 @@ export function CourseRequestsTable({
               </a>
             `}
       </div>
-      <div class="table-responsive">
+      <div>
         <table class="table table-sm" aria-label="Course requests">
           <thead>
             <tr>
@@ -122,20 +122,58 @@ export function CourseRequestsTable({
                       : ''}
                   </td>
                   <td class="align-middle">
-                    ${row.jobs.length > 0
-                      ? html`
+                    <div class="dropdown">
+                      <button
+                        class="btn btn-secondary btn-xs dropdown-toggle"
+                        type="button"
+                        data-bs-toggle="dropdown"
+                        aria-expanded="false"
+                      >
+                        Show Details
+                      </button>
+                      <ul class="dropdown-menu">
+                        <li>
                           <button
-                            class="btn btn-secondary btn-xs text-nowrap show-hide-btn collapsed"
+                            class="dropdown-item show-hide-btn${row.note ? '' : ' collapsed'}"
                             data-bs-toggle="collapse"
-                            data-bs-target="#course-requests-job-list-${row.id}"
-                            aria-expanded="false"
-                            aria-controls="course-requests-job-list-${row.id}"
+                            data-bs-target="#course-requests-note-${row.id}"
+                            aria-expanded="${row.note ? 'true' : 'false'}"
+                            aria-controls="course-requests-note-${row.id}"
                           >
-                            <i class="fa fa-angle-up expand-icon"></i>
-                            Show Jobs
+                            <span class="show-when-collapsed">Edit Note</span>
+                            <span class="show-when-expanded">Close Note</span>
                           </button>
-                        `
-                      : ''}
+                        </li>
+                        ${row.jobs.length > 0
+                          ? html`
+                              <li>
+                                <button
+                                  class="dropdown-item show-hide-btn collapsed"
+                                  data-bs-toggle="collapse"
+                                  data-bs-target="#course-requests-job-list-${row.id}"
+                                  aria-expanded="false"
+                                  aria-controls="course-requests-job-list-${row.id}"
+                                >
+                                  Show jobs
+                                </button>
+                              </li>
+                            `
+                          : ''}
+                      </ul>
+                    </div>
+                  </td>
+                </tr>
+                <tr>
+                  <td colspan="${showAll ? 11 : 10}" class="p-0">
+                    <div
+                      id="course-requests-note-${row.id}"
+                      class="${row.note ? 'collapse show' : 'collapse'}"
+                    >
+                      ${CourseRequestEditNoteForm({
+                        request: row,
+                        csrfToken,
+                      })}
+                    </div>
                   </td>
                 </tr>
                 ${row.jobs.length > 0
@@ -332,4 +370,42 @@ function CourseRequestStatusIcon({ status }: { status: CourseRequestRow['approve
     case 'denied':
       return html`<span class="badge text-bg-danger"><i class="fa fa-times"></i> Denied</span>`;
   }
+}
+
+function CourseRequestEditNoteForm({
+  request,
+  csrfToken,
+}: {
+  request: CourseRequestRow;
+  csrfToken: string;
+}) {
+  return html`
+    <form method="POST">
+      <input type="hidden" name="__csrf_token" value="${csrfToken}" />
+      <input type="hidden" name="__action" value="update_course_request_note" />
+      <input type="hidden" name="request_id" value="${request.id}" />
+      <div class="d-flex gap-2 align-items-center py-2 px-2">
+        <textarea
+          class="form-control flex-grow-1"
+          id="course-request-note-${request.id}"
+          name="note"
+          rows="1"
+          placeholder="Add a note about this course request..."
+        >
+${request.note ?? ''}</textarea
+        >
+        <button
+          type="button"
+          class="btn btn-secondary"
+          data-bs-toggle="collapse"
+          data-bs-target="#course-requests-note-${request.id}"
+        >
+          Cancel
+        </button>
+        <button type="submit" class="btn btn-primary text-nowrap">
+          <i class="fa fa-save" aria-hidden="true"></i> Save note
+        </button>
+      </div>
+    </form>
+  `;
 }

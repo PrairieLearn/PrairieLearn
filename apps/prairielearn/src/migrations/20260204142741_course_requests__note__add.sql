@@ -1,0 +1,2 @@
+ALTER TABLE course_requests
+ADD COLUMN IF NOT EXISTS note VARCHAR;

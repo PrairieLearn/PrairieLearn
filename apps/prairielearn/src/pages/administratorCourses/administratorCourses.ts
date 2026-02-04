@@ -8,6 +8,7 @@ import {
   createCourseFromRequest,
   selectPendingCourseRequests,
   updateCourseRequest,
+  updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { deleteCourse, insertCourse, selectCourseById } from '../../models/course.js';
@@ -76,6 +77,8 @@ router.post(
       await updateCourseRequest(req, res);
     } else if (req.body.__action === 'create_course_from_request') {
       await createCourseFromRequest(req, res);
+    } else if (req.body.__action === 'update_course_request_note') {
+      await updateCourseRequestNote(req, res);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

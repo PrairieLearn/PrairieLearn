@@ -32,6 +32,7 @@ const CourseRequestRowSchema = z.object({
   institution: z.string().nullable(),
   jobs: z.array(JobsRowSchema),
   last_name: z.string().nullable(),
+  note: z.string().nullable(),
   referral_source: z.string().nullable(),
   short_name: z.string(),
   title: z.string(),
@@ -106,4 +107,12 @@ export async function createCourseFromRequest(req: Request, res: Response) {
     logger.error('Error sending course request message to Slack', err);
     Sentry.captureException(err);
   }
+}
+
+export async function updateCourseRequestNote(req: Request, res: Response) {
+  await execute(sql.update_course_request_note, {
+    id: req.body.request_id,
+    note: req.body.note,
+  });
+  res.redirect(req.originalUrl);
 }

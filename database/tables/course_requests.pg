@@ -7,6 +7,7 @@ columns
     id: bigint not null default nextval('course_requests_id_seq'::regclass)
     institution: text
     last_name: text
+    note: character varying
     referral_source: text
     short_name: text not null
     title: text not null
