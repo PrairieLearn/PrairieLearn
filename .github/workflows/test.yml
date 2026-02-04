@@ -141,6 +141,11 @@ jobs:
         with:
           node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
