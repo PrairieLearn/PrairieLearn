@@ -14,7 +14,7 @@ export function PromptInput({
   disabled: boolean;
   isGenerating: boolean;
   onStop: () => void;
-  refreshQuestionPreviewAfterChanges?: boolean;
+  refreshQuestionPreviewAfterChanges: boolean;
   setRefreshQuestionPreviewAfterChanges?: (value: boolean) => void;
 }) {
   return (
