@@ -259,7 +259,7 @@ export async function createQuestionGenerationAgent({
     question_id: question.id,
   });
   for (const filename of ['question.html', 'server.py']) {
-    if (questionFilesResult.files[filename]) {
+    if (filename in questionFilesResult.files) {
       files[filename] = b64DecodeUnicode(questionFilesResult.files[filename]);
     }
   }
