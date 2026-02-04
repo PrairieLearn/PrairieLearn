@@ -55,4 +55,7 @@ SET
   usage_output_tokens = $usage_output_tokens,
   usage_output_tokens_reasoning = $usage_output_tokens_reasoning
 WHERE
-  id = $id;
+  id = $id
+  -- Only update if still streaming; prevents overwriting 'canceled' status
+  -- if user clicked stop after we checked but before we finalized.
+  AND status = 'streaming';
