@@ -49,8 +49,8 @@ def generate(data):
 
 | Attribute     | Type    | Default | Description                                                                                                                                 |
 | ------------- | ------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| `params-name` | string  | —       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
 | `empty`       | boolean | false   | Whether the entry for the given `params-name` should be set to empty. Will throw an error if variables are defined and this is set to true. |
+| `params-name` | string  | —       | Name of variable specification in `data["params"]` to display, the format for which is given above.                                         |
 
 The HTML inside the inner `pl-variable` tag is used as the description. If the tag is empty, no description is used for the given variable. The inner `pl-variable` tag has the following attributes:
 
