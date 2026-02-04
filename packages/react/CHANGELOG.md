@@ -1,5 +1,17 @@
 # @prairielearn/react
 
+## 2.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/compiled-assets@4.0.1
+  - @prairielearn/browser-utils@2.6.3
+  - @prairielearn/error@3.0.2
+  - @prairielearn/utils@3.1.1
+  - @prairielearn/html@5.0.1
+
 ## 2.0.0
 
 ### Major Changes

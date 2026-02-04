@@ -82,7 +82,7 @@ export function getNavPageTabs() {
         activeSubPage: 'sets',
         urlSuffix: '/course_admin/sets',
         iconClasses: 'fa fa-list',
-        tabLabel: 'Assessment Sets',
+        tabLabel: 'Assessment sets',
       },
 
       {
@@ -158,7 +158,7 @@ export function getNavPageTabs() {
         activeSubPage: 'manual_grading',
         urlSuffix: ({ assessment }) => `/assessment/${assessment.id}/manual_grading`,
         iconClasses: 'fas fa-marker',
-        tabLabel: 'Manual Grading',
+        tabLabel: 'Manual grading',
         renderCondition: ({ authz_data }) => authz_data.has_course_instance_permission_view,
       },
       {
@@ -262,7 +262,7 @@ export function getNavPageTabs() {
         activeSubPage: 'networks',
         urlSuffix: '/administrator/networks',
         iconClasses: 'fas fa-network-wired',
-        tabLabel: 'Exam Networks',
+        tabLabel: 'Exam networks',
       },
       {
         activeSubPage: 'queries',
@@ -286,7 +286,7 @@ export function getNavPageTabs() {
         activeSubPage: 'batchedMigrations',
         urlSuffix: '/administrator/batchedMigrations',
         iconClasses: 'fas fa-database',
-        tabLabel: 'Batched Migrations',
+        tabLabel: 'Batched migrations',
       },
       {
         activeSubPage: 'settings',

@@ -41,6 +41,7 @@ interface ResLocalsForPageLookup {
     course_instance: CourseInstance;
   };
   'instructor-instance-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestionWithCourseInstance &
     ResLocalsInstanceQuestion &
@@ -51,10 +52,12 @@ interface ResLocalsForPageLookup {
     };
   'instructor-question': ResLocals &
     ResLocalsCourse &
+    ResLocalsCourseIssueCount &
     Partial<ResLocalsCourseInstance> &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender;
   'instructor-assessment-question': ResLocals &
+    ResLocalsCourseIssueCount &
     ResLocalsCourseInstance &
     ResLocalsInstructorQuestion &
     ResLocalsQuestionRender &
