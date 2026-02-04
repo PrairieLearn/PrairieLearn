@@ -1,11 +1,6 @@
 CREATE TYPE enum_ai_question_generation_message_role AS ENUM('user', 'assistant');
 
-CREATE TYPE enum_ai_question_generation_message_status AS ENUM(
-  'streaming',
-  'completed',
-  'errored',
-  'canceled'
-);
+CREATE TYPE enum_ai_question_generation_message_status AS ENUM('streaming', 'completed', 'errored', 'canceled');
 
 CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
   id BIGSERIAL PRIMARY KEY,
