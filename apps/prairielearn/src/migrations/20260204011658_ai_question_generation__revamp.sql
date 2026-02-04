@@ -1,7 +1,6 @@
 CREATE TYPE enum_ai_question_generation_message_role AS ENUM('user', 'assistant');
 
 CREATE TYPE enum_ai_question_generation_message_status AS ENUM(
-  'pending',
   'streaming',
   'completed',
   'errored',
@@ -15,7 +14,7 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
   job_sequence_id BIGINT REFERENCES job_sequences (id) ON UPDATE CASCADE ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
-  status enum_ai_question_generation_message_status NOT NULL DEFAULT 'pending',
+  status enum_ai_question_generation_message_status NOT NULL,
   role enum_ai_question_generation_message_role NOT NULL,
   parts JSONB NOT NULL DEFAULT '[]'::JSONB,
   model TEXT,

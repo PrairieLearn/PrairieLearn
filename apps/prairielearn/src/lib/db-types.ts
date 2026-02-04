@@ -15,7 +15,6 @@ export type EnumAiQuestionGenerationMessageRole = z.infer<
 >;
 
 export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
-  'pending',
   'streaming',
   'completed',
   'errored',

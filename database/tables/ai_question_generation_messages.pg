@@ -8,7 +8,7 @@ columns
     parts: jsonb not null default '[]'::jsonb
     question_id: bigint not null
     role: enum_ai_question_generation_message_role not null
-    status: enum_ai_question_generation_message_status not null default 'pending'::enum_ai_question_generation_message_status
+    status: enum_ai_question_generation_message_status not null
     updated_at: timestamp with time zone not null default now()
     usage_input_tokens: integer not null default 0
     usage_input_tokens_cache_read: integer not null default 0
