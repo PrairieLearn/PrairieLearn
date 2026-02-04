@@ -11,7 +11,7 @@ export function ResetQuestionVariantsModal({
   assessmentQuestionId: string;
   show: boolean;
   onHide: () => void;
-  onExited: () => void;
+  onExited?: () => void;
 }) {
   return (
     <Modal show={show} size="lg" backdrop="static" onHide={onHide} onExited={onExited}>
