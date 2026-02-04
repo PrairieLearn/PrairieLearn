@@ -4,7 +4,7 @@ CREATE FUNCTION
         IN authz_data jsonb,
         IN req_date timestamptz,
         IN display_timezone text,
-        IN team_work boolean,
+        IN group_work boolean,
         OUT authorized boolean,      -- Is this assessment available for the given user?
         OUT authorized_edit boolean, -- Is this assessment available for editing by the given user?
         OUT exam_access_end timestamptz, -- If in exam mode, when does access end?
@@ -104,12 +104,12 @@ BEGIN
     -- the user about grading on an exam assessment instance. Be careful if you
     -- change this behavior!
     --
-    -- What about teams? No problem. Everything is the same, except for team work
+    -- What about groups? No problem. Everything is the same, except for group work
     -- we need to check instead that "there exists a team_users with the same team_id
     -- as the assessment instance and the same user_id as the effective user."
     IF
-        (((team_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS tu WHERE tu.team_id = assessment_instance.team_id AND tu.user_id = (authz_data->'user'->>'id')::bigint)))
-        OR ((NOT team_work) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
+        (((group_work) AND (NOT EXISTS (SELECT 1 FROM team_users AS gu WHERE gu.team_id = assessment_instance.team_id AND gu.user_id = (authz_data->'user'->>'id')::bigint)))
+        OR ((NOT group_work) AND ((authz_data->'user'->>'id')::bigint != assessment_instance.user_id)))
     THEN
         authorized := authorized AND (authz_data->>'has_course_instance_permission_view')::boolean;
         authorized_edit := FALSE;

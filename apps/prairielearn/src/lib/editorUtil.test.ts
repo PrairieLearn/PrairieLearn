@@ -2,7 +2,7 @@ import { assert, describe, it } from 'vitest';
 
 import { getUniqueNames, propertyValueWithDefault } from './editorUtil.shared.js';
 
-describe('editors', () => {
+describe('editor utils', () => {
   describe('getNamesForAdd', () => {
     describe('No specified short_name and long_name', () => {
       it('should set short_name to New_1 and long_name to New (1)', () => {

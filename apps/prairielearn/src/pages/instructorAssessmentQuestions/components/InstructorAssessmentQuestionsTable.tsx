@@ -4,7 +4,7 @@ import {
   type DragOverEvent,
   KeyboardSensor,
   PointerSensor,
-  pointerWithin,
+  closestCenter,
   useSensor,
   useSensors,
 } from '@dnd-kit/core';
@@ -24,16 +24,16 @@ import type {
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
+} from '../types.js';
 import type { CourseQuestionForPicker } from '../types.js';
-import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
   createZoneWithTrackingId,
   stripTrackingIds,
-  useAssessmentEditor,
-} from '../utils/useAssessmentEditor.js';
+} from '../utils/dataTransform.js';
+import { normalizeQuestionPoints, questionDisplayName } from '../utils/questions.js';
+import { useAssessmentEditor } from '../utils/useAssessmentEditor.js';
 
 import { AssessmentZone } from './AssessmentZone.js';
 import { EditQuestionModal } from './EditQuestionModal.js';
@@ -166,7 +166,6 @@ export function InstructorAssessmentQuestionsTable({
   canEdit,
   csrfToken,
   origHash,
-  editorEnabled,
 }: {
   course: StaffCourse;
   questionRows: StaffAssessmentQuestionRow[];
@@ -179,7 +178,6 @@ export function InstructorAssessmentQuestionsTable({
   canEdit: boolean;
   csrfToken: string;
   origHash: string;
-  editorEnabled: boolean;
 }) {
   // Initialize editor state from JSON zones
   const initialZones = addTrackingIds(jsonZones);
@@ -314,13 +312,13 @@ export function InstructorAssessmentQuestionsTable({
     resetModal.showWithData(assessmentQuestionId);
   };
 
-  const assessmentType = assessment.type!;
+  const assessmentType = assessment.type;
 
   const handleAddQuestion = (zoneTrackingId: string) => {
     openPickerForNew(zoneTrackingId);
   };
 
-  const handleQuestionPicked = (qid: string) => {
+const handleQuestionPicked = (qid: string) => {
     if (questionEditState.status !== 'picking') return;
 
     if (questionEditState.returnToEdit) {
@@ -360,7 +358,8 @@ export function InstructorAssessmentQuestionsTable({
 
   const handleUpdateQuestion = (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionData?: StaffAssessmentQuestionRow,
+    // This will only be provided if the QID changed
+    newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => {
     if (!updatedQuestion.id) return;
     if (questionEditState.status !== 'editing') return;
@@ -391,7 +390,10 @@ export function InstructorAssessmentQuestionsTable({
       dispatch({
         type: 'ADD_QUESTION',
         zoneTrackingId: questionEditState.zoneTrackingId,
-        question: createQuestionWithTrackingId(normalizedQuestion as ZoneQuestionBlockForm),
+        question: {
+          ...createQuestionWithTrackingId(),
+          ...(normalizedQuestion as ZoneQuestionBlockForm),
+        },
         questionData: preparedQuestionData,
       });
     } else {
@@ -610,7 +612,7 @@ export function InstructorAssessmentQuestionsTable({
             {assessmentSetName} {assessment.number}: Questions
           </h1>
           <div className="ms-auto">
-            {editorEnabled && canEdit && origHash ? (
+            {canEdit && origHash ? (
               <EditModeButtons
                 csrfToken={csrfToken}
                 origHash={origHash}
@@ -644,7 +646,8 @@ export function InstructorAssessmentQuestionsTable({
         </div>
         <DndContext
           sensors={sensors}
-          collisionDetection={pointerWithin}
+          // TODO: Explore using pointerWithin instead of closestCenter
+          collisionDetection={closestCenter}
           autoScroll={false}
           onDragOver={handleDragOver}
           onDragEnd={handleDragEnd}
@@ -654,7 +657,7 @@ export function InstructorAssessmentQuestionsTable({
             strategy={verticalListSortingStrategy}
           >
             <div style={{ overflowX: 'auto' }}>
-              <table className="table table-sm table-hover" aria-label="Assessment questions">
+              <table className="table table-sm table-hover mb-0" aria-label="Assessment questions">
                 <thead>
                   <tr>
                     {editMode && (

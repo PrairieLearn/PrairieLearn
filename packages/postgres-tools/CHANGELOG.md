@@ -1,5 +1,21 @@
 # @prairielearn/postgres-tools
 
+## 3.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/postgres@5.0.2
+
+## 3.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+- Updated dependencies [f929a68]
+  - @prairielearn/postgres@5.0.1
+
 ## 3.0.0
 
 ### Major Changes

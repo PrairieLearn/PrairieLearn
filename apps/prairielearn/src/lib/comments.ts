@@ -3,7 +3,9 @@
  *
  * @param comment - the comment being assessed
  */
-export function isRenderableComment(comment: string | string[] | Record<string, any> | null) {
+export function isRenderableComment(
+  comment: string | string[] | Record<string, any> | null | undefined,
+) {
   if (
     !comment ||
     (typeof comment === 'string' && comment.trim() === '') ||

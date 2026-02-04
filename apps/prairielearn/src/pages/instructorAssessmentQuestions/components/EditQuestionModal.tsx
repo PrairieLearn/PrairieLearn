@@ -1,13 +1,12 @@
 import clsx from 'clsx';
-import { useMemo } from 'react';
 import { Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 
+import { run } from '@prairielearn/run';
+
 import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-question.js';
-import type {
-  QuestionAlternativeForm,
-  ZoneQuestionBlockForm,
-} from '../instructorAssessmentQuestions.shared.js';
+import type { QuestionAlternativeForm, ZoneQuestionBlockForm } from '../types.js';
+import { validatePositiveInteger } from '../utils/questions.js';
 
 export type EditQuestionModalData =
   | {
@@ -22,20 +21,17 @@ export type EditQuestionModalData =
       zoneQuestionBlock?: ZoneQuestionBlockForm;
     };
 
-/**
- * Helper function to check if a value on an alternative question is inherited from the parent group.
- */
 function isInherited(
-  fieldName: keyof ZoneQuestionBlockForm | keyof QuestionAlternativeForm,
+  fieldName: keyof ZoneQuestionBlockForm & keyof QuestionAlternativeForm,
   isAlternative: boolean,
   question: ZoneQuestionBlockForm | QuestionAlternativeForm,
   zoneQuestionBlock?: ZoneQuestionBlockForm,
 ): boolean {
   if (!isAlternative || !zoneQuestionBlock) return false;
   return (
-    (!(fieldName in question) || question[fieldName as keyof typeof question] === undefined) &&
+    (!(fieldName in question) || question[fieldName] === undefined) &&
     fieldName in zoneQuestionBlock &&
-    zoneQuestionBlock[fieldName as keyof typeof zoneQuestionBlock] !== undefined
+    zoneQuestionBlock[fieldName] !== undefined
   );
 }
 
@@ -67,7 +63,7 @@ export function EditQuestionModal({
   onHide: () => void;
   handleUpdateQuestion: (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
-    newQuestionDataRef?: StaffAssessmentQuestionRow,
+    newQuestionData: StaffAssessmentQuestionRow | undefined,
   ) => void;
   assessmentType: 'Homework' | 'Exam';
   onPickQuestion?: () => void;
@@ -83,7 +79,7 @@ export function EditQuestionModal({
     question?.manualPoints ?? zoneQuestionBlock?.manualPoints ?? null;
 
   // Determine which property was originally set (points vs autoPoints)
-  const originalPointsProperty = useMemo<'points' | 'autoPoints'>(() => {
+  const originalPointsProperty = run(() => {
     if (question?.points != null) return 'points';
     if (question?.autoPoints != null) return 'autoPoints';
     if (zoneQuestionBlock) {
@@ -95,10 +91,10 @@ export function EditQuestionModal({
       }
     }
     return 'autoPoints';
-  }, [question, zoneQuestionBlock]);
+  });
 
   // Determine which property was originally set (maxPoints vs maxAutoPoints)
-  const originalMaxProperty = useMemo<'maxPoints' | 'maxAutoPoints'>(() => {
+  const originalMaxProperty = run(() => {
     if (question?.maxAutoPoints != null) return 'maxAutoPoints';
     if (question?.maxPoints != null) return 'maxPoints';
 
@@ -111,19 +107,15 @@ export function EditQuestionModal({
       }
     }
     return originalPointsProperty === 'points' ? 'maxPoints' : 'maxAutoPoints';
-  }, [question, zoneQuestionBlock, originalPointsProperty]);
+  });
 
-  const isPointsInherited = useMemo(
-    () => (question ? isInherited('points', isAlternative, question, zoneQuestionBlock) : false),
-    [isAlternative, question, zoneQuestionBlock],
-  );
-  const isMaxPointsInherited = useMemo(
-    () =>
-      question
-        ? isInherited(originalMaxProperty, isAlternative, question, zoneQuestionBlock)
-        : false,
-    [originalMaxProperty, isAlternative, question, zoneQuestionBlock],
-  );
+  const isPointsInherited = question
+    ? isInherited('points', isAlternative, question, zoneQuestionBlock)
+    : false;
+  const isMaxPointsInherited = question
+    ? isInherited(originalMaxProperty, isAlternative, question, zoneQuestionBlock)
+    : false;
+
   const autoPointsDisplayValue = isPointsInherited
     ? zoneQuestionBlock?.[originalPointsProperty]
     : (question?.[originalPointsProperty] ?? undefined);
@@ -133,7 +125,7 @@ export function EditQuestionModal({
     : (question?.[originalMaxProperty] ?? null);
 
   // Track the original inherited values so we can detect if they were modified
-  const originalInheritedValues = useMemo(() => {
+  const originalInheritedValues = run(() => {
     return {
       [originalPointsProperty]: isPointsInherited
         ? zoneQuestionBlock?.[originalPointsProperty]
@@ -146,20 +138,9 @@ export function EditQuestionModal({
           ? zoneQuestionBlock?.manualPoints
           : undefined,
     };
-  }, [
-    originalPointsProperty,
-    originalMaxProperty,
-    isPointsInherited,
-    isMaxPointsInherited,
-    isAlternative,
-    question,
-    zoneQuestionBlock,
-  ]);
+  });
 
-  const formValues = useMemo<ZoneQuestionBlockForm | QuestionAlternativeForm>(
-    () => question ?? ({ trackingId: '' } as ZoneQuestionBlockForm),
-    [question],
-  );
+  const formValues = run(() => question ?? ({ trackingId: '' } as ZoneQuestionBlockForm));
 
   const {
     register,
@@ -318,7 +299,7 @@ export function EditQuestionModal({
                     </div>
                   )}
                   <small id="autoPointsHelp" className="form-text text-muted">
-                    The amount of points each attempt at the question is worth.
+                    The number of points each attempt at the question is worth.
                     {isInherited(
                       originalPointsProperty,
                       isAlternative,
@@ -394,7 +375,7 @@ export function EditQuestionModal({
                     </div>
                   )}
                   <small id="manualPointsHelp" className="form-text text-muted">
-                    The amount of points possible from manual grading.
+                    The number of points possible from manual grading.
                     {isInherited('manualPoints', isAlternative, question, zoneQuestionBlock) ? (
                       <>
                         {' '}
@@ -420,14 +401,7 @@ export function EditQuestionModal({
                         }
                         return Number(value);
                       },
-                      validate: (triesPerVariant) => {
-                        if (!Number.isInteger(triesPerVariant)) {
-                          return 'Tries per variant must be an integer';
-                        }
-                        if (triesPerVariant !== undefined && triesPerVariant < 1) {
-                          return 'Tries per variant must be at least 1.';
-                        }
-                      },
+                      validate: (value) => validatePositiveInteger(value, 'Tries per variant'),
                     })}
                   />
                   {errors.triesPerVariant && (
@@ -444,7 +418,7 @@ export function EditQuestionModal({
             ) : (
               <>
                 <div className="mb-3">
-                  <label htmlFor="autoPoints">Points list</label>
+                  <label htmlFor="autoPointsInput">Points list</label>
                   <input
                     type="text"
                     className={clsx(
@@ -505,7 +479,7 @@ export function EditQuestionModal({
                   </small>
                 </div>
                 <div className="mb-3">
-                  <label htmlFor="manualPoints">Manual points</label>
+                  <label htmlFor="manualPointsInput">Manual points</label>
                   <input
                     type="number"
                     className={clsx('form-control', errors.manualPoints && 'is-invalid')}
@@ -536,7 +510,7 @@ export function EditQuestionModal({
                     </div>
                   )}
                   <small id="manualPointsHelp" className="form-text text-muted">
-                    The amount of points possible from manual grading.
+                    The number of points possible from manual grading.
                     {isInherited('manualPoints', isAlternative, question, zoneQuestionBlock) ? (
                       <>
                         {' '}
