@@ -9,7 +9,7 @@ import { z } from 'zod';
 
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 
-import type { OpenAIModelId } from '../../lib/ai.js';
+import type { OpenAIModelId } from '../../lib/ai-util.js';
 import { config } from '../../lib/config.js';
 import { AiQuestionGenerationPromptSchema, type User } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
