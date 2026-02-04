@@ -154,6 +154,7 @@ Inline `PageLayout` directly in the Express route handler rather than creating w
 - Inline prop definitions for components if they are not used outside of the component.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
+- Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
 
 ## Python guidance
 
