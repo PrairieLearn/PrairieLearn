@@ -1,8 +1,14 @@
 -- BLOCK insert_user_message
 INSERT INTO
-  ai_question_generation_messages (question_id, role, status, parts)
+  ai_question_generation_messages (question_id, authn_user_id, role, status, parts)
 VALUES
-  ($question_id, 'user', 'completed', $parts::jsonb);
+  (
+    $question_id,
+    $authn_user_id,
+    'user',
+    'completed',
+    $parts::jsonb
+  );
 
 -- BLOCK insert_initial_assistant_message
 INSERT INTO

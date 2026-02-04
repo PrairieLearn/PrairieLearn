@@ -13,8 +13,8 @@ import { privateProcedure } from '../../trpc.js';
 /**
  * Returns base64-encoded `question.html` and `server.py` files for a question.
  *
- * This function does not perform any authorization checks. It's up to the caller
- * to ensure that it's safe to call this function for a given course and question.
+ * This procedure assumes internal-only access (e.g., authenticated via the
+ * course-files API secret). Do not expose it directly to user-controlled clients.
  */
 export const getQuestionFiles = privateProcedure
   .input(

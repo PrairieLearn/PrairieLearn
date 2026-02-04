@@ -94,6 +94,8 @@ router.post(
     if (req.body.__action === 'generate_question') {
       const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
+      // Note: we only check current interval usage here, not the prompt's estimated cost.
+      // A large prompt can exceed the limit, but estimating cost up front is unreliable.
       if (intervalCost > config.aiQuestionGenerationRateLimitDollars) {
         res.send(RateLimitExceeded());
         return;

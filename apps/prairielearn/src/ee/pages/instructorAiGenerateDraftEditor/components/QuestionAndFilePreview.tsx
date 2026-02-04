@@ -28,7 +28,10 @@ function replaceQuestionContainer(wrapper: HTMLDivElement, htmlResponse: string)
   // Replace the old container with the new one
   oldQuestionContainer.replaceWith(container);
 
-  // Execute any scripts in the new container
+  executeScripts(container);
+}
+
+function executeScripts(container: Element) {
   const scripts = container.querySelectorAll('script');
   scripts.forEach((oldScript) => {
     const newScript = document.createElement('script');
@@ -167,6 +170,8 @@ function QuestionPreview({ questionContainerHtml }: { questionContainerHtml: str
   useEffect(() => {
     if (!ref.current) return;
     ref.current.innerHTML = questionContainerHtml;
+    const container = ref.current.querySelector<HTMLElement>('.question-container') ?? ref.current;
+    executeScripts(container);
   }, [questionContainerHtml]);
 
   return <div ref={ref} suppressHydrationWarning />;

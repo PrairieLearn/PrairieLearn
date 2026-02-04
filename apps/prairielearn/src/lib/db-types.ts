@@ -273,6 +273,7 @@ export const AiGradingJobSchema = z.object({
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
 export const AiQuestionGenerationMessageSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
   created_at: DateFromISOString,
   id: IdSchema,
   include_in_context: z.boolean(),

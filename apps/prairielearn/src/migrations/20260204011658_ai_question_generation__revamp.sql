@@ -11,6 +11,7 @@ CREATE TYPE enum_ai_question_generation_message_status AS ENUM(
 CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
   id BIGSERIAL PRIMARY KEY,
   question_id BIGINT NOT NULL REFERENCES questions (id) ON UPDATE CASCADE ON DELETE CASCADE,
+  authn_user_id BIGINT REFERENCES users (id) ON UPDATE CASCADE ON DELETE CASCADE,
   job_sequence_id BIGINT REFERENCES job_sequences (id) ON UPDATE CASCADE ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -33,6 +34,17 @@ CREATE TABLE IF NOT EXISTS ai_question_generation_messages (
     OR (
       role = 'assistant'
       AND model IS NOT NULL
+    )
+  ),
+  -- Only user messages should be attributed to an authn_user_id.
+  CONSTRAINT ai_question_generation_messages_authn_user_check CHECK (
+    (
+      role = 'user'
+      AND authn_user_id IS NOT NULL
+    )
+    OR (
+      role = 'assistant'
+      AND authn_user_id IS NULL
     )
   )
 );

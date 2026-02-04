@@ -6,7 +6,8 @@ FROM
 WHERE
   question_id = $question_id
 ORDER BY
-  created_at ASC;
+  created_at ASC,
+  id ASC;
 
 -- BLOCK select_ai_question_generation_context_messages
 SELECT
@@ -17,4 +18,5 @@ WHERE
   question_id = $question_id
   AND include_in_context = TRUE
 ORDER BY
-  created_at ASC;
+  created_at ASC,
+  id ASC;

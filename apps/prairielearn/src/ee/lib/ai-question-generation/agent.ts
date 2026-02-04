@@ -550,6 +550,7 @@ export async function editQuestionWithAgent({
   // Insert the prompt as a message.
   await execute(sql.insert_user_message, {
     question_id: question.id,
+    authn_user_id: authnUser.id,
     parts: JSON.stringify(userMessageParts ?? [{ type: 'text' as const, text: prompt! }]),
   });
 
