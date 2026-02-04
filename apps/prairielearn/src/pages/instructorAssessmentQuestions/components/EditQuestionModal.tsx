@@ -53,6 +53,7 @@ export function EditQuestionModal({
   show,
   data,
   onHide,
+  onExited,
   handleUpdateQuestion,
   assessmentType,
   onPickQuestion,
@@ -61,6 +62,7 @@ export function EditQuestionModal({
   show: boolean;
   data: EditQuestionModalData | null;
   onHide: () => void;
+  onExited?: () => void;
   handleUpdateQuestion: (
     updatedQuestion: ZoneQuestionBlockForm | QuestionAlternativeForm,
     newQuestionData: StaffAssessmentQuestionRow | undefined,
@@ -154,7 +156,7 @@ export function EditQuestionModal({
   });
 
   return (
-    <Modal show={show} onHide={onHide}>
+    <Modal show={show} onHide={onHide} onExited={onExited}>
       <Modal.Header closeButton>
         <Modal.Title>{type === 'create' ? 'Add question' : 'Edit question'}</Modal.Title>
       </Modal.Header>

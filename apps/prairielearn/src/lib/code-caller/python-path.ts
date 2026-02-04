@@ -20,6 +20,6 @@ export async function getPythonPath(): Promise<string> {
 
   throw new Error(
     `Python venv not found. Please set up a virtual environment with ${PYTHON_VERSION}. ` +
-      'See https://prairielearn.readthedocs.io/en/latest/installingLocal/ for instructions.',
+      'See https://docs.prairielearn.com/installingLocal/ for instructions.',
   );
 }
