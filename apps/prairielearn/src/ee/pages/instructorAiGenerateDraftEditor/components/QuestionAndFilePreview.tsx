@@ -3,10 +3,14 @@ import { type Ref, useCallback, useEffect, useImperativeHandle, useRef } from 'r
 import { b64DecodeUnicode } from '../../../../lib/base64-util.js';
 import RichTextEditor from '../RichTextEditor/index.js';
 
-import { QuestionCodeEditors } from './QuestionCodeEditors.js';
+import { QuestionCodeEditors, type QuestionCodeEditorsHandle } from './QuestionCodeEditors.js';
 
 export interface NewVariantHandle {
   newVariant: () => void;
+}
+
+export interface CodeEditorsHandle {
+  discardChanges: () => void;
 }
 
 interface VariantResponse {
@@ -215,8 +219,7 @@ function useQuestionHtml({
           if (!res.ok) throw new Error(`Server returned status ${res.status}`);
           if (!wrapperRef.current) return;
 
-          const { questionContainerHtml, extraHeadersHtml } =
-            (await res.json()) as VariantResponse;
+          const { questionContainerHtml, extraHeadersHtml } = (await res.json()) as VariantResponse;
           // Inject question-specific assets before executing inline scripts in the new container.
           await syncQuestionAssets(extraHeadersHtml);
           replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
@@ -237,8 +240,7 @@ function useQuestionHtml({
         if (!res.ok) throw new Error(`Server returned status ${res.status}`);
         if (!wrapperRef.current) return;
 
-        const { questionContainerHtml, extraHeadersHtml } =
-          (await res.json()) as VariantResponse;
+        const { questionContainerHtml, extraHeadersHtml } = (await res.json()) as VariantResponse;
         // Inject question-specific assets before executing inline scripts in the new container.
         await syncQuestionAssets(extraHeadersHtml);
         replaceQuestionContainer(wrapperRef.current, questionContainerHtml);
@@ -298,6 +300,7 @@ export function QuestionAndFilePreview({
   variantUrl,
   variantCsrfToken,
   newVariantRef,
+  codeEditorsRef,
   isGenerating,
   onHasUnsavedChanges,
   filesError,
@@ -310,15 +313,22 @@ export function QuestionAndFilePreview({
   variantUrl: string;
   variantCsrfToken: string;
   newVariantRef: Ref<NewVariantHandle>;
+  codeEditorsRef?: Ref<CodeEditorsHandle>;
   isGenerating: boolean;
   onHasUnsavedChanges?: (hasChanges: boolean) => void;
   filesError?: Error | null;
   onRetryFiles?: () => void;
 }) {
   const { wrapperRef, newVariant } = useQuestionHtml({ variantUrl, variantCsrfToken });
+  const internalCodeEditorsRef = useRef<QuestionCodeEditorsHandle>(null);
 
   // Allow the caller to request a new variant.
   useImperativeHandle(newVariantRef, () => ({ newVariant }));
+
+  // Allow the caller to discard code editor changes.
+  useImperativeHandle(codeEditorsRef, () => ({
+    discardChanges: () => internalCodeEditorsRef.current?.discardChanges(),
+  }));
 
   return (
     <div className="tab-content" style={{ height: '100%' }}>
@@ -339,6 +349,7 @@ export function QuestionAndFilePreview({
           csrfToken={csrfToken}
           isGenerating={isGenerating}
           filesError={filesError}
+          editorRef={internalCodeEditorsRef}
           onHasChangesChange={onHasUnsavedChanges}
           onRetryFiles={onRetryFiles}
         />

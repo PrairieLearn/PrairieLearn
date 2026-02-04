@@ -7,7 +7,11 @@ import type { QuestionGenerationUIMessage } from '../../../lib/ai-question-gener
 
 import { AiQuestionGenerationChat } from './AiQuestionGenerationChat.js';
 import { FinalizeModal } from './FinalizeModal.js';
-import { type NewVariantHandle, QuestionAndFilePreview } from './QuestionAndFilePreview.js';
+import {
+  type CodeEditorsHandle,
+  type NewVariantHandle,
+  QuestionAndFilePreview,
+} from './QuestionAndFilePreview.js';
 
 async function fetchQuestionFiles(
   urlPrefix: string,
@@ -52,6 +56,7 @@ function AiQuestionGenerationEditorInner({
   const [isGenerating, setIsGenerating] = useState(false);
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
   const newVariantRef = useRef<NewVariantHandle>(null);
+  const codeEditorsRef = useRef<CodeEditorsHandle>(null);
 
   const {
     data: questionFiles,
@@ -82,6 +87,7 @@ function AiQuestionGenerationEditorInner({
         urlPrefix={urlPrefix}
         refreshQuestionPreview={() => newVariantRef.current?.newVariant()}
         hasUnsavedChanges={hasUnsavedChanges}
+        discardUnsavedChanges={() => codeEditorsRef.current?.discardChanges()}
         onGeneratingChange={setIsGenerating}
         onGenerationComplete={() => refetchFiles()}
       />
@@ -134,6 +140,7 @@ function AiQuestionGenerationEditorInner({
           variantUrl={variantUrl}
           variantCsrfToken={variantCsrfToken}
           newVariantRef={newVariantRef}
+          codeEditorsRef={codeEditorsRef}
           isGenerating={isGenerating}
           filesError={filesError}
           onHasUnsavedChanges={setHasUnsavedChanges}

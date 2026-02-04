@@ -1,7 +1,12 @@
 import ace from 'ace-builds';
-import { useEffect, useRef, useState } from 'react';
+import { type Ref, useEffect, useImperativeHandle, useRef, useState } from 'react';
 
 import { b64EncodeUnicode } from '../../../../lib/base64-util.js';
+
+export interface QuestionCodeEditorsHandle {
+  /** Resets the editor contents to match the current saved state (htmlContents/pythonContents props). */
+  discardChanges: () => void;
+}
 
 export function QuestionCodeEditors({
   htmlContents,
@@ -11,6 +16,7 @@ export function QuestionCodeEditors({
   onHasChangesChange,
   filesError,
   onRetryFiles,
+  editorRef,
 }: {
   htmlContents: string | null;
   pythonContents: string | null;
@@ -19,29 +25,33 @@ export function QuestionCodeEditors({
   onHasChangesChange?: (hasChanges: boolean) => void;
   filesError?: Error | null;
   onRetryFiles?: () => void;
+  editorRef?: Ref<QuestionCodeEditorsHandle>;
 }) {
-  const htmlEditorRef = useRef<HTMLDivElement>(null);
-  const pythonEditorRef = useRef<HTMLDivElement>(null);
+  const htmlEditorContainerRef = useRef<HTMLDivElement>(null);
+  const pythonEditorContainerRef = useRef<HTMLDivElement>(null);
   const htmlEditorInstanceRef = useRef<ace.Ace.Editor | null>(null);
   const pythonEditorInstanceRef = useRef<ace.Ace.Editor | null>(null);
 
+  // Track what we last synced to detect when props change externally.
+  const syncedHtmlRef = useRef(htmlContents ?? '');
+  const syncedPythonRef = useRef(pythonContents ?? '');
+
   const [htmlValue, setHtmlValue] = useState(htmlContents ?? '');
   const [pythonValue, setPythonValue] = useState(pythonContents ?? '');
-  const [hasChanges, setHasChanges] = useState(false);
 
-  // Notify parent of changes. This needs to use an effect because the state
-  // is managed locally and we need to inform the parent when it changes.
+  // Derive hasChanges by comparing current editor state to props.
+  const hasChanges = htmlValue !== (htmlContents ?? '') || pythonValue !== (pythonContents ?? '');
+
+  // Notify parent when hasChanges changes.
   useEffect(() => {
     // eslint-disable-next-line react-you-might-not-need-an-effect/no-pass-live-state-to-parent
     onHasChangesChange?.(hasChanges);
   }, [hasChanges, onHasChangesChange]);
 
-  // Initialize ACE editors.
-  // TODO: this doesn't have any sensible undo story. Should it?
+  // Initialize ACE editors once on mount.
   useEffect(() => {
-    if (!htmlEditorRef.current || !pythonEditorRef.current) return;
+    if (!htmlEditorContainerRef.current || !pythonEditorContainerRef.current) return;
 
-    // Configure ACE base path from meta tag
     const aceBasePath = document.querySelector<HTMLMetaElement>(
       'meta[name="ace-base-path"]',
     )?.content;
@@ -49,66 +59,78 @@ export function QuestionCodeEditors({
       ace.config.set('basePath', aceBasePath);
     }
 
-    // Initialize HTML editor
-    const htmlEditor = ace.edit(htmlEditorRef.current, {
+    const htmlEditor = ace.edit(htmlEditorContainerRef.current, {
       mode: 'ace/mode/html',
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
     });
-    htmlEditor.getSession().setValue(htmlContents ?? '');
+    htmlEditor.getSession().setValue(syncedHtmlRef.current);
     htmlEditor.getSession().setTabSize(2);
     htmlEditor.gotoLine(1, 0, false);
     htmlEditorInstanceRef.current = htmlEditor;
 
-    // Initialize Python editor
-    const pythonEditor = ace.edit(pythonEditorRef.current, {
+    const pythonEditor = ace.edit(pythonEditorContainerRef.current, {
       mode: 'ace/mode/python',
       enableKeyboardAccessibility: true,
       theme: 'ace/theme/chrome',
     });
-    pythonEditor.getSession().setValue(pythonContents ?? '');
+    pythonEditor.getSession().setValue(syncedPythonRef.current);
     pythonEditor.gotoLine(1, 0, false);
     pythonEditorInstanceRef.current = pythonEditor;
 
-    // Track changes
-    const handleHtmlChange = () => {
-      const newValue = htmlEditor.getValue();
-      setHtmlValue(newValue);
-      setHasChanges(
-        newValue !== (htmlContents ?? '') || pythonEditor.getValue() !== (pythonContents ?? ''),
-      );
-    };
-
-    const handlePythonChange = () => {
-      const newValue = pythonEditor.getValue();
-      setPythonValue(newValue);
-      setHasChanges(
-        htmlEditor.getValue() !== (htmlContents ?? '') || newValue !== (pythonContents ?? ''),
-      );
-    };
-
-    htmlEditor.getSession().on('change', handleHtmlChange);
-    pythonEditor.getSession().on('change', handlePythonChange);
-
-    // Reset state to match new content. This is necessary because setValue()
-    // is called before the change handlers are attached, so the handlers don't
-    // run and the state remains stale from previous content.
-    //
-    // TODO: can we do this in a wey that keeps the linter happy?
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setHtmlValue(htmlContents ?? '');
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect
-    setPythonValue(pythonContents ?? '');
-    // eslint-disable-next-line @eslint-react/hooks-extra/no-direct-set-state-in-use-effect, react-you-might-not-need-an-effect/no-adjust-state-on-prop-change
-    setHasChanges(false);
+    // Update state when editor content changes (user edits or programmatic setValue).
+    htmlEditor.getSession().on('change', () => setHtmlValue(htmlEditor.getValue()));
+    pythonEditor.getSession().on('change', () => setPythonValue(pythonEditor.getValue()));
 
     return () => {
       htmlEditor.destroy();
       pythonEditor.destroy();
     };
+  }, []);
+
+  // Sync editor content when props change (e.g., after AI updates or saves).
+  useEffect(() => {
+    const htmlEditor = htmlEditorInstanceRef.current;
+    const pythonEditor = pythonEditorInstanceRef.current;
+    if (!htmlEditor || !pythonEditor) return;
+
+    const newHtml = htmlContents ?? '';
+    const newPython = pythonContents ?? '';
+
+    if (newHtml !== syncedHtmlRef.current || newPython !== syncedPythonRef.current) {
+      syncedHtmlRef.current = newHtml;
+      syncedPythonRef.current = newPython;
+
+      htmlEditor.getSession().setValue(newHtml);
+      pythonEditor.getSession().setValue(newPython);
+
+      // Clear undo history so users can't undo past this point.
+      htmlEditor.getSession().getUndoManager().reset();
+      pythonEditor.getSession().getUndoManager().reset();
+
+      htmlEditor.gotoLine(1, 0, false);
+      pythonEditor.gotoLine(1, 0, false);
+    }
   }, [htmlContents, pythonContents]);
 
-  // Set read-only mode when generating.
+  useImperativeHandle(editorRef, () => ({
+    discardChanges: () => {
+      const htmlEditor = htmlEditorInstanceRef.current;
+      const pythonEditor = pythonEditorInstanceRef.current;
+      if (!htmlEditor || !pythonEditor) return;
+
+      htmlEditor.getSession().setValue(syncedHtmlRef.current);
+      pythonEditor.getSession().setValue(syncedPythonRef.current);
+
+      htmlEditor.getSession().getUndoManager().reset();
+      pythonEditor.getSession().getUndoManager().reset();
+
+      htmlEditor.gotoLine(1, 0, false);
+      pythonEditor.gotoLine(1, 0, false);
+    },
+  }));
+
+  // Forbid manual edits while the agent is working.
   useEffect(() => {
     htmlEditorInstanceRef.current?.setReadOnly(isGenerating);
     pythonEditorInstanceRef.current?.setReadOnly(isGenerating);
@@ -163,14 +185,14 @@ export function QuestionCodeEditors({
         style={{ overflow: 'hidden' }}
       >
         <div className="py-2 px-3 font-monospace bg-light">question.html</div>
-        <div ref={htmlEditorRef} className="flex-grow-1" />
+        <div ref={htmlEditorContainerRef} className="flex-grow-1" />
       </div>
       <div
         className="editor-pane-python d-flex flex-column border rounded"
         style={{ overflow: 'hidden' }}
       >
         <div className="py-2 px-3 font-monospace bg-light">server.py</div>
-        <div ref={pythonEditorRef} className="flex-grow-1" />
+        <div ref={pythonEditorContainerRef} className="flex-grow-1" />
       </div>
     </div>
   );

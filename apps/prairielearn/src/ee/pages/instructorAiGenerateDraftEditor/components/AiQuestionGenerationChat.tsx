@@ -494,6 +494,7 @@ export function AiQuestionGenerationChat({
   onGeneratingChange,
   onGenerationComplete,
   hasUnsavedChanges,
+  discardUnsavedChanges,
 }: {
   chatCsrfToken: string;
   initialMessages: QuestionGenerationUIMessage[];
@@ -503,7 +504,8 @@ export function AiQuestionGenerationChat({
   refreshQuestionPreview: () => void;
   onGeneratingChange?: (isGenerating: boolean) => void;
   onGenerationComplete?: () => void;
-  hasUnsavedChanges?: boolean;
+  hasUnsavedChanges: boolean;
+  discardUnsavedChanges: () => void;
 }) {
   const [refreshQuestionPreviewAfterChanges, setRefreshQuestionPreviewAfterChanges] =
     useState(true);
@@ -759,6 +761,9 @@ export function AiQuestionGenerationChat({
             className="btn btn-primary"
             onClick={() => {
               setShowUnsavedChangesModal(false);
+              // Immediately discard the unsaved changes so the user sees the
+              // editor state revert to the last saved version.
+              discardUnsavedChanges();
               const text = promptInput.trim();
               if (text) {
                 void sendMessage({ text });

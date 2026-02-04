@@ -22,6 +22,7 @@ import {
   tool,
 } from 'ai';
 import klaw from 'klaw';
+import memoize from 'p-memoize';
 import z from 'zod';
 
 import { execute, loadSql, loadSqlEquiv, queryOptionalRow, queryRow } from '@prairielearn/postgres';
@@ -141,6 +142,68 @@ export type QuestionGenerationUIMessage = UIMessage<
 >;
 
 export type QuestionGenerationToolUIPart = ToolUIPart<QuestionGenerationUIMessageTools>;
+
+/** Loads element documentation files. Cached in production for performance. */
+const getElementDocs = memoize(
+  async (): Promise<DocumentChunk[]> => {
+    const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements');
+    const elementDocsFiles = await fs.readdir(elementDocsPath);
+    const elementDocs: DocumentChunk[] = [];
+    for (const file of elementDocsFiles) {
+      if (!file.endsWith('.md')) continue;
+      const text = await fs.readFile(path.join(elementDocsPath, file), { encoding: 'utf-8' });
+      const elementName = path.basename(file, '.md');
+
+      if (SUPPORTED_ELEMENTS.has(elementName)) {
+        const context = buildContextForSingleElementDoc(text, elementName);
+        if (context) elementDocs.push(context);
+      }
+    }
+    return elementDocs;
+  },
+  { cacheKey: () => 'element-docs', shouldCacheResult: () => !config.devMode },
+);
+
+interface ExampleQuestionsResult {
+  exampleQuestions: Map<string, QuestionContext>;
+  exampleQuestionsByElement: DefaultMap<string, (QuestionContext & { qid: string })[]>;
+}
+
+/** Loads example questions from the template directory. Cached in production for performance. */
+const getExampleQuestions = memoize(
+  async (): Promise<ExampleQuestionsResult> => {
+    const exampleQuestions = new Map<string, QuestionContext>();
+    const exampleQuestionsByElement = new DefaultMap<string, (QuestionContext & { qid: string })[]>(
+      () => [],
+    );
+    const exampleCourseQuestionsPath = path.join(REPOSITORY_ROOT_PATH, 'exampleCourse/questions');
+    const templateQuestionsPath = path.join(exampleCourseQuestionsPath, 'template');
+    for await (const file of klaw(templateQuestionsPath)) {
+      if (file.stats.isDirectory()) continue;
+
+      const filename = path.basename(file.path);
+      if (filename !== 'question.html') continue;
+
+      const fileText = await fs.readFile(file.path, { encoding: 'utf-8' });
+      const questionContext = await buildContextForQuestion(path.dirname(file.path));
+      if (!questionContext) continue;
+
+      const qid = path.relative(exampleCourseQuestionsPath, path.dirname(file.path));
+      exampleQuestions.set(qid, questionContext);
+
+      for (const elementName of SUPPORTED_ELEMENT_NAMES) {
+        if (fileText.includes(`<${elementName}`)) {
+          exampleQuestionsByElement.getOrCreate(elementName).push({
+            ...questionContext,
+            qid,
+          });
+        }
+      }
+    }
+    return { exampleQuestions, exampleQuestionsByElement };
+  },
+  { cacheKey: () => 'example-questions', shouldCacheResult: () => !config.devMode },
+);
 
 function makeSystemPrompt({ isExistingQuestion }: { isExistingQuestion: boolean }) {
   return formatPrompt([
@@ -264,53 +327,10 @@ export async function createQuestionGenerationAgent({
     }
   }
 
-  // TODO: global cache or TTL cache of these?
-  const elementDocsPath = path.join(REPOSITORY_ROOT_PATH, 'docs/elements');
-  const elementDocsFiles = await fs.readdir(elementDocsPath);
-  const elementDocs: DocumentChunk[] = [];
-  for (const file of elementDocsFiles) {
-    if (!file.endsWith('.md')) continue;
-    const text = await fs.readFile(path.join(elementDocsPath, file), { encoding: 'utf-8' });
-    const elementName = path.basename(file, '.md');
-
-    // Don't show agents documentation for unsupported elements.
-    if (SUPPORTED_ELEMENTS.has(elementName)) {
-      const context = buildContextForSingleElementDoc(text, elementName);
-      if (context) elementDocs.push(context);
-    }
-  }
-
-  // TODO: ditto, cache these?
-  // This is a map from element name to example questions that use that element.
-  const exampleQuestions = new Map<string, QuestionContext>();
-  const exampleQuestionsByElement = new DefaultMap<string, (QuestionContext & { qid: string })[]>(
-    () => [],
-  );
-  const exampleCourseQuestionsPath = path.join(REPOSITORY_ROOT_PATH, 'exampleCourse/questions');
-  const templateQuestionsPath = path.join(exampleCourseQuestionsPath, 'template');
-  for await (const file of klaw(templateQuestionsPath)) {
-    if (file.stats.isDirectory()) continue;
-
-    const filename = path.basename(file.path);
-    if (filename !== 'question.html') continue;
-
-    const fileText = await fs.readFile(file.path, { encoding: 'utf-8' });
-    const questionContext = await buildContextForQuestion(path.dirname(file.path));
-    if (!questionContext) continue;
-
-    const qid = path.relative(exampleCourseQuestionsPath, path.dirname(file.path));
-    exampleQuestions.set(qid, questionContext);
-
-    // Dumb and dirty.
-    for (const elementName of SUPPORTED_ELEMENT_NAMES) {
-      if (fileText.includes(`<${elementName}`)) {
-        exampleQuestionsByElement.getOrCreate(elementName).push({
-          ...questionContext,
-          qid,
-        });
-      }
-    }
-  }
+  const [elementDocs, { exampleQuestions, exampleQuestionsByElement }] = await Promise.all([
+    getElementDocs(),
+    getExampleQuestions(),
+  ]);
 
   const systemPrompt = makeSystemPrompt({ isExistingQuestion });
 
