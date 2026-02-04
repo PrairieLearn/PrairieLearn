@@ -52,8 +52,6 @@ def check_attributes_rec(element: lxml.html.HtmlElement) -> None:
 
     name = element.tag
     attributes = elements.get_attributes(name)
-    if name == "pl-drawing":
-        attributes += ["weight", "allow-blank", "show-score"]
 
     if elements.should_validate_attributes(name):
         try:
