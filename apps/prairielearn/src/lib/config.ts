@@ -90,7 +90,7 @@ export const ConfigSchema = z.object({
    * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
-  nonVolatileRedisUrl: z.string().nullable().default(null),
+  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -323,7 +323,7 @@ export const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('redis'),
   cacheKeyPrefix: z
     .string()
     .default('prairielearn-cache:')

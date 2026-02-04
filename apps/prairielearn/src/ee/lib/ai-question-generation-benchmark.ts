@@ -7,8 +7,9 @@ import fs from 'fs-extra';
 import * as tmp from 'tmp-promise';
 import { z } from 'zod';
 
-import { type OpenAIModelId, formatPrompt } from '../../lib/ai.js';
 import { b64DecodeUnicode } from '../../lib/base64-util.js';
+
+import { type OpenAIModelId, formatPrompt } from '../../lib/ai-util.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
 import { type User } from '../../lib/db-types.js';

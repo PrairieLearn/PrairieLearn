@@ -46,9 +46,6 @@ router.get(
           page: 'course_admin',
           subPage: 'topics',
         },
-        options: {
-          fullWidth: true,
-        },
         content: (
           <Hydrate>
             <TagsTopicsTable

@@ -28,7 +28,7 @@ import { execute, loadSql, loadSqlEquiv, queryOptionalRow, queryRow } from '@pra
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
 
-import { emptyUsage, formatPrompt } from '../../../lib/ai.js';
+import { emptyUsage, formatPrompt } from '../../../lib/ai-util.js';
 import { b64DecodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
 import { getCourseFilesClient } from '../../../lib/course-files-api.js';

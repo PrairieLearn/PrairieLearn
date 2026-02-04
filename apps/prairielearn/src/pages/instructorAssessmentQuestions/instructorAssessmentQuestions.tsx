@@ -10,7 +10,7 @@ import { compiledScriptTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 
 const router = Router();
 
@@ -41,7 +41,7 @@ router.get(
         },
         content: (
           <Hydrate>
-            <InstructorAssessmentQuestionsTable
+            <InstructorAssessmentQuestionsTableLegacy
               course={pageContext.course}
               questionRows={questionRows}
               urlPrefix={pageContext.urlPrefix}

@@ -1,5 +1,13 @@
 # @prairielearn/ui
 
+## 3.1.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/browser-utils@2.6.3
+
 ## 3.1.0
 
 ### Minor Changes
