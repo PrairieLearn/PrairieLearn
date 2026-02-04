@@ -8,6 +8,9 @@ import {
   zodToJsonSchema,
 } from 'zod-to-json-schema';
 
+import { DatetimeLocalStringSchema } from '@prairielearn/zod';
+
+import { AccessControlJsonSchema, DeadlineEntryJsonSchema } from './accessControl.js';
 import { CommentJsonSchema } from './comment.js';
 import {
   AdvanceScorePercJsonSchema,
@@ -190,6 +193,9 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
+    AccessControlJsonSchema,
+    DatetimeLocalStringSchema,
+    DeadlineEntryJsonSchema,
   },
 }) as JSONSchemaType<AssessmentJson>;
 

@@ -26,6 +26,7 @@ import * as syncCourseInfo from './fromDisk/courseInfo.js';
 import * as syncCourseInstances from './fromDisk/courseInstances.js';
 import * as syncQuestions from './fromDisk/questions.js';
 import * as syncSharingSets from './fromDisk/sharing.js';
+import { syncAccessControl } from './fromDisk/accessControl.js';
 import { syncStudentLabels } from './fromDisk/studentLabels.js';
 import * as syncTags from './fromDisk/tags.js';
 import * as syncTopics from './fromDisk/topics.js';
@@ -196,9 +197,22 @@ export async function syncDiskToSqlWithLock(
         3,
         async ([ciid, courseInstanceData]) => {
           const courseInstanceId = courseInstanceIds[ciid];
-          await timed(`Synced assessments for ${ciid}`, () =>
+          const assessmentIds = await timed(`Synced assessments for ${ciid}`, () =>
             syncAssessments.sync(courseId, courseInstanceId, courseInstanceData, questionIds),
           );
+
+          // Sync access control for assessments that define the modern accessControl property
+          if (assessmentIds) {
+            await timed(`Synced access control for ${ciid}`, async () => {
+              for (const [tid, assessment] of Object.entries(courseInstanceData.assessments)) {
+                const assessmentId = assessmentIds[tid];
+                const accessControlRules = assessment.data?.accessControl;
+                if (assessmentId && accessControlRules) {
+                  await syncAccessControl(courseInstanceId, assessmentId, accessControlRules);
+                }
+              }
+            });
+          }
         },
       );
     });

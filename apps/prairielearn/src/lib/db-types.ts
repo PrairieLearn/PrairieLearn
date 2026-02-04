@@ -226,6 +226,91 @@ export const SprocInstanceQuestionsNextAllowedGradeSchema = z.object({
 
 export const AccessLogSchema = null;
 
+export const AssessmentAccessControlSchema = z.object({
+  // After complete fields
+  after_complete_hide_questions: z.boolean().nullable(),
+  after_complete_hide_questions_again_date: DateFromISOString.nullable(),
+  after_complete_hide_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_hide_score: z.boolean().nullable(),
+  after_complete_show_questions_again_date: DateFromISOString.nullable(),
+  after_complete_show_questions_again_date_overridden: z.boolean().nullable(),
+  after_complete_show_score_again_date: DateFromISOString.nullable(),
+  after_complete_show_score_again_date_overridden: z.boolean().nullable(),
+
+  assessment_id: IdSchema,
+  block_access: z.boolean().nullable(),
+  course_instance_id: IdSchema,
+
+  // Date control fields
+  date_control_after_last_deadline_allow_submissions: z.boolean().nullable(),
+  date_control_after_last_deadline_credit: z.number().nullable(),
+  date_control_after_last_deadline_credit_overridden: z.boolean().nullable(),
+  date_control_due_date: DateFromISOString.nullable(),
+  date_control_due_date_overridden: z.boolean().nullable(),
+  date_control_duration_minutes: z.number().nullable(),
+  date_control_duration_minutes_overridden: z.boolean().nullable(),
+  date_control_early_deadlines_overridden: z.boolean().nullable(),
+  date_control_late_deadlines_overridden: z.boolean().nullable(),
+  date_control_overridden: z.boolean().nullable(),
+  date_control_password: z.string().nullable(),
+  date_control_password_overridden: z.boolean().nullable(),
+  date_control_release_date: DateFromISOString.nullable(),
+  date_control_release_date_overridden: z.boolean().nullable(),
+
+  enabled: z.boolean().nullable(),
+  id: IdSchema,
+  list_before_release: z.boolean().nullable(),
+  number: z.number().nullable(),
+
+  // PrairieTest control fields
+  prairietest_control_overridden: z.boolean().nullable(),
+
+  // Target type: 'none' for main rule (applies to all), 'enrollment' for individual students, 'student_label' for labels
+  target_type: z.enum(['none', 'enrollment', 'student_label']),
+});
+export type AssessmentAccessControl = z.infer<typeof AssessmentAccessControlSchema>;
+
+export const AssessmentAccessControlEarlyDeadlineSchema = z.object({
+  access_control_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AssessmentAccessControlEnrollmentSchema = z.object({
+  assessment_access_control_id: IdSchema,
+  enrollment_id: IdSchema,
+  id: IdSchema,
+  target_type: z.literal('enrollment'),
+});
+export type AssessmentAccessControlEnrollment = z.infer<
+  typeof AssessmentAccessControlEnrollmentSchema
+>;
+
+export const AssessmentAccessControlLateDeadlineSchema = z.object({
+  access_control_id: IdSchema,
+  credit: z.number().int(),
+  date: DateFromISOString,
+  id: IdSchema,
+});
+
+export const AssessmentAccessControlPrairietestExamSchema = z.object({
+  access_control_id: IdSchema,
+  id: IdSchema,
+  read_only: z.boolean(),
+  uuid: z.string(),
+});
+
+export const AssessmentAccessControlStudentLabelSchema = z.object({
+  assessment_access_control_id: IdSchema,
+  id: IdSchema,
+  student_label_id: IdSchema,
+  target_type: z.literal('student_label'),
+});
+export type AssessmentAccessControlStudentLabel = z.infer<
+  typeof AssessmentAccessControlStudentLabelSchema
+>;
+
 export const AccessTokenSchema = z.object({
   created_at: DateFromISOString,
   id: IdSchema,
@@ -1604,6 +1689,12 @@ export const TableNames = [
   'access_logs',
   'access_tokens',
   'administrators',
+  'assessment_access_control',
+  'assessment_access_control_early_deadline',
+  'assessment_access_control_enrollments',
+  'assessment_access_control_late_deadline',
+  'assessment_access_control_prairietest_exam',
+  'assessment_access_control_student_labels',
   'ai_grading_jobs',
   'ai_question_generation_prompts',
   'alternative_groups',
