@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import type { Brand } from '@prairielearn/utils';
 
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
@@ -22,7 +23,6 @@ import {
   SprocAuthzCourseSchema,
   type User,
 } from './db-types.js';
-import type { Brand } from './types.js';
 
 /**
  * This schema isn't used to directly validate the authz data that ends up in
@@ -68,13 +68,14 @@ export const PageAuthzDataSchema = RawPageAuthzDataSchema.extend({
   authn_user: StaffUserSchema,
 }).brand<'PageAuthzData'>();
 export type PageAuthzData = z.infer<typeof PageAuthzDataSchema>;
+type PageAuthzDataInput = z.input<typeof PageAuthzDataSchema>;
 
 export interface DangerousSystemAuthzData {
   authn_user: {
-    user_id: null;
+    id: null;
   };
   user: {
-    user_id: null;
+    id: null;
   };
 }
 
@@ -134,28 +135,40 @@ export type CourseOrInstanceContextData = z.infer<typeof CourseOrInstanceContext
 
 export type AuthzDataWithoutEffectiveUser = PlainAuthzData | DangerousSystemAuthzData;
 
-export type AuthzDataWithEffectiveUser = PageAuthzData | DangerousSystemAuthzData;
+export type AuthzDataWithEffectiveUser =
+  | RawPageAuthzData
+  | PageAuthzData
+  | DangerousSystemAuthzData;
 
 export type AuthzData = AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser;
 
-export type CourseInstanceRole =
-  | 'System'
-  | 'None'
-  | 'Student'
-  | 'Student Data Viewer'
-  | 'Student Data Editor'
-  // The role 'Any' is equivalent to 'Student' OR 'Student Data Viewer' OR 'Student Data Editor'
-  | 'Any';
+// More information about these roles can be found in the "Permission checking" section of the developer guide.
+
+export type SystemRole = 'System';
+
+export type StudentCourseInstanceRole = 'Student';
+
+export type InstructorCourseInstanceRole = 'Student Data Viewer' | 'Student Data Editor';
+
+export type CourseInstanceRole = StudentCourseInstanceRole | InstructorCourseInstanceRole;
+
+export type CourseRole = 'Previewer' | 'Viewer' | 'Editor' | 'Owner';
+
+export type Role =
+  | SystemRole
+  | StudentCourseInstanceRole
+  | InstructorCourseInstanceRole
+  | CourseRole;
 
 export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
   return {
     authn_user: {
-      // We use this structure with a user_id of null to indicate that the user is the system.
-      // Inserts into the audit_events table as a system user have a user_id of null.
-      user_id: null,
+      // We use this structure with a id of null to indicate that the user is the system.
+      // Inserts into the audit_events table as a system user have a id of null.
+      id: null,
     },
     user: {
-      user_id: null,
+      id: null,
     },
   };
 }
@@ -163,19 +176,21 @@ export function dangerousFullSystemAuthz(): DangerousSystemAuthzData {
 export function isDangerousFullSystemAuthz(
   authzData: AuthzDataWithoutEffectiveUser | AuthzDataWithEffectiveUser,
 ): authzData is DangerousSystemAuthzData {
-  return authzData.user.user_id === null;
+  return authzData.user.id === null;
 }
 
-export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole): boolean {
-  // You must set the requestedRole to 'System' when you use dangerousFullSystemAuthz.
+export function hasRole(authzData: AuthzData, requiredRole: Role[]): boolean {
+  /* System roles */
   if (isDangerousFullSystemAuthz(authzData)) {
-    return ['System', 'Any'].includes(requestedRole);
+    // You must include 'System' in the requiredRole when you use dangerousFullSystemAuthz.
+    return requiredRole.includes('System');
   }
 
+  /* Student course instance roles */
   if (
-    (requestedRole === 'Student' || requestedRole === 'Any') &&
+    requiredRole.includes('Student') &&
     authzData.has_student_access &&
-    // If the user is an instructor, and the requestedRole is student, this should fail.
+    // If the user is an instructor, and the requiredRole is student, this should fail.
     // We want to prevent instructors from calling functions that are only meant for students.
     //
     // This can happen if the instructor is in 'Student view' (with access restrictions) as well.
@@ -184,21 +199,35 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
     return true;
   }
 
+  /* Instructor course instance roles */
   if (
-    (requestedRole === 'Student Data Viewer' || requestedRole === 'Any') &&
+    requiredRole.includes('Student Data Viewer') &&
     authzData.has_course_instance_permission_view
   ) {
     return true;
   }
 
   if (
-    (requestedRole === 'Student Data Editor' || requestedRole === 'Any') &&
+    requiredRole.includes('Student Data Editor') &&
     authzData.has_course_instance_permission_edit
   ) {
     return true;
   }
 
-  if (requestedRole === 'None') {
+  /* Course roles */
+  if (requiredRole.includes('Previewer') && authzData.has_course_permission_preview) {
+    return true;
+  }
+
+  if (requiredRole.includes('Viewer') && authzData.has_course_permission_view) {
+    return true;
+  }
+
+  if (requiredRole.includes('Editor') && authzData.has_course_permission_edit) {
+    return true;
+  }
+
+  if (requiredRole.includes('Owner') && authzData.has_course_permission_own) {
     return true;
   }
 
@@ -206,30 +235,63 @@ export function hasRole(authzData: AuthzData, requestedRole: CourseInstanceRole)
 }
 
 /**
- * Asserts that the user has the requested role. It also asserts that
- * the requested role is one of the allowed roles.
- * If the model function enforces `requestedRole` at the type level, `allowedRoles` is not needed.
+ * Asserts that the requiredRole passed by the caller is allowed for the type of action being performed by the model function.
  *
- * For staff roles, it checks that you have at least the requested role.
- * role. If you have a more permissive role, you are allowed to perform the action.
+ * Most model functions enforce the required role at the type level, so this function is not needed.
+ * For model functions in which the authorization required depends on the action, this function can be used to
+ * check, at runtime, that the role is allowed for the action.
+ *
+ * This function is called by the model function to assert that the role is allowed for the model function.
+ *
+ * @param requiredRole The potential roles.
+ * @param permittedRoles The roles permitted for the action.
+ */
+export function assertRoleIsPermitted(requiredRole: Role[], permittedRoles: Role[]): void {
+  // Assert that requiredRole is a subset of allowedRoles
+  for (const role of requiredRole) {
+    if (!permittedRoles.includes(role)) {
+      throw new Error(
+        `Required role "${role}" is not permitted for this action. Permitted roles: "${permittedRoles.join('", "')}"`,
+      );
+    }
+  }
+}
+/**
+ * Asserts that the user has the required role. If requiredRole is a list of multiple roles,
+ * it asserts that the user has at least one of the required roles.
+ *
+ * @example
+ *
+ * ```typescript
+ * function myModelFunction(... : { authzData: AuthzData, requiredRole: ('Student' | 'Student Data Viewer' | 'Student Data Editor')[] }): void {
+ *   assertHasRole(authzData, requiredRole);
+ * }
+ *
+ * myModelFunction({ authzData, requiredRole: ['Student', 'Student Data Viewer'] });
+ * ```
+ *
+ * In this call, the model function requires that the user must be a Student, Student Data Viewer, or Student Data Editor.
+ *
+ * The caller of the model function wants to assert that the user is either a Student or Student Data Viewer.
+ *
+ * @example
+ * ```typescript
+ * function myModelFunction(... : { authzData: AuthzData, requiredRole: ('Student Data Viewer' | 'Student Data Editor')[] }): void {
+ *   assertHasRole(authzData, requiredRole);
+ * }
+ *
+ * myModelFunction({ authzData, requiredRole: ['Student Data Viewer'] });
+ * ```
+ *
+ * In this call, the model function requires that the user must be a Student Data Viewer or Student Data Editor.
+ *
+ * The caller of the model function wants to assert that the user has the Student Data Viewer role.
  *
  * @param authzData - The authorization data of the user.
- * @param requestedRole - The requested role from the caller of the model function.
- * @param allowedRoles - The allowed roles for the model function.
+ * @param requiredRole - The required role by the model function. Provided by the caller of the model function.
  */
-export function assertHasRole(
-  authzData: AuthzData,
-  requestedRole: CourseInstanceRole,
-  allowedRoles?: CourseInstanceRole[],
-): void {
-  if (allowedRoles && requestedRole !== 'Any' && !allowedRoles.includes(requestedRole)) {
-    // This suggests the code was called incorrectly (internal error).
-    throw new Error(
-      `Requested role "${requestedRole}" is not allowed for this action. Allowed roles: "${allowedRoles.join('", "')}"`,
-    );
-  }
-
-  if (!hasRole(authzData, requestedRole)) {
+export function assertHasRole(authzData: AuthzData, requiredRole: Role[]): void {
+  if (!hasRole(authzData, requiredRole)) {
     throw new HttpStatusError(403, 'Access denied');
   }
 }
@@ -250,4 +312,47 @@ export function calculateCourseInstanceRolePermissions(role: EnumCourseInstanceR
     ),
     has_course_instance_permission_edit: ['Student Data Editor'].includes(role),
   };
+}
+
+/**
+ * Converts a `PlainAuthzData` into a `PageAuthzData`. Assumes that the context
+ * in which this is called does not differentiate between authenticated user and
+ * effective user.
+ *
+ * This function is a temporary solution until we can add `is_administrator` to
+ * `PlainAuthzData` directly, and teach model functions how to work with both
+ * `PlainAuthzData` and `PageAuthzData`.
+ */
+export function makePageAuthzData({
+  authzData,
+  is_administrator,
+}: {
+  authzData: PlainAuthzData;
+  is_administrator: boolean;
+}): PageAuthzData {
+  const input: PageAuthzDataInput = {
+    ...authzData,
+    is_administrator,
+
+    authn_user: authzData.user,
+    authn_is_administrator: is_administrator,
+
+    authn_has_course_permission_preview: authzData.has_course_permission_preview,
+    authn_has_course_permission_view: authzData.has_course_permission_view,
+    authn_has_course_permission_edit: authzData.has_course_permission_edit,
+    authn_has_course_permission_own: authzData.has_course_permission_own,
+    authn_course_role: authzData.course_role,
+  };
+
+  if (authzData.course_instance_role != null) {
+    Object.assign(input, {
+      authn_course_instance_role: authzData.course_instance_role,
+      authn_has_course_instance_permission_view: authzData.has_course_instance_permission_view,
+      authn_has_course_instance_permission_edit: authzData.has_course_instance_permission_edit,
+      authn_has_student_access: authzData.has_student_access,
+      authn_has_student_access_with_enrollment: authzData.has_student_access_with_enrollment,
+    } satisfies Partial<PageAuthzDataInput>);
+  }
+
+  return PageAuthzDataSchema.parse(input);
 }

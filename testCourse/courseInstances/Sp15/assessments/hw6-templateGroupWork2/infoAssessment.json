@@ -4,12 +4,15 @@
   "title": "Group Activity Template 2",
   "set": "Homework",
   "number": "6",
-  "groupWork": true,
-  "groupMaxSize": 3,
-  "groupMinSize": 3,
-  "studentGroupCreate": true,
-  "studentGroupJoin": true,
-  "studentGroupLeave": true,
+  "groups": {
+    "minMembers": 3,
+    "maxMembers": 3,
+    "studentPermissions": {
+      "canCreateGroup": true,
+      "canJoinGroup": true,
+      "canLeaveGroup": true
+    }
+  },
   "allowAccess": [
     {
       "credit": 100,
@@ -33,5 +36,5 @@
       ]
     }
   ],
-  "text": "For this homework you can use the <a target=\"_blank\" href=\"<%= clientFilesCourse %>/formulas.pdf\">formula sheet</a>."
+  "text": "For this homework you can use the <a target=\"_blank\" href=\"{{ client_files_course }}/formulas.pdf\">formula sheet</a>."
 }

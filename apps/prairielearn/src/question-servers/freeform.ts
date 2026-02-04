@@ -3,8 +3,8 @@ import * as path from 'node:path';
 
 import * as async from 'async';
 import debugfn from 'debug';
+import { difference, isEmptyObject, isEqual, mapValues, omit, union } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import mustache from 'mustache';
 import objectHash from 'object-hash';
 
@@ -13,6 +13,7 @@ import { logger } from '@prairielearn/logger';
 import { instrumented, instrumentedWithMetrics, metrics } from '@prairielearn/opentelemetry';
 import { run } from '@prairielearn/run';
 import * as Sentry from '@prairielearn/sentry';
+import { assertNever } from '@prairielearn/utils';
 
 import * as assets from '../lib/assets.js';
 import { canonicalLogger } from '../lib/canonical-logger.js';
@@ -24,7 +25,7 @@ import { idsEqual } from '../lib/id.js';
 import { isEnterprise } from '../lib/license.js';
 import * as markdown from '../lib/markdown.js';
 import { APP_ROOT_PATH } from '../lib/paths.js';
-import { assertNever } from '../lib/types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
 import { getOrUpdateCourseCommitHash } from '../models/course.js';
 import {
   type ElementCoreJson,
@@ -64,7 +65,10 @@ interface QuestionProcessingContext {
   course_element_extensions: ElementExtensionNameDirMap;
 }
 
-type ElementExtensionNameDirMap = Record<string, Record<string, ElementExtensionJsonExtension>>;
+export type ElementExtensionNameDirMap = Record<
+  string,
+  Record<string, ElementExtensionJsonExtension>
+>;
 type ElementNameMap = Record<
   string,
   ((ElementCoreJson & { type: 'core' }) | (ElementCourseJson & { type: 'course' })) & {
@@ -137,7 +141,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
   let files: string[];
   try {
     files = await fs.readdir(sourceDir);
-  } catch (err) {
+  } catch (err: any) {
     if (err?.code === 'ENOENT') {
       // Directory doesn't exist, most likely a course with no elements.
       // Proceed with an empty object.
@@ -160,7 +164,7 @@ async function loadElements(sourceDir: string, elementType: 'core' | 'course') {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJSON(elementInfoPath);
-    } catch (err) {
+    } catch (err: any) {
       if (err?.code === 'ENOENT') {
         // This must not be an element directory, skip it
         return;
@@ -224,7 +228,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
   let elementFolders: string[];
   try {
     elementFolders = await fs.readdir(sourceDir);
-  } catch (err) {
+  } catch (err: any) {
     if (err.code === 'ENOENT') {
       // We don't really care if there are no extensions, just return an empty object.
       return {};
@@ -258,7 +262,7 @@ export async function loadExtensions(sourceDir: string, runtimeDir: string) {
     let rawInfo: any;
     try {
       rawInfo = await fs.readJson(infoPath);
-    } catch (err) {
+    } catch (err: any) {
       if (err.code === 'ENOENT') {
         // Not an extension directory, skip it.
         return;
@@ -372,7 +376,7 @@ async function execPythonServer(
     );
     debug('execPythonServer(): completed');
     return { result, output };
-  } catch (err) {
+  } catch (err: any) {
     if (err instanceof FunctionMissingError) {
       // function wasn't present in server
       debug('execPythonServer(): function not present');
@@ -436,7 +440,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
       if (!Object.prototype.hasOwnProperty.call(origData, prop)) {
         return `"${prop}" is missing from "origData"`;
       }
-      if (!_.isEqual(data[prop], origData[prop])) {
+      if (!isEqual(data[prop], origData[prop])) {
         return `data.${prop} has been illegally modified, new value: "${JSON.stringify(
           data[prop],
         )}", original value: "${JSON.stringify(origData[prop])}"`;
@@ -477,7 +481,7 @@ function checkData(data: Record<string, any>, origData: Record<string, any>, pha
              || checkProp('answers_names',         'object',  ['prepare'],                          ['prepare']);
   if (err) return err;
 
-  const extraProps = _.difference(Object.keys(data), checked);
+  const extraProps = difference(Object.keys(data), checked);
   if (extraProps.length > 0) return `"data" has invalid extra keys: ${extraProps.join(', ')}`;
 
   return null;
@@ -514,7 +518,7 @@ async function processQuestionPhase<T>(
     );
     result = res.result;
     output = res.output;
-  } catch (err) {
+  } catch (err: any) {
     courseIssues.push(
       new CourseIssueError(err.message, {
         data: err.data,
@@ -577,7 +581,7 @@ async function processQuestionHtml<T extends ExecutionData>(
   let html: string;
   try {
     html = await execTemplate(htmlFilename, data);
-  } catch (err) {
+  } catch (err: any) {
     return {
       courseIssues: [new CourseIssueError(`${htmlFilename}: ${err.toString()}`, { fatal: true })],
       data,
@@ -652,7 +656,7 @@ async function processQuestionServer<T extends ExecutionData>(
   let result, output;
   try {
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
-  } catch (err) {
+  } catch (err: any) {
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
       new CourseIssueError(`${serverFile}: Error calling ${phase}(): ${err.toString()}`, {
@@ -880,7 +884,7 @@ async function renderPanel(
   variant: Variant,
   submission: Submission | null,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   debug(`renderPanel(${panel})`);
@@ -1025,7 +1029,7 @@ async function renderPanelInstrumented(
   variant: Variant,
   question: Question,
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
   context: QuestionProcessingContext,
 ): Promise<RenderPanelResult> {
   return instrumented(`freeform.renderPanel:${panel}`, async (span) => {
@@ -1056,7 +1060,7 @@ export async function render(
   submission: Submission | null,
   submissions: Submission[],
   course: Course,
-  locals: Record<string, any>,
+  locals: UntypedResLocals,
 ): QuestionServerReturnValue<RenderResultData> {
   return instrumented('freeform.render', async () => {
     debug('render()');
@@ -1089,30 +1093,33 @@ export async function render(
 
         courseIssues.push(...newCourseIssues);
         htmls.questionHtml = html;
-        allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+        allRenderedElementNames = union(allRenderedElementNames, renderedElementNames ?? []);
       }
 
       if (renderSelection.submissions) {
-        htmls.submissionHtmls = await async.mapSeries(submissions, async (submission) => {
-          const {
-            courseIssues: newCourseIssues,
-            html,
-            renderedElementNames,
-          } = await renderPanelInstrumented(
-            'submission',
-            codeCaller,
-            submission,
-            variant,
-            question,
-            course,
-            locals,
-            context,
-          );
+        htmls.submissionHtmls = await async.mapSeries(
+          submissions,
+          async (submission: Submission) => {
+            const {
+              courseIssues: newCourseIssues,
+              html,
+              renderedElementNames,
+            } = await renderPanelInstrumented(
+              'submission',
+              codeCaller,
+              submission,
+              variant,
+              question,
+              course,
+              locals,
+              context,
+            );
 
-          courseIssues.push(...newCourseIssues);
-          allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
-          return html;
-        });
+            courseIssues.push(...newCourseIssues);
+            allRenderedElementNames = union(allRenderedElementNames, renderedElementNames ?? []);
+            return html;
+          },
+        );
       }
 
       if (renderSelection.answer) {
@@ -1133,7 +1140,7 @@ export async function render(
 
         courseIssues.push(...newCourseIssues);
         htmls.answerHtml = html;
-        allRenderedElementNames = _.union(allRenderedElementNames, renderedElementNames);
+        allRenderedElementNames = union(allRenderedElementNames, renderedElementNames ?? []);
       }
 
       const extensions = context.course_element_extensions;
@@ -1165,7 +1172,9 @@ export async function render(
         if (!(type in dependencies)) continue;
 
         for (const dep of question.dependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           if (!dependencies[type].includes(dep)) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             dependencies[type].push(dep);
           }
         }
@@ -1192,8 +1201,8 @@ export async function render(
           );
         }
         if ('elementScripts' in elementDynamicDependencies) {
-          elementDynamicDependencies.elementScripts = _.mapValues(
-            elementDynamicDependencies.elementScripts,
+          elementDynamicDependencies.elementScripts = mapValues(
+            elementDynamicDependencies.elementScripts ?? {},
             (dep) => `${resolvedElement.name}/${dep}`,
           );
         }
@@ -1213,8 +1222,11 @@ export async function render(
 
           if (!(resolvedType in dependencies)) continue;
 
-          for (const dep of elementDependencies[type]) {
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+          for (const dep of elementDependencies[type] ?? []) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!dependencies[resolvedType].includes(dep)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dependencies[resolvedType].push(dep);
             }
           }
@@ -1231,17 +1243,26 @@ export async function render(
             return type;
           });
 
+          // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
           for (const key in elementDynamicDependencies[type]) {
+            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
             if (!Object.hasOwn(dynamicDependencies[resolvedType], key)) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] = elementDynamicDependencies[type][key];
             } else if (
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               dynamicDependencies[resolvedType][key] !== elementDynamicDependencies[type][key]
             ) {
               courseIssues.push(
                 new CourseIssueError(`Dynamic dependency ${key} assigned to conflicting files`, {
                   data: {
                     dependencyType: type,
-                    values: [dynamicDependencies[type][key], elementDynamicDependencies[type][key]],
+                    values: [
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      dynamicDependencies[resolvedType][key],
+                      // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                      elementDynamicDependencies[type][key],
+                    ],
                   },
                   fatal: true,
                 }),
@@ -1275,8 +1296,8 @@ export async function render(
               );
             }
             if ('extensionScripts' in extensionDynamic) {
-              extensionDynamic.extensionScripts = _.mapValues(
-                extensionDynamic.extensionScripts,
+              extensionDynamic.extensionScripts = mapValues(
+                extensionDynamic.extensionScripts ?? {},
                 (dep) => `${elementName}/${extensionName}/${dep}`,
               );
             }
@@ -1284,24 +1305,40 @@ export async function render(
             for (const type in extension) {
               if (!(type in dependencies)) continue;
 
-              for (const dep of extension[type]) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+              for (const dep of extension[type] ?? []) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!dependencies[type].includes(dep)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dependencies[type].push(dep);
                 }
               }
             }
             for (const type in extensionDynamic) {
+              // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
               for (const key in extensionDynamic[type]) {
+                // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                 if (!Object.hasOwn(dynamicDependencies[type], key)) {
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
                   dynamicDependencies[type][key] = extensionDynamic[type][key];
-                } else if (dynamicDependencies[type][key] !== extensionDynamic[type][key]) {
+                } else if (
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  dynamicDependencies[type][key] !==
+                  // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                  extensionDynamic[type][key]
+                ) {
                   courseIssues.push(
                     new CourseIssueError(
                       `Dynamic dependency ${key} assigned to conflicting files`,
                       {
                         data: {
                           dependencyType: type,
-                          values: [dynamicDependencies[type][key], extensionDynamic[type][key]],
+                          values: [
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            dynamicDependencies[type][key],
+                            // @ts-expect-error - freeform tracks dependencies in a way that is not type-safe.
+                            extensionDynamic[type][key],
+                          ],
                         },
                         fatal: true,
                       },
@@ -1376,20 +1413,20 @@ export async function render(
 
       const importMap = {
         imports: {
-          ..._.mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
+          ...mapValues(dynamicDependencies.nodeModulesScripts, (file) =>
             assets.nodeModulesAssetPath(file),
           ),
-          ..._.mapValues(
+          ...mapValues(
             dynamicDependencies.clientFilesCourseScripts,
             (file) => `${locals.urlPrefix}/clientFilesCourse/${file}`,
           ),
-          ..._.mapValues(dynamicDependencies.coreElementScripts, (file) =>
+          ...mapValues(dynamicDependencies.coreElementScripts, (file) =>
             assets.coreElementAssetPath(file),
           ),
-          ..._.mapValues(dynamicDependencies.courseElementScripts, (file) =>
+          ...mapValues(dynamicDependencies.courseElementScripts, (file) =>
             assets.courseElementAssetPath(course.commit_hash, courseElementUrlPrefix, file),
           ),
-          ..._.mapValues(dynamicDependencies.extensionScripts, (file) =>
+          ...mapValues(dynamicDependencies.extensionScripts, (file) =>
             assets.courseElementExtensionAssetPath(course.commit_hash, locals.urlPrefix, file),
           ),
         },
@@ -1413,7 +1450,7 @@ export async function render(
       const headerHtmls = [
         ...styleUrls.map((url) => `<link href="${url}" rel="stylesheet" />`),
         // The import map must come before any scripts that use imports
-        !_.isEmpty(importMap.imports)
+        !isEmptyObject(importMap.imports)
           ? `<script type="importmap">${JSON.stringify(importMap)}</script>`
           : '',
         // It's important that any library-style scripts come first
@@ -1696,7 +1733,7 @@ async function getCacheKey(
         // We deliberately exclude large user-controlled objects from the cache key.
         // Whenever these change, the `modified_at` column of `variants` and/or
         // `submissions` will change, which will cause the cache to be invalidated.
-        _.omit(data, [
+        omit(data, [
           'params',
           'correct_answers',
           'submitted_answers',
@@ -1772,7 +1809,7 @@ async function getCachedDataOrCompute(
 
     try {
       cachedData = await cache.get(cacheKey);
-    } catch (err) {
+    } catch (err: any) {
       // We don't actually want to fail if the cache has an error; we'll
       // just compute the cachedData as normal
       logger.error('Error in cache.get()', err);

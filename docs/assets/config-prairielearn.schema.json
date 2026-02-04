@@ -97,7 +97,7 @@
     },
     "nonVolatileRedisUrl": {
       "type": ["string", "null"],
-      "default": null
+      "default": "redis://localhost:6379"
     },
     "logFilename": {
       "type": "string",
@@ -672,7 +672,7 @@
     "nonVolatileCacheType": {
       "type": "string",
       "enum": ["none", "redis", "memory"],
-      "default": "none"
+      "default": "redis"
     },
     "cacheKeyPrefix": {
       "type": "string",
@@ -939,18 +939,6 @@
       "type": "string",
       "default": "development"
     },
-    "titleOverride": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterText": {
-      "type": ["string", "null"],
-      "default": null
-    },
-    "homepageFooterTextHref": {
-      "type": ["string", "null"],
-      "default": null
-    },
     "announcementHtml": {
       "type": ["string", "null"],
       "default": null
@@ -1091,6 +1079,10 @@
       "type": ["string", "null"],
       "default": null
     },
+    "aiGradingRateLimitDollars": {
+      "type": "number",
+      "default": 10
+    },
     "aiQuestionGenerationRateLimitDollars": {
       "type": "number",
       "default": 1
@@ -1145,13 +1137,6 @@
       "type": ["string", "null"],
       "default": null
     },
-    "pythonVenvSearchPaths": {
-      "type": "array",
-      "items": {
-        "type": "string"
-      },
-      "default": [".venv"]
-    },
     "costPerMillionTokens": {
       "type": "object",
       "additionalProperties": false,
@@ -1161,6 +1146,7 @@
         "gpt-5-2025-08-07",
         "gpt-5.1-2025-11-13",
         "gemini-2.5-flash",
+        "gemini-3-flash-preview",
         "gemini-3-pro-preview",
         "claude-opus-4-5",
         "claude-haiku-4-5",
@@ -1196,6 +1182,9 @@
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gemini-2.5-flash": {
+          "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
+        },
+        "gemini-3-flash-preview": {
           "$ref": "#/properties/costPerMillionTokens/properties/gpt-4o-2024-11-20"
         },
         "gemini-3-pro-preview": {
@@ -1237,6 +1226,11 @@
           "cachedInput": 0.03,
           "output": 2.5
         },
+        "gemini-3-flash-preview": {
+          "input": 0.5,
+          "cachedInput": 0.05,
+          "output": 3
+        },
         "gemini-3-pro-preview": {
           "input": 2,
           "cachedInput": 0.2,
@@ -1258,6 +1252,10 @@
           "output": 25
         }
       }
+    },
+    "exampleCoursePath": {
+      "type": "string",
+      "default": "./exampleCourse"
     }
   }
 }

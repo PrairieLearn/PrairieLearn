@@ -1,4 +1,4 @@
-import _ from 'lodash';
+import { difference } from 'es-toolkit';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 import type z from 'zod';
 
@@ -9,17 +9,24 @@ import * as helperDb from '../tests/helperDb.js';
 import * as DbSchemas from './db-types.js';
 import { TableNames } from './db-types.js';
 
-const schemaNameOverrides = {
-  // https://github.com/PrairieLearn/PrairieLearn/issues/12428
-  courses: null,
-  pl_courses: 'CourseSchema',
+const schemaNameOverrides: Record<string, string | null> = {
   last_accesses: 'LastAccessSchema',
   query_runs: 'QueryRunSchema',
   time_series: 'TimeSeriesSchema',
 };
 
 const customSchemas = new Set(['IdSchema', 'IntervalSchema']);
-const unusedSchemas = new Set(['JsonCommentSchema']);
+const unusedSchemas = new Set([
+  'JsonCommentSchema',
+  // TODO: Make these the primary schemas after renaming "teams" back to "groups"
+  // in the database.
+  'GroupSchema',
+  'GroupConfigSchema',
+  'GroupRoleSchema',
+  'GroupUserSchema',
+  'GroupUserRoleSchema',
+  'GroupLogSchema',
+]);
 
 function tableNameToSchemaName(tableName: string) {
   if (tableName in schemaNameOverrides) {
@@ -63,7 +70,7 @@ describe('Database Schema Sync Test', () => {
         continue;
       }
 
-      const schema = DbSchemas[schemaName];
+      const schema = (DbSchemas as Record<string, unknown>)[schemaName];
       if (schema === undefined) {
         throw new Error(`No schema mapping for table: ${tableName}`);
       }
@@ -78,8 +85,8 @@ describe('Database Schema Sync Test', () => {
 
       const dbColumnNames = data.tables[tableName].columns.map((column) => column.name);
       const schemaKeys = Object.keys((schema as z.ZodObject<any>).shape);
-      const extraColumns = _.difference(dbColumnNames, schemaKeys);
-      const missingColumns = _.difference(schemaKeys, dbColumnNames);
+      const extraColumns = difference(dbColumnNames, schemaKeys);
+      const missingColumns = difference(schemaKeys, dbColumnNames);
 
       if (extraColumns.length > 0 || missingColumns.length > 0) {
         const extraColumnsDiff = extraColumns.map((column) => `+ ${column}`).join('\n');
@@ -107,8 +114,8 @@ describe('Database Schema Sync Test', () => {
       throw new Error(`Unused schemas: ${remainingSchemas.join(', ')}`);
     }
 
-    const remainingTableNames = _.difference(nonPtTables, TableNames);
-    const remainingSchemaNames = _.difference(TableNames, nonPtTables);
+    const remainingTableNames = difference(nonPtTables, TableNames);
+    const remainingSchemaNames = difference(TableNames, nonPtTables);
     if (remainingTableNames.length > 0) {
       throw new Error(
         `table definitions missing from TableNames: ${remainingTableNames.join(', ')}`,

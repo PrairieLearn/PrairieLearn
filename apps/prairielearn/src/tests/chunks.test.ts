@@ -6,10 +6,11 @@ import { afterEach, assert, beforeEach, describe, expect, it } from 'vitest';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import * as chunksLib from '../lib/chunks.js';
 import { config } from '../lib/config.js';
-import { CourseSchema, IdSchema } from '../lib/db-types.js';
+import { CourseSchema } from '../lib/db-types.js';
 import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectCourseInstanceByShortName } from '../models/course-instances.js';
 import { selectCourseById } from '../models/course.js';
@@ -759,7 +760,7 @@ describe('chunks', () => {
       // Get the new course instance.
       const courseInstance = await selectCourseInstanceByShortName({
         course: await selectCourseById(courseId),
-        short_name: 'new',
+        shortName: 'new',
       });
 
       // Generate new chunks.
@@ -841,7 +842,7 @@ describe('chunks', () => {
       // Assert that we produced a course instance without sync errors/warnings.
       const newCourseInstance = await selectCourseInstanceByShortName({
         course: await selectCourseById(courseId),
-        short_name: 'new',
+        shortName: 'new',
       });
       assert.equal(newCourseInstance.id, courseInstance.id);
       expect(newCourseInstance.sync_errors).toBeFalsy();
@@ -927,6 +928,62 @@ describe('chunks', () => {
             chunk.type === 'clientFilesAssessment' && chunk.assessment_id === newAssessmentId,
         ),
       );
+    });
+
+    it('preserves relative symlinks with .. in serverFilesCourse', async () => {
+      const courseDir = tempTestCourseDir.path;
+      const courseRuntimeDir = chunksLib.getRuntimeDirectoryForCourse({
+        id: courseId,
+        path: courseDir,
+      });
+
+      // Create a serverFilesCourse directory with a file and a symlink that uses ..
+      const serverFilesDir = path.join(courseDir, 'serverFilesCourse');
+      const libDir = path.join(serverFilesDir, 'lib');
+      const utilsDir = path.join(serverFilesDir, 'utils');
+
+      await fs.ensureDir(libDir);
+      await fs.ensureDir(utilsDir);
+
+      // Create a shared file in lib/
+      const sharedFilePath = path.join(libDir, 'shared.py');
+      await fs.writeFile(sharedFilePath, '# Shared library code\n');
+
+      // Create a symlink in utils/ that points to ../lib/shared.py
+      const symlinkPath = path.join(utilsDir, 'shared.py');
+      await fs.symlink('../lib/shared.py', symlinkPath);
+
+      // Verify the symlink was created correctly
+      const originalLinkTarget = await fs.readlink(symlinkPath);
+      assert.equal(originalLinkTarget, '../lib/shared.py');
+
+      // Generate chunks for the test course
+      await chunksLib.updateChunksForCourse({
+        coursePath: courseDir,
+        courseId,
+        courseData: await courseDB.loadFullCourse(courseId, courseDir),
+      });
+
+      // Load and unpack the serverFilesCourse chunk
+      const chunksToLoad: chunksLib.Chunk[] = [{ type: 'serverFilesCourse' }];
+      await chunksLib.ensureChunksForCourseAsync(courseId, chunksToLoad);
+
+      // Verify the symlink exists in the unpacked chunk and has the correct target
+      const unpackedSymlinkPath = path.join(
+        courseRuntimeDir,
+        'serverFilesCourse',
+        'utils',
+        'shared.py',
+      );
+      const stat = await fs.lstat(unpackedSymlinkPath);
+      assert.isTrue(stat.isSymbolicLink(), 'Expected a symlink at utils/shared.py');
+
+      const unpackedLinkTarget = await fs.readlink(unpackedSymlinkPath);
+      assert.equal(unpackedLinkTarget, '../lib/shared.py', 'Symlink target should be preserved');
+
+      // Also verify the symlink resolves to the correct file
+      const resolvedContent = await fs.readFile(unpackedSymlinkPath, 'utf-8');
+      assert.equal(resolvedContent, '# Shared library code\n');
     });
 
     it('no-op update does not create duplicate chunks when IDs unchanged', async () => {

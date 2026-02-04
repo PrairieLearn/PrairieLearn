@@ -35,7 +35,7 @@ jobs:
       CAN_PUSH_IMAGE: ${{ secrets.DOCKERHUB_USERNAME != '' }}
 
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
         with:
           # We need the whole history so we can diff against `master` to determine
           # what images need to be built.
@@ -71,7 +71,7 @@ jobs:
         # We have tests for external grading code, which relies on the Docker
         # socket being available, as well as a specific volume mount and
         # environment variable. See the docs for more details:
-        # https://prairielearn.readthedocs.io/en/latest/externalGrading/#running-locally-for-development
+        # https://docs.prairielearn.com/externalGrading/#running-locally-for-development
         #
         # We put the Postgres data on a tmpfs volume, which should be much faster.
         run: |
@@ -99,7 +99,7 @@ jobs:
         shardIndex: [1, 2, 3, 4]
         shardTotal: [4]
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
 
       # We uninstall `man-db` to speed up the installation of other packages
       # by avoiding building man pages for them. As this is a non-interactive
@@ -109,9 +109,11 @@ jobs:
       # doesn't require it.
       - name: Install OS packages
         run: |
-          sudo apt-get update
           sudo apt-get purge -y man-db
-          sudo apt-get install -y --no-install-recommends git gcc libc6-dev graphviz libgraphviz-dev redis postgresql-16-pgvector
+          sudo apt-get install -y --no-install-recommends postgresql-common
+          # Configure Postgres repository, purge existing postgres version, and install v17
+          sudo /usr/share/postgresql-common/pgdg/apt.postgresql.org.sh -y -p -i -v 17
+          sudo apt-get install -y --no-install-recommends postgresql-17-pgvector git gcc libc6-dev graphviz libgraphviz-dev redis
 
       # The two `sed` commands are here to handle the fact that the default
       # configuration of Postgres on Ubuntu is to use `local` and `scram-sha-256`
@@ -123,10 +125,10 @@ jobs:
       # We also update the configuration to try to speed up Postgres itself.
       - name: Start Postgres
         run: |
-          sudo sed -i 's/ local/ trust/g' /etc/postgresql/16/main/pg_hba.conf
-          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/16/main/pg_hba.conf
+          sudo sed -i 's/ local/ trust/g' /etc/postgresql/17/main/pg_hba.conf
+          sudo sed -i 's/ scram-sha-256/ trust/g' /etc/postgresql/17/main/pg_hba.conf
 
-          sudo tee -a /etc/postgresql/16/main/postgresql.conf <<EOF
+          sudo tee -a /etc/postgresql/17/main/postgresql.conf <<EOF
           fsync = off
           full_page_writes = off
           synchronous_commit = off
@@ -137,8 +139,13 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
@@ -152,7 +159,7 @@ jobs:
       - name: Set up Python
         uses: actions/setup-python@v6
         with:
-          python-version: '3.10'
+          python-version: '3.13'
       - name: Install uv
         uses: astral-sh/setup-uv@v7
         with:
@@ -160,10 +167,12 @@ jobs:
           cache-dependency-glob: 'pyproject.toml'
           cache-suffix: core
       - name: Install core Python dependencies
+        env:
+          UV_LOCKED: 1
         run: make python-deps-core
 
       - name: Set up Turborepo cache
-        uses: actions/cache@v4
+        uses: actions/cache@v5
         with:
           path: .turbo/cache
           key: ${{ runner.os }}-turbo-${{ github.sha }}
@@ -178,17 +187,20 @@ jobs:
           git config --global user.name "Dev User"
           git config --global safe.directory '*'
 
-      - name: Test JavaScript code
+      - name: Vitest suite
         run: |
           make start-support
           yarn test --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
-          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
         env:
           SHARDED_TESTS: true
 
+      - name: Playwright suite
+        run: |
+          yarn workspace @prairielearn/prairielearn run test:e2e --shard=${{ matrix.shardIndex }}/${{ matrix.shardTotal }}
+
       - name: Upload Vitest blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: blob-report-${{ matrix.shardIndex }}
           path: .vitest-reports/*
@@ -196,7 +208,7 @@ jobs:
           retention-days: 1
       - name: Upload Playwright blob report to GitHub Actions Artifacts
         if: ${{ !cancelled() }}
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: playwright-blob-report-${{ matrix.shardIndex }}
           path: apps/prairielearn/test-results/blob-report/*
@@ -209,11 +221,11 @@ jobs:
     needs: [test-prairielearn-native]
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v5
+      - uses: actions/checkout@v6
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
@@ -221,7 +233,7 @@ jobs:
         # Note that this means playwright is installed in the root workspace, not the prairielearn workspace.
         run: yarn workspaces focus prairielearn
       - name: Download Vitest blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: .vitest-reports
           pattern: blob-report-*
@@ -230,7 +242,7 @@ jobs:
       - name: Merge Vitest reports
         run: yarn vitest --watch=false --merge-reports --coverage
       - name: Download Playwright blob reports from GitHub Actions Artifacts
-        uses: actions/download-artifact@v6
+        uses: actions/download-artifact@v7
         with:
           path: apps/prairielearn/test-results/blob-report
           pattern: playwright-blob-report-*
@@ -238,13 +250,18 @@ jobs:
       - name: Merge Playwright reports
         run: yarn playwright merge-reports --reporter html,github apps/prairielearn/test-results/blob-report
       - name: Upload JavaScript coverage report to Codecov
-        uses: codecov/codecov-action@v5.5.1
+        uses: codecov/codecov-action@v5.5.2
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           flags: javascript
       - name: Upload HTML report
-        uses: actions/upload-artifact@v5
+        uses: actions/upload-artifact@v6
         with:
           name: html-report--attempt-${{ github.run_attempt }}
           path: playwright-report
           retention-days: 7
+      # The merge-reports command always exits with 0, so we need to check if
+      # the test job succeeded and fail this job if it didn't.
+      - name: Fail if tests failed
+        if: ${{ needs.test-prairielearn-native.result != 'success' }}
+        run: exit 1

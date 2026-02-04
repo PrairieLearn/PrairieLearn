@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Popover } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -12,8 +12,6 @@ import { QueryClientProviderDebug } from '../../lib/client/tanstackQuery.js';
 import { CreateCourseInstanceModal } from './components/CreateCourseInstanceModal.js';
 import { EmptyState } from './components/EmptyState.js';
 import type { InstructorCourseAdminInstanceRow } from './instructorCourseAdminInstances.shared.js';
-
-const queryClient = new QueryClient();
 
 function renderPopoverStartDate(courseInstanceId: string) {
   // React Bootstrap's OverlayTrigger expects the overlay prop to be JSX (or a render function)
@@ -33,9 +31,7 @@ function renderPopoverStartDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>
@@ -60,9 +56,7 @@ function renderPopoverEndDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>
@@ -77,6 +71,7 @@ interface InstructorCourseAdminInstancesInnerProps {
   needToSync: boolean;
   csrfToken: string;
   urlPrefix: string;
+  isAdministrator: boolean;
 }
 
 export function InstructorCourseAdminInstancesInner({
@@ -86,6 +81,7 @@ export function InstructorCourseAdminInstancesInner({
   needToSync,
   csrfToken,
   urlPrefix,
+  isAdministrator,
 }: InstructorCourseAdminInstancesInnerProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
 
@@ -97,11 +93,12 @@ export function InstructorCourseAdminInstancesInner({
         show={showCreateModal}
         course={course}
         csrfToken={csrfToken}
+        isAdministrator={isAdministrator}
         onHide={() => setShowCreateModal(false)}
       />
 
-      <div class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center justify-content-between">
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center justify-content-between">
           <h1>Course instances</h1>
           {courseInstances.length > 0 && canCreateInstances && (
             <Button
@@ -110,18 +107,21 @@ export function InstructorCourseAdminInstancesInner({
               type="button"
               onClick={() => setShowCreateModal(true)}
             >
-              <i class="fa fa-plus" aria-hidden="true" />
-              <span class="d-none d-sm-inline">Add course instance</span>
+              <i className="fa fa-plus" aria-hidden="true" />
+              <span className="d-none d-sm-inline">Add course instance</span>
             </Button>
           )}
         </div>
         {courseInstances.length > 0 ? (
-          <div class="table-responsive">
-            <table class="table table-sm table-hover table-striped" aria-label="Course instances">
+          <div className="table-responsive">
+            <table
+              className="table table-sm table-hover table-striped"
+              aria-label="Course instances"
+            >
               <thead>
                 <tr>
                   <th>Long Name</th>
-                  <th>CIID</th>
+                  <th>Short name</th>
                   <th>Start date</th>
                   <th>End date</th>
                   <th>Students</th>
@@ -143,7 +143,7 @@ export function InstructorCourseAdminInstancesInner({
                       : '—';
                   return (
                     <tr key={row.id}>
-                      <td class="align-left">
+                      <td className="align-left">
                         {row.sync_errors ? (
                           <SyncProblemButton type="error" output={row.sync_errors} />
                         ) : row.sync_warnings ? (
@@ -153,8 +153,8 @@ export function InstructorCourseAdminInstancesInner({
                           {row.long_name}
                         </a>
                       </td>
-                      <td class="align-left">{row.short_name}</td>
-                      <td class="align-left">
+                      <td className="align-left">{row.short_name}</td>
+                      <td className="align-left">
                         {startDate}
                         {isLegacyStartDate ? (
                           <OverlayTrigger
@@ -169,15 +169,15 @@ export function InstructorCourseAdminInstancesInner({
                           >
                             <Button
                               variant="ghost"
-                              class="btn-xs"
+                              className="btn-xs"
                               aria-label="Information about start date"
                             >
-                              <i class="far fa-question-circle" aria-hidden="true" />
+                              <i className="far fa-question-circle" aria-hidden="true" />
                             </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
-                      <td class="align-left">
+                      <td className="align-left">
                         {endDate}
                         {isLegacyEndDate ? (
                           <OverlayTrigger
@@ -192,15 +192,15 @@ export function InstructorCourseAdminInstancesInner({
                           >
                             <Button
                               variant="ghost"
-                              class="btn-xs"
+                              className="btn-xs"
                               aria-label="Information about end date"
                             >
-                              <i class="far fa-question-circle" aria-hidden="true" />
+                              <i className="far fa-question-circle" aria-hidden="true" />
                             </Button>
                           </OverlayTrigger>
                         ) : null}
                       </td>
-                      <td class="align-middle">{row.enrollment_count}</td>
+                      <td className="align-middle">{row.enrollment_count}</td>
                     </tr>
                   );
                 })}
@@ -224,6 +224,7 @@ export function InstructorCourseAdminInstancesInner({
 export function InstructorCourseAdminInstances({
   ...props
 }: InstructorCourseAdminInstancesInnerProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <QueryClientProviderDebug client={queryClient}>
       <InstructorCourseAdminInstancesInner {...props} />

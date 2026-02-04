@@ -1,10 +1,11 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import * as ejs from 'ejs';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
+import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
@@ -14,15 +15,14 @@ import {
   AssessmentInstanceSchema,
   ClientFingerprintSchema,
   CourseSchema,
-  DateFromISOString,
-  IdSchema,
   QuestionSchema,
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
-import { getGroupId } from './groups.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
+import { getGroupId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -88,11 +88,18 @@ export function renderText(
   const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
 
   const context = {
-    clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
-    clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-    clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
+    client_files_course: assessmentUrlPrefix + '/clientFilesCourse',
+    client_files_course_instance: assessmentUrlPrefix + '/clientFilesCourseInstance',
+    client_files_assessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
-  return ejs.render(assessment.text, context);
+
+  // Convert all legacy EJS-style template variables to Mustache template variables.
+  const text = assessment.text
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ client_files_course }}')
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
+
+  return mustache.render(text, context);
 }
 
 /**
@@ -126,7 +133,7 @@ export async function makeAssessmentInstance({
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
     let group_id: string | null = null;
-    if (assessment.group_work) {
+    if (assessment.team_work) {
       group_id = await getGroupId(assessment.id, user_id);
       if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
@@ -377,13 +384,13 @@ export async function gradeAllAssessmentInstances({
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'grade_all_assessment_instances',
+    description: 'Grade all assessment instances for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'grade_all_assessment_instances',
-    description: 'Grade all assessment instances for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
@@ -512,7 +519,7 @@ export async function selectAssessmentInstanceLog(
     { assessment_instance_id, include_files },
     InstanceLogSchema,
   );
-  const fingerprintNumbers = {};
+  const fingerprintNumbers: Record<string, number> = {};
   let i = 1;
   log.forEach((row) => {
     if (row.client_fingerprint) {
@@ -527,8 +534,8 @@ export async function selectAssessmentInstanceLog(
 }
 
 export async function selectAssessmentInstanceLogCursor(
-  assessment_instance_id,
-  include_files,
+  assessment_instance_id: string,
+  include_files: boolean,
 ): Promise<sqldb.CursorIterator<InstanceLogEntry>> {
   return sqldb.queryCursor(
     sql.assessment_instance_log,
@@ -618,7 +625,7 @@ export async function deleteAllAssessmentInstancesForAssessment(
  *
  * @returns Whether or not the user should be allowed to delete the assessment instance.
  */
-export function canDeleteAssessmentInstance(resLocals): boolean {
+export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolean {
   return (
     // Check for permissions.
     (resLocals.authz_data.authn_has_course_permission_preview ||

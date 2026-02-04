@@ -1,9 +1,10 @@
-import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { QueryClient, useQueryClient } from '@tanstack/react-query';
+import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
+import { NuqsAdapter } from '@prairielearn/ui';
+
 import type { AiGradingGeneralStats } from '../../../ee/lib/ai-grading/types.js';
-import { NuqsAdapter } from '../../../lib/client/nuqs.js';
 import type { PageContext } from '../../../lib/client/page-context.js';
 import type {
   StaffAssessment,
@@ -21,15 +22,18 @@ import {
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
+import {
+  type ManualGradingTrpcClient,
+  createManualGradingTrpcClient,
+} from './utils/trpc-client.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
-
-const queryClient = new QueryClient();
 
 export interface AssessmentQuestionManualGradingProps {
   hasCourseInstancePermissionEdit: boolean;
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  trpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -42,6 +46,7 @@ export interface AssessmentQuestionManualGradingProps {
   instanceQuestionGroups: StaffInstanceQuestionGroup[];
   courseStaff: StaffUser[];
   aiGradingStats: AiGradingGeneralStats | null;
+  initialOngoingJobSequenceTokens: Record<string, string> | null;
   numOpenInstances: number;
   search: string;
   isDevMode: boolean;
@@ -51,8 +56,10 @@ export interface AssessmentQuestionManualGradingProps {
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode'
->;
+  'search' | 'isDevMode' | 'trpcCsrfToken'
+> & {
+  trpcClient: ManualGradingTrpcClient;
+};
 
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
@@ -61,6 +68,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  trpcClient,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -71,54 +79,53 @@ function AssessmentQuestionManualGradingInner({
   instanceQuestionGroups,
   courseStaff,
   aiGradingStats,
+  initialOngoingJobSequenceTokens,
   numOpenInstances,
   questionTitle,
   questionNumber,
 }: AssessmentQuestionManualGradingInnerProps) {
+  const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
-  const { groupSubmissionMutation, setAiGradingModeMutation, ...mutations } =
-    useManualGradingActions({
-      csrfToken,
-      courseInstanceId: courseInstance.id,
-    });
+  const mutations = useManualGradingActions(trpcClient);
+  const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
   return (
     <>
       {setAiGradingModeMutation.isError && (
         <Alert
           variant="danger"
-          class="mb-3"
+          className="mb-3"
           dismissible
           onClose={() => setAiGradingModeMutation.reset()}
         >
           <strong>Error:</strong> {setAiGradingModeMutation.error.message}
         </Alert>
       )}
-      <div class="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
+      <div className="d-flex flex-row justify-content-between align-items-center mb-3 gap-2">
         <nav aria-label="breadcrumb">
-          <ol class="breadcrumb mb-0">
-            <li class="breadcrumb-item">
+          <ol className="breadcrumb mb-0">
+            <li className="breadcrumb-item">
               <a href={`${urlPrefix}/assessment/${assessment.id}/manual_grading`}>Manual grading</a>
             </li>
-            <li class="breadcrumb-item active" aria-current="page">
+            <li className="breadcrumb-item active" aria-current="page">
               Question {questionNumber}. {questionTitle}
             </li>
           </ol>
         </nav>
         {aiGradingEnabled && (
-          <div class="card px-3 py-2 mb-0">
-            <div class="form-check form-switch mb-0">
+          <div className="card px-3 py-2 mb-0">
+            <div className="form-check form-switch mb-0">
               <input
-                class="form-check-input"
+                className="form-check-input"
                 type="checkbox"
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending}
+                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
                 onChange={() =>
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
@@ -127,8 +134,8 @@ function AssessmentQuestionManualGradingInner({
                   })
                 }
               />
-              <label class="form-check-label" for="switchCheckDefault">
-                <i class="bi bi-stars" />
+              <label className="form-check-label" htmlFor="switchCheckDefault">
+                <i className="bi bi-stars" />
                 AI grading mode
               </label>
             </div>
@@ -140,6 +147,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        trpcClient={trpcClient}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}
@@ -152,6 +160,7 @@ function AssessmentQuestionManualGradingInner({
         courseStaff={courseStaff}
         aiGradingStats={aiGradingStats}
         mutations={mutations}
+        initialOngoingJobSequenceTokens={initialOngoingJobSequenceTokens}
         onSetGroupInfoModalState={setGroupInfoModalState}
         onSetConflictModalState={setConflictModalState}
       />
@@ -180,12 +189,15 @@ function AssessmentQuestionManualGradingInner({
 export function AssessmentQuestionManualGrading({
   search,
   isDevMode,
+  trpcCsrfToken,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
+  const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createManualGradingTrpcClient(trpcCsrfToken));
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <AssessmentQuestionManualGradingInner {...innerProps} />
+        <AssessmentQuestionManualGradingInner trpcClient={trpcClient} {...innerProps} />
       </QueryClientProviderDebug>
     </NuqsAdapter>
   );

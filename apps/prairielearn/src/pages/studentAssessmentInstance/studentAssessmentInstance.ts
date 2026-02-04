@@ -5,8 +5,10 @@ import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import * as assessment from '../../lib/assessment.js';
-import { AssessmentInstanceSchema } from '../../lib/db-types.js';
+import { AssessmentInstanceSchema, type File } from '../../lib/db-types.js';
 import { deleteFile, uploadFile } from '../../lib/file-store.js';
+import { idsEqual } from '../../lib/id.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   canUserAssignGroupRoles,
   getGroupConfig,
@@ -14,8 +16,7 @@ import {
   getQuestionGroupPermissions,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/groups.js';
-import { idsEqual } from '../../lib/id.js';
+} from '../../lib/teams.js';
 import clientFingerprint from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessmentInstance from '../../middlewares/selectAndAuthzAssessmentInstance.js';
@@ -33,13 +34,14 @@ const sql = loadSqlEquiv(import.meta.url);
 router.use(selectAndAuthzAssessmentInstance);
 router.use(studentAssessmentAccess);
 
-async function ensureUpToDate(locals: Record<string, any>) {
+async function ensureUpToDate(locals: ResLocalsForPage<'assessment-instance'>) {
   const updated = await assessment.updateAssessmentInstance(
     locals.assessment_instance.id,
-    locals.authn_user.user_id,
+    locals.authn_user.id,
   );
   if (updated) {
     // we updated the assessment_instance, so reload it
+    // @ts-expect-error This reload doesn't set 'formatted_date'
     locals.assessment_instance = await queryRow(
       sql.select_assessment_instance,
       { assessment_instance_id: locals.assessment_instance.id },
@@ -68,8 +70,8 @@ async function processFileUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 }
 
@@ -90,8 +92,8 @@ async function processTextUpload(req: Request, res: Response) {
     assessment_id: res.locals.assessment.id,
     assessment_instance_id: res.locals.assessment_instance.id,
     instance_question_id: null,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
   });
 }
 
@@ -107,7 +109,7 @@ async function processDeleteFile(req: Request, res: Response) {
   }
 
   // Check the requested file belongs to the current assessment instance
-  const validFiles = (res.locals.file_list ?? []).filter((file) =>
+  const validFiles = (res.locals.file_list ?? []).filter((file: File) =>
     idsEqual(file.id, req.body.file_id),
   );
   if (validFiles.length === 0) {
@@ -119,7 +121,7 @@ async function processDeleteFile(req: Request, res: Response) {
     throw new HttpStatusError(403, `Cannot delete file type ${file.type} for file_id=${file.id}`);
   }
 
-  await deleteFile(file.id, res.locals.authn_user.user_id);
+  await deleteFile(file.id, res.locals.authn_user.id);
 }
 
 router.post(
@@ -160,8 +162,8 @@ router.post(
       const isFinishing = ['finish', 'timeLimitFinish'].includes(req.body.__action);
       await assessment.gradeAssessmentInstance({
         assessment_instance_id: res.locals.assessment_instance.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         requireOpen: true,
         close: isFinishing,
         ignoreGradeRateLimit: isFinishing,
@@ -178,11 +180,7 @@ router.post(
       if (!res.locals.authz_result.active) {
         throw new HttpStatusError(400, 'Unauthorized request.');
       }
-      await leaveGroup(
-        res.locals.assessment.id,
-        res.locals.user.user_id,
-        res.locals.authn_user.user_id,
-      );
+      await leaveGroup(res.locals.assessment.id, res.locals.user.id, res.locals.authn_user.id);
       res.redirect(
         `/pl/course_instance/${res.locals.course_instance.id}/assessment/${res.locals.assessment.id}`,
       );
@@ -190,10 +188,10 @@ router.post(
       await updateGroupRoles(
         req.body,
         res.locals.assessment.id,
-        res.locals.assessment_instance.group_id,
-        res.locals.user.user_id,
+        res.locals.assessment_instance.team_id,
+        res.locals.user.id,
         res.locals.authz_data.has_course_instance_permission_edit,
-        res.locals.authn_user.user_id,
+        res.locals.authn_user.id,
       );
       res.redirect(req.originalUrl);
     } else {
@@ -212,7 +210,14 @@ router.get(
   // have a corresponding page view event to show in the logs.
   clientFingerprint,
   logPageView('studentAssessmentInstance'),
-  asyncHandler(async (req, res, _next) => {
+  typedAsyncHandler<
+    'assessment-instance',
+    {
+      has_manual_grading_question: boolean;
+      has_auto_grading_question: boolean;
+      assessment_text_templated: string | null;
+    }
+  >(async (req, res, _next) => {
     if (res.locals.assessment.type === 'Homework') {
       await ensureUpToDate(res.locals);
     }
@@ -244,7 +249,7 @@ router.get(
 
     const showTimeLimitExpiredModal = req.query.timeLimitExpired === 'true';
 
-    if (!res.locals.assessment.group_work) {
+    if (!res.locals.assessment.team_work) {
       res.send(
         StudentAssessmentInstance({
           instance_question_rows,
@@ -258,10 +263,10 @@ router.get(
 
     // Get the group config info
     const groupConfig = await getGroupConfig(res.locals.assessment.id);
-    const groupInfo = await getGroupInfo(res.locals.assessment_instance.group_id, groupConfig);
+    const groupInfo = await getGroupInfo(res.locals.assessment_instance.team_id!, groupConfig);
     const userCanAssignRoles =
       groupConfig.has_roles &&
-      (canUserAssignGroupRoles(groupInfo, res.locals.user.user_id) ||
+      (canUserAssignGroupRoles(groupInfo, res.locals.user.id) ||
         res.locals.authz_data.has_course_instance_permission_edit);
 
     if (groupConfig.has_roles) {
@@ -271,8 +276,8 @@ router.get(
         for (const question of instance_question_rows) {
           question.group_role_permissions = await getQuestionGroupPermissions(
             question.id,
-            res.locals.assessment_instance.group_id,
-            res.locals.authz_data.user.user_id,
+            res.locals.assessment_instance.team_id!,
+            res.locals.authz_data.user.id,
           );
         }
       }

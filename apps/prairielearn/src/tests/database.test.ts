@@ -1,6 +1,6 @@
 import * as path from 'node:path';
 
-import _ from 'lodash';
+import { partition } from 'es-toolkit';
 import { afterAll, beforeAll, describe, it } from 'vitest';
 
 import { describeDatabase, diffDirectoryAndDatabase } from '@prairielearn/postgres-tools';
@@ -17,7 +17,7 @@ class DatabaseError extends Error {
   }
 }
 
-const SOFT_DELETE_CASCADE_EXCEPTIONS = {
+const SOFT_DELETE_CASCADE_EXCEPTIONS: Record<string, string[]> = {
   // We want grading jobs to be soft deleted, primarily to support deleting AI
   // grading jobs while still retaining the jobs and their associated `ai_grading_jobs`
   // row for logging and auditing purposes, as well as usage tracking.
@@ -63,7 +63,7 @@ describe('database', { timeout: 20_000 }, function () {
     const dbName = helperDb.getDatabaseNameForCurrentWorker();
     const data = await describeDatabase(dbName);
 
-    const [softDeleteTables, hardDeleteTables] = _.partition(Object.keys(data.tables), (table) =>
+    const [softDeleteTables, hardDeleteTables] = partition(Object.keys(data.tables), (table) =>
       data.tables[table].columns.some((column) => column.name === 'deleted_at'),
     );
 
@@ -78,6 +78,7 @@ describe('database', { timeout: 20_000 }, function () {
         const [, keyName, otherTable, deleteAction] = match;
 
         // Skip table/column pairs that are exceptions to the rule.
+        // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
         if (SOFT_DELETE_CASCADE_EXCEPTIONS[table]?.includes(keyName)) continue;
 
         if (deleteAction === 'CASCADE' && hardDeleteTables.includes(otherTable)) {

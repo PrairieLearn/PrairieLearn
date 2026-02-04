@@ -1,8 +1,8 @@
 # `@prairielearn/ui`
 
-UI components and styles shared between PrairieLearn and PrairieTest.
+UI components, utilities, and styles shared between PrairieLearn and PrairieTest.
 
-## Examples
+## UI Component Examples
 
 ### TanstackTableCard
 
@@ -32,6 +32,7 @@ import { TanstackTableCard } from '@prairielearn/ui';
           : null,
       };
     },
+    hasSelection: false,
   }}
   headerButtons={
     <>
@@ -48,8 +49,6 @@ import { TanstackTableCard } from '@prairielearn/ui';
     </>
   }
   globalFilter={{
-    value: globalFilter,
-    setValue: setGlobalFilter,
     placeholder: 'Search by UID, name, email...',
   }}
   tableOptions={tableOptions}
@@ -105,4 +104,86 @@ const tableOptions = {
     ),
   },
 };
+```
+
+### ComboBox and TagPicker
+
+Accessible combobox components built on [React Aria](https://react-spectrum.adobe.com/react-aria/).
+
+```tsx
+import { ComboBox, TagPicker, type ComboBoxItem } from '@prairielearn/ui';
+import { useState } from 'react';
+
+const items: ComboBoxItem[] = [
+  { id: '1', label: 'Apple' },
+  { id: '2', label: 'Banana' },
+];
+
+// Single selection
+const [selected, setSelected] = useState<string | null>(null);
+<ComboBox items={items} value={selected} onChange={setSelected} label="Fruit" />;
+
+// Multi-selection with tags
+const [selectedIds, setSelectedIds] = useState<string[]>([]);
+<TagPicker items={items} value={selectedIds} onChange={setSelectedIds} label="Fruits" />;
+```
+
+Items can include `searchableText` for filtering on text different from the label, and `data` for custom data passed to `renderItem`.
+
+## nuqs Utilities
+
+This package provides utilities for integrating [nuqs](https://nuqs.47ng.com/) (type-safe URL query state management) with server-side rendering and TanStack Table.
+
+### NuqsAdapter
+
+`nuqs` needs to be aware of the current state of the URL search parameters during both server-side and client-side rendering. The `NuqsAdapter` component handles this by using a custom adapter on the server that reads from a provided `search` prop, while on the client it uses nuqs's built-in React adapter that reads directly from `location.search`.
+
+```tsx
+import { NuqsAdapter } from '@prairielearn/ui';
+
+// Wrap your component that uses nuqs hooks
+<NuqsAdapter search={new URL(req.url).search}>
+  <MyTableComponent />
+</NuqsAdapter>;
+```
+
+### TanStack Table State Parsers
+
+The package provides custom parsers for syncing TanStack Table state with URL query parameters:
+
+- **`parseAsSortingState`**: Syncs table sorting state with the URL. Format: `col:asc` or `col1:asc,col2:desc` for multi-column sorting.
+- **`parseAsColumnVisibilityStateWithColumns(allColumns, defaultValueRef?)`**: Syncs column visibility. Parses comma-separated visible column IDs.
+- **`parseAsColumnPinningState`**: Syncs left-pinned columns. Format: `col1,col2,col3`.
+- **`parseAsNumericFilter`**: Syncs numeric filter values. URL format: `gte_5`, `lte_10`, `gt_3`, `lt_7`, `eq_5`, `empty`.
+
+```tsx
+import {
+  parseAsSortingState,
+  parseAsColumnVisibilityStateWithColumns,
+  parseAsColumnPinningState,
+  parseAsNumericFilter,
+} from '@prairielearn/ui';
+import { useQueryState } from 'nuqs';
+
+// Sorting state synced to URL
+const [sorting, setSorting] = useQueryState('sort', parseAsSortingState.withDefault([]));
+
+// Column visibility synced to URL
+const allColumns = ['name', 'email', 'status'];
+const [columnVisibility, setColumnVisibility] = useQueryState(
+  'cols',
+  parseAsColumnVisibilityStateWithColumns(allColumns).withDefault({}),
+);
+
+// Column pinning synced to URL
+const [columnPinning, setColumnPinning] = useQueryState(
+  'pin',
+  parseAsColumnPinningState.withDefault({ left: [], right: [] }),
+);
+
+// Numeric filter synced to URL
+const [scoreFilter, setScoreFilter] = useQueryState(
+  'score',
+  parseAsNumericFilter.withDefault({ filterValue: '', emptyOnly: false }),
+);
 ```

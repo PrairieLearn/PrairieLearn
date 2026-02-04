@@ -2,6 +2,7 @@ import { z } from 'zod';
 
 import {
   ConfigLoader,
+  makeEnvConfigSource,
   makeFileConfigSource,
   makeImdsConfigSource,
   makeSecretsManagerConfigSource,
@@ -88,7 +89,7 @@ export const ConfigSchema = z.object({
    * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
-  nonVolatileRedisUrl: z.string().nullable().default(null),
+  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */
@@ -321,8 +322,13 @@ export const ConfigSchema = z.object({
   checkAccessRulesExamUuid: z.boolean().default(false),
   questionRenderCacheType: z.enum(['none', 'redis', 'memory']).nullable().default(null),
   cacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('none'),
-  cacheKeyPrefix: z.string().default('prairielearn-cache:'),
+  nonVolatileCacheType: z.enum(['none', 'redis', 'memory']).default('redis'),
+  cacheKeyPrefix: z
+    .string()
+    .default('prairielearn-cache:')
+    .refine((s) => s.endsWith(':'), {
+      message: 'must end with a colon (:)',
+    }),
   questionRenderCacheTtlSec: z.number().default(60 * 60),
   ltiRedirectUrl: z.string().nullable().default(null),
   lti13InstancePlatforms: z
@@ -457,18 +463,6 @@ export const ConfigSchema = z.object({
   sentryDsn: z.string().nullable().default(null),
   sentryEnvironment: z.string().default('development'),
   /**
-   * In some markets, such as China, the title of all pages needs to be a
-   * specific string in order to comply with local regulations. If this option
-   * is set, it will be used verbatim as the `<title>` of all pages.
-   */
-  titleOverride: z.string().nullable().default(null),
-  /**
-   * Similarly, China also requires us to include a registration number and link
-   * to a specific page on the homepage footer.
-   */
-  homepageFooterText: z.string().nullable().default(null),
-  homepageFooterTextHref: z.string().nullable().default(null),
-  /**
    * HTML that will be displayed in a banner at the top of every page. Useful for
    * announcing maintenance windows, etc.
    */
@@ -571,6 +565,12 @@ export const ConfigSchema = z.object({
   aiGradingGoogleApiKey: z.string().nullable().default(null),
   aiGradingAnthropicApiKey: z.string().nullable().default(null),
   /**
+   * The hourly spending rate limit for AI grading, in US dollars.
+   * This is applied per course instance.
+   * Accounts for both input and output tokens.
+   */
+  aiGradingRateLimitDollars: z.number().default(10),
+  /**
    * The hourly spending rate limit for AI question generation, in US dollars.
    * Accounts for both input and output tokens.
    */
@@ -590,11 +590,6 @@ export const ConfigSchema = z.object({
   courseFilesApiTransport: z.enum(['process', 'network']).default('process'),
   /** Should be something like `https://hostname/pl/api/trpc/course_files`. */
   courseFilesApiUrl: z.string().nullable().default(null),
-  /**
-   * A list of Python venvs in which to search for Python executables.
-   * Will be resolved relative to the repository root.
-   */
-  pythonVenvSearchPaths: z.string().array().default(['.venv']),
   costPerMillionTokens: z
     .object({
       'gpt-4o-2024-11-20': TokenPricingSchema,
@@ -602,6 +597,7 @@ export const ConfigSchema = z.object({
       'gpt-5-2025-08-07': TokenPricingSchema,
       'gpt-5.1-2025-11-13': TokenPricingSchema,
       'gemini-2.5-flash': TokenPricingSchema,
+      'gemini-3-flash-preview': TokenPricingSchema,
       'gemini-3-pro-preview': TokenPricingSchema,
       'claude-opus-4-5': TokenPricingSchema,
       'claude-haiku-4-5': TokenPricingSchema,
@@ -618,6 +614,7 @@ export const ConfigSchema = z.object({
       // Prices current as of 2025-11-25. Values obtained from
       // https://ai.google.dev/gemini-api/docs/pricing
       'gemini-2.5-flash': { input: 0.3, cachedInput: 0.03, output: 2.5 },
+      'gemini-3-flash-preview': { input: 0.5, cachedInput: 0.05, output: 3 },
       'gemini-3-pro-preview': { input: 2, cachedInput: 0.2, output: 12 },
 
       // Prices current as of 2025-11-25. Values obtained from
@@ -626,6 +623,7 @@ export const ConfigSchema = z.object({
       'claude-sonnet-4-5': { input: 3, cachedInput: 0.3, output: 15 },
       'claude-opus-4-5': { input: 5, cachedInput: 0.5, output: 25 },
     }),
+  exampleCoursePath: z.string().default('./exampleCourse'),
 });
 
 export type Config = z.infer<typeof ConfigSchema>;
@@ -641,6 +639,9 @@ export const config = loader.config;
  */
 export async function loadConfig(paths: string[]) {
   await loader.loadAndValidate([
+    makeEnvConfigSource<typeof ConfigSchema>({
+      serverPort: 'CONDUCTOR_PORT',
+    }),
     ...paths.map((path) => makeFileConfigSource(path)),
     makeImdsConfigSource(),
     makeSecretsManagerConfigSource('ConfSecret'),

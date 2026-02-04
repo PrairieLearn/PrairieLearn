@@ -1,12 +1,13 @@
 import assert from 'node:assert';
 
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
 import { logger } from '@prairielearn/logger';
 import * as sqldb from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
+import { IdSchema } from '@prairielearn/zod';
 
 import { updateCourseInstanceUsagesForGradingJob } from '../models/course-instance-usages.js';
 import {
@@ -18,7 +19,6 @@ import { config } from './config.js';
 import {
   CourseSchema,
   GradingJobSchema,
-  IdSchema,
   QuestionSchema,
   SubmissionSchema,
   VariantSchema,

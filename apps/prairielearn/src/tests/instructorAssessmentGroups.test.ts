@@ -2,9 +2,10 @@ import fetchCookie from 'fetch-cookie';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import { loadSqlEquiv, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import { IdSchema, type User } from '../lib/db-types.js';
+import { type User } from '../lib/db-types.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import {

@@ -119,7 +119,6 @@ export const COURSE_INSTANCE_ID = 'Fa19';
 export const ASSESSMENT_ID = 'test';
 
 const course = {
-  uuid: '5d14d80e-b0b8-494e-afed-f5a47497f5cb',
   name: 'TEST 101',
   title: 'Test Course',
   assessmentSets: [
@@ -435,7 +434,7 @@ export function assertSnapshotsMatch(
  */
 export function assertSnapshotSubset(
   snapshotA: Record<string, any[]>,
-  snapshotB: Record<string, any>,
+  snapshotB: Record<string, any[]>,
   ignoredKeys: string[] = [],
 ) {
   // Sanity check - make sure both snapshots have the same keys

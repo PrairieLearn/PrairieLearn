@@ -76,9 +76,9 @@ describe(
       const user = await selectUserByUid('student@example.com');
       const courseInstance = await selectCourseInstanceById('1');
       await ensureUncheckedEnrollment({
-        userId: user.user_id,
+        userId: user.id,
         courseInstance,
-        requestedRole: 'System',
+        requiredRole: ['System'],
         authzData: dangerousFullSystemAuthz(),
         actionDetail: 'implicit_joined',
       });
@@ -184,7 +184,7 @@ describe(
       context.__csrf_token = response.$('span[id=test_csrf_token]').text();
       const questionWithVariantPath = response.$('a:contains("Question 1")').attr('href');
       const questionWithoutVariantPath = response.$('a:contains("Question 2")').attr('href');
-      const questionWithWorkspace = response.$('a:contains("Question 7")').attr('href');
+      const questionWithWorkspace = response.$('a:contains("Question 6")').attr('href');
       context.examQuestionUrl = `${context.siteUrl}${questionWithVariantPath}`;
       context.examQuestionWithoutVariantUrl = `${context.siteUrl}${questionWithoutVariantPath}`;
       context.examQuestionWithWorkspaceUrl = `${context.siteUrl}${questionWithWorkspace}`;

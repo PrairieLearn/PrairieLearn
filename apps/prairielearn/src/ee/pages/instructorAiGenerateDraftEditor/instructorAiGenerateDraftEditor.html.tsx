@@ -1,21 +1,27 @@
 import assert from 'node:assert';
 
 import { html, unsafeHtml } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
-import { Hydrate } from '@prairielearn/preact/server';
+import { renderHtml } from '@prairielearn/react';
+import { Hydrate } from '@prairielearn/react/server';
 import { run } from '@prairielearn/run';
 
 import { HeadContents } from '../../../components/HeadContents.js';
 import { Modal } from '../../../components/Modal.js';
 import { Navbar } from '../../../components/Navbar.js';
+import { PageLayout } from '../../../components/PageLayout.js';
 import { QuestionContainer } from '../../../components/QuestionContainer.js';
+import { QuestionShortNameDescription } from '../../../components/ShortNameDescriptions.js';
 import {
   compiledScriptTag,
   compiledStylesheetTag,
   nodeModulesAssetPath,
 } from '../../../lib/assets.js';
 import { b64EncodeUnicode } from '../../../lib/base64-util.js';
+import { getAiQuestionGenerationDraftsUrl } from '../../../lib/client/url.js';
 import { type AiQuestionGenerationPrompt, type Question } from '../../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
+import { SHORT_NAME_PATTERN } from '../../../lib/short-name.js';
 
 import RichTextEditor from './RichTextEditor/index.js';
 
@@ -26,7 +32,7 @@ export function InstructorAiGenerateDraftEditor({
   richTextEditorEnabled,
   variantId,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   prompts: AiQuestionGenerationPrompt[];
   question: Question;
   richTextEditorEnabled: boolean;
@@ -43,22 +49,33 @@ export function InstructorAiGenerateDraftEditor({
           name="ace-base-path"
           content="${nodeModulesAssetPath('ace-builds/src-min-noconflict/')}"
         />
+        <meta
+          name="mathjax-fonts-path"
+          content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+        />
         ${[
           HeadContents({ resLocals }),
           compiledScriptTag('question.ts'),
           compiledScriptTag('instructorAiGenerateDraftEditorClient.ts'),
           compiledStylesheetTag('instructorAiGenerateDraftEditor.css'),
         ]}
-        <script defer src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+        <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
         ${unsafeHtml(resLocals.extraHeadersHtml)}
       </head>
       <body hx-ext="loading-states">
         <div class="app-container" style="--chat-width: 400px;">
           <div class="app-grid">
             <div class="app-navbar">
+              <!-- This is the last page directly rendering a Navbar component.
+
+              It was not converted to avoid merge conflicts with the upcoming agentic question generation feature.
+              
+              We should rip out the remaining bits of the legacy Navbar
+              logic when we convert this. -->
               ${Navbar({
                 navPage: 'course_admin',
                 navSubPage: 'questions',
+                navbarType: 'instructor',
                 resLocals,
                 marginBottom: false,
               })}
@@ -66,7 +83,7 @@ export function InstructorAiGenerateDraftEditor({
             <main id="content" class="app-content">
               <div class="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back">
                 <a
-                  href="${resLocals.urlPrefix}/ai_generate_question_drafts"
+                  href="${getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}"
                   class="btn btn-sm btn-ghost"
                 >
                   <i class="fa fa-arrow-left" aria-hidden="true"></i>
@@ -171,6 +188,38 @@ export function InstructorAiGenerateDraftEditor({
       </body>
     </html>
   `.toString();
+}
+
+export function DraftNotFound({ resLocals }: { resLocals: ResLocalsForPage<'course'> }) {
+  return PageLayout({
+    resLocals,
+    pageTitle: 'Draft question not found',
+    navContext: {
+      type: 'instructor',
+      page: 'course_admin',
+      subPage: 'questions',
+    },
+    content: (
+      <div className="card mb-4">
+        <div className="card-header bg-primary text-white">Draft question not found</div>
+        <div className="card-body">
+          <p className="mb-0">
+            The draft question you're looking for could not be found. It may have been deleted or
+            already finalized.
+          </p>
+        </div>
+        <div className="card-footer">
+          <a
+            href={getAiQuestionGenerationDraftsUrl({ urlPrefix: resLocals.urlPrefix })}
+            className="btn btn-primary"
+          >
+            <i className="fa fa-arrow-left" aria-hidden="true" />
+            Back to AI question drafts
+          </a>
+        </div>
+      </div>
+    ),
+  });
 }
 
 /**
@@ -297,7 +346,7 @@ function QuestionAndFilePreview({
   resLocals,
 }: {
   prompts: AiQuestionGenerationPrompt[];
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   return html`
     <div class="tab-content" style="height: 100%">
@@ -405,13 +454,10 @@ function FinalizeModal({ csrfToken }: { csrfToken: string }) {
           class="form-control"
           id="question-qid"
           name="qid"
-          pattern="[\\-A-Za-z0-9_\\/]+"
+          pattern="${SHORT_NAME_PATTERN}"
           required
         />
-        <div class="form-text text-muted">
-          A unique identifier that will be used to include this question in assessments, e.g.
-          <code>add-random-numbers</code>.
-        </div>
+        <div class="form-text text-muted">${renderHtml(<QuestionShortNameDescription />)}</div>
       </div>
     `,
     footer: html`

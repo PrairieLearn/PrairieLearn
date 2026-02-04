@@ -10,13 +10,15 @@ import type {
   CourseInstance,
   GroupConfig,
   InstanceQuestion,
-  Issue,
   Question,
   User,
   Variant,
 } from '../lib/db-types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
+import type { IssueRenderData } from '../lib/question-render.types.js';
+import type { UntypedResLocals } from '../lib/res-locals.types.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
+import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
 import { Modal } from './Modal.js';
@@ -37,7 +39,7 @@ export function QuestionContainer({
   questionCopyTargets = null,
   aiGradingInfo,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter?: boolean;
@@ -73,7 +75,9 @@ export function QuestionContainer({
       ${question.type !== 'Freeform'
         ? html`<div hidden class="question-data">${questionJsonBase64}</div>`
         : ''}
-      ${issues.map((issue) => IssuePanel({ issue, course_instance, authz_data, is_administrator }))}
+      ${issues.map((issue: IssueRenderData) =>
+        IssuePanel({ issue, course_instance, authz_data, is_administrator }),
+      )}
       ${question.type === 'Freeform'
         ? html`
             <form class="question-form" name="question-form" method="POST" autocomplete="off">
@@ -105,10 +109,10 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.explanation
+      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -159,8 +163,8 @@ export function QuestionContainer({
               : ''}
           `
         : ''}
+      ${CopyQuestionModal({ resLocals, questionCopyTargets })}
     </div>
-    ${CopyQuestionModal({ resLocals, questionCopyTargets })}
   `;
 }
 
@@ -193,7 +197,13 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({
+  explanation,
+  rotationCorrectionDegrees,
+}: {
+  explanation: string | null;
+  rotationCorrectionDegrees: string | null;
+}) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -216,9 +226,25 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+          ${explanation
+            ? html`
+                <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}
+</pre>
+              `
+            : ''}
+          ${rotationCorrectionDegrees
+            ? html`
+                <br />
+                <pre>
+Not all images were upright
+Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
+</pre>
+              `
+            : html`
+                <br />
+                <pre>All images were upright</pre>
+              `}
         </div>
       </div>
     </div>
@@ -231,12 +257,7 @@ export function IssuePanel({
   authz_data,
   is_administrator,
 }: {
-  issue: Issue & {
-    user_name: User['name'];
-    user_email: User['email'];
-    user_uid: User['uid'];
-    formatted_date: string;
-  };
+  issue: IssueRenderData;
   course_instance?: CourseInstance;
   authz_data: Record<string, any>;
   is_administrator: boolean;
@@ -588,7 +609,9 @@ export function QuestionFooterContent({
               : showTryAgainButton
                 ? html`
                     <a href="${tryAgainUrl}" class="btn btn-primary disable-on-click ms-1">
-                      ${instance_question_info.previous_variants?.some((variant) => variant.open)
+                      ${instance_question_info.previous_variants?.some(
+                        (variant: SimpleVariantWithScore) => variant.open,
+                      )
                         ? 'Go to latest variant'
                         : 'Try a new variant'}
                     </a>
@@ -778,7 +801,7 @@ function QuestionPanel({
   aiGradingPreviewUrl,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   showFooter: boolean;
@@ -884,7 +907,7 @@ function SubmissionList({
   submissionCount,
   renderSubmissionSearchParams,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionContext: QuestionContext;
   questionRenderContext?: QuestionRenderContext;
   submissions: SubmissionForRender[];
@@ -916,7 +939,7 @@ function CopyQuestionModal({
   resLocals,
 }: {
   questionCopyTargets: CopyTarget[] | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const { question, course } = resLocals;
   if (questionCopyTargets == null) return '';

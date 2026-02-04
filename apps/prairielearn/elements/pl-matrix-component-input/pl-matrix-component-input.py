@@ -581,7 +581,7 @@ def create_table_for_html_display(
             )
             format_errors = data["format_errors"].get(each_entry_name, None)
             if format_errors is None:
-                display_array += '<td class="allborder"><code class="user-output">'
+                display_array += '<td class="allborder"><code>'
             else:
                 display_array += (
                     '<td class="allborder"><code class="user-output-invalid">'
@@ -602,7 +602,7 @@ def create_table_for_html_display(
                 )
                 format_errors = data["format_errors"].get(each_entry_name, None)
                 if format_errors is None:
-                    display_array += '<td class="allborder"><code class="user-output">'
+                    display_array += '<td class="allborder"><code>'
                 else:
                     display_array += (
                         '<td class="allborder"><code class="user-output-invalid">'
@@ -620,7 +620,7 @@ def create_table_for_html_display(
         if score is not None:
             score = float(score)
             if score >= 1:
-                score_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>'
             elif score > 0:
                 score_message = (
                     '&nbsp;<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i>'
@@ -628,7 +628,7 @@ def create_table_for_html_display(
                     + "%</span>"
                 )
             else:
-                score_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>'
+                score_message = '&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>'
         else:
             score_message = ""
 
@@ -653,9 +653,9 @@ def create_table_for_html_display(
                 feedback_each_entry, dict
             ):
                 if feedback_each_entry[each_entry_name] == "correct":
-                    feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i></span>'
                 elif feedback_each_entry[each_entry_name] == "incorrect":
-                    feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                    feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i></span>'
                 else:
                     raise ValueError(
                         f"invalid feedback type: {feedback_each_entry[each_entry_name]}"
@@ -686,9 +686,9 @@ def create_table_for_html_display(
                     feedback_each_entry, dict
                 ):
                     if feedback_each_entry[each_entry_name] == "correct":
-                        feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i></span>'
                     elif feedback_each_entry[each_entry_name] == "incorrect":
-                        feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i></span>'
+                        feedback_message = '&nbsp;<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i></span>'
                     else:
                         raise ValueError(
                             "invalid feedback type: this should not happen"

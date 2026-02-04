@@ -1,11 +1,12 @@
+import { isEmpty } from 'es-toolkit/compat';
 import jsonStringifySafe from 'json-stringify-safe';
-import _ from 'lodash';
 
 import { formatErrorStack } from '@prairielearn/error';
 import { html, unsafeHtml } from '@prairielearn/html';
 import { formatQueryWithErrorPosition } from '@prairielearn/postgres';
 
 import { PageLayout } from '../../components/PageLayout.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 function formatJson(value: any): string {
   return jsonStringifySafe(value, null, '    ');
@@ -27,7 +28,7 @@ export function ErrorPage({
   errorInfo?: string;
   errorId: string;
   referrer: string | null;
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
 }) {
   const {
     outputStderr,
@@ -97,19 +98,19 @@ export function ErrorPage({
                 <pre class="bg-dark text-white rounded p-2">${formattedSqlQuery}</pre>
               `
             : ''}
-          ${!_.isEmpty(sqlParams)
+          ${!isEmpty(sqlParams)
             ? html`
                 <p><strong>SQL params:</strong></p>
                 <pre class="bg-dark text-white rounded p-2">${formatJson(sqlParams)}</pre>
               `
             : ''}
-          ${!_.isEmpty(sqlError)
+          ${!isEmpty(sqlError)
             ? html`
                 <p><strong>SQL error data:</strong></p>
                 <pre class="bg-dark text-white rounded p-2">${formatJson(sqlError)}</pre>
               `
             : ''}
-          ${!_.isEmpty(restData)
+          ${!isEmpty(restData)
             ? html`
                 <p><strong>Additional data:</strong></p>
                 <pre class="bg-dark text-white rounded p-2">${formatJson(restData)}</pre>

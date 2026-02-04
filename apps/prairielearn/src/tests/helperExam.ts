@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { keyBy } from 'es-toolkit';
 import fetch from 'node-fetch';
 import { assert, describe, it } from 'vitest';
 import z from 'zod';
@@ -16,7 +16,7 @@ import { selectAssessmentByTid } from '../models/assessment.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-interface TestExamQuestion {
+export interface TestExamQuestion {
   qid: string;
   type: 'Freeform' | 'Calculation';
   maxPoints: number;
@@ -49,7 +49,7 @@ export const exams: Record<string, TestExam> = {
     tid: 'exam1-automaticTestSuite',
     title: 'Exam for automatic test suite',
     questions: exam1AutomaticTestSuiteQuestions,
-    keyedQuestions: _.keyBy(exam1AutomaticTestSuiteQuestions, 'qid'),
+    keyedQuestions: keyBy(exam1AutomaticTestSuiteQuestions, (question) => question.qid),
   },
 };
 
@@ -85,7 +85,7 @@ export function startExam(locals: Record<string, any>, examTid: keyof typeof exa
       exam.questions.forEach(function (question) {
         for (const prop in question) {
           if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-            delete question[prop];
+            delete question[prop as keyof TestExamQuestion];
           }
         }
         question.points = 0;

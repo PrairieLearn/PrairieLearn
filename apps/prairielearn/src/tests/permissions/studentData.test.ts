@@ -67,7 +67,7 @@ describe('student data access', { timeout: 60_000 }, function () {
     await ensureUncheckedEnrollment({
       userId: '3',
       courseInstance,
-      requestedRole: 'System',
+      requiredRole: ['System'],
       authzData: dangerousFullSystemAuthz(),
       actionDetail: 'implicit_joined',
     });

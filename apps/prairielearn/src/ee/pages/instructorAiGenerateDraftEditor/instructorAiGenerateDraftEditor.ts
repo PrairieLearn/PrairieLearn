@@ -5,6 +5,7 @@ import asyncHandler from 'express-async-handler';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { execute, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { b64DecodeUnicode, b64EncodeUnicode } from '../../../lib/base64-util.js';
 import { config } from '../../../lib/config.js';
@@ -12,7 +13,6 @@ import { getCourseFilesClient } from '../../../lib/course-files-api.js';
 import {
   AiQuestionGenerationPromptSchema,
   type Course,
-  IdSchema,
   type Question,
   type User,
 } from '../../../lib/db-types.js';
@@ -22,8 +22,9 @@ import { getAndRenderVariant } from '../../../lib/question-render.js';
 import { processSubmission } from '../../../lib/question-submission.js';
 import { HttpRedirect } from '../../../lib/redirect.js';
 import { typedAsyncHandler } from '../../../lib/res-locals.js';
+import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 import { logPageView } from '../../../middlewares/logPageView.js';
-import { selectQuestionById } from '../../../models/question.js';
+import { selectOptionalQuestionById, selectQuestionById } from '../../../models/question.js';
 import {
   QUESTION_GENERATION_OPENAI_MODEL,
   addCompletionCostToIntervalUsage,
@@ -36,7 +37,10 @@ import {
   RateLimitExceeded,
 } from '../instructorAiGenerateDrafts/instructorAiGenerateDrafts.html.js';
 
-import { InstructorAiGenerateDraftEditor } from './instructorAiGenerateDraftEditor.html.js';
+import {
+  DraftNotFound,
+  InstructorAiGenerateDraftEditor,
+} from './instructorAiGenerateDraftEditor.html.js';
 
 const router = Router({ mergeParams: true });
 const sql = loadSqlEquiv(import.meta.url);
@@ -48,7 +52,10 @@ async function saveGeneratedQuestion(
   title?: string,
   qid?: string,
 ): Promise<{ question_id: string; qid: string }> {
-  const files = {};
+  const files: {
+    'question.html'?: string;
+    'server.py'?: string;
+  } = {};
 
   if (htmlFileContents) {
     files['question.html'] = htmlFileContents;
@@ -62,8 +69,8 @@ async function saveGeneratedQuestion(
 
   const result = await client.createQuestion.mutate({
     course_id: res.locals.course.id,
-    user_id: res.locals.user.user_id,
-    authn_user_id: res.locals.authn_user.user_id,
+    user_id: res.locals.user.id,
+    authn_user_id: res.locals.authn_user.id,
     has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
     qid,
     title,
@@ -119,8 +126,8 @@ async function saveRevisedQuestion({
 
   const result = await client.updateQuestionFiles.mutate({
     course_id: course.id,
-    user_id: user.user_id,
-    authn_user_id: authn_user.user_id,
+    user_id: user.id,
+    authn_user_id: authn_user.id,
     question_id: question.id,
     has_course_permission_edit: authz_data.has_course_permission_edit,
     files,
@@ -134,7 +141,7 @@ async function saveRevisedQuestion({
 
   await execute(sql.insert_ai_question_generation_prompt, {
     question_id: question.id,
-    prompting_user_id: authn_user.user_id,
+    prompting_user_id: authn_user.id,
     prompt_type: promptType,
     user_prompt: prompt,
     system_prompt: prompt,
@@ -144,7 +151,7 @@ async function saveRevisedQuestion({
   });
 }
 
-function assertCanCreateQuestion(resLocals: Record<string, any>) {
+function assertCanCreateQuestion(resLocals: UntypedResLocals) {
   // Do not allow users to edit without permission
   if (!resLocals.authz_data.has_course_permission_edit) {
     throw new error.HttpStatusError(403, 'Access denied (must be course editor)');
@@ -167,16 +174,35 @@ router.use(
 
 router.get(
   '/',
-  typedAsyncHandler<'instance-question'>(async (req, res) => {
-    res.locals.question = await selectQuestionById(req.params.question_id);
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
+    const question = await selectOptionalQuestionById(req.params.question_id);
 
-    // Ensure the question belongs to this course and that it's a draft question.
     if (
-      !idsEqual(res.locals.question.course_id, res.locals.course.id) ||
-      !res.locals.question.draft
+      question == null ||
+      !idsEqual(question.course_id, res.locals.course.id) ||
+      question.deleted_at != null ||
+      !question.draft
     ) {
-      throw new error.HttpStatusError(404, 'Draft question not found');
+      // If the question exists, belongs to this course, is non-deleted, but
+      // is no longer a draft (i.e. it was finalized), redirect to the question
+      // preview. This handles the common case of a user pressing the browser
+      // back button after finalizing a question.
+      if (
+        question != null &&
+        idsEqual(question.course_id, res.locals.course.id) &&
+        question.deleted_at == null &&
+        !question.draft
+      ) {
+        res.redirect(`${res.locals.urlPrefix}/question/${question.id}/preview`);
+        return;
+      }
+
+      // Otherwise, show an informational page.
+      res.status(404).send(DraftNotFound({ resLocals: res.locals }));
+      return;
     }
+
+    res.locals.question = question;
 
     assertCanCreateQuestion(res.locals);
 
@@ -228,7 +254,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'instructor-question'>(async (req, res) => {
     if (
       !config.aiQuestionGenerationOpenAiApiKey ||
       !config.aiQuestionGenerationOpenAiOrganization
@@ -264,9 +290,7 @@ router.post(
         throw new error.HttpStatusError(403, 'Prompt history not found.');
       }
 
-      const intervalCost = await getIntervalUsage({
-        userId: res.locals.authn_user.user_id,
-      });
+      const intervalCost = await getIntervalUsage(res.locals.authn_user);
 
       const approxPromptCost = approximatePromptCost({
         model: QUESTION_GENERATION_OPENAI_MODEL,
@@ -291,20 +315,19 @@ router.post(
         model: openai(QUESTION_GENERATION_OPENAI_MODEL),
         embeddingModel: openai.textEmbeddingModel('text-embedding-3-small'),
         courseId: res.locals.course.id,
-        authnUserId: res.locals.authn_user.user_id,
+        authnUserId: res.locals.authn_user.id,
         originalPrompt: prompts[0]?.user_prompt,
         revisionPrompt: req.body.prompt,
         originalHTML: prompts[prompts.length - 1].html || '',
         originalPython: prompts[prompts.length - 1].python || '',
         questionQid: question.qid,
-        userId: res.locals.authn_user.user_id,
+        userId: res.locals.authn_user.id,
         hasCoursePermissionEdit: res.locals.authz_data.has_course_permission_edit,
       });
 
       await addCompletionCostToIntervalUsage({
-        userId: res.locals.authn_user.user_id,
+        user: res.locals.authn_user,
         usage: result.usage,
-        intervalCost,
       });
 
       if (result.htmlResult) {
@@ -347,8 +370,8 @@ router.post(
 
       const result = await client.batchDeleteQuestions.mutate({
         course_id: res.locals.course.id,
-        user_id: res.locals.user.user_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        user_id: res.locals.user.id,
+        authn_user_id: res.locals.authn_user.id,
         has_course_permission_edit: res.locals.authz_data.has_course_permission_edit,
         question_ids: [question.id],
       });

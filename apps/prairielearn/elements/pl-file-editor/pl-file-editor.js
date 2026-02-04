@@ -28,6 +28,10 @@ window.PLFileEditor = function (uuid, options) {
   this.editor.getSession().on('change', this.syncFileToHiddenInput.bind(this));
 
   if (options.aceMode) {
+    if (options.aceModePath) {
+      // Retrieve the mode from a custom path (course or question-specific).
+      ace.config.setModuleUrl(options.aceMode, options.aceModePath);
+    }
     this.editor.getSession().setMode(options.aceMode);
   }
 
@@ -113,7 +117,7 @@ window.PLFileEditor.prototype.updatePreview = async function (preview_type) {
     // a style tag in the head, but this tag is not applied to the shadow DOM by
     // default, so we need to manually adopt the MathJax styles.
     await MathJax.startup.promise;
-    const mjxStyles = document.getElementById('MJX-SVG-styles');
+    const mjxStyles = MathJax.svgStylesheet();
     if (mjxStyles) {
       const style = new CSSStyleSheet();
       style.replaceSync(mjxStyles.textContent);

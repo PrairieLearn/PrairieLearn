@@ -31,13 +31,13 @@
         {{#show_info}}
         <button type="button" class="btn btn-light border d-flex align-items-center"
             data-bs-toggle="popover" data-bs-html="true" title="Units" data-bs-content="{{info}}" data-bs-placement="auto">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
         {{/show_info}}
 
         {{#correct}}
             <span class="input-group-text">
-                <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
             </span>
         {{/correct}}
         {{#partial}}
@@ -47,7 +47,7 @@
         {{/partial}}
         {{#incorrect}}
             <span class="input-group-text">
-                <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
             </span>
         {{/incorrect}}
     </span>
@@ -55,7 +55,7 @@
             <span class="invalid-feedback d-block">
                 <span class="badge text-bg-danger">
                     Invalid 
-                    <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                    <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                 </span>
                 <a 
                     class="link-primary"
@@ -85,7 +85,7 @@
     {{#raw_submitted_answer}}<code class="user-output-invalid">{{raw_submitted_answer}}</code>{{/raw_submitted_answer}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
-            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
             class="link-primary"
@@ -107,7 +107,7 @@
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing input 
-            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a 
             class="link-primary"
@@ -129,15 +129,15 @@
 {{^error}}
 <div class="d-inline-block">
     {{#label}}<span>{{{label}}}</span>{{/label}}
-    <samp class="user-output">{{a_sub}}</samp>
+    <samp>{{a_sub}}</samp>
     {{#suffix}}<span>{{suffix}}</span>{{/suffix}}
 
     <!-- Show submitted answer submission was parsed from -->
     <button type="button" class="btn btn-sm btn-secondary small border"
         data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
         style="margin-left: 5px" title="Original Input"
-        data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>
+        data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>">
+        <i class="fas fa-question-circle" aria-hidden="true"></i>
     </button>
 </div>
 
@@ -149,7 +149,7 @@
 
 {{#correct}}
 <span class="me-1 badge text-bg-success">
-    <i class="fa fa-check" aria-hidden="true"></i> 100%
+    <i class="fas fa-check" aria-hidden="true"></i> 100%
 </span>
 {{/correct}}
 {{#partial}}
@@ -159,7 +159,7 @@
 {{/partial}}
 {{#incorrect}}
 <span class="me-1 badge text-bg-danger">
-    <i class="fa fa-times" aria-hidden="true"></i> 0%
+    <i class="fas fa-times" aria-hidden="true"></i> 0%
 </span>
 {{/incorrect}}
 {{/error}}

@@ -2,7 +2,7 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { ArrayFromCheckboxSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../../components/PageLayout.js';
@@ -46,7 +46,7 @@ router.post(
       institution_id: req.params.institution_id,
       enabled_authn_provider_ids: enabledProviders,
       default_authn_provider_id: body.default_authn_provider_id,
-      authn_user_id: res.locals.authn_user.user_id.toString(),
+      authn_user_id: res.locals.authn_user.id.toString(),
     });
 
     res.redirect(req.originalUrl);

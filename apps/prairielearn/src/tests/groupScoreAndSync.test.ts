@@ -1,18 +1,13 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { keyBy } from 'es-toolkit';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-import {
-  AssessmentInstanceSchema,
-  IdSchema,
-  SubmissionSchema,
-  VariantSchema,
-} from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
+import { AssessmentInstanceSchema, SubmissionSchema, VariantSchema } from '../lib/db-types.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 
 import * as helperServer from './helperServer.js';
@@ -24,10 +19,11 @@ locals.baseUrl = locals.siteUrl + '/pl';
 locals.courseInstanceUrl = locals.baseUrl + '/course_instance/1';
 locals.courseInstanceBaseUrl = locals.baseUrl + '/course_instance/1';
 
-let page, elemList;
+let page: string;
+let elemList;
 
 const question = [{ qid: 'addNumbers', type: 'Freeform', maxPoints: 5 }];
-const questions = _.keyBy(question, 'qid');
+const questions = keyBy(question, (question) => question.qid);
 
 describe('assessment instance group synchronization test', function () {
   const storedConfig: Record<string, any> = {};
@@ -42,7 +38,7 @@ describe('assessment instance group synchronization test', function () {
     Object.assign(config, storedConfig);
   });
 
-  beforeAll(helperServer.before(TEST_COURSE_PATH));
+  beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
   describe('1. database initialization', function () {
@@ -148,7 +144,7 @@ describe('assessment instance group synchronization test', function () {
       locals.assessment_instance = assessment_instance;
       locals.assessmentInstanceUrl =
         locals.courseInstanceUrl + '/assessment_instance/' + locals.assessment_instance_id;
-      assert.equal(assessment_instance.group_id, '1');
+      assert.equal(assessment_instance.team_id, '1');
     });
     it('should parse', function () {
       locals.$ = cheerio.load(page);
@@ -203,7 +199,7 @@ describe('assessment instance group synchronization test', function () {
         assessment_instance_points: 1,
         assessment_instance_score_perc: (1 / 10) * 100,
       };
-      locals.getSubmittedAnswer = function (variant) {
+      locals.getSubmittedAnswer = function (variant: any) {
         return {
           F: variant.true_answer.F,
         };

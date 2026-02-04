@@ -1,14 +1,15 @@
 import * as path from 'path';
 import { promisify } from 'util';
 
+import { isEqual } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { afterAll, assert, beforeAll, describe, it, test } from 'vitest';
 
 import { config } from '../lib/config.js';
 import { EXAMPLE_COURSE_PATH, TEST_COURSE_PATH } from '../lib/paths.js';
 import { selectQuestionByQid } from '../models/question.js';
 import * as freeform from '../question-servers/freeform.js';
+import type { ElementExtensionNameDirMap } from '../question-servers/freeform.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -24,10 +25,10 @@ describe('Course element extensions', { timeout: 60_000 }, function () {
       'extension-clientfiles',
     ];
 
-    const check_ext = (loaded) => {
+    const check_ext = (loaded: ElementExtensionNameDirMap) => {
       assert.isTrue(element in loaded, `did not find element ${element} in loaded extensions`);
       assert(
-        _.isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
+        isEqual(Object.keys(loaded[element]).sort(), element_extensions.sort()),
         'could not load all extensions',
       );
     };

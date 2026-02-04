@@ -1,14 +1,16 @@
 import { html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
+import { renderHtml } from '@prairielearn/react';
 
 import { GitHubButtonHtml } from '../../components/GitHubButton.js';
 import { PublicLinkSharingHtml, StudentLinkSharingHtml } from '../../components/LinkSharing.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { QRCodeModalHtml } from '../../components/QRCodeModal.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
+import { AssessmentShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { type AssessmentModule, type AssessmentSet } from '../../lib/db-types.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
+import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
 
 export function InstructorAssessmentSettings({
   resLocals,
@@ -22,7 +24,7 @@ export function InstructorAssessmentSettings({
   assessmentModules,
   canEdit,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment'>;
   origHash: string;
   assessmentGHLink: string | null;
   tids: string[];
@@ -43,23 +45,14 @@ export function InstructorAssessmentSettings({
     },
     headContent: html` ${compiledScriptTag('instructorAssessmentSettingsClient.ts')} `,
     content: html`
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       ${QRCodeModalHtml({
         id: 'studentLinkModal',
-        title: 'Student Link QR Code',
+        title: 'Student link QR code',
         content: studentLink,
       })}
       ${QRCodeModalHtml({
         id: 'publicLinkModal',
-        title: 'Public Link QR Code',
+        title: 'Public link QR code',
         content: publicLink,
       })}
       <div class="card mb-4">
@@ -74,21 +67,31 @@ export function InstructorAssessmentSettings({
             <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
             <input type="hidden" name="orig_hash" value="${origHash}" />
             <div class="mb-3">
-              <label class="form-label" for="aid">AID</label>
+              <label class="form-label" for="aid">Short name</label>
               <input
                 type="text"
                 class="form-control font-monospace"
                 id="aid"
                 name="aid"
                 value="${resLocals.assessment.tid}"
-                pattern="[\\-A-Za-z0-9_\\/]+"
+                pattern="${
+                  // TODO: if/when this page is converted to React, use `validateShortName`
+                  // from `../../lib/short-name.js` with react-hook-form to provide more specific
+                  // validation feedback (e.g., "cannot start with a slash").
+                  SHORT_NAME_PATTERN
+                }|${
+                  // NOTE: this will not be compatible with browsers, as it was only
+                  // just added to modern browsers as of January 2025. If/when this
+                  // page is converted to React, we should use a custom validation
+                  // function instead of the `pattern` attribute to enforce this.
+                  // @ts-expect-error -- https://github.com/microsoft/TypeScript/issues/61321
+                  RegExp.escape(resLocals.assessment.tid)
+                }"
                 data-other-values="${tids.join(',')}"
                 ${canEdit ? '' : 'disabled'}
               />
               <small class="form-text text-muted">
-                The unique identifier for this assessment. This may contain only letters, numbers,
-                dashes, and underscores, with no spaces. You may use forward slashes to separate
-                directories.
+                ${renderHtml(<AssessmentShortNameDescription />)}
               </small>
             </div>
             <div class="mb-3">
@@ -124,7 +127,7 @@ export function InstructorAssessmentSettings({
                   (set) => html`
                     <option
                       value="${set.name}"
-                      ${resLocals.assessment_set.name === set.name ? 'selected' : ''}
+                      ${resLocals.assessment_set.id === set.id ? 'selected' : ''}
                     >
                       ${set.name}
                     </option>
@@ -158,7 +161,7 @@ export function InstructorAssessmentSettings({
                   (module) => html`
                     <option
                       value="${module.name}"
-                      ${resLocals.assessment_module.name === module.name ? 'selected' : ''}
+                      ${resLocals.assessment_module?.id === module.id ? 'selected' : ''}
                     >
                       ${module.name}
                     </option>

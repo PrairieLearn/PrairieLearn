@@ -7,8 +7,9 @@ import {
 import { PageLayout } from '../components/PageLayout.js';
 import { ScorebarHtml } from '../components/Scorebar.js';
 import { TimeLimitExpiredModal } from '../components/TimeLimitExpiredModal.js';
-import type { Assessment, AssessmentInstance, AssessmentSet } from '../lib/db-types.js';
+import type { AssessmentInstance } from '../lib/db-types.js';
 import { formatPoints } from '../lib/format.js';
+import type { ResLocalsForPage } from '../lib/res-locals.js';
 
 export function StudentAssessmentAccess({
   resLocals,
@@ -16,17 +17,12 @@ export function StudentAssessmentAccess({
   showTimeLimitExpiredModal = false,
   userCanDeleteAssessmentInstance = false,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment' | 'assessment-instance'>;
   showClosedScore?: boolean;
   showTimeLimitExpiredModal?: boolean;
   userCanDeleteAssessmentInstance?: boolean;
 }) {
-  const { assessment, assessment_set, assessment_instance, authz_result } = resLocals as {
-    assessment: Assessment;
-    assessment_set: AssessmentSet;
-    assessment_instance?: AssessmentInstance;
-    authz_result: any;
-  };
+  const { assessment, assessment_set, assessment_instance, authz_result } = resLocals;
   return PageLayout({
     resLocals,
     pageTitle: `${assessment_set.abbreviation}${assessment.number}: ${assessment.title}`,

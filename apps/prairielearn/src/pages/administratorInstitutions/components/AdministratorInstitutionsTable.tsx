@@ -1,14 +1,13 @@
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 
-import type { AdminInstitution } from '../../../lib/client/safe-db-types.js';
-import { type AuthnProvider } from '../../../lib/db-types.js';
+import type { AdminInstitution, StaffAuthnProvider } from '../../../lib/client/safe-db-types.js';
 import { type Timezone } from '../../../lib/timezone.shared.js';
 
 import { AddInstitutionModal } from './AddInstitutionModal.js';
 
 export interface InstitutionRow {
   institution: AdminInstitution;
-  authn_providers: AuthnProvider['name'][];
+  authn_providers: StaffAuthnProvider['name'][];
 }
 
 export function AdministratorInstitutionsTable({
@@ -20,7 +19,7 @@ export function AdministratorInstitutionsTable({
 }: {
   institutions: InstitutionRow[];
   availableTimezones: Timezone[];
-  supportedAuthenticationProviders: AuthnProvider[];
+  supportedAuthenticationProviders: StaffAuthnProvider[];
   csrfToken: string;
   isEnterprise: boolean;
 }) {
@@ -28,20 +27,20 @@ export function AdministratorInstitutionsTable({
 
   return (
     <>
-      <div id="institutions" class="card mb-4">
-        <div class="card-header bg-primary text-white d-flex align-items-center">
+      <div id="institutions" className="card mb-4">
+        <div className="card-header bg-primary text-white d-flex align-items-center">
           <h1>Institutions</h1>
           <button
             type="button"
-            class="btn btn-sm btn-light ms-auto"
+            className="btn btn-sm btn-light ms-auto"
             onClick={() => setShowModal(true)}
           >
-            <i class="fas fa-plus" />
-            <span class="d-none d-sm-inline">Add institution</span>
+            <i className="fas fa-plus" />
+            <span className="d-none d-sm-inline">Add institution</span>
           </button>
         </div>
-        <div class="table-responsive">
-          <table class="table table-sm table-hover table-striped" aria-label="Institutions">
+        <div className="table-responsive">
+          <table className="table table-sm table-hover table-striped" aria-label="Institutions">
             <thead>
               <tr>
                 <th>Short name</th>
@@ -67,7 +66,7 @@ export function AdministratorInstitutionsTable({
                   <td>{institution.display_timezone}</td>
                   <td>
                     {institution.uid_regexp ? (
-                      <span class="font-monospace">{institution.uid_regexp}</span>
+                      <span className="font-monospace">{institution.uid_regexp}</span>
                     ) : (
                       '—'
                     )}

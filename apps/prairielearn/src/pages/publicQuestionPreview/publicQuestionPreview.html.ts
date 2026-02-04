@@ -6,12 +6,13 @@ import { PageLayout } from '../../components/PageLayout.js';
 import { QuestionContainer } from '../../components/QuestionContainer.js';
 import { assetPath, nodeModulesAssetPath } from '../../lib/assets.js';
 import type { CopyTarget } from '../../lib/copy-content.js';
+import type { UntypedResLocals } from '../../lib/res-locals.types.js';
 
 export function PublicQuestionPreview({
   resLocals,
   questionCopyTargets,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: UntypedResLocals;
   questionCopyTargets: CopyTarget[] | null;
 }) {
   return PageLayout({
@@ -26,8 +27,12 @@ export function PublicQuestionPreview({
       pageNote: 'Public Preview',
     },
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledScriptTag('question.ts')}
-      <script src="${nodeModulesAssetPath('mathjax/es5/startup.js')}"></script>
+      <script src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
         document.urlPrefix = '${resLocals.urlPrefix}';
       </script>

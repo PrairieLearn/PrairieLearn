@@ -1,8 +1,8 @@
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
-import { IdSchema } from '../../lib/db-types.js';
 import { type CourseData } from '../course-db.js';
 import * as infofile from '../infofile.js';
 
@@ -30,7 +30,7 @@ export async function sync(
       name: z.string(),
     }),
   );
-  const sharingSetIdsByName = {};
+  const sharingSetIdsByName: Record<string, string> = {};
   for (const sharingSet of courseSharingSets) {
     sharingSetIdsByName[sharingSet.name] = sharingSet.id;
   }

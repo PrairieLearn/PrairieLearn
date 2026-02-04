@@ -1,8 +1,7 @@
 import { pipeline } from 'node:stream/promises';
 
 import archiver from 'archiver';
-import { type Response, Router } from 'express';
-import asyncHandler from 'express-async-handler';
+import { type Request, type Response, Router } from 'express';
 import { z } from 'zod';
 
 import { stringifyStream } from '@prairielearn/csv';
@@ -25,8 +24,9 @@ import {
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
-import { getGroupConfig } from '../../lib/groups.js';
+import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { getGroupConfig } from '../../lib/teams.js';
 
 import {
   type Filenames,
@@ -111,7 +111,7 @@ const ManualGradingSubmissionRowSchema = z.object({
 
 type ManualGradingSubmissionRow = z.infer<typeof ManualGradingSubmissionRowSchema>;
 
-function getFilenames(locals: Record<string, any>) {
+export function getFilenames(locals: ResLocalsForPage<'assessment'>) {
   const prefix = assessmentFilenamePrefix(
     locals.assessment,
     locals.assessment_set,
@@ -140,7 +140,7 @@ function getFilenames(locals: Record<string, any>) {
     bestFilesZipFilename: prefix + 'best_files.zip',
     allFilesZipFilename: prefix + 'all_files.zip',
   };
-  if (locals.assessment.group_work) {
+  if (locals.assessment.team_work) {
     filenames.groupsCsvFilename = prefix + 'groups.csv';
     filenames.scoresGroupCsvFilename = prefix + 'scores_by_group.csv';
     filenames.scoresGroupAllCsvFilename = prefix + 'scores_by_group_all.csv';
@@ -271,7 +271,7 @@ async function pipeCursorToArchive<T>(
 
 router.get(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -293,7 +293,12 @@ function stringifyWithColumns(columns: Columns, transform?: (record: any) => any
   });
 }
 
-async function sendInstancesCsv(res, req, columns, options) {
+async function sendInstancesCsv(
+  res: Response,
+  req: Request,
+  columns: Columns,
+  options: { only_highest: boolean; group_work?: boolean },
+) {
   const result = await sqldb.queryCursor(
     sql.select_assessment_instances,
     {
@@ -310,7 +315,7 @@ async function sendInstancesCsv(res, req, columns, options) {
 
 router.get(
   '/:filename',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'assessment'>(async (req, res) => {
     if (!res.locals.authz_data.has_course_instance_permission_view) {
       throw new error.HttpStatusError(403, 'Access denied (must be a student data viewer)');
     }
@@ -357,7 +362,7 @@ router.get(
         ['Role', 'role'],
       ]),
     );
-    if (res.locals.assessment.group_work) {
+    if (res.locals.assessment.team_work) {
       identityColumn = groupNameColumn;
     }
     const instancesColumns = identityColumn.concat(instanceColumn);
@@ -381,12 +386,12 @@ router.get(
     } else if (req.params.filename === filenames.instancesCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: true,
-        group_work: res.locals.assessment.group_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instancesAllCsvFilename) {
       await sendInstancesCsv(res, req, instancesColumns, {
         only_highest: false,
-        group_work: res.locals.assessment.group_work,
+        group_work: res.locals.assessment.team_work,
       });
     } else if (req.params.filename === filenames.instanceQuestionsCsvFilename) {
       const cursor = await sqldb.queryCursor(
@@ -428,7 +433,7 @@ router.get(
       );
 
       // Replace user-friendly column names with upload-friendly names
-      identityColumn = (res.locals.assessment.group_work ? groupNameColumn : studentColumn).map(
+      identityColumn = (res.locals.assessment.team_work ? groupNameColumn : studentColumn).map(
         (pair) => [pair[1], pair[1]],
       );
       const columns = identityColumn.concat([
@@ -476,7 +481,7 @@ router.get(
       );
 
       let submissionColumn = identityColumn;
-      if (res.locals.assessment.group_work) {
+      if (res.locals.assessment.team_work) {
         submissionColumn = identityColumn.concat([['SubmitStudent', 'submission_user']]);
       }
       const columns = submissionColumn.concat([
@@ -556,8 +561,8 @@ router.get(
       );
 
       const columns: Columns = [
-        ['groupName', 'name'],
-        ['UID', 'uid'],
+        ['group_name', 'name'],
+        ['uid', 'uid'],
       ];
       if (groupConfig.has_roles) columns.push(['Role(s)', 'roles']);
       res.attachment(req.params.filename);

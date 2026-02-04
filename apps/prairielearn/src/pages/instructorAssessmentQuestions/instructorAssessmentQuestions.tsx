@@ -2,16 +2,15 @@ import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 
 import { HttpStatusError } from '@prairielearn/error';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { selectAssessmentQuestions } from '../../lib/assessment-question.js';
 import { compiledScriptTag } from '../../lib/assets.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { resetVariantsForAssessmentQuestion } from '../../models/variant.js';
 
-import { InstructorAssessmentQuestionsTable } from './components/InstructorAssessmentQuestionsTable.js';
+import { InstructorAssessmentQuestionsTableLegacy } from './components/InstructorAssessmentQuestionsTableLegacy.js';
 
 const router = Router();
 
@@ -41,32 +40,23 @@ router.get(
           fullWidth: true,
         },
         content: (
-          <>
-            <AssessmentSyncErrorsAndWarnings
-              authzData={pageContext.authz_data}
-              assessment={pageContext.assessment}
-              courseInstance={pageContext.course_instance}
+          <Hydrate>
+            <InstructorAssessmentQuestionsTableLegacy
               course={pageContext.course}
+              questionRows={questionRows}
               urlPrefix={pageContext.urlPrefix}
+              assessmentType={pageContext.assessment.type}
+              assessmentSetName={pageContext.assessment_set.name}
+              assessmentNumber={pageContext.assessment.number}
+              hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
+              hasCourseInstancePermissionEdit={
+                // TODO: This should never be undefined on this page. Ideally we fix
+                // this up in the `extractPageContext` function types.
+                pageContext.authz_data.has_course_instance_permission_edit ?? false
+              }
+              csrfToken={res.locals.__csrf_token}
             />
-            <Hydrate>
-              <InstructorAssessmentQuestionsTable
-                course={pageContext.course}
-                questionRows={questionRows}
-                urlPrefix={pageContext.urlPrefix}
-                assessmentType={pageContext.assessment.type}
-                assessmentSetName={pageContext.assessment_set.name}
-                assessmentNumber={pageContext.assessment.number}
-                hasCoursePermissionPreview={pageContext.authz_data.has_course_permission_preview}
-                hasCourseInstancePermissionEdit={
-                  // TODO: This should never be undefined on this page. Ideally we fix
-                  // this up in the `extractPageContext` function types.
-                  pageContext.authz_data.has_course_instance_permission_edit ?? false
-                }
-                csrfToken={res.locals.__csrf_token}
-              />
-            </Hydrate>
-          </>
+          </Hydrate>
         ),
       }),
     );
@@ -85,7 +75,7 @@ router.post(
       await resetVariantsForAssessmentQuestion({
         assessment_id: res.locals.assessment.id,
         unsafe_assessment_question_id: req.body.unsafe_assessment_question_id,
-        authn_user_id: res.locals.authn_user.user_id,
+        authn_user_id: res.locals.authn_user.id,
       });
       res.redirect(req.originalUrl);
     } else {

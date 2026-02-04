@@ -2,25 +2,24 @@ import { UAParser } from 'ua-parser-js';
 import { z } from 'zod';
 
 import { escapeHtml, html } from '@prairielearn/html';
-import { renderHtml } from '@prairielearn/preact';
 import { run } from '@prairielearn/run';
+import { IdSchema } from '@prairielearn/zod';
 
 import { EditQuestionPointsScoreButtonHtml } from '../../components/EditQuestionPointsScore.js';
 import { Modal } from '../../components/Modal.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { InstanceQuestionPoints } from '../../components/QuestionScore.js';
 import { ScorebarHtml } from '../../components/Scorebar.js';
-import { AssessmentSyncErrorsAndWarnings } from '../../components/SyncErrorsAndWarnings.js';
 import { type InstanceLogEntry } from '../../lib/assessment.js';
 import { compiledScriptTag, nodeModulesAssetPath } from '../../lib/assets.js';
 import {
   type Assessment,
   AssessmentQuestionSchema,
   type ClientFingerprint,
-  IdSchema,
   InstanceQuestionSchema,
 } from '../../lib/db-types.js';
 import { formatFloat, formatPoints } from '../../lib/format.js';
+import type { ResLocalsForPage } from '../../lib/res-locals.js';
 
 export const AssessmentInstanceStatsSchema = z.object({
   assessment_instance_id: IdSchema,
@@ -72,7 +71,7 @@ export function InstructorAssessmentInstance({
   instance_questions,
   assessmentInstanceLog,
 }: {
-  resLocals: Record<string, any>;
+  resLocals: ResLocalsForPage<'assessment-instance'>;
   logCsvFilename: string;
   assessment_instance_stats: AssessmentInstanceStats[];
   assessment_instance_date_formatted: string;
@@ -82,7 +81,7 @@ export function InstructorAssessmentInstance({
 }) {
   return PageLayout({
     resLocals,
-    pageTitle: resLocals.instance_group?.name || resLocals.instance_user?.uid,
+    pageTitle: resLocals.instance_group?.name ?? resLocals.instance_user?.uid ?? '',
     navContext: {
       type: 'instructor',
       page: 'assessment',
@@ -116,15 +115,6 @@ export function InstructorAssessmentInstance({
         csrfToken: resLocals.__csrf_token,
       })}
       ${ExamResetNotSupportedModal({ assessment: resLocals.assessment })}
-      ${renderHtml(
-        <AssessmentSyncErrorsAndWarnings
-          authzData={resLocals.authz_data}
-          assessment={resLocals.assessment}
-          courseInstance={resLocals.course_instance}
-          course={resLocals.course}
-          urlPrefix={resLocals.urlPrefix}
-        />,
-      )}
       <div class="card mb-4">
         <div class="card-header bg-primary text-white">
           <h2>
@@ -705,7 +695,7 @@ export function InstructorAssessmentInstance({
 }
 
 function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint }) {
-  const { browser, device, os } = UAParser(fingerprint.user_agent);
+  const { browser, device, os } = UAParser(fingerprint.user_agent ?? undefined);
   return html`
     <div>
       IP Address:
@@ -720,16 +710,20 @@ function FingerprintContent({ fingerprint }: { fingerprint: ClientFingerprint })
     <div>Session ID: ${fingerprint.user_session_id}</div>
     <div>User Agent:</div>
     <ul>
-      ${browser?.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
-      ${device?.type ? html`<li>Device Type: ${device.type}</li>` : ''}
-      ${device?.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
-      ${os?.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
+      ${browser.name ? html`<li>Browser: ${browser.name} ${browser.version ?? ''}</li>` : ''}
+      ${device.type ? html`<li>Device Type: ${device.type}</li>` : ''}
+      ${device.vendor ? html`<li>Device: ${device.vendor} ${device.model ?? ''}</li>` : ''}
+      ${os.name ? html`<li>OS: ${os.name} ${os.version ?? ''}</li>` : ''}
       <li>Raw: <code>${fingerprint.user_agent}</code></li>
     </ul>
   `;
 }
 
-function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalPointsForm({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'assessment-instance'>;
+}) {
   return html`
     <form name="edit-total-points-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_points" />
@@ -764,7 +758,11 @@ function EditTotalPointsForm({ resLocals }: { resLocals: Record<string, any> }) 
   `;
 }
 
-function EditTotalScorePercForm({ resLocals }: { resLocals: Record<string, any> }) {
+function EditTotalScorePercForm({
+  resLocals,
+}: {
+  resLocals: ResLocalsForPage<'assessment-instance'>;
+}) {
   return html`
     <form name="edit-total-score-perc-form" method="POST">
       <input type="hidden" name="__action" value="edit_total_score_perc" />
@@ -812,11 +810,11 @@ function ResetQuestionVariantsModal({
     body: html`
       <p>
         Are your sure you want to reset all current variants of this question for this
-        ${assessment.group_work ? 'group' : 'student'}?
+        ${assessment.team_work ? 'group' : 'student'}?
         <strong>All ungraded attempts will be lost.</strong>
       </p>
       <p>
-        This ${assessment.group_work ? 'group' : 'student'} will receive a new variant the next time
+        This ${assessment.team_work ? 'group' : 'student'} will receive a new variant the next time
         they view this question.
       </p>
     `,
@@ -838,7 +836,7 @@ function ExamResetNotSupportedModal({ assessment }: { assessment: Assessment }) 
       <p>Resetting question variants is not supported for Exam assessments.</p>
       <p class="mb-0">
         Consider alternative options, such as deleting the assessment instance to allow the
-        ${assessment.group_work ? 'group' : 'student'} to start over.
+        ${assessment.team_work ? 'group' : 'student'} to start over.
       </p>
     `,
     footer: html`

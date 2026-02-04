@@ -22,12 +22,12 @@
                     id="pl-big-o-input-{{uuid}}-suffix">$)$</span>
                 {{#show_info}}
                 <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="Symbolic" data-bs-content="{{info}}" data-bs-placement="auto">
-                    <i class="fa fa-question-circle" aria-hidden="true"></i>
+                    <i class="fas fa-question-circle" aria-hidden="true"></i>
                 </button>
                 {{/show_info}}
                 {{#correct}}
                     <span class="input-group-text">
-                        <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+                        <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
                     </span>
                 {{/correct}}
                 {{#partial}}
@@ -37,7 +37,7 @@
                 {{/partial}}
                 {{#incorrect}}
                     <span class="input-group-text">
-                        <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+                        <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
                     </span>
                 {{/incorrect}}
             </span>
@@ -45,7 +45,7 @@
                     <span class="invalid-feedback d-block">
                         <span class="badge text-bg-danger">
                             Invalid 
-                            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
                         </span>
                         <a 
                             class="link-primary"
@@ -75,7 +75,7 @@
         {{/raw_submitted_answer}}
         <span class="small" style="white-space: nowrap">
             <span class="badge text-bg-danger">
-                Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
             <a
                 class="link-primary"
@@ -95,7 +95,7 @@
         <span class="small" style="white-space: nowrap">
             <span class="badge text-bg-dark border">
                 Missing input
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
             <a 
                 class="link-primary"
@@ -123,8 +123,8 @@
     <button type="button" class="ms-1 btn btn-sm btn-secondary small border"
         data-bs-placement="auto" data-bs-toggle="popover" data-bs-html="true"
         title="Original Input"
-        data-bs-content="Parsed from <samp class=user-output>{{raw_submitted_answer}}</samp>">
-        <i class="fa fa-question-circle" aria-hidden="true"></i>
+        data-bs-content="Parsed from <samp class=&#34;user-output&#34;>{{raw_submitted_answer}}</samp>">
+        <i class="fas fa-question-circle" aria-hidden="true"></i>
     </button>
 
     {{#feedback}}
@@ -132,9 +132,9 @@
             {{{feedback}}}
         </div>
     {{/feedback}}
-    {{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+    {{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
     {{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-    {{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+    {{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
     </div>
     {{/error}}
     {{#inline}}</span>{{/inline}}
@@ -145,28 +145,28 @@ ${{type}}({{a_tru}})$
 {{/answer}}
 
 {{#format}}
-<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code class="user-output">1/2</code> instead of <code class="user-output">0.5</code>.</p>
+<p><strong>General format information:</strong><br>Your answer must be a symbolic expression. All numbers must be rational - so, <code>1/2</code> instead of <code>0.5</code>.</p>
 <!-- From https://stackoverflow.com/a/14417521/2923069 -->
 {{#variables.0}}
 <p>
     <strong>Allowable variables:</strong><br>
-    {{#variables}} <code class="user-output">{{.}}</code> &nbsp; {{/variables}}
+    {{#variables}} <code>{{.}}</code> &nbsp; {{/variables}}
 </p>
 {{/variables.0}}
 {{#constants.0}}
 <p>
     <strong>Allowable constants:</strong><br>
-    {{#constants}} <code class="user-output">{{.}}</code> &nbsp; {{/constants}}
+    {{#constants}} <code>{{.}}</code> &nbsp; {{/constants}}
 </p>
 {{/constants.0}}
 {{#operators.0}}
 <p>
     <strong>Allowable operators:</strong><br>
-    {{#operators}} <code class="user-output">{{.}}</code> &nbsp; {{/operators}}
+    {{#operators}} <code>{{.}}</code> &nbsp; {{/operators}}
 </p>
 {{/operators.0}}
 
-<p>Note that either <code class="user-output">^</code> or <code class="user-output">**</code> can be used for exponentiation.</p>
+<p>Note that either <code>^</code> or <code>**</code> can be used for exponentiation.</p>
 {{/format}}
 
 

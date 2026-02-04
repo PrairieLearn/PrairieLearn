@@ -1,8 +1,9 @@
 import { Temporal } from '@js-temporal/polyfill';
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { useFormContext } from 'react-hook-form';
 
+import { type PublishingStatus, computeStatus } from '../lib/publishing.js';
 import {
   dateToPlainDateTime,
   nowRoundedToSeconds,
@@ -11,28 +12,13 @@ import {
 
 import { FriendlyDate } from './FriendlyDate.js';
 
-type PublishingStatus = 'unpublished' | 'publish_scheduled' | 'published';
+function normalizeDateTimeLocal(value: string): string {
+  // This works around a bug in Chrome where seconds are omitted from the input value when they're 0.
+  // Note that this transformation will only work with a client-side POST.
 
-/** Helper to compute status from dates and current time. */
-function computeStatus(startDate: Date | null, endDate: Date | null): PublishingStatus {
-  if (!startDate && !endDate) {
-    return 'unpublished';
-  }
-
-  const now = nowRoundedToSeconds();
-
-  if (startDate && endDate) {
-    if (endDate <= now) {
-      return 'unpublished';
-    }
-    if (startDate > now) {
-      return 'publish_scheduled';
-    }
-    return 'published';
-  }
-
-  // Should not happen in valid states, but default to unpublished
-  return 'unpublished';
+  // https://stackoverflow.com/questions/19504018/show-seconds-on-input-type-date-local-in-chrome
+  // https://issues.chromium.org/issues/41159420
+  return value.length === 16 ? `${value}:00` : value;
 }
 
 export interface PublishingFormValues {
@@ -52,6 +38,7 @@ export interface PublishingFormValues {
  * @param params.originalStartDate - The original start date of the course instance.
  * @param params.originalEndDate - The original end date of the course instance.
  * @param params.showButtons - Whether to show the buttons to save and cancel.
+ * @param params.formId - An unique ID for the form on the page.
  */
 export function CourseInstancePublishingForm({
   displayTimezone,
@@ -59,12 +46,14 @@ export function CourseInstancePublishingForm({
   originalStartDate,
   originalEndDate,
   showButtons = true,
+  formId,
 }: {
   displayTimezone: string;
   canEdit: boolean;
   originalStartDate: Date | null;
   originalEndDate: Date | null;
   showButtons?: boolean;
+  formId: string;
 }) {
   const originalStatus = computeStatus(originalStartDate, originalEndDate);
 
@@ -89,8 +78,10 @@ export function CourseInstancePublishingForm({
     const now = nowRoundedToSeconds();
     const nowTemporal = dateToPlainDateTime(now, displayTimezone);
 
-    const oneWeekLater = nowTemporal.add({ weeks: 1 });
-    const eighteenWeeksLater = nowTemporal.add({ weeks: 18 });
+    const oneWeekLater = nowTemporal.add({ weeks: 1 }).with({ hour: 0, minute: 1, second: 1 });
+    const eighteenWeeksLater = nowTemporal
+      .add({ weeks: 18 })
+      .with({ hour: 23, minute: 59, second: 59 });
 
     const currentStartDate = startDate === '' ? null : Temporal.PlainDateTime.from(startDate);
     const currentEndDate = endDate === '' ? null : Temporal.PlainDateTime.from(endDate);
@@ -224,15 +215,15 @@ export function CourseInstancePublishingForm({
 
   return (
     <>
-      <div class="mb-4">
+      <div className="mb-4">
         {/* Unpublished */}
-        <div class="mb-3">
-          <div class="form-check">
+        <div className="mb-3">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="radio"
               name="status"
-              id="status-unpublished"
+              id={`${formId}-status-unpublished`}
               value="unpublished"
               checked={selectedStatus === 'unpublished'}
               disabled={!canEdit}
@@ -242,7 +233,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-unpublished">
+            <label className="form-check-label" htmlFor={`${formId}-status-unpublished`}>
               Unpublished
             </label>
           </div>
@@ -250,7 +241,7 @@ export function CourseInstancePublishingForm({
             <>
               <input type="hidden" name="start_date" value={startDate} />
               <input type="hidden" name="end_date" value={endDate} />
-              <div class="ms-4 mt-1 small text-muted">
+              <div className="ms-4 small text-muted">
                 Course is not accessible by any students
                 {startDate && ' except those with extensions'}.
                 {endDate && (
@@ -277,13 +268,13 @@ export function CourseInstancePublishingForm({
         </div>
 
         {/* Publish Scheduled */}
-        <div class="mb-3">
-          <div class="form-check">
+        <div className="mb-3">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="radio"
               name="status"
-              id="status-publish-scheduled"
+              id={`${formId}-status-publish-scheduled`}
               value="publish_scheduled"
               checked={selectedStatus === 'publish_scheduled'}
               disabled={!canEdit}
@@ -293,7 +284,7 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-publish-scheduled">
+            <label className="form-check-label" htmlFor={`${formId}-status-publish-scheduled`}>
               Scheduled to be published
             </label>
           </div>
@@ -301,7 +292,7 @@ export function CourseInstancePublishingForm({
           {selectedStatus === 'publish_scheduled' && (
             <>
               {startDate && endDate && (
-                <div class="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course will be published at{' '}
                   <FriendlyDate
                     date={Temporal.PlainDateTime.from(startDate)}
@@ -319,16 +310,16 @@ export function CourseInstancePublishingForm({
                   .
                 </div>
               )}
-              <div class="ms-4 mt-2">
-                <div class="mb-3">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="start_date">
+              <div className="ms-4 mt-2">
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <label className="form-label mb-0" htmlFor={`${formId}-start-date`}>
                       Start date
                     </label>
                     {canEdit && (
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline-primary"
+                        className="btn btn-sm btn-outline-primary"
                         disabled={!startDate}
                         onClick={() => handleAddWeek('start_date')}
                       >
@@ -336,34 +327,41 @@ export function CourseInstancePublishingForm({
                       </button>
                     )}
                   </div>
-                  <div class="input-group mt-2">
+                  <div className="input-group mt-2">
                     <input
                       type="datetime-local"
-                      class={clsx('form-control', errors.start_date && 'is-invalid')}
-                      id="start_date"
+                      className={clsx('form-control', errors.start_date && 'is-invalid')}
+                      id={`${formId}-start-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.start_date}
+                      aria-errormessage={
+                        errors.start_date ? `${formId}-start-date-error` : undefined
+                      }
                       {...register('start_date', {
                         validate: validateStartDate,
+                        setValueAs: normalizeDateTimeLocal,
                         deps: ['end_date'],
                       })}
                     />
-                    <span class="input-group-text">{displayTimezone}</span>
+                    <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.start_date && (
-                    <div class="text-danger small mt-1">{errors.start_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-start-date-error`}>
+                      {errors.start_date.message}
+                    </div>
                   )}
                 </div>
 
-                <div class="mb-3">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end_date">
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline-primary"
+                        className="btn btn-sm btn-outline-primary"
                         disabled={!endDate}
                         onClick={() => handleAddWeek('end_date')}
                       >
@@ -371,21 +369,26 @@ export function CourseInstancePublishingForm({
                       </button>
                     )}
                   </div>
-                  <div class="input-group mt-2">
+                  <div className="input-group mt-2">
                     <input
                       type="datetime-local"
-                      class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      className={clsx('form-control', errors.end_date && 'is-invalid')}
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
-                    <span class="input-group-text">{displayTimezone}</span>
+                    <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-end-date-error`}>
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>
@@ -394,13 +397,13 @@ export function CourseInstancePublishingForm({
         </div>
 
         {/* Published */}
-        <div class="mb-3">
-          <div class="form-check">
+        <div className="mb-3">
+          <div className="form-check">
             <input
-              class="form-check-input"
+              className="form-check-input"
               type="radio"
               name="status"
-              id="status-published"
+              id={`${formId}-status-published`}
               value="published"
               checked={selectedStatus === 'published'}
               disabled={!canEdit}
@@ -410,14 +413,14 @@ export function CourseInstancePublishingForm({
                 }
               }}
             />
-            <label class="form-check-label" for="status-published">
+            <label className="form-check-label" htmlFor={`${formId}-status-published`}>
               Published
             </label>
           </div>
           {selectedStatus === 'published' && (
             <>
               {startDate && endDate && (
-                <div class="ms-4 mt-1 small text-muted">
+                <div className="ms-4 small text-muted">
                   The course{' '}
                   {plainDateTimeStringToDate(startDate, displayTimezone).getTime() ===
                     originalStartDate?.getTime() && originalStatus === 'published'
@@ -441,16 +444,16 @@ export function CourseInstancePublishingForm({
                 </div>
               )}
               <input type="hidden" name="start_date" value={startDate} />
-              <div class="ms-4 mt-2">
-                <div class="mb-3">
-                  <div class="d-flex justify-content-between align-items-center">
-                    <label class="form-label mb-0" for="end_date">
+              <div className="ms-4 mt-2">
+                <div className="mb-3">
+                  <div className="d-flex justify-content-between align-items-center">
+                    <label className="form-label mb-0" htmlFor={`${formId}-end-date`}>
                       End date
                     </label>
                     {canEdit && (
                       <button
                         type="button"
-                        class="btn btn-sm btn-outline-primary"
+                        className="btn btn-sm btn-outline-primary"
                         disabled={!endDate}
                         onClick={() => handleAddWeek('end_date')}
                       >
@@ -458,21 +461,26 @@ export function CourseInstancePublishingForm({
                       </button>
                     )}
                   </div>
-                  <div class="input-group mt-2">
+                  <div className="input-group mt-2">
                     <input
                       type="datetime-local"
-                      class={clsx('form-control', errors.end_date && 'is-invalid')}
-                      id="end_date"
+                      className={clsx('form-control', errors.end_date && 'is-invalid')}
+                      id={`${formId}-end-date`}
                       step="1"
                       disabled={!canEdit}
+                      aria-invalid={!!errors.end_date}
+                      aria-errormessage={errors.end_date ? `${formId}-end-date-error` : undefined}
                       {...register('end_date', {
                         validate: validateEndDate,
+                        setValueAs: normalizeDateTimeLocal,
                       })}
                     />
-                    <span class="input-group-text">{displayTimezone}</span>
+                    <span className="input-group-text">{displayTimezone}</span>
                   </div>
                   {errors.end_date && (
-                    <div class="text-danger small mt-1">{errors.end_date.message}</div>
+                    <div className="form-text text-danger" id={`${formId}-end-date-error`}>
+                      {errors.end_date.message}
+                    </div>
                   )}
                 </div>
               </div>
@@ -482,13 +490,13 @@ export function CourseInstancePublishingForm({
       </div>
 
       {canEdit && showButtons && (
-        <div class="d-flex gap-2">
-          <button type="submit" class="btn btn-primary" disabled={!isDirty}>
+        <div className="d-flex gap-2">
+          <button type="submit" className="btn btn-primary" disabled={!isDirty}>
             Save
           </button>
           <button
             type="button"
-            class="btn btn-secondary"
+            className="btn btn-secondary"
             disabled={!isDirty}
             onClick={() => {
               setSelectedStatus(originalStatus);

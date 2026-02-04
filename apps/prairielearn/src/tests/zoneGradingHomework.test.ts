@@ -1,5 +1,5 @@
 import * as cheerio from 'cheerio';
-import _ from 'lodash';
+import { keyBy } from 'es-toolkit';
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, it } from 'vitest';
 import z from 'zod';
@@ -46,7 +46,7 @@ const questionsArray: TestQuestion[] = [
   { qid: 'partialCredit3', type: 'Freeform', maxPoints: 50 },
 ];
 
-const questions = _.keyBy(questionsArray, 'qid');
+const questions = keyBy(questionsArray, (question) => question.qid);
 
 const assessmentMaxPoints = 57;
 
@@ -170,7 +170,7 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
         questionsArray.forEach(function (question) {
           for (const prop in question) {
             if (prop !== 'qid' && prop !== 'type' && prop !== 'maxPoints') {
-              delete question[prop];
+              delete question[prop as keyof TestQuestion];
             }
           }
           question.points = 0;
@@ -312,7 +312,7 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
-              locals.getSubmittedAnswer = function (_variant) {
+              locals.getSubmittedAnswer = function (_variant: any) {
                 return {
                   s: String(questionTest.score),
                 };

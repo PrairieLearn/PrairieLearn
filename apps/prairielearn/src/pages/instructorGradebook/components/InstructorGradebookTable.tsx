@@ -20,26 +20,25 @@ import {
   useQueryState,
   useQueryStates,
 } from 'nuqs';
-import { useMemo, useRef, useState } from 'preact/compat';
+import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
   CategoricalColumnFilter,
   type NumericColumnFilterValue,
   NumericInputColumnFilter,
+  NuqsAdapter,
   PresetFilterDropdown,
   TanstackTableCard,
+  type TanstackTableCsvCell,
   numericColumnFilterFn,
-} from '@prairielearn/ui';
-
-import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
-import {
-  NuqsAdapter,
   parseAsColumnPinningState,
   parseAsColumnVisibilityStateWithColumns,
   parseAsNumericFilter,
   parseAsSortingState,
-} from '../../../lib/client/nuqs.js';
+} from '@prairielearn/ui';
+
+import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import { getStudentEnrollmentUrl } from '../../../lib/client/url.js';
 import { type EnumEnrollmentStatus, EnumEnrollmentStatusSchema } from '../../../lib/db-types.js';
@@ -51,7 +50,7 @@ import {
 
 import { EditScoreButton } from './EditScoreModal.js';
 
-const DEFAULT_SORT: SortingState = [{ id: 'role', desc: true }];
+const DEFAULT_SORT: SortingState = [{ id: 'uid', desc: false }];
 const DEFAULT_PINNING: ColumnPinningState = { left: ['uid'], right: [] };
 
 const ROLE_VALUES = ['Staff', 'Student', 'None'] as const;
@@ -60,7 +59,6 @@ const STATUS_VALUES = Object.values(EnumEnrollmentStatusSchema.Values);
 const DEFAULT_STATUS_FILTER: EnumEnrollmentStatus[] = ['joined'];
 
 const columnHelper = createColumnHelper<GradebookRow>();
-const queryClient = new QueryClient();
 
 /**
  * Recursively extracts leaf column IDs from column definitions.
@@ -88,7 +86,7 @@ interface GradebookTableProps {
   gradebookRows: GradebookRow[];
   urlPrefix: string;
   courseInstanceId: string;
-  csvFilename: string;
+  filenameBase: string;
 }
 
 function GradebookTable({
@@ -97,7 +95,7 @@ function GradebookTable({
   gradebookRows: initialGradebookRows,
   urlPrefix,
   courseInstanceId,
-  csvFilename,
+  filenameBase,
 }: GradebookTableProps) {
   const tableRef = useRef<HTMLDivElement>(null);
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
@@ -262,14 +260,14 @@ function GradebookTable({
           <span>
             Role{' '}
             <button
-              class="btn btn-xs btn-ghost"
+              className="btn btn-xs btn-ghost"
               type="button"
               aria-label="Roles help"
               data-bs-toggle="modal"
               data-bs-target="#role-help"
               onClick={(e) => e.stopPropagation()}
             >
-              <i class="bi-question-circle-fill" aria-hidden="true" />
+              <i className="bi-question-circle-fill" aria-hidden="true" />
             </button>
           </span>
         ),
@@ -321,7 +319,7 @@ function GradebookTable({
                 header: () => (
                   <a href={`${urlPrefix}/assessment/${assessment.assessment_id}`}>
                     <span
-                      class={clsx('badge', `color-${assessment.color}`)}
+                      className={clsx('badge', `color-${assessment.color}`)}
                       title={assessment.label}
                     >
                       {assessment.label}
@@ -339,7 +337,7 @@ function GradebookTable({
                   }
 
                   return (
-                    <span class="text-nowrap">
+                    <span className="text-nowrap">
                       <a
                         href={`${urlPrefix}/assessment_instance/${assessmentData.assessment_instance_id}`}
                       >
@@ -470,37 +468,48 @@ function GradebookTable({
         title="Gradebook"
         singularLabel="user"
         pluralLabel="users"
-        // eslint-disable-next-line @eslint-react/no-forbidden-props
         className="h-100"
-        headerButtons={
-          <button
-            type="button"
-            class="btn btn-sm btn-light"
-            onClick={() => {
-              window.location.href = `${urlPrefix}/instance_admin/gradebook/${csvFilename}`;
-            }}
-          >
-            <i class="fa fa-download" aria-hidden="true" /> Download
-          </button>
-        }
-        columnManagerButtons={
-          <PresetFilterDropdown
-            table={table}
-            label="Filter"
-            options={{
-              'Joined students': [
-                { id: 'enrollment_status', value: ['joined'] },
-                { id: 'role', value: ['Student'] },
-              ],
-              'All students': [{ id: 'role', value: ['Student'] }],
-              'All students & staff': [],
-            }}
-            onSelect={handleEnrollmentFilterSelect}
-          />
-        }
+        downloadButtonOptions={{
+          filenameBase,
+          mapRowToData: (row: GradebookRow) => {
+            const data: TanstackTableCsvCell[] = [
+              { name: 'UID', value: row.uid },
+              { name: 'Name', value: row.user_name },
+              { name: 'UIN', value: row.uin },
+              { name: 'Role', value: row.role },
+              { name: 'Enrollment', value: row.enrollment?.status ?? null },
+            ];
+            for (const assessment of courseAssessments) {
+              data.push({
+                name: assessment.label,
+                // eslint-disable-next-line @typescript-eslint/no-unnecessary-condition
+                value: row.scores[assessment.assessment_id]?.score_perc ?? null,
+              });
+            }
+            return data;
+          },
+          pluralLabel: "users' grades",
+          singularLabel: "user's grades",
+          hasSelection: false,
+        }}
+        columnManager={{
+          buttons: (
+            <PresetFilterDropdown
+              table={table}
+              label="Filter"
+              options={{
+                'Joined students': [
+                  { id: 'enrollment_status', value: ['joined'] },
+                  { id: 'role', value: ['Student'] },
+                ],
+                'All students': [{ id: 'role', value: ['Student'] }],
+                'All students & staff': [],
+              }}
+              onSelect={handleEnrollmentFilterSelect}
+            />
+          ),
+        }}
         globalFilter={{
-          value: globalFilter,
-          setValue: setGlobalFilter,
           placeholder: 'Search by UID, name...',
         }}
         tableOptions={{
@@ -517,7 +526,7 @@ export function InstructorGradebookTable({
   courseAssessments,
   gradebookRows,
   urlPrefix,
-  csvFilename,
+  filenameBase,
   search,
   isDevMode,
   courseInstanceId,
@@ -526,6 +535,7 @@ export function InstructorGradebookTable({
   isDevMode: boolean;
   courseInstanceId: string;
 } & GradebookTableProps) {
+  const [queryClient] = useState(() => new QueryClient());
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
@@ -534,7 +544,7 @@ export function InstructorGradebookTable({
           courseAssessments={courseAssessments}
           gradebookRows={gradebookRows}
           urlPrefix={urlPrefix}
-          csvFilename={csvFilename}
+          filenameBase={filenameBase}
           courseInstanceId={courseInstanceId}
         />
       </QueryClientProviderDebug>

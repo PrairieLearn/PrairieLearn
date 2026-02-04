@@ -1,16 +1,16 @@
-import { Router } from 'express';
+import { type Request, type Response, Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
+import { IdSchema } from '@prairielearn/zod';
 
 import { getQuestionCopyTargets } from '../../lib/copy-content.js';
-import { IdSchema, UserSchema } from '../../lib/db-types.js';
+import { UserSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
 import { getAndRenderVariant, renderPanelsForSubmission } from '../../lib/question-render.js';
 import { processSubmission } from '../../lib/question-submission.js';
 import { logPageView } from '../../middlewares/logPageView.js';
-import { selectCourseById } from '../../models/course.js';
 import { selectQuestionById } from '../../models/question.js';
 import { selectAndAuthzVariant } from '../../models/variant.js';
 
@@ -18,26 +18,25 @@ import { PublicQuestionPreview } from './publicQuestionPreview.html.js';
 
 const router = Router({ mergeParams: true });
 
-async function setLocals(req, res) {
+async function setLocals(req: Request, res: Response) {
   res.locals.user = UserSchema.parse(res.locals.authn_user);
   res.locals.authz_data = { user: res.locals.user };
-  res.locals.course = await selectCourseById(req.params.course_id);
   res.locals.question = await selectQuestionById(req.params.question_id);
-
-  const disablePublicWorkspaces = await features.enabledFromLocals(
-    'disable-public-workspaces',
-    res.locals,
-  );
-
-  if (res.locals.question.workspace_image && disablePublicWorkspaces) {
-    throw new error.HttpStatusError(403, 'Access denied');
-  }
 
   if (
     !(res.locals.question.share_publicly || res.locals.question.share_source_publicly) ||
     res.locals.course.id !== res.locals.question.course_id
   ) {
     throw new error.HttpStatusError(404, 'Not Found');
+  }
+
+  const disablePublicWorkspaces = await features.enabled('disable-public-workspaces', {
+    institution_id: res.locals.course.institution_id,
+    course_id: res.locals.course.id,
+  });
+
+  if (res.locals.question.workspace_image && disablePublicWorkspaces) {
+    throw new error.HttpStatusError(403, 'Access denied');
   }
 }
 

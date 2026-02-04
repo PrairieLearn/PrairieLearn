@@ -1,14 +1,15 @@
-import isPlainObject from 'is-plain-obj';
+import { isPlainObject } from 'es-toolkit';
 import * as streamifier from 'streamifier';
 import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstancePoints, updateAssessmentInstanceScore } from './assessment.js';
 import { createCsvParser } from './csv.js';
-import { type Assessment, IdSchema } from './db-types.js';
+import { type Assessment } from './db-types.js';
 import * as manualGrading from './manualGrading.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -39,23 +40,17 @@ export async function uploadInstanceQuestionScores(
   );
 
   const serverJob = await createServerJob({
+    type: 'upload_instance_question_scores',
+    description: 'Upload question scores for ' + assessment_label,
+    userId: user_id,
+    authnUserId: authn_user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment.id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_instance_question_scores',
-    description: 'Upload question scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
     job.info('Uploading question scores for ' + assessment_label);
-
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
 
     let successCount = 0;
     let errorCount = 0;
@@ -77,42 +72,18 @@ export async function uploadInstanceQuestionScores(
       },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        try {
-          if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
-            successCount++;
-            const msg = `Processed CSV line ${info.lines}: ${JSON.stringify(record)}`;
-            if (output == null) {
-              output = msg;
-            } else {
-              output += '\n' + msg;
-            }
-          } else {
-            skippedCount++;
-            // NO OUTPUT
-          }
-        } catch (err) {
-          errorCount++;
-          const msg = `Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`;
-          if (output == null) {
-            output = msg;
-          } else {
-            output += '\n' + msg;
-          }
+    for await (const { info, record } of csvParser) {
+      try {
+        if (await updateInstanceQuestionFromCsvRow(record, assessment, authn_user_id)) {
+          successCount++;
+          job.verbose(`Processed CSV line ${info.lines}: ${JSON.stringify(record)}`);
+        } else {
+          skippedCount++;
+          // NO OUTPUT
         }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output ?? '');
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+      } catch (err: any) {
+        errorCount++;
+        job.error(`Error processing CSV line ${info.lines}: ${JSON.stringify(record)}\n${err}`);
       }
     }
 
@@ -124,6 +95,10 @@ export async function uploadInstanceQuestionScores(
     }
     if (skippedCount !== 0) {
       job.warn(`${skippedCount} questions were skipped, with no score/feedback values to update`);
+    }
+    if (errorCount > 0 && successCount === 0) {
+      // Mark the job as failed if there were no successful updates and at least one error
+      job.fail('No question scores were updated due to errors in the CSV file');
     }
   });
 
@@ -153,23 +128,17 @@ export async function uploadAssessmentInstanceScores(
     await selectAssessmentInfoForJob(assessment_id);
 
   const serverJob = await createServerJob({
+    type: 'upload_assessment_instance_scores',
+    description: 'Upload total scores for ' + assessment_label,
+    authnUserId: authn_user_id,
+    userId: user_id,
     courseId: course_id,
     courseInstanceId: course_instance_id,
     assessmentId: assessment_id,
-    userId: user_id,
-    authnUserId: authn_user_id,
-    type: 'upload_assessment_instance_scores',
-    description: 'Upload total scores for ' + assessment_label,
   });
 
   serverJob.executeInBackground(async (job) => {
-    job.verbose('Uploading total scores for ' + assessment_label);
-
-    // accumulate output lines in the "output" variable and actually
-    // output put them in blocks, to avoid spamming the updates
-    let output = null as string | null;
-    let outputCount = 0;
-    let outputThreshold = 100;
+    job.info('Uploading total scores for ' + assessment_label);
 
     let successCount = 0;
     let errorCount = 0;
@@ -180,44 +149,28 @@ export async function uploadAssessmentInstanceScores(
       { integerColumns: ['instance'], floatColumns: ['score_perc', 'points'] },
     );
 
-    try {
-      for await (const { info, record } of csvParser) {
-        const msg = `Processing CSV line ${info.lines}: ${JSON.stringify(record)}`;
-        if (output == null) {
-          output = msg;
-        } else {
-          output += '\n' + msg;
-        }
-        try {
-          await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
-          successCount++;
-        } catch (err) {
-          errorCount++;
-          const msg = String(err);
-          output += '\n' + msg;
-        }
-        outputCount++;
-        if (outputCount >= outputThreshold) {
-          job.verbose(output);
-          output = null;
-          outputCount = 0;
-          outputThreshold *= 2; // exponential backoff
-        }
-      }
-    } finally {
-      // Log output even in the case of failure.
-      if (output != null) {
-        job.verbose(output);
+    for await (const { info, record } of csvParser) {
+      job.verbose(`Processing CSV line ${info.lines}: ${JSON.stringify(record)}`);
+      try {
+        await updateAssessmentInstanceFromCsvRow(record, assessment_id, authn_user_id);
+        successCount++;
+      } catch (err) {
+        errorCount++;
+        job.error(String(err));
       }
     }
 
     if (errorCount === 0) {
-      job.verbose(
+      job.info(
         `Successfully updated scores for ${successCount} assessment instances, with no errors`,
       );
     } else {
-      job.verbose(`Successfully updated scores for ${successCount} assessment instances`);
+      job.info(`Successfully updated scores for ${successCount} assessment instances`);
       job.error(`Error updating ${errorCount} assessment instances`);
+      if (successCount === 0) {
+        // Mark the job as failed if there were no successful updates and at least one error
+        job.fail('No assessment instance scores were updated due to errors in the CSV file');
+      }
     }
   });
 
