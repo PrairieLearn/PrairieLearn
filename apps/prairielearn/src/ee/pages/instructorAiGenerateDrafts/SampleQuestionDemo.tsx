@@ -1,4 +1,4 @@
-import { useLayoutEffect, useRef, useState } from 'react';
+import { type ReactNode, useLayoutEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Card from 'react-bootstrap/Card';
 import CardBody from 'react-bootstrap/CardBody';
@@ -20,7 +20,13 @@ import {
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
+export function SampleQuestionDemo({
+  prompt,
+  header,
+}: {
+  prompt: ExamplePromptWithId;
+  header?: ReactNode;
+}) {
   const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
 
   // Used if the question receives a number or string response
@@ -162,13 +168,8 @@ export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) 
   });
 
   return (
-    <Card ref={cardRef} className="shadow">
-      <CardHeader>
-        <div className="d-flex align-items-center gap-2">
-          <p className="mb-0">{prompt.name}</p>
-          <span className="badge rounded-pill bg-success me-3">Try me!</span>
-        </div>
-      </CardHeader>
+    <Card ref={cardRef}>
+      {header && <CardHeader>{header}</CardHeader>}
       <CardBody>
         {variant.question
           .split(/(\$\$[\s\S]+?\$\$|\$[\s\S]+?\$|\*\*[\s\S]+?\*\*)/g)

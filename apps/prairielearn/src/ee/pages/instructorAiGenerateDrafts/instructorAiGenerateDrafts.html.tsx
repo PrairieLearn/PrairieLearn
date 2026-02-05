@@ -73,7 +73,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div class="card mb-5 mx-auto" style="max-width: 700px">
+      <div class="card mb-3 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
@@ -114,10 +114,10 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div class="mt-2">${hydrateHtml(<SampleQuestions />)}</div>
           </form>
         </div>
       </div>
+      <div class="mb-5 mx-auto" style="max-width: 700px">${hydrateHtml(<SampleQuestions />)}</div>
       ${hasDrafts
         ? html`
             <div class="d-flex flex-row align-items-center justify-content-between mb-2">

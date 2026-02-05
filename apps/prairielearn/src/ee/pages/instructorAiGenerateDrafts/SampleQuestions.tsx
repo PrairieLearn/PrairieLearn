@@ -4,10 +4,8 @@ import AccordionBody from 'react-bootstrap/AccordionBody';
 import AccordionHeader from 'react-bootstrap/AccordionHeader';
 import AccordionItem from 'react-bootstrap/AccordionItem';
 import Button from 'react-bootstrap/Button';
-import Dropdown from 'react-bootstrap/Dropdown';
-import DropdownItem from 'react-bootstrap/DropdownItem';
-import DropdownMenu from 'react-bootstrap/DropdownMenu';
-import DropdownToggle from 'react-bootstrap/DropdownToggle';
+import FormSelect from 'react-bootstrap/FormSelect';
+import InputGroup from 'react-bootstrap/InputGroup';
 import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
 import Tooltip from 'react-bootstrap/Tooltip';
 
@@ -34,14 +32,18 @@ export function SampleQuestions() {
       <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
         <AccordionBody>
-          <SampleQuestionSelector
-            selectedQuestionName={selectedQuestion.name}
-            selectedQuestionIndex={selectedQuestionIndex}
-            onSelectQuestionIndex={setSelectedQuestionIndex}
-            onClickPrevious={handleClickPrevious}
-            onClickNext={handleClickNext}
+          <SampleQuestionDemo
+            key={selectedQuestion.id}
+            prompt={selectedQuestion}
+            header={
+              <SampleQuestionSelector
+                selectedQuestionIndex={selectedQuestionIndex}
+                onSelectQuestionIndex={setSelectedQuestionIndex}
+                onClickPrevious={handleClickPrevious}
+                onClickNext={handleClickNext}
+              />
+            }
           />
-          <SampleQuestionDemo key={selectedQuestion.id} prompt={selectedQuestion} />
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
       </AccordionItem>
@@ -52,56 +54,46 @@ export function SampleQuestions() {
 SampleQuestions.displayName = 'SampleQuestions';
 
 function SampleQuestionSelector({
-  selectedQuestionName,
   selectedQuestionIndex,
   onSelectQuestionIndex,
   onClickPrevious,
   onClickNext,
 }: {
-  selectedQuestionName: string;
   selectedQuestionIndex: number;
   onSelectQuestionIndex: (index: number) => void;
   onClickPrevious: () => void;
   onClickNext: () => void;
 }) {
   return (
-    <div style={{ width: '100%' }} className="d-flex align-items-center gap-2 mb-3 flex-wrap">
-      <Dropdown
-        style={{ flex: 1 }}
-        onSelect={(eventKey) => onSelectQuestionIndex(Number(eventKey))}
+    <InputGroup>
+      <FormSelect
+        value={selectedQuestionIndex}
+        aria-label="Select example question"
+        onChange={(e) => onSelectQuestionIndex(Number(e.target.value))}
       >
-        <DropdownToggle
-          as="button"
-          type="button"
-          style={{ width: '100%' }}
-          className="btn border d-flex justify-content-between align-items-center bg-white"
-        >
-          {selectedQuestionName}
-        </DropdownToggle>
-        <DropdownMenu>
-          {examplePromptsArray.map((prompt, index) => (
-            <DropdownItem
-              key={prompt.id}
-              active={index === selectedQuestionIndex}
-              eventKey={index.toString()}
-            >
-              {prompt.name}
-            </DropdownItem>
-          ))}
-        </DropdownMenu>
-      </Dropdown>
-      <div className="d-flex align-items-center gap-2">
-        <Button disabled={selectedQuestionIndex === 0} onClick={onClickPrevious}>
-          Previous
-        </Button>
-        <Button
-          disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
-          onClick={onClickNext}
-        >
-          Next
-        </Button>
-      </div>
-    </div>
+        {examplePromptsArray.map((prompt, index) => (
+          <option key={prompt.id} value={index}>
+            {prompt.name}
+          </option>
+        ))}
+      </FormSelect>
+      <Button
+        variant="outline-secondary"
+        disabled={selectedQuestionIndex === 0}
+        aria-label="Previous example"
+        onClick={onClickPrevious}
+      >
+        <i className="bi bi-chevron-left" aria-hidden="true" />
+      </Button>
+      <Button
+        variant="outline-secondary"
+        disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
+        aria-label="Next example"
+        onClick={onClickNext}
+      >
+        <i className="bi bi-chevron-right" aria-hidden="true" />
+      </Button>
+    </InputGroup>
   );
 }
 
@@ -121,7 +113,9 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
         placement="top"
         overlay={<Tooltip>Copy this prompt to the prompt input</Tooltip>}
       >
-        <Button onClick={handleUsePrompt}>Use prompt</Button>
+        <Button variant="outline-primary" onClick={handleUsePrompt}>
+          Use prompt
+        </Button>
       </OverlayTrigger>
     </>
   );
