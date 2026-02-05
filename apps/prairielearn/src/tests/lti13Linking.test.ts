@@ -18,6 +18,7 @@ import * as helperServer from './helperServer.js';
 import {
   LTI_CONTEXT_ID,
   LTI_DEPLOYMENT_ID,
+  createCrossInstitutionFixture,
   createLti13Instance,
   grantCoursePermissions,
   linkLtiContext,
@@ -391,31 +392,18 @@ describe('LTI 1.3 course instance linking', () => {
 
     test.sequential('cannot link course instance from different institution', async () => {
       // Create a second institution with its own course and course instance
-      await execute(`
-        INSERT INTO institutions (id, short_name, long_name, uid_regexp)
-        VALUES ('2', 'Other', 'Other Institution', '@other\\.edu$')
-      `);
-
-      await execute(`
-        INSERT INTO courses (id, short_name, title, institution_id, path, branch, display_timezone, options)
-        VALUES ('2', 'OTHER 101', 'Other Course', '2', '/course2', 'main', 'America/Chicago', '{}')
-      `);
-
-      await execute(`
-        INSERT INTO course_instances (id, course_id, short_name, long_name, display_timezone, enrollment_code)
-        VALUES ('2', '2', 'Other CI', 'Other Course Instance', 'America/Chicago', 'OTHER101-001')
-      `);
+      const { courseId, courseInstanceId } = await createCrossInstitutionFixture();
 
       const fetchWithCookies = fetchCookie(fetch);
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/1/course_navigation`;
 
-      // Grant permissions for the OTHER institution's course (institution 2)
-      // This user has permissions for course 2, but the LTI instance is in institution 1
+      // Grant permissions for the OTHER institution's course
+      // This user has permissions for course in institution 2, but the LTI instance is in institution 1
       await grantCoursePermissions({
         uid: 'cross-inst-instructor@example.com',
-        courseId: '2',
+        courseId,
         courseRole: 'Editor',
-        courseInstanceId: '2',
+        courseInstanceId,
         courseInstanceRole: 'Student Data Editor',
         authnUserId: '1',
       });
@@ -454,7 +442,7 @@ describe('LTI 1.3 course instance linking', () => {
         method: 'POST',
         body: new URLSearchParams({
           __csrf_token: csrfToken,
-          unsafe_course_instance_id: '2', // Course instance from different institution
+          unsafe_course_instance_id: courseInstanceId,
         }),
         redirect: 'manual',
       });
@@ -467,8 +455,8 @@ describe('LTI 1.3 course instance linking', () => {
       const linkRecord = await queryOptionalRow(
         `SELECT * FROM lti13_course_instances
          WHERE lti13_instance_id = '1'
-         AND course_instance_id = '2'`,
-        {},
+         AND course_instance_id = $course_instance_id`,
+        { course_instance_id: courseInstanceId },
         Lti13CourseInstanceSchema,
       );
       assert.isNull(linkRecord);

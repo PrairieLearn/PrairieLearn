@@ -3,7 +3,8 @@ import * as jose from 'jose';
 import type nodeJose from 'node-jose';
 import { assert } from 'vitest';
 
-import { execute } from '@prairielearn/postgres';
+import { execute, queryRow } from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import {
   insertCourseInstancePermissions,
@@ -365,4 +366,36 @@ export async function grantCoursePermissions({
   }
 
   return user;
+}
+
+/**
+ * Creates a secondary institution with its own course and course instance.
+ * Used for testing cross-institution authorization checks.
+ */
+export async function createCrossInstitutionFixture() {
+  const institutionId = await queryRow(
+    `INSERT INTO institutions (short_name, long_name, uid_regexp)
+     VALUES ('Other', 'Other Institution', '@other\\.edu$')
+     RETURNING id`,
+    {},
+    IdSchema,
+  );
+
+  const courseId = await queryRow(
+    `INSERT INTO courses (short_name, title, institution_id, path, branch, display_timezone, options)
+     VALUES ('OTHER 101', 'Other Course', $institution_id, '/course2', 'main', 'America/Chicago', '{}')
+     RETURNING id`,
+    { institution_id: institutionId },
+    IdSchema,
+  );
+
+  const courseInstanceId = await queryRow(
+    `INSERT INTO course_instances (course_id, short_name, long_name, display_timezone, enrollment_code)
+     VALUES ($course_id, 'Other CI', 'Other Course Instance', 'America/Chicago', 'OTHER101-001')
+     RETURNING id`,
+    { course_id: courseId },
+    IdSchema,
+  );
+
+  return { institutionId, courseId, courseInstanceId };
 }
