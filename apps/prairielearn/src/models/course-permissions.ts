@@ -22,7 +22,82 @@ import {
 
 import { selectOrInsertUserByUid } from './user.js';
 
+type EnrollmentUpdateReason = 'staff_permissions_granted' | 'staff_permissions_removed';
+
 const sql = loadSqlEquiv(import.meta.url);
+
+/**
+ * Updates all enrollments for a user in all instances of a course to 'left' status.
+ * This should be called within a transaction along with permission changes.
+ */
+async function updateEnrollmentsToLeftForCourse({
+  course_id,
+  user_id,
+  authn_user_id,
+  reason,
+}: {
+  course_id: string;
+  user_id: string;
+  authn_user_id: string;
+  reason: EnrollmentUpdateReason;
+}): Promise<void> {
+  await execute(sql.update_enrollments_to_left_for_course, {
+    course_id,
+    user_id,
+    authn_user_id,
+    reason,
+  });
+}
+
+/**
+ * Updates all enrollments for multiple users in all instances of a course to 'left' status.
+ * This should be called within a transaction along with permission changes.
+ */
+async function updateEnrollmentsToLeftForCourseBatch({
+  course_id,
+  user_ids,
+  authn_user_id,
+  reason,
+}: {
+  course_id: string;
+  user_ids: string[];
+  authn_user_id: string;
+  reason: EnrollmentUpdateReason;
+}): Promise<void> {
+  if (user_ids.length === 0) return;
+  await execute(sql.update_enrollments_to_left_for_course_batch, {
+    course_id,
+    user_ids,
+    authn_user_id,
+    reason,
+  });
+}
+
+/**
+ * Updates enrollment for a user in a specific course instance to 'left' status.
+ * This should be called within a transaction along with permission changes.
+ */
+async function updateEnrollmentToLeftForCourseInstance({
+  course_id,
+  course_instance_id,
+  user_id,
+  authn_user_id,
+  reason,
+}: {
+  course_id: string;
+  course_instance_id: string;
+  user_id: string;
+  authn_user_id: string;
+  reason: EnrollmentUpdateReason;
+}): Promise<void> {
+  await execute(sql.update_enrollment_to_left_for_course_instance, {
+    course_id,
+    course_instance_id,
+    user_id,
+    authn_user_id,
+    reason,
+  });
+}
 
 /**
  * Inserts course permissions for a user identified by UID. If the user doesn't
@@ -56,6 +131,9 @@ export async function insertCoursePermissionsByUserUid({
  * Inserts course permissions for a user identified by user ID. This only allows
  * stepping up in permissions; if the user already has a higher role, the role
  * is not changed.
+ *
+ * When granting non-'None' permissions, also updates any existing enrollments
+ * for this user in instances of this course to 'left' status.
  */
 export async function insertCoursePermissionsByUserId({
   course_id,
@@ -68,17 +146,34 @@ export async function insertCoursePermissionsByUserId({
   course_role: NonNullable<CoursePermission['course_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.insert_course_permissions, {
-    course_id,
-    user_id,
-    course_role,
-    authn_user_id,
+  await runInTransactionAsync(async () => {
+    await execute(sql.insert_course_permissions, {
+      course_id,
+      user_id,
+      course_role,
+      authn_user_id,
+    });
+
+    // Update enrollments to 'left' when granting non-'None' permissions.
+    // The enrollment update is idempotent (only updates 'joined' enrollments),
+    // so it's safe to call even if permissions weren't actually changed.
+    if (course_role !== 'None') {
+      await updateEnrollmentsToLeftForCourse({
+        course_id,
+        user_id,
+        authn_user_id,
+        reason: 'staff_permissions_granted',
+      });
+    }
   });
 }
 
 /**
  * Updates the course role for an existing course_permissions record.
  * Throws a 404 error if no course permissions exist for the user.
+ *
+ * When updating to a non-'None' role, also updates any existing enrollments
+ * for this user in instances of this course to 'left' status.
  */
 export async function updateCoursePermissionsRole({
   course_id,
@@ -91,20 +186,32 @@ export async function updateCoursePermissionsRole({
   course_role: NonNullable<CoursePermission['course_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  const result = await queryOptionalRow(
-    sql.update_course_permissions_role,
-    { course_id, user_id, course_role, authn_user_id },
-    CoursePermissionSchema,
-  );
-  if (!result) {
-    throw new error.HttpStatusError(404, 'No course permissions to update');
-  }
+  await runInTransactionAsync(async () => {
+    const result = await queryOptionalRow(
+      sql.update_course_permissions_role,
+      { course_id, user_id, course_role, authn_user_id },
+      CoursePermissionSchema,
+    );
+    if (!result) {
+      throw new error.HttpStatusError(404, 'No course permissions to update');
+    }
+
+    // Only update enrollments if the new role is greater than 'None'
+    if (course_role !== 'None') {
+      await updateEnrollmentsToLeftForCourse({
+        course_id,
+        user_id,
+        authn_user_id,
+        reason: 'staff_permissions_granted',
+      });
+    }
+  });
 }
 
 /**
- * Deletes course permissions for one or more users. Also deletes all
- * enrollments for these users in instances of this course. Does not throw
- * an error if no course permissions exist.
+ * Deletes course permissions for one or more users. Also updates all
+ * enrollments for these users in instances of this course to 'left' status.
+ * Does not throw an error if no course permissions exist.
  */
 export async function deleteCoursePermissions({
   course_id,
@@ -115,10 +222,23 @@ export async function deleteCoursePermissions({
   user_id: string | string[];
   authn_user_id: string;
 }): Promise<void> {
-  await execute(sql.delete_course_permissions, {
-    course_id,
-    user_ids: Array.isArray(user_id) ? user_id : [user_id],
-    authn_user_id,
+  const user_ids = Array.isArray(user_id) ? user_id : [user_id];
+
+  await runInTransactionAsync(async () => {
+    // First update enrollments to 'left' status (before deleting permissions)
+    await updateEnrollmentsToLeftForCourseBatch({
+      course_id,
+      user_ids,
+      authn_user_id,
+      reason: 'staff_permissions_removed',
+    });
+
+    // Then delete the course permissions
+    await execute(sql.delete_course_permissions, {
+      course_id,
+      user_ids,
+      authn_user_id,
+    });
   });
 }
 
@@ -181,6 +301,9 @@ export async function deleteCoursePermissionsForUsersWithoutAccess({
  *
  * This only allows stepping up in permissions; if the user already has a higher
  * course instance role, the role is not changed.
+ *
+ * When granting non-'None' permissions, also updates any existing enrollment
+ * for this user in this course instance to 'left' status.
  */
 export async function insertCourseInstancePermissions({
   course_id,
@@ -213,12 +336,28 @@ export async function insertCourseInstancePermissions({
       course_instance_role,
       authn_user_id,
     });
+
+    // Update enrollment to 'left' when granting non-'None' permissions.
+    // The enrollment update is idempotent (only updates 'joined' enrollments),
+    // so it's safe to call even if permissions weren't actually changed.
+    if (course_instance_role !== 'None') {
+      await updateEnrollmentToLeftForCourseInstance({
+        course_id,
+        course_instance_id,
+        user_id,
+        authn_user_id,
+        reason: 'staff_permissions_granted',
+      });
+    }
   });
 }
 
 /**
  * Updates the course instance role for an existing course_instance_permissions
  * record. Throws a 404 error if no course instance permissions exist for the user.
+ *
+ * When updating to a non-'None' role, also updates any existing enrollment
+ * for this user in this course instance to 'left' status.
  */
 export async function updateCourseInstancePermissionsRole({
   course_id,
@@ -233,14 +372,27 @@ export async function updateCourseInstancePermissionsRole({
   course_instance_role: NonNullable<CourseInstancePermission['course_instance_role']>;
   authn_user_id: string;
 }): Promise<void> {
-  const result = await queryOptionalRow(
-    sql.update_course_instance_permissions_role,
-    { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
-    CourseInstancePermissionSchema,
-  );
-  if (!result) {
-    throw new error.HttpStatusError(404, 'No course instance permissions to update');
-  }
+  await runInTransactionAsync(async () => {
+    const result = await queryOptionalRow(
+      sql.update_course_instance_permissions_role,
+      { course_id, course_instance_id, user_id, course_instance_role, authn_user_id },
+      CourseInstancePermissionSchema,
+    );
+    if (!result) {
+      throw new error.HttpStatusError(404, 'No course instance permissions to update');
+    }
+
+    // Only update enrollment if the new role is greater than 'None'
+    if (course_instance_role !== 'None') {
+      await updateEnrollmentToLeftForCourseInstance({
+        course_id,
+        course_instance_id,
+        user_id,
+        authn_user_id,
+        reason: 'staff_permissions_granted',
+      });
+    }
+  });
 }
 
 /**

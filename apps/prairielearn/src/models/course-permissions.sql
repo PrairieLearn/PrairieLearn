@@ -111,22 +111,6 @@ WITH
       to_jsonb(cp)
     FROM
       deleted_course_permissions AS cp
-  ),
-  deleted_enrollments AS (
-    -- Delete all enrollments of this user from instances of the course, for two
-    -- reasons:
-    -- 1) So they will still be ignored when computing statistics. Only users
-    --    who are enrolled and who do not have access to course content or
-    --    student data are considered when computing statistics.
-    -- 2) So their role, displayed in the list of assessment instances, will
-    --    change from "Staff" to "None" instead of to "Student".
-    DELETE FROM enrollments AS e USING course_instances AS ci
-    WHERE
-      ci.id = e.course_instance_id
-      AND e.user_id = ANY ($user_ids::bigint[])
-      AND ci.course_id = $course_id
-    RETURNING
-      e.*
   )
 SELECT
   *
@@ -209,34 +193,28 @@ WITH
       cip.course_instance_role < EXCLUDED.course_instance_role
     RETURNING
       cip.*
-  ),
-  inserted_audit_log AS (
-    INSERT INTO
-      audit_logs (
-        authn_user_id,
-        course_id,
-        user_id,
-        table_name,
-        row_id,
-        action,
-        new_state
-      )
-    SELECT
-      $authn_user_id,
-      cp.course_id,
-      cp.user_id,
-      'course_instance_permissions',
-      cip.id,
-      'insert',
-      to_jsonb(cip)
-    FROM
-      inserted_course_instance_permissions AS cip
-      JOIN existing_course_permission AS cp ON TRUE
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    new_state
   )
 SELECT
-  *
+  $authn_user_id,
+  cp.course_id,
+  cp.user_id,
+  'course_instance_permissions',
+  cip.id,
+  'insert',
+  to_jsonb(cip)
 FROM
-  existing_course_permission;
+  inserted_course_instance_permissions AS cip
+  JOIN existing_course_permission AS cp ON TRUE;
 
 -- BLOCK update_course_instance_permissions_role
 WITH
@@ -398,3 +376,119 @@ WHERE
   )
 LIMIT
   1;
+
+-- BLOCK update_enrollments_to_left_for_course
+-- Updates all enrollments to 'left' status for a user in all instances of a course.
+-- Used when staff permissions are granted or removed at the course level.
+WITH
+  updated_enrollments AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'left'
+    FROM
+      course_instances AS ci
+    WHERE
+      ci.course_id = $course_id
+      AND e.course_instance_id = ci.id
+      AND e.user_id = $user_id
+      AND e.status = 'joined'
+    RETURNING
+      e.*,
+      ci.course_id AS ci_course_id
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    parameters
+  )
+SELECT
+  $authn_user_id,
+  ue.ci_course_id,
+  ue.user_id,
+  'enrollments',
+  ue.id,
+  'update',
+  jsonb_build_object('status', 'left', 'reason', $reason::text)
+FROM
+  updated_enrollments AS ue;
+
+-- BLOCK update_enrollments_to_left_for_course_batch
+-- Updates all enrollments to 'left' status for multiple users in all instances of a course.
+-- Used when staff permissions are removed for multiple users.
+WITH
+  updated_enrollments AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'left'
+    FROM
+      course_instances AS ci
+    WHERE
+      ci.course_id = $course_id
+      AND e.course_instance_id = ci.id
+      AND e.user_id = ANY ($user_ids::bigint[])
+      AND e.status = 'joined'
+    RETURNING
+      e.*,
+      ci.course_id AS ci_course_id
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    parameters
+  )
+SELECT
+  $authn_user_id,
+  ue.ci_course_id,
+  ue.user_id,
+  'enrollments',
+  ue.id,
+  'update',
+  jsonb_build_object('status', 'left', 'reason', $reason::text)
+FROM
+  updated_enrollments AS ue;
+
+-- BLOCK update_enrollment_to_left_for_course_instance
+-- Updates enrollment to 'left' status for a user in a specific course instance.
+-- Used when staff permissions are granted at the course instance level.
+WITH
+  updated_enrollment AS (
+    UPDATE enrollments AS e
+    SET
+      status = 'left'
+    WHERE
+      e.course_instance_id = $course_instance_id
+      AND e.user_id = $user_id
+      AND e.status = 'joined'
+    RETURNING
+      e.*
+  )
+INSERT INTO
+  audit_logs (
+    authn_user_id,
+    course_id,
+    user_id,
+    table_name,
+    row_id,
+    action,
+    parameters
+  )
+SELECT
+  $authn_user_id,
+  $course_id,
+  ue.user_id,
+  'enrollments',
+  ue.id,
+  'update',
+  jsonb_build_object('status', 'left', 'reason', $reason::text)
+FROM
+  updated_enrollment AS ue;

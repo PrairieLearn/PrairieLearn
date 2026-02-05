@@ -19,6 +19,7 @@ import {
   VariantSchema,
 } from './db-types.js';
 import { gradeVariant } from './grading.js';
+import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
@@ -466,18 +467,43 @@ export async function updateAssessmentInstanceScore(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const { max_points } = await sqldb.queryRow(
+    const assessmentInstance = await sqldb.queryRow(
       sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      AssessmentInstanceSchema,
+      AssessmentInstanceSchema.extend({ course_instance_id: IdSchema }),
     );
-    const points = (score_perc * (max_points ?? 0)) / 100;
+    const points = (score_perc * (assessmentInstance.max_points ?? 0)) / 100;
     await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
       authn_user_id,
     });
+
+    // Check if staff member is modifying their own assessment instance
+    const isOwnInstance =
+      (assessmentInstance.user_id != null && idsEqual(authn_user_id, assessmentInstance.user_id)) ||
+      (assessmentInstance.team_id != null &&
+        (
+          await sqldb.queryRow(
+            sql.check_user_in_team,
+            { team_id: assessmentInstance.team_id, user_id: authn_user_id },
+            z.object({ is_member: z.boolean() }),
+          )
+        ).is_member);
+
+    if (isOwnInstance) {
+      const { is_instructor } = await sqldb.callRow(
+        'users_is_instructor_in_course_instance',
+        [authn_user_id, assessmentInstance.course_instance_id],
+        z.object({ is_instructor: z.boolean() }),
+      );
+      if (is_instructor) {
+        await sqldb.execute(sql.update_include_in_statistics_for_self_modification, {
+          assessment_instance_id,
+        });
+      }
+    }
   });
 }
 
@@ -487,18 +513,48 @@ export async function updateAssessmentInstancePoints(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const { max_points } = await sqldb.queryRow(
+    const assessmentInstance = await sqldb.queryRow(
       sql.select_and_lock_assessment_instance,
       { assessment_instance_id },
-      AssessmentInstanceSchema,
+      AssessmentInstanceSchema.extend({ course_instance_id: IdSchema }),
     );
-    const score_perc = (points / (max_points != null && max_points > 0 ? max_points : 1)) * 100;
+    const score_perc =
+      (points /
+        (assessmentInstance.max_points != null && assessmentInstance.max_points > 0
+          ? assessmentInstance.max_points
+          : 1)) *
+      100;
     await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
       score_perc,
       points,
       authn_user_id,
     });
+
+    // Check if staff member is modifying their own assessment instance
+    const isOwnInstance =
+      (assessmentInstance.user_id != null && idsEqual(authn_user_id, assessmentInstance.user_id)) ||
+      (assessmentInstance.team_id != null &&
+        (
+          await sqldb.queryRow(
+            sql.check_user_in_team,
+            { team_id: assessmentInstance.team_id, user_id: authn_user_id },
+            z.object({ is_member: z.boolean() }),
+          )
+        ).is_member);
+
+    if (isOwnInstance) {
+      const { is_instructor } = await sqldb.callRow(
+        'users_is_instructor_in_course_instance',
+        [authn_user_id, assessmentInstance.course_instance_id],
+        z.object({ is_instructor: z.boolean() }),
+      );
+      if (is_instructor) {
+        await sqldb.execute(sql.update_include_in_statistics_for_self_modification, {
+          assessment_instance_id,
+        });
+      }
+    }
   });
 }
 
