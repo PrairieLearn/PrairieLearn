@@ -520,11 +520,13 @@ async function processQuestionPhase<T>(
     output = res.output;
 } catch (err: any) {
     // Log the error message and any Python output to help diagnose test failures.
-    logger.error(
-      `Error in processQuestionPhase(${phase}) for question ${context.question.directory}`,
-    );
-    if (err?.data?.outputBoth) {
-      logger.error(err.data.outputBoth.trim());
+    if (config.devMode) {
+      logger.error(
+        `Error in processQuestionPhase(${phase}) for question ${context.question.directory}`,
+      );
+      if (err?.data?.outputBoth) {
+        logger.error(err.data.outputBoth.trim());
+      }
     }
     courseIssues.push(
       new CourseIssueError(err.message, {
