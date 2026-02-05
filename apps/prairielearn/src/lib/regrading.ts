@@ -3,7 +3,6 @@ import { z } from 'zod';
 import { logger } from '@prairielearn/logger';
 import {
   callRow,
-  execute,
   loadSqlEquiv,
   queryRow,
   queryRows,
@@ -11,11 +10,11 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { flagSelfModifiedAssessmentInstance } from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import { updateAssessmentInstance } from './assessment.js';
 import { AssessmentInstanceSchema, AssessmentSchema, QuestionSchema } from './db-types.js';
-import { idsEqual } from './id.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import { createServerJob } from './server-jobs.js';
 
@@ -220,30 +219,13 @@ async function regradeSingleAssessmentInstance({
       AssessmentInstancesGradeSchema,
     );
 
-    // Check if staff member is modifying their own assessment instance
-    const isOwnInstance =
-      (assessmentInstance.user_id != null && idsEqual(authn_user_id, assessmentInstance.user_id)) ||
-      (assessmentInstance.team_id != null &&
-        (
-          await queryRow(
-            sql.check_user_in_team,
-            { team_id: assessmentInstance.team_id, user_id: authn_user_id },
-            z.object({ is_member: z.boolean() }),
-          )
-        ).is_member);
-
-    if (isOwnInstance) {
-      const { is_instructor } = await callRow(
-        'users_is_instructor_in_course_instance',
-        [authn_user_id, assessmentInstance.course_instance_id],
-        z.object({ is_instructor: z.boolean() }),
-      );
-      if (is_instructor) {
-        await execute(sql.update_include_in_statistics_for_self_modification, {
-          assessment_instance_id,
-        });
-      }
-    }
+    await flagSelfModifiedAssessmentInstance({
+      assessment_instance_id,
+      assessment_instance_user_id: assessmentInstance.user_id,
+      assessment_instance_team_id: assessmentInstance.team_id,
+      course_instance_id: assessmentInstance.course_instance_id,
+      authn_user_id,
+    });
 
     return {
       updated: assessmentUpdated || updatedQuestionQids.length > 0 || gradeUpdated,
