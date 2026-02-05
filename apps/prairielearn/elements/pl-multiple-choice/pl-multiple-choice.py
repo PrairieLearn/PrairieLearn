@@ -636,6 +636,12 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
     submitted_key = data["submitted_answers"].get(name, None)
+
+    # Normalize empty string to None for dropdown blank submissions
+    if submitted_key == "":
+        submitted_key = None
+        data["submitted_answers"][name] = None
+
     all_keys = {a["key"] for a in data["params"][name]}
 
     if not allow_blank and submitted_key is None:
