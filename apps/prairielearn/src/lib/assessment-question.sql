@@ -39,6 +39,8 @@ SELECT
         jsonb_build_object(
           'assessment_set_abbreviation',
           aset.abbreviation,
+          'assessment_set_name',
+          aset.name,
           'assessment_number',
           a2.number,
           'assessment_id',

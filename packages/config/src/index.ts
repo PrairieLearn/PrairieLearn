@@ -1,7 +1,7 @@
 import { DescribeTagsCommand, EC2Client } from '@aws-sdk/client-ec2';
 import { GetSecretValueCommand, SecretsManagerClient } from '@aws-sdk/client-secrets-manager';
+import { mergeWith } from 'es-toolkit';
 import fs from 'fs-extra';
-import _ from 'lodash';
 import { z } from 'zod';
 
 import { fetchInstanceHostname, fetchInstanceIdentity } from '@prairielearn/aws-imds';
@@ -132,11 +132,11 @@ export class ConfigLoader<Schema extends z.ZodTypeAny> {
     const mergeRule = (_obj: any, src: any) => (Array.isArray(src) ? src : undefined);
 
     for (const source of sources) {
-      config = _.mergeWith(config, await source.load(config), mergeRule);
+      config = mergeWith(config, await source.load(config), mergeRule);
     }
 
     const parsedConfig = this.schema.parse(config);
-    _.mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
+    mergeWith(this.resolvedConfig, parsedConfig, mergeRule);
   }
 
   reset() {

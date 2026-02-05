@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/sentry",
-  "version": "5.0.0",
+  "version": "5.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -16,14 +16,14 @@
     "dev": "tsgo --watch --preserveWatchOutput"
   },
   "dependencies": {
-    "@sentry/core": "^10.34.0",
-    "@sentry/node-core": "^10.34.0",
+    "@sentry/core": "^10.38.0",
+    "@sentry/node-core": "^10.38.0",
     "execa": "^9.6.1"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "tsx": "^4.21.0",
     "typescript": "^5.9.3"
   }

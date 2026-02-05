@@ -6,6 +6,7 @@ import { HttpStatusError } from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { redirectToTermsPageIfNeeded } from '../../ee/lib/terms.js';
@@ -15,7 +16,6 @@ import { StaffInstitutionSchema } from '../../lib/client/safe-db-types.js';
 import { config } from '../../lib/config.js';
 import { isEnterprise } from '../../lib/license.js';
 import { computeStatus } from '../../lib/publishing.js';
-import { assertNever } from '../../lib/types.js';
 import { getUrl } from '../../lib/url.js';
 import {
   ensureEnrollment,
@@ -23,12 +23,7 @@ import {
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
 
-import {
-  Home,
-  InstructorHomePageCourseSchema,
-  StudentHomePageCourseSchema,
-  StudentHomePageCourseWithExtensionSchema,
-} from './home.html.js';
+import { Home, InstructorHomePageCourseSchema, StudentHomePageCourseSchema } from './home.html.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 const router = Router();
@@ -56,35 +51,30 @@ router.get(
       InstructorHomePageCourseSchema,
     );
 
-    // Query parameters for student courses
-    const studentCourseParams = {
-      // Use the authenticated user, not the authorized user.
-      user_id: res.locals.authn_user.id,
-      pending_uid: res.locals.authn_user.uid,
-      // This is a somewhat ugly escape hatch specifically for load testing. In
-      // general, we don't want to clutter the home page with example course
-      // enrollments, but for load testing we want to enroll a large number of
-      // users in the example course and then have them find the example course
-      // on the home page. So, you'd make a request like this:
-      // `/pl?include_example_course_enrollments=true`
-      include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
-    };
+    // Query all student courses (both legacy and modern publishing) in a single query
+    const allStudentCourses = await queryRows(
+      sql.select_student_courses,
+      {
+        // Use the authenticated user, not the authorized user.
+        user_id: res.locals.authn_user.id,
+        pending_uid: res.locals.authn_user.uid,
+        // This is a somewhat ugly escape hatch specifically for load testing. In
+        // general, we don't want to clutter the home page with example course
+        // enrollments, but for load testing we want to enroll a large number of
+        // users in the example course and then have them find the example course
+        // on the home page. So, you'd make a request like this:
+        // `/pl?include_example_course_enrollments=true`
+        include_example_course_enrollments: req.query.include_example_course_enrollments === 'true',
+        req_date: res.locals.req_date,
+      },
+      StudentHomePageCourseSchema,
+    );
 
-    // Run both legacy and modern publishing queries
-    const [legacyStudentCourses, allModernStudentCourses] = await Promise.all([
-      queryRows(
-        sql.select_student_courses_legacy_access,
-        { ...studentCourseParams, req_date: res.locals.req_date },
-        StudentHomePageCourseSchema,
-      ),
-      queryRows(
-        sql.select_student_courses_modern_publishing,
-        studentCourseParams,
-        StudentHomePageCourseWithExtensionSchema,
-      ),
-    ]);
+    const studentCourses = allStudentCourses.filter((entry) => {
+      // Legacy courses are already filtered by check_course_instance_access in SQL
+      if (!entry.course_instance.modern_publishing) return true;
 
-    const modernStudentCourses = allModernStudentCourses.filter((entry) => {
+      // For modern publishing courses, check access dates
       const startDate = entry.course_instance.publishing_start_date;
       const endDate = run(() => {
         if (entry.course_instance.publishing_end_date == null) {
@@ -108,9 +98,6 @@ router.get(
         res.locals.req_date < endDate
       );
     });
-
-    // Modern publishing courses show above legacy courses in the list
-    const studentCourses = [...modernStudentCourses, ...legacyStudentCourses];
 
     const adminInstitutions = await queryRows(
       sql.select_admin_institutions,

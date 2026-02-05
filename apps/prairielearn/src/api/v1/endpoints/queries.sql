@@ -64,10 +64,9 @@ WITH
       ai.number AS assessment_instance_number,
       ai.open,
       format_date_iso8601 (ai.modified_at, ci.display_timezone) AS modified_at,
-      -- user-facing API
-      ti.id AS group_id,
-      ti.name AS group_name,
-      ti.uid_list AS group_uids,
+      gi.id AS group_id,
+      gi.name AS group_name,
+      gi.uid_list AS group_uids,
       CASE
         WHEN ai.open
         AND ai.date_limit IS NOT NULL THEN greatest(
@@ -86,7 +85,8 @@ WITH
           PARTITION BY
             u.id
           ORDER BY
-            score_perc DESC,
+            score_perc DESC NULLS LAST,
+            ai.date DESC,
             ai.number DESC,
             ai.id DESC
         )
@@ -96,7 +96,7 @@ WITH
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_info (a.id) AS ti ON (ti.id = ai.team_id)
+      LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
     WHERE
       ci.id = $course_instance_id
@@ -281,10 +281,9 @@ WITH
       u.uin AS user_uin,
       u.name AS user_name,
       users_get_displayed_role (u.id, ci.id) AS user_role,
-      -- user-facing
-      ti.id AS group_id,
-      ti.name AS group_name,
-      ti.uid_list AS group_uids,
+      gi.id AS group_id,
+      gi.name AS group_name,
+      gi.uid_list AS group_uids,
       a.id AS assessment_id,
       a.tid AS assessment_name,
       (aset.abbreviation || a.number) AS assessment_label,
@@ -361,7 +360,8 @@ WITH
           PARTITION BY
             v.id
           ORDER BY
-            s.score DESC,
+            s.score DESC NULLS LAST,
+            s.date DESC,
             s.id DESC
         )
       ) = 1 AS best_submission_per_variant
@@ -370,7 +370,7 @@ WITH
       JOIN assessment_sets AS aset ON (aset.id = a.assessment_set_id)
       JOIN course_instances AS ci ON (ci.id = a.course_instance_id)
       JOIN assessment_instances AS ai ON (ai.assessment_id = a.id)
-      LEFT JOIN team_info (a.id) AS ti ON (ti.id = ai.team_id)
+      LEFT JOIN team_info (a.id) AS gi ON (gi.id = ai.team_id)
       LEFT JOIN users AS u ON (u.id = ai.user_id)
       JOIN instance_questions AS iq ON (iq.assessment_instance_id = ai.id)
       JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)

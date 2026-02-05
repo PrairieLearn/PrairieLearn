@@ -192,7 +192,8 @@ def get_display_type(element: lxml.html.HtmlElement) -> DisplayType:
     """Get display type in a backwards-compatible way. New display overwrites old."""
     if pl.has_attrib(element, "inline") and pl.has_attrib(element, "display"):
         raise ValueError(
-            'Setting answer choice display should be done with the "display" attribute.'
+            "Cannot set both 'display' and 'inline' attributes. "
+            "Use only 'display'; the 'inline' attribute is deprecated."
         )
 
     inline = pl.get_boolean_attrib(element, "inline", INLINE_DEFAULT)

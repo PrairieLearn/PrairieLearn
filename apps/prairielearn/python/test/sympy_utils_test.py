@@ -230,6 +230,22 @@ class TestSympy:
             )
             assert result == expected
 
+    @pytest.mark.parametrize(
+        ("a_sub", "variables", "expected"),
+        [
+            # See https://github.com/PrairieLearn/PrairieLearn/issues/11709 for additional details.
+            ("2e+3", None, 2 * sympy.E + 3),
+            ("2e-3", None, 2 * sympy.E - 3),
+            ("2E+3", ["E"], 2 * sympy.Symbol("E") + 3),
+            ("2E-3", ["E"], 2 * sympy.Symbol("E") - 3),
+        ],
+    )
+    def test_scientific_notation_with_sign_as_euler(
+        self, a_sub: str, variables: list[str] | None, expected: sympy.Expr
+    ) -> None:
+        result = psu.convert_string_to_sympy(a_sub, variables, allow_complex=True)
+        assert result == expected
+
     def test_string_conversion_complex_conflict(self) -> None:
         """
         Check for no issues in the case where complex is not
@@ -477,3 +493,76 @@ def test_greek_unicode_transform(input_str: str, expected_output: str) -> None:
 )
 def test_get_items_list(items_string: str | None, expected_output: list[str]) -> None:
     assert psu.get_items_list(items_string) == expected_output
+
+
+class TestValidateNamesForConflicts:
+    """Tests for validate_names_for_conflicts()."""
+
+    def test_no_conflicts(self) -> None:
+        # Should not raise when there are no conflicts
+        psu.validate_names_for_conflicts("test", ["x", "y"], ["f", "g"])
+
+    @pytest.mark.parametrize("conflicting_name", ["e", "pi", "infty"])
+    def test_variable_conflicts_with_constant(self, conflicting_name: str) -> None:
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name, "x"], [])
+
+    def test_variable_conflicts_with_function(self) -> None:
+        with pytest.raises(ValueError, match="sin"):
+            psu.validate_names_for_conflicts("test", ["sin"], [])
+
+    def test_custom_function_conflicts_with_builtin(self) -> None:
+        with pytest.raises(ValueError, match="cos"):
+            psu.validate_names_for_conflicts("test", [], ["cos"])
+
+    @pytest.mark.parametrize("conflicting_name", ["i", "j"])
+    def test_complex_constants_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_complex=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_complex=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [conflicting_name], [], allow_complex=True
+            )
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts(
+                "test", [], [conflicting_name], allow_complex=True
+            )
+
+    @pytest.mark.parametrize("conflicting_name", ["sin", "cos", "tan"])
+    def test_trig_functions_only_conflict_when_enabled(
+        self, conflicting_name: str
+    ) -> None:
+        psu.validate_names_for_conflicts(
+            "test", [conflicting_name], [], allow_trig_functions=False
+        )
+        psu.validate_names_for_conflicts(
+            "test", [], [conflicting_name], allow_trig_functions=False
+        )
+
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [conflicting_name], [])
+        with pytest.raises(ValueError, match=conflicting_name):
+            psu.validate_names_for_conflicts("test", [], [conflicting_name])
+
+
+class TestValidateStringConfigurationErrors:
+    """Tests for configuration error messages in validate_string_as_sympy()."""
+
+    def test_conflicting_variable_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy("x + 1", ["pi", "x"])
+        assert error_msg is not None
+        assert "conflicts with a built-in constant" in error_msg
+
+    def test_conflicting_function_error_message(self) -> None:
+        error_msg = psu.validate_string_as_sympy(
+            "x + 1", ["x"], custom_functions=["sin"]
+        )
+        assert error_msg is not None
+        assert "conflicts with a built-in function" in error_msg

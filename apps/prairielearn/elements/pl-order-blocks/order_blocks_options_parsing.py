@@ -26,6 +26,11 @@ class SourceBlocksOrderType(Enum):
     ORDERED = "ordered"
 
 
+class DistractorOrderType(Enum):
+    RANDOM = "random"
+    INHERIT = "inherit"
+
+
 class SolutionPlacementType(Enum):
     RIGHT = "right"
     BOTTOM = "bottom"
@@ -68,6 +73,7 @@ ORDERING_FEEDBACK_DEFAULT = None
 PARTIAL_CREDIT_DEFAULT = PartialCreditType.NONE
 SOURCE_HEADER_DEFAULT = "Drag from here:"
 SOURCE_BLOCKS_ORDER_DEFAULT = SourceBlocksOrderType.ALPHABETIZED
+DISTRACTOR_ORDER_DEFAULT = DistractorOrderType.INHERIT
 SOLUTION_HEADER_DEFAULT = "Construct your solution here:"
 SOLUTION_PLACEMENT_DEFAULT = SolutionPlacementType.RIGHT
 FEEDBACK_DEFAULT = FeedbackType.NONE
@@ -119,7 +125,7 @@ def get_multigraph_info(
 class AnswerOptions:
     """
     Collects and validates <pl-answer> tag options
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://docs.prairielearn.com/elements/pl-order-blocks)
     """
 
     tag: str
@@ -223,7 +229,7 @@ class AnswerOptions:
 class OrderBlocksOptions:
     """
     Collects and validates <pl-order-block> question options.
-    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://prairielearn.readthedocs.io/en/latest/elements/pl-order-blocks)
+    For more information on the pl-order-blocks attributes see the [pl-order-block docs](https://docs.prairielearn.com/elements/pl-order-blocks)
     """
 
     answers_name: str
@@ -232,6 +238,7 @@ class OrderBlocksOptions:
     allow_blank: bool
     file_name: str
     source_blocks_order: SourceBlocksOrderType
+    distractor_order: DistractorOrderType
     indentation: bool
     source_header: str
     solution_header: str
@@ -266,6 +273,12 @@ class OrderBlocksOptions:
             "source-blocks-order",
             SourceBlocksOrderType,
             SOURCE_BLOCKS_ORDER_DEFAULT,
+        )
+        self.distractor_order = pl.get_enum_attrib(
+            html_element,
+            "distractor-order",
+            DistractorOrderType,
+            DISTRACTOR_ORDER_DEFAULT,
         )
         self.indentation = pl.get_boolean_attrib(
             html_element, "indentation", INDENTATION_DEFAULT
@@ -321,6 +334,7 @@ class OrderBlocksOptions:
         required_attribs = ["answers-name"]
         optional_attribs = [
             "source-blocks-order",
+            "distractor-order",
             "grading-method",
             "indentation",
             "source-header",
@@ -352,14 +366,12 @@ class OrderBlocksOptions:
         if self.has_optional_blocks:
             has_final = False
             for options in self.answer_options:
-                if options.final and has_final:
-                    raise ValueError("Multiple 'final' attributes are not allowed.")
                 if options.final and not has_final:
                     has_final = True
 
             if not has_final:
                 raise ValueError(
-                    "Use of optional lines requires a singular 'final' attribute on the last true <pl-answer> block in the question."
+                    "Use of optional lines requires 'final' attributes on all true <pl-answer> blocks that appears at the end of a valid ordering."
                 )
 
     def _validate_order_blocks_options(self) -> None:
@@ -409,6 +421,14 @@ class OrderBlocksOptions:
         if self.inline and self.indentation:
             raise ValueError(
                 "The indentation attribute may not be used when inline is true."
+            )
+
+        if (
+            self.distractor_order == DistractorOrderType.RANDOM
+            and self.source_blocks_order == SourceBlocksOrderType.RANDOM
+        ):
+            raise ValueError(
+                'distractor-order="random" cannot be used with source-blocks-order="random".'
             )
 
     def _validate_answer_options(self) -> None:

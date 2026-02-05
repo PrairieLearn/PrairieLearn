@@ -15,15 +15,15 @@ import {
   type AssessmentJson,
   AssessmentJsonSchema,
   ForceMaxPointsJsonSchema,
-  GroupRoleJsonSchema,
+  GroupsRoleJsonSchema,
+  LegacyGroupRoleJsonSchema,
   PointsJsonSchema,
   PointsListJsonSchema,
   PointsSingleJsonSchema,
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
-  TeamRoleJsonSchema,
   ZoneAssessmentJsonSchema,
-  ZoneQuestionJsonSchema,
+  ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
@@ -67,18 +67,18 @@ const schemaOverride = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
-    const inTeams = refs.currentPath.includes('teams');
+    const inQuestion = refs.currentPath.includes('ZoneQuestionBlockJsonSchema');
+    const inGroups = refs.currentPath.includes('groups');
 
-    // Skip fields inside teams.rolePermissions - let default handle them
-    if (inTeams) {
+    // Skip fields inside groups.rolePermissions - let default handle them
+    if (inGroups) {
       return ignoreOverride;
     }
 
     // Question level
     if (inQuestion) {
       return {
-        description: `A list of team role names that can ${action} the question. Only applicable for team assessments.`,
+        description: `A list of group role names that can ${action} the question. Only applicable for group assessments.`,
         type: 'array',
         items: {
           type: 'string',
@@ -91,7 +91,7 @@ const schemaOverride = (
     // Zone level
     if (inZone) {
       return {
-        description: `A list of team role names that can ${action} questions in this zone. Only applicable for team assessments.`,
+        description: `A list of group role names that can ${action} questions in this zone. Only applicable for group assessments.`,
         type: 'array',
         items: {
           type: 'string',
@@ -105,7 +105,7 @@ const schemaOverride = (
     // Note: `deprecated: true` is added automatically by the traverse function below
     // because the description contains "DEPRECATED"
     return {
-      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using teams instead.`,
+      description: `A list of group role names that can ${action} questions. Only applicable for group assessments. DEPRECATED -- prefer using the "groups" property instead.`,
       type: 'array',
       items: {
         type: 'string',
@@ -115,13 +115,13 @@ const schemaOverride = (
     };
   }
 
-  // Add uniqueItems to the roles array in teams
-  if (segment === 'roles' && refs.currentPath.includes('teams')) {
+  // Add uniqueItems to the roles array in groups
+  if (segment === 'roles' && refs.currentPath.includes('groups')) {
     return {
-      description: 'Array of custom user roles in a team.',
+      description: 'Array of custom user roles in a group.',
       type: 'array',
       items: {
-        $ref: '#/definitions/TeamRoleJsonSchema',
+        $ref: '#/definitions/GroupsRoleJsonSchema',
       },
       uniqueItems: true,
       default: [],
@@ -185,9 +185,9 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     AssessmentAccessRuleJsonSchema,
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
-    ZoneQuestionJsonSchema,
-    GroupRoleJsonSchema,
-    TeamRoleJsonSchema,
+    ZoneQuestionBlockJsonSchema,
+    LegacyGroupRoleJsonSchema,
+    GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
     CommentJsonSchema,
   },
