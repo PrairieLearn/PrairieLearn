@@ -92,20 +92,22 @@ describe('LTI 1.3 authentication', () => {
 
   test.sequential('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
-    const data: {
+    const data: unknown = await fetch(url).then((res) => res.json());
+    assert.isObject(data);
+    const metadata = data as {
       title: string;
       oidc_initiation_url: string;
       target_link_uri: string;
       public_jwk_url: string;
       custom_fields: Record<string, string>;
-    } = await fetch(url).then((res) => res.json());
+    };
 
-    assert.equal(data.title, 'PrairieLearn');
-    assert.equal(data.oidc_initiation_url, `${siteUrl}/pl/lti13_instance/1/auth/login`);
-    assert.equal(data.target_link_uri, `${siteUrl}/pl/lti13_instance/1/auth/callback`);
-    assert.equal(data.public_jwk_url, `${siteUrl}/pl/lti13_instance/1/jwks`);
-    assert.isObject(data.custom_fields);
-    assert.equal(data.custom_fields.uin, '$Canvas.user.sisIntegrationId');
+    assert.equal(metadata.title, 'PrairieLearn');
+    assert.equal(metadata.oidc_initiation_url, `${siteUrl}/pl/lti13_instance/1/auth/login`);
+    assert.equal(metadata.target_link_uri, `${siteUrl}/pl/lti13_instance/1/auth/callback`);
+    assert.equal(metadata.public_jwk_url, `${siteUrl}/pl/lti13_instance/1/jwks`);
+    assert.isObject(metadata.custom_fields);
+    assert.equal(metadata.custom_fields.uin, '$Canvas.user.sisIntegrationId');
   });
 
   test.sequential('perform login', async () => {

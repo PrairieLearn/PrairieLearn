@@ -386,7 +386,7 @@ describe('LTI 1.3 course instance linking', () => {
         { deployment_id: LTI_DEPLOYMENT_ID, context_id: LTI_CONTEXT_ID },
         Lti13CourseInstanceSchema,
       );
-      assert.isNull(linkRecord, 'No link should have been created');
+      assert.isNull(linkRecord);
     });
 
     test.sequential('cannot link course instance from different institution', async () => {
@@ -394,19 +394,16 @@ describe('LTI 1.3 course instance linking', () => {
       await execute(`
         INSERT INTO institutions (id, short_name, long_name, uid_regexp)
         VALUES ('2', 'Other', 'Other Institution', '@other\\.edu$')
-        ON CONFLICT (id) DO NOTHING
       `);
 
       await execute(`
         INSERT INTO courses (id, short_name, title, institution_id, path, branch, display_timezone, options)
         VALUES ('2', 'OTHER 101', 'Other Course', '2', '/course2', 'main', 'America/Chicago', '{}')
-        ON CONFLICT (id) DO NOTHING
       `);
 
       await execute(`
         INSERT INTO course_instances (id, course_id, short_name, long_name, display_timezone, enrollment_code)
         VALUES ('2', '2', 'Other CI', 'Other Course Instance', 'America/Chicago', 'OTHER101-001')
-        ON CONFLICT (id) DO NOTHING
       `);
 
       const fetchWithCookies = fetchCookie(fetch);
@@ -464,11 +461,7 @@ describe('LTI 1.3 course instance linking', () => {
 
       // Should get 403 because the course instance belongs to a different institution
       // than the LTI instance
-      assert.equal(
-        linkRes.status,
-        403,
-        'Expected 403 when linking course from different institution',
-      );
+      assert.equal(linkRes.status, 403);
 
       // Verify no link was created
       const linkRecord = await queryOptionalRow(
@@ -478,7 +471,7 @@ describe('LTI 1.3 course instance linking', () => {
         {},
         Lti13CourseInstanceSchema,
       );
-      assert.isNull(linkRecord, 'No cross-institution link should have been created');
+      assert.isNull(linkRecord);
 
       // Re-create the link for subsequent tests that depend on it
       await linkLtiContext({
