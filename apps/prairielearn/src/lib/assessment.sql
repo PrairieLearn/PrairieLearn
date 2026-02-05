@@ -1809,24 +1809,3 @@ FROM
   JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 WHERE
   iq.assessment_instance_id = $assessment_instance_id;
-
--- BLOCK check_user_in_team
-SELECT
-  EXISTS (
-    SELECT
-      1
-    FROM
-      team_users
-    WHERE
-      team_id = $team_id
-      AND user_id = $user_id
-  ) AS is_member;
-
--- BLOCK update_include_in_statistics_for_self_modification
-UPDATE assessment_instances
-SET
-  include_in_statistics = FALSE,
-  modified_at = now()
-WHERE
-  id = $assessment_instance_id
-  AND include_in_statistics = TRUE;
