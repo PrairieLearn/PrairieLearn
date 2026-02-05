@@ -110,7 +110,7 @@ The element functions are:
 
 The above table describes the purpose of each function and the values in `data` that are allowed to be modified. Any permitted changes to the values in `data` will be persisted to the database. No function is allowed to add or delete keys in `data`.
 
-For the functions that exist both in elements and questions (i.e., `prepare()`, `render()`, `parse()`, `grade()`, and `test()`), the element function is always executed first for each element in the question, in the order the elements appear in the question, followed by the question function. This allows question code to override or modify the behavior of the element if necessary.
+All functions above have equivalents in [question code](question/server.md) (i.e., the question's own `server.py` file). When the functions are declared in both the element and the question, the element function is always executed first for each element in the question, in the order the elements appear in the question, followed by the question function. This allows question code to override or modify the behavior of the element if necessary.
 
 ## Element dependencies
 
