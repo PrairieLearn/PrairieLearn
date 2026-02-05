@@ -35,9 +35,25 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     if (req.body.__action === 'approve_deny_course_request') {
-      await updateCourseRequest(req, res);
+      await updateCourseRequest({
+        approveDenyAction: req.body.approve_deny_action,
+        courseRequestId: req.body.request_id,
+        authnUser: res.locals.authn_user,
+      });
+      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_course_from_request') {
-      await createCourseFromRequest(req, res);
+      const jobSequenceId = await createCourseFromRequest({
+        courseRequestId: req.body.request_id,
+        shortName: req.body.short_name,
+        title: req.body.title,
+        institutionId: req.body.institution_id,
+        displayTimezone: req.body.display_timezone,
+        path: req.body.path,
+        repoShortName: req.body.repository_short_name,
+        githubUser: req.body.github_user.length > 0 ? req.body.github_user : null,
+        authnUser: res.locals.authn_user,
+      });
+      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
