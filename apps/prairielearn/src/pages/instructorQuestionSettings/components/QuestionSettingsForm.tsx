@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { type ReactNode, useMemo } from 'react';
+import { useMemo } from 'react';
 import { useForm } from 'react-hook-form';
 
 import { ComboBox, type ComboBoxItem, TagPicker } from '@prairielearn/ui';
@@ -18,44 +18,6 @@ import type {
 import { idsEqual } from '../../../lib/id.js';
 import { validateShortName } from '../../../lib/short-name.js';
 import type { SelectedAssessments } from '../instructorQuestionSettings.types.js';
-
-function ToggleableSection({
-  title,
-  description,
-  checkboxId,
-  checked,
-  disabled,
-  onToggle,
-  children,
-}: {
-  title: string;
-  description: ReactNode;
-  checkboxId: string;
-  checked: boolean;
-  disabled?: boolean;
-  onToggle: () => void;
-  children: ReactNode;
-}) {
-  return (
-    <div className="mb-3">
-      <div className="form-check">
-        <input
-          className="form-check-input"
-          type="checkbox"
-          id={checkboxId}
-          checked={checked}
-          disabled={disabled}
-          onChange={onToggle}
-        />
-        <label className="form-check-label h4 mb-0" htmlFor={checkboxId}>
-          {title}
-        </label>
-      </div>
-      <small className="text-muted ps-4">{description}</small>
-      {checked && <div className="mt-3 ps-4">{children}</div>}
-    </div>
-  );
-}
 
 function AssessmentBadges({
   assessmentsWithQuestion,
@@ -459,329 +421,353 @@ export const QuestionSettingsForm = ({
         </div>
       </div>
 
-      <ToggleableSection
-        title="Workspace"
-        description={
-          <>
-            Configure a{' '}
-            <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
-              remote development environment
-            </a>{' '}
-            for students.
-          </>
-        }
-        checkboxId="workspaceEnabled"
-        checked={workspaceEnabled}
-        disabled={!canEdit}
-        onToggle={() => {
-          if (workspaceEnabled) {
-            // Clear validation errors when hiding workspace options
-            clearErrors([
-              'workspace_image',
-              'workspace_port',
-              'workspace_home',
-              'workspace_environment',
-            ]);
-          }
-          setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
-        }}
-      >
-        <div id="workspace-options">
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_image">
-              Image
-            </label>
-            <input
-              type="text"
-              className={clsx('form-control', errors.workspace_image && 'is-invalid')}
-              id="workspace_image"
-              disabled={!canEdit}
-              {...register('workspace_image', {
-                required: workspaceEnabled && 'Image is required for workspace',
-              })}
-            />
-            {errors.workspace_image && (
-              <div className="invalid-feedback">{errors.workspace_image.message}</div>
-            )}
-            <small className="form-text text-muted">
-              The Docker image that will be used to serve this workspace. Only images from the
-              Dockerhub registry are supported.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_port">
-              Port
-            </label>
-            <input
-              type="number"
-              className={clsx('form-control', errors.workspace_port && 'is-invalid')}
-              id="workspace_port"
-              disabled={!canEdit}
-              // Disable default behavior of incrementing/decrementing the value when scrolling
-              onWheel={(e) => e.currentTarget.blur()}
-              {...register('workspace_port', {
-                required: workspaceEnabled && 'Port is required for workspace',
-              })}
-            />
-            {errors.workspace_port && (
-              <div className="invalid-feedback">{errors.workspace_port.message}</div>
-            )}
-            <small className="form-text text-muted">
-              The port number used in the Docker image.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_home">
-              Home
-            </label>
-            <input
-              type="text"
-              className={clsx('form-control', errors.workspace_home && 'is-invalid')}
-              id="workspace_home"
-              disabled={!canEdit}
-              {...register('workspace_home', {
-                required: workspaceEnabled && 'Home is required for workspace',
-              })}
-            />
-            {errors.workspace_home && (
-              <div className="invalid-feedback">{errors.workspace_home.message}</div>
-            )}
-            <small className="form-text text-muted">
-              The home directory of the workspace container.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_graded_files">
-              Graded files
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="workspace_graded_files"
-              disabled={!canEdit}
-              {...register('workspace_graded_files')}
-            />
-            <small className="form-text text-muted">
-              The list of files or directories that will be copied out of the workspace container
-              when saving a submission. You may enter multiple files or directories, separated by
-              commas.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_args">
-              Arguments
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="workspace_args"
-              disabled={!canEdit}
-              {...register('workspace_args')}
-            />
-            <small className="form-text text-muted">
-              Command line arguments to pass to the Docker container. Multiple arguments should be
-              separated by spaces and escaped as necessary using the same format as a typical shell.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="workspace_environment">
-              Environment
-            </label>
-            <textarea
-              className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
-              id="workspace_environment"
-              disabled={!canEdit}
-              {...register('workspace_environment', {
-                validate: validateJson,
-              })}
-            />
-            {errors.workspace_environment && (
-              <div className="invalid-feedback">{errors.workspace_environment.message}</div>
-            )}
-            <small className="form-text text-muted">
-              Environment variables to set inside the workspace container. Variables must be
-              specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
-            </small>
-          </div>
-
-          <div className="mb-3 form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="workspace_enable_networking"
-              disabled={!canEdit}
-              {...register('workspace_enable_networking')}
-            />
-            <label className="form-check-label" htmlFor="workspace_enable_networking">
-              Enable networking
-            </label>
-            <div className="small text-muted">
-              Whether the workspace should have network access. Access is disabled by default.
-            </div>
-          </div>
-
-          <div className="mb-3 form-check">
-            <input
-              className="form-check-input"
-              type="checkbox"
-              id="workspace_rewrite_url"
-              disabled={!canEdit}
-              {...register('workspace_rewrite_url')}
-            />
-            <label className="form-check-label" htmlFor="workspace_rewrite_url">
-              Rewrite URL
-            </label>
-            <div className="small text-muted">
-              If enabled, the URL will be rewritten such that the workspace container will see all
-              requests as originating from "/".
-            </div>
-          </div>
+      <div className="mb-3">
+        <div className="form-check">
+          <input
+            className="form-check-input"
+            type="checkbox"
+            id="workspaceEnabled"
+            checked={workspaceEnabled}
+            disabled={!canEdit}
+            onChange={() => {
+              if (workspaceEnabled) {
+                clearErrors([
+                  'workspace_image',
+                  'workspace_port',
+                  'workspace_home',
+                  'workspace_environment',
+                ]);
+              }
+              setValue('workspace_enabled', !workspaceEnabled, { shouldDirty: true });
+            }}
+          />
+          <label className="form-check-label h4 mb-0" htmlFor="workspaceEnabled">
+            Workspace
+          </label>
         </div>
-      </ToggleableSection>
+        <small className="text-muted ps-4">
+          Configure a{' '}
+          <a href="https://prairielearn.readthedocs.io/en/latest/workspaces/">
+            remote development environment
+          </a>{' '}
+          for students.
+        </small>
+        {workspaceEnabled && (
+          <div className="mt-3 ps-4" id="workspace-options">
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_image">
+                Image
+              </label>
+              <input
+                type="text"
+                className={clsx('form-control', errors.workspace_image && 'is-invalid')}
+                id="workspace_image"
+                disabled={!canEdit}
+                {...register('workspace_image', {
+                  required: 'Image is required for workspace',
+                })}
+              />
+              {errors.workspace_image && (
+                <div className="invalid-feedback">{errors.workspace_image.message}</div>
+              )}
+              <small className="form-text text-muted">
+                The Docker image that will be used to serve this workspace. Only images from the
+                Dockerhub registry are supported.
+              </small>
+            </div>
 
-      <ToggleableSection
-        title="External grading"
-        description={
-          <>
-            Configure{' '}
-            <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
-              grading using a Docker container
-            </a>
-            .
-          </>
-        }
-        checkboxId="externalGradingEnabled"
-        checked={isExternalGrading || externalGradingEnabled}
-        disabled={!canEdit || isExternalGrading}
-        onToggle={() => {
-          if (externalGradingEnabled) {
-            // Clear validation errors when hiding external grading options
-            clearErrors(['external_grading_image', 'external_grading_environment']);
-          }
-          setValue('external_grading_enabled', !externalGradingEnabled, { shouldDirty: true });
-        }}
-      >
-        <div id="external-grading-options">
-          <div className="mb-3">
-            <label className="form-label" htmlFor="external_grading_image">
-              Image
-            </label>
-            <input
-              type="text"
-              className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
-              id="external_grading_image"
-              disabled={!canEdit}
-              {...register('external_grading_image', {
-                required: externalGradingEnabled && 'Image is required for external grading',
-              })}
-            />
-            {errors.external_grading_image && (
-              <div className="invalid-feedback">{errors.external_grading_image.message}</div>
-            )}
-            <small className="form-text text-muted">
-              The Docker image that will be used to grade this question. Only images from the
-              Dockerhub registry are supported.
-            </small>
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_port">
+                Port
+              </label>
+              <input
+                type="number"
+                className={clsx('form-control', errors.workspace_port && 'is-invalid')}
+                id="workspace_port"
+                disabled={!canEdit}
+                // Disable default behavior of incrementing/decrementing the value when scrolling
+                onWheel={(e) => e.currentTarget.blur()}
+                {...register('workspace_port', {
+                  required: 'Port is required for workspace',
+                })}
+              />
+              {errors.workspace_port && (
+                <div className="invalid-feedback">{errors.workspace_port.message}</div>
+              )}
+              <small className="form-text text-muted">
+                The port number used in the Docker image.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_home">
+                Home
+              </label>
+              <input
+                type="text"
+                className={clsx('form-control', errors.workspace_home && 'is-invalid')}
+                id="workspace_home"
+                disabled={!canEdit}
+                {...register('workspace_home', {
+                  required: 'Home is required for workspace',
+                })}
+              />
+              {errors.workspace_home && (
+                <div className="invalid-feedback">{errors.workspace_home.message}</div>
+              )}
+              <small className="form-text text-muted">
+                The home directory of the workspace container.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_graded_files">
+                Graded files
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="workspace_graded_files"
+                disabled={!canEdit}
+                {...register('workspace_graded_files')}
+              />
+              <small className="form-text text-muted">
+                The list of files or directories that will be copied out of the workspace container
+                when saving a submission. You may enter multiple files or directories, separated by
+                commas.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_args">
+                Arguments
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="workspace_args"
+                disabled={!canEdit}
+                {...register('workspace_args')}
+              />
+              <small className="form-text text-muted">
+                Command line arguments to pass to the Docker container. Multiple arguments should be
+                separated by spaces and escaped as necessary using the same format as a typical
+                shell.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="workspace_environment">
+                Environment
+              </label>
+              <textarea
+                className={clsx('form-control', errors.workspace_environment && 'is-invalid')}
+                id="workspace_environment"
+                disabled={!canEdit}
+                {...register('workspace_environment', {
+                  validate: validateJson,
+                })}
+              />
+              {errors.workspace_environment && (
+                <div className="invalid-feedback">{errors.workspace_environment.message}</div>
+              )}
+              <small className="form-text text-muted">
+                Environment variables to set inside the workspace container. Variables must be
+                specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+              </small>
+            </div>
+
+            <div className="mb-3 form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="workspace_enable_networking"
+                disabled={!canEdit}
+                {...register('workspace_enable_networking')}
+              />
+              <label className="form-check-label" htmlFor="workspace_enable_networking">
+                Enable networking
+              </label>
+              <div className="small text-muted">
+                Whether the workspace should have network access. Access is disabled by default.
+              </div>
+            </div>
+
+            <div className="mb-3 form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="workspace_rewrite_url"
+                disabled={!canEdit}
+                {...register('workspace_rewrite_url')}
+              />
+              <label className="form-check-label" htmlFor="workspace_rewrite_url">
+                Rewrite URL
+              </label>
+              <div className="small text-muted">
+                If enabled, the URL will be rewritten such that the workspace container will see all
+                requests as originating from "/".
+              </div>
+            </div>
           </div>
+        )}
+      </div>
 
-          <div className="mb-3">
-            <label className="form-label" htmlFor="external_grading_entrypoint">
-              Entrypoint
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="external_grading_entrypoint"
-              disabled={!canEdit}
-              {...register('external_grading_entrypoint')}
-            />
-            <small className="form-text text-muted">
-              Program or command to run as the entrypoint to your grader. If not provided, the
-              default entrypoint for the image will be used.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="external_grading_files">
-              Server files
-            </label>
-            <input
-              type="text"
-              className="form-control"
-              id="external_grading_files"
-              disabled={!canEdit}
-              {...register('external_grading_files')}
-            />
-            <small className="form-text text-muted">
-              The list of files or directories that will be copied from{' '}
-              <code>course/serverFilesCourse</code> into the grading job. You may enter multiple
-              files or directories, separated by commas.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="external_grading_timeout">
-              Timeout
-            </label>
-            <input
-              type="number"
-              className="form-control"
-              id="external_grading_timeout"
-              min="0"
-              disabled={!canEdit}
-              // Disable default behavior of incrementing/decrementing the value when scrolling
-              onWheel={(e) => e.currentTarget.blur()}
-              {...register('external_grading_timeout')}
-            />
-            <small className="form-text text-muted">
-              The number of seconds after which the grading job will timeout.
-            </small>
-          </div>
-
-          <div className="mb-3">
-            <label className="form-label" htmlFor="external_grading_environment">
-              Environment
-            </label>
-            <textarea
-              className={clsx('form-control', errors.external_grading_environment && 'is-invalid')}
-              id="external_grading_environment"
-              disabled={!canEdit}
-              {...register('external_grading_environment', {
-                validate: validateJson,
-              })}
-            />
-            {errors.external_grading_environment && (
-              <div className="invalid-feedback">{errors.external_grading_environment.message}</div>
-            )}
-            <small className="form-text text-muted">
-              Environment variables to set inside the grading container. Variables must be specified
-              as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
-            </small>
-          </div>
-
-          <div className="mb-3 form-check">
+      <div className="mb-3">
+        {isExternalGrading ? (
+          <h4 className="mb-0">External grading</h4>
+        ) : (
+          <div className="form-check">
             <input
               className="form-check-input"
               type="checkbox"
-              id="external_grading_enable_networking"
+              id="externalGradingEnabled"
+              checked={externalGradingEnabled}
               disabled={!canEdit}
-              {...register('external_grading_enable_networking')}
+              onChange={() => {
+                if (externalGradingEnabled) {
+                  clearErrors(['external_grading_image', 'external_grading_environment']);
+                }
+                setValue('external_grading_enabled', !externalGradingEnabled, {
+                  shouldDirty: true,
+                });
+              }}
             />
-            <label className="form-check-label" htmlFor="external_grading_enable_networking">
-              Enable networking
+            <label className="form-check-label h4 mb-0" htmlFor="externalGradingEnabled">
+              External grading
             </label>
-            <div className="small text-muted">
-              Whether the grading containers should have network access. Access is disabled by
-              default.
+          </div>
+        )}
+        <small className={clsx('text-muted', !isExternalGrading && 'ps-4')}>
+          Configure{' '}
+          <a href="https://prairielearn.readthedocs.io/en/latest/externalGrading/">
+            grading using a Docker container
+          </a>
+          .
+        </small>
+        {(isExternalGrading || externalGradingEnabled) && (
+          <div className={clsx('mt-3', !isExternalGrading && 'ps-4')} id="external-grading-options">
+            <div className="mb-3">
+              <label className="form-label" htmlFor="external_grading_image">
+                Image
+              </label>
+              <input
+                type="text"
+                className={clsx('form-control', errors.external_grading_image && 'is-invalid')}
+                id="external_grading_image"
+                disabled={!canEdit}
+                {...register('external_grading_image', {
+                  required: externalGradingEnabled && 'Image is required for external grading',
+                })}
+              />
+              {errors.external_grading_image && (
+                <div className="invalid-feedback">{errors.external_grading_image.message}</div>
+              )}
+              <small className="form-text text-muted">
+                The Docker image that will be used to grade this question. Only images from the
+                Dockerhub registry are supported.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="external_grading_entrypoint">
+                Entrypoint
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="external_grading_entrypoint"
+                disabled={!canEdit}
+                {...register('external_grading_entrypoint')}
+              />
+              <small className="form-text text-muted">
+                Program or command to run as the entrypoint to your grader. If not provided, the
+                default entrypoint for the image will be used.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="external_grading_files">
+                Server files
+              </label>
+              <input
+                type="text"
+                className="form-control"
+                id="external_grading_files"
+                disabled={!canEdit}
+                {...register('external_grading_files')}
+              />
+              <small className="form-text text-muted">
+                The list of files or directories that will be copied from{' '}
+                <code>course/serverFilesCourse</code> into the grading job. You may enter multiple
+                files or directories, separated by commas.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="external_grading_timeout">
+                Timeout
+              </label>
+              <input
+                type="number"
+                className="form-control"
+                id="external_grading_timeout"
+                min="0"
+                disabled={!canEdit}
+                // Disable default behavior of incrementing/decrementing the value when scrolling
+                onWheel={(e) => e.currentTarget.blur()}
+                {...register('external_grading_timeout')}
+              />
+              <small className="form-text text-muted">
+                The number of seconds after which the grading job will timeout.
+              </small>
+            </div>
+
+            <div className="mb-3">
+              <label className="form-label" htmlFor="external_grading_environment">
+                Environment
+              </label>
+              <textarea
+                className={clsx(
+                  'form-control',
+                  errors.external_grading_environment && 'is-invalid',
+                )}
+                id="external_grading_environment"
+                disabled={!canEdit}
+                {...register('external_grading_environment', {
+                  validate: validateJson,
+                })}
+              />
+              {errors.external_grading_environment && (
+                <div className="invalid-feedback">
+                  {errors.external_grading_environment.message}
+                </div>
+              )}
+              <small className="form-text text-muted">
+                Environment variables to set inside the grading container. Variables must be
+                specified as a JSON object (e.g. <code>{'{"key":"value"}'}</code>).
+              </small>
+            </div>
+
+            <div className="mb-3 form-check">
+              <input
+                className="form-check-input"
+                type="checkbox"
+                id="external_grading_enable_networking"
+                disabled={!canEdit}
+                {...register('external_grading_enable_networking')}
+              />
+              <label className="form-check-label" htmlFor="external_grading_enable_networking">
+                Enable networking
+              </label>
+              <div className="small text-muted">
+                Whether the grading containers should have network access. Access is disabled by
+                default.
+              </div>
             </div>
           </div>
-        </div>
-      </ToggleableSection>
+        )}
+      </div>
 
       {canEdit && (
         <>
