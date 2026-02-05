@@ -22,6 +22,7 @@ import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import {
   deleteEnrollment,
   inviteStudentByUid,
+  reenrollEnrollmentFromSync,
   removeEnrollmentFromSync,
   selectOptionalEnrollmentByUid,
 } from '../../models/enrollment.js';
@@ -100,10 +101,13 @@ const BodySchema = z.union([InviteUidsBodySchema, SyncStudentsBodySchema]);
 
 interface InviteCounts {
   invited: number;
+  unblocked: number;
+  reenrolled: number;
   skippedInstructor: number;
   skippedAlreadyInvited: number;
   skippedAlreadyJoined: number;
   skippedAlreadyBlocked: number;
+  skippedAlreadyRemoved: number;
   errors: number;
 }
 
@@ -117,6 +121,7 @@ async function processInvitations({
   job,
   counts,
   skipBlocked,
+  allowReenroll,
   actionDetail = 'invited',
 }: {
   uids: string[];
@@ -129,6 +134,11 @@ async function processInvitations({
    * If false, re-invites blocked students. This is useful for `sync_students`.
    */
   skipBlocked: boolean;
+  /**
+   * If true, re-enrolls blocked/removed students. This is useful for `sync_students`.
+   * If false, skips blocked/removed students. This is useful for `invite_uids`.
+   */
+  allowReenroll: boolean;
   actionDetail?: 'invited' | 'invited_by_manual_sync';
 }): Promise<void> {
   for (const uid of uids) {
@@ -167,6 +177,31 @@ async function processInvitations({
       if (skipBlocked && existingEnrollment?.status === 'blocked') {
         job.info(`${uid}: Skipped (blocked)`);
         counts.skippedAlreadyBlocked++;
+        continue;
+      }
+      if (!allowReenroll && existingEnrollment?.status === 'removed') {
+        job.info(`${uid}: Skipped (removed)`);
+        counts.skippedAlreadyRemoved++;
+        continue;
+      }
+
+      if (allowReenroll && existingEnrollment?.status === 'blocked') {
+        await reenrollEnrollmentFromSync({
+          enrollment: existingEnrollment,
+          authzData,
+        });
+        job.info(`${uid}: Unblocked`);
+        counts.unblocked++;
+        continue;
+      }
+
+      if (allowReenroll && existingEnrollment?.status === 'removed') {
+        await reenrollEnrollmentFromSync({
+          enrollment: existingEnrollment,
+          authzData,
+        });
+        job.info(`${uid}: Reenrolled`);
+        counts.reenrolled++;
         continue;
       }
 
@@ -227,10 +262,13 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         const counts: InviteCounts = {
           invited: 0,
+          unblocked: 0,
+          reenrolled: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
           skippedAlreadyJoined: 0,
           skippedAlreadyBlocked: 0,
+          skippedAlreadyRemoved: 0,
           errors: 0,
         };
 
@@ -241,6 +279,7 @@ router.post(
           job,
           counts,
           skipBlocked: true, // invite_uids respects existing blocks
+          allowReenroll: false,
         });
 
         // Log summary at the end
@@ -254,6 +293,9 @@ router.post(
         }
         if (counts.skippedAlreadyBlocked > 0) {
           job.info(`  Skipped (blocked): ${counts.skippedAlreadyBlocked}`);
+        }
+        if (counts.skippedAlreadyRemoved > 0) {
+          job.info(`  Skipped (removed): ${counts.skippedAlreadyRemoved}`);
         }
         if (counts.skippedInstructor > 0) {
           job.info(`  Skipped (instructor): ${counts.skippedInstructor}`);
@@ -277,10 +319,13 @@ router.post(
       serverJob.executeInBackground(async (job) => {
         const syncCounts: InviteCounts = {
           invited: 0,
+          unblocked: 0,
+          reenrolled: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
           skippedAlreadyJoined: 0,
           skippedAlreadyBlocked: 0,
+          skippedAlreadyRemoved: 0,
           errors: 0,
         };
         let cancelled = 0;
@@ -298,6 +343,7 @@ router.post(
             job,
             counts: syncCounts,
             skipBlocked: false, // sync_students can re-invite blocked students
+            allowReenroll: true,
             actionDetail: 'invited_by_manual_sync',
           });
         }
@@ -377,6 +423,12 @@ router.post(
         // Log summary at the end
         job.info('\nSummary:');
         job.info(`  Invited: ${syncCounts.invited}`);
+        if (syncCounts.unblocked > 0) {
+          job.info(`  Unblocked: ${syncCounts.unblocked}`);
+        }
+        if (syncCounts.reenrolled > 0) {
+          job.info(`  Reenrolled: ${syncCounts.reenrolled}`);
+        }
         job.info(`  Invitations cancelled: ${cancelled}`);
         job.info(`  Removed: ${removed}`);
         if (syncCounts.skippedAlreadyJoined > 0) {

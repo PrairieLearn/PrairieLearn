@@ -37,7 +37,7 @@ const MAX_UIDS = 1000;
  * Computes the diff between the input roster and the current enrollments.
  *
  * Sync logic (roster is the source of truth):
- * - Students on roster but not `joined`/`invited`: should be invited
+ * - Students on roster but not `joined`/`invited`: should be invited or re-enrolled
  * - Students not on roster who are `joined`: should be removed
  * - Students not on roster who are `invited`/`rejected`: should have invitation cancelled
  * - Students already `joined` or `invited` who are on the roster: no action
@@ -70,7 +70,7 @@ function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]):
         enrollmentId: null,
       });
     } else if (!['joined', 'invited'].includes(existing.enrollment.status)) {
-      // Existing but not active - needs re-invitation
+      // Existing but not active - needs invitation or re-enrollment
       toInvite.push({
         uid: existing.user?.uid ?? existing.enrollment.pending_uid ?? uid,
         currentStatus: existing.enrollment.status,
@@ -379,8 +379,8 @@ export function SyncStudentsModal({
         {step === 'input' && (
           <form onSubmit={onCompare}>
             <p className="text-muted">
-              Paste your student roster below. Students on this list will be invited if not already
-              enrolled. Students not on this list will be removed.
+              Paste your student roster below. Students on this list will be invited or re-enrolled
+              if not already enrolled. Students not on this list will be blocked.
             </p>
             <div className="mb-3">
               <label htmlFor="sync-uids" className="form-label">

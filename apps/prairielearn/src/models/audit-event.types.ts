@@ -68,11 +68,13 @@ export type SupportedTableActionCombination =
         | 'invitation_rejected'
         | 'blocked'
         | 'unblocked'
+        | 'unblocked_by_manual_sync'
         | 'invitation_deleted'
         | 'invitation_deleted_by_manual_sync'
         | 'left'
         | 'removed'
         | 'removed_by_manual_sync'
+        | 'reenrolled_by_manual_sync'
         | 'reenrolled_by_instructor'
         | null;
     };

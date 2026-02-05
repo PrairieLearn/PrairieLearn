@@ -711,7 +711,7 @@ export async function removeEnrollmentFromSync({
   authzData,
 }: {
   enrollment: Enrollment;
-  authzData: AuthzData;
+  authzData: AuthzDataWithEffectiveUser;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -750,6 +750,71 @@ export async function removeEnrollmentFromSync({
       tableName: 'enrollments',
       action: 'update',
       actionDetail: 'removed_by_manual_sync',
+      rowId: newEnrollment.id,
+      oldRow: lockedEnrollment,
+      newRow: newEnrollment,
+      agentUserId: authzData.user.id,
+      agentAuthnUserId: authzData.authn_user.id,
+    });
+
+    return newEnrollment;
+  });
+}
+
+/**
+ * Re-enrolls a blocked or removed enrollment as part of a roster sync operation.
+ *
+ * This is used when the roster is the source of truth and a previously blocked or removed
+ * student reappears on the roster.
+ */
+export async function reenrollEnrollmentFromSync({
+  enrollment,
+  authzData,
+}: {
+  enrollment: Enrollment;
+  authzData: AuthzData;
+}): Promise<Enrollment> {
+  return await runInTransactionAsync(async () => {
+    const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
+    if (lockedEnrollment.user_id) {
+      await selectAndLockUser(lockedEnrollment.user_id);
+    }
+
+    // Already joined - nothing to do.
+    if (lockedEnrollment.status === 'joined') {
+      return lockedEnrollment;
+    }
+
+    // LTI-managed enrollments cannot be modified via roster sync.
+    if (lockedEnrollment.status === 'lti13_pending') {
+      throw new error.HttpStatusError(400, 'Cannot re-enroll LTI-managed enrollment');
+    }
+
+    if (!['blocked', 'removed'].includes(lockedEnrollment.status)) {
+      throw new error.HttpStatusError(
+        400,
+        `Cannot re-enroll enrollment with status "${lockedEnrollment.status}"`,
+      );
+    }
+
+    // Roster sync requires Student Data Editor permission.
+    assertHasRole(authzData, ['Student Data Editor']);
+
+    const newEnrollment = await queryRow(
+      sql.set_enrollment_status,
+      { enrollment_id: lockedEnrollment.id, status: 'joined' },
+      EnrollmentSchema,
+    );
+
+    const actionDetail =
+      lockedEnrollment.status === 'blocked'
+        ? 'unblocked_by_manual_sync'
+        : 'reenrolled_by_manual_sync';
+
+    await insertAuditEvent({
+      tableName: 'enrollments',
+      action: 'update',
+      actionDetail,
       rowId: newEnrollment.id,
       oldRow: lockedEnrollment,
       newRow: newEnrollment,

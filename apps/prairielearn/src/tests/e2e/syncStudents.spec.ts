@@ -1,10 +1,15 @@
 import type { Page } from '@playwright/test';
 
-import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { type AuthzData, dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
+import type { User } from '../../lib/db-types.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
-import { ensureUncheckedEnrollment, inviteStudentByUid } from '../../models/enrollment.js';
+import {
+  ensureUncheckedEnrollment,
+  inviteStudentByUid,
+  setEnrollmentStatus,
+} from '../../models/enrollment.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
@@ -30,6 +35,38 @@ async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
   for (const text of expectedTexts) {
     await expect(jobOutput.getByText(text)).toBeVisible();
   }
+}
+
+function createInstructorAuthzData(user: User): AuthzData {
+  return {
+    authn_user: user,
+    user,
+    authn_is_administrator: false,
+    authn_has_course_permission_preview: false,
+    authn_has_course_permission_view: false,
+    authn_has_course_permission_edit: false,
+    authn_has_course_permission_own: false,
+    authn_course_role: 'None',
+    authn_course_instance_role: 'Student Data Editor',
+    authn_mode: 'Public',
+    authn_has_student_access: false,
+    authn_has_student_access_with_enrollment: false,
+    authn_has_course_instance_permission_view: true,
+    authn_has_course_instance_permission_edit: true,
+    is_administrator: false,
+    has_course_permission_preview: false,
+    has_course_permission_view: false,
+    has_course_permission_edit: false,
+    has_course_permission_own: false,
+    course_role: 'None',
+    course_instance_role: 'Student Data Editor',
+    mode: 'Public',
+    mode_reason: 'Default',
+    has_student_access: false,
+    has_student_access_with_enrollment: false,
+    has_course_instance_permission_view: true,
+    has_course_instance_permission_edit: true,
+  } as AuthzData;
 }
 
 // Test users for sync scenarios
@@ -167,6 +204,80 @@ test.describe('Sync students', () => {
       'fresh_sync_new@test.com: Invited',
       'fresh_sync_cancel@test.com: Invitation cancelled',
       'fresh_sync_remove@test.com: Removed',
+    ]);
+  });
+
+  test('re-invites blocked and removed students who reappear on the roster', async ({ page }) => {
+    const blockedUser = await getOrCreateUser({
+      uid: 'sync_blocked@test.com',
+      name: 'Blocked Student',
+      uin: null,
+    });
+    const removedUser = await getOrCreateUser({
+      uid: 'sync_removed@test.com',
+      name: 'Removed Student',
+      uin: null,
+    });
+
+    const course = await selectCourseByShortName('QA 101');
+    const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
+    const instructorAuthzData = createInstructorAuthzData(blockedUser);
+
+    const blockedEnrollment = await ensureUncheckedEnrollment({
+      userId: blockedUser.id,
+      courseInstance,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
+      actionDetail: 'implicit_joined',
+    });
+    const removedEnrollment = await ensureUncheckedEnrollment({
+      userId: removedUser.id,
+      courseInstance,
+      authzData: dangerousFullSystemAuthz(),
+      requiredRole: ['System'],
+      actionDetail: 'implicit_joined',
+    });
+
+    if (!blockedEnrollment || !removedEnrollment) {
+      throw new Error('Expected enrollments to exist for blocked/removed users');
+    }
+
+    await setEnrollmentStatus({
+      enrollment: blockedEnrollment,
+      status: 'blocked',
+      authzData: instructorAuthzData,
+      requiredRole: ['Student Data Editor'],
+    });
+    await setEnrollmentStatus({
+      enrollment: removedEnrollment,
+      status: 'removed',
+      authzData: instructorAuthzData,
+      requiredRole: ['Student Data Editor'],
+    });
+
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+    await expect(page).toHaveTitle(/Students/);
+
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
+    await page.getByRole('button', { name: 'Sync roster' }).click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+    await page
+      .getByRole('textbox', { name: 'Student UIDs' })
+      .fill('sync_blocked@test.com\nsync_removed@test.com');
+
+    await page.getByRole('button', { name: 'Compare' }).click();
+
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByText('Students to invite')).toBeVisible();
+    await expect(dialog.getByText('sync_blocked@test.com')).toBeVisible();
+    await expect(dialog.getByText('sync_removed@test.com')).toBeVisible();
+
+    await page.getByRole('button', { name: /Sync \d+ student/ }).click();
+
+    await waitForJobAndCheckOutput(page, [
+      'sync_blocked@test.com: Unblocked',
+      'sync_removed@test.com: Reenrolled',
     ]);
   });
 
