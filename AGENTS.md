@@ -19,11 +19,26 @@ Backend: TypeScript / Express / Python / PostgreSQL
 
 ## Packages
 
-Libraries live in `packages/`. If you update a package, you MUST add a changeset using `yarn changeset`.
+Libraries live in `packages/`. If you update a package, you MUST add a changeset. Create a markdown file in `.changeset/` with a name like `fix-my-bug.md` containing:
+
+```markdown
+---
+'@prairielearn/package-name': patch
+---
+
+Description of the change
+```
+
+Use `patch` for bug fixes, `minor` for new features, and `major` for breaking changes.
 
 Frequently used packages:
 
 - `@prairielearn/ui`: UI components for the PrairieLearn web application.
+
+## Git
+
+- NEVER amend commits or force push unless specifically requested.
+- NEVER rebase unless specifically requested, always use merge commits.
 
 ## Building, type checking, and linting
 
@@ -123,6 +138,11 @@ Tests expect Postgres, Redis, and an S3-compatible store to be running, and usua
 
 To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
 
+When writing tests:
+
+- Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
+- Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
+
 ### Rendering HTML
 
 The PrairieLearn web application renders HTML in one of two ways:
@@ -137,10 +157,13 @@ The PrairieLearn web application renders HTML in one of two ways:
 - Inline prop definitions for components if they are not used outside of the component.
 - Pass `res.locals` to `getPageContext` to get information about the course instance / authentication state.
 - If you hydrate a component with `Hydrate`, you must register the component with `registerHydratedComponent` in a file in `apps/prairielearn/assets/scripts/esm-bundles/hydrated-components`.
+- Don't use `useMemo` for cheap computations. Use `run` from `@prairielearn/run` instead (an IIFE helper that executes a function immediately).
 
 ## Python guidance
 
 Elements (similar to React components, used to build interactive questions) are written in Python and are located in `apps/prairielearn/elements/`.
+
+When changing element properties or options, you MUST update the corresponding documentation in `docs/elements/<element-name>.md` to match.
 
 ### Testing
 

@@ -14,10 +14,10 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -109,10 +109,10 @@ export function QuestionContainer({
             `
           : ''
       }
-      ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
-      aiGradingInfo?.explanation
+      ${['instructor', 'manual_grading'].includes(questionContext) && aiGradingInfo
         ? AIGradingExplanation({
             explanation: aiGradingInfo.explanation,
+            rotationCorrectionDegrees: aiGradingInfo.rotationCorrectionDegrees,
           })
         : ''}
       ${(questionContext === 'instructor' || questionContext === 'manual_grading') &&
@@ -197,7 +197,13 @@ function AIGradingPrompt({ prompt }: { prompt: string }) {
   `;
 }
 
-function AIGradingExplanation({ explanation }: { explanation: string }) {
+function AIGradingExplanation({
+  explanation,
+  rotationCorrectionDegrees,
+}: {
+  explanation: string | null;
+  rotationCorrectionDegrees: string | null;
+}) {
   return html`
     <div class="card mb-3 grading-block">
       <div
@@ -220,9 +226,25 @@ function AIGradingExplanation({ explanation }: { explanation: string }) {
         id="ai-grading-explanation-body"
       >
         <div class="card-body">
-          <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
-${explanation}</pre
-          >
+          ${explanation
+            ? html`
+                <pre class="mb-0 overflow-visible mathjax_process" style="white-space: pre-wrap;">
+${explanation}
+</pre>
+              `
+            : ''}
+          ${rotationCorrectionDegrees
+            ? html`
+                <br />
+                <pre>
+Not all images were upright
+Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
+</pre>
+              `
+            : html`
+                <br />
+                <pre>All images were upright</pre>
+              `}
         </div>
       </div>
     </div>
@@ -580,7 +602,10 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                  <a
+                    href="${newVariantUrl}"
+                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                  >
                     New variant
                   </a>
                 `

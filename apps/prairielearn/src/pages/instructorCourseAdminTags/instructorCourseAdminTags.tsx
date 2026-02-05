@@ -14,7 +14,8 @@ import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
 import { StaffTagSchema } from '../../lib/client/safe-db-types.js';
 import { TagSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, getOriginalHash, propertyValueWithDefault } from '../../lib/editors.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -44,9 +45,6 @@ router.get(
           type: 'instructor',
           page: 'course_admin',
           subPage: 'tags',
-        },
-        options: {
-          fullWidth: true,
         },
         content: (
           <Hydrate>
