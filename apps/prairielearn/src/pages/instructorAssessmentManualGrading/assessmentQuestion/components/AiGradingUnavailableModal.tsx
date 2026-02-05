@@ -14,7 +14,7 @@ export function AiGradingUnavailableModal({ show, onHide }: { show: boolean; onH
         <p className="mb-0">
           See the{' '}
           <a
-            href="https://prairielearn.readthedocs.io/en/latest/manualGrading/#configuring-a-question-for-manual-grading"
+            href="https://prairielearn.readthedocs.io/en/latest/manualGrading/"
             target="_blank"
             rel="noopener noreferrer"
           >
