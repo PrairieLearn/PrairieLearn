@@ -4,7 +4,7 @@ import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { idsEqual } from '../lib/id.js';
 
-import { isUserInTeam } from './team.js';
+import { isUserInTeam } from '../lib/teams.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
