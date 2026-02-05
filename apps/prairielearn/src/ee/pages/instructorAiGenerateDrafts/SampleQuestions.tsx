@@ -34,7 +34,7 @@ export function SampleQuestions() {
       }}
     >
       <AccordionItem eventKey="0">
-        <AccordionHeader>Example questions and prompts</AccordionHeader>
+        <AccordionHeader>Example prompts</AccordionHeader>
         <AccordionBody className="p-3">
           <SampleQuestionSelector
             selectedQuestionIndex={selectedQuestionIndex}
@@ -49,11 +49,8 @@ export function SampleQuestions() {
             prompt={selectedQuestion}
             header={
               <div className="d-flex align-items-center gap-2">
-                <span
-                  className="d-inline-block rounded-circle bg-success"
-                  style={{ width: 8, height: 8 }}
-                />
-                <span className="fw-medium">Generated preview</span>
+                <i className="bi bi-check-circle-fill text-success" />
+                <span className="fw-medium">Example output</span>
               </div>
             }
           />
@@ -128,14 +125,9 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
         borderColor: 'rgba(var(--bs-primary-rgb), 0.2)',
       }}
     >
-      <div className="d-flex align-items-center gap-1 mb-2">
+      <div className="d-flex align-items-center gap-2 mb-2">
         <i className="bi bi-chat-left-text text-primary small" />
-        <span
-          className="text-uppercase fw-semibold small text-primary"
-          style={{ letterSpacing: '0.05em' }}
-        >
-          Prompt
-        </span>
+        <span className="fw-medium text-primary">Prompt</span>
       </div>
       <p className="mb-2">{prompt}</p>
       <Button variant="link" className="p-0 text-decoration-none" onClick={handleUsePrompt}>
