@@ -14,7 +14,7 @@ import Tooltip from 'react-bootstrap/Tooltip';
 import { SampleQuestionDemo } from './SampleQuestionDemo.js';
 import { type SampleQuestionVariant, examplePromptsArray } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestions({ initialVariant }: { initialVariant?: SampleQuestionVariant }) {
+export function SampleQuestions({ initialVariant }: { initialVariant: SampleQuestionVariant }) {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
