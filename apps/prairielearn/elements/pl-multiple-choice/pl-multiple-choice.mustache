@@ -43,7 +43,7 @@
     {{/answers}}
     </span>
     {{#editable}}{{#allow_blank}}
-    <button type="button" class="btn btn-link btn-sm p-0 text-secondary small" onclick="window.PLMultipleChoiceClearRadio('{{name}}')">Clear</button>
+    <button type="button" class="btn btn-link btn-sm p-0 text-secondary small" data-name="{{name}}" aria-label="Clear multiple choice selection" onclick="window.PLMultipleChoiceClearRadio(this)">Clear</button>
     {{/allow_blank}}{{/editable}}
 
 {{#display_score_badge}}
