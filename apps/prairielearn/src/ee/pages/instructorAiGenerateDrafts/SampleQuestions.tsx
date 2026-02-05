@@ -6,9 +6,8 @@ import AccordionItem from 'react-bootstrap/AccordionItem';
 import Button from 'react-bootstrap/Button';
 import FormSelect from 'react-bootstrap/FormSelect';
 import InputGroup from 'react-bootstrap/InputGroup';
-import OverlayTrigger from 'react-bootstrap/OverlayTrigger';
-import Tooltip from 'react-bootstrap/Tooltip';
 
+import { MagicConnector } from './MagicConnector.js';
 import { SampleQuestionDemo } from './SampleQuestionDemo.js';
 import { examplePromptsArray } from './aiGeneratedQuestionSamples.js';
 
@@ -28,23 +27,37 @@ export function SampleQuestions() {
   };
 
   return (
-    <Accordion>
+    <Accordion
+      style={{
+        // Match the border color of the card that's displayed above this accordion.
+        // @ts-expect-error -- TypeScript doesn't recognize CSS variables on the style prop.
+        '--bs-accordion-border-color': 'var(--bs-border-color-translucent)',
+      }}
+    >
       <AccordionItem eventKey="0">
         <AccordionHeader>Example questions and prompts</AccordionHeader>
-        <AccordionBody>
+        <AccordionBody className="p-3">
+          <SampleQuestionSelector
+            selectedQuestionIndex={selectedQuestionIndex}
+            onSelectQuestionIndex={setSelectedQuestionIndex}
+            onClickPrevious={handleClickPrevious}
+            onClickNext={handleClickNext}
+          />
+          <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
+          <MagicConnector />
           <SampleQuestionDemo
             key={selectedQuestion.id}
             prompt={selectedQuestion}
             header={
-              <SampleQuestionSelector
-                selectedQuestionIndex={selectedQuestionIndex}
-                onSelectQuestionIndex={setSelectedQuestionIndex}
-                onClickPrevious={handleClickPrevious}
-                onClickNext={handleClickNext}
-              />
+              <div className="d-flex align-items-center gap-2">
+                <span
+                  className="d-inline-block rounded-circle bg-success"
+                  style={{ width: 8, height: 8 }}
+                />
+                <span className="fw-medium">Generated preview</span>
+              </div>
             }
           />
-          <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
         </AccordionBody>
       </AccordionItem>
     </Accordion>
@@ -106,17 +119,26 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   };
 
   return (
-    <>
-      <p className="fw-bold mb-1 mt-3">Prompt</p>
-      <p>{prompt}</p>
-      <OverlayTrigger
-        placement="top"
-        overlay={<Tooltip>Copy this prompt to the prompt input</Tooltip>}
-      >
-        <Button variant="outline-primary" onClick={handleUsePrompt}>
-          Use prompt
-        </Button>
-      </OverlayTrigger>
-    </>
+    <div
+      className="rounded border p-3 mt-3"
+      style={{
+        backgroundColor: 'rgba(var(--bs-primary-rgb), 0.05)',
+        borderColor: 'rgba(var(--bs-primary-rgb), 0.2)',
+      }}
+    >
+      <div className="d-flex align-items-center gap-1 mb-2">
+        <i className="bi bi-chat-left-text text-primary small" />
+        <span
+          className="text-uppercase fw-semibold small text-primary"
+          style={{ letterSpacing: '0.05em' }}
+        >
+          Prompt
+        </span>
+      </div>
+      <p className="mb-2">{prompt}</p>
+      <Button variant="link" className="p-0 text-decoration-none" onClick={handleUsePrompt}>
+        Use this prompt <i className="bi bi-arrow-right small" />
+      </Button>
+    </div>
   );
 }
