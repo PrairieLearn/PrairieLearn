@@ -131,7 +131,7 @@ function AssessmentQuestionManualGradingInner({
                 type="checkbox"
                 role="switch"
                 id="switchCheckDefault"
-                checked={aiGradingMode && isAiGradingAvailable}
+                checked={aiGradingMode}
                 onChange={() => {
                   if (!isAiGradingAvailable) {
                     setShowAiGradingUnavailableModal(true);
