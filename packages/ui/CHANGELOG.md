@@ -1,5 +1,12 @@
 # @prairielearn/ui
 
+## 3.1.2
+
+### Patch Changes
+
+- cde69c1: Upgrade all JavaScript dependencies
+- aae8ad7: Fix ColumnManager not properly unchecking a group of columns
+
 ## 3.1.1
 
 ### Patch Changes

@@ -893,7 +893,7 @@ export async function initExpress(): Promise<Express> {
         res.locals.navSubPage = 'groups';
         next();
       },
-      (await import('./pages/instructorAssessmentTeams/instructorAssessmentTeams.js')).default,
+      (await import('./pages/instructorAssessmentGroups/instructorAssessmentGroups.js')).default,
     ],
   );
   app.use(
