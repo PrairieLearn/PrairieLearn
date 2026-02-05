@@ -1,5 +1,32 @@
 # @prairielearn/compiled-assets
 
+## 4.0.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/html@5.0.1
+
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/html@5.0.0
+
+## 3.3.3
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/html@4.0.24
+
 ## 3.3.2
 
 ### Patch Changes

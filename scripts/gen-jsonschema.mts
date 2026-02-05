@@ -35,7 +35,7 @@ const orderedStringify = (schema: any) => {
     'GroupRoleJsonSchema',
     'AssessmentAccessRuleJsonSchema',
     'ZoneAssessmentJsonSchema',
-    'ZoneQuestionJsonSchema',
+    'ZoneQuestionBlockJsonSchema',
     'QuestionAlternativeJsonSchema',
     'PointsJsonSchema',
     'PointsSingleJsonSchema',

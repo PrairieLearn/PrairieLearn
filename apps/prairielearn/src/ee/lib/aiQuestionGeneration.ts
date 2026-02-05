@@ -6,9 +6,10 @@ import {
   type LanguageModelUsage,
   generateText,
 } from 'ai';
+import { Redis } from 'ioredis';
 import * as parse5 from 'parse5';
 
-import { Cache } from '@prairielearn/cache';
+import { logger } from '@prairielearn/logger';
 import {
   execute,
   loadSqlEquiv,
@@ -16,26 +17,28 @@ import {
   queryRow,
   queryRows,
 } from '@prairielearn/postgres';
+import * as Sentry from '@prairielearn/sentry';
 import { IdSchema } from '@prairielearn/zod';
 
 import {
-  type OpenAIModelId,
   calculateResponseCost,
   emptyUsage,
   formatPrompt,
   logResponseUsage,
   mergeUsage,
-} from '../../lib/ai.js';
+} from '../../lib/ai-util.js';
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { chalk } from '../../lib/chalk.js';
 import { config } from '../../lib/config.js';
 import { getCourseFilesClient } from '../../lib/course-files-api.js';
-import { type Issue, QuestionGenerationContextEmbeddingSchema } from '../../lib/db-types.js';
+import { QuestionGenerationContextEmbeddingSchema, type User } from '../../lib/db-types.js';
 import { getAndRenderVariant } from '../../lib/question-render.js';
+import type { IssueRenderData } from '../../lib/question-render.types.js';
+import { RedisRateLimiter } from '../../lib/redis-rate-limiter.js';
 import { type ServerJob, createServerJob } from '../../lib/server-jobs.js';
 import { updateCourseInstanceUsagesForAiQuestionGeneration } from '../../models/course-instance-usages.js';
 import { selectCourseById } from '../../models/course.js';
-import { selectQuestionById, selectQuestionByQid } from '../../models/question.js';
+import { selectQuestionById } from '../../models/question.js';
 import { selectUserById } from '../../models/user.js';
 
 import { createEmbedding, openAiUserFromAuthn, vectorToString } from './contextEmbeddings.js';
@@ -43,10 +46,9 @@ import { validateHTML } from './validateHTML.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
-// We're still using `4o` for question generation as it seems to have better
-// cost/performance characteristics. We'll revisit moving to a newer model in
-// the future.
-export const QUESTION_GENERATION_OPENAI_MODEL = 'gpt-4o-2024-11-20' satisfies OpenAIModelId;
+export type QuestionGenerationModelId = keyof (typeof config)['costPerMillionTokens'];
+
+export const QUESTION_GENERATION_OPENAI_MODEL: QuestionGenerationModelId = 'gpt-5.2-2025-12-11';
 
 const NUM_TOTAL_ATTEMPTS = 2;
 
@@ -56,7 +58,7 @@ const NUM_TOTAL_ATTEMPTS = 2;
  * @param context Relevant example documents, formatted into one string.
  * @returns A string, the prompt preamble.
  */
-function promptPreamble(context: string): string {
+export function promptPreamble(context: string): string {
   return formatPrompt([
     '# Introduction',
     'You are an assistant that helps instructors write questions for PrairieLearn.',
@@ -105,7 +107,7 @@ function promptPreamble(context: string): string {
   ]);
 }
 
-async function checkRender(
+export async function checkRender(
   status: 'success' | 'error',
   errors: string[],
   courseId: string,
@@ -127,6 +129,8 @@ async function checkRender(
     user,
     authn_user: user, // We don't have a separate authn user in this case.
     is_administrator: false,
+    // This will be populated with any issues that occur during rendering.
+    issues: [] as IssueRenderData[],
   };
   await getAndRenderVariant(null, null, locals, {
     // Needed so that we can read the error output below.
@@ -135,7 +139,7 @@ async function checkRender(
 
   // Errors should generally have stack traces. If they don't, we'll filter
   // them out, but they may not help us much.
-  return ((locals as any).issues as Issue[])
+  return locals.issues
     .map((issue) => issue.system_data?.courseErrData?.outputBoth as string | undefined)
     .filter((output) => output !== undefined)
     .map((output) => {
@@ -245,21 +249,31 @@ function extractFromResponse(
   return out;
 }
 
-/**
- * Returns the AI question generation cache used for rate limiting.
- */
-let aiQuestionGenerationCache: Cache | undefined;
-export async function getAiQuestionGenerationCache() {
-  // The cache variable is outside the function to avoid creating multiple instances of the same cache in the same process.
-  if (aiQuestionGenerationCache) return aiQuestionGenerationCache;
-  aiQuestionGenerationCache = new Cache();
-  await aiQuestionGenerationCache.init({
-    type: config.nonVolatileCacheType,
-    keyPrefix: config.cacheKeyPrefix,
-    redisUrl: config.nonVolatileRedisUrl,
-  });
-  return aiQuestionGenerationCache;
-}
+const rateLimiter = new RedisRateLimiter({
+  redis: () => {
+    if (!config.nonVolatileRedisUrl) {
+      // Redis is a hard requirement for AI question generation. We don't attempt
+      // to operate without it.
+      throw new Error('nonVolatileRedisUrl must be set in config');
+    }
+
+    const redis = new Redis(config.nonVolatileRedisUrl);
+    redis.on('error', (err) => {
+      logger.error('AI question generation Redis error', err);
+
+      // This error could happen during a specific request, but we shouldn't
+      // associate it with that request - we just happened to try to set up
+      // Redis during a given request. We'll use a fresh scope to capture this.
+      Sentry.withScope((scope) => {
+        scope.clear();
+        Sentry.captureException(err);
+      });
+    });
+    return redis;
+  },
+  keyPrefix: () => config.cacheKeyPrefix + 'ai-question-generation-usage:',
+  intervalSeconds: 3600,
+});
 
 /**
  * Approximate the cost of the prompt, in US dollars.
@@ -286,47 +300,33 @@ export function approximatePromptCost({
 }
 
 /**
- * Retrieve the Redis key for a user's current AI question generation interval usage
+ * Retrieve the Redis key for a user's AI question generation interval usage.
  */
-function getIntervalUsageKey(userId: number) {
-  const intervalStart = Date.now() - (Date.now() % intervalLengthMs);
-  return `ai-question-generation-usage:user:${userId}:interval:${intervalStart}`;
+function getIntervalUsageKey(user: User) {
+  return `user:${user.id}`;
 }
-
-// 1 hour in milliseconds
-const intervalLengthMs = 3600 * 1000;
 
 /**
  * Retrieve the user's AI question generation usage in the last hour interval, in US dollars
  */
-export async function getIntervalUsage({ userId }: { userId: number }) {
-  const cache = await getAiQuestionGenerationCache();
-  return (await cache.get<number>(getIntervalUsageKey(userId))) ?? 0;
+export async function getIntervalUsage(user: User) {
+  return rateLimiter.getIntervalUsage(getIntervalUsageKey(user));
 }
 
 /**
  * Add the cost of a completion to the usage of the user for the current interval.
  */
 export async function addCompletionCostToIntervalUsage({
-  userId,
+  user,
   usage,
-  intervalCost,
+  model = QUESTION_GENERATION_OPENAI_MODEL,
 }: {
-  userId: number;
+  user: User;
   usage: LanguageModelUsage | undefined;
-  intervalCost: number;
+  model?: keyof (typeof config)['costPerMillionTokens'];
 }) {
-  const cache = await getAiQuestionGenerationCache();
-
-  const completionCost = calculateResponseCost({
-    model: QUESTION_GENERATION_OPENAI_MODEL,
-    usage,
-  });
-
-  // Date.now() % intervalLengthMs is the number of milliseconds since the beginning of the interval.
-  const timeRemainingInInterval = intervalLengthMs - (Date.now() % intervalLengthMs);
-
-  cache.set(getIntervalUsageKey(userId), intervalCost + completionCost, timeRemainingInInterval);
+  const completionCost = calculateResponseCost({ model, usage });
+  await rateLimiter.addToIntervalUsage(getIntervalUsageKey(user), completionCost);
 }
 
 /**
@@ -744,99 +744,4 @@ async function regenInternal({
   }
 
   return { usage };
-}
-
-/**
- * Revises a question using the LLM based on user input.
- *
- * @param params
- * @param params.model The language model to use.
- * @param params.embeddingModel The embedding model to use.
- * @param params.courseId The ID of the current course.
- * @param params.authnUserId The authenticated user's ID.
- * @param params.originalPrompt The prompt creating the original generation.
- * @param params.revisionPrompt A prompt with user instructions on how to revise the question.
- * @param params.originalHTML The question.html file to revise.
- * @param params.originalPython The server.py file to revise.
- * @param params.questionQid The qid of the question to edit.
- * @param params.userId The ID of the generating/saving user.
- * @param params.hasCoursePermissionEdit Whether the saving generating/saving has course permission edit privileges.
- * @returns A server job ID for the generation task and a promise to return the associated saved data on completion.
- */
-export async function regenerateQuestion({
-  model,
-  embeddingModel,
-  courseId,
-  authnUserId,
-  originalPrompt,
-  revisionPrompt,
-  originalHTML,
-  originalPython,
-  questionQid,
-  userId,
-  hasCoursePermissionEdit,
-}: {
-  model: LanguageModel;
-  embeddingModel: EmbeddingModel;
-  courseId: string;
-  authnUserId: string;
-  originalPrompt: string;
-  revisionPrompt: string;
-  originalHTML: string;
-  originalPython: string;
-  questionQid: string;
-  userId: string;
-  hasCoursePermissionEdit: boolean;
-}): Promise<{
-  jobSequenceId: string;
-  htmlResult: string | undefined;
-  pythonResult: string | undefined;
-  usage: LanguageModelUsage | undefined;
-}> {
-  const serverJob = await createServerJob({
-    type: 'ai_question_regenerate',
-    description: 'Revise a question using the LLM',
-    userId,
-    authnUserId,
-    courseId,
-  });
-
-  const question = await selectQuestionByQid({ qid: questionQid, course_id: courseId });
-
-  let usage = emptyUsage();
-
-  const jobData = await serverJob.execute(async (job) => {
-    job.data.questionQid = questionQid;
-    const { usage: newUsage } = await regenInternal({
-      job,
-      model,
-      embeddingModel,
-      authnUserId,
-      originalPrompt,
-      revisionPrompt,
-      originalHTML,
-      originalPython,
-      remainingAttempts: NUM_TOTAL_ATTEMPTS,
-      isAutomated: false,
-      questionId: question.id,
-      questionQid,
-      courseId,
-      userId,
-      hasCoursePermissionEdit,
-      jobSequenceId: serverJob.jobSequenceId,
-    });
-
-    usage = mergeUsage(usage, newUsage);
-
-    job.data.promptTokens = usage.inputTokens;
-    job.data.completionTokens = usage.outputTokens;
-    job.data.usage = usage;
-  });
-
-  return {
-    jobSequenceId: serverJob.jobSequenceId,
-    htmlResult: jobData.data.html,
-    pythonResult: jobData.data.python,
-    usage,
-  };
 }

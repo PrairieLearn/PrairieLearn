@@ -1,5 +1,49 @@
 # @prairielearn/ui
 
+## 3.1.2
+
+### Patch Changes
+
+- cde69c1: Upgrade all JavaScript dependencies
+- aae8ad7: Fix ColumnManager not properly unchecking a group of columns
+
+## 3.1.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/browser-utils@2.6.3
+
+## 3.1.0
+
+### Minor Changes
+
+- 3f7e76a: Add `<ComboBox>` and `<TagPicker>` components
+
+## 3.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- f1da6ea: Make `useAutoSizeColumns` compatible with React 18+
+  - @prairielearn/browser-utils@2.6.2
+
+## 2.0.0
+
+### Major Changes
+
+- d94c74c: Use React instead of Preact
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/browser-utils@2.6.1
+
 ## 1.10.0
 
 ### Minor Changes

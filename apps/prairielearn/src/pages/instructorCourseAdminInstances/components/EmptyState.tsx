@@ -14,7 +14,7 @@ export function EmptyState({
   onCreateClick: () => void;
 }) {
   return (
-    <div className="my-4 card-body text-center" style="text-wrap: balance;">
+    <div className="my-4 card-body text-center" style={{ textWrap: 'balance' }}>
       <p className="fw-bold">No course instances found.</p>
       <p className="mb-0">
         A course instance contains the assessments and other configuration for a single offering of
@@ -22,11 +22,7 @@ export function EmptyState({
       </p>
       <p>
         Learn more in the{' '}
-        <a
-          href="https://prairielearn.readthedocs.io/en/latest/courseInstance/"
-          target="_blank"
-          rel="noreferrer"
-        >
+        <a href="https://docs.prairielearn.com/courseInstance/" target="_blank" rel="noreferrer">
           course instance documentation
         </a>
         .

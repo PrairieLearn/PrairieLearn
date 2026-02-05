@@ -22,7 +22,7 @@ export function LegacyAccessRuleCard({
         <code>allowAccess</code> system. To use the new publishing system, you must first remove the{' '}
         <code>allowAccess</code> section from your course instance configuration. For more
         information, please see the{' '}
-        <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
+        <a href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess">
           migration documentation
         </a>
         .
@@ -37,7 +37,7 @@ export function LegacyAccessRuleCard({
             <thead>
               <tr>
                 {showComments && (
-                  <th style="width: 1%">
+                  <th style={{ width: '1%' }}>
                     <span className="visually-hidden">Comments</span>
                   </th>
                 )}

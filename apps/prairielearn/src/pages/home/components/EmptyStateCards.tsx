@@ -11,7 +11,7 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-person-badge text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-person-badge text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Students</h3>
             <p className="card-text mb-4">Add a course and start learning.</p>
@@ -32,7 +32,7 @@ export function EmptyStateCards({
         <div className="card h-100">
           <div className="card-body text-center d-flex flex-column">
             <div className="mb-3">
-              <i className="bi bi-mortarboard text-primary" style="font-size: 3rem;" />
+              <i className="bi bi-mortarboard text-primary" style={{ fontSize: '3rem' }} />
             </div>
             <h3 className="card-title mb-3">Instructors</h3>
             <p className="card-text mb-4">Create and manage courses for your students.</p>
@@ -46,7 +46,7 @@ export function EmptyStateCards({
                   Request course
                 </a>
                 <a
-                  href="https://prairielearn.readthedocs.io/en/latest"
+                  href="https://docs.prairielearn.com"
                   className="btn btn-outline-primary flex-fill d-flex gap-2 justify-content-center"
                   target="_blank"
                   rel="noopener noreferrer"

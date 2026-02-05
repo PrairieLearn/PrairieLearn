@@ -1,5 +1,5 @@
 import clsx from 'clsx';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Form, InputGroup, Modal } from 'react-bootstrap';
 import { type Control, type UseFormTrigger, useWatch } from 'react-hook-form';
 
@@ -22,14 +22,14 @@ function SelfEnrollmentCode({ enrollmentCode }: { enrollmentCode: string }) {
 
   return (
     <div className="mb-3">
-      <label className="form-label" for="self_enrollment_code">
+      <label className="form-label" htmlFor="self_enrollment_code">
         Self-enrollment code
       </label>
       <InputGroup>
         <Form.Control
           id="self_enrollment_code"
           value={enrollmentCodeDashed}
-          style="font-family: monospace; font-size: 1.1em; letter-spacing: 0.1em;"
+          style={{ fontFamily: 'monospace', fontSize: '1.1em', letterSpacing: '0.1em' }}
           disabled
         />
         <OverlayTrigger
@@ -75,7 +75,7 @@ function SelfEnrollmentLink({
   return (
     <>
       <div className="mb-3">
-        <label className="form-label" for="self_enrollment_link">
+        <label className="form-label" htmlFor="self_enrollment_link">
           Self-enrollment link
         </label>
         <InputGroup>
@@ -222,12 +222,14 @@ export function SelfEnrollmentSettings({
 
       {!hasModernPublishing ? (
         <div className="alert alert-warning">
-          You are using access rules to control who can access the course instance. To change the
-          self-enrollment settings, you must first{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/courseInstance/#migrating-from-allowaccess">
-            migrate to publishing
-          </a>
-          .
+          You are using access rules to control who can access the course instance.{' '}
+          <a
+            href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
+            className="alert-link"
+          >
+            Migrate to publishing
+          </a>{' '}
+          to unlock additional enrollment management features.
         </div>
       ) : null}
 
@@ -246,7 +248,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabled ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_enabled">
+        <label className="form-check-label" htmlFor="self_enrollment_enabled">
           Allow self-enrollment
         </label>
         <div className="small text-muted">
@@ -269,11 +271,11 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentUseEnrollmentCode ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_use_enrollment_code">
+        <label className="form-check-label" htmlFor="self_enrollment_use_enrollment_code">
           Use enrollment code for self-enrollment
         </label>
         <div className="small text-muted">
-          If not checked, any link to to anything in the course instance will allow self-enrollment.
+          If not checked, any link to anything in the course instance will allow self-enrollment.
         </div>
       </div>
 
@@ -292,7 +294,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentRestrictToInstitution ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="self_enrollment_restrict_to_institution">
+        <label className="form-check-label" htmlFor="self_enrollment_restrict_to_institution">
           Restrict self-enrollment to institution "{institution.long_name}"
         </label>
         <div className="small text-muted">
@@ -321,7 +323,7 @@ export function SelfEnrollmentSettings({
             value={selfEnrollmentEnabledBeforeDateEnabled ? 'checked' : ''}
           />
         )}
-        <label className="form-check-label" for="disable_self_enrollment_after_date">
+        <label className="form-check-label" htmlFor="disable_self_enrollment_after_date">
           Self-enrollment cutoff date
         </label>
         <div className="small text-muted">

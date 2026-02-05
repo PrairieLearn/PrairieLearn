@@ -1,6 +1,6 @@
 import * as async from 'async';
 import debugfn from 'debug';
-import * as ejs from 'ejs';
+import mustache from 'mustache';
 import { z } from 'zod';
 
 import * as error from '@prairielearn/error';
@@ -22,7 +22,7 @@ import { gradeVariant } from './grading.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
 import type { UntypedResLocals } from './res-locals.types.js';
 import { createServerJob } from './server-jobs.js';
-import { getTeamId } from './teams.js';
+import { getGroupId } from './teams.js';
 
 const debug = debugfn('prairielearn:assessment');
 const sql = sqldb.loadSqlEquiv(import.meta.url);
@@ -88,11 +88,18 @@ export function renderText(
   const assessmentUrlPrefix = urlPrefix + '/assessment/' + assessment.id;
 
   const context = {
-    clientFilesCourse: assessmentUrlPrefix + '/clientFilesCourse',
-    clientFilesCourseInstance: assessmentUrlPrefix + '/clientFilesCourseInstance',
-    clientFilesAssessment: assessmentUrlPrefix + '/clientFilesAssessment',
+    client_files_course: assessmentUrlPrefix + '/clientFilesCourse',
+    client_files_course_instance: assessmentUrlPrefix + '/clientFilesCourseInstance',
+    client_files_assessment: assessmentUrlPrefix + '/clientFilesAssessment',
   };
-  return ejs.render(assessment.text, context);
+
+  // Convert all legacy EJS-style template variables to Mustache template variables.
+  const text = assessment.text
+    .replaceAll(/<%=\s*clientFilesCourse\s*%>/g, '{{ client_files_course }}')
+    .replaceAll(/<%=\s*clientFilesCourseInstance\s*%>/g, '{{ client_files_course_instance }}')
+    .replaceAll(/<%=\s*clientFilesAssessment\s*%>/g, '{{ client_files_assessment }}');
+
+  return mustache.render(text, context);
 }
 
 /**
@@ -125,10 +132,10 @@ export async function makeAssessmentInstance({
   client_fingerprint_id: string | null;
 }): Promise<string> {
   return await sqldb.runInTransactionAsync(async () => {
-    let team_id: string | null = null;
+    let group_id: string | null = null;
     if (assessment.team_work) {
-      team_id = await getTeamId(assessment.id, user_id);
-      if (team_id == null) {
+      group_id = await getGroupId(assessment.id, user_id);
+      if (group_id == null) {
         throw new error.HttpStatusError(403, 'No group found for this user in this assessment');
       }
     }
@@ -137,7 +144,7 @@ export async function makeAssessmentInstance({
       sql.insert_assessment_instance,
       {
         assessment_id: assessment.id,
-        team_id,
+        group_id,
         user_id,
         mode,
         time_limit_min,
@@ -624,7 +631,7 @@ export function canDeleteAssessmentInstance(resLocals: UntypedResLocals): boolea
     (resLocals.authz_data.authn_has_course_permission_preview ||
       resLocals.authz_data.authn_has_course_instance_permission_view) &&
     // Check that the assessment instance belongs to this user, or that the
-    // user belongs to the team that created the assessment instance.
+    // user belongs to the group that created the assessment instance.
     resLocals.authz_result.authorized_edit &&
     // Check that the assessment instance was created by an instructor; bypass
     // this check if the course is an example course.

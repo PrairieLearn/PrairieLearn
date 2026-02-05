@@ -1,7 +1,6 @@
 import assert from 'assert';
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import z from 'zod';
@@ -9,7 +8,7 @@ import z from 'zod';
 import * as error from '@prairielearn/error';
 import { flash } from '@prairielearn/flash';
 import { loadSqlEquiv, queryRows, runInTransactionAsync } from '@prairielearn/postgres';
-import { Hydrate } from '@prairielearn/preact/server';
+import { Hydrate } from '@prairielearn/react/server';
 import { DatetimeLocalStringSchema } from '@prairielearn/zod';
 
 import { PageLayout } from '../../components/PageLayout.js';
@@ -19,7 +18,8 @@ import { extractPageContext } from '../../lib/client/page-context.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
 import { type CourseInstance, CourseInstanceAccessRuleSchema } from '../../lib/db-types.js';
-import { FileModifyEditor, propertyValueWithDefault } from '../../lib/editors.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
+import { FileModifyEditor, getOriginalHash } from '../../lib/editors.js';
 import { getPaths } from '../../lib/instructorFiles.js';
 import { formatJsonWithPrettier } from '../../lib/prettier.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -176,13 +176,7 @@ router.get(
       courseInstance.short_name,
       'infoCourseInstance.json',
     );
-    const infoCourseInstancePathExists = await fs.pathExists(infoCourseInstancePath);
-    let origHash: string | null = null;
-    if (infoCourseInstancePathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(infoCourseInstancePath, 'utf8')),
-      ).toString();
-    }
+    const origHash = await getOriginalHash(infoCourseInstancePath);
 
     const accessRules = await queryRows(
       sql.course_instance_access_rules,

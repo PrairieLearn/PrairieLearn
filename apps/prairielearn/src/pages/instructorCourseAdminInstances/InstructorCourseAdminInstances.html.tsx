@@ -1,5 +1,5 @@
 import { QueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Button, Popover } from 'react-bootstrap';
 
 import { formatDate } from '@prairielearn/formatter';
@@ -31,9 +31,7 @@ function renderPopoverStartDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>
@@ -58,9 +56,7 @@ function renderPopoverEndDate(courseInstanceId: string) {
           which that particular course instance is offered. You can do so by editing the{' '}
           <code>infoCourseInstance.json</code> file for the course instance. For more information,
           see the{' '}
-          <a href="https://prairielearn.readthedocs.io/en/latest/accessControl/">
-            documentation on access control
-          </a>
+          <a href="https://docs.prairielearn.com/accessControl/">documentation on access control</a>
           .
         </p>
       </Popover.Body>
@@ -125,7 +121,7 @@ export function InstructorCourseAdminInstancesInner({
               <thead>
                 <tr>
                   <th>Long Name</th>
-                  <th>CIID</th>
+                  <th>Short name</th>
                   <th>Start date</th>
                   <th>End date</th>
                   <th>Students</th>

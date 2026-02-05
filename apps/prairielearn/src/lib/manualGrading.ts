@@ -1,7 +1,7 @@
 import { setImmediate } from 'node:timers/promises';
 
 import * as async from 'async';
-import _ from 'lodash';
+import { omit, sum, sumBy } from 'es-toolkit';
 import mustache from 'mustache';
 import { z } from 'zod';
 
@@ -172,7 +172,7 @@ export async function selectRubricData({
 
   if (submission) {
     // Render rubric items: description, explanation and grader note
-    const mustache_data = {
+    const mustacheParams = {
       correct_answers: submission.true_answer ?? {},
       params: submission.params ?? {},
       submitted_answers: submission.submitted_answer,
@@ -180,15 +180,15 @@ export async function selectRubricData({
 
     for (const item of rubric_data?.rubric_items || []) {
       item.description_rendered = item.rubric_item.description
-        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustache_data), {
+        ? markdownToHtml(mustache.render(item.rubric_item.description || '', mustacheParams), {
             inline: true,
           })
         : '';
       item.explanation_rendered = item.rubric_item.explanation
-        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustache_data))
+        ? markdownToHtml(mustache.render(item.rubric_item.explanation || '', mustacheParams))
         : '';
       item.grader_note_rendered = item.rubric_item.grader_note
-        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustache_data))
+        ? markdownToHtml(mustache.render(item.rubric_item.grader_note || '', mustacheParams))
         : '';
 
       // Yield to the event loop to avoid blocking too long.
@@ -346,9 +346,9 @@ export async function updateAssessmentQuestionRubric(
           // Attempt to update the rubric item based on the ID. If the ID is not set or does not
           // exist, insert a new rubric item.
           if (item.id == null) {
-            await sqldb.execute(sql.insert_rubric_item, _.omit(item, ['order', 'id']));
+            await sqldb.execute(sql.insert_rubric_item, omit(item, ['order', 'id']));
           } else {
-            await sqldb.queryRow(sql.update_rubric_item, _.omit(item, ['order']), IdSchema);
+            await sqldb.queryRow(sql.update_rubric_item, omit(item, ['order']), IdSchema);
           }
         },
       );
@@ -420,7 +420,7 @@ export async function insertRubricGrading(
       z.object({ rubric_data: RubricSchema, rubric_item_data: z.array(RubricItemSchema) }),
     );
 
-    const sum_rubric_item_points = _.sum(
+    const sum_rubric_item_points = sum(
       rubric_items.map(
         (item) =>
           (item.score ?? 1) *
@@ -532,11 +532,11 @@ export async function updateInstanceQuestionScore(
       }
       new_auto_score_perc =
         (100 *
-          _.sumBy(
+          sumBy(
             Object.values(score.partial_scores),
             (value) => (value.score ?? 0) * (value.weight ?? 1),
           )) /
-        _.sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
+        sumBy(Object.values(score.partial_scores), (value) => value.weight ?? 1);
       new_auto_points = (new_auto_score_perc / 100) * (current_submission.max_auto_points ?? 0);
     }
 

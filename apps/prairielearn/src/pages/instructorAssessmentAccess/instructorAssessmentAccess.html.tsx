@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 import { html } from '@prairielearn/html';
 
-import { CommentPopover } from '../../components/CommentPopover.js';
+import { CommentPopoverHtml } from '../../components/CommentPopover.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { isRenderableComment } from '../../lib/comments.js';
 import { config } from '../../lib/config.js';
@@ -81,7 +81,7 @@ export function InstructorAssessmentAccess({
                 // student data. See https://github.com/PrairieLearn/PrairieLearn/issues/3342
                 return html`
                   <tr>
-                    ${showComments ? html`<td>${CommentPopover(access_rule.comment)}</td>` : ''}
+                    ${showComments ? html`<td>${CommentPopoverHtml(access_rule.comment)}</td>` : ''}
                     <td>${access_rule.mode}</td>
                     <td>
                       ${access_rule.uids === '—' ||
@@ -135,10 +135,7 @@ export function InstructorAssessmentAccess({
         <div class="card-footer">
           <small>
             Instructions on how to change the access rules can be found in the
-            <a
-              href="https://prairielearn.readthedocs.io/en/latest/accessControl/"
-              target="_blank"
-              rel="noreferrer"
+            <a href="https://docs.prairielearn.com/accessControl/" target="_blank" rel="noreferrer"
               >PrairieLearn documentation</a
             >. Note that changing time limit rules does not affect assessments in progress; to
             change the time limit for these exams please visit the

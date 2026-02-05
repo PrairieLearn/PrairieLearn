@@ -73,13 +73,13 @@
     {{/multiline}}
     {{#show_info}}
         <button type="button" class="btn btn-light border d-flex align-items-center" data-bs-toggle="popover" data-bs-html="true" title="String" data-bs-content="{{info}}" data-bs-placement="auto">
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
     {{/show_info}}
 
     {{#correct}}
         <span class="input-group-text">
-            <span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>
+            <span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>
         </span>
     {{/correct}}
     {{#partial}}
@@ -89,7 +89,7 @@
     {{/partial}}
     {{#incorrect}}
         <span class="input-group-text">
-            <span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>
+            <span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>
         </span>
     {{/incorrect}}
     </span>
@@ -97,7 +97,7 @@
         <span class="invalid-feedback d-block">
             <span class="badge text-bg-danger">
                 Invalid
-                <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+                <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
             </span>
             <a
                 class="link-primary"
@@ -122,7 +122,7 @@
 {{/question}}
 
 {{#submission}}
-{{#inline}}<span class="d-inline-block">{{/inline}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     {{#a_sub}}<code>{{a_sub}}</code>{{/a_sub}}
@@ -158,7 +158,7 @@
             &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
             &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
         >
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
         {{/a_sub}}
     </span>
@@ -168,7 +168,7 @@
 {{#parse_error}}
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-danger">
-            Invalid <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            Invalid <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
             class="link-primary"
@@ -190,7 +190,7 @@
     <span class="small" style="white-space: nowrap">
         <span class="badge text-bg-dark border">
             Missing input 
-            <i class="fa fa-exclamation-triangle" aria-hidden="true"></i>
+            <i class="fas fa-exclamation-triangle" aria-hidden="true"></i>
         </span>
         <a
             class="link-primary"
@@ -228,25 +228,26 @@
     &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
     &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_submitted_answer}}&lt;/pre&gt;"
 >
-    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
 {{/a_sub}}
 {{/multiline}}
 
 <span>
-{{#correct}}<span class="badge text-bg-success"><i class="fa fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
-{{#partial}}<span class="badge text-bg-warning"><i class="fa fa-circle-o" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
-{{#incorrect}}<span class="badge text-bg-danger"><i class="fa fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
+{{#correct}}<span class="badge text-bg-success"><i class="fas fa-check" aria-hidden="true"></i> 100%</span>{{/correct}}
+{{#partial}}<span class="badge text-bg-warning"><i class="far fa-circle" aria-hidden="true"></i> {{partial}}%</span>{{/partial}}
+{{#incorrect}}<span class="badge text-bg-danger"><i class="fas fa-times" aria-hidden="true"></i> 0%</span>{{/incorrect}}
 </span>
 
 {{#multiline}}
 </span>
 {{/multiline}}
 
-{{#inline}}</span>{{/inline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/submission}}
 
 {{#answer}}
+{{#block}}<div>{{/block}}{{#inline}}<span class="d-inline-block">{{/inline}}
 {{^multiline}}
     {{#label}}<span>{{{label}}}</span>{{/label}}
     <code>{{a_tru}}</code>
@@ -282,7 +283,7 @@
             &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
             &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
         >
-            <i class="fa fa-question-circle" aria-hidden="true"></i>
+            <i class="fas fa-question-circle" aria-hidden="true"></i>
         </button>
     </span>
     {{#suffix}}
@@ -303,10 +304,11 @@
     &lt;code&gt;&amp;lt;U+xxxx&amp;gt;&lt;/code&gt;:&lt;/p&gt;
     &lt;pre class=&quot;mb-0&quot;&gt;{{escaped_correct_answer}}&lt;/pre&gt;"
 >
-    <i class="fa fa-question-circle" aria-hidden="true"></i>
+    <i class="fas fa-question-circle" aria-hidden="true"></i>
 </button>
 {{/multiline}}
 {{#multiline}}
 </span>
 {{/multiline}}
+{{#inline}}</span>{{/inline}}{{#block}}</div>{{/block}}
 {{/answer}}

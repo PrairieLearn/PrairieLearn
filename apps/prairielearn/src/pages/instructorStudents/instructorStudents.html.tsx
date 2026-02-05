@@ -13,7 +13,7 @@ import {
   useReactTable,
 } from '@tanstack/react-table';
 import { parseAsArrayOf, parseAsString, parseAsStringLiteral, useQueryState } from 'nuqs';
-import { useMemo, useState } from 'preact/compat';
+import { useMemo, useState } from 'react';
 import { Button, ButtonGroup, Dropdown, DropdownButton } from 'react-bootstrap';
 import z from 'zod';
 
@@ -74,7 +74,7 @@ function CopyEnrollmentLinkButton({
     enrollmentCode: courseInstance.enrollment_code,
   });
 
-  const handleCopyLink = async (e: Event) => {
+  const handleCopyLink = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const selfEnrollmentLink = run(() => {
       if (!courseInstance.self_enrollment_use_enrollment_code) {
@@ -87,7 +87,7 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedLink(false), 2000);
   };
 
-  const handleCopyCode = async (e: Event) => {
+  const handleCopyCode = async (e: React.MouseEvent) => {
     e.stopPropagation();
     const enrollmentCodeDashed =
       courseInstance.enrollment_code.slice(0, 3) +

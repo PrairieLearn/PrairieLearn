@@ -1,5 +1,29 @@
 # @prairielearn/formatter
 
+## 2.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 2.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
+## 2.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+## 1.5.2
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 1.5.1
 
 ### Patch Changes

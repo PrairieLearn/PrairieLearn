@@ -1,5 +1,44 @@
 # @prairielearn/config
 
+## 4.0.3
+
+### Patch Changes
+
+- cde69c1: Upgrade all JavaScript dependencies
+
+## 4.0.2
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+- Updated dependencies [8bdf6ea]
+  - @prairielearn/aws-imds@3.0.1
+
+## 4.0.1
+
+### Patch Changes
+
+- f929a68: Replace lodash with es-toolkit
+
+## 4.0.0
+
+### Major Changes
+
+- 3914bb4: Upgrade to Node 24
+
+### Patch Changes
+
+- Updated dependencies [3914bb4]
+  - @prairielearn/aws-imds@3.0.0
+
+## 3.2.1
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+- Updated dependencies [0900843]
+  - @prairielearn/aws-imds@2.0.24
+
 ## 3.2.0
 
 ### Minor Changes

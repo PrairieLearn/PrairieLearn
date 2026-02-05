@@ -1,5 +1,17 @@
 # @prairielearn/express-test-utils
 
+## 2.0.7
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 2.0.6
+
+### Patch Changes
+
+- 0900843: Switch to the `tsgo` compiler
+
 ## 2.0.5
 
 ### Patch Changes

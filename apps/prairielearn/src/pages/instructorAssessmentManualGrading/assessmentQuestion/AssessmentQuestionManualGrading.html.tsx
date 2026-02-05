@@ -1,5 +1,5 @@
 import { QueryClient, useQueryClient } from '@tanstack/react-query';
-import { useState } from 'preact/compat';
+import { useState } from 'react';
 import { Alert } from 'react-bootstrap';
 
 import { NuqsAdapter } from '@prairielearn/ui';
@@ -16,12 +16,17 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
   type ConflictModalState,
   GradingConflictModal,
 } from './components/GradingConflictModal.js';
 import { GroupInfoModal, type GroupInfoModalState } from './components/GroupInfoModal.js';
+import {
+  type ManualGradingTrpcClient,
+  createManualGradingTrpcClient,
+} from './utils/trpc-client.js';
 import { useManualGradingActions } from './utils/useManualGradingActions.js';
 
 export interface AssessmentQuestionManualGradingProps {
@@ -29,6 +34,7 @@ export interface AssessmentQuestionManualGradingProps {
   course: PageContext<'assessmentQuestion', 'instructor'>['course'];
   courseInstance: PageContext<'assessmentQuestion', 'instructor'>['course_instance'];
   csrfToken: string;
+  trpcCsrfToken: string;
   instanceQuestionsInfo: InstanceQuestionRowWithAIGradingStats[];
   urlPrefix: string;
   assessment: StaffAssessment;
@@ -51,8 +57,10 @@ export interface AssessmentQuestionManualGradingProps {
 
 type AssessmentQuestionManualGradingInnerProps = Omit<
   AssessmentQuestionManualGradingProps,
-  'search' | 'isDevMode'
->;
+  'search' | 'isDevMode' | 'trpcCsrfToken'
+> & {
+  trpcClient: ManualGradingTrpcClient;
+};
 
 function AssessmentQuestionManualGradingInner({
   hasCourseInstancePermissionEdit,
@@ -61,6 +69,7 @@ function AssessmentQuestionManualGradingInner({
   courseInstance,
   urlPrefix,
   csrfToken,
+  trpcClient,
   assessment,
   assessmentQuestion,
   questionQid,
@@ -79,14 +88,15 @@ function AssessmentQuestionManualGradingInner({
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
+  const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
 
-  const { groupSubmissionMutation, setAiGradingModeMutation, ...mutations } =
-    useManualGradingActions({
-      csrfToken,
-      courseInstanceId: courseInstance.id,
-    });
+  // AI grading is available only if the question uses manual grading.
+  const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
+
+  const mutations = useManualGradingActions(trpcClient);
+  const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
 
   return (
     <>
@@ -113,23 +123,28 @@ function AssessmentQuestionManualGradingInner({
         </nav>
         {aiGradingEnabled && (
           <div className="card px-3 py-2 mb-0">
-            <div className="form-check form-switch mb-0">
+            <div
+              className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-75'}`}
+            >
               <input
                 className="form-check-input"
                 type="checkbox"
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
-                onChange={() =>
+                onChange={() => {
+                  if (!isAiGradingAvailable) {
+                    setShowAiGradingUnavailableModal(true);
+                    return;
+                  }
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
                       setAiGradingMode((prev) => !prev);
                     },
-                  })
-                }
+                  });
+                }}
               />
-              <label className="form-check-label" for="switchCheckDefault">
+              <label className="form-check-label" htmlFor="switchCheckDefault">
                 <i className="bi bi-stars" />
                 AI grading mode
               </label>
@@ -142,6 +157,7 @@ function AssessmentQuestionManualGradingInner({
         course={course}
         courseInstance={courseInstance}
         csrfToken={csrfToken}
+        trpcClient={trpcClient}
         instanceQuestionsInfo={instanceQuestionsInfo}
         urlPrefix={urlPrefix}
         assessment={assessment}
@@ -176,6 +192,11 @@ function AssessmentQuestionManualGradingInner({
           });
         }}
       />
+
+      <AiGradingUnavailableModal
+        show={showAiGradingUnavailableModal}
+        onHide={() => setShowAiGradingUnavailableModal(false)}
+      />
     </>
   );
 }
@@ -183,13 +204,15 @@ function AssessmentQuestionManualGradingInner({
 export function AssessmentQuestionManualGrading({
   search,
   isDevMode,
+  trpcCsrfToken,
   ...innerProps
 }: AssessmentQuestionManualGradingProps) {
   const [queryClient] = useState(() => new QueryClient());
+  const [trpcClient] = useState(() => createManualGradingTrpcClient(trpcCsrfToken));
   return (
     <NuqsAdapter search={search}>
       <QueryClientProviderDebug client={queryClient} isDevMode={isDevMode}>
-        <AssessmentQuestionManualGradingInner {...innerProps} />
+        <AssessmentQuestionManualGradingInner trpcClient={trpcClient} {...innerProps} />
       </QueryClientProviderDebug>
     </NuqsAdapter>
   );

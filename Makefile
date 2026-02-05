@@ -122,7 +122,7 @@ lint-docs-links: build-docs
 lint-html:
 	@yarn htmlhint "testCourse/**/question.html" "exampleCourse/**/question.html" "site"
 lint-markdown:
-	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" "**/*.md"
+	@yarn markdownlint --ignore "**/node_modules/**" --ignore exampleCourse --ignore testCourse --ignore "**/dist/**" --ignore "**/test-results/**" --ignore .claude "**/*.md"
 lint-links:
 	@node scripts/validate-links.mjs
 lint-docker:
@@ -156,6 +156,9 @@ format-js-cached:
 format-python:
 	@uv run ruff check --fix ./
 	@uv run ruff format ./
+
+format-changed:
+	@node scripts/format-changed.mjs
 
 typecheck: typecheck-js typecheck-python typecheck-contrib typecheck-scripts typecheck-sql
 typecheck-contrib:

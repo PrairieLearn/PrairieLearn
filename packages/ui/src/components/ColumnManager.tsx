@@ -1,6 +1,6 @@
 import { type Column, type Table } from '@tanstack/react-table';
 import clsx from 'clsx';
-import { type JSX, useEffect, useRef, useState } from 'preact/compat';
+import { type JSX, useEffect, useRef, useState } from 'react';
 import Button from 'react-bootstrap/Button';
 import Dropdown from 'react-bootstrap/Dropdown';
 
@@ -67,28 +67,45 @@ function ColumnLeafItem<RowDataModel>({
 
 function ColumnGroupItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
+  const checkboxRef = useRef<HTMLInputElement>(null);
 
   const leafColumns = column.getLeafColumns();
   const visibleLeafColumns = leafColumns.filter((c) => c.getIsVisible());
   const isAllVisible = visibleLeafColumns.length === leafColumns.length;
   const isSomeVisible = visibleLeafColumns.length > 0 && !isAllVisible;
 
-  const handleToggleVisibility = (e: Event) => {
+  // Set indeterminate state via ref since it's a DOM property, not an HTML attribute
+  useEffect(() => {
+    if (checkboxRef.current) {
+      checkboxRef.current.indeterminate = isSomeVisible;
+    }
+  }, [isSomeVisible]);
+
+  const handleToggleVisibility = (e: React.ChangeEvent<HTMLInputElement>) => {
     e.preventDefault();
     e.stopPropagation();
     const targetVisibility = !isAllVisible;
-    leafColumns.forEach((col) => {
-      if (col.getCanHide()) {
-        col.toggleVisibility(targetVisibility);
-      }
+    // Batch all visibility changes into a single update
+    // Doing rapid state updates caused the state updates to not be applied correctly.
+    // See https://github.com/PrairieLearn/PrairieLearn/pull/13989
+    table.setColumnVisibility((old) => {
+      const newVisibility = { ...old };
+      leafColumns.forEach((col) => {
+        if (col.getCanHide()) {
+          newVisibility[col.id] = targetVisibility;
+        }
+      });
+      return newVisibility;
     });
   };
 
@@ -102,10 +119,10 @@ function ColumnGroupItem<RowDataModel>({
       <div className="px-2 py-1 d-flex align-items-center justify-content-between">
         <div className="d-flex align-items-center flex-grow-1">
           <input
+            ref={checkboxRef}
             type="checkbox"
             className="form-check-input flex-shrink-0"
             checked={isAllVisible}
-            indeterminate={isSomeVisible}
             aria-label={`Toggle visibility for group '${header}'`}
             onChange={handleToggleVisibility}
           />
@@ -135,6 +152,7 @@ function ColumnGroupItem<RowDataModel>({
             <ColumnItem
               key={childCol.id}
               column={childCol}
+              table={table}
               getIsOnPinningBoundary={getIsOnPinningBoundary}
               onTogglePin={onTogglePin}
             />
@@ -147,10 +165,12 @@ function ColumnGroupItem<RowDataModel>({
 
 function ColumnItem<RowDataModel>({
   column,
+  table,
   onTogglePin,
   getIsOnPinningBoundary,
 }: {
   column: Column<RowDataModel>;
+  table: Table<RowDataModel>;
   onTogglePin: (columnId: string) => void;
   getIsOnPinningBoundary: (columnId: string) => boolean;
 }) {
@@ -158,6 +178,7 @@ function ColumnItem<RowDataModel>({
     return (
       <ColumnGroupItem
         column={column}
+        table={table}
         getIsOnPinningBoundary={getIsOnPinningBoundary}
         onTogglePin={onTogglePin}
       />
@@ -297,9 +318,10 @@ export function ColumnManager<RowDataModel>({
       autoClose="outside"
       show={dropdownOpen}
       onToggle={(isOpen, _meta) => setDropdownOpen(isOpen)}
-      onFocusOut={(e: FocusEvent) => {
+      onBlur={(e: React.FocusEvent) => {
         // Since we aren't using role="menu", we need to manually close the dropdown when focus leaves.
-        if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        // `relatedTarget` is the element gaining focus.
+        if (menuRef.current && !menuRef.current.contains(e.relatedTarget)) {
           setDropdownOpen(false);
         }
       }}
@@ -348,6 +370,7 @@ export function ColumnManager<RowDataModel>({
                   <ColumnItem
                     key={column.id}
                     column={column}
+                    table={table}
                     getIsOnPinningBoundary={getIsOnPinningBoundary}
                     onTogglePin={handleTogglePin}
                   />

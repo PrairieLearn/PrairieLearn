@@ -1,4 +1,4 @@
-import { useState } from 'preact/hooks';
+import { useState } from 'react';
 import Accordion from 'react-bootstrap/Accordion';
 import AccordionBody from 'react-bootstrap/AccordionBody';
 import AccordionHeader from 'react-bootstrap/AccordionHeader';

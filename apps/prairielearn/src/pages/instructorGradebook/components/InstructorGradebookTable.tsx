@@ -20,7 +20,7 @@ import {
   useQueryState,
   useQueryStates,
 } from 'nuqs';
-import { useMemo, useRef, useState } from 'preact/compat';
+import { useMemo, useRef, useState } from 'react';
 import { z } from 'zod';
 
 import {
@@ -347,7 +347,7 @@ function GradebookTable({
                         assessmentInstanceId={assessmentData.assessment_instance_id}
                         courseInstanceId={courseInstanceId}
                         currentScore={score}
-                        otherUsers={assessmentData.uid_other_users_team}
+                        otherUsers={assessmentData.uid_other_users_group}
                         csrfToken={csrfToken}
                       />
                     </span>

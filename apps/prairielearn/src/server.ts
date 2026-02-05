@@ -21,6 +21,7 @@ import bodyParser from 'body-parser';
 import cookie from 'cookie';
 import cookieParser from 'cookie-parser';
 import esMain from 'es-main';
+import { sampleSize } from 'es-toolkit';
 import express, {
   type Express,
   type NextFunction,
@@ -52,6 +53,7 @@ import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 import { createSessionMiddleware } from '@prairielearn/session';
 import { getCheckedSignedTokenData } from '@prairielearn/signed-token';
+import { assertNever } from '@prairielearn/utils';
 
 import * as cron from './cron/index.js';
 import * as assets from './lib/assets.js';
@@ -77,13 +79,13 @@ import * as serverJobProgressSocket from './lib/serverJobProgressSocket.js';
 import { PostgresSessionStore } from './lib/session-store.js';
 import * as socketServer from './lib/socket-server.js';
 import { SocketActivityMetrics } from './lib/telemetry/socket-activity-metrics.js';
-import { assertNever } from './lib/types.js';
 import { getSearchParams } from './lib/url.js';
 import * as workspace from './lib/workspace.js';
 import { markAllWorkspaceHostsUnhealthy } from './lib/workspaceHost.js';
 import { enterpriseOnly } from './middlewares/enterpriseOnly.js';
 import staticNodeModules from './middlewares/staticNodeModules.js';
 import { makeWorkspaceProxyMiddleware } from './middlewares/workspaceProxy.js';
+import { selectCourseById } from './models/course.js';
 import * as news_items from './news_items/index.js';
 import * as freeformServer from './question-servers/freeform.js';
 import * as sprocs from './sprocs/index.js';
@@ -190,11 +192,11 @@ export async function initExpress(): Promise<Express> {
         '/pl/api/',
         // Static assets don't need to read from or write to sessions.
         //
-        // Note that the `/assets` route is configured to turn any missing files into 404
+        // Note that the assets route is configured to turn any missing files into 404
         // errors, not to fall through and allow other routes to try to serve them. If they
         // did fall through, we'd likely end up running code that does expect sessions to
         // be present, e.g. `middlewares/authn`.
-        '/assets',
+        config.assetsPrefix,
       ],
       sessionRouter,
     ),
@@ -2019,11 +2021,7 @@ export async function initExpress(): Promise<Express> {
   // This should come first so that both Sentry and our own error page can
   // read the error ID and any status code.
   app.use((err: any, req: Request, res: Response, next: NextFunction) => {
-    const chars = [...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'];
-
-    res.locals.error_id = Array.from({ length: 12 })
-      .map(() => chars[Math.floor(Math.random() * chars.length)])
-      .join('');
+    res.locals.error_id = sampleSize([...'0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ'], 12).join('');
 
     err.status = err.status ?? maybeGetStatusCodeFromSqlError(err) ?? 500;
 
@@ -2524,8 +2522,9 @@ if (shouldStartServer) {
 
     if ('sync-course' in argv) {
       logger.info(`option --sync-course passed, syncing course ${argv['sync-course']}...`);
+      const course = await selectCourseById(argv['sync-course']);
       const { jobSequenceId, jobPromise } = await pullAndUpdateCourse({
-        courseId: argv['sync-course'],
+        course,
         authnUserId: null,
         userId: null,
       });
@@ -2573,7 +2572,7 @@ if (shouldStartServer) {
     app = await initExpress();
     const httpServer = await startServer(app);
 
-    socketServer.init(httpServer);
+    await socketServer.init(httpServer);
 
     externalGradingSocket.init();
     externalGrader.init();
@@ -2684,7 +2683,7 @@ if (shouldStartServer) {
   await socketServer.close();
   app = await initExpress();
   const httpServer = await startServer(app);
-  socketServer.init(httpServer);
+  await socketServer.init(httpServer);
 }
 
 /**

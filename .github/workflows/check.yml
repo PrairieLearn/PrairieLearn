@@ -40,8 +40,13 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
           cache: 'yarn'
+      - name: Cache node-gyp headers
+        uses: actions/cache@v5
+        with:
+          path: ~/.cache/node-gyp
+          key: node-gyp-${{ runner.os }}
       - name: Preinstall node-gyp headers
         run: yarn dlx node-gyp install
       - name: Install Node dependencies
@@ -150,7 +155,7 @@ jobs:
       - name: Set up Node
         uses: actions/setup-node@v6
         with:
-          node-version: '22'
+          node-version: '24'
       - name: Set up Yarn
         # We only install the dependencies in the root workspace to avoid
         # installing dependencies that won't be used.
