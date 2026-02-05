@@ -720,7 +720,7 @@ export function AssessmentQuestionTable({
         }}
         headerButtons={
           hasCourseInstancePermissionEdit ? (
-            aiGradingMode && assessmentQuestion.max_manual_points ? (
+            aiGradingMode ? (
               <>
                 <Dropdown>
                   <Dropdown.Toggle key="ai-grading-dropdown" variant="light" size="sm">
