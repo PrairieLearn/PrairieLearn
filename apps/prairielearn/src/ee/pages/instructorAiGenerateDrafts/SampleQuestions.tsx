@@ -5,7 +5,6 @@ import AccordionHeader from 'react-bootstrap/AccordionHeader';
 import AccordionItem from 'react-bootstrap/AccordionItem';
 import Button from 'react-bootstrap/Button';
 import FormSelect from 'react-bootstrap/FormSelect';
-import InputGroup from 'react-bootstrap/InputGroup';
 
 import { MagicConnector } from './MagicConnector.js';
 import { SampleQuestionDemo } from './SampleQuestionDemo.js';
@@ -78,7 +77,16 @@ function SampleQuestionSelector({
   onClickNext: () => void;
 }) {
   return (
-    <InputGroup>
+    <div className="d-flex align-items-center gap-1">
+      <button
+        type="button"
+        className="btn btn-light"
+        disabled={selectedQuestionIndex === 0}
+        aria-label="Previous example"
+        onClick={onClickPrevious}
+      >
+        <i className="bi bi-arrow-left" aria-hidden="true" />
+      </button>
       <FormSelect
         value={selectedQuestionIndex}
         aria-label="Select example question"
@@ -90,23 +98,16 @@ function SampleQuestionSelector({
           </option>
         ))}
       </FormSelect>
-      <Button
-        variant="outline-secondary"
-        disabled={selectedQuestionIndex === 0}
-        aria-label="Previous example"
-        onClick={onClickPrevious}
-      >
-        <i className="bi bi-chevron-left" aria-hidden="true" />
-      </Button>
-      <Button
-        variant="outline-secondary"
+      <button
+        type="button"
+        className="btn btn-light"
         disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
         aria-label="Next example"
         onClick={onClickNext}
       >
-        <i className="bi bi-chevron-right" aria-hidden="true" />
-      </Button>
-    </InputGroup>
+        <i className="bi bi-arrow-right" aria-hidden="true" />
+      </button>
+    </div>
   );
 }
 
