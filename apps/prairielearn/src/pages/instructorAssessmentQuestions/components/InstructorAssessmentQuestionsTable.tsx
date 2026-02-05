@@ -21,11 +21,11 @@ import type { StaffAssessmentQuestionRow } from '../../../lib/assessment-questio
 import type { StaffAssessment, StaffCourse } from '../../../lib/client/safe-db-types.js';
 import type { ZoneAssessmentJson } from '../../../schemas/infoAssessment.js';
 import type {
+  CourseQuestionForPicker,
   QuestionAlternativeForm,
   ZoneAssessmentForm,
   ZoneQuestionBlockForm,
 } from '../types.js';
-import type { CourseQuestionForPicker } from '../types.js';
 import {
   addTrackingIds,
   createQuestionWithTrackingId,
@@ -781,6 +781,7 @@ export function InstructorAssessmentQuestionsTable({
               ? (questionEditState.returnToEdit?.question.id ?? null)
               : null
           }
+          currentAssessmentId={assessment.id}
           onHide={handlePickerCancel}
           onQuestionSelected={handleQuestionPicked}
         />

@@ -96,6 +96,11 @@ export const SprocAssessmentsFormatForQuestionSchema = z.array(
     course_instance_id: IdSchema,
     label: z.string(),
     share_source_publicly: z.boolean(),
+    // Additional fields for grouping by assessment set (added for question picker)
+    assessment_number: z.string().optional(),
+    assessment_set_abbreviation: z.string().optional(),
+    assessment_set_color: z.string().optional(),
+    assessment_set_name: z.string().optional(),
   }),
 );
 

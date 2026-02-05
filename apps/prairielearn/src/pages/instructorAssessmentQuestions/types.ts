@@ -44,6 +44,19 @@ export const ZoneAssessmentFormSchema = ZoneAssessmentJsonSchema.omit({ question
 export type ZoneAssessmentForm = z.infer<typeof ZoneAssessmentFormSchema>;
 
 /**
+ * Assessment data for the question picker, including fields needed for grouping.
+ */
+export interface AssessmentForPicker {
+  assessment_id: string;
+  label: string;
+  color: string;
+  assessment_set_abbreviation?: string;
+  assessment_set_name?: string;
+  assessment_set_color?: string;
+  assessment_number?: string;
+}
+
+/**
  * Simplified question data for the question picker modal.
  * Only includes fields needed for display and selection.
  */
@@ -53,6 +66,7 @@ export interface CourseQuestionForPicker {
   title: string;
   topic: { id: string; name: string; color: string };
   tags: { id: string; name: string; color: string }[] | null;
+  assessments: AssessmentForPicker[] | null;
 }
 
 /**
