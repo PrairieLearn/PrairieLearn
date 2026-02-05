@@ -138,6 +138,11 @@ Tests expect Postgres, Redis, and an S3-compatible store to be running, and usua
 
 To test UI code looks correct, you should try to connect to the development server at `http://localhost:3000` and screenshot the page with `playwright`. A development server can be started with `make dev`, but the developer has typically already started one up.
 
+When writing tests:
+
+- Don't add assertion messages unless they provide information that isn't obvious from reading the assertion itself (e.g., `assert.isNull(linkRecord)` is clear without a message).
+- Don't use defensive checks in tests -- tests should fail fast if unexpected data exists.
+
 ### Rendering HTML
 
 The PrairieLearn web application renders HTML in one of two ways:
