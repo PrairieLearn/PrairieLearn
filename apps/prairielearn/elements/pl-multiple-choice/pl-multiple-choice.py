@@ -635,7 +635,7 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    # Unselected wouldn't appear in submitted_answers, but "Clear" would submit as an empty string.
+    # Unselected wouldn't be in submitted_answers, but "Clear" would submit as an empty string.
     submitted_key = data["submitted_answers"].get(name, "") or ""
 
     all_keys = {a["key"] for a in data["params"][name]}
