@@ -116,6 +116,7 @@ function SampleQuestionPrompt({ prompt }: { prompt: string }) {
     const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm');
     if (promptTextarea) {
       promptTextarea.value = prompt;
+      promptTextarea.dispatchEvent(new Event('input', { bubbles: true }));
     }
   };
 
