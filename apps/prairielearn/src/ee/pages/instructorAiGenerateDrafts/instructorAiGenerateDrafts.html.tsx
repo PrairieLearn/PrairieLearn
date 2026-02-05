@@ -121,6 +121,8 @@ export function InstructorAIGenerateDrafts({
             <div class="mt-2">
               ${hydrateHtml(
                 <SampleQuestions
+                  // Since variant are randomly generated, we need to generate the initial one
+                  // on the server to ensure that we don't get a hydration mismatch.
                   initialVariant={generateSampleQuestionVariant(examplePromptsArray[0].id)}
                 />,
               )}
