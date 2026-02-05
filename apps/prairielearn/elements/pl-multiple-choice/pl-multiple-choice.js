@@ -99,8 +99,5 @@ window.PLMultipleChoice = function (uuid) {
 window.PLMultipleChoiceClearRadio = function (button) {
   const name = button.dataset.name;
   const form = button.closest('form');
-  const radios = form.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`);
-  radios.forEach((radio) => {
-    radio.checked = false;
-  });
+  form.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`).forEach((radio) => (radio.checked = false));
 };
