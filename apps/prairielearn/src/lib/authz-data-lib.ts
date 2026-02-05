@@ -1,6 +1,7 @@
 import z from 'zod';
 
 import { HttpStatusError } from '@prairielearn/error';
+import type { Brand } from '@prairielearn/utils';
 
 import { RawStaffUserSchema, StaffUserSchema } from './client/safe-db-types.js';
 import {
@@ -22,7 +23,6 @@ import {
   SprocAuthzCourseSchema,
   type User,
 } from './db-types.js';
-import type { Brand } from './types.js';
 
 /**
  * This schema isn't used to directly validate the authz data that ends up in

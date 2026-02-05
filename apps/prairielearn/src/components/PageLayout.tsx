@@ -6,11 +6,11 @@ import { formatDateFriendly } from '@prairielearn/formatter';
 import { HtmlSafeString, html, unsafeHtml } from '@prairielearn/html';
 import { renderHtml } from '@prairielearn/react';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 
 import { getNavPageTabs } from '../lib/navPageTabs.js';
 import { computeStatus } from '../lib/publishing.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { assertNever } from '../lib/types.js';
 
 import { AssessmentNavigation } from './AssessmentNavigation.js';
 import { HeadContents } from './HeadContents.js';
@@ -105,6 +105,38 @@ function SyncErrorsAndWarningsForContext({
     default:
       return null;
   }
+}
+
+function LegacyPublishingBannerComponent({
+  navContext,
+  resLocals,
+}: {
+  navContext: NavContext;
+  resLocals: UntypedResLocals;
+}) {
+  if (navContext.type !== 'instructor') return null;
+  if (navContext.page !== 'instance_admin' || navContext.subPage !== 'students') return null;
+
+  const { course_instance: courseInstance } = resLocals;
+
+  // Only show banner if using legacy publishing
+  if (!courseInstance || courseInstance.modern_publishing) return null;
+
+  return (
+    <div
+      className="alert alert-warning py-2 mb-0 rounded-0 border-0 border-bottom small"
+      role="alert"
+    >
+      You are using access rules to control who can access the course instance.{' '}
+      <a
+        href="https://docs.prairielearn.com/courseInstance/#migrating-from-allowaccess"
+        className="alert-link"
+      >
+        Migrate to publishing
+      </a>{' '}
+      to unlock additional enrollment management features.
+    </div>
+  );
 }
 
 function UnpublishedBannerComponent({
@@ -351,6 +383,9 @@ export function PageLayout({
                 'd-flex flex-column',
               )}"
             >
+              ${renderHtml(
+                <LegacyPublishingBannerComponent navContext={navContext} resLocals={resLocals} />,
+              )}
               ${renderHtml(
                 <UnpublishedBannerComponent navContext={navContext} resLocals={resLocals} />,
               )}

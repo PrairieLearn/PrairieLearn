@@ -2,19 +2,19 @@ import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
+import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../../lib/config.js';
 import { SprocSyncAssessmentsSchema } from '../../lib/db-types.js';
 import { features } from '../../lib/features/index.js';
-import { assertNever } from '../../lib/types.js';
 import {
   type AssessmentJson,
   type QuestionAlternativeJson,
   type QuestionPointsJson,
-  type ZoneQuestionJson,
+  type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
-import { type CourseInstanceData } from '../course-db.js';
+import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
 import * as infofile from '../infofile.js';
 
@@ -104,9 +104,13 @@ function getParamsForAssessment(
 
   let alternativeGroupNumber = 0;
   let assessmentQuestionNumber = 0;
-  const allRoleNames = assessment.groupRoles.map((role) => role.name);
-  const assessmentCanView = assessment.canView.length > 0 ? assessment.canView : allRoleNames;
-  const assessmentCanSubmit = assessment.canSubmit.length > 0 ? assessment.canSubmit : allRoleNames;
+
+  const groups = assessment.groups ?? convertLegacyGroupsToGroupsConfig(assessment);
+  const allRoleNames = groups.roles.map((role) => role.name);
+  const assessmentCanView =
+    groups.rolePermissions.canView.length > 0 ? groups.rolePermissions.canView : allRoleNames;
+  const assessmentCanSubmit =
+    groups.rolePermissions.canSubmit.length > 0 ? groups.rolePermissions.canSubmit : allRoleNames;
   const alternativeGroups = assessment.zones.map((zone) => {
     const zoneGradeRateMinutes = zone.gradeRateMinutes ?? assessment.gradeRateMinutes ?? 0;
     const zoneAllowRealTimeGrading = zone.allowRealTimeGrading ?? assessment.allowRealTimeGrading;
@@ -123,8 +127,8 @@ function getParamsForAssessment(
         > & {
           qid: QuestionAlternativeJson['id'];
           allowRealTimeGrading: boolean;
-          canView: ZoneQuestionJson['canView'];
-          canSubmit: ZoneQuestionJson['canSubmit'];
+          canView: ZoneQuestionBlockJson['canView'];
+          canSubmit: ZoneQuestionBlockJson['canSubmit'];
           maxPoints: number | null;
           points: number | number[] | null;
           maxAutoPoints: number | null;
@@ -315,11 +319,11 @@ function getParamsForAssessment(
     });
   });
 
-  const teamRoles = assessment.groupRoles.map((role) => ({
+  const groupRoles = groups.roles.map((role) => ({
     role_name: role.name,
-    minimum: role.minimum,
-    maximum: role.maximum,
-    can_assign_roles: role.canAssignRoles,
+    minimum: role.minMembers,
+    maximum: role.maxMembers,
+    can_assign_roles: groups.rolePermissions.canAssignRoles.includes(role.name),
   }));
 
   return {
@@ -349,27 +353,25 @@ function getParamsForAssessment(
     assessment_module_name: assessment.module,
     text: assessment.text,
     constant_question_value: assessment.constantQuestionValue,
-    // TODO: Fix up schemas to refer to teams and not groups
-    // https://github.com/PrairieLearn/PrairieLearn/issues/13545
-    team_work: assessment.groupWork,
-    team_max_size: assessment.groupMaxSize ?? null,
-    team_min_size: assessment.groupMinSize ?? null,
-    student_team_create: assessment.studentGroupCreate,
-    student_team_choose_name: assessment.studentGroupChooseName,
-    student_team_join: assessment.studentGroupJoin,
-    student_team_leave: assessment.studentGroupLeave,
+    team_work: groups.enabled,
+    group_max_size: groups.maxMembers ?? null,
+    group_min_size: groups.minMembers ?? null,
+    student_group_create: groups.studentPermissions.canCreateGroup,
+    student_group_choose_name: groups.studentPermissions.canNameGroup,
+    student_group_join: groups.studentPermissions.canJoinGroup,
+    student_group_leave: groups.studentPermissions.canLeaveGroup,
 
     advance_score_perc: assessment.advanceScorePerc,
     comment: assessment.comment,
-    has_roles: assessment.groupRoles.length > 0,
-    json_can_view: assessment.canView,
-    json_can_submit: assessment.canSubmit,
+    has_roles: groupRoles.length > 0,
+    json_can_view: groups.rolePermissions.canView,
+    json_can_submit: groups.rolePermissions.canSubmit,
     // TODO: This will be conditional based on the access control settings in the future.
     modern_access_control: false,
     allowAccess,
     zones,
     alternativeGroups,
-    teamRoles,
+    groupRoles,
     grade_rate_minutes: assessment.gradeRateMinutes,
     // Needed when deleting unused alternative groups
     lastAlternativeGroupNumber: alternativeGroupNumber,

@@ -6,10 +6,9 @@ import { type Readable, type Writable } from 'stream';
 
 import debugfn from 'debug';
 
-import { withResolvers } from '@prairielearn/utils';
+import { assertNever, withResolvers } from '@prairielearn/utils';
 
 import { APP_ROOT_PATH, REPOSITORY_ROOT_PATH } from '../paths.js';
-import { assertNever } from '../types.js';
 
 import {
   type CallType,

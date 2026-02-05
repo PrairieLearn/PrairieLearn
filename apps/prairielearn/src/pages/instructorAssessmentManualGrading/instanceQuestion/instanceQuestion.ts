@@ -143,6 +143,7 @@ router.get(
           manual_rubric_grading_id: GradingJobSchema.shape.manual_rubric_grading_id,
           prompt: AiGradingJobSchema.shape.prompt,
           completion: AiGradingJobSchema.shape.completion,
+          rotation_correction_degrees: AiGradingJobSchema.shape.rotation_correction_degrees,
         }),
       );
 
@@ -211,6 +212,9 @@ router.get(
           prompt: formattedPrompt,
           selectedRubricItemIds: selectedRubricItems.map((item) => item.id),
           explanation,
+          rotationCorrectionDegrees: ai_grading_job_data.rotation_correction_degrees
+            ? JSON.stringify(ai_grading_job_data.rotation_correction_degrees)
+            : null,
         };
       }
     }
@@ -294,8 +298,8 @@ router.get(
       authorizedEdit: false,
       // The score panels never need to be live-updated in this context.
       renderScorePanels: false,
-      // Team role permissions are not used in this context.
-      teamRolePermissions: null,
+      // Group role permissions are not used in this context.
+      groupRolePermissions: null,
     });
     res.json(panels);
   }),

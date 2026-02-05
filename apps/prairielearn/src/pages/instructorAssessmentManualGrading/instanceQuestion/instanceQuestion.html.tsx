@@ -85,6 +85,10 @@ export function InstanceQuestion({
       pageNote: `Instance - question ${resLocals.instance_question_info.instructor_question_number}`,
     },
     headContent: html`
+      <meta
+        name="mathjax-fonts-path"
+        content="${nodeModulesAssetPath('@mathjax/mathjax-newcm-font')}"
+      />
       ${compiledScriptTag('question.ts')}
       <script defer src="${nodeModulesAssetPath('mathjax/tex-svg.js')}"></script>
       <script>
@@ -254,8 +258,8 @@ export function InstanceQuestion({
             lastGrader,
             question: resLocals.question,
             variant: resLocals.variant,
-            instance_team: resLocals.instance_team,
-            instance_team_uid_list: resLocals.instance_team_uid_list,
+            instance_group: resLocals.instance_group,
+            instance_group_uid_list: resLocals.instance_group_uid_list,
             instance_user: resLocals.instance_user,
             authz_data: resLocals.authz_data,
             question_is_shared: resLocals.question_is_shared,

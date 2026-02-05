@@ -82,6 +82,8 @@ jobs:
           title: All images
           sha: ${{ env.COMMIT_SHA }}
           token: ${{ secrets.GITHUB_TOKEN }}
+          docker_username: ${{ secrets.DOCKERHUB_USERNAME }}
+          docker_password: ${{ secrets.DOCKERHUB_TOKEN }}
           images: |
             prairielearn/workspace-desktop
             prairielearn/workspace-jupyterlab-base

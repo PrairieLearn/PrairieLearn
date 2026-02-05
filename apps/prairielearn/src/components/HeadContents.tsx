@@ -47,7 +47,10 @@ export function HeadContents(titleOptions: TitleOptions) {
     <link href="${assetPath('stylesheets/local.css')}" rel="stylesheet" />
     <script src="${nodeModulesAssetPath('jquery/dist/jquery.min.js')}"></script>
     <script src="${nodeModulesAssetPath('bootstrap/dist/js/bootstrap.bundle.min.js')}"></script>
-    <script src="${nodeModulesAssetPath('@fortawesome/fontawesome-free/js/all.min.js')}"></script>
+    <link
+      href="${nodeModulesAssetPath('@fortawesome/fontawesome-free/css/all.min.css')}"
+      rel="stylesheet"
+    />
     ${compiledStylesheetTag('prairielearn-ui.css')} ${compiledScriptTag('application.ts')}
     ${compiledScriptTag('navbarClient.ts')}
   `;

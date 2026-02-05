@@ -78,41 +78,43 @@ g.start()
 
 The `tests` method above will contain the basis for user tests, and will have access to some regular functions provided by the C/C++ grader. Some methods that can be called are listed below.
 
-Any file submitted using a `pl-file-editor` or `pl-file-upload` will be available for use by the C/C++ grader. To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains the similar keys to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
+Any file submitted using a `pl-file-editor` or `pl-file-upload`, or through workspaces, will be available for use by the C/C++ grader. To create tests based on parameters defined by `server.py`, or to have access to submitted data from other elements such as `pl-string-input` elements, you can access the `self.data` dictionary. This dictionary contains keys similar to those found in the `grade()` function in `server.py`, such as `self.data["params"]` or `self.data["submitted_answers"]`.
 
 ## Available test options
 
+After compiling the student and instructor code, test may be created using one of two methods. The choice of method depends on the type of code students are expected to write, and the type of validation that need to be performed. The two main options are:
+
+- Running the executable file compiled from student code, and [checking its output](#running-a-program-and-checking-its-standard-output). This option is recommended if students are expected to write open-ended complete programs that can be executed from the command line, and where the main purpose of the program is to generate some predetermined output based on the standard input, command line arguments, or external files.
+- Running a [unit test suite based on the Check framework](#running-a-check-framework-test-suite). This option is strongly recommended for more complex cases, where students are expected to implement specific functions with well-defined behavior, and where multiple test cases and scenarios must be checked. This option is also recommended if you want to check for memory leaks and dangling pointers, which can be done using [the AddressSanitizer functionality](#identifying-dangling-pointers-memory-leaks-and-similar-issues).
+
 ### Compiling a C/C++ program
 
-To compile a C or C++ file, you may use the methods `self.compile_file()` or `self.test_compile_file()`. Both methods provide similar functionality, with the difference being that `self.test_compile_file()` will also include a unit test for the compilation itself. The latter can be used to provide points to a submission based on a successful compilation.
-
-A simple invocation of these methods, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (typically the same name used in the `pl-file-upload` or `pl-file-editor` elements listed above), and the name of an executable file to be created.
+To compile a C or C++ file, you may use the method `self.compile_file()`. A typical call to this method, assuming students write a complete C file including the `main` function, will include two parameters: the name of the C or C++ file to be compiled (the file submitted by the student), and the name of an executable file to be created.
 
 ```python
 self.compile_file("square.c", "square")      # Compile the file, but do not create a unit test result
 self.test_compile_file("square.c", "square") # Compile the file and give one point to student if compilation is successful
 ```
 
-By default, these methods use `gcc` and `g++` (for C and C++, respectively) to compile the code. To use a different compiler (e.g., `clang`), set the `compiler` argument:
+By default, these methods use `gcc` and `g++` (for `CGrader` and `CPPGrader`, respectively) to compile the code. To use a different compiler (e.g., `clang`), set the `compiler` argument:
 
 ```python
 self.compile_file("square.c", "square", compiler="clang")
-self.test_compile_file("square.c", "square", compiler="clang")
 ```
 
 By default, if the compilation fails, it will stop all tests and return the submission as ungradable. This means that the submission will not count towards the student's submission limit, and the student will not receive a grade. The student will, however, see the result of the compilation. If you would like the tests to proceed in case of failure, you can call the function with:
 
 ```python
 self.compile_file("square.c", "square", ungradable_if_failed=False)
-self.test_compile_file("square.c", "square", ungradable_if_failed=False)
 ```
 
 By default, if the compilation succeeds but gives a warning, a message with the warning will be listed in the main results message, above the test results. If you would not like the warnings to be listed at the top of the results, you can call the function with:
 
 ```python
-self.compile_file("square.c", "square", add_warning_result_msg=False)      # Does not show any warnings
-self.test_compile_file("square.c", "square", add_warning_result_msg=False) # Creates a test result that includes the warning as the output
+self.compile_file("square.c", "square", add_warning_result_msg=False)
 ```
+
+#### Setting compilation flags
 
 You may also include additional compilation flags accepted by `gcc` (or `g++`) with the `flags` argument, which can be invoked with a single string for flags, or with an array of strings:
 
@@ -129,6 +131,8 @@ self.compile_file("square.c", "square", pkg_config_flags=["check", "ncurses"]) #
 ```
 
 It is also possible to test programs where the student only submits part of an application. To compile the C/C++ file submitted by the user with some functions (including, for example, a `main` function) implemented by the instructor, you can save a `main.c` (or `main.cpp`) file inside the `tests` folder and run:
+
+#### Working with multiple files
 
 ```python
 self.compile_file("square.c", "square", add_c_file="/grade/tests/main.c")
@@ -160,7 +164,7 @@ self.compile_file(
 
 If the compilation involves include (`.h`) files, the flags `-I/grade/tests` (for question-provided includes) and `-I/grade/student` (for student-provided includes) are recommended as well. The specific `.h` files don't need to be listed as arguments to `compile_file`.
 
-If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fined-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles student files and instructor files with different flags.
+If the executable name is not provided, then the files will be compiled only into equivalent object files (with `.o` extension). To link these files into an executable, the `link_object_files` can be used. This function receives three mandatory arguments: the student object files, the additional object files (which can be set to `None` if there are none), and the executable name. This separation allows for more fine-tuned compilation flags between different C files or between compilation and linking, as well as additional operations to be performed with the generated object files. For example, the following sequence compiles student files and instructor files with different flags.
 
 ```python
 self.compile_file(["student_file1.c", "student_file2.c"],
@@ -176,6 +180,8 @@ self.link_object_files(["student_file1.o", "student_file2.o"],
 
 The `link_object_files` also accepts arguments like `flags`, `pkg_config_flags`, `add_warning_result_msg=False` and `ungradable_if_failed=False`, as described above.
 
+#### Restricting the use of specific functions or global variables
+
 For questions where students are not allowed to use a specific set of functions or global variables (e.g., students are not allowed to use the `system` library call), it is possible to reject a specific set of symbols. This option will cause an error similar to a compilation error if any of these symbols is referenced in the code. Only student files are checked against this list of symbols, so they can still be used in instructor code.
 
 ```python
@@ -188,21 +194,37 @@ self.compile_file(
 )
 ```
 
-For `self.test_compile_file()`, the results of the compilation will show up as a test named "Compilation", worth one point. To change the name and/or points, set the `name` or `points` argument as follows:
+#### Creating a test result for the compilation
+
+To create a test result based on the compilation itself, use `self.test_compile_file()` instead of `self.compile_file()`. This method accepts the same arguments as `self.compile_file()`, but will create a test named "Compilation" worth one point by default.
+
+```python
+self.test_compile_file("square.c", "square") # Compile the file and give one point to student if compilation is successful
+```
+
+To change the name and/or points, set the `name` or `points` argument as follows:
 
 ```python
 self.test_compile_file("square.c", "square", name="Compilation of the first file", points=3)
+```
+
+Note that you can set the `points` to zero if you want to create a test result for the compilation, but do not want to assign any points to it. This may be useful in combination with the `add_warning_result_msg=False` argument, which in this case will cause the warning to be shown in the test output instead of the main results message.
+
+```python
+self.test_compile_file("square.c", "square", points=0, add_warning_result_msg=False)
 ```
 
 ### Running a program and checking its standard output
 
 The `self.test_run()` method can be used to run an executable and check its output. This will typically be the program generated by the compiler above, but it can be used for any program. The program will run [as a non-privileged user](#sandbox-execution).
 
-The only required argument is the `command` argument, which corresponds to the command to be executed:
+The only required argument is the `command` argument, which corresponds to the command to be executed. If no additional parameters are set, the test will pass if the program completes within a certain time limit.
 
 ```python
 self.test_run("./square")
 ```
+
+#### Validating the output of the executed program
 
 In most cases, though, this program will be executed to check the output of the program, which can be done by including the `exp_output` argument. In its simplest case, `exp_output` can be provided with a single string, and the test will pass if that string is found somewhere in the output of the program.
 
@@ -220,24 +242,6 @@ The `exp_output` argument can also be used to check for multiple output patterns
 self.test_run("./square", exp_output=["SUCCESS", "CORRECT"]) # default, either SUCCESS or CORRECT are enough for full points
 self.test_run("./square", exp_output=["TEST 1 PASSED", "TEST 2 PASSED"],
               must_match_all_outputs="partial") # Test passes with 0, 0.5 or 1, depending on if none, one or two patterns are found
-```
-
-This method can also be provided with an input string to be passed to the standard input of the program, with the `input` argument:
-
-```python
-self.test_run("./square", input="3\n", exp_output="9")
-self.test_run("./square", "3\n", "9") # input and exp_output can also be passed
-                                      # as positional arguments
-```
-
-To use command-line arguments for a command, the arguments can be included either in the `command` itself, or with the `args` argument, which can be a single argument set as a string, or multiple arguments in a list:
-
-```python
-self.test_run("./square 3 5", exp_output=["9", "25"],
-              must_match_all_outputs="all")
-self.test_run("./square", args="3", exp_output="9")
-self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
-              must_match_all_outputs="all")
 ```
 
 Sometimes a test must ensure that some strings are _not_ found in the output of the program. This can be achieved with the `reject_output` argument, which again can be an array or a single string.
@@ -266,7 +270,7 @@ self.test_run("./pattern", exp_output="  1  2  3\n  4  5  6\n  7  8  9",
 By default, differences in cases are ignored. To make all comparisons case-sensitive, set the `ignore_case` argument to `False`:
 
 ```python
-self.test_run("./lowercase", "ABC", "abc", ignore_case=False)
+self.test_run("./lowercase ABC", exp_output="abc", ignore_case=False)
 ```
 
 For both `exp_output` and `reject_output`, regular expressions may be used, by providing a compiled pattern object from [Python's `re` module](https://docs.python.org/3/library/re.html#re.compile). Note: if a pattern object is used, arguments `ignore_consec_spaces` and `ignore_case` do not take effect. If these patterns should ignore consecutive spaces, a pattern such as `\\s+` may be used instead of spaces, while case may be ignored by using the [`re.I` flag](https://docs.python.org/3/library/re.html#re.I);
@@ -274,6 +278,26 @@ For both `exp_output` and `reject_output`, regular expressions may be used, by p
 ```python
 self.test_run("./valid_date", exp_output=re.compile('([12]\d{3}-(0[1-9]|1[0-2])-(0[1-9]|[12]\d|3[01]))'))
 ```
+
+#### Providing input to the executed program
+
+This method can also be provided with an input string to be passed to the standard input of the program, with the `input` argument:
+
+```python
+self.test_run("./square", input="3\n", exp_output="9")
+```
+
+To use command-line arguments for a command, the arguments can be included either in the `command` itself, or with the `args` argument, which can be a single argument set as a string, or multiple arguments in a list:
+
+```python
+self.test_run("./square 3 5", exp_output=["9", "25"],
+              must_match_all_outputs="all")
+self.test_run("./square", args="3", exp_output="9")
+self.test_run("./square", args=["3", "5"], exp_output=["9", "25"],
+              must_match_all_outputs="all")
+```
+
+#### Limiting the execution time and output size
 
 To avoid issues with student-provided code running longer than expected, such as in cases of infinite loop, the program will time out after one second. In this case, the test will be considered failed. This setting can be changed with the `timeout` argument, which should be set to a number of seconds.
 
@@ -287,7 +311,9 @@ To avoid issues with student-provided code producing code that is too large for 
 self.test_run("./verboseprogram", exp_output="COMPLETED", size_limit=102400)
 ```
 
-The test will be created and shown to the user, worth 1 point by default. The default name for a test that include an `input` argument is: `Test with input "<INPUT>"` (where `INPUT` is the provided input). For a test that uses `args`, the default name is `Test with arguments "<ARGS>"` (where `ARGS` is the set of arguments separated by spaces). A message will also be included with a summary of expected and rejected outputs. To change these settings, use the `max_points`, `msg` and/or `name` arguments:
+#### Setting a custom test name, message and points
+
+The test will be created and shown to the user, worth 1 point by default. The default name for a test that includes an `input` argument is: `Test with input "<INPUT>"` (where `INPUT` is the provided input). For a test that uses `args`, the default name is `Test with arguments "<ARGS>"` (where `ARGS` is the set of arguments separated by spaces). A message will also be included with a summary of expected and rejected outputs. To change these settings, use the `max_points`, `msg` and/or `name` arguments:
 
 ```python
 self.test_run("diff -q output.txt expected.txt", reject_output=["differ"],
@@ -299,19 +325,49 @@ self.test_run("diff -q output.txt expected.txt", reject_output=["differ"],
 
 For tests that involve more complex scenarios, particularly related to individual function calls and unit tests, the C autograder allows integration with a modified version of the [Check framework](https://libcheck.github.io/check/). This framework provides functionality to run multiple test suites and test cases with individual unit tests. It is also able to capture signals (e.g., segmentation fault) by running unit tests in an isolated process.
 
-To run a Check suite, create a main C file containing the tests and a `main` function that runs the Check suite. A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check tutorial](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes a basic test suite that can be used as an example.
+To run a Check suite, create a main C file in the `tests` directory, containing the tests and a `main` function that runs the Check suite. This C file may look like:
 
-Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
+```c title="main.c"
+#include <check.h>
 
-A typical `test.py` file for a Check-based suite will look something like this, assuming `student_code.c` contains the student code and `/grade/tests/main.c` contains the Check tests:
+extern int factorial(int x);
 
-```python
+START_TEST(test_factorial) {
+    ck_assert_int_eq(factorial(0), 1);
+    ck_assert_int_eq(factorial(1), 1);
+    ck_assert_int_eq(factorial(2), 2);
+    ck_assert_int_eq(factorial(5), 120);
+    ck_assert_int_eq(factorial(10), 3628800);
+}
+END_TEST
+
+int main(void) {
+    Suite *s = suite_create("factorial");
+
+    TCase *tc_factorial = tcase_create("Check factorial return value");
+    tcase_add_test(tc_factorial, test_factorial);
+    suite_add_tcase(s, tc_factorial);
+
+    SRunner *sr = srunner_create(s);
+    srunner_run_all(sr, CK_NORMAL);
+    srunner_free(sr);
+    return 0;
+}
+```
+
+A tutorial with instructions on how to create test suites, test cases and unit tests can be found in [the official Check documentation](https://libcheck.github.io/check/doc/check_html/check_3.html#Tutorial). The example course also includes [basic questions](https://github.com/PrairieLearn/PrairieLearn/tree/master/exampleCourse/questions/demo/autograder/c) that can be used as a starting point.
+
+!!! note
+
+    Note that the functionality for working with the Check framework relies on its [test logging features](https://libcheck.github.io/check/doc/check_html/check_4.html#Test-Logging). To ensure the tests are properly captured by the autograder you should not overwrite the log files.
+
+A typical `test.py` file for a Check-based suite will look something like this, assuming `student_code.c` contains the student code and `/grade/tests/main.c` contains the Check tests like the example above:
+
+```python title="test.py"
 import cgrader
 
 class DemoGrader(cgrader.CGrader):
-
     def tests(self):
-
         self.compile_file("student_code.c", "main", add_c_file="/grade/tests/main.c",
                           # The following must be included if compiling a Check test
                           pkg_config_flags="check")
@@ -323,7 +379,7 @@ g.start()
 
 To compile the student code and test suite, use the `self.compile_file()` or `self.test_compile_file()` described above. Make sure that the `pkg_config_flags` argument includes the `check` library for proper compilation.
 
-The `self.run_check_suite()` method will call the executable containing the Check test suites, will parse the log files, and will create one autograder test for each unit test executed by the Check suites. The name of the test will typically be the name of the Check test case followed by the unit test ID, though this can be changed by setting the following arguments to `True` or `False`:
+The `self.run_check_suite()` method will call the executable containing the Check test suites, will parse the log files, and will create one autograder test for each unit test executed by the Check suites. One test result will be created for each unit test within each test case, so you may create as many test cases and as many unit tests as you wish to provide further details to students. The name of the test will typically be the name of the Check test case followed by the unit test ID, though this can be changed by setting the following arguments to `True` or `False`:
 
 - `use_suite_title`: use the title of the test suite in the test name (default: false);
 - `use_case_name`: use the name of the test case in the test name (default: true);
@@ -334,11 +390,11 @@ The `self.run_check_suite()` method will call the executable containing the Chec
 self.run_check_suite("./main", use_suite_title=True, use_unit_test_id=False)
 ```
 
-The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. In order to ensure these safeguards work as expected, your test application should:
+The version of Check used in the autograder has been modified slightly to include additional safeguards against malicious student code. These safeguards restrict access to test logs and other resources to the processes running unit tests. To ensure these safeguards work as expected, your test application:
 
-- keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
-- open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
-- do not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
+- should keep Check's default fork status enabled, i.e., do not set "No Fork Mode";
+- should open any files or file-like resources in the unit test itself or in checked fixtures, i.e., do not open files in unchecked fixtures or in the main application;
+- should not rely on environment variables for any student application, or set them manually in the unit test itself or in checked fixtures.
 
 If your application explicitly needs to keep any of the restricted environments above, you may disable some of these safeguards in your code. _Note that disabling these safeguards increases the chances that a student may bypass your unit tests and autograder_, so only do this if absolutely necessary. You may do this by setting the following preprocessor directives _at the top of your test code_ (before `#include <check.h>`):
 
@@ -469,7 +525,7 @@ In some situations, instructors may perform a manual review of the student's cod
 
 ## Sandbox execution
 
-The autograder is set up to allow program to run either a root, or as a non-privileged user. This feature is available to ensure that the student is unable to manipulate the testing environment or manually modify their grade in the container.
+The autograder is set up to allow programs to run either as root or as a non-privileged user. This feature is available to ensure that the student is unable to manipulate the testing environment or manually modify their grade in the container.
 
 By default, the sandbox user will not have access to any files inside the `/grade` folder in the container. If it is expected that a program running in this environment have access to a specific file, access must be explicitly granted to the user. This can be done with the `change_mode()` method, which receives two arguments: the file name/path, and the mode to be set.
 
@@ -478,3 +534,19 @@ self.change_mode("/grade/student/myfile.txt", "744")
 ```
 
 Any program compiled with `test_compile_file()` will be granted executable permissions (mode `755`), so these programs don't need to be explicitly allowed by your tests.
+
+As is typical in Unix-like systems, creating new files requires write permission in the directory where the file is created. Therefore, if a program is expected to create new files in a specific directory, write permission must be granted to that directory as well. You should avoid granting write permissions to system directories, such as `/grade` or `/grade/tests`, as students may be able to bypass the sandbox environment otherwise. Instead, create specific subdirectories for student files, and grant write permission to those directories only. You may want to switch the current working directory to that directory as well, which can be done with the `os.chdir()` method.
+
+```python
+self.run_command("mkdir -p /tmp/sbdir", sandboxed=False)
+self.change_mode("/tmp/sbdir", "777")
+os.chdir("/tmp/sbdir")
+```
+
+Note that changing the working directory also affects how student programs are invoked. This typically means that any execution of a student program must replace the typical `./` prefix with the directory where the student file was originally compiled, which by default is `/grade/student/`. For example, if the compilation process was executed before the statements above, the following command must be used to run a student program named `myprog`:
+
+```python
+self.test_run("/grade/student/myprog", ...)
+```
+
+The use of the `tempfile` library is also recommended to create temporary files and directories that the student code may use. Note that any file or directory created with this library will not be accessible to the sandbox user by default, so you must explicitly change its mode as shown above.

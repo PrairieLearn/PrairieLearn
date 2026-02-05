@@ -1,5 +1,17 @@
 # @prairielearn/utils
 
+## 3.1.1
+
+### Patch Changes
+
+- 8bdf6ea: Upgrade all JavaScript dependencies
+
+## 3.1.0
+
+### Minor Changes
+
+- 5b466e0: Add type utilities: `WithRequiredKeys`, `ExpandRecursively`, `assertNever`, `Result`, `Brand`, `withBrand`, `IsUnion`, `Prettify`, and `MergeUnion`
+
 ## 3.0.0
 
 ### Major Changes

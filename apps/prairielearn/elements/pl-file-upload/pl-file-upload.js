@@ -319,7 +319,7 @@
           );
         } else if (fileData) {
           $fileStatusContainerLeft.append(
-            `<i class="file-status-icon fa fa-check-circle" style="color: ${this.checkIconColor}" aria-hidden="true"></i>`,
+            `<i class="file-status-icon fas fa-check-circle" style="color: ${this.checkIconColor}" aria-hidden="true"></i>`,
           );
         } else {
           $fileStatusContainerLeft.append(
@@ -438,7 +438,7 @@
           $deleteUpload.on('click', () => this.deleteUploadedFile(fileName));
           $fileButtons.append($deleteUpload);
           $fileButtons.append(
-            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fa fa-angle-down"></span></button>`,
+            `<button type="button" class="btn btn-outline-secondary btn-sm file-preview-button ${!isExpanded ? 'collapsed' : ''}" data-bs-toggle="collapse" data-bs-target="#file-preview-${uuid}-${index}" aria-expanded="${isExpanded ? 'true' : 'false'}" aria-controls="file-preview-${uuid}-${index}"><span class="file-preview-icon fas fa-angle-down"></span></button>`,
           );
           $fileStatusContainer.append($fileButtons);
         }

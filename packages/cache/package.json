@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/cache",
-  "version": "2.1.6",
+  "version": "2.1.7",
   "type": "module",
   "repository": {
     "type": "git",
@@ -15,13 +15,13 @@
   "dependencies": {
     "@prairielearn/logger": "workspace:^",
     "@prairielearn/sentry": "workspace:^",
-    "ioredis": "^5.9.1",
-    "lru-cache": "^11.2.4",
+    "ioredis": "^5.9.2",
+    "lru-cache": "^11.2.5",
     "zod": "^3.25.76"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
-    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "typescript": "^5.9.3"
   }
 }
