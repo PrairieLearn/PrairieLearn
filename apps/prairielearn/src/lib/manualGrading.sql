@@ -453,7 +453,10 @@ SELECT
   -- We are comparing a database timestamp (microseconds precision) to a time
   -- that comes from the client (milliseconds precision). This avoids a precision
   -- mismatch that would cause the comparison to fail.
-  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict
+  AND date_trunc('milliseconds', $check_modified_at) != date_trunc('milliseconds', iq.modified_at) AS modified_at_conflict,
+  ai.user_id AS assessment_instance_user_id,
+  ai.team_id AS assessment_instance_team_id,
+  a.course_instance_id
 FROM
   instance_questions AS iq
   JOIN assessment_questions AS aq ON (aq.id = iq.assessment_question_id)
@@ -591,3 +594,24 @@ FROM
   updated_instance_question uiq
 RETURNING
   *;
+
+-- BLOCK check_user_in_team
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      team_users
+    WHERE
+      team_id = $team_id
+      AND user_id = $user_id
+  ) AS is_member;
+
+-- BLOCK update_include_in_statistics_for_self_modification
+UPDATE assessment_instances
+SET
+  include_in_statistics = FALSE,
+  modified_at = now()
+WHERE
+  id = $assessment_instance_id
+  AND include_in_statistics = TRUE;

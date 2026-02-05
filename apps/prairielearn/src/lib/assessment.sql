@@ -757,9 +757,11 @@ WHERE
 
 -- BLOCK select_and_lock_assessment_instance
 SELECT
-  ai.*
+  ai.*,
+  a.course_instance_id
 FROM
   assessment_instances AS ai
+  JOIN assessments AS a ON (a.id = ai.assessment_id)
 WHERE
   ai.id = $assessment_instance_id
 FOR NO KEY UPDATE OF
@@ -1807,3 +1809,24 @@ FROM
   JOIN instance_questions AS iq ON (iq.id = v.instance_question_id)
 WHERE
   iq.assessment_instance_id = $assessment_instance_id;
+
+-- BLOCK check_user_in_team
+SELECT
+  EXISTS (
+    SELECT
+      1
+    FROM
+      team_users
+    WHERE
+      team_id = $team_id
+      AND user_id = $user_id
+  ) AS is_member;
+
+-- BLOCK update_include_in_statistics_for_self_modification
+UPDATE assessment_instances
+SET
+  include_in_statistics = FALSE,
+  modified_at = now()
+WHERE
+  id = $assessment_instance_id
+  AND include_in_statistics = TRUE;

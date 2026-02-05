@@ -705,6 +705,35 @@ export async function updateInstanceQuestionScore(
         SprocAssessmentInstancesGradeSchema,
       );
 
+      // Check if staff member is modifying their own assessment instance
+      const isOwnInstance =
+        (current_submission.assessment_instance_user_id != null &&
+          idsEqual(authn_user_id, current_submission.assessment_instance_user_id)) ||
+        (current_submission.assessment_instance_team_id != null &&
+          (
+            await sqldb.queryRow(
+              sql.check_user_in_team,
+              {
+                team_id: current_submission.assessment_instance_team_id,
+                user_id: authn_user_id,
+              },
+              z.object({ is_member: z.boolean() }),
+            )
+          ).is_member);
+
+      if (isOwnInstance) {
+        const { is_instructor } = await sqldb.callRow(
+          'users_is_instructor_in_course_instance',
+          [authn_user_id, current_submission.course_instance_id],
+          z.object({ is_instructor: z.boolean() }),
+        );
+        if (is_instructor) {
+          await sqldb.execute(sql.update_include_in_statistics_for_self_modification, {
+            assessment_instance_id: current_submission.assessment_instance_id,
+          });
+        }
+      }
+
       // TODO: this ends up running inside a transaction. This is not good.
       await ltiOutcomes.updateScore(current_submission.assessment_instance_id);
     }
