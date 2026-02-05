@@ -1,6 +1,6 @@
 # yaml-language-server: $schema=https://json.schemastore.org/mkdocs-1.6.json
 site_name: PrairieLearn Docs
-site_url: https://prairielearn.readthedocs.io/en/latest/
+site_url: https://docs.prairielearn.com/
 repo_url: https://github.com/PrairieLearn/PrairieLearn
 theme:
   name: material
