@@ -23,7 +23,7 @@ import {
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
   ZoneAssessmentJsonSchema,
-  ZoneQuestionJsonSchema,
+  ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
@@ -67,7 +67,7 @@ const schemaOverride = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
+    const inQuestion = refs.currentPath.includes('ZoneQuestionBlockJsonSchema');
     const inGroups = refs.currentPath.includes('groups');
 
     // Skip fields inside groups.rolePermissions - let default handle them
@@ -185,7 +185,7 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     AssessmentAccessRuleJsonSchema,
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
-    ZoneQuestionJsonSchema,
+    ZoneQuestionBlockJsonSchema,
     LegacyGroupRoleJsonSchema,
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,

@@ -80,5 +80,9 @@
   "yaml.format.enable": false,
   "java.project.resourceFilters": ["node_modules", "\\.git", "exampleCourse"],
   "java.project.referencedLibraries": ["graders/java/libs/*.jar"],
-  "java.project.sourcePaths": ["graders/java"]
+  "java.project.sourcePaths": ["graders/java"],
+  "files.associations": {
+    "**/exampleCourse/questions/**/question.html": "htmlmustache",
+    "**/testCourse/questions/**/question.html": "htmlmustache"
+  }
 }
