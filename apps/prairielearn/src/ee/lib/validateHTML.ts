@@ -824,17 +824,16 @@ function dfsCheckParseTree(ast: DocumentFragment | ChildNode) {
  * @returns A list of human-readable render error messages, if any.
  */
 export function validateHTML(file: string, hasServerPy: boolean): string[] {
-  const forbiddenTags = ['html', 'body', 'head'];
-  for (const tag of forbiddenTags) {
-    if (new RegExp(`</?${tag}[\\s>]`, 'i').test(file)) {
+  const forbiddenTagMatch = file.match(/^\s*<(!doctype|\/?(html|body|head))[\s>]/i);
+  if (forbiddenTagMatch) {
+    const tag = forbiddenTagMatch[1].toLowerCase();
+    if (tag === '!doctype') {
       return [
-        `The <${tag}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
+        'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
       ];
     }
-  }
-  if (/<!doctype\s/i.test(file)) {
     return [
-      'The <!DOCTYPE> declaration must not be included. Only generate the inner content that would go inside the <body> tag.',
+      `The <${tag.replace(/^\//, '')}> tag must not be included. Only generate the inner content that would go inside the <body> tag.`,
     ];
   }
 
