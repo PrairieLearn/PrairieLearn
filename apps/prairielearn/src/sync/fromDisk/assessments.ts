@@ -12,7 +12,7 @@ import {
   type AssessmentJson,
   type QuestionAlternativeJson,
   type QuestionPointsJson,
-  type ZoneQuestionJson,
+  type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
 import { isDateInFuture } from '../dates.js';
@@ -127,8 +127,8 @@ function getParamsForAssessment(
         > & {
           qid: QuestionAlternativeJson['id'];
           allowRealTimeGrading: boolean;
-          canView: ZoneQuestionJson['canView'];
-          canSubmit: ZoneQuestionJson['canSubmit'];
+          canView: ZoneQuestionBlockJson['canView'];
+          canSubmit: ZoneQuestionBlockJson['canSubmit'];
           maxPoints: number | null;
           points: number | number[] | null;
           maxAutoPoints: number | null;
