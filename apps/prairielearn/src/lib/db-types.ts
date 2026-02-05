@@ -9,6 +9,24 @@ import { DateFromISOString, IdSchema, IntervalSchema } from '@prairielearn/zod';
 // Enum schemas. These should be alphabetized by their corresponding enum name.
 // *******************************************************************************
 
+export const EnumAiQuestionGenerationMessageRoleSchema = z.enum(['user', 'assistant']);
+export type EnumAiQuestionGenerationMessageRole = z.infer<
+  typeof EnumAiQuestionGenerationMessageRoleSchema
+>;
+
+export const EnumAiQuestionGenerationMessageStatusSchema = z.enum([
+  'streaming',
+  'completed',
+  'errored',
+  'canceled',
+]);
+export type EnumAiQuestionGenerationMessageStatus = z.infer<
+  typeof EnumAiQuestionGenerationMessageStatusSchema
+>;
+
+export const EnumAssessmentTypeSchema = z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']);
+export type EnumAssessmentType = z.infer<typeof EnumAssessmentTypeSchema>;
+
 export const EnumAuditEventActionSchema = z.enum(['insert', 'update', 'delete']);
 export type EnumAuditEventAction = z.infer<typeof EnumAuditEventActionSchema>;
 
@@ -256,6 +274,26 @@ export const AiGradingJobSchema = z.object({
 });
 export type AiGradingJob = z.infer<typeof AiGradingJobSchema>;
 
+export const AiQuestionGenerationMessageSchema = z.object({
+  authn_user_id: IdSchema.nullable(),
+  created_at: DateFromISOString,
+  id: IdSchema,
+  include_in_context: z.boolean(),
+  job_sequence_id: IdSchema.nullable(),
+  model: z.string().nullable(),
+  parts: z.array(z.any()),
+  question_id: IdSchema,
+  role: EnumAiQuestionGenerationMessageRoleSchema,
+  status: EnumAiQuestionGenerationMessageStatusSchema,
+  updated_at: DateFromISOString,
+  usage_input_tokens: z.number(),
+  usage_input_tokens_cache_read: z.number(),
+  usage_input_tokens_cache_write: z.number(),
+  usage_output_tokens: z.number(),
+  usage_output_tokens_reasoning: z.number(),
+});
+export type AiQuestionGenerationMessage = z.infer<typeof AiQuestionGenerationMessageSchema>;
+
 export const AlternativeGroupSchema = z.object({
   advance_score_perc: z.number().nullable(),
   assessment_id: IdSchema,
@@ -336,7 +374,7 @@ export const AssessmentSchema = z.object({
   text: z.string().nullable(),
   tid: z.string().nullable(),
   title: z.string().nullable(),
-  type: z.enum(['Exam', 'RetryExam', 'Basic', 'Game', 'Homework']),
+  type: EnumAssessmentTypeSchema,
   uuid: z.string().nullable(),
 });
 export type Assessment = z.infer<typeof AssessmentSchema>;
@@ -1586,6 +1624,7 @@ export const TableNames = [
   'access_tokens',
   'administrators',
   'ai_grading_jobs',
+  'ai_question_generation_messages',
   'ai_question_generation_prompts',
   'alternative_groups',
   'assessment_access_rules',
