@@ -303,12 +303,6 @@ FROM
 
 -- BLOCK update_assessment_instance_max_points
 WITH
-  zones_total_max_points AS (
-    SELECT
-      SUM(max_points) AS total_max_points
-    FROM
-      assessment_instances_points ($assessment_instance_id)
-  ),
   new_max_points AS (
     SELECT
       ai.max_points AS old_max_points,
@@ -316,7 +310,7 @@ WITH
       COALESCE(
         a.max_points,
         GREATEST(
-          ztmp.total_max_points - COALESCE(a.max_bonus_points, 0),
+          $total_points_zones - COALESCE(a.max_bonus_points, 0),
           0
         )
       ) AS new_max_points,
@@ -324,7 +318,6 @@ WITH
     FROM
       assessment_instances AS ai
       JOIN assessments AS a ON (a.id = ai.assessment_id)
-      LEFT JOIN zones_total_max_points ztmp ON TRUE
     WHERE
       ai.id = $assessment_instance_id
   ),
