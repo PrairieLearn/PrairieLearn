@@ -105,10 +105,13 @@ export function MagicConnector() {
 
       // Draw flowing line
       ctx.beginPath();
-      ctx.moveTo(w / 2, 0);
-      for (let y = 0; y < h; y += 2) {
+      for (let y = 0; y <= h; y += 2) {
         const wobble = Math.sin(y * 0.03 + time * 0.02) * 8;
-        ctx.lineTo(w / 2 + wobble, y);
+        if (y === 0) {
+          ctx.moveTo(w / 2 + wobble, 0);
+        } else {
+          ctx.lineTo(w / 2 + wobble, y);
+        }
       }
       ctx.strokeStyle = 'hsl(217, 91%, 50%)';
       ctx.globalAlpha = 0.08;
