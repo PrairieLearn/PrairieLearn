@@ -7,6 +7,15 @@ SET NOT NULL;
 ALTER TABLE alternative_groups
 DROP CONSTRAINT alternative_groups_number_not_null;
 
+ALTER TABLE assessment_instances VALIDATE CONSTRAINT assessment_instances_number_not_null;
+
+ALTER TABLE assessment_instances
+ALTER COLUMN number
+SET NOT NULL;
+
+ALTER TABLE assessment_instances
+DROP CONSTRAINT assessment_instances_number_not_null;
+
 ALTER TABLE assessment_modules VALIDATE CONSTRAINT assessment_modules_number_not_null;
 
 ALTER TABLE assessment_modules
@@ -51,3 +60,12 @@ SET NOT NULL;
 
 ALTER TABLE tags
 DROP CONSTRAINT tags_number_not_null;
+
+ALTER TABLE topics VALIDATE CONSTRAINT topics_number_not_null;
+
+ALTER TABLE topics
+ALTER COLUMN number
+SET NOT NULL;
+
+ALTER TABLE topics
+DROP CONSTRAINT topics_number_not_null;
