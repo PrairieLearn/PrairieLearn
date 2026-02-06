@@ -14,6 +14,10 @@ import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { SampleQuestions } from './SampleQuestions.js';
+import {
+  examplePromptsArray,
+  generateSampleQuestionVariant,
+} from './aiGeneratedQuestionSamples.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -114,7 +118,15 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div class="mt-2">${hydrateHtml(<SampleQuestions />)}</div>
+            <div class="mt-2">
+              ${hydrateHtml(
+                <SampleQuestions
+                  // Since variant are randomly generated, we need to generate the initial one
+                  // on the server to ensure that we don't get a hydration mismatch.
+                  initialVariant={generateSampleQuestionVariant(examplePromptsArray[0].id)}
+                />,
+              )}
+            </div>
           </form>
         </div>
       </div>
@@ -195,20 +207,11 @@ export function GenerationFailure({
   `.toString();
 }
 
-export function RateLimitExceeded({
-  canShortenMessage = false,
-}: {
-  /**
-   * If true, shows that the user should shorten their message to stay under the rate limit.
-   */
-  canShortenMessage: boolean;
-}): string {
+export function RateLimitExceeded(): string {
   return html`
     <div id="generation-results">
       <div class="alert alert-danger mt-2 mb-0">
-        ${canShortenMessage
-          ? 'Your prompt is too long. Please shorten it and try again.'
-          : "You've reached the hourly usage cap for AI question generation. Please try again later."}
+        You've reached the hourly usage cap for AI question generation. Please try again later.
       </div>
     </div>
   `.toString();

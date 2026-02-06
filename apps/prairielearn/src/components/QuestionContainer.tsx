@@ -14,10 +14,10 @@ import type {
   User,
   Variant,
 } from '../lib/db-types.js';
+import { type GroupInfo, getRoleNamesForUser } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 import type { IssueRenderData } from '../lib/question-render.types.js';
 import type { UntypedResLocals } from '../lib/res-locals.types.js';
-import { type GroupInfo, getRoleNamesForUser } from '../lib/teams.js';
 import type { SimpleVariantWithScore } from '../models/variant.js';
 
 import { AiGradingHtmlPreview } from './AiGradingHtmlPreview.js';
@@ -602,7 +602,10 @@ export function QuestionFooterContent({
                 `}
             ${showNewVariantButton
               ? html`
-                  <a href="${newVariantUrl}" class="btn btn-primary disable-on-click ms-1">
+                  <a
+                    href="${newVariantUrl}"
+                    class="btn btn-primary disable-on-click ms-1 js-new-variant-button"
+                  >
                     New variant
                   </a>
                 `

@@ -6,10 +6,7 @@ import { flash } from '@prairielearn/flash';
 import * as sqldb from '@prairielearn/postgres';
 
 import { GroupConfigSchema } from '../../lib/db-types.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
-import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { parseUniqueValuesFromString } from '../../lib/string-util.js';
-import { randomGroups, uploadInstanceGroups } from '../../lib/team-update.js';
+import { randomGroups, uploadInstanceGroups } from '../../lib/group-update.js';
 import {
   GroupOperationError,
   addUserToGroup,
@@ -17,13 +14,16 @@ import {
   deleteAllGroups,
   deleteGroup,
   leaveGroup,
-} from '../../lib/teams.js';
+} from '../../lib/groups.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
+import { parseUniqueValuesFromString } from '../../lib/string-util.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 
 import {
   GroupUsersRowSchema,
   InstructorAssessmentGroups,
-} from './instructorAssessmentTeams.html.js';
+} from './instructorAssessmentGroups.html.js';
 
 const router = Router();
 const sql = sqldb.loadSqlEquiv(import.meta.url);
