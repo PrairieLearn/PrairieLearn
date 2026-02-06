@@ -28,8 +28,9 @@ const repoRoot = dirname(fileURLToPath(import.meta.url));
 // which already handles directories, nested paths and edge cases
 // using the same rules Git uses.
 const gitignore = ignore();
-if (existsSync('.gitignore')) {
-  gitignore.add(readFileSync(resolve(repoRoot, '.gitignore'), 'utf8'));
+const gitignorePath = resolve(repoRoot, '.gitignore');
+if (existsSync(gitignorePath)) {
+  gitignore.add(readFileSync(gitignorePath, 'utf8'));
 }
 
 // Each shard will get a certain slice of the tests outside of SLOW_TESTS.
