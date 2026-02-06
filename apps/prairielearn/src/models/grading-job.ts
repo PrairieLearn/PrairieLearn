@@ -9,10 +9,10 @@ import {
 } from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
+import { updateAssessmentInstanceGrade } from '../lib/assessment-grading.js';
 import {
   type GradingJob,
   GradingJobSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
@@ -82,11 +82,7 @@ export async function insertGradingJob({
       }),
     );
     if (assessment_instance_id != null) {
-      await callRow(
-        'assessment_instances_grade',
-        [assessment_instance_id, authn_user_id, credit],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({ assessment_instance_id, authn_user_id, credit });
     }
     return grading_job;
   });
@@ -200,11 +196,11 @@ export async function updateGradingJobAfterGrading({
           grading_job_id,
           authn_user_id: gradingJob.auth_user_id,
         });
-        await callRow(
-          'assessment_instances_grade',
-          [assessment_instance_id, gradingJob.auth_user_id, credit],
-          SprocAssessmentInstancesGradeSchema,
-        );
+        await updateAssessmentInstanceGrade({
+          assessment_instance_id,
+          authn_user_id: gradingJob.auth_user_id,
+          credit,
+        });
       }
     }
 
