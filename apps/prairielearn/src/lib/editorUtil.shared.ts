@@ -77,7 +77,7 @@ export function getUniqueNames({
       const oldShortNameCompare = oldShortName.toLowerCase();
       const found =
         shortNameCompare === oldShortNameCompare ||
-        oldShortNameCompare.match(new RegExp(`^${shortNameCompare}_([0-9]+)$`));
+        oldShortNameCompare.match(new RegExp(`^${escapeRegExp(shortNameCompare)}_([0-9]+)$`));
       if (found) {
         const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
@@ -97,7 +97,8 @@ export function getUniqueNames({
     oldLongNames.forEach((oldLongName) => {
       if (typeof oldLongName !== 'string') return;
       const found =
-        oldLongName === longName || oldLongName.match(new RegExp(`^${longName} \\(([0-9]+)\\)$`));
+        oldLongName === longName ||
+        oldLongName.match(new RegExp(`^${escapeRegExp(longName)} \\(([0-9]+)\\)$`));
       if (found) {
         const foundNumber = found === true ? 1 : Number.parseInt(found[1]);
         if (foundNumber >= numberOfMostRecentCopy) {
