@@ -334,9 +334,9 @@ export function StudentAssessmentInstance({
                             <th colspan="${zoneTitleColspan}">
                               ${zoneHasInfo
                                 ? html`
-                                    <div class="d-flex align-items-center">
+                                    <div class="d-flex align-items-center gap-2">
                                       ${instance_question_row.zone_title
-                                        ? html`<span class="me-2"
+                                        ? html`<span
                                             >${instance_question_row.zone_title}</span
                                           >`
                                         : ''}
@@ -360,7 +360,7 @@ export function StudentAssessmentInstance({
                                         : ''}
                                     </div>
                                   `
-                                : ''}
+                                : html`&nbsp;`}
                             </th>
                           </tr>
                         `

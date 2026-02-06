@@ -29,7 +29,7 @@
   "maxBonusPoints": 3,
   "zones": [
     {
-      "title": "Zone 1: Fundamental questions",
+      "title": "Fundamental questions",
       "bestQuestions": 2,
       "questions": [
         { "id": "demo/calculation", "points": 1, "maxPoints": 3 },
@@ -40,7 +40,7 @@
       ]
     },
     {
-      "title": "Zone 2: Intermediate questions",
+      "title": "Intermediate questions",
       "maxPoints": 6,
       "questions": [
         { "id": "demo/annotated/engCentroid", "points": 1, "maxPoints": 3 },
@@ -49,7 +49,6 @@
       ]
     },
     {
-      "title": "Zone 3: Advanced questions",
       "questions": [
         { "id": "demo/annotated/mathProof", "points": 3, "maxPoints": 3 },
         { "id": "demo/computeNumber-fromDataFrame", "points": 1, "maxPoints": 6 },
