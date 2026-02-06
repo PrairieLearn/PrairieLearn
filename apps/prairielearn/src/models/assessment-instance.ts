@@ -1,33 +1,31 @@
-import { z } from 'zod';
-
 import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 
+import { SprocUsersIsInstructorInCourseInstanceSchema } from '../lib/db-types.js';
 import { idsEqual } from '../lib/id.js';
-
-import { isUserInTeam } from '../lib/teams.js';
+import { isUserInGroup } from '../lib/teams.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
 /**
- * Check if a user owns an assessment instance (either directly or via team membership).
+ * Check if a user owns an assessment instance (either directly or via group membership).
  */
 export async function isUserOwnerOfAssessmentInstance({
-  assessment_instance_user_id,
-  assessment_instance_team_id,
-  user_id,
+  assessmentInstanceUserId,
+  assessmentInstanceGroupId,
+  userId,
 }: {
-  assessment_instance_user_id: string | null;
-  assessment_instance_team_id: string | null;
-  user_id: string;
+  assessmentInstanceUserId: string | null;
+  assessmentInstanceGroupId: string | null;
+  userId: string;
 }): Promise<boolean> {
   // Direct ownership
-  if (assessment_instance_user_id != null && idsEqual(user_id, assessment_instance_user_id)) {
+  if (assessmentInstanceUserId != null && idsEqual(userId, assessmentInstanceUserId)) {
     return true;
   }
 
-  // Team membership
-  if (assessment_instance_team_id != null) {
-    return await isUserInTeam({ team_id: assessment_instance_team_id, user_id });
+  // Group membership
+  if (assessmentInstanceGroupId != null) {
+    return await isUserInGroup({ groupId: assessmentInstanceGroupId, userId });
   }
 
   return false;
@@ -40,35 +38,35 @@ export async function isUserOwnerOfAssessmentInstance({
  * This function should be called within a transaction.
  */
 export async function flagSelfModifiedAssessmentInstance({
-  assessment_instance_id,
-  assessment_instance_user_id,
-  assessment_instance_team_id,
-  course_instance_id,
-  authn_user_id,
+  assessmentInstanceId,
+  assessmentInstanceUserId,
+  assessmentInstanceGroupId,
+  courseInstanceId,
+  authnUserId,
 }: {
-  assessment_instance_id: string;
-  assessment_instance_user_id: string | null;
-  assessment_instance_team_id: string | null;
-  course_instance_id: string;
-  authn_user_id: string;
+  assessmentInstanceId: string;
+  assessmentInstanceUserId: string | null;
+  assessmentInstanceGroupId: string | null;
+  courseInstanceId: string;
+  authnUserId: string;
 }): Promise<void> {
   const isOwnInstance = await isUserOwnerOfAssessmentInstance({
-    assessment_instance_user_id,
-    assessment_instance_team_id,
-    user_id: authn_user_id,
+    assessmentInstanceUserId,
+    assessmentInstanceGroupId,
+    userId: authnUserId,
   });
 
   if (!isOwnInstance) return;
 
-  const { is_instructor } = await callRow(
+  const isInstructor = await callRow(
     'users_is_instructor_in_course_instance',
-    [authn_user_id, course_instance_id],
-    z.object({ is_instructor: z.boolean() }),
+    [authnUserId, courseInstanceId],
+    SprocUsersIsInstructorInCourseInstanceSchema,
   );
 
-  if (is_instructor) {
+  if (isInstructor) {
     await execute(sql.update_include_in_statistics_for_self_modification, {
-      assessment_instance_id,
+      assessment_instance_id: assessmentInstanceId,
     });
   }
 }

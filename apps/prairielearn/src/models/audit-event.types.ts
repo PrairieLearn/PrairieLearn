@@ -71,6 +71,8 @@ export type SupportedTableActionCombination =
         | 'left'
         | 'removed'
         | 'reenrolled_by_instructor'
+        | 'staff_permissions_granted'
+        | 'staff_permissions_removed'
         | null;
     };
 export type SupportedActionsForTable<T extends TableName> = NonNullable<

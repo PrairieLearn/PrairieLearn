@@ -542,7 +542,7 @@ SELECT
 FROM
   deleted_groups;
 
--- BLOCK is_user_in_team
+-- BLOCK is_user_in_group
 SELECT
   EXISTS (
     SELECT
@@ -550,6 +550,6 @@ SELECT
     FROM
       team_users
     WHERE
-      team_id = $team_id
+      team_id = $group_id
       AND user_id = $user_id
-  ) AS is_member;
+  ) AS is_in_group;
