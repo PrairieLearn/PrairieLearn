@@ -87,15 +87,17 @@ function AiQuestionGenerationEditorInner({
       />
 
       <div className="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
-        <a
-          href={`${urlPrefix}/ai_generate_question_drafts`}
-          className="btn btn-sm btn-ghost d-flex align-items-center ms-2 mt-2 mb-0"
-          aria-label="Back to AI questions"
-          data-bs-toggle="tooltip"
-          data-bs-title="Back to AI questions"
-        >
-          <i className="fa fa-arrow-left" aria-hidden="true" />
-        </a>
+        <div className="d-flex align-items-center border-bottom ps-2">
+          <a
+            href={`${urlPrefix}/ai_generate_question_drafts`}
+            className="btn btn-sm btn-ghost"
+            aria-label="Back to AI questions"
+            data-bs-toggle="tooltip"
+            data-bs-title="Back to AI questions"
+          >
+            <i className="fa fa-arrow-left" aria-hidden="true" />
+          </a>
+        </div>
         <ul className="nav nav-tabs me-auto ps-2 pt-2">
           <li className="nav-item">
             <a
