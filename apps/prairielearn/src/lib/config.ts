@@ -163,7 +163,6 @@ export const ConfigSchema = z.object({
   fileUploadMaxParts: z.number().default(1000),
   fileStoreS3Bucket: z.string().default('file-store'),
   fileStoreStorageTypeDefault: z.enum(['S3', 'FileSystem']).default('S3'),
-  initNewsItems: z.boolean().default(true),
   cronActive: z.boolean().default(true),
   /**
    * A list of cron job names that should be run. If this is set to a non-null
