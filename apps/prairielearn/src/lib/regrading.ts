@@ -220,11 +220,11 @@ async function regradeSingleAssessmentInstance({
     );
 
     await flagSelfModifiedAssessmentInstance({
-      assessment_instance_id,
-      assessment_instance_user_id: assessmentInstance.user_id,
-      assessment_instance_team_id: assessmentInstance.team_id,
-      course_instance_id: assessmentInstance.course_instance_id,
-      authn_user_id,
+      assessmentInstanceId: assessment_instance_id,
+      assessmentInstanceUserId: assessmentInstance.user_id,
+      assessmentInstanceGroupId: assessmentInstance.team_id,
+      courseInstanceId: assessmentInstance.course_instance_id,
+      authnUserId: authn_user_id,
     });
 
     return {
