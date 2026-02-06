@@ -336,9 +336,7 @@ export function StudentAssessmentInstance({
                                 ? html`
                                     <div class="d-flex align-items-center gap-2">
                                       ${instance_question_row.zone_title
-                                        ? html`<span
-                                            >${instance_question_row.zone_title}</span
-                                          >`
+                                        ? html`<span>${instance_question_row.zone_title}</span>`
                                         : ''}
                                       ${instance_question_row.zone_has_max_points
                                         ? ZoneInfoPopover({
