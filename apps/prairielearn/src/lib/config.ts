@@ -90,7 +90,7 @@ export const ConfigSchema = z.object({
    * appropriately sized such that it will not run out of memory during
    * normal usage.
    */
-nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
+  nonVolatileRedisUrl: z.string().nullable().default('redis://localhost:6379'),
   logFilename: z.string().default('server.log'),
   logErrorFilename: z.string().nullable().default(null),
   /** Sets the default user UID in development. */

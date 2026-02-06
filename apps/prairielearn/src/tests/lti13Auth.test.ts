@@ -152,7 +152,7 @@ describe('LTI 1.3 authentication', () => {
   test.sequential('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
-// Malformed login - missing login_hint
+    // Malformed login - missing login_hint
     await withoutLogging(async () => {
       const startBadLoginResponse = await fetchWithCookies(
         `${siteUrl}/pl/lti13_instance/1/auth/login`,
@@ -189,7 +189,7 @@ describe('LTI 1.3 authentication', () => {
     const redirectUri = redirectUrl.searchParams.get('redirect_uri');
     const nonce = redirectUrl.searchParams.get('nonce');
 
-assert.ok(redirectUri);
+    assert.ok(redirectUri);
     assert.ok(nonce);
 
     // Missing state parameter should error
