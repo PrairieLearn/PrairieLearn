@@ -58,13 +58,55 @@ export function SampleQuestions({ initialVariant }: { initialVariant: SampleQues
 
 SampleQuestions.displayName = 'SampleQuestions';
 
+function smoothScrollIntoView(element: HTMLElement): Promise<void> {
+  return new Promise((resolve) => {
+    let scrolling = false;
+
+    // Use capture phase because scroll/scrollend don't bubble — if the scroll
+    // happens on a container element rather than the document, only capture
+    // phase listeners on document will see the events.
+    const onScroll = () => {
+      scrolling = true;
+      document.removeEventListener('scroll', onScroll, true);
+      document.addEventListener('scrollend', () => resolve(), { once: true, capture: true });
+    };
+
+    document.addEventListener('scroll', onScroll, { capture: true, passive: true });
+    element.scrollIntoView({ behavior: 'smooth', block: 'center' });
+
+    // If no scroll event fires within 50ms, the element is already in position.
+    setTimeout(() => {
+      if (!scrolling) {
+        document.removeEventListener('scroll', onScroll, true);
+        resolve();
+      }
+    }, 50);
+  });
+}
+
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
-  const handleUsePrompt = () => {
+  const handleUsePrompt = async () => {
     const promptTextarea = document.querySelector<HTMLTextAreaElement>('#user-prompt-llm');
-    if (promptTextarea) {
-      promptTextarea.value = prompt;
-      promptTextarea.dispatchEvent(new Event('input', { bubbles: true }));
-    }
+    if (!promptTextarea) return;
+
+    // Fill the text before scrolling so the user sees it as it comes into view.
+    promptTextarea.value = prompt;
+    promptTextarea.dispatchEvent(new Event('input', { bubbles: true }));
+
+    await smoothScrollIntoView(promptTextarea);
+
+    promptTextarea.focus({ preventScroll: true });
+
+    // Subtle grow/shrink pulse to draw attention.
+    promptTextarea.style.transition = 'transform 0.2s ease-out';
+    promptTextarea.style.transform = 'scale(1.02)';
+    setTimeout(() => {
+      promptTextarea.style.transform = 'scale(1)';
+      setTimeout(() => {
+        promptTextarea.style.transition = '';
+        promptTextarea.style.transform = '';
+      }, 200);
+    }, 200);
   };
 
   return (
