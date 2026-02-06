@@ -31,7 +31,7 @@ interface SyncPreview {
 
 type SyncStep = 'input' | 'preview';
 
-const MAX_UIDS = 1000;
+const MAX_UIDS = 5000;
 
 /**
  * Computes the diff between the input roster and the current enrollments.
@@ -133,20 +133,23 @@ function StudentCheckboxList({
     invite: {
       icon: 'bi-person-plus',
       iconColor: 'text-success',
-      label: 'Students to invite',
-      ariaLabel: 'Students to invite',
+      label: 'Students to invite or re-enroll',
+      ariaLabel: 'Students to invite or re-enroll',
+      description: 'New students will be invited. Blocked or removed students will be re-enrolled.',
     },
     cancel: {
       icon: 'bi-x-circle',
       iconColor: 'text-warning',
       label: 'Invitations to cancel',
       ariaLabel: 'Invitations to cancel',
+      description: 'Pending invitations will be cancelled (deleted).',
     },
     remove: {
       icon: 'bi-person-dash',
       iconColor: 'text-danger',
       label: 'Students to remove',
       ariaLabel: 'Students to remove',
+      description: 'Joined students not on the roster will be removed from the course.',
     },
   };
 
@@ -168,6 +171,7 @@ function StudentCheckboxList({
           </Button>
         </div>
       </div>
+      <p className="text-muted small mb-2">{config.description}</p>
 
       {variant === 'remove' && (
         <Alert variant="warning" className="py-2 mb-2">
@@ -370,6 +374,13 @@ export function SyncStudentsModal({
           </Alert>
         )}
 
+        {courseInstance.self_enrollment_enabled && step === 'input' && (
+          <Alert variant="info">
+            Self-enrollment is enabled for this course instance. Removed students will be able to
+            re-enroll themselves. Consider disabling self-enrollment if you want to prevent this.
+          </Alert>
+        )}
+
         {syncMutation.isError && (
           <Alert variant="danger" dismissible onClose={() => syncMutation.reset()}>
             {syncMutation.error instanceof Error ? syncMutation.error.message : 'An error occurred'}
@@ -379,8 +390,9 @@ export function SyncStudentsModal({
         {step === 'input' && (
           <form onSubmit={onCompare}>
             <p className="text-muted">
-              Paste your student roster below. Students on this list will be invited or re-enrolled
-              if not already enrolled. Students not on this list will be blocked.
+              Paste your student roster below. Students on this list will be invited (or re-enrolled
+              if previously blocked or removed). Students not on this list will be removed, and
+              pending invitations will be cancelled.
             </p>
             <div className="mb-3">
               <label htmlFor="sync-uids" className="form-label">

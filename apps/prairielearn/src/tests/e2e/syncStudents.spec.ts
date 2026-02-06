@@ -1,5 +1,3 @@
-import type { Page } from '@playwright/test';
-
 import { type AuthzData, dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
 import type { User } from '../../lib/db-types.js';
@@ -10,32 +8,11 @@ import {
   inviteStudentByUid,
   setEnrollmentStatus,
 } from '../../models/enrollment.js';
+import { syncCourse } from '../helperCourse.js';
 import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
-
-async function syncAllCourses(page: Page) {
-  await page.goto('/pl/loadFromDisk');
-  await expect(page).toHaveURL(/\/jobSequence\//);
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-}
-
-/**
- * Waits for the job sequence page to show completion and checks for expected text in the job output.
- */
-async function waitForJobAndCheckOutput(page: Page, expectedTexts: string[]) {
-  // Should be redirected to the job sequence page
-  await expect(page).toHaveURL(/\/jobSequence\//);
-
-  // Wait for job to complete (status badge shows Success)
-  await expect(page.locator('.badge', { hasText: 'Success' })).toBeVisible();
-
-  // Check for expected text in the job output (rendered in a <pre> element)
-  const jobOutput = page.locator('pre');
-  for (const text of expectedTexts) {
-    await expect(jobOutput.getByText(text)).toBeVisible();
-  }
-}
+import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
 
 function createInstructorAuthzData(user: User): AuthzData {
   return {
@@ -132,10 +109,8 @@ async function createTestData() {
 }
 
 test.describe('Sync students', () => {
-  test.beforeAll(async ({ browser, workerPort }) => {
-    const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
-    await syncAllCourses(page);
-    await page.close();
+  test.beforeAll(async () => {
+    await syncCourse();
     await createTestData();
   });
 
@@ -189,7 +164,7 @@ test.describe('Sync students', () => {
     await expect(page.getByText('Review the changes below')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Students to invite')).toBeVisible();
+    await expect(dialog.getByText('Students to invite or re-enroll')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_new@test.com')).toBeVisible();
     await expect(dialog.getByText('Invitations to cancel')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
@@ -269,7 +244,7 @@ test.describe('Sync students', () => {
     await page.getByRole('button', { name: 'Compare' }).click();
 
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Students to invite')).toBeVisible();
+    await expect(dialog.getByText('Students to invite or re-enroll')).toBeVisible();
     await expect(dialog.getByText('sync_blocked@test.com')).toBeVisible();
     await expect(dialog.getByText('sync_removed@test.com')).toBeVisible();
 
