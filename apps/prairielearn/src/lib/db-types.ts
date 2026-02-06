@@ -1231,18 +1231,7 @@ export const LtiOutcomeSchema = z.object({
 export const MigrationSchema = null;
 export const NamedLockSchema = null;
 
-export const NewsItemSchema = z.object({
-  author: z.string().nullable(),
-  date: DateFromISOString,
-  directory: z.string(),
-  id: IdSchema,
-  order_by: z.number(),
-  title: z.string(),
-  uuid: z.string(),
-  visible_to_students: z.boolean(),
-});
-export type NewsItem = z.infer<typeof NewsItemSchema>;
-
+export const NewsItemSchema = null;
 export const NewsItemNotificationSchema = null;
 export const PageViewLogSchema = null;
 

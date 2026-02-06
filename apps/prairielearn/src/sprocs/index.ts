@@ -65,7 +65,6 @@ export async function init() {
       'assessment_instances_points.sql',
       'sync_course_instances.sql',
       'sync_questions.sql',
-      'sync_news_items.sql',
       'sync_question_tags.sql',
       'sync_assessments.sql',
       'team_info.sql',
