@@ -59,7 +59,7 @@ export function Navbar({
     >
       <a href="#content" class="d-inline-flex p-2 m-2 text-white">Skip to main content</a>
       <a
-        href="https://prairielearn.readthedocs.io/en/latest/student-guide/accessibility/"
+        href="https://docs.prairielearn.com/student-guide/accessibility/"
         class="d-inline-flex p-2 m-2 text-white"
       >
         Accessibility guide
