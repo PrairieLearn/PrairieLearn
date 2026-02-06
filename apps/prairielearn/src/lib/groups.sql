@@ -552,4 +552,4 @@ SELECT
     WHERE
       team_id = $group_id
       AND user_id = $user_id
-  ) AS is_in_group;
+  );
