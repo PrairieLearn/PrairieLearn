@@ -159,7 +159,7 @@ async function processMessage(data: {
     return;
   } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
-    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
+    const details = await sqldb.queryOptionalRow(
       sql.get_job_details,
       { grading_job_id: jobId },
       z.object({
@@ -167,6 +167,12 @@ async function processMessage(data: {
         s3_root_key: GradingJobSchema.shape.s3_root_key,
       }),
     );
+
+    if (!details) {
+      throw new error.HttpStatusError(500, 'Grading job not found');
+    }
+
+    const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = details;
 
     if (!s3Bucket || !s3RootKey) {
       throw new error.HttpStatusError(
