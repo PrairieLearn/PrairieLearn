@@ -755,18 +755,6 @@ FROM
 WHERE
   a.id = $assessment_id;
 
--- BLOCK select_and_lock_assessment_instance
-SELECT
-  ai.*,
-  a.course_instance_id
-FROM
-  assessment_instances AS ai
-  JOIN assessments AS a ON (a.id = ai.assessment_id)
-WHERE
-  ai.id = $assessment_instance_id
-FOR NO KEY UPDATE OF
-  ai;
-
 -- BLOCK update_assessment_instance_score
 WITH
   updated_assessment_instances AS (
