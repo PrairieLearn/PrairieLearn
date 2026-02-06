@@ -740,19 +740,13 @@ export function getRoleNamesForUser(groupInfo: GroupInfo, user: User): string[] 
 }
 
 /**
- * Check if a user is a member of a team.
+ * Check if a user is a member of a group.
  */
-export async function isUserInTeam({
-  team_id,
-  user_id,
-}: {
-  team_id: string;
-  user_id: string;
-}): Promise<boolean> {
+export async function isUserInGroup({ groupId, userId }: { groupId: string; userId: string }) {
   const result = await sqldb.queryRow(
-    sql.is_user_in_team,
-    { team_id, user_id },
-    z.object({ is_member: z.boolean() }),
+    sql.is_user_in_group,
+    { group_id: groupId, user_id: userId },
+    z.boolean(),
   );
-  return result.is_member;
+  return result;
 }

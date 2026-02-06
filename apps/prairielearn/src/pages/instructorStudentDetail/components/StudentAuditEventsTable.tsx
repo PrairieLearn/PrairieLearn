@@ -28,6 +28,8 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
     // We should feel free to adjust this text or the action detail later if needed.
     removed: 'Student removed from course by instructor',
     reenrolled_by_instructor: 'Reenrolled in course by instructor',
+    staff_permissions_granted: 'Removed from course (staff permissions granted)',
+    staff_permissions_removed: 'Removed from course (staff permissions removed)',
   };
 
   const detail = detailMap[action_detail as SupportedActionsForTable<'enrollments'>];
