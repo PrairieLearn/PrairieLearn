@@ -570,6 +570,43 @@ async function _selectAndLockEnrollment(id: string) {
 }
 
 /**
+ * Low-level function to update an enrollment's status.
+ * Caller must hold a lock on the enrollment and user.
+ */
+async function _updateEnrollmentStatus({
+  lockedEnrollment,
+  status,
+  actionDetail,
+  agentUserId,
+  agentAuthnUserId,
+}: {
+  lockedEnrollment: Enrollment;
+  status: EnumEnrollmentStatus;
+  actionDetail: SupportedActionsForTable<'enrollments'>;
+  agentUserId: string | null;
+  agentAuthnUserId: string | null;
+}): Promise<Enrollment> {
+  const newEnrollment = await queryRow(
+    sql.set_enrollment_status,
+    { enrollment_id: lockedEnrollment.id, status },
+    EnrollmentSchema,
+  );
+
+  await insertAuditEvent({
+    tableName: 'enrollments',
+    action: 'update',
+    actionDetail,
+    rowId: newEnrollment.id,
+    oldRow: lockedEnrollment,
+    newRow: newEnrollment,
+    agentUserId,
+    agentAuthnUserId,
+  });
+
+  return newEnrollment;
+}
+
+/**
  * Updates the status of an existing enrollment record.
  *
  * If the enrollment is not in the required status or already in the desired status, this will throw an error.
@@ -660,24 +697,13 @@ export async function setEnrollmentStatus({
     // Assert that the caller is authorized to perform the action.
     assertHasRole(authzData, requiredRole);
 
-    const newEnrollment = await queryRow(
-      sql.set_enrollment_status,
-      { enrollment_id: lockedEnrollment.id, status },
-      EnrollmentSchema,
-    );
-
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
+    return await _updateEnrollmentStatus({
+      lockedEnrollment,
+      status,
       actionDetail: transitionInformation.actionDetail,
-      rowId: newEnrollment.id,
-      oldRow: lockedEnrollment,
-      newRow: newEnrollment,
       agentUserId: authzData.user.id,
       agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
     });
-
-    return newEnrollment;
   });
 }
 
@@ -780,24 +806,25 @@ export async function updateEnrollmentToRemovedForStaffPermissions({
   agentUserId: string;
   agentAuthnUserId: string;
 }): Promise<void> {
-  const rows = await queryRows(
-    sql.update_enrollment_to_removed_for_course_instance,
+  const lockedEnrollment = await queryOptionalRow(
+    sql.select_and_lock_joined_enrollment_by_course_instance_and_user,
     { course_instance_id: courseInstanceId, user_id: userId },
-    UpdatedEnrollmentRowSchema,
+    EnrollmentSchema,
   );
 
-  for (const row of rows) {
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
-      actionDetail,
-      rowId: row.new_enrollment.id,
-      oldRow: row.old_enrollment,
-      newRow: row.new_enrollment,
-      agentUserId,
-      agentAuthnUserId,
-    });
+  if (!lockedEnrollment) {
+    return;
   }
+
+  await selectAndLockUser(userId);
+
+  await _updateEnrollmentStatus({
+    lockedEnrollment,
+    status: 'removed',
+    actionDetail,
+    agentUserId,
+    agentAuthnUserId,
+  });
 }
 
 /**

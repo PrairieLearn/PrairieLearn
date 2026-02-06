@@ -127,7 +127,6 @@ export async function updateCoursePermissionsRole({
       throw new error.HttpStatusError(404, 'No course permissions to update');
     }
 
-    // Only update enrollments if the new role is greater than 'None'
     if (course_role !== 'None') {
       await updateEnrollmentsToRemovedForCourse({
         courseId: course_id,
@@ -157,7 +156,6 @@ export async function deleteCoursePermissions({
   const user_ids = Array.isArray(user_id) ? user_id : [user_id];
 
   await runInTransactionAsync(async () => {
-    // First update enrollments to 'removed' status (before deleting permissions)
     await updateEnrollmentsToRemovedForCourseBatch({
       courseId: course_id,
       userIds: user_ids,
@@ -166,7 +164,6 @@ export async function deleteCoursePermissions({
       agentAuthnUserId: authn_user_id,
     });
 
-    // Then delete the course permissions
     await execute(sql.delete_course_permissions, {
       course_id,
       user_ids,
