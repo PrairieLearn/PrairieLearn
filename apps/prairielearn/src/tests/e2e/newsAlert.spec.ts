@@ -26,8 +26,8 @@ test.describe.serial('News alert', () => {
   test('shows news alert to instructors with unread items', async ({ page }) => {
     await page.goto('/');
 
-    const alert = page.getByRole('alert');
-    await expect(alert).toBeVisible();
+    const newsCard = page.locator('[data-testid="news-alert"]');
+    await expect(newsCard).toBeVisible();
 
     await expect(page.getByRole('heading', { name: 'News' })).toBeVisible();
 
@@ -40,14 +40,14 @@ test.describe.serial('News alert', () => {
   test('can dismiss the news alert', async ({ page }) => {
     await page.goto('/');
 
-    const alert = page.getByRole('alert');
-    await expect(alert).toBeVisible();
+    const newsCard = page.locator('[data-testid="news-alert"]');
+    await expect(newsCard).toBeVisible();
 
     const dismissButton = page.getByRole('button', { name: 'Dismiss news alert' });
     await dismissButton.click();
 
     await expect(page).toHaveURL('/');
 
-    await expect(page.getByRole('alert')).not.toBeVisible();
+    await expect(page.locator('[data-testid="news-alert"]')).not.toBeVisible();
   });
 });

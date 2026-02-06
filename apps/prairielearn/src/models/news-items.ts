@@ -3,6 +3,7 @@ import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import {
   type CachedNewsItem,
   CachedNewsItemSchema,
+  type User,
   type UserNewsReadTimestamp,
   UserNewsReadTimestampSchema,
 } from '../lib/db-types.js';
@@ -10,20 +11,22 @@ import {
 const sql = loadSqlEquiv(import.meta.url);
 
 export async function selectUnreadNewsItemsForUser(
-  user_id: string,
+  user: Pick<User, 'id'>,
   limit: number,
 ): Promise<CachedNewsItem[]> {
   return await queryRows(
     sql.select_unread_news_items_for_user,
-    { user_id, limit },
+    { user_id: user.id, limit },
     CachedNewsItemSchema,
   );
 }
 
-export async function markNewsItemsAsReadForUser(user_id: string): Promise<UserNewsReadTimestamp> {
+export async function markNewsItemsAsReadForUser(
+  user: Pick<User, 'id'>,
+): Promise<UserNewsReadTimestamp> {
   return await queryRow(
     sql.upsert_user_news_read_timestamp,
-    { user_id },
+    { user_id: user.id },
     UserNewsReadTimestampSchema,
   );
 }

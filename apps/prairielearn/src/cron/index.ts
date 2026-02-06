@@ -114,12 +114,15 @@ export async function init() {
       module: await import('./cleanTimeSeries.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalCleanTimeSeriesSec,
     },
-    {
+  ];
+
+  if (config.newsFeedUrl) {
+    jobs.push({
       name: 'fetchNewsItems',
       module: await import('./fetchNewsItems.js'),
       intervalSec: config.cronOverrideAllIntervalsSec || config.cronIntervalFetchNewsItemsSec,
-    },
-  ];
+    });
+  }
 
   if (isEnterprise()) {
     jobs.push(

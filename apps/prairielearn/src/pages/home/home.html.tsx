@@ -54,6 +54,7 @@ export function Home({
   isDevMode,
   search,
   unreadNewsItems,
+  blogUrl,
 }: {
   canAddCourses: boolean;
   csrfToken: string;
@@ -64,6 +65,7 @@ export function Home({
   isDevMode: boolean;
   search: string;
   unreadNewsItems: CachedNewsItem[];
+  blogUrl: string | null;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {
     if (ci.enrollment.status === 'joined') return true;
@@ -86,7 +88,7 @@ export function Home({
       <h1 className="visually-hidden">PrairieLearn Homepage</h1>
       <DevModeCard isDevMode={isDevMode} />
       <AdminInstitutionsCard adminInstitutions={adminInstitutions} />
-      <NewsAlert newsItems={unreadNewsItems} csrfToken={csrfToken} />
+      <NewsAlert newsItems={unreadNewsItems} csrfToken={csrfToken} blogUrl={blogUrl} />
       <InstructorCoursesCard instructorCourses={instructorCourses} urlPrefix={urlPrefix} />
       <Hydrate>
         <HomeCards

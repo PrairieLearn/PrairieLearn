@@ -90,6 +90,10 @@ router.post(
         user: res.locals.authn_user,
       });
       res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}`);
+    } else if (req.body.__action === 'sync_news_feed') {
+      const { fetchAndCacheNewsItems } = await import('../../lib/news-feed.js');
+      await fetchAndCacheNewsItems();
+      res.redirect(req.originalUrl);
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }

@@ -187,7 +187,7 @@ export const ConfigSchema = z.object({
   cronIntervalWorkspaceHostTransitionsSec: z.number().default(10),
   cronIntervalChunksHostAutoScalingSec: z.number().default(10),
   cronIntervalCleanTimeSeriesSec: z.number().default(10 * 60),
-  cronIntervalFetchNewsItemsSec: z.number().default(60 * 60 * 3),
+  cronIntervalFetchNewsItemsSec: z.number().default(5 * 60),
   cronDailySec: z.number().default(8 * 60 * 60),
   /**
    * Controls how much history is retained when removing old rows
@@ -593,6 +593,8 @@ export const ConfigSchema = z.object({
   courseFilesApiUrl: z.string().nullable().default(null),
   /** URL of an RSS feed to display news alerts on the homepage. Set to null to disable. */
   newsFeedUrl: z.string().nullable().default(null),
+  /** URL of the blog to link to from the news alert. If not set, no "View all posts" link is shown. */
+  newsFeedBlogUrl: z.string().nullable().default(null),
   /**
    * List of RSS category tags to filter news items by. Only items with at least one matching category will be shown to users.
    * If no categories are specified, all items will be shown.

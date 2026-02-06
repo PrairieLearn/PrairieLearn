@@ -88,6 +88,16 @@ export function AdministratorSettings({ resLocals }: { resLocals: ResLocalsForPa
               });
             });
           </script>
+          ${config.newsFeedUrl
+            ? html`
+                <hr />
+                <form method="POST" class="d-inline">
+                  <input type="hidden" name="__action" value="sync_news_feed" />
+                  <input type="hidden" name="__csrf_token" value="${resLocals.__csrf_token}" />
+                  <button type="submit" class="btn btn-primary">Sync news feed</button>
+                </form>
+              `
+            : ''}
         </div>
       </div>
 

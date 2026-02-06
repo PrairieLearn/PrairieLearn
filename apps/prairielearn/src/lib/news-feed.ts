@@ -1,6 +1,7 @@
 import Parser from 'rss-parser';
 
 import { logger } from '@prairielearn/logger';
+import * as Sentry from '@prairielearn/sentry';
 
 import { type NewsItemInput, upsertCachedNewsItems } from '../models/news-items.js';
 
@@ -29,7 +30,7 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
   }
 
   try {
-    logger.verbose('news-feed: Fetching RSS feed', { feedUrl });
+    logger.verbose('news-feed: Fetching RSS feed');
 
     const feed = await parser.parseURL(feedUrl);
 
@@ -41,7 +42,6 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
 
     if (items.length === 0) {
       logger.verbose('news-feed: RSS feed has no matching items', {
-        feedUrl,
         totalItems: feed.items.length,
         categories: allowedCategories,
       });
@@ -71,6 +71,7 @@ export async function fetchAndCacheNewsItems(): Promise<void> {
       logger.verbose('news-feed: Cached news items', { count: newsItems.length });
     }
   } catch (err) {
-    logger.error('news-feed: Error fetching or parsing RSS feed', { feedUrl, err });
+    Sentry.captureException(err);
+    logger.error('news-feed: Error fetching or parsing RSS feed', { err });
   }
 }

@@ -112,7 +112,7 @@ router.get(
     // Only show news alerts to instructors (users with instructor courses)
     const unreadNewsItems =
       instructorCourses.length > 0
-        ? await selectUnreadNewsItemsForUser(res.locals.authn_user.id, 3)
+        ? await selectUnreadNewsItemsForUser(res.locals.authn_user, 3)
         : [];
 
     const { authn_provider_name, __csrf_token, urlPrefix } = extractPageContext(res.locals, {
@@ -145,6 +145,7 @@ router.get(
             isDevMode={config.devMode}
             search={search}
             unreadNewsItems={unreadNewsItems}
+            blogUrl={config.newsFeedBlogUrl}
           />
         ),
       }),
@@ -156,7 +157,7 @@ router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
     const {
-      authn_user: { uid, id: authn_user_id },
+      authn_user: { uid },
     } = extractPageContext(res.locals, {
       pageType: 'plain',
       accessType: 'student',
@@ -173,7 +174,7 @@ router.post(
     const body = BodySchema.parse(req.body);
 
     if (body.__action === 'dismiss_news_alert') {
-      await markNewsItemsAsReadForUser(authn_user_id);
+      await markNewsItemsAsReadForUser(res.locals.authn_user);
       res.redirect(req.originalUrl);
       return;
     }
