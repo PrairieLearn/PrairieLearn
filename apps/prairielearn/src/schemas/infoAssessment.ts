@@ -119,6 +119,7 @@ export const GroupsJsonSchema = z
   .describe('Configuration for group-based assessments.');
 
 export type GroupsJson = z.infer<typeof GroupsJsonSchema>;
+export type GroupsJsonInput = z.input<typeof GroupsJsonSchema>;
 
 export const AssessmentAccessRuleJsonSchema = z
   .object({
@@ -248,7 +249,9 @@ export const QuestionAlternativeJsonSchema = QuestionPointsJsonSchema.extend({
 
 export type QuestionAlternativeJson = z.infer<typeof QuestionAlternativeJsonSchema>;
 
-export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
+// 'Block' is used to signify that this can either be a single question, or
+// a container for multiple question alternatives.
+export const ZoneQuestionBlockJsonSchema = QuestionPointsJsonSchema.extend({
   comment: CommentJsonSchema.optional(),
   points: PointsJsonSchema.optional(),
   autoPoints: PointsJsonSchema.optional(),
@@ -302,7 +305,8 @@ export const ZoneQuestionJsonSchema = QuestionPointsJsonSchema.extend({
     .default([]),
 });
 
-export type ZoneQuestionJson = z.infer<typeof ZoneQuestionJsonSchema>;
+export type ZoneQuestionBlockJson = z.infer<typeof ZoneQuestionBlockJsonSchema>;
+export type ZoneQuestionBlockJsonInput = z.input<typeof ZoneQuestionBlockJsonSchema>;
 
 export const ZoneAssessmentJsonSchema = z.object({
   title: z
@@ -332,7 +336,10 @@ export const ZoneAssessmentJsonSchema = z.object({
       'Only this many of the questions in this zone, with the highest number of awarded points, will count toward the total points.',
     )
     .optional(),
-  questions: z.array(ZoneQuestionJsonSchema).min(1).describe('Array of questions in the zone.'),
+  questions: z
+    .array(ZoneQuestionBlockJsonSchema)
+    .min(1)
+    .describe('Array of questions in the zone.'),
   advanceScorePerc: AdvanceScorePercJsonSchema.optional(),
   gradeRateMinutes: z
     .number()
@@ -360,6 +367,8 @@ export const ZoneAssessmentJsonSchema = z.object({
     .optional()
     .default([]),
 });
+
+export type ZoneAssessmentJson = z.infer<typeof ZoneAssessmentJsonSchema>;
 
 export const AssessmentJsonSchema = z
   .object({

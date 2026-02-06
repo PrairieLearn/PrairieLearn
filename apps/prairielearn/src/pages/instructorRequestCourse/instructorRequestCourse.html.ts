@@ -117,10 +117,10 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
         <div class="card-body">
           <p>
             This form is for instructors who want to create a new course on PrairieLearn. Students
-            should <strong>not</strong> submit this form and should instead use the "Add or remove
-            courses" button on the PrairieLearn homepage. Teaching assistants and course staff are
-            granted access by the owner of their course and should <strong>not</strong> submit this
-            form.
+            should <strong>not</strong> submit this form and should instead enroll in a course using
+            an enrollment code or direct link provided by their instructor. Teaching assistants and
+            course staff are granted access by the owner of their course and should
+            <strong>not</strong> submit this form.
           </p>
 
           <div class="row">
@@ -211,7 +211,7 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               Providing your GitHub username will grant you access to your course's GitHub
               repository. This access allows you to edit your code in a
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/installing/"
+                href="https://docs.prairielearn.com/installing/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >local installation of PrairieLearn</a
@@ -219,14 +219,14 @@ function CourseNewRequestCard({ csrfToken }: { csrfToken: string }): HtmlValue {
               provide this if you would like to exclusively use the online web editor. You are
               encouraged to provide it if you are planning complex questions such as those using
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/externalGrading/"
+                href="https://docs.prairielearn.com/externalGrading/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >code autograding</a
               >
               or
               <a
-                href="https://prairielearn.readthedocs.io/en/latest/workspaces/"
+                href="https://docs.prairielearn.com/workspaces/"
                 target="_blank"
                 rel="noopener noreferrer"
                 >workspaces</a

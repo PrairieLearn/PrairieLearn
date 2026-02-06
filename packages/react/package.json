@@ -1,6 +1,6 @@
 {
   "name": "@prairielearn/react",
-  "version": "2.0.0",
+  "version": "2.0.1",
   "type": "module",
   "repository": {
     "type": "git",
@@ -25,18 +25,18 @@
     "@prairielearn/error": "workspace:^",
     "@prairielearn/html": "workspace:^",
     "@prairielearn/utils": "workspace:^",
-    "@types/react": "^19.2.8",
+    "@types/react": "^19.2.10",
     "@types/react-dom": "^19.2.3",
     "clsx": "^2.1.1",
-    "react": "^19.2.3",
-    "react-dom": "^19.2.3",
+    "react": "^19.2.4",
+    "react-dom": "^19.2.4",
     "selector-observer": "^2.1.6",
     "superjson": "^2.2.6"
   },
   "devDependencies": {
     "@prairielearn/tsconfig": "workspace:^",
     "@types/node": "^24.10.9",
-    "@typescript/native-preview": "^7.0.0-dev.20260106.1",
+    "@typescript/native-preview": "^7.0.0-dev.20260203.1",
     "typescript": "^5.9.3"
   }
 }

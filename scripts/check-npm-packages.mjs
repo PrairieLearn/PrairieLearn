@@ -5,24 +5,26 @@
 // needed because trusted publishing can only update existing packages, not
 // create new ones.
 
+import { execSync } from 'node:child_process';
 import { readFile, readdir } from 'node:fs/promises';
 import { join } from 'node:path';
 
 const PACKAGES_DIR = 'packages';
 
 /**
- * Check if a package exists on npm.
+ * Check if a package exists on npm using `npm view`.
+ * This handles authentication and retries automatically.
  * @param {string} packageName
- * @returns {Promise<boolean>}
+ * @returns {boolean}
  */
-async function packageExistsOnNpm(packageName) {
-  // Use the /latest endpoint to avoid fetching the full package metadata
-  const url = `https://registry.npmjs.org/${encodeURIComponent(packageName)}/latest`;
+function packageExistsOnNpm(packageName) {
   try {
-    const response = await fetch(url);
-    return response.ok;
+    execSync(`npm view ${packageName} version`, {
+      stdio: 'pipe',
+      timeout: 30000,
+    });
+    return true;
   } catch {
-    // Network errors should be treated as a failure
     return false;
   }
 }
@@ -57,7 +59,7 @@ for (const pkg of packages) {
     continue;
   }
 
-  const exists = await packageExistsOnNpm(packageJson.name);
+  const exists = packageExistsOnNpm(packageJson.name);
   console.log(`${packageJson.name}: ${exists ? 'found' : 'MISSING'}`);
   if (!exists) {
     missingPackages.push({ name: packageJson.name, path: packagePath });

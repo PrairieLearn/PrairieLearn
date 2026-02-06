@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import { Router } from 'express';
 import fs from 'fs-extra';
 import { z } from 'zod';
@@ -13,13 +12,14 @@ import { IdSchema } from '@prairielearn/zod';
 
 import { b64EncodeUnicode } from '../../lib/base64-util.js';
 import { AssessmentModuleSchema, AssessmentSetSchema } from '../../lib/db-types.js';
+import { propertyValueWithDefault } from '../../lib/editorUtil.shared.js';
 import {
   AssessmentCopyEditor,
   AssessmentDeleteEditor,
   AssessmentRenameEditor,
   FileModifyEditor,
   MultiEditor,
-  propertyValueWithDefault,
+  getOriginalHash,
 } from '../../lib/editors.js';
 import { courseRepoContentUrl } from '../../lib/github.js';
 import { getPaths } from '../../lib/instructorFiles.js';
@@ -72,14 +72,7 @@ router.get(
     );
     const fullInfoAssessmentPath = path.join(res.locals.course.path, infoAssessmentPath);
 
-    const infoAssessmentPathExists = await fs.pathExists(fullInfoAssessmentPath);
-
-    let origHash = '';
-    if (infoAssessmentPathExists) {
-      origHash = sha256(
-        b64EncodeUnicode(await fs.readFile(fullInfoAssessmentPath, 'utf8')),
-      ).toString();
-    }
+    const origHash = (await getOriginalHash(fullInfoAssessmentPath)) ?? '';
 
     const assessmentGHLink = courseRepoContentUrl(
       res.locals.course,

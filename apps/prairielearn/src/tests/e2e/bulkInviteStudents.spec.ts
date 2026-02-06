@@ -1,3 +1,5 @@
+import type { Page } from '@playwright/test';
+
 import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
@@ -71,6 +73,11 @@ async function createTestData() {
   });
 }
 
+async function openInviteModal(page: Page) {
+  await page.getByRole('button', { name: 'Manage enrollments' }).click();
+  await page.locator('.dropdown-menu').getByText('Invite students').click();
+}
+
 test.describe('Bulk invite students', () => {
   test.beforeAll(async () => {
     await syncCourse();
@@ -81,9 +88,8 @@ test.describe('Bulk invite students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
-    // Open the manage enrollments dropdown and click invite students
-    await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    // Open the invite modal from the dropdown
+    await openInviteModal(page);
 
     // Modal should open
     await expect(page.getByRole('dialog')).toBeVisible();
@@ -107,8 +113,7 @@ test.describe('Bulk invite students', () => {
   test('can invite multiple valid students', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Enter multiple UIDs
@@ -132,8 +137,7 @@ test.describe('Bulk invite students', () => {
 
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     // Enter mix of valid and already enrolled UIDs
@@ -155,8 +159,7 @@ test.describe('Bulk invite students', () => {
   test('shows error for invalid email format', async ({ page }) => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
-    await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Invite students' }).click();
+    await openInviteModal(page);
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByRole('textbox', { name: 'UIDs' }).fill('not-an-email');

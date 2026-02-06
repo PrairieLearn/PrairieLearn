@@ -486,14 +486,14 @@ function StudentsCard({
           hasSelection: false,
         }}
         headerButtons={
-          courseInstance.modern_publishing && (
+          courseInstance.modern_publishing ? (
             <ManageEnrollmentsDropdown
               courseInstance={courseInstance}
               authzData={authzData}
               onInvite={() => setShowInvite(true)}
               onSync={() => setShowSync(true)}
             />
-          )
+          ) : undefined
         }
         globalFilter={{
           placeholder: 'Search by UID, name, email...',
