@@ -78,7 +78,7 @@ export async function updateInstanceQuestionGrade({
       return;
     }
 
-    const computedPoints = await run(() => {
+    const computedPoints = run(() => {
       if (assessment.type === 'Exam') {
         return computeInstanceQuestionPointsExam({
           assessmentQuestion,
@@ -112,7 +112,7 @@ export async function updateInstanceQuestionGrade({
   });
 }
 
-async function computeInstanceQuestionPointsExam({
+function computeInstanceQuestionPointsExam({
   instanceQuestion,
   assessmentQuestion,
   submissionScore,
@@ -120,7 +120,7 @@ async function computeInstanceQuestionPointsExam({
   instanceQuestion: InstanceQuestion;
   assessmentQuestion: AssessmentQuestion;
   submissionScore: number;
-}): Promise<InstanceQuestionsPoints> {
+}): InstanceQuestionsPoints {
   const maxAutoPoints = assessmentQuestion.max_auto_points ?? 0;
   const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
 
@@ -172,7 +172,7 @@ async function computeInstanceQuestionPointsExam({
   };
 }
 
-async function computeInstanceQuestionPointsHomework({
+function computeInstanceQuestionPointsHomework({
   assessment,
   instanceQuestion,
   assessmentQuestion,
@@ -182,7 +182,7 @@ async function computeInstanceQuestionPointsHomework({
   instanceQuestion: InstanceQuestion;
   assessmentQuestion: AssessmentQuestion;
   submissionScore: number;
-}): Promise<InstanceQuestionsPoints> {
+}): InstanceQuestionsPoints {
   const maxAutoPoints = assessmentQuestion.max_auto_points ?? 0;
   const maxManualPoints = assessmentQuestion.max_manual_points ?? 0;
 
