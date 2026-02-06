@@ -9,8 +9,8 @@
 
   height: 100%;
   display: grid;
-  grid-template-areas: 'preview-tabs back' 'preview chat';
-  grid-template-rows: min-content 1fr;
+  grid-template-areas: 'back back' 'preview-tabs chat' 'preview chat';
+  grid-template-rows: min-content min-content 1fr;
   grid-template-columns: 1fr var(--chat-width, 500px);
 }
 
