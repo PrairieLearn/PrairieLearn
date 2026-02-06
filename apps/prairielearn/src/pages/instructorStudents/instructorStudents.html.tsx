@@ -67,10 +67,14 @@ async function copyToClipboard(text: string) {
   await navigator.clipboard.writeText(text);
 }
 
-function CopyEnrollmentLinkButton({
+function ManageEnrollmentsDropdown({
   courseInstance,
+  authzData,
+  onInvite,
 }: {
   courseInstance: PageContext<'courseInstance', 'instructor'>['course_instance'];
+  authzData: PageContextWithAuthzData['authz_data'];
+  onInvite: () => void;
 }) {
   const [copiedCode, setCopiedCode] = useState(false);
   const [copiedLink, setCopiedLink] = useState(false);
@@ -106,14 +110,16 @@ function CopyEnrollmentLinkButton({
     setTimeout(() => setCopiedCode(false), 2000);
   };
 
+  const canEdit = authzData.has_course_instance_permission_edit;
+
   return (
-    <DropdownButton
-      as={ButtonGroup}
-      title="Enrollment details"
-      size="sm"
-      disabled={!courseInstance.self_enrollment_enabled}
-      variant="light"
-    >
+    <DropdownButton as={ButtonGroup} title="Manage enrollments" size="sm" variant="light">
+      <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onInvite}>
+        <i className="bi bi-person-plus me-2" aria-hidden="true" />
+        Invite students
+      </Dropdown.Item>
+
+      <Dropdown.Divider />
       {courseInstance.self_enrollment_use_enrollment_code && (
         <OverlayTrigger
           placement="right"
@@ -123,31 +129,38 @@ function CopyEnrollmentLinkButton({
           }}
           show={copiedCode ? true : undefined}
         >
-          <Dropdown.Item as="button" type="button" onClick={handleCopyCode}>
-            <i className="bi bi-key me-2" />
+          <Dropdown.Item
+            as="button"
+            type="button"
+            disabled={!courseInstance.self_enrollment_enabled}
+            onClick={handleCopyCode}
+          >
+            <i className="bi bi-key me-2" aria-hidden="true" />
             Copy enrollment code
           </Dropdown.Item>
         </OverlayTrigger>
       )}
-
-      {courseInstance.self_enrollment_enabled && (
-        <OverlayTrigger
-          placement="right"
-          tooltip={{
-            body: copiedLink ? 'Copied!' : 'Copy',
-            props: { id: 'students-copy-link-tooltip' },
-          }}
-          show={copiedLink ? true : undefined}
+      <OverlayTrigger
+        placement="right"
+        tooltip={{
+          body: copiedLink ? 'Copied!' : 'Copy',
+          props: { id: 'students-copy-link-tooltip' },
+        }}
+        show={copiedLink ? true : undefined}
+      >
+        <Dropdown.Item
+          as="button"
+          type="button"
+          disabled={!courseInstance.self_enrollment_enabled}
+          onClick={handleCopyLink}
         >
-          <Dropdown.Item as="button" type="button" onClick={handleCopyLink}>
-            <i className="bi bi-link-45deg me-2" />
-            Copy enrollment link
-          </Dropdown.Item>
-        </OverlayTrigger>
-      )}
+          <i className="bi bi-link-45deg me-2" aria-hidden="true" />
+          Copy enrollment link
+        </Dropdown.Item>
+      </OverlayTrigger>
       <Dropdown.Item as="a" href={getSelfEnrollmentSettingsUrl(courseInstance.id)}>
-        <i className="bi bi-gear me-2" />
-        Manage settings
+        <i className="bi bi-gear me-2" aria-hidden="true" />
+        Enrollment settings
       </Dropdown.Item>
     </DropdownButton>
   );
@@ -472,22 +485,13 @@ function StudentsCard({
           hasSelection: false,
         }}
         headerButtons={
-          <>
-            {courseInstance.modern_publishing && (
-              <>
-                <Button
-                  variant="light"
-                  size="sm"
-                  disabled={!authzData.has_course_instance_permission_edit}
-                  onClick={() => setShowInvite(true)}
-                >
-                  <i className="bi bi-person-plus me-2" aria-hidden="true" />
-                  Invite students
-                </Button>
-                <CopyEnrollmentLinkButton courseInstance={courseInstance} />
-              </>
-            )}
-          </>
+          courseInstance.modern_publishing ? (
+            <ManageEnrollmentsDropdown
+              courseInstance={courseInstance}
+              authzData={authzData}
+              onInvite={() => setShowInvite(true)}
+            />
+          ) : undefined
         }
         globalFilter={{
           placeholder: 'Search by UID, name, email...',
