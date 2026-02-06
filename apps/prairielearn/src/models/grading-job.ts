@@ -16,6 +16,7 @@ import {
   type Submission,
   SubmissionSchema,
 } from '../lib/db-types.js';
+import { updateInstanceQuestionGrade } from '../lib/question-points.js';
 
 import { lockSubmission } from './submission.js';
 
@@ -192,11 +193,13 @@ export async function updateGradingJobAfterGrading({
     if (gradable) {
       await callRow('variants_update_after_grading', [variant_id, gradingJob.correct], z.unknown());
       if (instance_question_id != null && assessment_instance_id != null) {
-        await callRow(
-          'instance_questions_grade',
-          [instance_question_id, gradingJob.score, gradingJob.id, gradingJob.auth_user_id],
-          z.unknown(),
-        );
+        await updateInstanceQuestionGrade({
+          variant_id,
+          instance_question_id,
+          submissionScore: gradingJob.score ?? 0,
+          grading_job_id,
+          authn_user_id: gradingJob.auth_user_id,
+        });
         await callRow(
           'assessment_instances_grade',
           [assessment_instance_id, gradingJob.auth_user_id, credit],
