@@ -118,48 +118,7 @@ WHERE
 RETURNING
   *;
 
--- BLOCK update_enrollments_to_removed_for_course
--- Updates all enrollments to 'removed' status for a user in all instances of a course.
--- Used when staff permissions are granted or removed at the course level.
--- Returns old and new row data for audit events.
-WITH
-  old_enrollments AS (
-    SELECT
-      e.*,
-      ci.course_id AS ci_course_id
-    FROM
-      enrollments AS e
-      JOIN course_instances AS ci ON (ci.id = e.course_instance_id)
-    WHERE
-      ci.course_id = $course_id
-      AND e.user_id = $user_id
-      AND e.status = 'joined'
-    FOR NO KEY UPDATE OF
-      e
-  ),
-  updated_enrollments AS (
-    UPDATE enrollments AS e
-    SET
-      status = 'removed'
-    FROM
-      old_enrollments AS oe
-    WHERE
-      e.id = oe.id
-    RETURNING
-      e.*
-  )
-SELECT
-  to_jsonb(oe.*) AS old_enrollment,
-  to_jsonb(ue.*) AS new_enrollment,
-  oe.ci_course_id AS course_id
-FROM
-  old_enrollments AS oe
-  JOIN updated_enrollments AS ue ON (oe.id = ue.id);
-
 -- BLOCK update_enrollments_to_removed_for_course_batch
--- Updates all enrollments to 'removed' status for multiple users in all instances of a course.
--- Used when staff permissions are removed for multiple users.
--- Returns old and new row data for audit events.
 WITH
   old_enrollments AS (
     SELECT
@@ -195,9 +154,6 @@ FROM
   JOIN updated_enrollments AS ue ON (oe.id = ue.id);
 
 -- BLOCK update_enrollment_to_removed_for_course_instance
--- Updates enrollment to 'removed' status for a user in a specific course instance.
--- Used when staff permissions are granted at the course instance level.
--- Returns old and new row data for audit events.
 WITH
   old_enrollment AS (
     SELECT

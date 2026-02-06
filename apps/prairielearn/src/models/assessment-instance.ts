@@ -17,13 +17,11 @@ export async function isUserOwnerOfAssessmentInstance({
   assessmentInstanceUserId: string | null;
   assessmentInstanceGroupId: string | null;
   userId: string;
-}): Promise<boolean> {
-  // Direct ownership
+}) {
   if (assessmentInstanceUserId != null && idsEqual(userId, assessmentInstanceUserId)) {
     return true;
   }
 
-  // Group membership
   if (assessmentInstanceGroupId != null) {
     return await isUserInGroup({ groupId: assessmentInstanceGroupId, userId });
   }
@@ -50,6 +48,10 @@ export async function flagSelfModifiedAssessmentInstance({
   courseInstanceId: string;
   authnUserId: string;
 }): Promise<void> {
+  if (assessmentInstanceUserId == null && assessmentInstanceGroupId == null) {
+    throw new Error('Assessment instance must be associated with a user or group');
+  }
+
   const isOwnInstance = await isUserOwnerOfAssessmentInstance({
     assessmentInstanceUserId,
     assessmentInstanceGroupId,

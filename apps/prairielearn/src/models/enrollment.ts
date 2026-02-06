@@ -818,24 +818,13 @@ export async function updateEnrollmentsToRemovedForCourse({
   agentUserId: string;
   agentAuthnUserId: string;
 }): Promise<void> {
-  const rows = await queryRows(
-    sql.update_enrollments_to_removed_for_course,
-    { course_id: courseId, user_id: userId },
-    UpdatedEnrollmentRowSchema,
-  );
-
-  for (const row of rows) {
-    await insertAuditEvent({
-      tableName: 'enrollments',
-      action: 'update',
-      actionDetail,
-      rowId: row.new_enrollment.id,
-      oldRow: row.old_enrollment,
-      newRow: row.new_enrollment,
-      agentUserId,
-      agentAuthnUserId,
-    });
-  }
+  await updateEnrollmentsToRemovedForCourseBatch({
+    courseId,
+    userIds: [userId],
+    actionDetail,
+    agentUserId,
+    agentAuthnUserId,
+  });
 }
 
 /**
