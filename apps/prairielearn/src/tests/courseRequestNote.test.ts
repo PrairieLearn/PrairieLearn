@@ -1,12 +1,10 @@
 import fetch from 'node-fetch';
-
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
+import { IdSchema } from '@prairielearn/zod';
 
 import { config } from '../lib/config.js';
-
-import { IdSchema } from '@prairielearn/zod';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -25,7 +23,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
   describe('create course request note', () => {
     let courseRequestId: string;
     let csrfToken: string;
-    const shortName = `TEST ${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+    const shortName = `TEST ${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
 
     test.sequential('insert a course request', async () => {
       courseRequestId = await sqldb.queryRow(

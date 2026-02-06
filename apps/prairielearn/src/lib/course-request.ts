@@ -106,10 +106,10 @@ export async function createCourseFromRequest({
   const jobSequenceId = await createCourseRepoJob(
     {
       short_name: shortName,
-      title: title,
+      title,
       institution_id: institutionId,
       display_timezone: displayTimezone,
-      path: path,
+      path,
       repo_short_name: repoShortName,
       github_user: githubUser,
       course_request_id: courseRequestId,
