@@ -1,9 +1,11 @@
 import fetch from 'node-fetch';
+
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
 import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
+
 import { IdSchema } from '@prairielearn/zod';
 
 import * as helperClient from './helperClient.js';
