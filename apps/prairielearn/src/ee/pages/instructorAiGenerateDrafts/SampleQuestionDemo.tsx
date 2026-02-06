@@ -15,13 +15,22 @@ import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
 import {
   type ExamplePromptWithId,
+  type SampleQuestionVariant,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
 } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestionDemo({ prompt }: { prompt: ExamplePromptWithId }) {
-  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
+export function SampleQuestionDemo({
+  prompt,
+  initialVariant,
+}: {
+  prompt: ExamplePromptWithId;
+  initialVariant?: SampleQuestionVariant;
+}) {
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');

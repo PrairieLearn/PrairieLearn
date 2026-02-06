@@ -96,9 +96,9 @@ window.PLMultipleChoice = function (uuid) {
   select.control.addEventListener('click', () => select.open());
 };
 
-window.PLMultipleChoiceClearRadio = function (name) {
-  const radios = document.querySelectorAll(`input[type="radio"][name="${name}"]`);
-  radios.forEach((radio) => {
-    radio.checked = false;
-  });
+window.PLMultipleChoiceClearRadio = function (button) {
+  const name = button.dataset.name;
+  const form = button.closest('form');
+  const radios = form.querySelectorAll(`input[type="radio"][name="${CSS.escape(name)}"]`);
+  radios.forEach((radio) => (radio.checked = false));
 };

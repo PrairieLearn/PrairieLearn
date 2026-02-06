@@ -296,6 +296,7 @@ router.get(
       authorizedEdit: res.locals.authz_result.authorized_edit,
       renderScorePanels: req.query.render_score_panels === 'true',
       groupRolePermissions: res.locals.group_role_permissions ?? null,
+      authz_result: res.locals.authz_result,
     });
     res.json(panels);
   }),

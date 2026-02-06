@@ -661,6 +661,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  authz_result,
 }: {
   unsafe_submission_id: string;
   question: Question;
@@ -673,6 +674,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  authz_result?: { active: boolean };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -730,6 +732,7 @@ export async function renderPanelsForSubmission({
       assessment_instance,
       assessment_question,
       group_config,
+      authz_result,
     }),
   };
 
