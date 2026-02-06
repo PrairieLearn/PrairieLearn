@@ -73,12 +73,6 @@ function AiQuestionGenerationEditorInner({
 
   return (
     <div className="app-content">
-      <div className="d-flex flex-row align-items-center p-2 bg-light border-bottom app-back shadow-sm z-1">
-        <a href={`${urlPrefix}/ai_generate_question_drafts`} className="btn btn-sm btn-ghost">
-          <i className="fa fa-arrow-left me-2" aria-hidden="true" />
-          Back to AI questions
-        </a>
-      </div>
       <AiQuestionGenerationChat
         chatCsrfToken={chatCsrfToken}
         initialMessages={initialMessages}
@@ -93,6 +87,15 @@ function AiQuestionGenerationEditorInner({
       />
 
       <div className="d-flex flex-row align-items-stretch bg-light app-preview-tabs z-1">
+        <a
+          href={`${urlPrefix}/ai_generate_question_drafts`}
+          className="btn btn-sm btn-ghost d-flex align-items-center ms-2 mt-2 mb-0"
+          aria-label="Back to AI questions"
+          data-bs-toggle="tooltip"
+          data-bs-title="Back to AI questions"
+        >
+          <i className="fa fa-arrow-left" aria-hidden="true" />
+        </a>
         <ul className="nav nav-tabs me-auto ps-2 pt-2">
           <li className="nav-item">
             <a

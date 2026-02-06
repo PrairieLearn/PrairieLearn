@@ -9,8 +9,8 @@
 
   height: 100%;
   display: grid;
-  grid-template-areas: 'back back' 'preview-tabs chat' 'preview chat';
-  grid-template-rows: min-content min-content 1fr;
+  grid-template-areas: 'preview-tabs chat' 'preview chat';
+  grid-template-rows: min-content 1fr;
   grid-template-columns: 1fr var(--chat-width, 500px);
 }
 
@@ -25,10 +25,6 @@
   grid-template-rows: 1fr min-content;
   height: 100%;
   position: relative;
-}
-
-.app-back {
-  grid-area: back;
 }
 
 .app-chat-history {
@@ -94,7 +90,7 @@
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
   .app-content {
-    grid-template-areas: 'back' 'preview-tabs' 'preview' 'chat';
+    grid-template-areas: 'preview-tabs' 'preview' 'chat';
     grid-template-columns: 1fr;
     height: unset;
   }
