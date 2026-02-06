@@ -328,22 +328,29 @@ export function InstructorAssessmentInstance({
             </thead>
             <tbody>
               ${run(() => {
-                // Check if any zone has information to display
-                const anyZoneHasInfo = instance_questions.some(
-                  (q) =>
-                    q.start_new_zone &&
-                    (q.zone_title || q.zone_has_max_points || q.zone_has_best_questions),
-                );
+                let previousZoneHadInfo = false;
 
                 return instance_questions.map((instance_question) => {
+                  const zoneHasInfo =
+                    instance_question.zone_title != null ||
+                    instance_question.zone_has_max_points ||
+                    instance_question.zone_has_best_questions;
+
+                  // Show a divider if this zone has info, or if the previous zone
+                  // had info (blank divider to visually separate).
+                  const showDivider =
+                    instance_question.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
+
+                  if (instance_question.start_new_zone) {
+                    previousZoneHadInfo = zoneHasInfo;
+                  }
+
                   return html`
-                    ${instance_question.start_new_zone && anyZoneHasInfo
+                    ${showDivider
                       ? html`
                           <tr>
                             <th colspan="9">
-                              ${instance_question.zone_title ||
-                              instance_question.zone_has_max_points ||
-                              instance_question.zone_has_best_questions
+                              ${zoneHasInfo
                                 ? (() => {
                                     const constraints = [
                                       instance_question.zone_has_max_points

@@ -310,22 +310,29 @@ export function StudentAssessmentInstance({
             </thead>
             <tbody>
               ${run(() => {
-                // Check if any zone has information to display
-                const anyZoneHasInfo = instance_question_rows.some(
-                  (q) =>
-                    q.start_new_zone &&
-                    (q.zone_title || q.zone_has_max_points || q.zone_has_best_questions),
-                );
+                let previousZoneHadInfo = false;
 
                 return instance_question_rows.map((instance_question_row) => {
+                  const zoneHasInfo =
+                    instance_question_row.zone_title != null ||
+                    instance_question_row.zone_has_max_points ||
+                    instance_question_row.zone_has_best_questions;
+
+                  // Show a divider if this zone has info, or if the previous zone
+                  // had info (blank divider to visually separate).
+                  const showDivider =
+                    instance_question_row.start_new_zone && (zoneHasInfo || previousZoneHadInfo);
+
+                  if (instance_question_row.start_new_zone) {
+                    previousZoneHadInfo = zoneHasInfo;
+                  }
+
                   return html`
-                    ${instance_question_row.start_new_zone && anyZoneHasInfo
+                    ${showDivider
                       ? html`
                           <tr>
                             <th colspan="${zoneTitleColspan}">
-                              ${instance_question_row.zone_title ||
-                              instance_question_row.zone_has_max_points ||
-                              instance_question_row.zone_has_best_questions
+                              ${zoneHasInfo
                                 ? html`
                                     <div class="d-flex align-items-center">
                                       ${instance_question_row.zone_title
