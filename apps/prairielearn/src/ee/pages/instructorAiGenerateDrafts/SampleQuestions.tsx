@@ -60,15 +60,17 @@ SampleQuestions.displayName = 'SampleQuestions';
 
 function smoothScrollIntoView(element: HTMLElement): Promise<void> {
   return new Promise((resolve) => {
-    let scrolling = false;
+    let scrollStarted = false;
 
     // Use capture phase because scroll/scrollend don't bubble — if the scroll
     // happens on a container element rather than the document, only capture
     // phase listeners on document will see the events.
     const onScroll = () => {
-      scrolling = true;
+      scrollStarted = true;
       document.removeEventListener('scroll', onScroll, true);
       document.addEventListener('scrollend', () => resolve(), { once: true, capture: true });
+      // Fallback in case scrollend isn't supported or never fires.
+      setTimeout(resolve, 1000);
     };
 
     document.addEventListener('scroll', onScroll, { capture: true, passive: true });
@@ -76,7 +78,7 @@ function smoothScrollIntoView(element: HTMLElement): Promise<void> {
 
     // If no scroll event fires within 50ms, the element is already in position.
     setTimeout(() => {
-      if (!scrolling) {
+      if (!scrollStarted) {
         document.removeEventListener('scroll', onScroll, true);
         resolve();
       }
