@@ -26,4 +26,4 @@ VALUES
     'pending'
   )
 RETURNING
-  course_requests.id as course_request_id;
+  course_requests.id AS course_request_id;

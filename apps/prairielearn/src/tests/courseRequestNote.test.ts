@@ -1,6 +1,5 @@
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
-import { z } from 'zod';
 
 import * as sqldb from '@prairielearn/postgres';
 
