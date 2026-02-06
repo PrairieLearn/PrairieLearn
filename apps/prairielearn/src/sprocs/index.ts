@@ -55,7 +55,6 @@ export async function init() {
       'server_usage_current.sql',
       'sync_course_instances.sql',
       'sync_questions.sql',
-      'sync_news_items.sql',
       'sync_question_tags.sql',
       'sync_assessments.sql',
       'team_info.sql',
