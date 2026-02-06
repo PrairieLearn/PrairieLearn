@@ -102,6 +102,17 @@ WHERE
   id = $id
 FOR NO KEY UPDATE;
 
+-- BLOCK select_and_lock_joined_enrollment_by_course_instance_and_user
+SELECT
+  *
+FROM
+  enrollments
+WHERE
+  course_instance_id = $course_instance_id
+  AND user_id = $user_id
+  AND status = 'joined'
+FOR NO KEY UPDATE;
+
 -- BLOCK set_enrollment_status
 UPDATE enrollments
 SET
@@ -152,35 +163,3 @@ SELECT
 FROM
   old_enrollments AS oe
   JOIN updated_enrollments AS ue ON (oe.id = ue.id);
-
--- BLOCK update_enrollment_to_removed_for_course_instance
-WITH
-  old_enrollment AS (
-    SELECT
-      e.*
-    FROM
-      enrollments AS e
-    WHERE
-      e.course_instance_id = $course_instance_id
-      AND e.user_id = $user_id
-      AND e.status = 'joined'
-    FOR NO KEY UPDATE OF
-      e
-  ),
-  updated_enrollment AS (
-    UPDATE enrollments AS e
-    SET
-      status = 'removed'
-    FROM
-      old_enrollment AS oe
-    WHERE
-      e.id = oe.id
-    RETURNING
-      e.*
-  )
-SELECT
-  to_jsonb(oe.*) AS old_enrollment,
-  to_jsonb(ue.*) AS new_enrollment
-FROM
-  old_enrollment AS oe
-  JOIN updated_enrollment AS ue ON (oe.id = ue.id);
