@@ -8,9 +8,9 @@ import FormSelect from 'react-bootstrap/FormSelect';
 
 import { MagicConnector } from './MagicConnector.js';
 import { SampleQuestionDemo } from './SampleQuestionDemo.js';
-import { examplePromptsArray } from './aiGeneratedQuestionSamples.js';
+import { type SampleQuestionVariant, examplePromptsArray } from './aiGeneratedQuestionSamples.js';
 
-export function SampleQuestions() {
+export function SampleQuestions({ initialVariant }: { initialVariant: SampleQuestionVariant }) {
   const [selectedQuestionIndex, setSelectedQuestionIndex] = useState(0);
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
@@ -47,6 +47,7 @@ export function SampleQuestions() {
           <SampleQuestionDemo
             key={selectedQuestion.id}
             prompt={selectedQuestion}
+            initialVariant={selectedQuestionIndex === 0 ? initialVariant : undefined}
             header={
               <div className="d-flex align-items-center gap-2">
                 <i className="bi bi-check-circle-fill text-success" />

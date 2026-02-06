@@ -15,6 +15,7 @@ import { mathjaxTypeset } from '../../../lib/client/mathjax.js';
 
 import {
   type ExamplePromptWithId,
+  type SampleQuestionVariant,
   type VariantOption,
   generateSampleQuestionVariant,
   variantOptionToString,
@@ -22,12 +23,16 @@ import {
 
 export function SampleQuestionDemo({
   prompt,
+  initialVariant,
   header,
 }: {
   prompt: ExamplePromptWithId;
+  initialVariant?: SampleQuestionVariant;
   header?: ReactNode;
 }) {
-  const [variant, setVariant] = useState(() => generateSampleQuestionVariant(prompt.id));
+  const [variant, setVariant] = useState(
+    () => initialVariant ?? generateSampleQuestionVariant(prompt.id),
+  );
 
   // Used if the question receives a number or string response
   const [userInputResponse, setUserInputResponse] = useState('');
