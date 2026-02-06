@@ -169,7 +169,17 @@ async function processMessage(data: {
     );
 
     if (!details) {
-      throw new error.HttpStatusError(500, 'Grading job not found');
+      // The grading job may have already been hard deleted; in that case,
+      // we can just ignore the result.
+
+      // Grading jobs are hard deleted in the following scenarios:
+      // 1. Instructor deletes a single assessment instance
+      // 2. Instructor deletes all assessment instances
+      // 3. Student regenerates their assessment instance
+
+      // The ON DELETE CASCADE chain is:
+      // assessment_instances → instance_questions → variants → submissions → grading_jobs
+      return;
     }
 
     const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = details;
