@@ -14,6 +14,10 @@ import { DraftQuestionMetadataSchema } from '../../../lib/db-types.js';
 import type { UntypedResLocals } from '../../../lib/res-locals.types.js';
 
 import { SampleQuestions } from './SampleQuestions.js';
+import {
+  examplePromptsArray,
+  generateSampleQuestionVariant,
+} from './aiGeneratedQuestionSamples.js';
 
 // We show all draft questions, even those without associated metadata, because we
 // won't have metadata for a draft question if it was created on and synced from
@@ -73,7 +77,7 @@ export function InstructorAIGenerateDrafts({
           Back to all questions
         </a>
       </div>
-      <div class="card mb-5 mx-auto" style="max-width: 700px">
+      <div class="card mb-3 mx-auto" style="max-width: 700px">
         <div class="card-body position-relative">
           <h1 class="h3 text-center">Generate a new question with AI</h1>
           <form
@@ -114,9 +118,17 @@ export function InstructorAIGenerateDrafts({
               AI can make mistakes. Review the generated question.
             </div>
             <div id="generation-results"></div>
-            <div class="mt-2">${hydrateHtml(<SampleQuestions />)}</div>
           </form>
         </div>
+      </div>
+      <div class="mb-5 mx-auto" style="max-width: 700px">
+        ${hydrateHtml(
+          <SampleQuestions
+            // Since variants are randomly generated, we need to generate the initial one
+            // on the server to ensure that we don't get a hydration mismatch.
+            initialVariant={generateSampleQuestionVariant(examplePromptsArray[0].id)}
+          />,
+        )}
       </div>
       ${hasDrafts
         ? html`
