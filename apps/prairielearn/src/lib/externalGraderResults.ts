@@ -157,7 +157,7 @@ async function processMessage(data: {
     });
     await gradingJobStatusUpdated(jobId);
     return;
-  } else if (data.event1 === 'grading_result') {
+  } else if (data.event === 'grading_result') {
     // Figure out where we can fetch results from.
     const { s3_bucket: s3Bucket, s3_root_key: s3RootKey } = await sqldb.queryRow(
       sql.get_job_details,
