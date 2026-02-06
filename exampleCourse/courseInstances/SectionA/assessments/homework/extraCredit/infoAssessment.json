@@ -49,6 +49,7 @@
       ]
     },
     {
+      "title": "Advanced questions",
       "questions": [
         { "id": "demo/annotated/mathProof", "points": 3, "maxPoints": 3 },
         { "id": "demo/computeNumber-fromDataFrame", "points": 1, "maxPoints": 6 },
