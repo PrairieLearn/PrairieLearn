@@ -7,7 +7,11 @@ export CFLAGS := -I$(shell brew --prefix graphviz)/include
 export LDFLAGS := -L$(shell brew --prefix graphviz)/lib
 endif
 
+.PHONY: build
+
 build:
+	@TURBO_NO_UPDATE_NOTIFIER=1 yarn turbo run build --output-logs=errors-only
+build-verbose:
 	@yarn turbo run build
 build-sequential:
 	@yarn turbo run --concurrency 1 build
@@ -166,7 +170,7 @@ typecheck-contrib:
 typecheck-scripts:
 	@yarn tsgo -p scripts --noEmit
 typecheck-js:
-	@yarn turbo run build
+	@TURBO_NO_UPDATE_NOTIFIER=1 yarn turbo run build --output-logs=errors-only
 typecheck-python: python-deps
 	@yarn pyright
 typecheck-sql:
