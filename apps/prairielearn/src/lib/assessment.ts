@@ -7,7 +7,10 @@ import * as error from '@prairielearn/error';
 import * as sqldb from '@prairielearn/postgres';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
-import { flagSelfModifiedAssessmentInstance } from '../models/assessment-instance.js';
+import {
+  flagSelfModifiedAssessmentInstance,
+  selectAndLockAssessmentInstance,
+} from '../models/assessment-instance.js';
 import { selectAssessmentInfoForJob } from '../models/assessment.js';
 
 import {
@@ -179,14 +182,11 @@ export async function updateAssessmentInstance(
   recomputeGrades = true,
 ): Promise<boolean> {
   const updated = await sqldb.runInTransactionAsync(async () => {
-    const assessmentInstance = await sqldb.queryOptionalRow(
-      sql.select_and_lock_assessment_instance,
-      { assessment_instance_id },
-      AssessmentInstanceSchema,
-    );
-    if (assessmentInstance == null) {
+    const result = await selectAndLockAssessmentInstance(assessment_instance_id);
+    if (result == null) {
       throw new error.HttpStatusError(404, 'Assessment instance not found');
     }
+    const { assessment_instance: assessmentInstance } = result;
     if (!assessmentInstance.open) {
       // Silently return without updating
       return false;
@@ -278,14 +278,11 @@ export async function gradeAssessmentInstance({
 
   if (requireOpen || close) {
     await sqldb.runInTransactionAsync(async () => {
-      const assessmentInstance = await sqldb.queryOptionalRow(
-        sql.select_and_lock_assessment_instance,
-        { assessment_instance_id },
-        AssessmentInstanceSchema,
-      );
-      if (assessmentInstance == null) {
+      const result = await selectAndLockAssessmentInstance(assessment_instance_id);
+      if (result == null) {
         throw new error.HttpStatusError(404, 'Assessment instance not found');
       }
+      const { assessment_instance: assessmentInstance } = result;
       if (!assessmentInstance.open) {
         throw new error.HttpStatusError(403, 'Assessment instance is not open');
       }
@@ -467,11 +464,11 @@ export async function updateAssessmentInstanceScore(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessmentInstance = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance,
-      { assessment_instance_id },
-      AssessmentInstanceSchema.extend({ course_instance_id: IdSchema }),
-    );
+    const result = await selectAndLockAssessmentInstance(assessment_instance_id);
+    if (result == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    const { assessment_instance: assessmentInstance, assessment } = result;
     const points = (score_perc * (assessmentInstance.max_points ?? 0)) / 100;
     await sqldb.execute(sql.update_assessment_instance_score, {
       assessment_instance_id,
@@ -484,7 +481,7 @@ export async function updateAssessmentInstanceScore(
       assessmentInstanceId: assessment_instance_id,
       assessmentInstanceUserId: assessmentInstance.user_id,
       assessmentInstanceGroupId: assessmentInstance.team_id,
-      courseInstanceId: assessmentInstance.course_instance_id,
+      courseInstanceId: assessment.course_instance_id,
       authnUserId: authn_user_id,
     });
   });
@@ -496,11 +493,11 @@ export async function updateAssessmentInstancePoints(
   authn_user_id: string,
 ): Promise<void> {
   await sqldb.runInTransactionAsync(async () => {
-    const assessmentInstance = await sqldb.queryRow(
-      sql.select_and_lock_assessment_instance,
-      { assessment_instance_id },
-      AssessmentInstanceSchema.extend({ course_instance_id: IdSchema }),
-    );
+    const result = await selectAndLockAssessmentInstance(assessment_instance_id);
+    if (result == null) {
+      throw new error.HttpStatusError(404, 'Assessment instance not found');
+    }
+    const { assessment_instance: assessmentInstance, assessment } = result;
     const score_perc =
       (points /
         (assessmentInstance.max_points != null && assessmentInstance.max_points > 0
@@ -518,7 +515,7 @@ export async function updateAssessmentInstancePoints(
       assessmentInstanceId: assessment_instance_id,
       assessmentInstanceUserId: assessmentInstance.user_id,
       assessmentInstanceGroupId: assessmentInstance.team_id,
-      courseInstanceId: assessmentInstance.course_instance_id,
+      courseInstanceId: assessment.course_instance_id,
       authnUserId: authn_user_id,
     });
   });

@@ -1,6 +1,12 @@
-import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
+import { z } from 'zod';
 
-import { SprocUsersIsInstructorInCourseInstanceSchema } from '../lib/db-types.js';
+import { callRow, execute, loadSqlEquiv, queryOptionalRow } from '@prairielearn/postgres';
+
+import {
+  AssessmentInstanceSchema,
+  AssessmentSchema,
+  SprocUsersIsInstructorInCourseInstanceSchema,
+} from '../lib/db-types.js';
 import { isUserInGroup } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
 
@@ -71,4 +77,15 @@ export async function flagSelfModifiedAssessmentInstance({
       assessment_instance_id: assessmentInstanceId,
     });
   }
+}
+
+export async function selectAndLockAssessmentInstance(assessmentInstanceId: string) {
+  return await queryOptionalRow(
+    sql.select_and_lock_assessment_instance,
+    { assessment_instance_id: assessmentInstanceId },
+    z.object({
+      assessment_instance: AssessmentInstanceSchema,
+      assessment: AssessmentSchema,
+    }),
+  );
 }
