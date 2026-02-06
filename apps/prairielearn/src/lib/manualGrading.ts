@@ -707,11 +707,11 @@ export async function updateInstanceQuestionScore(
       );
 
       await flagSelfModifiedAssessmentInstance({
-        assessment_instance_id: current_submission.assessment_instance_id,
-        assessment_instance_user_id: current_submission.assessment_instance_user_id,
-        assessment_instance_team_id: current_submission.assessment_instance_team_id,
-        course_instance_id: current_submission.course_instance_id,
-        authn_user_id,
+        assessmentInstanceId: current_submission.assessment_instance_id,
+        assessmentInstanceUserId: current_submission.assessment_instance_user_id,
+        assessmentInstanceGroupId: current_submission.assessment_instance_team_id,
+        courseInstanceId: current_submission.course_instance_id,
+        authnUserId: authn_user_id,
       });
 
       // TODO: this ends up running inside a transaction. This is not good.

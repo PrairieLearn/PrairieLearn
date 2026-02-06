@@ -1,8 +1,8 @@
 import { callRow, execute, loadSqlEquiv } from '@prairielearn/postgres';
 
 import { SprocUsersIsInstructorInCourseInstanceSchema } from '../lib/db-types.js';
+import { isUserInGroup } from '../lib/groups.js';
 import { idsEqual } from '../lib/id.js';
-import { isUserInGroup } from '../lib/teams.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
