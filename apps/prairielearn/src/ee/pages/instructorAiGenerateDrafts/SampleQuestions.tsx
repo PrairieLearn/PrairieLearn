@@ -15,16 +15,6 @@ export function SampleQuestions({ initialVariant }: { initialVariant: SampleQues
 
   const selectedQuestion = examplePromptsArray[selectedQuestionIndex];
 
-  const handleClickPrevious = () => {
-    setSelectedQuestionIndex((prevIndex) => Math.max(prevIndex - 1, 0));
-  };
-
-  const handleClickNext = () => {
-    setSelectedQuestionIndex((prevIndex) =>
-      Math.min(prevIndex + 1, examplePromptsArray.length - 1),
-    );
-  };
-
   return (
     <Accordion
       style={{
@@ -36,12 +26,17 @@ export function SampleQuestions({ initialVariant }: { initialVariant: SampleQues
       <AccordionItem eventKey="0">
         <AccordionHeader>Example prompts</AccordionHeader>
         <AccordionBody className="p-3">
-          <SampleQuestionSelector
-            selectedQuestionIndex={selectedQuestionIndex}
-            onSelectQuestionIndex={setSelectedQuestionIndex}
-            onClickPrevious={handleClickPrevious}
-            onClickNext={handleClickNext}
-          />
+          <FormSelect
+            value={selectedQuestionIndex}
+            aria-label="Select example prompt"
+            onChange={(e) => setSelectedQuestionIndex(Number(e.target.value))}
+          >
+            {examplePromptsArray.map((prompt, index) => (
+              <option key={prompt.id} value={index}>
+                {prompt.name}
+              </option>
+            ))}
+          </FormSelect>
           <SampleQuestionPrompt prompt={selectedQuestion.prompt} />
           <MagicConnector />
           <SampleQuestionDemo
@@ -62,52 +57,6 @@ export function SampleQuestions({ initialVariant }: { initialVariant: SampleQues
 }
 
 SampleQuestions.displayName = 'SampleQuestions';
-
-function SampleQuestionSelector({
-  selectedQuestionIndex,
-  onSelectQuestionIndex,
-  onClickPrevious,
-  onClickNext,
-}: {
-  selectedQuestionIndex: number;
-  onSelectQuestionIndex: (index: number) => void;
-  onClickPrevious: () => void;
-  onClickNext: () => void;
-}) {
-  return (
-    <div className="d-flex align-items-center gap-1">
-      <button
-        type="button"
-        className="btn btn-light"
-        disabled={selectedQuestionIndex === 0}
-        aria-label="Previous example"
-        onClick={onClickPrevious}
-      >
-        <i className="bi bi-arrow-left" aria-hidden="true" />
-      </button>
-      <FormSelect
-        value={selectedQuestionIndex}
-        aria-label="Select example question"
-        onChange={(e) => onSelectQuestionIndex(Number(e.target.value))}
-      >
-        {examplePromptsArray.map((prompt, index) => (
-          <option key={prompt.id} value={index}>
-            {prompt.name}
-          </option>
-        ))}
-      </FormSelect>
-      <button
-        type="button"
-        className="btn btn-light"
-        disabled={selectedQuestionIndex === examplePromptsArray.length - 1}
-        aria-label="Next example"
-        onClick={onClickNext}
-      >
-        <i className="bi bi-arrow-right" aria-hidden="true" />
-      </button>
-    </div>
-  );
-}
 
 function SampleQuestionPrompt({ prompt }: { prompt: string }) {
   const handleUsePrompt = () => {
