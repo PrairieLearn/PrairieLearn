@@ -172,10 +172,9 @@ async function processMessage(data: {
       // The grading job may have already been hard deleted; in that case,
       // we can just ignore the result.
 
-      // Grading jobs are hard deleted in the following scenarios:
-      // 1. Instructor deletes a single assessment instance
-      // 2. Instructor deletes all assessment instances
-      // 3. Student regenerates their assessment instance
+      // Grading jobs are hard deleted when an instructor deletes
+      // an assessment instance: either individually, or in bulk,
+      // or because they regenerated their own assessment instance.
 
       // The ON DELETE CASCADE chain is:
       // assessment_instances → instance_questions → variants → submissions → grading_jobs
