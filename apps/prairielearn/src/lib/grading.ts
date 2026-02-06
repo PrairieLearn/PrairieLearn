@@ -12,7 +12,7 @@ import { insertGradingJob, updateGradingJobAfterGrading } from '../models/gradin
 import { lockVariant } from '../models/variant.js';
 import * as questionServers from '../question-servers/index.js';
 
-import { updateAssessmentInstancesScorePercPending } from './assessment.js';
+import { updateAssessmentInstancesScorePercPending } from './assessment-grading.js';
 import { ensureChunksForCourseAsync } from './chunks.js';
 import {
   AssessmentQuestionSchema,
@@ -30,6 +30,7 @@ import * as externalGrader from './externalGrader.js';
 import { idsEqual } from './id.js';
 import { writeCourseIssues } from './issues.js';
 import * as ltiOutcomes from './ltiOutcomes.js';
+import { updateInstanceQuestionStats } from './question-points.js';
 import { getQuestionCourse } from './question-variant.js';
 import * as workspaceHelper from './workspace.js';
 
@@ -155,7 +156,7 @@ export async function insertSubmission({
 
     await updateCourseInstanceUsagesForSubmission({ submission_id, user_id });
 
-    if (variant.assessment_instance_id != null) {
+    if (variant.instance_question_id != null) {
       await sqldb.execute(sql.update_instance_question_post_submission, {
         instance_question_id: variant.instance_question_id,
         assessment_instance_id: variant.assessment_instance_id,
@@ -163,9 +164,9 @@ export async function insertSubmission({
         status: gradable ? 'saved' : 'invalid',
         requires_manual_grading: (variant.max_manual_points ?? 0) > 0,
       });
-      await sqldb.callAsync('instance_questions_calculate_stats', [variant.instance_question_id]);
+      await updateInstanceQuestionStats(variant.instance_question_id);
 
-      if ((variant.max_manual_points ?? 0) > 0) {
+      if ((variant.max_manual_points ?? 0) > 0 && variant.assessment_instance_id != null) {
         await updateAssessmentInstancesScorePercPending([variant.assessment_instance_id]);
       }
     }
