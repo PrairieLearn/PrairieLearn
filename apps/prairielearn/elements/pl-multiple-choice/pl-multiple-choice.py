@@ -543,6 +543,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             size = pl.get_integer_attrib(element, "size") * 8
 
         placeholder = pl.get_string_attrib(element, "placeholder", PLACEHOLDER_DEFAULT)
+        allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
 
         html_params = {
             "question": True,
@@ -551,6 +552,7 @@ def render(element_html: str, data: pl.QuestionData) -> str:
             "radio": display_radio,
             "size": size,
             "placeholder": placeholder,
+            "allow_blank": allow_blank,
             "uuid": pl.get_uuid(),
             "name": name,
             "editable": editable,
@@ -634,14 +636,16 @@ def parse(element_html: str, data: pl.QuestionData) -> None:
     name = pl.get_string_attrib(element, "answers-name")
 
     allow_blank = pl.get_boolean_attrib(element, "allow-blank", ALLOW_BLANK_DEFAULT)
-    submitted_key = data["submitted_answers"].get(name, None)
+    # Unselected wouldn't be in submitted_answers, but "Clear" would submit as an empty string.
+    submitted_key = data["submitted_answers"].get(name, "") or ""
+
     all_keys = {a["key"] for a in data["params"][name]}
 
-    if not allow_blank and submitted_key is None:
+    if not allow_blank and submitted_key == "":
         data["format_errors"][name] = "No answer was submitted."
         return
 
-    if submitted_key not in all_keys and submitted_key is not None:
+    if submitted_key not in all_keys and submitted_key != "":
         data["format_errors"][name] = (
             f"Invalid choice: {pl.escape_invalid_string(submitted_key)}"
         )

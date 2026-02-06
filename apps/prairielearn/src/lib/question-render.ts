@@ -48,6 +48,12 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
@@ -60,12 +66,6 @@ import {
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import type { UntypedResLocals } from './res-locals.types.js';
-import {
-  type QuestionGroupPermissions,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  getUserRoles,
-} from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 

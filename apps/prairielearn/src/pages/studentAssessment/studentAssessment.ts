@@ -6,7 +6,6 @@ import { flash } from '@prairielearn/flash';
 import { markdownToHtml } from '@prairielearn/markdown';
 
 import { makeAssessmentInstance } from '../../lib/assessment.js';
-import { typedAsyncHandler } from '../../lib/res-locals.js';
 import {
   GroupOperationError,
   canUserAssignGroupRoles,
@@ -17,7 +16,8 @@ import {
   joinGroup,
   leaveGroup,
   updateGroupRoles,
-} from '../../lib/teams.js';
+} from '../../lib/groups.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { getClientFingerprintId } from '../../middlewares/clientFingerprint.js';
 import logPageView from '../../middlewares/logPageView.js';
 import selectAndAuthzAssessment from '../../middlewares/selectAndAuthzAssessment.js';

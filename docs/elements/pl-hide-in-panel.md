@@ -14,9 +14,9 @@ Hide the contents so that it is **not** displayed in specific panels ("question"
 
 | Attribute    | Type    | Default | Description                                                   |
 | ------------ | ------- | ------- | ------------------------------------------------------------- |
+| `answer`     | boolean | false   | Whether to hide the element contents in the answer panel.     |
 | `question`   | boolean | false   | Whether to hide the element contents in the question panel.   |
 | `submission` | boolean | false   | Whether to hide the element contents in the submission panel. |
-| `answer`     | boolean | false   | Whether to hide the element contents in the answer panel.     |
 
 ## Details
 

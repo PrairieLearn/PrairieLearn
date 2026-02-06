@@ -164,7 +164,11 @@ router.get(
                 questionQid={question.qid!}
                 aiGradingEnabled={aiGradingEnabled}
                 aiGradingModelSelectionEnabled={aiGradingModelSelectionEnabled}
-                initialAiGradingMode={aiGradingEnabled && assessment_question.ai_grading_mode}
+                initialAiGradingMode={
+                  aiGradingEnabled &&
+                  assessment_question.ai_grading_mode &&
+                  (assessment_question.max_manual_points ?? 0) > 0
+                }
                 rubricData={rubric_data}
                 instanceQuestionGroups={instanceQuestionGroups}
                 courseStaff={courseStaff}

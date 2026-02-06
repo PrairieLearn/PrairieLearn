@@ -38,6 +38,7 @@
       "title": "Questions using Java External Grader",
       "questions": [
         { "id": "demo/autograder/java/square", "points": 1 },
+        { "id": "demo/autograder/java/readFile", "points": 1 },
         { "id": "demo/autograder/java/helloWorld", "points": 1 }
       ]
     },

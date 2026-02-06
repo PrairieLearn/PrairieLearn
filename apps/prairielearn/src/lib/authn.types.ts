@@ -17,7 +17,6 @@ export const SelectUserSchema = z.object({
   user: UserSchema,
   institution: InstitutionSchema,
   is_administrator: z.boolean(),
-  news_item_notification_count: z.number(),
 });
 type SelectUser = z.infer<typeof SelectUserSchema>;
 
@@ -29,5 +28,4 @@ export interface ResLocalsAuthnUser {
   access_as_administrator: boolean;
   is_administrator: boolean;
   is_institution_administrator: boolean;
-  news_item_notification_count: SelectUser['news_item_notification_count'];
 }

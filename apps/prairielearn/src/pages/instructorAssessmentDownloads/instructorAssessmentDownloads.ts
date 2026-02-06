@@ -24,9 +24,9 @@ import {
   type Variant,
   VariantSchema,
 } from '../../lib/db-types.js';
+import { getGroupConfig } from '../../lib/groups.js';
 import { type ResLocalsForPage, typedAsyncHandler } from '../../lib/res-locals.js';
 import { assessmentFilenamePrefix } from '../../lib/sanitize-name.js';
-import { getGroupConfig } from '../../lib/teams.js';
 
 import {
   type Filenames,

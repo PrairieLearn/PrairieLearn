@@ -187,6 +187,13 @@ export async function aiInstanceQuestionGrouping({
     throw new HttpStatusError(403, 'Feature not available.');
   }
 
+  if (!assessment_question.max_manual_points) {
+    throw new HttpStatusError(
+      400,
+      'AI submission grouping is only available on assessment questions that use manual grading.',
+    );
+  }
+
   const openai = createOpenAI({
     apiKey: config.aiGradingOpenAiApiKey,
     organization: config.aiGradingOpenAiOrganization,
@@ -206,11 +213,6 @@ export async function aiInstanceQuestionGrouping({
   const instanceQuestionIdsSet = new Set<string>(instance_question_ids);
 
   serverJob.executeInBackground(async (job) => {
-    if (!assessment_question.max_manual_points) {
-      job.fail('The assessment question has no manual grading');
-      return;
-    }
-
     const allInstanceQuestions = await selectInstanceQuestionsForAssessmentQuestion({
       assessment_question_id: assessment_question.id,
       closed_instance_questions_only,

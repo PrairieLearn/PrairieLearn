@@ -1,7 +1,9 @@
+/**
+ * Tests for LTI 1.3 authentication flows: login, UID/UIN handling, token exchange.
+ */
 import express from 'express';
 import fetchCookie from 'fetch-cookie';
 import getPort from 'get-port';
-import * as jose from 'jose';
 import nodeJose from 'node-jose';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
@@ -14,263 +16,19 @@ import { selectOptionalUserByUid } from '../models/user.js';
 
 import { fetchCheerio } from './helperClient.js';
 import * as helperServer from './helperServer.js';
+import {
+  CLIENT_ID,
+  createLti13Instance,
+  makeLoginExecutor,
+  withServer,
+} from './lti13TestHelpers.js';
 
-const CLIENT_ID = 'prairielearn_test_lms';
 const USER_SUB = 'a555090c-8355-4b58-b315-247612cc22f0';
 const USER_WITHOUT_UID_SUB = '03745213-6fe3-4c29-a7c3-d31013202f95';
 
 const siteUrl = 'http://localhost:' + config.serverPort;
 
-async function withServer<T>(app: express.Express, port: number, fn: () => Promise<T>) {
-  const server = app.listen(port);
-
-  await new Promise<void>((resolve, reject) => {
-    server.on('listening', () => resolve());
-    server.on('error', (err) => reject(err));
-  });
-
-  try {
-    return await fn();
-  } finally {
-    server.close();
-  }
-}
-
-async function makeLoginExecutor({
-  user,
-  fetchWithCookies,
-  oidcProviderPort,
-  keystore,
-  loginUrl,
-  callbackUrl,
-  targetLinkUri,
-}: {
-  user: {
-    name: string;
-    email: string;
-    uin: string | null;
-    sub: string;
-  };
-  fetchWithCookies: typeof fetch;
-  oidcProviderPort: number;
-  keystore: nodeJose.JWK.KeyStore;
-  loginUrl: string;
-  callbackUrl: string;
-  targetLinkUri: string;
-}) {
-  const startLoginResponse = await fetchWithCookies(loginUrl, {
-    method: 'POST',
-    body: new URLSearchParams({
-      iss: siteUrl,
-      login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
-      target_link_uri: targetLinkUri,
-    }),
-    redirect: 'manual',
-  });
-  assert.equal(startLoginResponse.status, 302);
-  const location = startLoginResponse.headers.get('location');
-  assert.ok(location);
-
-  const redirectUrl = new URL(location);
-  assert.equal(redirectUrl.hostname, 'localhost');
-  assert.equal(redirectUrl.pathname, '/auth');
-  assert.equal(redirectUrl.searchParams.get('client_id'), CLIENT_ID);
-  assert.equal(redirectUrl.searchParams.get('scope'), 'openid');
-  assert.equal(redirectUrl.searchParams.get('response_type'), 'id_token');
-  assert.equal(redirectUrl.searchParams.get('response_mode'), 'form_post');
-  assert.equal(redirectUrl.searchParams.get('redirect_uri'), callbackUrl);
-  assert.equal(redirectUrl.searchParams.get('login_hint'), 'fef15674-ae78-4763-b915-6fe3dbf42c67');
-
-  const redirectUri = redirectUrl.searchParams.get('redirect_uri');
-  const nonce = redirectUrl.searchParams.get('nonce');
-  const state = redirectUrl.searchParams.get('state');
-
-  assert.ok(redirectUri);
-  assert.ok(nonce);
-  assert.ok(state);
-
-  const key = keystore.get('test');
-  const joseKey = await jose.importJWK(key.toJSON(true) as any);
-  const fakeIdToken = await new jose.SignJWT({
-    nonce,
-    // The below values are based on data observed by Dave during an actual
-    // login with Canvas.
-    'https://purl.imsglobal.org/spec/lti/claim/message_type': 'LtiResourceLinkRequest',
-    'https://purl.imsglobal.org/spec/lti/claim/version': '1.3.0',
-    'https://purl.imsglobal.org/spec/lti/claim/deployment_id':
-      '7fdce954-4c33-47c9-97b4-e435dbbed9bb',
-    // This MUST match the value in the login request.
-    'https://purl.imsglobal.org/spec/lti/claim/target_link_uri': targetLinkUri,
-    'https://purl.imsglobal.org/spec/lti/claim/resource_link': {
-      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
-      title: 'Test Course',
-    },
-    'https://purl.imsglobal.org/spec/lti/claim/roles': [
-      'http://purl.imsglobal.org/vocab/lis/v2/institution/person#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/membership#Instructor',
-      'http://purl.imsglobal.org/vocab/lis/v2/system/person#User',
-    ],
-    'https://purl.imsglobal.org/spec/lti/claim/context': {
-      id: 'f6bc7a50-448c-4469-94f7-54d6ea882c2a',
-      type: ['http://purl.imsglobal.org/vocab/lis/v2/course#CourseOffering'],
-      label: 'TEST 101',
-      title: 'Test Course',
-    },
-    name: user.name,
-    email: user.email,
-    ...(user.uin
-      ? {
-          'https://purl.imsglobal.org/spec/lti/claim/custom': {
-            uin: user.uin,
-          },
-        }
-      : {}),
-    'https://purl.imsglobal.org/spec/lti-ags/claim/endpoint': {
-      scope: [
-        'https://purl.imsglobal.org/spec/lti-ags/scope/lineitem',
-        'https://purl.imsglobal.org/spec/lti-ags/scope/score',
-      ],
-      errors: {
-        errors: {},
-      },
-      lineitems: `https://localhost:${oidcProviderPort}/api/lti/courses/1/line_items`,
-      validation_context: null,
-    },
-  })
-    .setProtectedHeader({ alg: 'RS256' })
-    .setIssuer(`http://localhost:${oidcProviderPort}`)
-    .setIssuedAt()
-    .setExpirationTime('1h')
-    .setSubject(user.sub)
-    .setAudience(CLIENT_ID)
-    .sign(joseKey);
-
-  // Run a server to respond to JWKS requests.
-  const app = express();
-  app.get('/jwks', (req, res) => {
-    res.setHeader('Content-Type', 'application/json');
-    // Pass `false` to `toJSON` to only include public keys.
-    res.end(JSON.stringify(keystore.toJSON(false)));
-  });
-
-  return {
-    login: async () => {
-      return await withServer(app, oidcProviderPort, async () => {
-        return await fetchWithCookies(redirectUri, {
-          method: 'POST',
-          body: new URLSearchParams({
-            nonce,
-            state,
-            id_token: fakeIdToken,
-          }),
-        });
-      });
-    },
-  };
-}
-
-async function createLti13Instance({
-  issuer_params,
-  attributes,
-}: {
-  issuer_params: {
-    issuer: string;
-    authorization_endpoint: string;
-    jwks_uri: string;
-    token_endpoint: string;
-  };
-  attributes?: {
-    uid_attribute: string;
-    uin_attribute: string;
-    email_attribute: string;
-    name_attribute: string;
-  };
-}) {
-  // Load the LTI admin page.
-  const ltiInstancesResponse = await fetchCheerio(
-    `${siteUrl}/pl/administrator/institution/1/lti13`,
-  );
-  assert.equal(ltiInstancesResponse.status, 200);
-
-  const newInstanceButton = ltiInstancesResponse.$('button:contains(Add a new LTI 1.3 instance)');
-  const newInstanceForm = newInstanceButton.closest('form');
-
-  const newInstanceButtonValue = newInstanceButton.attr('value');
-  assert.ok(newInstanceButtonValue);
-
-  // Create a new LTI instance.
-  const createInstanceResponse = await fetchCheerio(ltiInstancesResponse.url, {
-    method: 'POST',
-    body: new URLSearchParams({
-      __csrf_token: newInstanceForm.find('input[name=__csrf_token]').val() as string,
-      __action: newInstanceButtonValue,
-    }),
-  });
-  assert.equal(createInstanceResponse.status, 200);
-  const instanceUrl = createInstanceResponse.url;
-
-  const ltiInstanceResponse = await fetchCheerio(instanceUrl);
-  assert.equal(ltiInstanceResponse.status, 200);
-
-  const savePlatformOptionsButton = ltiInstanceResponse.$('button:contains(Save platform options)');
-  const platformOptionsForm = savePlatformOptionsButton.closest('form');
-
-  // Update the platform options.
-  const updatePlatformOptionsResponse = await fetchCheerio(instanceUrl, {
-    method: 'POST',
-    body: new URLSearchParams({
-      __csrf_token: platformOptionsForm.find('input[name=__csrf_token]').val() as string,
-      __action: platformOptionsForm.find('input[name=__action]').val() as string,
-      platform: 'Unknown',
-      issuer_params: JSON.stringify(issuer_params),
-      custom_fields: JSON.stringify({
-        uin: '$Canvas.user.sisIntegrationId',
-      }),
-      client_id: CLIENT_ID,
-    }),
-  });
-  assert.equal(updatePlatformOptionsResponse.status, 200);
-
-  const addKeyButton = updatePlatformOptionsResponse.$('button:contains(Add key to keystore)');
-  const keystoreForm = addKeyButton.closest('form');
-
-  // Update the attributes if needed.
-  if (attributes) {
-    const savePrairieLearnConfigButton = ltiInstanceResponse.$(
-      'button:contains(Save PrairieLearn config)',
-    );
-    const prairieLearnOptionsForm = savePrairieLearnConfigButton.closest('form');
-
-    // Update the instance's attribute settings.
-    const updateRes = await fetchCheerio(instanceUrl, {
-      method: 'POST',
-      body: new URLSearchParams({
-        __action: 'save_pl_config',
-        __csrf_token: prairieLearnOptionsForm.find('input[name=__csrf_token]').val() as string,
-        uid_attribute: attributes.uid_attribute,
-        uin_attribute: attributes.uin_attribute,
-        email_attribute: attributes.email_attribute,
-        name_attribute: attributes.name_attribute,
-      }),
-    });
-    assert.equal(updateRes.status, 200);
-  }
-
-  const addKeyButtonValue = addKeyButton.attr('value');
-  assert.ok(addKeyButtonValue);
-
-  // Create a key
-  const createKeyResponse = await fetchCheerio(instanceUrl, {
-    method: 'POST',
-    body: new URLSearchParams({
-      __csrf_token: keystoreForm.find('input[name=__csrf_token]').val() as string,
-      __action: addKeyButtonValue,
-    }),
-  });
-  assert.equal(createKeyResponse.status, 200);
-}
-
-describe('LTI 1.3', () => {
+describe('LTI 1.3 authentication', () => {
   let oidcProviderPort: number;
   let keystore: nodeJose.JWK.KeyStore;
 
@@ -279,10 +37,8 @@ describe('LTI 1.3', () => {
     config.features.lti13 = true;
     await helperServer.before()();
 
-    // We need to give the default institution a `uid_regexp`.
     await execute("UPDATE institutions SET uid_regexp = '@example\\.com$'");
 
-    // Allocate an available port for the OIDC provider.
     oidcProviderPort = await getPort();
 
     keystore = nodeJose.JWK.createKeyStore();
@@ -301,6 +57,7 @@ describe('LTI 1.3', () => {
 
   test.sequential('create and configure an LTI instance', async () => {
     await createLti13Instance({
+      siteUrl,
       issuer_params: {
         issuer: `http://localhost:${oidcProviderPort}`,
         authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
@@ -335,8 +92,8 @@ describe('LTI 1.3', () => {
 
   test.sequential('validate metadata', async () => {
     const url = `${siteUrl}/pl/lti13_instance/1/config`;
-    const data = await fetch(url).then((res) => res.json() as any);
-
+    const data: any = await fetch(url).then((res) => res.json());
+    assert.isObject(data);
     assert.equal(data.title, 'PrairieLearn');
     assert.equal(data.oidc_initiation_url, `${siteUrl}/pl/lti13_instance/1/auth/login`);
     assert.equal(data.target_link_uri, `${siteUrl}/pl/lti13_instance/1/auth/callback`);
@@ -346,8 +103,6 @@ describe('LTI 1.3', () => {
   });
 
   test.sequential('perform login', async () => {
-    // `openid-client` relies on the session to store state, so we need to use
-    // a cookie-aware version of fetch.
     const fetchWithCookies = fetchCookie(fetch);
 
     const executor = await makeLoginExecutor({
@@ -368,17 +123,12 @@ describe('LTI 1.3', () => {
     const res = await executor.login();
     assert.equal(res.status, 200);
 
-    // Inspect more into this response for output that is for Instructors vs for Students
-    // Setup link to a course instance (database modification)
-    // Confirm the redirect passes through to the course
-
     // Logging in again should fail because of nonce reuse.
     const repeatLoginRes = await executor.login();
     assert.equal(repeatLoginRes.status, 500);
   });
 
   test.sequential('validate login', async () => {
-    // There should be a new user.
     const user = await selectOptionalUserByUid('test-user@example.com');
     assert.ok(user);
     assert.equal(user.uid, 'test-user@example.com');
@@ -386,7 +136,6 @@ describe('LTI 1.3', () => {
     assert.equal(user.uin, '123456789');
     assert.equal(user.institution_id, '1');
 
-    // The new user should have an entry in `lti13_users`.
     const ltiUser = await queryOptionalRow(
       'SELECT * FROM lti13_users WHERE user_id = $user_id',
       { user_id: user.id },
@@ -400,15 +149,13 @@ describe('LTI 1.3', () => {
   test.sequential('malformed requests fail', async () => {
     const fetchWithCookies = fetchCookie(fetchCheerio);
 
-    // Malformed login
+    // Malformed login - missing login_hint
     const startBadLoginResponse = await fetchWithCookies(
       `${siteUrl}/pl/lti13_instance/1/auth/login`,
       {
         method: 'POST',
         body: new URLSearchParams({
           iss: siteUrl,
-          // Missing required login_hint
-          //login_hint: 'fef15674-ae78-4763-b915-6fe3dbf42c67',
           target_link_uri: `${siteUrl}/pl/lti13_instance/1/course_navigation`,
         }),
         redirect: 'manual',
@@ -432,7 +179,6 @@ describe('LTI 1.3', () => {
     assert.ok(location);
 
     const redirectUrl = new URL(location);
-
     assert.ok(redirectUrl.searchParams.get('state'));
 
     const redirectUri = redirectUrl.searchParams.get('redirect_uri');
@@ -441,14 +187,11 @@ describe('LTI 1.3', () => {
     assert.ok(redirectUri);
     assert.ok(nonce);
 
-    // Not a real token, not running a JWKS server, so not a full test
-    // Just making sure if state is missing that PL errors
+    // Missing state parameter should error
     const finishBadLoginResponse = await fetchWithCookies(redirectUri, {
       method: 'POST',
       body: new URLSearchParams({
         nonce,
-        // Missing state parameter
-        //state,
         id_token: 'junkjunkjunk',
       }),
       redirect: 'manual',
@@ -460,7 +203,6 @@ describe('LTI 1.3', () => {
   test.sequential('request access token', async () => {
     const ACCESS_TOKEN = '33679293-edd6-4415-af36-03113feb8447';
 
-    // Run a server to respond to token requests.
     const app = express();
     app.use(express.urlencoded({ extended: true }));
 
@@ -472,7 +214,6 @@ describe('LTI 1.3', () => {
         'urn:ietf:params:oauth:client-assertion-type:jwt-bearer',
       );
 
-      // Decodes but does not validate
       const jwt = JSON.parse(
         Buffer.from(req.body.client_assertion.split('.')[1], 'base64').toString(),
       );
@@ -496,11 +237,12 @@ describe('LTI 1.3', () => {
   });
 
   describe('LTI 1.3 instance that does not provide UIDs', () => {
-    // We need to share this across all tests here, as we need to maintain the same session.
-    const fetchWithCookies = fetchCookie(fetch);
+    // Shared cookie jar for tests that need session continuity (login flow spanning multiple tests)
+    const sharedFetchWithCookies = fetchCookie(fetch);
 
     test.sequential('create second LTI 1.3 instance', async () => {
       await createLti13Instance({
+        siteUrl,
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
           authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
@@ -508,7 +250,6 @@ describe('LTI 1.3', () => {
           token_endpoint: `http://localhost:${oidcProviderPort}/token`,
         },
         attributes: {
-          // Intentionally left blank - no UIDs provided.
           uid_attribute: '',
           uin_attribute: '["https://purl.imsglobal.org/spec/lti/claim/custom"]["uin"]',
           email_attribute: 'email',
@@ -526,7 +267,7 @@ describe('LTI 1.3', () => {
           uin: '987654321',
           sub: USER_WITHOUT_UID_SUB,
         },
-        fetchWithCookies,
+        fetchWithCookies: sharedFetchWithCookies,
         oidcProviderPort,
         keystore,
         loginUrl: `${siteUrl}/pl/lti13_instance/2/auth/login`,
@@ -536,11 +277,8 @@ describe('LTI 1.3', () => {
 
       const res = await executor.login();
       assert.equal(res.status, 200);
-
-      // Assert that they've landed on the page prompting them to auth another way.
       assert.equal(res.url, `${siteUrl}/pl/lti13_instance/2/auth/auth_required`);
 
-      // The user should not exist until they log in via SAML.
       const user = await selectOptionalUserByUid('test-user-2@example.com');
       assert.isNull(user);
     });
@@ -549,7 +287,7 @@ describe('LTI 1.3', () => {
       const res = await fetchCheerio(`${siteUrl}/pl/login`);
       assert.equal(res.status, 200);
 
-      const loginRes = await fetchWithCookies(`${siteUrl}/pl/login`, {
+      const loginRes = await sharedFetchWithCookies(`${siteUrl}/pl/login`, {
         method: 'POST',
         body: new URLSearchParams({
           __csrf_token: res.$('input[name=__csrf_token]').val() as string,
@@ -561,12 +299,8 @@ describe('LTI 1.3', () => {
         }),
       });
       assert.equal(loginRes.status, 200);
-
-      // The user should have been redirected to the course navigation page,
-      // which is what was originally specified in `target_link_uri`.
       assert.equal(loginRes.url, `${siteUrl}/pl/lti13_instance/2/course_navigation`);
 
-      // The user should now exist.
       const user = await selectOptionalUserByUid('test-user-2@example.com');
       assert.ok(user);
       assert.equal(user.uid, 'test-user-2@example.com');
@@ -575,7 +309,6 @@ describe('LTI 1.3', () => {
       assert.equal(user.institution_id, '1');
       assert.equal(user.email, 'test-user-2@example.com');
 
-      // The new user should have an entry in `lti13_users`.
       const ltiUser = await queryOptionalRow(
         'SELECT * FROM lti13_users WHERE user_id = $user_id',
         { user_id: user.id },
@@ -587,7 +320,6 @@ describe('LTI 1.3', () => {
     });
 
     test.sequential('perform LTI 1.3 login after prior auth', async () => {
-      // We use a new set of cookies to simulate a new session.
       const fetchWithCookies = fetchCookie(fetch);
 
       const targetLinkUri = `${siteUrl}/pl/lti13_instance/2/course_navigation`;
@@ -608,19 +340,14 @@ describe('LTI 1.3', () => {
 
       const res = await executor.login();
       assert.equal(res.status, 200);
-
-      // Assert that they've been redirected to the course navigation page.
-      // This means that the login succeeded.
       assert.equal(res.url, targetLinkUri);
     });
   });
 
   describe('LTI 1.3 instance that does not provide UINs', () => {
-    // We need to share this across all tests here, as we need to maintain the same session.
-    const fetchWithCookies = fetchCookie(fetch);
-
     test.sequential('create LTI 1.3 instance with UID but no UIN attribute', async () => {
       await createLti13Instance({
+        siteUrl,
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
           authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
@@ -629,7 +356,6 @@ describe('LTI 1.3', () => {
         },
         attributes: {
           uid_attribute: 'email',
-          // Intentionally left blank - no UINs provided
           uin_attribute: '',
           email_attribute: 'email',
           name_attribute: 'name',
@@ -640,18 +366,19 @@ describe('LTI 1.3', () => {
     test.sequential(
       'should update UID when user is found by LTI sub but has different UID',
       async () => {
-        // Create a user with an initial UID using LTI 1.3 login.
         const initialUid = 'old-uid-no-uin@example.com';
         const newUid = 'new-uid-no-uin@example.com';
         const testSub = 'uid-update-test-sub-no-uin-67890';
         const testUin = '1234512345';
 
-        // Perform initial LTI login to create the user.
+        // Fresh cookie jar for initial login
+        const fetchWithCookies = fetchCookie(fetch);
+
         const targetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const initialExecutor = await makeLoginExecutor({
           user: {
             name: 'Test User No UIN',
-            email: initialUid, // Initial UID
+            email: initialUid,
             uin: null,
             sub: testSub,
           },
@@ -667,20 +394,15 @@ describe('LTI 1.3', () => {
         assert.equal(initialLoginResult.status, 200);
         assert.equal(initialLoginResult.url, targetLinkUri);
 
-        // Verify user was created with initial UID.
         const initialUser = await selectOptionalUserByUid(initialUid);
         assert.ok(initialUser);
         assert.equal(initialUser.uid, initialUid);
 
-        // Add a UIN to the user. This doesn't matter for the login process, but
-        // we'll use this later to validate that it's persisted after UID update.
         await execute('UPDATE users SET uin = $uin WHERE id = $user_id', {
           user_id: initialUser.id,
           uin: testUin,
         });
 
-        // Now perform LTI login with the same sub but a different UID (email).
-        const secondTargetLinkUri = `${siteUrl}/pl/lti13_instance/3/course_navigation`;
         const executor = await makeLoginExecutor({
           user: {
             name: 'UID Update Test User No UIN',
@@ -688,20 +410,18 @@ describe('LTI 1.3', () => {
             uin: null,
             sub: testSub,
           },
-          // Use fresh cookies for new session.
           fetchWithCookies: fetchCookie(fetch),
           oidcProviderPort,
           keystore,
           loginUrl: `${siteUrl}/pl/lti13_instance/3/auth/login`,
           callbackUrl: `${siteUrl}/pl/lti13_instance/3/auth/callback`,
-          targetLinkUri: secondTargetLinkUri,
+          targetLinkUri,
         });
 
         const loginResult = await executor.login();
         assert.equal(loginResult.status, 200);
-        assert.equal(loginResult.url, secondTargetLinkUri);
+        assert.equal(loginResult.url, targetLinkUri);
 
-        // Verify that the user was updated successfully.
         const updatedUser = await selectOptionalUserByUid(newUid);
         const oldUser = await selectOptionalUserByUid(initialUid);
 
@@ -715,11 +435,11 @@ describe('LTI 1.3', () => {
   });
 
   describe('LTI 1.3 instance without UID or UIN attributes (misconfiguration)', () => {
-    // We need to share this across all tests here, as we need to maintain the same session.
     const fetchWithCookies = fetchCookie(fetch);
 
     test.sequential('create fourth LTI 1.3 instance without UID or UIN attributes', async () => {
       await createLti13Instance({
+        siteUrl,
         issuer_params: {
           issuer: `http://localhost:${oidcProviderPort}`,
           authorization_endpoint: `http://localhost:${oidcProviderPort}/auth`,
@@ -727,7 +447,6 @@ describe('LTI 1.3', () => {
           token_endpoint: `http://localhost:${oidcProviderPort}/token`,
         },
         attributes: {
-          // Intentionally leave both UID and UIN attributes blank to test misconfiguration error
           uid_attribute: '',
           uin_attribute: '',
           email_attribute: 'email',
@@ -757,7 +476,6 @@ describe('LTI 1.3', () => {
       const res = await executor.login();
       assert.equal(res.status, 500);
 
-      // The error response should contain our misconfiguration error message
       const responseText = await res.text();
       assert.include(
         responseText,

@@ -30,7 +30,6 @@ import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseI
 import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
-import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
   type QuestionOptionsCalculationJson,
@@ -165,13 +164,6 @@ const prairielearnZodToJsonSchema = (
   return jsonSchema;
 };
 
-export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
-  name: 'News Item Info',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<NewsItemJson>;
-
 export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
@@ -292,7 +284,6 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
 }) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
-  infoNewsItem,
   infoAssessment,
   infoCourse,
   infoCourseInstance,

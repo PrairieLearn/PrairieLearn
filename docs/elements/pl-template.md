@@ -45,18 +45,18 @@ Along with the sample usage of the element, we include a sample template file. T
 
 | Attribute               | Type                                                                                                      | Default               | Description                                                                                                  |
 | ----------------------- | --------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------------------------------------------------------ |
-| `file-name`             | string                                                                                                    | —                     | File name of the outer template to use.                                                                      |
 | `directory`             | `"question"`, `"clientFilesQuestion"`, `"clientFilesCourse"`, `"serverFilesCourse"`, `"courseExtensions"` | `"serverFilesCourse"` | Parent directory to locate `file-name`.                                                                      |
-| `log-variable-warnings` | boolean                                                                                                   | false                 | Whether to log warnings when rendering templates with undefined variables. Useful for debugging.             |
+| `file-name`             | string                                                                                                    | —                     | File name of the outer template to use.                                                                      |
 | `log-tag-warnings`      | boolean                                                                                                   | true                  | Whether to log warnings if a rendered template contains elements which are not guaranteed to work correctly. |
+| `log-variable-warnings` | boolean                                                                                                   | false                 | Whether to log warnings when rendering templates with undefined variables. Useful for debugging.             |
 
 Inside the `pl-template` element, variables for use in rendering the template may be specified with a `pl-variable` tag. Each `pl-variable` tag can be used to define a variable with data from a file or with the contents of the tag (but not both). Note that substitution is **not** applied to external files used in `pl-variable` (files are used as-is). The `pl-variable` tag supports the following attributes:
 
 | Attribute         | Type                                                                                                      | Default               | Description                                                   |
 | ----------------- | --------------------------------------------------------------------------------------------------------- | --------------------- | ------------------------------------------------------------- |
-| `name`            | string                                                                                                    | —                     | Variable name to assign the data defined by this tag.         |
-| `file-name`       | string                                                                                                    | —                     | File name to use if variable data is being taken from a file. |
 | `directory`       | `"question"`, `"clientFilesQuestion"`, `"clientFilesCourse"`, `"serverFilesCourse"`, `"courseExtensions"` | `"serverFilesCourse"` | Parent directory to locate `file-name`.                       |
+| `file-name`       | string                                                                                                    | —                     | File name to use if variable data is being taken from a file. |
+| `name`            | string                                                                                                    | —                     | Variable name to assign the data defined by this tag.         |
 | `trim-whitespace` | boolean                                                                                                   | true                  | Whether to trim whitespace of data specified by this tag.     |
 
 ## Details

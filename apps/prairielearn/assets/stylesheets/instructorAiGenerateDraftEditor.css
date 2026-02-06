@@ -1,39 +1,29 @@
-body,
-.app-container {
-  width: 100%;
+.app-content-container {
+  grid-area: content;
+  min-height: 0;
   height: 100%;
-  position: absolute;
-  overscroll-behavior: none;
-}
-
-.app-grid {
-  height: 100%;
-  display: grid;
-  grid-template-areas: 'navbar' 'content';
-  grid-template-rows: min-content 1fr;
-}
-
-.app-navbar {
-  grid-area: navbar;
 }
 
 .app-content {
   grid-area: content;
 
+  height: 100%;
   display: grid;
   grid-template-areas: 'back preview-tabs' 'chat preview';
   grid-template-rows: min-content 1fr;
-  grid-template-columns: var(--chat-width, 400px) 1fr;
+  grid-template-columns: var(--chat-width, 500px) 1fr;
+}
+
+.app-chat-container {
+  grid-area: chat;
   min-height: 0;
 }
 
 .app-chat {
-  grid-area: chat;
-
   display: grid;
   grid-template-areas: 'history' 'prompt';
   grid-template-rows: 1fr min-content;
-  min-height: 0;
+  height: 100%;
   position: relative;
 }
 
@@ -43,8 +33,9 @@ body,
 
 .app-chat-history {
   grid-area: history;
-  overflow-y: auto;
-  scrollbar-color: var(--bs-secondary) transparent;
+  position: relative;
+  min-height: 0;
+  min-width: 0;
 }
 
 .app-chat-prompt {
@@ -100,39 +91,12 @@ body,
   grid-area: python;
 }
 
-.revert-to-revision-button {
-  /**
-   * We hide the button by setting its opacity instead of controlling its
-   * visibility with `display: none` or `visibility: hidden` because we need
-   * the button to be focusable for keyboard navigation.
-   */
-  opacity: 0;
-  pointer-events: none;
-  transition: opacity 0.2s ease-in-out;
-}
-
-.prompt-response:hover .revert-to-revision-button,
-.prompt-response:focus-within .revert-to-revision-button {
-  opacity: 1;
-  pointer-events: auto;
-}
-
-@media (hover: none) {
-  .revert-to-revision-button {
-    opacity: 1;
-    pointer-events: auto;
-  }
-}
-
 /* Reflow to a vertical layout on narrow viewports */
 @media (max-width: 768px) {
-  .app-grid {
-    height: auto;
-  }
-
   .app-content {
     grid-template-areas: 'back' 'chat' 'preview-tabs' 'preview';
     grid-template-columns: 1fr;
+    height: unset;
   }
 
   .editor-pane-html,
@@ -148,4 +112,37 @@ body,
     grid-template-rows: min-content 1fr 1fr;
     grid-template-columns: 1fr;
   }
+}
+
+.markdown-body > :last-child {
+  margin-bottom: 0;
+}
+
+.markdown-body ul {
+  padding-left: 1rem;
+}
+
+.markdown-body ul p {
+  margin-bottom: 0;
+}
+
+/** The default padding looks too large for reasoning sections. */
+.reasoning-body p {
+  margin-bottom: 0.25rem;
+}
+
+.spinner-border-text {
+  margin: 0.1em;
+  --bs-spinner-width: 0.8em;
+  --bs-spinner-height: 0.8em;
+  --bs-spinner-border-width: 0.15em;
+}
+
+.bi-fw {
+  width: 1em;
+  height: 1em;
+}
+
+.bi-fw::before {
+  vertical-align: unset;
 }

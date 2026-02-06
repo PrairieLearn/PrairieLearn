@@ -41,8 +41,6 @@ export const NavPageSchema = z
     'request_course',
     'home',
     'upgrade',
-    'news_item',
-    'news_items',
     'user_settings',
     'password',
   ])
