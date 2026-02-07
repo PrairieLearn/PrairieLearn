@@ -50,7 +50,6 @@ export async function init() {
       'users_is_instructor_in_course_instance.sql',
       'users_get_displayed_role.sql',
       'grading_jobs_stats_day.sql',
-      'variants_update_after_grading.sql',
       'grader_loads_current.sql',
       'server_loads_current.sql',
       'server_usage_current.sql',
