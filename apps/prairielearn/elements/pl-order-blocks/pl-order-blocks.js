@@ -1,18 +1,16 @@
 window.PLOrderBlocks = function (uuid, options) {
-  function snapToDevicePx(x) {
-    const dpr = window.devicePixelRatio || 1;
-    return Math.round(x * dpr) / dpr;
-  }
+  let TABWIDTH = 31; // defines how many px the answer block is indented by, when the student
+  // drags and indents a block.  31px is a hand-calculated fallback value in case render-time calculation fails
 
-  const measured = 30.789; //Calculated character width
-  const TABWIDTH = snapToDevicePx(measured); // defines how many px the answer block is indented by, when the student
-  // drags and indents a block
+  const TAB_SPACES = 4;
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
   const optionsElementId = '#order-blocks-options-' + uuid;
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
+
+  computeTabWidth();
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -320,7 +318,6 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function drawIndentLocationLines(dropzoneElementId) {
-   // $(dropzoneElementId)[0].style.paddingLeft = '0px';
     $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
@@ -374,4 +371,37 @@ window.PLOrderBlocks = function (uuid, options) {
   if (enableIndentation) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
+
+  function computeTabWidth() {
+    // Prefer a <pre> inside a block, since that’s what users are visually aligning to.
+    const pre =
+      fullContainer?.querySelector('.pl-order-block pre') ||
+      fullContainer?.querySelector('pre');
+
+    if (!pre) return;
+
+    const cs = getComputedStyle(pre);
+
+    const span = document.createElement('span');
+    span.style.font = cs.font;
+    span.style.letterSpacing = cs.letterSpacing;
+    span.style.whiteSpace = 'pre';
+    span.style.visibility = 'hidden';
+    span.style.position = 'absolute';
+    span.style.left = '-9999px';
+    span.style.top = '-9999px';
+
+    const reps = 200;
+    span.textContent = ' '.repeat(TAB_SPACES * reps);
+
+    document.body.appendChild(span);
+    const measured = span.getBoundingClientRect().width / reps;
+    span.remove();
+
+    if (Number.isFinite(measured) && measured > 0) {
+      const dpr = window.devicePixelRatio || 1;
+      TABWIDTH = Math.round(x * dpr) / dpr;
+    }
+  }
+
 };
