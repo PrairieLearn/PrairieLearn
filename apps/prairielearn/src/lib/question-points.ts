@@ -258,6 +258,7 @@ export async function updateInstanceQuestionStats({
     }
     return increment;
   });
+  const max_submission_score = nonNullSubmissionScores.length > 0 ? incrementalHighestScore : null;
 
   let pointsListIndex = 0;
   const incremental_submission_points_array =
@@ -273,12 +274,11 @@ export async function updateInstanceQuestionStats({
   await execute(sql.recalculate_instance_question_stats, {
     instance_question_id: instanceQuestion.id,
     some_submission: submissionScores.length > 0,
-    some_perfect_submission: nonNullSubmissionScores.some((score) => score >= 1),
-    some_nonzero_submission: nonNullSubmissionScores.some((score) => score > 0),
+    some_perfect_submission: incrementalHighestScore >= 1,
+    some_nonzero_submission: incrementalHighestScore > 0,
     first_submission_score: nonNullSubmissionScores.at(0) ?? null,
     last_submission_score: nonNullSubmissionScores.at(-1) ?? null,
-    max_submission_score:
-      nonNullSubmissionScores.length > 0 ? Math.max(...nonNullSubmissionScores) : null,
+    max_submission_score,
     average_submission_score:
       nonNullSubmissionScores.length > 0
         ? nonNullSubmissionScores.reduce((a, b) => a + b, 0) / nonNullSubmissionScores.length
