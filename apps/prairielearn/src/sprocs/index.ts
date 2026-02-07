@@ -11,8 +11,6 @@ export async function init() {
   logger.verbose('Starting DB stored procedure initialization');
   await eachSeries(
     [
-      'scores_to_points_array.sql',
-      'array_increments_above_max.sql',
       'array_and_number.sql',
       'array_avg.sql',
       'array_var.sql',
