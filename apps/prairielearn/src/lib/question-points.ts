@@ -1,6 +1,12 @@
 import z from 'zod';
 
-import { execute, loadSqlEquiv, queryRow, runInTransactionAsync } from '@prairielearn/postgres';
+import {
+  execute,
+  loadSqlEquiv,
+  queryRow,
+  queryRows,
+  runInTransactionAsync,
+} from '@prairielearn/postgres';
 import { run } from '@prairielearn/run';
 
 import {
@@ -102,7 +108,7 @@ export async function updateInstanceQuestionGrade({
       grading_job_id,
       authn_user_id,
     });
-    await updateInstanceQuestionStats(instance_question_id);
+    await updateInstanceQuestionStats({ instanceQuestion });
   });
 }
 
@@ -231,6 +237,54 @@ function computeInstanceQuestionPointsHomework({
   };
 }
 
-export async function updateInstanceQuestionStats(instance_question_id: string) {
-  await execute(sql.recalculate_instance_question_stats, { instance_question_id });
+export async function updateInstanceQuestionStats({
+  instanceQuestion,
+}: {
+  instanceQuestion: InstanceQuestion;
+}) {
+  const submissionScores = await queryRows(
+    sql.select_submissions_for_stats,
+    { instance_question_id: instanceQuestion.id },
+    z.number().nullable(),
+  );
+  const nonNullSubmissionScores = submissionScores.filter((score) => score !== null);
+
+  let incrementalHighestScore = 0;
+  const incremental_submission_score_array = submissionScores.map((score) => {
+    if (score === null) return null;
+    const increment = Math.max(score - incrementalHighestScore, 0);
+    if (score > incrementalHighestScore) {
+      incrementalHighestScore = score;
+    }
+    return increment;
+  });
+  const max_submission_score = nonNullSubmissionScores.length > 0 ? incrementalHighestScore : null;
+
+  let pointsListIndex = 0;
+  const incremental_submission_points_array =
+    instanceQuestion.points_list_original === null
+      ? null // This stat is not available if there's no points list (i.e., homework assessments).
+      : incremental_submission_score_array.map((score) => {
+          if (score === null) return null;
+          const points = instanceQuestion.points_list_original?.at(pointsListIndex) ?? 0;
+          pointsListIndex += 1;
+          return points * score;
+        });
+
+  await execute(sql.update_instance_question_stats, {
+    instance_question_id: instanceQuestion.id,
+    some_submission: submissionScores.length > 0,
+    some_perfect_submission: incrementalHighestScore >= 1,
+    some_nonzero_submission: incrementalHighestScore > 0,
+    first_submission_score: nonNullSubmissionScores.at(0) ?? null,
+    last_submission_score: nonNullSubmissionScores.at(-1) ?? null,
+    max_submission_score,
+    average_submission_score:
+      nonNullSubmissionScores.length > 0
+        ? nonNullSubmissionScores.reduce((a, b) => a + b, 0) / nonNullSubmissionScores.length
+        : null,
+    submission_score_array: submissionScores,
+    incremental_submission_score_array,
+    incremental_submission_points_array,
+  });
 }
