@@ -1,8 +1,6 @@
 window.PLOrderBlocks = function (uuid, options) {
-  let TABWIDTH = 31; // defines how many px the answer block is indented by, when the student
-  // drags and indents a block.  31px is a hand-calculated fallback value in case render-time calculation fails
-
-  const TAB_SPACES = 4;
+   // defines how many px the answer block is indented by, when the student
+  // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
@@ -10,7 +8,7 @@ window.PLOrderBlocks = function (uuid, options) {
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
 
-  computeTabWidth();
+  const TABWIDTH = calculateTabWidth();
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -330,6 +328,8 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
+  
+
   const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
@@ -339,6 +339,7 @@ window.PLOrderBlocks = function (uuid, options) {
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create() {
+      
       placePairingIndicators();
       setAnswer();
       if (enableIndentation) {
@@ -372,36 +373,32 @@ window.PLOrderBlocks = function (uuid, options) {
     $(dropzoneElementId).sortable('option', 'grid', [TABWIDTH, 1]);
   }
 
-  function computeTabWidth() {
-    // Prefer a <pre> inside a block, since that’s what users are visually aligning to.
-    const pre =
-      fullContainer?.querySelector('.pl-order-block pre') ||
-      fullContainer?.querySelector('pre');
-
-    if (!pre) return;
-
-    const cs = getComputedStyle(pre);
-
-    const span = document.createElement('span');
-    span.style.font = cs.font;
-    span.style.letterSpacing = cs.letterSpacing;
-    span.style.whiteSpace = 'pre';
-    span.style.visibility = 'hidden';
-    span.style.position = 'absolute';
-    span.style.left = '-9999px';
-    span.style.top = '-9999px';
-
-    const reps = 200;
-    span.textContent = ' '.repeat(TAB_SPACES * reps);
-
-    document.body.appendChild(span);
-    const measured = span.getBoundingClientRect().width / reps;
-    span.remove();
-
-    if (Number.isFinite(measured) && measured > 0) {
-      const dpr = window.devicePixelRatio || 1;
-      TABWIDTH = Math.round(x * dpr) / dpr;
-    }
+  function calculateTabWidth() {
+    // Find the <pre> element where the monospace font is actually applied
+    // Based on the CSS: .pl-code td.code pre contains the actual code text
+    const sourceElement = fullContainer.querySelector('.pl-code td.code pre');
+      
+    // Create a temporary element to measure character width
+    const measureElement = document.createElement('span');
+    const computedStyle = window.getComputedStyle(sourceElement);
+    
+    // Copy all font-related properties to ensure accurate measurement
+    measureElement.style.fontFamily = computedStyle.fontFamily;
+    measureElement.style.fontSize = computedStyle.fontSize;
+    measureElement.style.fontWeight = computedStyle.fontWeight;
+    measureElement.style.fontStyle = computedStyle.fontStyle;
+    measureElement.style.letterSpacing = computedStyle.letterSpacing;
+    measureElement.style.lineHeight = computedStyle.lineHeight;
+    
+    measureElement.style.position = 'absolute';
+    measureElement.style.visibility = 'hidden';
+    measureElement.style.whiteSpace = 'pre';
+    measureElement.textContent = '    '; // 4 spaces
+    document.body.appendChild(measureElement);
+    
+    const width = measureElement.offsetWidth;
+    document.body.removeChild(measureElement);
+    
+    return width > 0 ? width : 30; // fallback to 30 if measurement fails
   }
-
 };
