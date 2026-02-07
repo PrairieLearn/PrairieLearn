@@ -67,7 +67,10 @@ cd pgvector
 make OPTFLAGS=""
 make install
 rm -rf /tmp/pgvector
-apt-get remove -y postgresql-server-dev-17
+# `autoremove` keeps `clang-19` due `build-essential -> dpkg-dev` recommending
+# `gcc | c-compiler` (`clang-19` provides `c-compiler`). Purge these roots
+# explicitly so the rest of the LLVM toolchain becomes removable.
+apt-get purge -y postgresql-server-dev-17 clang-19 llvm-19-dev
 apt-get autoremove -y
 
 echo "setting up uv + venv..."
