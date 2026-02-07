@@ -273,8 +273,8 @@ export async function updateInstanceQuestionStats({
   await execute(sql.recalculate_instance_question_stats, {
     instance_question_id: instanceQuestion.id,
     some_submission: submissionScores.length > 0,
-    some_perfect_submission: submissionScores.some((score) => (score ?? 0) >= 1),
-    some_nonzero_submission: submissionScores.some((score) => (score ?? 0) > 0),
+    some_perfect_submission: nonNullSubmissionScores.some((score) => score >= 1),
+    some_nonzero_submission: nonNullSubmissionScores.some((score) => score > 0),
     first_submission_score: nonNullSubmissionScores.at(0) ?? null,
     last_submission_score: nonNullSubmissionScores.at(-1) ?? null,
     max_submission_score:
