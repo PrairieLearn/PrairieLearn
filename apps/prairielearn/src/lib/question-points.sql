@@ -63,7 +63,7 @@ WHERE
 ORDER BY
   s.date;
 
--- BLOCK recalculate_instance_question_stats
+-- BLOCK update_instance_question_stats
 UPDATE instance_questions AS iq
 SET
   some_submission = $some_submission,

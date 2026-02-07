@@ -271,7 +271,7 @@ export async function updateInstanceQuestionStats({
           return points * score;
         });
 
-  await execute(sql.recalculate_instance_question_stats, {
+  await execute(sql.update_instance_question_stats, {
     instance_question_id: instanceQuestion.id,
     some_submission: submissionScores.length > 0,
     some_perfect_submission: incrementalHighestScore >= 1,
