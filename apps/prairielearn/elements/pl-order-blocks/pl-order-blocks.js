@@ -1,5 +1,11 @@
 window.PLOrderBlocks = function (uuid, options) {
-  const TABWIDTH = 50; // defines how many px the answer block is indented by, when the student
+  function snapToDevicePx(x) {
+    const dpr = window.devicePixelRatio || 1;
+    return Math.round(x * dpr) / dpr;
+  }
+
+  const measured = 30.789; //Calculated character width
+  const TABWIDTH = snapToDevicePx(measured); // defines how many px the answer block is indented by, when the student
   // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
@@ -314,6 +320,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function drawIndentLocationLines(dropzoneElementId) {
+   // $(dropzoneElementId)[0].style.paddingLeft = '0px';
     $(dropzoneElementId)[0].style.background = 'linear-gradient(#9E9E9E, #9E9E9E) no-repeat, '
       .repeat(maxIndent + 1)
       .slice(0, -2);
