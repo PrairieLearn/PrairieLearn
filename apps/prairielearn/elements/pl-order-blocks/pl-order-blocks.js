@@ -1,6 +1,4 @@
 window.PLOrderBlocks = function (uuid, options) {
-   // defines how many px the answer block is indented by, when the student
-  // drags and indents a block
   const maxIndent = options.maxIndent; // defines the maximum number of times an answer block can be indented
   const enableIndentation = options.enableIndentation;
 
@@ -8,7 +6,8 @@ window.PLOrderBlocks = function (uuid, options) {
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
 
-  const TABWIDTH = calculateTabWidth();
+  const TABWIDTH = calculateTabWidth(); // defines how many px the answer block is indented by, when the student
+    // drags and indents a block
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -328,8 +327,6 @@ window.PLOrderBlocks = function (uuid, options) {
     ).join(', ');
   }
 
-  
-
   const sortables = optionsElementId + ', ' + dropzoneElementId;
   $(sortables).sortable({
     items: '.pl-order-block:not(.nodrag)',
@@ -339,7 +336,6 @@ window.PLOrderBlocks = function (uuid, options) {
     connectWith: sortables,
     placeholder: 'ui-state-highlight',
     create() {
-      
       placePairingIndicators();
       setAnswer();
       if (enableIndentation) {
