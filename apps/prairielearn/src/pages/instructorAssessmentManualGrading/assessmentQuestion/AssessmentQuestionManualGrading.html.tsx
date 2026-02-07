@@ -16,6 +16,7 @@ import { QueryClientProviderDebug } from '../../../lib/client/tanstackQuery.js';
 import type { RubricData } from '../../../lib/manualGrading.types.js';
 
 import type { InstanceQuestionRowWithAIGradingStats } from './assessmentQuestion.types.js';
+import { AiGradingUnavailableModal } from './components/AiGradingUnavailableModal.js';
 import { AssessmentQuestionTable } from './components/AssessmentQuestionTable.js';
 import {
   type ConflictModalState,
@@ -87,8 +88,12 @@ function AssessmentQuestionManualGradingInner({
   const queryClient = useQueryClient();
   const [groupInfoModalState, setGroupInfoModalState] = useState<GroupInfoModalState>(null);
   const [conflictModalState, setConflictModalState] = useState<ConflictModalState>(null);
+  const [showAiGradingUnavailableModal, setShowAiGradingUnavailableModal] = useState(false);
 
   const [aiGradingMode, setAiGradingMode] = useState(initialAiGradingMode);
+
+  // AI grading is available only if the question uses manual grading.
+  const isAiGradingAvailable = (assessmentQuestion.max_manual_points ?? 0) > 0;
 
   const mutations = useManualGradingActions(trpcClient);
   const { setAiGradingModeMutation, groupSubmissionMutation } = mutations;
@@ -118,21 +123,26 @@ function AssessmentQuestionManualGradingInner({
         </nav>
         {aiGradingEnabled && (
           <div className="card px-3 py-2 mb-0">
-            <div className="form-check form-switch mb-0">
+            <div
+              className={`form-check form-switch mb-0 ${isAiGradingAvailable ? 'opacity-100' : 'opacity-75'}`}
+            >
               <input
                 className="form-check-input"
                 type="checkbox"
                 role="switch"
                 id="switchCheckDefault"
                 checked={aiGradingMode}
-                disabled={setAiGradingModeMutation.isPending || !hasCourseInstancePermissionEdit}
-                onChange={() =>
+                onChange={() => {
+                  if (!isAiGradingAvailable) {
+                    setShowAiGradingUnavailableModal(true);
+                    return;
+                  }
                   setAiGradingModeMutation.mutate(!aiGradingMode, {
                     onSuccess: () => {
                       setAiGradingMode((prev) => !prev);
                     },
-                  })
-                }
+                  });
+                }}
               />
               <label className="form-check-label" htmlFor="switchCheckDefault">
                 <i className="bi bi-stars" />
@@ -181,6 +191,11 @@ function AssessmentQuestionManualGradingInner({
             queryKey: ['instance-questions'],
           });
         }}
+      />
+
+      <AiGradingUnavailableModal
+        show={showAiGradingUnavailableModal}
+        onHide={() => setShowAiGradingUnavailableModal(false)}
       />
     </>
   );

@@ -23,14 +23,13 @@ import {
   QuestionAlternativeJsonSchema,
   QuestionIdJsonSchema,
   ZoneAssessmentJsonSchema,
-  ZoneQuestionJsonSchema,
+  ZoneQuestionBlockJsonSchema,
 } from './infoAssessment.js';
 import { ColorJsonSchema, type CourseJson, CourseJsonSchema } from './infoCourse.js';
 import { type CourseInstanceJson, CourseInstanceJsonSchema } from './infoCourseInstance.js';
 import { type ElementCoreJson, ElementCoreJsonSchema } from './infoElementCore.js';
 import { type ElementCourseJson, ElementCourseJsonSchema } from './infoElementCourse.js';
 import { type ElementExtensionJson, ElementExtensionJsonSchema } from './infoElementExtension.js';
-import { type NewsItemJson, NewsItemJsonSchema } from './infoNewsItem.js';
 import { type QuestionJson, QuestionJsonSchema } from './infoQuestion.js';
 import {
   type QuestionOptionsCalculationJson,
@@ -67,7 +66,7 @@ const schemaOverride = (
   if (['canView', 'canSubmit'].includes(segment)) {
     const action = segment === 'canView' ? 'view' : 'submit';
     const inZone = refs.currentPath.includes('ZoneAssessmentJsonSchema');
-    const inQuestion = refs.currentPath.includes('ZoneQuestionJsonSchema');
+    const inQuestion = refs.currentPath.includes('ZoneQuestionBlockJsonSchema');
     const inGroups = refs.currentPath.includes('groups');
 
     // Skip fields inside groups.rolePermissions - let default handle them
@@ -165,13 +164,6 @@ const prairielearnZodToJsonSchema = (
   return jsonSchema;
 };
 
-export const infoNewsItem = prairielearnZodToJsonSchema(NewsItemJsonSchema, {
-  name: 'News Item Info',
-  nameStrategy: 'title',
-  target: 'jsonSchema7',
-  definitions: { CommentJsonSchema },
-}) as JSONSchemaType<NewsItemJson>;
-
 export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, {
   name: 'Assessment info',
   nameStrategy: 'title',
@@ -185,7 +177,7 @@ export const infoAssessment = prairielearnZodToJsonSchema(AssessmentJsonSchema, 
     AssessmentAccessRuleJsonSchema,
     QuestionAlternativeJsonSchema,
     ZoneAssessmentJsonSchema,
-    ZoneQuestionJsonSchema,
+    ZoneQuestionBlockJsonSchema,
     LegacyGroupRoleJsonSchema,
     GroupsRoleJsonSchema,
     AdvanceScorePercJsonSchema,
@@ -292,7 +284,6 @@ export const questionOptionsv3 = prairielearnZodToJsonSchema(QuestionOptionsv3Js
 }) as JSONSchemaType<QuestionOptionsv3Json>;
 
 export const ajvSchemas = {
-  infoNewsItem,
   infoAssessment,
   infoCourse,
   infoCourseInstance,
