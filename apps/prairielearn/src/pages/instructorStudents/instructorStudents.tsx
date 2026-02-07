@@ -103,6 +103,7 @@ interface InviteCounts {
   invited: number;
   unblocked: number;
   reenrolled: number;
+  skippedLti13Pending: number;
   skippedInstructor: number;
   skippedAlreadyInvited: number;
   skippedAlreadyJoined: number;
@@ -172,6 +173,13 @@ async function processInvitations({
       if (existingEnrollment?.status === 'invited') {
         job.info(`${uid}: Skipped (already invited)`);
         counts.skippedAlreadyInvited++;
+        continue;
+      }
+      if (existingEnrollment?.status === 'lti13_pending') {
+        // TODO: once LTI roster syncing is supported, handle this status based on
+        // the LTI source of truth instead of skipping it.
+        job.info(`${uid}: Skipped (LTI-managed enrollment)`);
+        counts.skippedLti13Pending++;
         continue;
       }
       if (skipBlocked && existingEnrollment?.status === 'blocked') {
@@ -264,6 +272,7 @@ router.post(
           invited: 0,
           unblocked: 0,
           reenrolled: 0,
+          skippedLti13Pending: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
           skippedAlreadyJoined: 0,
@@ -297,6 +306,9 @@ router.post(
         if (counts.skippedAlreadyRemoved > 0) {
           job.info(`  Skipped (removed): ${counts.skippedAlreadyRemoved}`);
         }
+        if (counts.skippedLti13Pending > 0) {
+          job.info(`  Skipped (LTI-managed): ${counts.skippedLti13Pending}`);
+        }
         if (counts.skippedInstructor > 0) {
           job.info(`  Skipped (instructor): ${counts.skippedInstructor}`);
         }
@@ -321,6 +333,7 @@ router.post(
           invited: 0,
           unblocked: 0,
           reenrolled: 0,
+          skippedLti13Pending: 0,
           skippedInstructor: 0,
           skippedAlreadyInvited: 0,
           skippedAlreadyJoined: 0,
@@ -436,6 +449,9 @@ router.post(
         }
         if (syncCounts.skippedAlreadyInvited > 0) {
           job.info(`  Skipped (already invited): ${syncCounts.skippedAlreadyInvited}`);
+        }
+        if (syncCounts.skippedLti13Pending > 0) {
+          job.info(`  Skipped (LTI-managed): ${syncCounts.skippedLti13Pending}`);
         }
         if (syncCounts.skippedInstructor > 0) {
           job.info(`  Skipped (instructor): ${syncCounts.skippedInstructor}`);

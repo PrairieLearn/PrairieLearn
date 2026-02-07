@@ -587,10 +587,12 @@ async function _selectAndLockEnrollment(id: string) {
  * This function enforces specific state transitions:
  * - `blocked` → `joined` (unblock)
  * - `joined` → `blocked` (block)
- * - `joined` → `removed` (student self-removal)
+ * - `joined` → `left` (student self-removal)
+ * - `joined` → `removed` (instructor removal)
  * - `invited` → `rejected` (student rejects invitation)
  *
- * For roster sync operations that need to block from any status, use `blockEnrollmentFromSync` instead.
+ * For roster sync operations, use `removeEnrollmentFromSync` and
+ * `reenrollEnrollmentFromSync` instead.
  */
 export async function setEnrollmentStatus({
   enrollment,
@@ -621,8 +623,8 @@ export async function setEnrollmentStatus({
         case 'joined':
           return {
             previousStatus: ['blocked', 'removed'],
-            // TODO: when we add support for re-enrolling via manual and LTI sync,
-            // we'll need to differentiate those action details here.
+            // TODO: once we support LTI roster syncing, differentiate
+            // LTI-driven re-enroll action details here.
             actionDetail:
               lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
             permittedRoles: ['Student Data Editor'],
@@ -700,9 +702,9 @@ export async function setEnrollmentStatus({
 /**
  * Removes an enrollment as part of a roster sync operation.
  *
- * Unlike `setEnrollmentStatus`, this function can remove enrollments from any "active" status
- * (joined) because roster sync treats the provided roster as the source of truth and needs
- * to remove anyone not on it who is currently enrolled.
+ * Unlike `setEnrollmentStatus`, this function uses a sync-specific action detail.
+ * Roster sync treats the provided roster as the source of truth and removes
+ * anyone not on it who is currently joined.
  *
  * LTI-managed enrollments (lti13_pending) cannot be removed via roster sync.
  */
