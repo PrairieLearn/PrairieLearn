@@ -132,7 +132,7 @@ async function processInvitations({
   counts: InviteCounts;
   /**
    * If true, skips students who are currently blocked. This is useful for `invite_uids`.
-   * If false, re-invites blocked students. This is useful for `sync_students`.
+   * If false, blocked students can be handled by `allowReenroll` in `sync_students`.
    */
   skipBlocked: boolean;
   /**

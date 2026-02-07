@@ -114,6 +114,34 @@ test.describe('Sync students', () => {
     await createTestData();
   });
 
+  test('allows deselecting previewed students before syncing', async ({ page }) => {
+    const inviteOnlyUid = 'sync_toggle_invite@test.com';
+    await getOrCreateUser({ uid: inviteOnlyUid, name: 'Toggle Invite', uin: null });
+
+    await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
+    await expect(page).toHaveTitle(/Students/);
+
+    await page.getByRole('button', { name: 'Manage enrollments' }).click();
+    await page.getByRole('button', { name: 'Sync roster' }).click();
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    await page.getByRole('textbox', { name: 'Student UIDs' }).fill(inviteOnlyUid);
+    await page.getByRole('button', { name: 'Compare' }).click();
+    await expect(page.getByText('Review the changes below')).toBeVisible();
+
+    const dialog = page.getByRole('dialog');
+    const syncButton = dialog.getByRole('button', { name: /Sync \d+ student/ });
+    const initialCount = Number((await syncButton.innerText()).match(/Sync (\d+) student/)![1]);
+
+    const inviteCheckbox = dialog.locator(`[id="sync-invite-${inviteOnlyUid}"]`);
+    await expect(inviteCheckbox).toBeChecked();
+    await inviteCheckbox.click();
+    await expect(inviteCheckbox).not.toBeChecked();
+
+    const updatedCount = Number((await syncButton.innerText()).match(/Sync (\d+) student/)![1]);
+    expect(updatedCount).toBe(initialCount - 1);
+  });
+
   test('can sync students with invites, cancellations, and removals', async ({ page }) => {
     // Create fresh users for this test to avoid conflicts
     await getOrCreateUser({ uid: 'fresh_sync_new@test.com', name: 'Fresh New', uin: null });

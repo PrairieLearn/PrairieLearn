@@ -196,14 +196,13 @@ function StudentCheckboxList({
             <Form.Check
               type="checkbox"
               id={`sync-${variant}-${item.uid}`}
-              checked={selectedUids.has(item.uid)}
               className="d-flex gap-2 align-items-center mb-0"
-              onChange={() => onToggle(item.uid)}
             >
               <Form.Check.Input
                 type="checkbox"
                 className="mt-0"
                 checked={selectedUids.has(item.uid)}
+                onChange={() => onToggle(item.uid)}
               />
               <span className="d-inline-flex align-items-center gap-2 flex-wrap">
                 <code>{item.uid}</code>
