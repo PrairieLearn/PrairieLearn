@@ -103,6 +103,7 @@ program.command('build <source> <destination>').action(async (source, destinatio
 
   // Format the output into an object that we can pass to `console.table`.
   const results: Record<string, any> = {};
+  const sizesJson: Record<string, AssetSizes> = {};
   Object.entries(manifest).forEach(([entryPoint, asset]) => {
     const totalSizes = calculateTotalSizes(asset, compressedSizes);
 
@@ -112,8 +113,13 @@ program.command('build <source> <destination>').action(async (source, destinatio
       'Size (gzip)': prettyBytes(totalSizes.gzip),
       'Size (brotli)': prettyBytes(totalSizes.brotli),
     };
+
+    sizesJson[entryPoint] = totalSizes;
   });
   console.table(results);
+
+  // Write sizes.json for use by the bundle size reporting action.
+  await fs.writeJSON(path.resolve(destination, 'sizes.json'), sizesJson, { spaces: 2 });
 });
 
 program.parseAsync(process.argv).catch((err) => {
