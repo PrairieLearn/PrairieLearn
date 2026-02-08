@@ -192,10 +192,11 @@ def worker_loop() -> None:
 
     sys.excepthook = make_rich_excepthook(
         suppress=[
-            # Hide frames from internal infrastructure code so that
-            # tracebacks only show the element's own code.
+            # Hide frames from internal library
+            # and infrastructure code. This cuts down output for
+            # scenarios where the problem isn't in our library code.
             __file__,
-            os.path.join(os.path.dirname(__file__), "prairielearn", "internal"),
+            os.path.join(os.path.dirname(__file__), "prairielearn"),
         ],
     )
 

@@ -201,9 +201,9 @@ def process(
                 )
         except Exception as exc:
             source = get_source_definition(element)
-            line = element.sourceline
-            location = f" on line {line}" if line is not None else ""
-            exc.add_note(f"Error occurred while processing element {source}{location}")
+            # We can't easily show the line number because
+            # the line-number is in the post-mustache processed HTML.
+            exc.add_note(f"Error occurred while processing element {source}")
             raise
 
     def process_element_return_none(element: lxml.html.HtmlElement) -> None:

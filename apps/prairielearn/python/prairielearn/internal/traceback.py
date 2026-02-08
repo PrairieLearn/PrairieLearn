@@ -42,6 +42,29 @@ def _suppress_panel_border() -> Iterator[None]:
         Panel.__rich_console__ = orig
 
 
+def _collect_and_clear_notes(exc: BaseException) -> list[str]:
+    """Walk the exception chain, collect all __notes__, and clear them.
+
+    Rich has a bug where it reads __notes__ once from the outermost exception
+    and applies them to every stack in the chain, causing duplicate display.
+    We work around this by stripping notes before Rich sees them and rendering
+    them ourselves afterward.
+
+    See https://github.com/Textualize/rich/issues/3960 for context.
+    """
+    notes: list[str] = []
+    seen: set[int] = set()
+    current: BaseException | None = exc
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        exc_notes = getattr(current, "__notes__", None)
+        if exc_notes:
+            notes.extend(exc_notes)
+            current.__notes__ = []
+        current = current.__cause__ or current.__context__
+    return notes
+
+
 def make_rich_excepthook(
     suppress: Sequence[str],
 ) -> Callable[[type[BaseException], BaseException, types.TracebackType | None], None]:
@@ -59,6 +82,8 @@ def make_rich_excepthook(
             from rich.console import Console
             from rich.theme import Theme
             from rich.traceback import Traceback
+
+            notes = _collect_and_clear_notes(exc_value)
 
             with _suppress_panel_border():
                 console = Console(
@@ -82,6 +107,13 @@ def make_rich_excepthook(
                     ),
                     soft_wrap=True,
                 )
+                for note in notes:
+                    from rich.text import Text
+
+                    console.print(
+                        Text.assemble(("[NOTE] ", "traceback.note"), note),
+                        highlight=False,
+                    )
                 sys.stderr.write(console.export_text(styles=True))
         except Exception:
             import traceback
