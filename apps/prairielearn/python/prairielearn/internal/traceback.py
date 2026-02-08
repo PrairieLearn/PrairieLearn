@@ -1,5 +1,6 @@
 import contextlib
 import io
+import os
 import sys
 import types
 from collections.abc import Callable, Iterator, Sequence
@@ -67,10 +68,15 @@ def _collect_and_clear_notes(exc: BaseException) -> list[str]:
 
 def make_rich_excepthook(
     suppress: Sequence[str],
+    hide: Sequence[str] = (),
 ) -> Callable[[type[BaseException], BaseException, types.TracebackType | None], None]:
     """Create an excepthook that formats tracebacks with syntax highlighting using Rich.
 
-    ``suppress`` is a list of paths whose frames will be hidden from the traceback.
+    ``suppress`` is a list of paths whose frames will be dimmed in the traceback
+    (source code hidden but frame header still shown).
+
+    ``hide`` is a list of paths whose frames will be removed entirely from the
+    traceback output.
     """
 
     def _hook(
@@ -93,20 +99,30 @@ def make_rich_excepthook(
                     width=300,
                     record=True,
                 )
-                console.print(
-                    Traceback.from_exception(
-                        exc_type,
-                        exc_value,
-                        exc_tb,
-                        suppress=list(suppress),
-                        width=None,
-                        code_width=None,
-                        word_wrap=False,
-                        show_locals=False,
-                        indent_guides=False,
-                    ),
-                    soft_wrap=True,
+                tb = Traceback.from_exception(
+                    exc_type,
+                    exc_value,
+                    exc_tb,
+                    suppress=list(suppress),
+                    width=None,
+                    code_width=None,
+                    word_wrap=False,
+                    show_locals=False,
+                    indent_guides=False,
                 )
+                if hide:
+                    normalized = [
+                        os.path.normpath(os.path.abspath(p)) for p in hide
+                    ]
+                    for stack in tb.trace.stacks:
+                        stack.frames = [
+                            f
+                            for f in stack.frames
+                            if not any(
+                                f.filename.startswith(p) for p in normalized
+                            )
+                        ]
+                console.print(tb, soft_wrap=True)
                 for note in notes:
                     from rich.text import Text
 
