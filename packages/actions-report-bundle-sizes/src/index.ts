@@ -102,9 +102,7 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   const biggestIncrease = Math.max(...pctChanges, 0);
   const biggestDecrease = Math.min(...pctChanges, 0);
   const hasSignificantChange =
-    Math.abs(totalPct) > THRESHOLD ||
-    biggestIncrease > THRESHOLD ||
-    biggestDecrease < -THRESHOLD;
+    Math.abs(totalPct) > THRESHOLD || biggestIncrease > THRESHOLD || biggestDecrease < -THRESHOLD;
 
   let summaryLine: string;
   if (!oldSizes) {
