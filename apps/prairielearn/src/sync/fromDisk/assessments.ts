@@ -16,7 +16,6 @@ import {
   type QuestionParameterJson,
   type QuestionPointsJson,
   type QuestionPreferences,
-  type ZoneQuestionJson,
   type ZoneQuestionBlockJson,
 } from '../../schemas/index.js';
 import { type CourseInstanceData, convertLegacyGroupsToGroupsConfig } from '../course-db.js';
