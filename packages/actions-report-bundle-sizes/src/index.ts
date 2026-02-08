@@ -99,15 +99,26 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
   } else if (entries.length === 0) {
     summaryLine = 'No size changes';
   } else {
-    const THRESHOLD = 100; // bytes
-    const significantEntries = entries.filter((e) => e.absDiff > THRESHOLD);
-    if (significantEntries.length === 0) {
-      summaryLine = 'No significant size changes';
-    } else {
-      const totalDiff = newTotal - oldTotal;
-      const sign = totalDiff > 0 ? '+' : '';
-      summaryLine = `${sign}${formatBytes(totalDiff)} total`;
+    const THRESHOLD = 0.5; // percent
+    const changedEntries = entries.filter(
+      (e) => e.kind === 'changed' && e.oldGzip != null && e.oldGzip > 0,
+    );
+    const pctChanges = changedEntries.map(
+      (e) => ((e.newGzip! - e.oldGzip!) / e.oldGzip!) * 100,
+    );
+
+    const totalPct = oldTotal > 0 ? ((newTotal - oldTotal) / oldTotal) * 100 : 0;
+    const biggestIncrease = Math.max(...pctChanges, 0);
+    const biggestDecrease = Math.min(...pctChanges, 0);
+
+    const parts: string[] = [`Total change: ${totalPct > 0 ? '+' : ''}${totalPct.toFixed(2)}%`];
+    if (biggestIncrease > THRESHOLD) {
+      parts.push(`Biggest increase: +${biggestIncrease.toFixed(2)}%`);
+    } else if (biggestDecrease < -THRESHOLD) {
+      parts.push(`Biggest decrease: ${biggestDecrease.toFixed(2)}%`);
     }
+
+    summaryLine = parts.join(', ');
   }
 
   const lines: string[] = [
