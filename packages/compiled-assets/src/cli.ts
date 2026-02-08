@@ -118,7 +118,7 @@ program.command('build <source> <destination>').action(async (source, destinatio
   });
   console.table(results);
 
-  // Write sizes.json for use by the bundle size reporting action.
+  // Write the result for processing by other tools (e.g. our bundle size reporting action).
   await fs.writeJSON(path.resolve(destination, 'sizes.json'), sizesJson, { spaces: 2 });
 });
 
