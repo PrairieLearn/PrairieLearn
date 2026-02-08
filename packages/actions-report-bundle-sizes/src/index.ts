@@ -27,8 +27,11 @@ function formatBytes(bytes: number): string {
 
 function formatChange(oldSize: number, newSize: number): string {
   const diff = newSize - oldSize;
-  const pct = oldSize > 0 ? ((diff / oldSize) * 100).toFixed(2) : '0.00';
   const sign = diff > 0 ? '+' : '';
+  if (oldSize === 0) {
+    return `${sign}${formatBytes(diff)} (N/A)`;
+  }
+  const pct = ((diff / oldSize) * 100).toFixed(2);
   return `${sign}${formatBytes(diff)} (${sign}${pct}%)`;
 }
 
@@ -113,7 +116,8 @@ function buildCommentSection(oldSizes: SizesJson | null, newSizes: SizesJson): s
     const parts: string[] = [`Total change: ${totalPct > 0 ? '+' : ''}${totalPct.toFixed(2)}%`];
     if (biggestIncrease > THRESHOLD) {
       parts.push(`Biggest increase: +${biggestIncrease.toFixed(2)}%`);
-    } else if (biggestDecrease < -THRESHOLD) {
+    }
+    if (biggestDecrease < -THRESHOLD) {
       parts.push(`Biggest decrease: ${biggestDecrease.toFixed(2)}%`);
     }
     summaryLine = parts.join(', ');
