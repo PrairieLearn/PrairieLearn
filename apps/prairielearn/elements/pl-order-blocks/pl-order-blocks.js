@@ -374,7 +374,8 @@ window.PLOrderBlocks = function (uuid, options) {
   function calculateTabWidth() {
     // Find the .pl-code td.code <pre> element where the monospace font is applied
     const sourceElement = fullContainer.querySelector('.pl-code td.code pre');
-      
+    if (!sourceElement) return 50;
+
     // Create a temporary element to measure character width
     const measureElement = document.createElement('span');
     const computedStyle = window.getComputedStyle(sourceElement);
@@ -391,11 +392,11 @@ window.PLOrderBlocks = function (uuid, options) {
     measureElement.style.position = 'absolute';
     measureElement.style.visibility = 'hidden';
     measureElement.style.whiteSpace = 'pre';
-    measureElement.textContent = new Array(TAB_SPACES).fill(" ").join('');
-    
+    measureElement.textContent = ' '.repeat(TAB_SPACES);
+
     //Create element, measure, and remove
     document.body.append(measureElement);
-    const width = measureElement.offsetWidth;
+    const width = measureElement.getBoundingClientRect().width;
     measureElement.remove();
     
     // fallback to 50 if measurement fails
