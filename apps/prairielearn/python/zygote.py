@@ -187,30 +187,17 @@ def try_dumps(obj: Any, *, sort_keys: bool = False, allow_nan: bool = False) -> 
         raise
 
 
-def _pygments_excepthook(
-    exc_type: type[BaseException],
-    exc_value: BaseException,
-    exc_tb: types.TracebackType | None,
-) -> None:
-    """Format tracebacks with syntax highlighting using Pygments."""
-    import traceback
-
-    try:
-        from pygments import highlight
-        from pygments.formatters import Terminal256Formatter
-        from pygments.lexers import PythonTracebackLexer
-
-        tb_text = "".join(traceback.format_exception(exc_type, exc_value, exc_tb))
-        colored = highlight(
-            tb_text, PythonTracebackLexer(), Terminal256Formatter(style="native")
-        )
-        print(colored, end="", file=sys.stderr)
-    except Exception:
-        traceback.print_exception(exc_type, exc_value, exc_tb)
-
-
 def worker_loop() -> None:
-    sys.excepthook = _pygments_excepthook
+    from prairielearn.internal.traceback import make_rich_excepthook
+
+    sys.excepthook = make_rich_excepthook(
+        suppress=[
+            # Hide frames from internal infrastructure code so that
+            # tracebacks only show the element's own code.
+            __file__,
+            os.path.join(os.path.dirname(__file__), "prairielearn", "internal"),
+        ],
+    )
 
     # The prairielearn.internal module is only needed in the worker process.
     # Because it makes use of threading, we only import it after forking to
