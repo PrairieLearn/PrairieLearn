@@ -69,6 +69,7 @@ def _collect_and_clear_notes(exc: BaseException) -> list[str]:
 def make_rich_excepthook(
     suppress: Sequence[str],
     hide: Sequence[str] = (),
+    relative_to: str | None = None,
 ) -> Callable[[type[BaseException], BaseException, types.TracebackType | None], None]:
     """Create an excepthook that formats tracebacks with syntax highlighting using Rich.
 
@@ -77,6 +78,9 @@ def make_rich_excepthook(
 
     ``hide`` is a list of paths whose frames will be removed entirely from the
     traceback output.
+
+    ``relative_to`` is a directory path. If provided, absolute filenames that
+    start with this prefix will be shortened to relative paths.
     """
 
     def _hook(
@@ -111,18 +115,33 @@ def make_rich_excepthook(
                     indent_guides=False,
                 )
                 if hide:
-                    normalized = [
-                        os.path.normpath(os.path.abspath(p)) for p in hide
-                    ]
+                    normalized = [os.path.normpath(os.path.abspath(p)) for p in hide]
                     for stack in tb.trace.stacks:
                         stack.frames = [
                             f
                             for f in stack.frames
-                            if not any(
-                                f.filename.startswith(p) for p in normalized
-                            )
+                            if not any(f.filename.startswith(p) for p in normalized)
                         ]
-                console.print(tb, soft_wrap=True)
+
+                if relative_to:
+                    # Rewrite the filenames for display purposes.
+                    prefix = os.path.normpath(os.path.abspath(relative_to)) + os.sep
+                    for stack in tb.trace.stacks:
+                        for frame in stack.frames:
+                            frame.filename = frame.filename.removeprefix(prefix)
+                    tb.suppress = [p.removeprefix(prefix) for p in tb.suppress]
+
+                    # chdir so os.path.exists and linecache resolve
+                    # the shortened relative paths during rendering.
+                    # Otherwise, the rewritten paths won't be resolved correctly.
+                    old_cwd = os.getcwd()
+                    os.chdir(relative_to)
+                    try:
+                        console.print(tb, soft_wrap=True)
+                    finally:
+                        os.chdir(old_cwd)
+                else:
+                    console.print(tb, soft_wrap=True)
                 for note in notes:
                     from rich.text import Text
 
