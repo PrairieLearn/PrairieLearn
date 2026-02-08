@@ -6,8 +6,10 @@ window.PLOrderBlocks = function (uuid, options) {
   const dropzoneElementId = '#order-blocks-dropzone-' + uuid;
   const fullContainer = document.querySelector('.pl-order-blocks-question-' + uuid);
 
+  const TAB_SPACES = 4;
   const TABWIDTH = calculateTabWidth(); // defines how many px the answer block is indented by, when the student
     // drags and indents a block
+
 
   function initializeKeyboardHandling() {
     const blocks = fullContainer.querySelectorAll('.pl-order-block');
@@ -370,8 +372,7 @@ window.PLOrderBlocks = function (uuid, options) {
   }
 
   function calculateTabWidth() {
-    // Find the <pre> element where the monospace font is actually applied
-    // Based on the CSS: .pl-code td.code pre contains the actual code text
+    // Find the .pl-code td.code <pre> element where the monospace font is applied
     const sourceElement = fullContainer.querySelector('.pl-code td.code pre');
       
     // Create a temporary element to measure character width
@@ -386,15 +387,18 @@ window.PLOrderBlocks = function (uuid, options) {
     measureElement.style.letterSpacing = computedStyle.letterSpacing;
     measureElement.style.lineHeight = computedStyle.lineHeight;
     
+    // Set visiblity and content
     measureElement.style.position = 'absolute';
     measureElement.style.visibility = 'hidden';
     measureElement.style.whiteSpace = 'pre';
-    measureElement.textContent = '    '; // 4 spaces
-    document.body.appendChild(measureElement);
+    measureElement.textContent = new Array(TAB_SPACES).fill(" ").join('');
     
+    //Create element, measure, and remove
+    document.body.append(measureElement);
     const width = measureElement.offsetWidth;
-    document.body.removeChild(measureElement);
+    measureElement.remove();
     
-    return width > 0 ? width : 30; // fallback to 30 if measurement fails
+    // fallback to 50 if measurement fails
+    return width > 0 ? width : 50; 
   }
 };
