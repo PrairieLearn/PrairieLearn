@@ -176,8 +176,6 @@ export async function loadUser(
         },
         z.boolean(),
       ));
-
-    res.locals.news_item_notification_count = selectedUser.news_item_notification_count;
   }
 
   return { user: selectedUser.user };

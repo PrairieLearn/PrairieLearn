@@ -383,7 +383,7 @@
           "description": "Array of questions in the zone.",
           "type": "array",
           "items": {
-            "$ref": "#/definitions/ZoneQuestionJsonSchema"
+            "$ref": "#/definitions/ZoneQuestionBlockJsonSchema"
           },
           "minItems": 1
         },
@@ -420,7 +420,7 @@
         }
       }
     },
-    "ZoneQuestionJsonSchema": {
+    "ZoneQuestionBlockJsonSchema": {
       "type": "object",
       "properties": {
         "comment": {

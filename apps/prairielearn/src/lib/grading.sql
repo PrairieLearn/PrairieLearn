@@ -204,10 +204,18 @@ WITH
       is_ai_graded = FALSE
     WHERE
       id = $instance_question_id
+    RETURNING
+      *
+  ),
+  updated_assessment_instance AS (
+    UPDATE assessment_instances
+    SET
+      duration = duration + ($delta * interval '1 ms'),
+      modified_at = now()
+    WHERE
+      id = $assessment_instance_id
   )
-UPDATE assessment_instances
-SET
-  duration = duration + ($delta * interval '1 ms'),
-  modified_at = now()
-WHERE
-  id = $assessment_instance_id;
+SELECT
+  *
+FROM
+  updated_instance_question;

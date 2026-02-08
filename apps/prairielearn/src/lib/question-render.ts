@@ -48,6 +48,12 @@ import {
   type User,
   type Variant,
 } from './db-types.js';
+import {
+  type QuestionGroupPermissions,
+  getGroupInfo,
+  getQuestionGroupPermissions,
+  getUserRoles,
+} from './groups.js';
 import { writeCourseIssues } from './issues.js';
 import * as manualGrading from './manualGrading.js';
 import { selectRubricData } from './manualGrading.js';
@@ -60,12 +66,6 @@ import {
 } from './question-render.types.js';
 import { ensureVariant, getQuestionCourse } from './question-variant.js';
 import type { UntypedResLocals } from './res-locals.types.js';
-import {
-  type QuestionGroupPermissions,
-  getGroupInfo,
-  getQuestionGroupPermissions,
-  getUserRoles,
-} from './teams.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
@@ -662,6 +662,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit,
   renderScorePanels,
   groupRolePermissions,
+  authz_result,
 }: {
   unsafe_submission_id: string;
   question: Question;
@@ -674,6 +675,7 @@ export async function renderPanelsForSubmission({
   authorizedEdit: boolean;
   renderScorePanels: boolean;
   groupRolePermissions: { can_view: boolean; can_submit: boolean } | null;
+  authz_result?: { active: boolean };
 }): Promise<SubmissionPanels> {
   const submissionInfo = await sqldb.queryOptionalRow(
     sql.select_submission_info,
@@ -731,6 +733,7 @@ export async function renderPanelsForSubmission({
       assessment_instance,
       assessment_question,
       group_config,
+      authz_result,
     }),
   };
 

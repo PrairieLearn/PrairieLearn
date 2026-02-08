@@ -23,11 +23,12 @@
  * `duration` for compute usage.
  */
 
-import type { LanguageModelUsage } from 'ai';
+import type { GenerateObjectResult, LanguageModelUsage } from 'ai';
 
 import { execute, loadSqlEquiv } from '@prairielearn/postgres';
 
-import { calculateResponseCost } from '../lib/ai.js';
+import type { CounterClockwiseRotationDegrees } from '../ee/lib/ai-grading/types.js';
+import { calculateResponseCost } from '../lib/ai-util.js';
 import type { Config, config } from '../lib/config.js';
 
 const sql = loadSqlEquiv(import.meta.url);
@@ -119,4 +120,43 @@ export async function updateCourseInstanceUsagesForAiGrading({
     authn_user_id: authnUserId,
     cost_ai_grading: calculateResponseCost({ model, usage }),
   });
+}
+
+export async function updateCourseInstanceUsagesForAiGradingResponses({
+  gradingJobId,
+  authnUserId,
+  model,
+  gradingResponseWithRotationIssue,
+  rotationCorrections,
+  finalGradingResponse,
+}: {
+  gradingJobId: string;
+  authnUserId: string;
+  model: keyof Config['costPerMillionTokens'];
+  gradingResponseWithRotationIssue?: GenerateObjectResult<any>;
+  rotationCorrections?: Record<
+    string,
+    {
+      degreesRotated: CounterClockwiseRotationDegrees;
+      response: GenerateObjectResult<any>;
+    }
+  >;
+  finalGradingResponse: GenerateObjectResult<any>;
+}) {
+  const responses = [
+    ...(gradingResponseWithRotationIssue ? [gradingResponseWithRotationIssue] : []),
+    ...(rotationCorrections
+      ? Object.values(rotationCorrections).map((correction) => correction.response)
+      : []),
+    finalGradingResponse,
+  ];
+
+  for (const response of responses) {
+    await updateCourseInstanceUsagesForAiGrading({
+      gradingJobId,
+      authnUserId,
+      model,
+      usage: response.usage,
+    });
+  }
 }
