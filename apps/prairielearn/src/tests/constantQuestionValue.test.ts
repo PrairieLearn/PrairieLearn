@@ -8,8 +8,11 @@ import * as sqldb from '@prairielearn/postgres';
 
 import { config } from '../lib/config.js';
 import {
+  type AssessmentInstance,
   AssessmentInstanceSchema,
+  type InstanceQuestion,
   InstanceQuestionSchema,
+  type Question,
   QuestionSchema,
 } from '../lib/db-types.js';
 import { selectAssessmentByTid } from '../models/assessment.js';
@@ -19,7 +22,37 @@ import * as helperServer from './helperServer.js';
 
 const sql = sqldb.loadSqlEquiv(import.meta.url);
 
-const locals: Record<string, any> = {};
+const locals = {} as {
+  siteUrl: string;
+  baseUrl: string;
+  courseInstanceBaseUrl: string;
+  questionBaseUrl: string;
+  assessmentsUrl: string;
+  isStudentPage: boolean;
+  totalPoints: number;
+  assessment_id: string;
+  assessmentUrl: string;
+  $: cheerio.CheerioAPI;
+  preStartTime: number;
+  postStartTime: number;
+  assessmentInstanceUrl: string;
+  assessment_instance: AssessmentInstance;
+  instance_questions: (InstanceQuestion & { qid: Question['qid'] })[];
+  shouldHaveButtons: string[];
+  postAction: string;
+  question: TestQuestion;
+  expectedResult: {
+    submission_score: number;
+    submission_correct: boolean;
+    instance_question_points: number;
+    instance_question_score_perc: number;
+    instance_question_auto_points: number;
+    instance_question_manual_points: number;
+    assessment_instance_points: number;
+    assessment_instance_score_perc: number;
+  };
+  getSubmittedAnswer: () => Record<string, string>;
+};
 
 interface TestQuestion {
   qid: string;
@@ -35,114 +68,50 @@ interface TestZone {
   qid: string;
   score: number;
   sub_points: number;
-  sub_total_points: number;
   submission_score?: number;
 }
 
 const questionsArray: TestQuestion[] = [
-  { qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 8 },
-  { qid: 'partialCredit1', type: 'Freeform', maxPoints: 30 },
-  { qid: 'partialCredit2', type: 'Freeform', maxPoints: 40 },
-  { qid: 'partialCredit3', type: 'Freeform', maxPoints: 50 },
+  { qid: 'partialCredit1', type: 'Freeform', maxPoints: 5 },
+  { qid: 'partialCredit2', type: 'Freeform', maxPoints: 13 },
+  { qid: 'partialCredit3', type: 'Freeform', maxPoints: 10 },
+  { qid: 'partialCredit4_v2', type: 'Calculation', maxPoints: 10 },
+  { qid: 'partialCredit6_no_partial', type: 'Freeform', maxPoints: 11 },
 ];
 
 const questions = keyBy(questionsArray, (question) => question.qid);
 
-const assessmentMaxPoints = 57;
+const assessmentMaxPoints = 49;
 
 // score: value to submit, will be the percentage score for the submission
 // sub_points: additional awarded points for this submission
-// sub_total_points: additional total points for this submission
-const zoneGradingTests: TestZone[][] = [
+const questionGradingTests: TestZone[][] = [
   [
-    {
-      qid: 'partialCredit1',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 5,
-    },
-    {
-      qid: 'partialCredit2',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit2',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 10,
-    },
-    {
-      qid: 'partialCredit1',
-      score: 0,
-      sub_points: 0,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      score: 100,
-      sub_points: 4,
-      sub_total_points: 4,
-    },
-    {
-      qid: 'partialCredit3',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit3',
-      score: 40,
-      sub_points: 2,
-      sub_total_points: 2,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      score: 100,
-      sub_points: 4,
-      sub_total_points: 3,
-    },
-    {
-      qid: 'partialCredit4_v2',
-      score: 100,
-      sub_points: 0,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit1',
-      score: 100,
-      sub_points: 5,
-      sub_total_points: 0,
-    },
-    {
-      qid: 'partialCredit1',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 3,
-    },
-    {
-      qid: 'partialCredit1',
-      score: 100,
-      sub_points: 10,
-      sub_total_points: 10,
-    },
-    {
-      qid: 'partialCredit2',
-      score: 100,
-      sub_points: 15,
-      sub_total_points: 0,
-    },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit1', score: 0, sub_points: 0 },
+    { qid: 'partialCredit4_v2', score: 100, sub_points: 3 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 40, sub_points: 2 * 0.4 },
+    { qid: 'partialCredit4_v2', score: 100, sub_points: 3 },
+    { qid: 'partialCredit4_v2', score: 100, sub_points: 3 },
+    { qid: 'partialCredit4_v2', score: 100, sub_points: 1 }, // reached max points
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 },
+    { qid: 'partialCredit2', score: 100, sub_points: 2 },
+    { qid: 'partialCredit1', score: 100, sub_points: 1 }, // reached max points
+    { qid: 'partialCredit1', score: 100, sub_points: 0 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 * (1 - 0.4) },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 },
+    { qid: 'partialCredit3', score: 100, sub_points: 2 }, // reached max auto points (has manual points)
+    { qid: 'partialCredit3', score: 100, sub_points: 0 },
   ],
 ];
 
-describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
+describe('Homework assessment with constant question values', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
 
   afterAll(helperServer.after);
@@ -151,7 +120,7 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
     describe('the locals object', function () {
       it('should be cleared', function () {
         for (const prop in locals) {
-          delete locals[prop];
+          delete locals[prop as keyof typeof locals];
         }
       });
       it('should be initialized', function () {
@@ -179,10 +148,10 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
     });
 
     describe('the database', function () {
-      it('should contain HW4', async () => {
+      it('should contain HW3', async () => {
         const { id: assessmentId } = await selectAssessmentByTid({
           course_instance_id: '1',
-          tid: 'hw4-perzonegrading',
+          tid: 'hw3-partialCredit',
         });
         locals.assessment_id = assessmentId;
       });
@@ -195,8 +164,8 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
         const page = await res.text();
         locals.$ = cheerio.load(page);
       });
-      it('should have correct link for "Homework to test per-zone grading"', function () {
-        const elemList = locals.$('td a:contains("Homework to test per-zone grading")');
+      it('should have correct link for "Homework to test partial credit"', function () {
+        const elemList = locals.$('td a:contains("Homework to test partial credit")');
         assert.lengthOf(elemList, 1);
 
         locals.assessmentUrl = locals.siteUrl + elemList[0].attribs.href;
@@ -273,8 +242,8 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
     });
   }
 
-  zoneGradingTests.forEach(function (zoneGradingTest, iZoneGradingTest) {
-    describe(`zone grading test #${iZoneGradingTest + 1}`, function () {
+  questionGradingTests.forEach(function (questionGradingTest, iQuestionGradingTest) {
+    describe(`question grading test #${iQuestionGradingTest + 1}`, function () {
       describe('server', function () {
         it('should shut down', async function () {
           await helperServer.after();
@@ -286,7 +255,7 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
 
       startAssessment();
 
-      zoneGradingTest.forEach(function (questionTest, iQuestionTest) {
+      questionGradingTest.forEach(function (questionTest, iQuestionTest) {
         describe(`grade answer number #${iQuestionTest + 1} for question ${
           questionTest.qid
         } with score ${questionTest.score}`, function () {
@@ -295,8 +264,8 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
               locals.shouldHaveButtons = ['grade', 'save'];
               locals.postAction = 'grade';
               locals.question = questions[questionTest.qid];
-              locals.question.points += questionTest.sub_points;
-              locals.totalPoints += questionTest.sub_total_points;
+              locals.question.points = (locals.question.points ?? 0) + questionTest.sub_points;
+              locals.totalPoints += questionTest.sub_points;
               const submission_score =
                 questionTest.submission_score == null
                   ? questionTest.score
@@ -312,11 +281,7 @@ describe('Zone grading homework assessment', { timeout: 60_000 }, function () {
                 assessment_instance_points: locals.totalPoints,
                 assessment_instance_score_perc: (locals.totalPoints / assessmentMaxPoints) * 100,
               };
-              locals.getSubmittedAnswer = function (_variant: any) {
-                return {
-                  s: String(questionTest.score),
-                };
-              };
+              locals.getSubmittedAnswer = () => ({ s: String(questionTest.score) });
             });
           });
           helperQuestion.getInstanceQuestion(locals);
