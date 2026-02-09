@@ -151,6 +151,8 @@ def make_rich_excepthook(
                     )
                 sys.stderr.write(console.export_text(styles=True))
         except Exception:
+            # If something goes wrong in the printing of the traceback with Rich, just print the exception and continue.
+            # This will swallow Rich's traceback.
             import traceback
 
             traceback.print_exception(exc_type, exc_value, exc_tb)
