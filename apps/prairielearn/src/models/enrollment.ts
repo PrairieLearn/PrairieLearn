@@ -623,8 +623,8 @@ export async function setEnrollmentStatus({
         case 'joined':
           return {
             previousStatus: ['blocked', 'removed'],
-            // TODO: once we support LTI roster syncing, differentiate
-            // LTI-driven re-enroll action details here.
+            // TODO: this intentionally uses instructor action details until
+            // LTI roster syncing exists. Add LTI-specific action details then.
             actionDetail:
               lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
             permittedRoles: ['Student Data Editor'],

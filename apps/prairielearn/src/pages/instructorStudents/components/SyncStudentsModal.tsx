@@ -7,104 +7,19 @@ import { z } from 'zod';
 
 import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
-import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
+
+import { type StudentSyncItem, type SyncPreview, computeSyncDiff } from './sync-students-diff.js';
 
 interface SyncStudentsForm {
   uids: string;
 }
 
-interface StudentSyncItem {
-  uid: string;
-  currentStatus: EnumEnrollmentStatus | null;
-  enrollmentId: string | null;
-  userName?: string | null;
-}
-
-interface SyncPreview {
-  toInvite: StudentSyncItem[];
-  toCancelInvitation: StudentSyncItem[];
-  toRemove: StudentSyncItem[];
-}
-
 type SyncStep = 'input' | 'preview';
 
 const MAX_UIDS = 5000;
-
-/**
- * Computes the diff between the input roster and the current enrollments.
- *
- * Sync logic (roster is the source of truth):
- * - Students on roster but not `joined`/`invited`: should be invited or re-enrolled
- * - Students not on roster who are `joined`: should be removed
- * - Students not on roster who are `invited`/`rejected`: should have invitation cancelled
- * - Students already `joined` or `invited` who are on the roster: no action
- */
-function computeSyncDiff(inputUids: string[], currentEnrollments: StudentRow[]): SyncPreview {
-  const inputUidSet = new Set(inputUids);
-  const currentUidMap = new Map<string, StudentRow>();
-
-  // Build map of current enrollments (all statuses) by UID
-  for (const student of currentEnrollments) {
-    const uid = student.user?.uid ?? student.enrollment.pending_uid;
-    if (uid) {
-      currentUidMap.set(uid, student);
-    }
-  }
-
-  const toInvite: StudentSyncItem[] = [];
-  const toCancelInvitation: StudentSyncItem[] = [];
-  const toRemove: StudentSyncItem[] = [];
-
-  // Students on roster who need to be invited
-  for (const uid of inputUids) {
-    const existing = currentUidMap.get(uid);
-
-    if (!existing) {
-      // New student - needs invitation
-      toInvite.push({
-        uid,
-        currentStatus: null,
-        enrollmentId: null,
-      });
-    } else if (!['joined', 'invited'].includes(existing.enrollment.status)) {
-      // Existing but not active - needs invitation or re-enrollment
-      toInvite.push({
-        uid: existing.user?.uid ?? existing.enrollment.pending_uid ?? uid,
-        currentStatus: existing.enrollment.status,
-        enrollmentId: existing.enrollment.id,
-        userName: existing.user?.name,
-      });
-    }
-    // else: already joined or invited - no action needed
-  }
-
-  // Students NOT on roster who should be removed or have invitation cancelled
-  for (const student of currentUidMap.values()) {
-    const uid = student.user?.uid ?? student.enrollment.pending_uid;
-    if (uid && !inputUidSet.has(uid)) {
-      const item: StudentSyncItem = {
-        uid: student.user?.uid ?? student.enrollment.pending_uid!,
-        currentStatus: student.enrollment.status,
-        enrollmentId: student.enrollment.id,
-        userName: student.user?.name,
-      };
-
-      // Invited/rejected students should have their invitation cancelled (deleted)
-      // Joined students should be removed
-      if (['invited', 'rejected'].includes(student.enrollment.status)) {
-        toCancelInvitation.push(item);
-      } else if (student.enrollment.status === 'joined') {
-        toRemove.push(item);
-      }
-      // Other statuses (blocked, removed, lti13_pending) - no action needed
-    }
-  }
-
-  return { toInvite, toCancelInvitation, toRemove };
-}
 
 interface StudentCheckboxListProps {
   items: StudentSyncItem[];
@@ -438,14 +353,14 @@ export function SyncStudentsModal({
               </div>
             </form>
 
-            {isUnpublished && step === 'input' && (
+            {isUnpublished && (
               <Alert variant="warning" className="mb-0">
                 Students will not be able to accept invitations until the course instance is
                 published.
               </Alert>
             )}
 
-            {courseInstance.self_enrollment_enabled && step === 'input' && (
+            {courseInstance.self_enrollment_enabled && (
               <Alert variant="info" className="mb-0">
                 Self-enrollment is enabled for this course instance. Removed students will be able
                 to re-enroll themselves. Consider disabling self-enrollment if you want to prevent

@@ -176,8 +176,8 @@ async function processInvitations({
         continue;
       }
       if (existingEnrollment?.status === 'lti13_pending') {
-        // TODO: once LTI roster syncing is supported, handle this status based on
-        // the LTI source of truth instead of skipping it.
+        // TODO: this is intentionally skipped until LTI roster syncing is supported.
+        // Once it exists, handle this status from the LTI source of truth.
         job.info(`${uid}: Skipped (LTI-managed enrollment)`);
         counts.skippedLti13Pending++;
         continue;
