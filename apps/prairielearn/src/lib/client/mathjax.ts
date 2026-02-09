@@ -52,6 +52,7 @@ const {
       // This PR was merged but won't be released until MathJax v4:
       // https://github.com/mathjax/MathJax-src/pull/859
       fontCache: 'local',
+      blacker: 13,
 
       // Because of the functionality inherited from MathJax v3, instructors
       // expect Math expressions not to line-break. MathJax v4 changed the
