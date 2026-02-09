@@ -1,4 +1,5 @@
 #! /bin/bash
+set -e
 
 KEY=/etc/pki/tls/private/localhost.key
 CERT=/etc/pki/tls/certs/localhost.crt
@@ -8,7 +9,8 @@ if [ -e $KEY ]; then
     exit 0
 fi
 
-# Create directories if they don't exist
+# These are Red Hat-style paths that don't exist on Ubuntu, created for
+# compatibility with certificate paths referenced in config.ts.
 mkdir -p /etc/pki/tls/private
 mkdir -p /etc/pki/tls/certs
 

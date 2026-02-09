@@ -1,4 +1,4 @@
-# syntax=docker/dockerfile-upstream:master-labs
+# syntax=docker/dockerfile:1.7-labs
 FROM ubuntu:24.04
 ARG CACHEBUST=2026-01-15-14-21-34
 
@@ -60,7 +60,7 @@ RUN chmod +x /PrairieLearn/scripts/init.sh \
     && /PrairieLearn/scripts/start_postgres.sh \
     && make build \
     && node apps/prairielearn/dist/server.js --migrate-and-exit \
-    && su postgres -c "/usr/lib/postgresql/17/bin/createuser -s root" \
+    && su postgres -c "createuser -s root" \
     && /PrairieLearn/scripts/start_postgres.sh stop \
     && /PrairieLearn/scripts/gen_ssl.sh \
     && git config --global user.email "dev@example.com" \
