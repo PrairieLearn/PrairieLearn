@@ -5,8 +5,10 @@ import { Alert, Button, Form, Modal } from 'react-bootstrap';
 import { useForm } from 'react-hook-form';
 import { z } from 'zod';
 
-import { EnrollmentStatusIcon } from '../../../components/EnrollmentStatusIcon.js';
+import { assertNever } from '@prairielearn/utils';
+
 import type { StaffCourseInstance } from '../../../lib/client/safe-db-types.js';
+import type { EnumEnrollmentStatus } from '../../../lib/db-types.js';
 import { computeStatus } from '../../../lib/publishing.js';
 import { parseUniqueValuesFromString } from '../../../lib/string-util.js';
 import type { StudentRow } from '../instructorStudents.shared.js';
@@ -20,6 +22,27 @@ interface SyncStudentsForm {
 type SyncStep = 'input' | 'preview';
 
 const MAX_UIDS = 5000;
+
+function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
+  switch (status) {
+    case 'invited':
+      return 'Currently invited';
+    case 'joined':
+      return 'Currently joined';
+    case 'blocked':
+      return 'Currently blocked';
+    case 'removed':
+      return 'Currently removed';
+    case 'rejected':
+      return 'Currently rejected';
+    case 'left':
+      return 'Currently left';
+    case 'lti13_pending':
+      return 'Currently invited via LTI';
+    default:
+      assertNever(status);
+  }
+}
 
 interface StudentCheckboxListProps {
   items: StudentSyncItem[];
@@ -148,9 +171,11 @@ function StudentCheckboxList({
                 </span>
                 <span className="ms-auto">
                   {item.currentStatus ? (
-                    <EnrollmentStatusIcon status={item.currentStatus} type="badge" />
+                    <span className="badge rounded-pill bg-light text-body border">
+                      {getCurrentStatusLabel(item.currentStatus)}
+                    </span>
                   ) : (
-                    <span className="badge bg-info">New</span>
+                    <span className="badge rounded-pill bg-light text-body border">New</span>
                   )}
                 </span>
               </Form.Check.Label>
@@ -299,7 +324,9 @@ export function SyncStudentsModal({
   const hasNoSelections = totalSelectedCount === 0;
 
   const summaryCounts = useMemo(() => {
-    if (!preview) return { invitations: 0, reEnrollments: 0, cancellations: 0, removals: 0 };
+    if (!preview) {
+      return { invitations: 0, reEnrollments: 0, cancellations: 0, removals: 0, unchanged: 0 };
+    }
     let invitations = 0;
     let reEnrollments = 0;
     for (const item of preview.toInvite) {
@@ -315,6 +342,7 @@ export function SyncStudentsModal({
       reEnrollments,
       cancellations: selectedCancellations.size,
       removals: selectedRemovals.size,
+      unchanged: preview.unchangedCount,
     };
   }, [preview, selectedInvites, selectedCancellations.size, selectedRemovals.size]);
 
@@ -506,6 +534,16 @@ export function SyncStudentsModal({
                     {summaryCounts.removals} removal{summaryCounts.removals === 1 ? '' : 's'}
                   </span>
                 )}
+                {summaryCounts.unchanged > 0 && (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="d-inline-block rounded-circle bg-secondary"
+                      style={{ width: '0.5rem', height: '0.5rem' }}
+                      aria-hidden="true"
+                    />
+                    {summaryCounts.unchanged} unchanged
+                  </span>
+                )}
               </div>
             )}
             <div className="d-flex align-items-center gap-2">
@@ -532,8 +570,8 @@ export function SyncStudentsModal({
                       onClick={() => syncMutation.mutate()}
                     >
                       {syncMutation.isPending
-                        ? 'Syncing...'
-                        : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
+                        ? 'Updating...'
+                        : `Update ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
                     </Button>
                   </>
                 )}

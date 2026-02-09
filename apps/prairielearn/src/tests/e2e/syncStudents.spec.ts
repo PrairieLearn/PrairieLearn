@@ -130,15 +130,15 @@ test.describe('Sync students', () => {
     await expect(page.getByText('Review the changes below')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
-    const syncButton = dialog.getByRole('button', { name: /Sync \d+ student/ });
-    const initialCount = Number((await syncButton.innerText()).match(/Sync (\d+) student/)![1]);
+    const syncButton = dialog.getByRole('button', { name: /Update \d+ student/ });
+    const initialCount = Number((await syncButton.innerText()).match(/Update (\d+) student/)![1]);
 
     const inviteCheckbox = dialog.locator(`[id="sync-invite-${inviteOnlyUid}"]`);
     await expect(inviteCheckbox).toBeChecked();
     await inviteCheckbox.click();
     await expect(inviteCheckbox).not.toBeChecked();
 
-    const updatedCount = Number((await syncButton.innerText()).match(/Sync (\d+) student/)![1]);
+    const updatedCount = Number((await syncButton.innerText()).match(/Update (\d+) student/)![1]);
     expect(updatedCount).toBe(initialCount - 1);
   });
 
@@ -200,7 +200,7 @@ test.describe('Sync students', () => {
     await expect(dialog.getByText('fresh_sync_remove@test.com')).toBeVisible();
 
     // Click sync button
-    await page.getByRole('button', { name: /Sync \d+ student/ }).click();
+    await page.getByRole('button', { name: /Update \d+ student/ }).click();
 
     // Check job output
     await waitForJobAndCheckOutput(page, [
@@ -276,7 +276,7 @@ test.describe('Sync students', () => {
     await expect(dialog.getByText('sync_blocked@test.com')).toBeVisible();
     await expect(dialog.getByText('sync_removed@test.com')).toBeVisible();
 
-    await page.getByRole('button', { name: /Sync \d+ student/ }).click();
+    await page.getByRole('button', { name: /Update \d+ student/ }).click();
 
     await waitForJobAndCheckOutput(page, [
       'sync_blocked@test.com: Unblocked',

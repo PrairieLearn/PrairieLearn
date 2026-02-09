@@ -35,6 +35,7 @@ describe('computeSyncDiff', () => {
     expect(diff.toInvite).toEqual([]);
     expect(diff.toCancelInvitation).toEqual([]);
     expect(diff.toRemove).toEqual([]);
+    expect(diff.unchangedCount).toBe(1);
   });
 
   it('skips lti13_pending enrollments that are not on the roster', () => {
@@ -46,6 +47,7 @@ describe('computeSyncDiff', () => {
     expect(diff.toInvite).toEqual([]);
     expect(diff.toCancelInvitation).toEqual([]);
     expect(diff.toRemove).toEqual([]);
+    expect(diff.unchangedCount).toBe(0);
   });
 
   it('still invites blocked and removed enrollments that are on the roster', () => {
@@ -73,5 +75,20 @@ describe('computeSyncDiff', () => {
     ]);
     expect(diff.toCancelInvitation).toEqual([]);
     expect(diff.toRemove).toEqual([]);
+    expect(diff.unchangedCount).toBe(0);
+  });
+
+  it('counts unchanged students who are already joined or invited', () => {
+    const diff = computeSyncDiff(
+      ['joined@example.com', 'invited@example.com', 'new@example.com'],
+      [
+        makeEnrollment({ status: 'joined', uid: 'joined@example.com' }),
+        makeEnrollment({ status: 'invited', uid: 'invited@example.com' }),
+      ],
+    );
+
+    expect(diff.unchangedCount).toBe(2);
+    expect(diff.toInvite).toHaveLength(1);
+    expect(diff.toInvite[0].uid).toBe('new@example.com');
   });
 });

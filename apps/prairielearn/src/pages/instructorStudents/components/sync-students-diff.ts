@@ -11,6 +11,7 @@ export interface SyncPreview {
   toInvite: StudentSyncItem[];
   toCancelInvitation: StudentSyncItem[];
   toRemove: StudentSyncItem[];
+  unchangedCount: number;
 }
 
 export interface SyncEnrollmentInfo {
@@ -51,6 +52,7 @@ export function computeSyncDiff(
   const toInvite: StudentSyncItem[] = [];
   const toCancelInvitation: StudentSyncItem[] = [];
   const toRemove: StudentSyncItem[] = [];
+  let unchangedCount = 0;
 
   for (const uid of inputUids) {
     const existing = currentUidMap.get(uid);
@@ -67,6 +69,8 @@ export function computeSyncDiff(
         enrollmentId: existing.enrollment.id,
         userName: existing.user?.name,
       });
+    } else {
+      unchangedCount++;
     }
   }
 
@@ -88,5 +92,5 @@ export function computeSyncDiff(
     }
   }
 
-  return { toInvite, toCancelInvitation, toRemove };
+  return { toInvite, toCancelInvitation, toRemove, unchangedCount };
 }
