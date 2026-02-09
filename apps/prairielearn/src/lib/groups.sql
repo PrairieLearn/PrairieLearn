@@ -462,13 +462,31 @@ WITH
     FROM
       deleted_group
   ),
+  -- Close any open assessment instances for this group. The
+  -- autoFinishExams cronjob will handle grading them.
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
     SET
+      open = FALSE,
+      closed_at = NOW(),
+      grading_needed = TRUE,
       modified_at = NOW()
     WHERE
       ai.assessment_id = $assessment_id
       AND ai.team_id = $group_id
+      AND ai.open
+    RETURNING
+      ai.id
+  ),
+  assessment_state_log AS (
+    INSERT INTO
+      assessment_state_logs (open, assessment_instance_id, auth_user_id)
+    SELECT
+      FALSE,
+      id,
+      $authn_user_id
+    FROM
+      updated_assessment_instance
   )
 SELECT
   id
@@ -523,15 +541,33 @@ WITH
     RETURNING
       g.id
   ),
+  -- Close any open assessment instances for the deleted groups. The
+  -- autoFinishExams cronjob will handle grading them.
   updated_assessment_instance AS (
     UPDATE assessment_instances AS ai
     SET
+      open = FALSE,
+      closed_at = NOW(),
+      grading_needed = TRUE,
       modified_at = NOW()
     FROM
       deleted_groups AS dg
     WHERE
       ai.assessment_id = $assessment_id
       AND ai.team_id = dg.id
+      AND ai.open
+    RETURNING
+      ai.id
+  ),
+  assessment_state_log AS (
+    INSERT INTO
+      assessment_state_logs (open, assessment_instance_id, auth_user_id)
+    SELECT
+      FALSE,
+      id,
+      $authn_user_id
+    FROM
+      updated_assessment_instance
   )
 INSERT INTO
   team_logs (authn_user_id, team_id, action)
