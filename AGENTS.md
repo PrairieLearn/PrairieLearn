@@ -115,6 +115,7 @@ When working with assessment "groups" / "teams", see the [`groups-and-teams` ski
 - Don't add extra defensive checks or try/catch blocks that are abnormal for that area of the codebase (especially if called by trusted / validated codepaths).
 - Don't add extra comments that a human wouldn't add or that are inconsistent with the rest of the file.
 - Always check for existing model functions in `apps/prairielearn/src/models/` or lib functions before writing one-off database queries.
+- Express request handlers must always either send a response (either by calling `res.send`/etc. or throwing an error) or explicitly pass control by calling `next(...)`.
 
 ### User interface conventions
 
