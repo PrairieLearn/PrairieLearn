@@ -19,8 +19,8 @@ import {
   type AuthzData,
   type AuthzDataWithEffectiveUser,
   type AuthzDataWithoutEffectiveUser,
-  type CourseInstanceRole,
   type DangerousSystemAuthzData,
+  type Role,
   assertHasRole,
   assertRoleIsPermitted,
   dangerousFullSystemAuthz,
@@ -603,7 +603,7 @@ export async function setEnrollmentStatus({
   enrollment: Enrollment;
   status: 'rejected' | 'blocked' | 'left' | 'removed' | 'joined';
   authzData: AuthzData;
-  requiredRole: CourseInstanceRole[];
+  requiredRole: Role[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -615,7 +615,7 @@ export async function setEnrollmentStatus({
       equivalentStatuses?: EnumEnrollmentStatus[];
       previousStatus: EnumEnrollmentStatus | EnumEnrollmentStatus[];
       actionDetail: SupportedActionsForTable<'enrollments'>;
-      permittedRoles: CourseInstanceRole[];
+      permittedRoles: Role[];
     }
 
     const transitionInformation = run((): EnrollmentStatusTransitionInformation => {
@@ -627,7 +627,7 @@ export async function setEnrollmentStatus({
             // LTI roster syncing exists. Add LTI-specific action details then.
             actionDetail:
               lockedEnrollment.status === 'blocked' ? 'unblocked' : 'reenrolled_by_instructor',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         case 'left':
           return {
@@ -636,25 +636,25 @@ export async function setEnrollmentStatus({
             equivalentStatuses: ['removed'],
             previousStatus: 'joined',
             actionDetail: 'left',
-            permittedRoles: ['Student'],
+            permittedRoles: ['Student', 'System'],
           };
         case 'removed':
           return {
             previousStatus: 'joined',
             actionDetail: 'removed',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         case 'rejected':
           return {
             previousStatus: 'invited',
             actionDetail: 'invitation_rejected',
-            permittedRoles: ['Student'],
+            permittedRoles: ['Student', 'System'],
           };
         case 'blocked':
           return {
             previousStatus: 'joined',
             actionDetail: 'blocked',
-            permittedRoles: ['Student Data Editor'],
+            permittedRoles: ['Student Data Editor', 'System'],
           };
         default:
           assertNever(status);

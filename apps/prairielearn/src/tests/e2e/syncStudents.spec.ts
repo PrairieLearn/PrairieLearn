@@ -214,13 +214,13 @@ test.describe('Sync students', () => {
       enrollment: blockedEnrollment,
       status: 'blocked',
       authzData: dangerousFullSystemAuthz(),
-      requiredRole: ['Student Data Editor'],
+      requiredRole: ['System'],
     });
     await setEnrollmentStatus({
       enrollment: removedEnrollment,
       status: 'removed',
       authzData: dangerousFullSystemAuthz(),
-      requiredRole: ['Student Data Editor'],
+      requiredRole: ['System'],
     });
 
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
