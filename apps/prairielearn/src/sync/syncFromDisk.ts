@@ -8,6 +8,7 @@ import { chalk } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { features } from '../lib/features/index.js';
 import { type ServerJobLogger } from '../lib/server-jobs.js';
+import { selectCourseInstanceById } from '../models/course-instances.js';
 import {
   getGitDefaultBranch,
   getGitRemoteUrl,
@@ -154,8 +155,9 @@ export async function syncDiskToSqlWithLock(
       for (const [ciid, courseInstanceData] of Object.entries(courseData.courseInstances)) {
         const courseInstanceId = courseInstanceIds[ciid];
         if (courseInstanceId) {
+          const courseInstance = await selectCourseInstanceById(courseInstanceId);
           const studentLabels = courseInstanceData.courseInstance.data?.studentLabels;
-          await syncStudentLabels(courseInstanceId, studentLabels);
+          await syncStudentLabels(courseInstance, studentLabels);
         }
       }
     });

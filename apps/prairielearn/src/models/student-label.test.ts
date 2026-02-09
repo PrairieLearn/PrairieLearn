@@ -72,7 +72,7 @@ describe('Student Label Model', () => {
     it('allows creating label with same name after deletion', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
         const label1 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-        await deleteStudentLabel(label1.id);
+        await deleteStudentLabel(label1);
 
         const label2 = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
 
@@ -95,7 +95,7 @@ describe('Student Label Model', () => {
         await createStudentLabel({ courseInstanceId: '2', name: 'Label B' });
         const labelToDelete = await createStudentLabel({ courseInstanceId: '2', name: 'Label C' });
 
-        await deleteStudentLabel(labelToDelete.id);
+        await deleteStudentLabel(labelToDelete);
 
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         assert.equal(labels.length, 2);
@@ -132,7 +132,7 @@ describe('Student Label Model', () => {
         ).rejects.toThrowError();
 
         const label = await createStudentLabel({ courseInstanceId: '1', name: 'Test Label' });
-        await deleteStudentLabel(label.id);
+        await deleteStudentLabel(label);
 
         await expect(
           selectStudentLabelById({ id: label.id, courseInstance }),
@@ -163,7 +163,14 @@ describe('Student Label Model', () => {
   describe('deleteStudentLabel', () => {
     it('throws error when deleting non-existent label', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
-        await expect(deleteStudentLabel('999999')).rejects.toThrowError();
+        await expect(
+          deleteStudentLabel({
+            id: '999999',
+            course_instance_id: '1',
+            name: 'nonexistent',
+            color: 'gray1',
+          }),
+        ).rejects.toThrowError();
       });
     });
   });
@@ -275,7 +282,7 @@ describe('Student Label Model', () => {
         assert.isTrue(labels.some((l) => l.id === label2.id));
 
         // Excludes deleted labels (cascade delete removes enrollments too)
-        await deleteStudentLabel(label1.id);
+        await deleteStudentLabel(label1);
         const labelsAfterDelete = await selectStudentLabelsForEnrollment(enrollment);
         assert.equal(labelsAfterDelete.length, 1);
         assert.equal(labelsAfterDelete[0].id, label2.id);
@@ -506,11 +513,12 @@ describe('Student Label Model', () => {
 
     it('creates audit events when label is deleted via sync', async () => {
       await helperDb.runInTransactionAndRollback(async () => {
+        const courseInstance = await selectCourseInstanceById('1');
+
         // Create label via sync with initial JSON
-        await syncStudentLabels('1', [{ name: 'SyncLabel', color: 'red1' }], null);
+        await syncStudentLabels(courseInstance, [{ name: 'SyncLabel', color: 'red1' }], null);
 
         // Get the created label
-        const courseInstance = await selectCourseInstanceById('1');
         const labels = await selectStudentLabelsInCourseInstance(courseInstance);
         const syncLabel = labels.find((l) => l.name === 'SyncLabel');
         assert.isDefined(syncLabel);
@@ -531,7 +539,7 @@ describe('Student Label Model', () => {
         });
 
         // Remove label by syncing without it
-        await syncStudentLabels('1', [], null);
+        await syncStudentLabels(courseInstance, [], null);
 
         // Verify audit events created for each enrollment
         const auditEvents1 = await selectAuditEvents({

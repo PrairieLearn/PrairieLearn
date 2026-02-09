@@ -1,5 +1,3 @@
-import assert from 'node:assert';
-
 import { HttpStatusError } from '@prairielearn/error';
 import { loadSqlEquiv, queryOptionalRow, queryRow, queryRows } from '@prairielearn/postgres';
 
@@ -29,8 +27,6 @@ function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabe
 
 /**
  * Creates a new student label in the given course instance.
- *
- * This should ONLY be called for testing.
  */
 export async function createStudentLabel({
   courseInstanceId,
@@ -41,7 +37,6 @@ export async function createStudentLabel({
   name: string;
   color?: string;
 }): Promise<StudentLabel> {
-  assert(process.env.NODE_ENV === 'test');
   return await queryRow(
     sql.create_student_label,
     { course_instance_id: courseInstanceId, name, color },
@@ -84,12 +79,9 @@ export async function selectStudentLabelById({
 
 /**
  * Deletes a student label.
- *
- * This should ONLY be called for testing.
  */
-export async function deleteStudentLabel(id: string): Promise<StudentLabel> {
-  assert(process.env.NODE_ENV === 'test');
-  return await queryRow(sql.delete_student_label, { id }, StudentLabelSchema);
+export async function deleteStudentLabel(label: StudentLabel): Promise<StudentLabel> {
+  return await queryRow(sql.delete_student_label, { id: label.id }, StudentLabelSchema);
 }
 
 /**
@@ -256,5 +248,32 @@ export async function selectStudentLabelsForEnrollment(
     sql.select_student_labels_for_enrollment,
     { enrollment_id: enrollment.id },
     StudentLabelSchema,
+  );
+}
+
+/**
+ * Updates the color of a student label.
+ */
+export async function updateStudentLabelColor(
+  label: StudentLabel,
+  color: string,
+): Promise<StudentLabel> {
+  return await queryRow(
+    sql.update_student_label_color,
+    { id: label.id, color },
+    StudentLabelSchema,
+  );
+}
+
+/**
+ * Selects all student_label_enrollments rows for a given label.
+ */
+export async function selectStudentLabelEnrollmentsForLabel(
+  label: StudentLabel,
+): Promise<StudentLabelEnrollment[]> {
+  return await queryRows(
+    sql.select_student_label_enrollments_for_label,
+    { student_label_id: label.id },
+    StudentLabelEnrollmentSchema,
   );
 }

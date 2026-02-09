@@ -68,3 +68,20 @@ WHERE
   AND enrollment_id = ANY ($enrollment_ids::bigint[])
 RETURNING
   *;
+
+-- BLOCK update_student_label_color
+UPDATE student_labels
+SET
+  color = $color
+WHERE
+  id = $id
+RETURNING
+  *;
+
+-- BLOCK select_student_label_enrollments_for_label
+SELECT
+  *
+FROM
+  student_label_enrollments
+WHERE
+  student_label_id = $student_label_id;
