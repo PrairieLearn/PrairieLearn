@@ -2,7 +2,7 @@ import { useMemo, useRef, useState } from 'react';
 import { Modal, Overlay, Popover } from 'react-bootstrap';
 import { z } from 'zod';
 
-import { downloadAsJSON } from '@prairielearn/browser-utils';
+import { downloadAsJSON, executeScripts } from '@prairielearn/browser-utils';
 
 import type { AiGradingGeneralStats } from '../ee/lib/ai-grading/types.js';
 import { b64EncodeUnicode } from '../lib/base64-util.js';
@@ -41,21 +41,6 @@ const ExportedRubricDataSchema = z.object({
 });
 
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
-
-/**
- * Re-creates script elements so the browser executes them, since innerHTML
- * does not execute scripts.
- */
-function executeScripts(container: Element) {
-  container.querySelectorAll('script').forEach((oldScript) => {
-    const newScript = document.createElement('script');
-    Array.from(oldScript.attributes).forEach((attr) => {
-      newScript.setAttribute(attr.name, attr.value);
-    });
-    newScript.textContent = oldScript.textContent;
-    oldScript.replaceWith(newScript);
-  });
-}
 
 /**
  * Explicitly declaring these functions from the window of the instance question page
