@@ -394,7 +394,10 @@ SELECT
 FROM
   assessment_instances AS ai
   JOIN assessments AS a ON (a.id = ai.assessment_id)
-  LEFT JOIN teams AS g ON (g.id = ai.team_id)
+  LEFT JOIN teams AS g ON (
+    g.id = ai.team_id
+    AND g.deleted_at IS NULL
+  )
   LEFT JOIN users AS u ON (u.id = ai.user_id)
 WHERE
   a.id = $assessment_id
