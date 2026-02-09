@@ -753,3 +753,26 @@ export async function inviteEnrollment({
     });
   });
 }
+
+/**
+ * Gets enrollments by IDs in a course instance.
+ * Only returns enrollments that exist AND belong to the specified course instance.
+ */
+export async function selectEnrollmentsByIdsInCourseInstance({
+  ids,
+  courseInstance,
+  requiredRole,
+  authzData,
+}: {
+  ids: string[];
+  courseInstance: CourseInstanceContext;
+  requiredRole: ('System' | 'Student Data Viewer' | 'Student Data Editor')[];
+  authzData: AuthzData;
+}): Promise<Enrollment[]> {
+  assertHasRole(authzData, requiredRole);
+  return await queryRows(
+    sql.select_enrollments_by_ids_in_course_instance,
+    { ids, course_instance_id: courseInstance.id },
+    EnrollmentSchema,
+  );
+}

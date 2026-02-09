@@ -1,6 +1,7 @@
 import { z } from 'zod';
 
 import { CommentJsonSchema } from './comment.js';
+import { ColorJsonSchema } from './infoCourse.js';
 
 const AccessRuleJsonSchema = z
   .object({
@@ -48,6 +49,16 @@ const PublishingJsonSchema = z.object({
 });
 
 export type PublishingJson = z.infer<typeof PublishingJsonSchema>;
+
+export const StudentLabelJsonSchema = z
+  .object({
+    name: z.string().min(1).max(255).describe('The name of the student label.'),
+    color: ColorJsonSchema.describe('The color to display for this label.'),
+  })
+  .strict()
+  .describe('A student label definition.');
+
+export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
 export const CourseInstanceJsonSchema = z
   .object({
@@ -120,6 +131,10 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
+    studentLabels: z
+      .array(StudentLabelJsonSchema)
+      .describe('Student label definitions for this course instance.')
+      .optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');
