@@ -1,6 +1,5 @@
-import { type AuthzData, dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
+import { dangerousFullSystemAuthz } from '../../lib/authz-data-lib.js';
 import { getCourseInstanceStudentsUrl } from '../../lib/client/url.js';
-import type { User } from '../../lib/db-types.js';
 import { selectCourseInstanceByShortName } from '../../models/course-instances.js';
 import { selectCourseByShortName } from '../../models/course.js';
 import {
@@ -13,38 +12,6 @@ import { type AuthUser, getOrCreateUser } from '../utils/auth.js';
 
 import { expect, test } from './fixtures.js';
 import { waitForJobAndCheckOutput } from './jobSequenceUtils.js';
-
-function createInstructorAuthzData(user: User): AuthzData {
-  return {
-    authn_user: user,
-    user,
-    authn_is_administrator: false,
-    authn_has_course_permission_preview: false,
-    authn_has_course_permission_view: false,
-    authn_has_course_permission_edit: false,
-    authn_has_course_permission_own: false,
-    authn_course_role: 'None',
-    authn_course_instance_role: 'Student Data Editor',
-    authn_mode: 'Public',
-    authn_has_student_access: false,
-    authn_has_student_access_with_enrollment: false,
-    authn_has_course_instance_permission_view: true,
-    authn_has_course_instance_permission_edit: true,
-    is_administrator: false,
-    has_course_permission_preview: false,
-    has_course_permission_view: false,
-    has_course_permission_edit: false,
-    has_course_permission_own: false,
-    course_role: 'None',
-    course_instance_role: 'Student Data Editor',
-    mode: 'Public',
-    mode_reason: 'Default',
-    has_student_access: false,
-    has_student_access_with_enrollment: false,
-    has_course_instance_permission_view: true,
-    has_course_instance_permission_edit: true,
-  } as AuthzData;
-}
 
 // Test users for sync scenarios
 const NEW_STUDENT: AuthUser = { uid: 'sync_new@test.com', uin: null, name: 'New Student' };
@@ -223,7 +190,6 @@ test.describe('Sync students', () => {
 
     const course = await selectCourseByShortName('QA 101');
     const courseInstance = await selectCourseInstanceByShortName({ course, shortName: 'Sp15' });
-    const instructorAuthzData = createInstructorAuthzData(blockedUser);
 
     const blockedEnrollment = await ensureUncheckedEnrollment({
       userId: blockedUser.id,
@@ -247,13 +213,13 @@ test.describe('Sync students', () => {
     await setEnrollmentStatus({
       enrollment: blockedEnrollment,
       status: 'blocked',
-      authzData: instructorAuthzData,
+      authzData: dangerousFullSystemAuthz(),
       requiredRole: ['Student Data Editor'],
     });
     await setEnrollmentStatus({
       enrollment: removedEnrollment,
       status: 'removed',
-      authzData: instructorAuthzData,
+      authzData: dangerousFullSystemAuthz(),
       requiredRole: ['Student Data Editor'],
     });
 
