@@ -133,7 +133,7 @@ test.describe('Sync students', () => {
     const syncButton = dialog.getByRole('button', { name: /Update \d+ student/ });
     const initialCount = Number((await syncButton.innerText()).match(/Update (\d+) student/)![1]);
 
-    const inviteCheckbox = dialog.locator(`[id="sync-invite-${inviteOnlyUid}"]`);
+    const inviteCheckbox = dialog.locator(`[id="sync-add-${inviteOnlyUid}"]`);
     await expect(inviteCheckbox).toBeChecked();
     await inviteCheckbox.click();
     await expect(inviteCheckbox).not.toBeChecked();
@@ -192,11 +192,10 @@ test.describe('Sync students', () => {
     await expect(page.getByText('Review the changes below')).toBeVisible();
 
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Students to invite or re-enroll')).toBeVisible();
+    await expect(dialog.getByText('Students to add')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_new@test.com')).toBeVisible();
-    await expect(dialog.getByText('Invitations to cancel')).toBeVisible();
-    await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
     await expect(dialog.getByText('Students to remove')).toBeVisible();
+    await expect(dialog.getByText('fresh_sync_cancel@test.com')).toBeVisible();
     await expect(dialog.getByText('fresh_sync_remove@test.com')).toBeVisible();
 
     // Click sync button
@@ -272,7 +271,7 @@ test.describe('Sync students', () => {
     await page.getByRole('button', { name: 'Compare' }).click();
 
     const dialog = page.getByRole('dialog');
-    await expect(dialog.getByText('Students to invite or re-enroll')).toBeVisible();
+    await expect(dialog.getByText('Students to add')).toBeVisible();
     await expect(dialog.getByText('sync_blocked@test.com')).toBeVisible();
     await expect(dialog.getByText('sync_removed@test.com')).toBeVisible();
 
