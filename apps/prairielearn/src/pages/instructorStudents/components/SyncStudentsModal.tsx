@@ -113,7 +113,6 @@ interface StudentCheckboxListProps {
   onSelectAll: () => void;
   onDeselectAll: () => void;
   variant: 'invite' | 'cancel' | 'remove';
-  className?: string;
 }
 
 function StudentCheckboxList({
@@ -123,7 +122,6 @@ function StudentCheckboxList({
   onSelectAll,
   onDeselectAll,
   variant,
-  className,
 }: StudentCheckboxListProps) {
   if (items.length === 0) return null;
 
@@ -133,6 +131,7 @@ function StudentCheckboxList({
     invite: {
       icon: 'bi-person-plus',
       iconColor: 'text-success',
+      iconBg: 'bg-success-subtle',
       label: 'Students to invite or re-enroll',
       ariaLabel: 'Students to invite or re-enroll',
       description: 'New students will be invited. Blocked or removed students will be re-enrolled.',
@@ -140,6 +139,7 @@ function StudentCheckboxList({
     cancel: {
       icon: 'bi-x-circle',
       iconColor: 'text-warning',
+      iconBg: 'bg-warning-subtle',
       label: 'Invitations to cancel',
       ariaLabel: 'Invitations to cancel',
       description: 'Pending invitations will be cancelled (deleted).',
@@ -147,6 +147,7 @@ function StudentCheckboxList({
     remove: {
       icon: 'bi-person-dash',
       iconColor: 'text-danger',
+      iconBg: 'bg-danger-subtle',
       label: 'Students to remove',
       ariaLabel: 'Students to remove',
       description: 'Joined students not on the roster will be removed from the course.',
@@ -156,13 +157,28 @@ function StudentCheckboxList({
   const config = variantConfig[variant];
 
   return (
-    <div className={className}>
-      <div className="d-flex justify-content-between align-items-center mb-2">
-        <h6 className="mb-0">
-          <i className={`bi ${config.icon} ${config.iconColor} me-2`} aria-hidden="true" />
-          {config.label} ({selectedCount} of {items.length} selected)
-        </h6>
-        <div className="btn-group btn-group-sm">
+    <div className="d-flex flex-column gap-3">
+      <div className="d-flex align-items-center gap-3">
+        <div
+          className={clsx(
+            config.iconBg,
+            'rounded d-flex align-items-center justify-content-center flex-shrink-0',
+          )}
+          style={{ width: '2.5rem', height: '2.5rem' }}
+        >
+          <i
+            className={clsx('bi', config.icon, config.iconColor)}
+            style={{ fontSize: '1.25rem' }}
+            aria-hidden="true"
+          />
+        </div>
+        <div className="flex-grow-1">
+          <h6 className="mb-0">
+            {config.label} ({selectedCount} of {items.length} selected)
+          </h6>
+          <p className="text-muted small mb-0">{config.description}</p>
+        </div>
+        <div className="btn-group btn-group-sm flex-shrink-0">
           <Button variant="outline-secondary" size="sm" onClick={onSelectAll}>
             Select all
           </Button>
@@ -171,16 +187,6 @@ function StudentCheckboxList({
           </Button>
         </div>
       </div>
-      <p className="text-muted small mb-2">{config.description}</p>
-
-      {variant === 'remove' && (
-        <Alert variant="warning" className="py-2 mb-2">
-          <small>
-            <i className="bi bi-exclamation-triangle me-1" aria-hidden="true" />
-            Selected students will be removed from the course. They can re-enroll later if allowed.
-          </small>
-        </Alert>
-      )}
 
       <div
         className="border rounded"
@@ -205,9 +211,9 @@ function StudentCheckboxList({
                 onChange={() => onToggle(item.uid)}
               />
               <span className="d-flex align-items-center gap-2 flex-grow-1">
-                <span className="d-inline-flex align-items-center gap-2 flex-wrap">
-                  <code>{item.uid}</code>
-                  {item.userName && <span className="text-muted">({item.userName})</span>}
+                <span className="d-flex flex-column">
+                  <span>{item.uid}</span>
+                  {item.userName && <span className="text-muted small">{item.userName}</span>}
                 </span>
                 <span className="ms-auto">
                   {item.currentStatus ? (
@@ -445,7 +451,7 @@ export function SyncStudentsModal({
               <>
                 <p>Review the changes below. Uncheck any students you don't want to modify.</p>
 
-                <div className="d-flex flex-column gap-4">
+                <div className="d-flex flex-column gap-5">
                   <StudentCheckboxList
                     items={preview.toInvite}
                     selectedUids={selectedInvites}
