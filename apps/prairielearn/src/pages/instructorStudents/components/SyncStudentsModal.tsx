@@ -122,18 +122,20 @@ function StudentCheckboxList({
           </h6>
           <p className="text-muted small mb-0">{config.description}</p>
         </div>
-        <div className="btn-group btn-group-sm flex-shrink-0 ms-auto">
+        <div className="d-flex gap-1 flex-shrink-0 ms-auto">
           <Button
-            variant="outline-secondary"
+            variant="link"
             size="sm"
+            className="text-decoration-none"
             aria-label={config.selectAllAriaLabel}
             onClick={onSelectAll}
           >
             Select all
           </Button>
           <Button
-            variant="outline-secondary"
+            variant="link"
             size="sm"
+            className="text-decoration-none"
             aria-label={config.clearAllAriaLabel}
             onClick={onDeselectAll}
           >
