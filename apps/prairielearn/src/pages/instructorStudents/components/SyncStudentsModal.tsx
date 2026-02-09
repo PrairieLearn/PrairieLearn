@@ -49,6 +49,8 @@ function StudentCheckboxList({
       iconBg: 'bg-success-subtle',
       label: 'Students to invite or re-enroll',
       ariaLabel: 'Students to invite or re-enroll',
+      selectAllAriaLabel: 'Select all students to invite or re-enroll',
+      clearAllAriaLabel: 'Clear all students to invite or re-enroll',
       description: 'New students will be invited. Blocked or removed students will be re-enrolled.',
     },
     cancel: {
@@ -57,6 +59,8 @@ function StudentCheckboxList({
       iconBg: 'bg-warning-subtle',
       label: 'Invitations to cancel',
       ariaLabel: 'Invitations to cancel',
+      selectAllAriaLabel: 'Select all invitations to cancel',
+      clearAllAriaLabel: 'Clear all invitations to cancel',
       description: 'Pending invitations will be cancelled.',
     },
     remove: {
@@ -65,6 +69,8 @@ function StudentCheckboxList({
       iconBg: 'bg-danger-subtle',
       label: 'Students to remove',
       ariaLabel: 'Students to remove',
+      selectAllAriaLabel: 'Select all students to remove',
+      clearAllAriaLabel: 'Clear all students to remove',
       description: 'Joined students not on the roster will be removed from the course.',
     },
   };
@@ -94,11 +100,21 @@ function StudentCheckboxList({
           <p className="text-muted small mb-0">{config.description}</p>
         </div>
         <div className="btn-group btn-group-sm flex-shrink-0">
-          <Button variant="outline-secondary" size="sm" onClick={onSelectAll}>
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            aria-label={config.selectAllAriaLabel}
+            onClick={onSelectAll}
+          >
             Select all
           </Button>
-          <Button variant="outline-secondary" size="sm" onClick={onDeselectAll}>
-            Clear
+          <Button
+            variant="outline-secondary"
+            size="sm"
+            aria-label={config.clearAllAriaLabel}
+            onClick={onDeselectAll}
+          >
+            Clear all
           </Button>
         </div>
       </div>

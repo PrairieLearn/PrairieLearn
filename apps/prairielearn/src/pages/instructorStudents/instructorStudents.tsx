@@ -312,6 +312,9 @@ router.post(
         if (counts.skippedInstructor > 0) {
           job.info(`  Skipped (instructor): ${counts.skippedInstructor}`);
         }
+        if (counts.errors > 0) {
+          job.info(`  Errors: ${counts.errors}`);
+        }
       });
 
       res.json({ job_sequence_id: serverJob.jobSequenceId });
