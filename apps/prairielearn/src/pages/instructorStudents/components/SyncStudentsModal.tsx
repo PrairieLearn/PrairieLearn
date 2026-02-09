@@ -102,7 +102,7 @@ function StudentCheckboxList({
 
   return (
     <div className="d-flex flex-column gap-3">
-      <div className="d-flex align-items-center gap-3">
+      <div className="d-flex flex-wrap align-items-center gap-3">
         <div
           className={clsx(
             config.iconBg,
@@ -122,7 +122,7 @@ function StudentCheckboxList({
           </h6>
           <p className="text-muted small mb-0">{config.description}</p>
         </div>
-        <div className="btn-group btn-group-sm flex-shrink-0">
+        <div className="btn-group btn-group-sm flex-shrink-0 ms-auto">
           <Button
             variant="outline-secondary"
             size="sm"
@@ -552,7 +552,7 @@ export function SyncStudentsModal({
                 disabled={syncMutation.isPending}
                 onClick={() => setStep('input')}
               >
-                Back
+                <i className="bi bi-arrow-left" aria-hidden="true" /> Back
               </Button>
               <div className="ms-auto d-flex gap-2">
                 {hasNoChanges ? (

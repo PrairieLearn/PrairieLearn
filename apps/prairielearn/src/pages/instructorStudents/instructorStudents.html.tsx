@@ -496,7 +496,7 @@ function StudentsCard({
               onSync={() => {
                 // Reload the latest student data so that the preview of sync actions
                 // will be as accurate as possible.
-                queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                void queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
                 setShowSync(true);
               }}
             />
