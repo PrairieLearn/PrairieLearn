@@ -485,6 +485,19 @@ export function RubricSettings({
         await window.mathjaxTypeset();
       }
 
+      if (data.submissionPanel && data.submissionId) {
+        const oldSubmission = document.getElementById(`submission-${data.submissionId}`);
+        if (oldSubmission) {
+          const temp = document.createElement('div');
+          temp.innerHTML = data.submissionPanel;
+          const newSubmission = temp.firstElementChild;
+          if (newSubmission) {
+            oldSubmission.replaceWith(newSubmission);
+            await window.mathjaxTypeset();
+          }
+        }
+      }
+
       // Since we are preserving the temporary rubric item selection in the instance question page, the page is not refreshed
       // after saving. Suppose we start with setting A, and update it to B and save it. Ideally we would expect a "Discard changes"
       // to reset to B instead of A. We are updating the default values with B so "Discard changes" would reset correctly.
