@@ -190,7 +190,7 @@ export async function deleteCoursePermissionsForNonOwners({
     );
     await deleteCoursePermissions({
       course_id,
-      user_id: nonOwners.map((user) => user.id),
+      user_id: nonOwners.map((user) => user.user_id),
       authn_user_id,
     });
   });
