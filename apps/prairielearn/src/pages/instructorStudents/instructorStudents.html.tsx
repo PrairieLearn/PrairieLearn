@@ -1,4 +1,4 @@
-import { QueryClient, useQuery } from '@tanstack/react-query';
+import { QueryClient, useQuery, useQueryClient } from '@tanstack/react-query';
 import {
   type ColumnFiltersState,
   type ColumnPinningState,
@@ -261,6 +261,8 @@ function StudentsCard({
     initialData: initialStudents,
   });
 
+  const queryClient = useQueryClient();
+
   const [showInvite, setShowInvite] = useState(false);
   const [showSync, setShowSync] = useState(false);
   const [copiedEnrollLink, setCopiedEnrollLink] = useState(false);
@@ -491,7 +493,12 @@ function StudentsCard({
               courseInstance={courseInstance}
               authzData={authzData}
               onInvite={() => setShowInvite(true)}
-              onSync={() => setShowSync(true)}
+              onSync={() => {
+                // Reload the latest student data so that the preview of sync actions
+                // will be as accurate as possible.
+                queryClient.invalidateQueries({ queryKey: ['enrollments', 'students'] });
+                setShowSync(true);
+              }}
             />
           )
         }
