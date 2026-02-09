@@ -294,26 +294,19 @@ router.post(
         // Log summary at the end
         job.info('\nSummary:');
         job.info(`  Successfully invited: ${counts.invited}`);
-        if (counts.skippedAlreadyJoined > 0) {
-          job.info(`  Skipped (already enrolled): ${counts.skippedAlreadyJoined}`);
-        }
-        if (counts.skippedAlreadyInvited > 0) {
-          job.info(`  Skipped (already invited): ${counts.skippedAlreadyInvited}`);
-        }
-        if (counts.skippedAlreadyBlocked > 0) {
-          job.info(`  Skipped (blocked): ${counts.skippedAlreadyBlocked}`);
-        }
-        if (counts.skippedAlreadyRemoved > 0) {
-          job.info(`  Skipped (removed): ${counts.skippedAlreadyRemoved}`);
-        }
-        if (counts.skippedLti13Pending > 0) {
-          job.info(`  Skipped (LTI-managed): ${counts.skippedLti13Pending}`);
-        }
-        if (counts.skippedInstructor > 0) {
-          job.info(`  Skipped (instructor): ${counts.skippedInstructor}`);
-        }
-        if (counts.errors > 0) {
-          job.info(`  Errors: ${counts.errors}`);
+        const summaryLines: [number, string][] = [
+          [counts.skippedAlreadyJoined, 'Skipped (already enrolled)'],
+          [counts.skippedAlreadyInvited, 'Skipped (already invited)'],
+          [counts.skippedAlreadyBlocked, 'Skipped (blocked)'],
+          [counts.skippedAlreadyRemoved, 'Skipped (removed)'],
+          [counts.skippedLti13Pending, 'Skipped (LTI-managed)'],
+          [counts.skippedInstructor, 'Skipped (instructor)'],
+          [counts.errors, 'Errors'],
+        ];
+        for (const [count, label] of summaryLines) {
+          if (count > 0) {
+            job.info(`  ${label}: ${count}`);
+          }
         }
       });
 
@@ -439,29 +432,22 @@ router.post(
         // Log summary at the end
         job.info('\nSummary:');
         job.info(`  Invited: ${syncCounts.invited}`);
-        if (syncCounts.unblocked > 0) {
-          job.info(`  Unblocked: ${syncCounts.unblocked}`);
-        }
-        if (syncCounts.reenrolled > 0) {
-          job.info(`  Reenrolled: ${syncCounts.reenrolled}`);
-        }
         job.info(`  Invitations cancelled: ${cancelled}`);
         job.info(`  Removed: ${removed}`);
-        if (syncCounts.skippedAlreadyJoined > 0) {
-          job.info(`  Skipped (already joined): ${syncCounts.skippedAlreadyJoined}`);
-        }
-        if (syncCounts.skippedAlreadyInvited > 0) {
-          job.info(`  Skipped (already invited): ${syncCounts.skippedAlreadyInvited}`);
-        }
-        if (syncCounts.skippedLti13Pending > 0) {
-          job.info(`  Skipped (LTI-managed): ${syncCounts.skippedLti13Pending}`);
-        }
-        if (syncCounts.skippedInstructor > 0) {
-          job.info(`  Skipped (instructor): ${syncCounts.skippedInstructor}`);
-        }
         const totalErrors = syncCounts.errors + cancelErrors + removeErrors;
-        if (totalErrors > 0) {
-          job.info(`  Errors: ${totalErrors}`);
+        const syncSummaryLines: [number, string][] = [
+          [syncCounts.unblocked, 'Unblocked'],
+          [syncCounts.reenrolled, 'Reenrolled'],
+          [syncCounts.skippedAlreadyJoined, 'Skipped (already joined)'],
+          [syncCounts.skippedAlreadyInvited, 'Skipped (already invited)'],
+          [syncCounts.skippedLti13Pending, 'Skipped (LTI-managed)'],
+          [syncCounts.skippedInstructor, 'Skipped (instructor)'],
+          [totalErrors, 'Errors'],
+        ];
+        for (const [count, label] of syncSummaryLines) {
+          if (count > 0) {
+            job.info(`  ${label}: ${count}`);
+          }
         }
       });
 
