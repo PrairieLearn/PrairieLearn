@@ -367,19 +367,6 @@ export function SyncStudentsModal({
       </Modal.Header>
 
       <Modal.Body>
-        {isUnpublished && step === 'input' && (
-          <Alert variant="warning">
-            Students will not be able to accept invitations until the course instance is published.
-          </Alert>
-        )}
-
-        {courseInstance.self_enrollment_enabled && step === 'input' && (
-          <Alert variant="info">
-            Self-enrollment is enabled for this course instance. Removed students will be able to
-            re-enroll themselves. Consider disabling self-enrollment if you want to prevent this.
-          </Alert>
-        )}
-
         {syncMutation.isError && (
           <Alert variant="danger" dismissible onClose={() => syncMutation.reset()}>
             {syncMutation.error instanceof Error ? syncMutation.error.message : 'An error occurred'}
@@ -387,38 +374,55 @@ export function SyncStudentsModal({
         )}
 
         {step === 'input' && (
-          <form onSubmit={onCompare}>
-            <p className="text-muted">
-              Paste your student roster below. Students on this list will be invited (or re-enrolled
-              if previously blocked or removed). Students not on this list will be removed, and
-              pending invitations will be cancelled.
-            </p>
-            <div className="mb-3">
-              <label htmlFor="sync-uids" className="form-label">
-                Student UIDs
-              </label>
-              <textarea
-                id="sync-uids"
-                className={clsx('form-control', errors.uids && 'is-invalid')}
-                rows={8}
-                placeholder="student1@example.com&#10;student2@example.com&#10;student3@example.com"
-                aria-invalid={!!errors.uids}
-                aria-errormessage={errors.uids ? 'sync-uids-error' : undefined}
-                aria-describedby="sync-uids-help"
-                {...register('uids', {
-                  validate: validateUidsFormat,
-                })}
-              />
-              {errors.uids?.message && (
-                <div className="invalid-feedback" id="sync-uids-error">
-                  {errors.uids.message}
+          <div className="d-flex flex-column gap-3">
+            <form onSubmit={onCompare}>
+              <p>
+                Paste your student roster below. Students on this list will be invited (or
+                re-enrolled if previously blocked or removed). Students not on this list will be
+                removed, and pending invitations will be cancelled.
+              </p>
+              <div>
+                <label htmlFor="sync-uids" className="form-label">
+                  Student UIDs
+                </label>
+                <textarea
+                  id="sync-uids"
+                  className={clsx('form-control', errors.uids && 'is-invalid')}
+                  rows={8}
+                  placeholder="student1@example.com&#10;student2@example.com&#10;student3@example.com"
+                  aria-invalid={!!errors.uids}
+                  aria-errormessage={errors.uids ? 'sync-uids-error' : undefined}
+                  aria-describedby="sync-uids-help"
+                  {...register('uids', {
+                    validate: validateUidsFormat,
+                  })}
+                />
+                {errors.uids?.message && (
+                  <div className="invalid-feedback" id="sync-uids-error">
+                    {errors.uids.message}
+                  </div>
+                )}
+                <div className="form-text" id="sync-uids-help">
+                  One UID per line, or comma/space/semicolon separated.
                 </div>
-              )}
-              <div className="form-text" id="sync-uids-help">
-                One UID per line, or comma/space/semicolon separated.
               </div>
-            </div>
-          </form>
+            </form>
+
+            {isUnpublished && step === 'input' && (
+              <Alert variant="warning" className="mb-0">
+                Students will not be able to accept invitations until the course instance is
+                published.
+              </Alert>
+            )}
+
+            {courseInstance.self_enrollment_enabled && step === 'input' && (
+              <Alert variant="info" className="mb-0">
+                Self-enrollment is enabled for this course instance. Removed students will be able
+                to re-enroll themselves. Consider disabling self-enrollment if you want to prevent
+                this.
+              </Alert>
+            )}
+          </div>
         )}
 
         {step === 'preview' && preview && (
