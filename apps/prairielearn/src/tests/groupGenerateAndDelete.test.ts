@@ -4,9 +4,12 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
-import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import * as groupUpdate from '../lib/group-update.js';
 import { createGroup, deleteAllGroups, deleteGroup } from '../lib/groups.js';
+import {
+  insertGroupAssessmentInstance,
+  selectAssessmentInstanceById,
+} from '../models/assessment-instance.js';
 import { selectAssessmentById } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -99,20 +102,16 @@ describe('deleting a group closes its assessment instances', { timeout: 20_000 }
     });
 
     // Create an open assessment instance for the group.
-    const ai = await sqldb.queryRow(
-      sql.insert_group_assessment_instance,
-      { assessment_id: assessmentId, team_id: group.id, authn_user_id: '1' },
-      AssessmentInstanceSchema,
-    );
+    const ai = await insertGroupAssessmentInstance({
+      assessment_id: assessmentId,
+      team_id: group.id,
+      authn_user_id: '1',
+    });
     assert.isTrue(ai.open);
 
     await deleteGroup(assessmentId, group.id, '1');
 
-    const updated = await sqldb.queryRow(
-      sql.select_assessment_instance,
-      { assessment_instance_id: ai.id },
-      AssessmentInstanceSchema,
-    );
+    const updated = await selectAssessmentInstanceById(ai.id);
     assert.isFalse(updated.open);
     assert.isNotNull(updated.closed_at);
   });
@@ -127,20 +126,16 @@ describe('deleting a group closes its assessment instances', { timeout: 20_000 }
       authzData: dangerousFullSystemAuthz(),
     });
 
-    const ai = await sqldb.queryRow(
-      sql.insert_group_assessment_instance,
-      { assessment_id: assessmentId, team_id: group.id, authn_user_id: '1' },
-      AssessmentInstanceSchema,
-    );
+    const ai = await insertGroupAssessmentInstance({
+      assessment_id: assessmentId,
+      team_id: group.id,
+      authn_user_id: '1',
+    });
     assert.isTrue(ai.open);
 
     await deleteAllGroups(assessmentId, '1');
 
-    const updated = await sqldb.queryRow(
-      sql.select_assessment_instance,
-      { assessment_instance_id: ai.id },
-      AssessmentInstanceSchema,
-    );
+    const updated = await selectAssessmentInstanceById(ai.id);
     assert.isFalse(updated.open);
     assert.isNotNull(updated.closed_at);
   });
