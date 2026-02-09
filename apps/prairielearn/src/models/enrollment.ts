@@ -774,7 +774,7 @@ export async function reenrollEnrollmentFromSync({
   authzData,
 }: {
   enrollment: Enrollment;
-  authzData: AuthzData;
+  authzData: AuthzDataWithEffectiveUser;
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -821,7 +821,7 @@ export async function reenrollEnrollmentFromSync({
       oldRow: lockedEnrollment,
       newRow: newEnrollment,
       agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
+      agentAuthnUserId: authzData.authn_user.id,
     });
 
     return newEnrollment;

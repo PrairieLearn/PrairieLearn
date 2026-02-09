@@ -217,6 +217,8 @@ export function SyncStudentsModal({
       const toRemove = Array.from(selectedRemovals);
       return onSubmit(toInvite, toCancelInvitation, toRemove);
     },
+    // Note: onSubmit navigates to the job sequence page via window.location.href,
+    // so onSuccess won't visibly affect the UI.
     onSuccess: onHide,
   });
 
@@ -450,6 +452,7 @@ export function SyncStudentsModal({
                     <span
                       className="d-inline-block rounded-circle bg-success"
                       style={{ width: '0.5rem', height: '0.5rem' }}
+                      aria-hidden="true"
                     />
                     {summaryCounts.invitations} invitation
                     {summaryCounts.invitations === 1 ? '' : 's'}
@@ -460,6 +463,7 @@ export function SyncStudentsModal({
                     <span
                       className="d-inline-block rounded-circle bg-success"
                       style={{ width: '0.5rem', height: '0.5rem' }}
+                      aria-hidden="true"
                     />
                     {summaryCounts.reEnrollments} re-enrollment
                     {summaryCounts.reEnrollments === 1 ? '' : 's'}
@@ -470,6 +474,7 @@ export function SyncStudentsModal({
                     <span
                       className="d-inline-block rounded-circle bg-warning"
                       style={{ width: '0.5rem', height: '0.5rem' }}
+                      aria-hidden="true"
                     />
                     {summaryCounts.cancellations} cancellation
                     {summaryCounts.cancellations === 1 ? '' : 's'}
@@ -480,6 +485,7 @@ export function SyncStudentsModal({
                     <span
                       className="d-inline-block rounded-circle bg-danger"
                       style={{ width: '0.5rem', height: '0.5rem' }}
+                      aria-hidden="true"
                     />
                     {summaryCounts.removals} removal{summaryCounts.removals === 1 ? '' : 's'}
                   </span>
