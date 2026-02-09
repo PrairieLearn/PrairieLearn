@@ -1,3 +1,5 @@
+import clsx from 'clsx';
+
 import { escapeHtml, html } from '@prairielearn/html';
 
 import { type CourseRequestRow } from '../lib/course-request.js';
@@ -134,7 +136,9 @@ export function CourseRequestsTable({
                       <ul class="dropdown-menu">
                         <li>
                           <button
-                            class="dropdown-item show-hide-btn${row.note ? '' : ' collapsed'}"
+                            class="${clsx('dropdown-item', 'show-hide-btn', {
+                              collapsed: !row.note,
+                            })}"
                             data-bs-toggle="collapse"
                             data-bs-target="#course-requests-note-${row.id}"
                             aria-expanded="${row.note ? 'true' : 'false'}"
@@ -167,7 +171,7 @@ export function CourseRequestsTable({
                   <td colspan="${showAll ? 11 : 10}" class="p-0">
                     <div
                       id="course-requests-note-${row.id}"
-                      class="${row.note ? 'collapse show' : 'collapse'}"
+                      class="${clsx('collapse', { show: row.note })}"
                     >
                       ${CourseRequestEditNoteForm({
                         request: row,
@@ -347,7 +351,7 @@ function CourseRequestDenyForm({
     <form method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
       <input type="hidden" name="__action" value="approve_deny_course_request" />
-      <input type="hidden" name="approve_deny_action" value="deny" />
+      <input type="hidden" name="approve_deny_action" value="denied" />
       <input type="hidden" name="request_id" value="${request.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Deny</button>

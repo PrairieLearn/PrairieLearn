@@ -1,10 +1,8 @@
 import fetch from 'node-fetch';
 import { afterAll, assert, beforeAll, describe, test } from 'vitest';
 
-import * as sqldb from '@prairielearn/postgres';
-import { IdSchema } from '@prairielearn/zod';
-
 import { config } from '../lib/config.js';
+import { insertCourseRequest } from '../lib/course-request.js';
 
 import * as helperClient from './helperClient.js';
 import * as helperServer from './helperServer.js';
@@ -12,8 +10,6 @@ import * as helperServer from './helperServer.js';
 const siteUrl = `http://localhost:${config.serverPort}`;
 const baseUrl = `${siteUrl}/pl`;
 const coursesAdminUrl = `${baseUrl}/administrator/courses`;
-
-const sql = sqldb.loadSqlEquiv(import.meta.url);
 
 describe('Course request note', { timeout: 60_000 }, function () {
   beforeAll(helperServer.before());
@@ -23,24 +19,21 @@ describe('Course request note', { timeout: 60_000 }, function () {
   describe('create course request note', () => {
     let courseRequestId: string;
     let csrfToken: string;
-    const shortName = `TEST ${Math.random().toString(36).slice(2, 8).toUpperCase()}`;
+    const shortName = 'TEST 101';
+    const note = 'This is a test note';
 
     test.sequential('insert a course request', async () => {
-      courseRequestId = await sqldb.queryRow(
-        sql.insert_course_request,
-        {
-          short_name: shortName,
-          title: 'Test Course',
-          user_id: '1',
-          github_user: null,
-          first_name: 'Test',
-          last_name: 'User',
-          work_email: 'test@example.com',
-          institution: 'Test Institution',
-          referral_source: null,
-        },
-        IdSchema,
-      );
+      courseRequestId = await insertCourseRequest({
+        short_name: shortName,
+        title: 'Test Course',
+        user_id: '1',
+        github_user: null,
+        first_name: 'Test',
+        last_name: 'User',
+        work_email: 'test@example.com',
+        institution: 'Test Institution',
+        referral_source: null,
+      });
     });
 
     test.sequential('load page and extract CSRF token', async () => {
@@ -67,7 +60,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
           __action: 'update_course_request_note',
           __csrf_token: csrfToken,
           request_id: courseRequestId,
-          note: 'This is a test note',
+          note,
         }),
       });
       assert.isTrue(response.ok);
@@ -80,7 +73,7 @@ describe('Course request note', { timeout: 60_000 }, function () {
       // Verify if the area for editing the note exists and the content matches the post
       const textarea = response.$(`#course-request-note-${courseRequestId}`);
       assert.lengthOf(textarea, 1); // textarea exists
-      assert.equal((textarea.val() as string).trim(), 'This is a test note'); // and content is updated
+      assert.equal((textarea.val() as string).trim(), note); // and content is updated
     });
   });
 });

@@ -1,7 +1,7 @@
 import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
-import { execute, executeRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
+import { execute, executeRow, loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 import * as Sentry from '@prairielearn/sentry';
 import { DateFromISOString, IdSchema } from '@prairielearn/zod';
 
@@ -62,9 +62,7 @@ export async function updateCourseRequest({
   courseRequestId: string;
   authnUser: User;
 }) {
-  if (approveDenyAction === 'deny') {
-    approveDenyAction = 'denied';
-  } else {
+  if (approveDenyAction !== 'denied') {
     throw new Error(`Unknown course request action "${approveDenyAction}"`);
   }
 
@@ -132,6 +130,44 @@ export async function createCourseFromRequest({
   }
 
   return jobSequenceId;
+}
+
+export async function insertCourseRequest({
+  short_name,
+  title,
+  user_id,
+  github_user,
+  first_name,
+  last_name,
+  work_email,
+  institution,
+  referral_source,
+}: {
+  short_name: string;
+  title: string;
+  user_id: string;
+  github_user: string | null;
+  first_name: string | null;
+  last_name: string | null;
+  work_email: string | null;
+  institution: string | null;
+  referral_source: string | null;
+}): Promise<string> {
+  return await queryRow(
+    sql.insert_course_request,
+    {
+      short_name,
+      title,
+      user_id,
+      github_user,
+      first_name,
+      last_name,
+      work_email,
+      institution,
+      referral_source,
+    },
+    IdSchema,
+  );
 }
 
 export async function updateCourseRequestNote({

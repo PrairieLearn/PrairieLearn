@@ -66,6 +66,36 @@ SET
 WHERE
   course_requests.id = $id;
 
+-- BLOCK insert_course_request
+INSERT INTO
+  course_requests (
+    short_name,
+    title,
+    user_id,
+    github_user,
+    first_name,
+    last_name,
+    work_email,
+    institution,
+    referral_source,
+    approved_status
+  )
+VALUES
+  (
+    $short_name,
+    $title,
+    $user_id,
+    $github_user,
+    $first_name,
+    $last_name,
+    $work_email,
+    $institution,
+    $referral_source,
+    'pending'
+  )
+RETURNING
+  course_requests.id;
+
 -- BLOCK update_course_request_note
 UPDATE course_requests
 SET
