@@ -471,9 +471,11 @@ WITH
       closed_at = NOW(),
       grading_needed = TRUE,
       modified_at = NOW()
+    FROM
+      deleted_group AS dg
     WHERE
       ai.assessment_id = $assessment_id
-      AND ai.team_id = $group_id
+      AND ai.team_id = dg.id
       AND ai.open
     RETURNING
       ai.id
