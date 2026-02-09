@@ -142,7 +142,7 @@ function StudentCheckboxList({
       iconBg: 'bg-warning-subtle',
       label: 'Invitations to cancel',
       ariaLabel: 'Invitations to cancel',
-      description: 'Pending invitations will be cancelled (deleted).',
+      description: 'Pending invitations will be cancelled.',
     },
     remove: {
       icon: 'bi-person-dash',
@@ -210,7 +210,7 @@ function StudentCheckboxList({
                 checked={selectedUids.has(item.uid)}
                 onChange={() => onToggle(item.uid)}
               />
-              <span className="d-flex align-items-center gap-2 flex-grow-1">
+              <Form.Check.Label className="d-flex align-items-center gap-2 flex-grow-1">
                 <span className="d-flex flex-column">
                   <span>{item.uid}</span>
                   {item.userName && <span className="text-muted small">{item.userName}</span>}
@@ -222,7 +222,7 @@ function StudentCheckboxList({
                     <span className="badge bg-info">New</span>
                   )}
                 </span>
-              </span>
+              </Form.Check.Label>
             </Form.Check>
           </div>
         ))}
@@ -365,6 +365,26 @@ export function SyncStudentsModal({
     selectedInvites.size + selectedCancellations.size + selectedRemovals.size;
   const hasNoSelections = totalSelectedCount === 0;
 
+  const summaryCounts = useMemo(() => {
+    if (!preview) return { invitations: 0, reEnrollments: 0, cancellations: 0, removals: 0 };
+    let invitations = 0;
+    let reEnrollments = 0;
+    for (const item of preview.toInvite) {
+      if (!selectedInvites.has(item.uid)) continue;
+      if (item.currentStatus === 'blocked' || item.currentStatus === 'removed') {
+        reEnrollments++;
+      } else {
+        invitations++;
+      }
+    }
+    return {
+      invitations,
+      reEnrollments,
+      cancellations: selectedCancellations.size,
+      removals: selectedRemovals.size,
+    };
+  }, [preview, selectedInvites, selectedCancellations.size, selectedRemovals.size]);
+
   const isUnpublished =
     courseInstance.modern_publishing &&
     computeStatus(courseInstance.publishing_start_date, courseInstance.publishing_end_date) !==
@@ -506,35 +526,83 @@ export function SyncStudentsModal({
         )}
 
         {step === 'preview' && (
-          <>
-            <Button
-              variant="outline-secondary"
-              disabled={syncMutation.isPending}
-              onClick={() => setStep('input')}
-            >
-              Back
-            </Button>
-            {hasNoChanges ? (
-              <Button variant="primary" onClick={onHide}>
-                Done
-              </Button>
-            ) : (
-              <>
-                <Button variant="secondary" disabled={syncMutation.isPending} onClick={onHide}>
-                  Cancel
-                </Button>
-                <Button
-                  variant="primary"
-                  disabled={hasNoSelections || syncMutation.isPending}
-                  onClick={() => syncMutation.mutate()}
-                >
-                  {syncMutation.isPending
-                    ? 'Syncing...'
-                    : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
-                </Button>
-              </>
+          <div className="d-flex flex-column w-100 gap-3">
+            {!hasNoChanges && !hasNoSelections && (
+              <div className="d-flex align-items-center gap-3 small text-muted">
+                <span className="fw-medium">Summary:</span>
+                {summaryCounts.invitations > 0 && (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="d-inline-block rounded-circle bg-success"
+                      style={{ width: '0.5rem', height: '0.5rem' }}
+                    />
+                    {summaryCounts.invitations} invitation
+                    {summaryCounts.invitations === 1 ? '' : 's'}
+                  </span>
+                )}
+                {summaryCounts.reEnrollments > 0 && (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="d-inline-block rounded-circle bg-success"
+                      style={{ width: '0.5rem', height: '0.5rem' }}
+                    />
+                    {summaryCounts.reEnrollments} re-enrollment
+                    {summaryCounts.reEnrollments === 1 ? '' : 's'}
+                  </span>
+                )}
+                {summaryCounts.cancellations > 0 && (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="d-inline-block rounded-circle bg-warning"
+                      style={{ width: '0.5rem', height: '0.5rem' }}
+                    />
+                    {summaryCounts.cancellations} cancellation
+                    {summaryCounts.cancellations === 1 ? '' : 's'}
+                  </span>
+                )}
+                {summaryCounts.removals > 0 && (
+                  <span className="d-inline-flex align-items-center gap-1">
+                    <span
+                      className="d-inline-block rounded-circle bg-danger"
+                      style={{ width: '0.5rem', height: '0.5rem' }}
+                    />
+                    {summaryCounts.removals} removal{summaryCounts.removals === 1 ? '' : 's'}
+                  </span>
+                )}
+              </div>
             )}
-          </>
+            <div className="d-flex align-items-center gap-2">
+              <Button
+                variant="outline-secondary"
+                disabled={syncMutation.isPending}
+                onClick={() => setStep('input')}
+              >
+                Back
+              </Button>
+              <div className="ms-auto d-flex gap-2">
+                {hasNoChanges ? (
+                  <Button variant="primary" onClick={onHide}>
+                    Done
+                  </Button>
+                ) : (
+                  <>
+                    <Button variant="secondary" disabled={syncMutation.isPending} onClick={onHide}>
+                      Cancel
+                    </Button>
+                    <Button
+                      variant="primary"
+                      disabled={hasNoSelections || syncMutation.isPending}
+                      onClick={() => syncMutation.mutate()}
+                    >
+                      {syncMutation.isPending
+                        ? 'Syncing...'
+                        : `Sync ${totalSelectedCount} student${totalSelectedCount === 1 ? '' : 's'}`}
+                    </Button>
+                  </>
+                )}
+              </div>
+            </div>
+          </div>
         )}
       </Modal.Footer>
     </Modal>
