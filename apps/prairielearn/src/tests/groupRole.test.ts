@@ -19,13 +19,13 @@ import {
   GroupUserRoleSchema,
   type User,
 } from '../lib/db-types.js';
-import { TEST_COURSE_PATH } from '../lib/paths.js';
 import {
   type GroupInfo,
   type GroupRoleWithCount,
   type RoleAssignment,
   getGroupRoleReassignmentsAfterLeave,
-} from '../lib/teams.js';
+} from '../lib/groups.js';
+import { TEST_COURSE_PATH } from '../lib/paths.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
 import { type GroupsRoleJson } from '../schemas/index.js';
 

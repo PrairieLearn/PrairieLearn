@@ -1,0 +1,30 @@
+columns
+    authn_user_id: bigint
+    created_at: timestamp with time zone not null default now()
+    id: bigint not null default nextval('ai_question_generation_messages_id_seq'::regclass)
+    include_in_context: boolean not null default true
+    job_sequence_id: bigint
+    model: text
+    parts: jsonb not null default '[]'::jsonb
+    question_id: bigint not null
+    role: enum_ai_question_generation_message_role not null
+    status: enum_ai_question_generation_message_status not null
+    updated_at: timestamp with time zone not null default now()
+    usage_input_tokens: integer not null default 0
+    usage_input_tokens_cache_read: integer not null default 0
+    usage_input_tokens_cache_write: integer not null default 0
+    usage_output_tokens: integer not null default 0
+    usage_output_tokens_reasoning: integer not null default 0
+
+indexes
+    ai_question_generation_messages_pkey: PRIMARY KEY (id) USING btree (id)
+    ai_question_generation_messages_question_id_idx: USING btree (question_id)
+
+check constraints
+    ai_question_generation_messages_authn_user_check: CHECK (role = 'user'::enum_ai_question_generation_message_role AND authn_user_id IS NOT NULL OR role = 'assistant'::enum_ai_question_generation_message_role AND authn_user_id IS NULL)
+    ai_question_generation_messages_model_check: CHECK (role = 'user'::enum_ai_question_generation_message_role AND model IS NULL OR role = 'assistant'::enum_ai_question_generation_message_role AND model IS NOT NULL)
+
+foreign-key constraints
+    ai_question_generation_messages_authn_user_id_fkey: FOREIGN KEY (authn_user_id) REFERENCES users(id) ON UPDATE CASCADE ON DELETE CASCADE
+    ai_question_generation_messages_job_sequence_id_fkey: FOREIGN KEY (job_sequence_id) REFERENCES job_sequences(id) ON UPDATE CASCADE ON DELETE SET NULL
+    ai_question_generation_messages_question_id_fkey: FOREIGN KEY (question_id) REFERENCES questions(id) ON UPDATE CASCADE ON DELETE CASCADE
