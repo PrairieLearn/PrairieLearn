@@ -44,75 +44,58 @@ function getCurrentStatusLabel(status: EnumEnrollmentStatus): string {
   }
 }
 
-interface StudentCheckboxListProps {
-  items: StudentSyncItem[];
-  selectedUids: Set<string>;
-  onToggle: (uid: string) => void;
-  onSelectAll: () => void;
-  onDeselectAll: () => void;
-  variant: 'add' | 'remove';
-}
-
 function StudentCheckboxList({
   items,
   selectedUids,
   onToggle,
   onSelectAll,
   onDeselectAll,
-  variant,
-}: StudentCheckboxListProps) {
+  icon,
+  iconColor,
+  iconBg,
+  label,
+  description,
+  checkboxIdPrefix,
+}: {
+  items: StudentSyncItem[];
+  selectedUids: Set<string>;
+  onToggle: (uid: string) => void;
+  onSelectAll: () => void;
+  onDeselectAll: () => void;
+  icon: string;
+  iconColor: string;
+  iconBg: string;
+  label: string;
+  description: string;
+  checkboxIdPrefix: string;
+}) {
   if (items.length === 0) return null;
 
   const selectedCount = items.filter((item) => selectedUids.has(item.uid)).length;
-
-  const variantConfig = {
-    add: {
-      icon: 'bi-person-plus',
-      iconColor: 'text-success',
-      iconBg: 'bg-success-subtle',
-      label: 'Students to add',
-      ariaLabel: 'Students to add',
-      selectAllAriaLabel: 'Select all students to add',
-      clearAllAriaLabel: 'Clear all students to add',
-      description: 'New students will be invited. Blocked or removed students will be re-enrolled.',
-    },
-    remove: {
-      icon: 'bi-person-dash',
-      iconColor: 'text-danger',
-      iconBg: 'bg-danger-subtle',
-      label: 'Students to remove',
-      ariaLabel: 'Students to remove',
-      selectAllAriaLabel: 'Select all students to remove',
-      clearAllAriaLabel: 'Clear all students to remove',
-      description: 'Joined students will be removed. Pending invitations will be cancelled.',
-    },
-  };
-
-  const config = variantConfig[variant];
 
   return (
     <div className="d-flex flex-column gap-2">
       <div className="d-flex align-items-center gap-2">
         <div
           className={clsx(
-            config.iconBg,
+            iconBg,
             'rounded d-flex align-items-center justify-content-center flex-shrink-0',
           )}
           style={{ width: '2.5rem', height: '2.5rem' }}
         >
           <i
-            className={clsx('bi', config.icon, config.iconColor)}
+            className={clsx('bi', icon, iconColor)}
             style={{ fontSize: '1.25rem' }}
             aria-hidden="true"
           />
         </div>
         <div className="flex-grow-1">
-          <h6 className="mb-0">{config.label}</h6>
-          <p className="text-muted small mb-0">{config.description}</p>
+          <h6 className="mb-0">{label}</h6>
+          <p className="text-muted small mb-0">{description}</p>
         </div>
       </div>
 
-      <div className="border rounded overflow-hidden" role="group" aria-label={config.ariaLabel}>
+      <div className="border rounded overflow-hidden" role="group" aria-label={label}>
         <div className="d-flex align-items-center px-3 py-2 bg-body-tertiary border-bottom">
           <span className="small text-muted">
             {selectedCount} of {items.length} selected
@@ -122,7 +105,7 @@ function StudentCheckboxList({
               variant="link"
               size="sm"
               className="text-decoration-none"
-              aria-label={config.selectAllAriaLabel}
+              aria-label={`Select all ${label.toLowerCase()}`}
               onClick={onSelectAll}
             >
               Select all
@@ -131,7 +114,7 @@ function StudentCheckboxList({
               variant="link"
               size="sm"
               className="text-decoration-none"
-              aria-label={config.clearAllAriaLabel}
+              aria-label={`Clear all ${label.toLowerCase()}`}
               onClick={onDeselectAll}
             >
               Clear all
@@ -146,7 +129,7 @@ function StudentCheckboxList({
             >
               <Form.Check
                 type="checkbox"
-                id={`sync-${variant}-${item.uid}`}
+                id={`${checkboxIdPrefix}-${item.uid}`}
                 className="d-flex gap-2 align-items-center mb-0"
               >
                 <Form.Check.Input
@@ -414,7 +397,12 @@ export function SyncStudentsModal({
                 <StudentCheckboxList
                   items={preview.toInvite}
                   selectedUids={selectedAdds}
-                  variant="add"
+                  icon="bi-person-plus"
+                  iconColor="text-success"
+                  iconBg="bg-success-subtle"
+                  label="Students to add"
+                  description="New students will be invited. Blocked or removed students will be re-enrolled."
+                  checkboxIdPrefix="sync-add"
                   onToggle={toggleAdd}
                   onSelectAll={() =>
                     setSelectedAdds(new Set(preview.toInvite.map((item) => item.uid)))
@@ -425,7 +413,12 @@ export function SyncStudentsModal({
                 <StudentCheckboxList
                   items={allRemovals}
                   selectedUids={selectedRemovals}
-                  variant="remove"
+                  icon="bi-person-dash"
+                  iconColor="text-danger"
+                  iconBg="bg-danger-subtle"
+                  label="Students to remove"
+                  description="Joined students will be removed. Pending invitations will be cancelled."
+                  checkboxIdPrefix="sync-remove"
                   onToggle={toggleRemoval}
                   onSelectAll={() =>
                     setSelectedRemovals(new Set(allRemovals.map((item) => item.uid)))
