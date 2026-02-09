@@ -15,7 +15,6 @@ import { z } from 'zod';
 
 import { logger } from '@prairielearn/logger';
 import {
-  callRow,
   execute,
   loadSqlEquiv,
   queryRow,
@@ -28,6 +27,7 @@ import { assertNever } from '@prairielearn/utils';
 import { IdSchema } from '@prairielearn/zod';
 
 import { calculateResponseCost, formatPrompt } from '../../../lib/ai-util.js';
+import { updateAssessmentInstanceGrade } from '../../../lib/assessment-grading.js';
 import { config } from '../../../lib/config.js';
 import {
   AssessmentQuestionSchema,
@@ -37,7 +37,6 @@ import {
   InstanceQuestionSchema,
   type RubricItem,
   RubricItemSchema,
-  SprocAssessmentInstancesGradeSchema,
   type Submission,
   SubmissionSchema,
   type Variant,
@@ -614,18 +613,13 @@ export async function deleteAiGradingJobs({
     );
 
     for (const iq of iqs) {
-      await callRow(
-        'assessment_instances_grade',
-        [
-          iq.assessment_instance_id,
-          // We use the user who is performing the deletion.
-          authn_user_id,
-          100, // credit
-          false, // only_log_if_score_updated
-          true, // allow_decrease
-        ],
-        SprocAssessmentInstancesGradeSchema,
-      );
+      await updateAssessmentInstanceGrade({
+        assessment_instance_id: iq.assessment_instance_id,
+        // We use the user who is performing the deletion.
+        authn_user_id,
+        credit: 100,
+        allowDecrease: true,
+      });
     }
 
     return iqs;
