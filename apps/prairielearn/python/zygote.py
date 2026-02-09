@@ -531,11 +531,15 @@ with open(4, "w", encoding="utf-8") as exitf:
                     json.dump({"exited": True}, exitf)
                     exitf.write("\n")
                     exitf.flush()
-                else:
-                    # The worker did not exit gracefully; the worker's
+                elif os.WEXITSTATUS(status) == 1:
+                    # The worker died due to an unhandled exception; its
                     # stderr already contains the relevant traceback, so
                     # exit without adding another one.
-                    sys.exit(os.WEXITSTATUS(status))
+                    sys.exit(1)
+                else:
+                    raise RuntimeError(
+                        f"worker process exited unexpectedly with status {os.WEXITSTATUS(status)}"
+                    )
             else:
                 # Something else happened that is weird
                 raise RuntimeError(
