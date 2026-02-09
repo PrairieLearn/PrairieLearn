@@ -242,7 +242,12 @@ window.PLOrderBlocks = function (uuid, options) {
       return 0;
     }
 
+    // Align snapping origin with the dropzone content box (indent lines start at padding-left)
+    const paddingLeft = Number.parseFloat(parent.css('padding-left')) || 0;
+
     let leftDiff = ui.position.left - parent.position().left;
+    leftDiff -= paddingLeft;
+
     leftDiff = Math.round(leftDiff / TABWIDTH) * TABWIDTH;
     const currentIndent = ui.item[0].style.marginLeft;
     if (currentIndent !== '') {
