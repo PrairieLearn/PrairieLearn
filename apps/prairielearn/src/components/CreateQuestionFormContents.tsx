@@ -148,7 +148,7 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
   );
 }
 
-export function CreateQuestionModalContents({
+export function CreateQuestionFormContents({
   templateQuestions,
 }: {
   templateQuestions: { example_course: boolean; qid: string; title: string }[];
@@ -277,4 +277,4 @@ export function CreateQuestionModalContents({
   );
 }
 
-CreateQuestionModalContents.displayName = 'CreateQuestionModalContents';
+CreateQuestionFormContents.displayName = 'CreateQuestionFormContents';

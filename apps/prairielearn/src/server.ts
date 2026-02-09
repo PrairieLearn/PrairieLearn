@@ -1176,6 +1176,10 @@ export async function initExpress(): Promise<Express> {
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions/new',
+    (await import('./pages/instructorQuestionNew/instructorQuestionNew.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/course_admin/questions',
     (await import('./pages/instructorQuestions/instructorQuestions.js')).default,
   );
@@ -1643,6 +1647,10 @@ export async function initExpress(): Promise<Express> {
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/issues',
     (await import('./pages/instructorIssues/instructorIssues.js')).default,
+  );
+  app.use(
+    '/pl/course/:course_id(\\d+)/course_admin/questions/new',
+    (await import('./pages/instructorQuestionNew/instructorQuestionNew.js')).default,
   );
   app.use(
     '/pl/course/:course_id(\\d+)/course_admin/questions',
