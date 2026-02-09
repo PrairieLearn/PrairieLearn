@@ -667,11 +667,13 @@ async function processQuestionServer<T extends ExecutionData>(
     ({ result, output } = await execPythonServer(codeCaller, phase, data, html, context));
   } catch (err: any) {
     // Log the error message and any Python output to help diagnose test failures.
-    logger.error(
-      `Error in processQuestionServer(${phase}) for question ${context.question.directory}`,
-    );
-    if (err?.data?.outputBoth) {
-      logger.error(err.data.outputBoth.trim());
+    if (config.devMode) {
+      logger.error(
+        `Error in processQuestionServer(${phase}) for question ${context.question.directory}`,
+      );
+      if (err?.data?.outputBoth) {
+        logger.error(err.data.outputBoth.trim());
+      }
     }
     const serverFile = path.join(context.question_dir, 'server.py');
     courseIssues.push(
