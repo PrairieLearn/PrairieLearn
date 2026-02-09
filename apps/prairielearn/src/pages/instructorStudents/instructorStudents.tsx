@@ -198,6 +198,7 @@ async function processInvitations({
         await reenrollEnrollmentFromSync({
           enrollment: existingEnrollment,
           authzData,
+          requiredRole: ['Student Data Editor'],
         });
         job.info(`${uid}: Unblocked`);
         counts.unblocked++;
@@ -208,6 +209,7 @@ async function processInvitations({
         await reenrollEnrollmentFromSync({
           enrollment: existingEnrollment,
           authzData,
+          requiredRole: ['Student Data Editor'],
         });
         job.info(`${uid}: Reenrolled`);
         counts.reenrolled++;
@@ -421,6 +423,7 @@ router.post(
                 await removeEnrollmentFromSync({
                   enrollment,
                   authzData,
+                  requiredRole: ['Student Data Editor'],
                 });
                 job.info(`${uid}: Removed`);
                 removed++;

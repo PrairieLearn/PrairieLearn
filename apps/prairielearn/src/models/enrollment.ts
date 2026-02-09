@@ -711,9 +711,11 @@ export async function setEnrollmentStatus({
 export async function removeEnrollmentFromSync({
   enrollment,
   authzData,
+  requiredRole,
 }: {
   enrollment: Enrollment;
   authzData: AuthzDataWithEffectiveUser;
+  requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -739,8 +741,7 @@ export async function removeEnrollmentFromSync({
       );
     }
 
-    // Roster sync requires Student Data Editor permission.
-    assertHasRole(authzData, ['Student Data Editor']);
+    assertHasRole(authzData, requiredRole);
 
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
@@ -772,9 +773,11 @@ export async function removeEnrollmentFromSync({
 export async function reenrollEnrollmentFromSync({
   enrollment,
   authzData,
+  requiredRole,
 }: {
   enrollment: Enrollment;
   authzData: AuthzDataWithEffectiveUser;
+  requiredRole: 'Student Data Editor'[];
 }): Promise<Enrollment> {
   return await runInTransactionAsync(async () => {
     const lockedEnrollment = await _selectAndLockEnrollment(enrollment.id);
@@ -799,8 +802,7 @@ export async function reenrollEnrollmentFromSync({
       );
     }
 
-    // Roster sync requires Student Data Editor permission.
-    assertHasRole(authzData, ['Student Data Editor']);
+    assertHasRole(authzData, requiredRole);
 
     const newEnrollment = await queryRow(
       sql.set_enrollment_status,
