@@ -18,6 +18,15 @@ import { insertAuditEvent } from './audit-event.js';
 
 const sql = loadSqlEquiv(import.meta.url);
 
+function assertEnrollmentMatchesLabel(enrollment: Enrollment, label: StudentLabel): void {
+  if (enrollment.course_instance_id !== label.course_instance_id) {
+    throw new HttpStatusError(
+      400,
+      'Enrollment does not belong to the same course instance as the label',
+    );
+  }
+}
+
 /**
  * Creates a new student label in the given course instance.
  *
@@ -86,8 +95,6 @@ export async function deleteStudentLabel(id: string): Promise<StudentLabel> {
 /**
  * Adds a label to an enrollment. If the enrollment already has this label,
  * this is a no-op.
- *
- * Callers must ensure that the enrollment belongs to the same course instance as the label.
  */
 export async function addEnrollmentToStudentLabel({
   enrollment,
@@ -98,35 +105,16 @@ export async function addEnrollmentToStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const result = await queryOptionalRow(
-    sql.add_enrollment_to_student_label,
-    { enrollment_id: enrollment.id, student_label_id: label.id },
-    StudentLabelEnrollmentSchema,
-  );
-
-  if (result) {
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'insert',
-      actionDetail: 'enrollment_added',
-      rowId: result.id,
-      newRow: result,
-      subjectUserId: enrollment.user_id,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: enrollment.id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
-
-  return result;
+  const results = await addEnrollmentsToStudentLabel({
+    enrollments: [enrollment],
+    label,
+    authzData,
+  });
+  return results[0] ?? null;
 }
 
 /**
  * Removes a label from an enrollment.
- *
- * Callers must ensure that the enrollment belongs to the same course instance as the label.
  */
 export async function removeEnrollmentFromStudentLabel({
   enrollment,
@@ -137,39 +125,17 @@ export async function removeEnrollmentFromStudentLabel({
   label: StudentLabel;
   authzData: AuthzData;
 }): Promise<StudentLabelEnrollment | null> {
-  const deletedRow = await queryOptionalRow(
-    sql.remove_enrollment_from_student_label,
-    {
-      enrollment_id: enrollment.id,
-      student_label_id: label.id,
-    },
-    StudentLabelEnrollmentSchema,
-  );
-
-  if (deletedRow) {
-    await insertAuditEvent({
-      tableName: 'student_label_enrollments',
-      action: 'delete',
-      actionDetail: 'enrollment_removed',
-      rowId: deletedRow.id,
-      oldRow: deletedRow,
-      subjectUserId: enrollment.user_id,
-      courseInstanceId: label.course_instance_id,
-      enrollmentId: enrollment.id,
-      agentUserId: authzData.user.id,
-      agentAuthnUserId: 'authn_user' in authzData ? authzData.authn_user.id : authzData.user.id,
-      context: { label_name: label.name },
-    });
-  }
-
-  return deletedRow;
+  const results = await removeEnrollmentsFromStudentLabel({
+    enrollments: [enrollment],
+    label,
+    authzData,
+  });
+  return results[0] ?? null;
 }
 
 /**
  * Adds a label to multiple enrollments in a single operation.
  * Returns the enrollments that received the label (those that didn't already have it).
- *
- * Callers must ensure that all enrollments belong to the same course instance as the label.
  */
 export async function addEnrollmentsToStudentLabel({
   enrollments,
@@ -182,6 +148,10 @@ export async function addEnrollmentsToStudentLabel({
 }): Promise<StudentLabelEnrollment[]> {
   if (enrollments.length === 0) {
     return [];
+  }
+
+  for (const enrollment of enrollments) {
+    assertEnrollmentMatchesLabel(enrollment, label);
   }
 
   const results = await queryRows(
@@ -216,9 +186,7 @@ export async function addEnrollmentsToStudentLabel({
 
 /**
  * Removes a label from multiple enrollments in a single operation.
- * Returns the count of enrollments that had the label removed.
- *
- * Callers must ensure that all enrollments belong to the same course instance as the label.
+ * Returns the enrollments that had the label removed.
  */
 export async function removeEnrollmentsFromStudentLabel({
   enrollments,
@@ -228,9 +196,13 @@ export async function removeEnrollmentsFromStudentLabel({
   enrollments: Enrollment[];
   label: StudentLabel;
   authzData: AuthzData;
-}): Promise<number> {
+}): Promise<StudentLabelEnrollment[]> {
   if (enrollments.length === 0) {
-    return 0;
+    return [];
+  }
+
+  for (const enrollment of enrollments) {
+    assertEnrollmentMatchesLabel(enrollment, label);
   }
 
   const deletedRows = await queryRows(
@@ -260,7 +232,7 @@ export async function removeEnrollmentsFromStudentLabel({
     });
   }
 
-  return deletedRows.length;
+  return deletedRows;
 }
 
 /**

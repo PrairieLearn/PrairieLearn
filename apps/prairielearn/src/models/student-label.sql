@@ -31,31 +31,6 @@ WHERE
 RETURNING
   *;
 
--- BLOCK add_enrollment_to_student_label
-INSERT INTO
-  student_label_enrollments (enrollment_id, student_label_id)
-SELECT
-  e.id AS enrollment_id,
-  sl.id AS student_label_id
-FROM
-  enrollments e
-  -- ensure the enrollment is in the same course instance as the student label
-  JOIN student_labels sl ON e.course_instance_id = sl.course_instance_id
-WHERE
-  e.id = $enrollment_id
-  AND sl.id = $student_label_id
-ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
-RETURNING
-  *;
-
--- BLOCK remove_enrollment_from_student_label
-DELETE FROM student_label_enrollments
-WHERE
-  enrollment_id = $enrollment_id
-  AND student_label_id = $student_label_id
-RETURNING
-  *;
-
 -- BLOCK select_enrollments_in_student_label
 SELECT
   e.*
@@ -80,15 +55,8 @@ ORDER BY
 INSERT INTO
   student_label_enrollments (enrollment_id, student_label_id)
 SELECT
-  e.id AS enrollment_id,
-  sl.id AS student_label_id
-FROM
-  enrollments e
-  -- ensure the enrollments belong to the same course instance as the student label
-  JOIN student_labels sl ON e.course_instance_id = sl.course_instance_id
-WHERE
-  e.id = ANY ($enrollment_ids::bigint[])
-  AND sl.id = $student_label_id
+  unnest($enrollment_ids::bigint[]),
+  $student_label_id
 ON CONFLICT (enrollment_id, student_label_id) DO NOTHING
 RETURNING
   *;
