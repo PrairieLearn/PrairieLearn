@@ -51,6 +51,7 @@ export const InstanceQuestionRowSchema = InstanceQuestionSchema.extend({
   zone_has_max_points: z.boolean(),
   zone_best_questions: z.number().nullable(),
   zone_has_best_questions: z.boolean(),
+  zone_question_count: z.number(),
   file_count: z.number(),
   sequence_locked: z.boolean(),
   prev_advance_score_perc: z.number().nullable(),
@@ -343,7 +344,7 @@ export function StudentAssessmentInstance({
                                             label: instance_question_row.zone_title
                                               ? `maximum ${instance_question_row.zone_max_points} points`
                                               : `Maximum ${instance_question_row.zone_max_points} points`,
-                                            content: `Of the points that you are awarded for answering these questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
+                                            content: `Of the points that you are awarded for answering these ${instance_question_row.zone_question_count} questions, at most ${instance_question_row.zone_max_points} will count toward your total points.`,
                                           })
                                         : ''}
                                       ${instance_question_row.zone_has_best_questions
@@ -351,9 +352,9 @@ export function StudentAssessmentInstance({
                                             label:
                                               instance_question_row.zone_title ||
                                               instance_question_row.zone_has_max_points
-                                                ? `best ${instance_question_row.zone_best_questions} questions`
-                                                : `Best ${instance_question_row.zone_best_questions} questions`,
-                                            content: `Of these questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
+                                                ? `best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`
+                                                : `Best ${instance_question_row.zone_best_questions} of ${instance_question_row.zone_question_count} questions`,
+                                            content: `Of these ${instance_question_row.zone_question_count} questions, only the ${instance_question_row.zone_best_questions} with the highest number of awarded points will count toward your total points.`,
                                           })
                                         : ''}
                                     </div>
