@@ -1254,6 +1254,10 @@ export async function initExpress(): Promise<Express> {
       .default,
   );
   app.use(
+    '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/students/labels',
+    (await import('./pages/instructorStudentsLabels/instructorStudentsLabels.js')).default,
+  );
+  app.use(
     '/pl/course_instance/:course_instance_id(\\d+)/instructor/instance_admin/assessments',
     (await import('./pages/instructorAssessments/instructorAssessments.js')).default,
   );

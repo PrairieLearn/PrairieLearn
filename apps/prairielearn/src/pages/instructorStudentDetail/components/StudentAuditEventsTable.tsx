@@ -37,7 +37,27 @@ function renderEnrollmentEventText(event: StaffAuditEvent): string {
   return detail;
 }
 
-export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
+function renderLabelEventText(event: StaffAuditEvent): string {
+  const { action_detail, context } = event;
+  const labelName = (context as Record<string, unknown> | null)?.label_name ?? 'Unknown label';
+
+  if (!action_detail) {
+    return 'Label event';
+  }
+
+  const detailMap: Record<SupportedActionsForTable<'student_label_enrollments'>, string> = {
+    enrollment_added: `Added to label "${labelName}"`,
+    enrollment_removed: `Removed from label "${labelName}"`,
+  };
+
+  const detail = detailMap[action_detail as SupportedActionsForTable<'student_label_enrollments'>];
+  if (!detail) {
+    throw new Error(`Unknown action detail: ${action_detail}`);
+  }
+  return detail;
+}
+
+export function StudentEnrollmentAuditEventsTable({ events }: StudentAuditEventsTableProps) {
   if (events.length === 0) {
     return (
       <>
@@ -53,7 +73,7 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
 
   return (
     <>
-      <table className="table table-sm table-hover" aria-label="Student Audit Events">
+      <table className="table table-sm table-hover" aria-label="Student enrollment audit events">
         <thead>
           <tr>
             <th>Date</th>
@@ -73,6 +93,47 @@ export function StudentAuditEventsTable({ events }: StudentAuditEventsTableProps
       </table>
       <div className="card-footer text-muted small">
         Missing events? Enrollment events were not logged before October 2025.
+      </div>
+    </>
+  );
+}
+
+export function StudentLabelAuditEventsTable({ events }: StudentAuditEventsTableProps) {
+  if (events.length === 0) {
+    return (
+      <>
+        <div className="card-body">
+          <div className="text-muted">No label events found.</div>
+        </div>
+        <div className="card-footer text-muted small">
+          Missing events? Label events were not logged before February 2026.
+        </div>
+      </>
+    );
+  }
+
+  return (
+    <>
+      <table className="table table-sm table-hover" aria-label="Student label audit events">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Event</th>
+          </tr>
+        </thead>
+        <tbody>
+          {events.map((e) => (
+            <tr key={e.id}>
+              <td className="align-middle">
+                <FriendlyDate date={e.date} />
+              </td>
+              <td className="align-middle">{renderLabelEventText(e)}</td>
+            </tr>
+          ))}
+        </tbody>
+      </table>
+      <div className="card-footer text-muted small">
+        Missing events? Label events were not logged before February 2026.
       </div>
     </>
   );

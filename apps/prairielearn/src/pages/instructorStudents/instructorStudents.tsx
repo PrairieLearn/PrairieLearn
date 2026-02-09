@@ -1,3 +1,6 @@
+import * as path from 'path';
+
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 import asyncHandler from 'express-async-handler';
 import z from 'zod';
@@ -5,21 +8,27 @@ import z from 'zod';
 import { HttpStatusError } from '@prairielearn/error';
 import { callRow, loadSqlEquiv, queryRows } from '@prairielearn/postgres';
 import { Hydrate } from '@prairielearn/react/server';
+import { generatePrefixCsrfToken } from '@prairielearn/signed-token';
 import { assertNever } from '@prairielearn/utils';
 import { UniqueUidsFromStringSchema } from '@prairielearn/zod';
 
 import { InsufficientCoursePermissionsCardPage } from '../../components/InsufficientCoursePermissionsCard.js';
 import { PageLayout } from '../../components/PageLayout.js';
 import { extractPageContext } from '../../lib/client/page-context.js';
-import { StaffEnrollmentSchema } from '../../lib/client/safe-db-types.js';
+import { StaffEnrollmentSchema, StaffStudentLabelSchema } from '../../lib/client/safe-db-types.js';
 import { getSelfEnrollmentLinkUrl, getStudentCourseInstanceUrl } from '../../lib/client/url.js';
 import { config } from '../../lib/config.js';
 import { getCourseOwners } from '../../lib/course.js';
+import { computeCourseInstanceJsonHash } from '../../lib/courseInstanceJson.js';
+import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { createServerJob } from '../../lib/server-jobs.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { getCanonicalHost, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { inviteStudentByUid, selectOptionalEnrollmentByUid } from '../../models/enrollment.js';
+import { selectStudentLabelsInCourseInstance } from '../../models/student-label.js';
 import { selectOptionalUserByUid } from '../../models/user.js';
+import { createTRPCContext, studentLabelsRouter } from '../instructorStudentsLabels/trpc.js';
 
 import { InstructorStudents } from './instructorStudents.html.js';
 import { StudentRowSchema } from './instructorStudents.shared.js';
@@ -80,7 +89,7 @@ router.get(
 
 router.post(
   '/',
-  asyncHandler(async (req, res) => {
+  typedAsyncHandler<'course-instance'>(async (req, res) => {
     if (req.accepts('html')) {
       throw new HttpStatusError(406, 'Not Acceptable');
     }
@@ -103,124 +112,174 @@ router.post(
       throw new HttpStatusError(400, 'Modern publishing is not enabled for this course instance');
     }
 
-    const BodySchema = z.object({
-      uids: UniqueUidsFromStringSchema(1000),
-      __action: z.literal('invite_uids'),
-    });
-    const body = BodySchema.parse(req.body);
+    if (req.body.__action === 'invite_by_uid') {
+      const BodySchema = z.object({
+        uid: z.string().min(1),
+        __action: z.literal('invite_by_uid'),
+      });
+      const body = BodySchema.parse(req.body);
 
-    const serverJob = await createServerJob({
-      type: 'invite_students',
-      description: 'Invite students to course instance',
-      userId,
-      authnUserId,
-      courseId: course.id,
-      courseInstanceId: courseInstance.id,
-    });
+      const user = await selectOptionalUserByUid(body.uid);
 
-    serverJob.executeInBackground(async (job) => {
-      const counts = {
-        success: 0,
-        instructor: 0,
-        alreadyEnrolled: 0,
-        alreadyInvited: 0,
-        alreadyRemoved: 0,
-        alreadyBlocked: 0,
-      };
+      if (user) {
+        const isInstructor = await callRow(
+          'users_is_instructor_in_course_instance',
+          [user.id, courseInstance.id],
+          z.boolean(),
+        );
 
-      for (const uid of body.uids) {
-        const user = await selectOptionalUserByUid(uid);
-        if (user) {
-          // Check if user is an instructor
-          const isInstructor = await callRow(
-            'users_is_instructor_in_course_instance',
-            [user.id, courseInstance.id],
-            z.boolean(),
-          );
-          if (isInstructor) {
-            job.info(`${uid}: Skipped (instructor)`);
-            counts.instructor++;
-            continue;
-          }
+        if (isInstructor) {
+          throw new HttpStatusError(400, 'The user is an instructor');
+        }
+      }
+
+      const existingEnrollment = await selectOptionalEnrollmentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Viewer'],
+        authzData: res.locals.authz_data,
+      });
+
+      if (existingEnrollment) {
+        if (existingEnrollment.status === 'joined') {
+          throw new HttpStatusError(400, 'The user is already enrolled');
         }
 
-        const existingEnrollment = await selectOptionalEnrollmentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Viewer'],
-          authzData,
-        });
+        if (existingEnrollment.status === 'invited') {
+          throw new HttpStatusError(400, 'The user has an existing invitation');
+        }
+      }
 
-        if (existingEnrollment) {
-          switch (existingEnrollment.status) {
-            case 'joined': {
-              job.info(`${uid}: Skipped (already enrolled)`);
-              counts.alreadyEnrolled++;
+      const enrollment = await inviteStudentByUid({
+        courseInstance,
+        uid: body.uid,
+        requiredRole: ['Student Data Editor'],
+        authzData: res.locals.authz_data,
+      });
+
+      const staffEnrollment = StaffEnrollmentSchema.parse(enrollment);
+
+      res.json({ data: staffEnrollment });
+    } else if (req.body.__action === 'invite_uids') {
+      const BodySchema = z.object({
+        uids: UniqueUidsFromStringSchema(1000),
+        __action: z.literal('invite_uids'),
+      });
+      const body = BodySchema.parse(req.body);
+
+      const serverJob = await createServerJob({
+        type: 'invite_students',
+        description: 'Invite students to course instance',
+        userId,
+        authnUserId,
+        courseId: course.id,
+        courseInstanceId: courseInstance.id,
+      });
+
+      serverJob.executeInBackground(async (job) => {
+        const counts = {
+          success: 0,
+          instructor: 0,
+          alreadyEnrolled: 0,
+          alreadyInvited: 0,
+          alreadyRemoved: 0,
+          alreadyBlocked: 0,
+        };
+
+        for (const uid of body.uids) {
+          const user = await selectOptionalUserByUid(uid);
+          if (user) {
+            const isInstructor = await callRow(
+              'users_is_instructor_in_course_instance',
+              [user.id, courseInstance.id],
+              z.boolean(),
+            );
+            if (isInstructor) {
+              job.info(`${uid}: Skipped (instructor)`);
+              counts.instructor++;
               continue;
-            }
-            case 'invited': {
-              job.info(`${uid}: Skipped (already invited)`);
-              counts.alreadyInvited++;
-              continue;
-            }
-            case 'removed': {
-              job.info(`${uid}: Skipped (removed)`);
-              counts.alreadyRemoved++;
-              continue;
-            }
-            case 'blocked': {
-              job.info(`${uid}: Skipped (blocked)`);
-              counts.alreadyBlocked++;
-              continue;
-            }
-            case 'lti13_pending': {
-              // We don't currently have any `lti13_pending` enrollments, so we'll just
-              // ignore this for now. We should have this better once we support LTI 1.3
-              // roster syncing.
-              continue;
-            }
-            case 'left':
-            case 'rejected': {
-              // We can re-invite these users below.
-              break;
-            }
-            default: {
-              assertNever(existingEnrollment.status);
             }
           }
+
+          const existingEnrollment = await selectOptionalEnrollmentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Viewer'],
+            authzData,
+          });
+
+          if (existingEnrollment) {
+            switch (existingEnrollment.status) {
+              case 'joined': {
+                job.info(`${uid}: Skipped (already enrolled)`);
+                counts.alreadyEnrolled++;
+                continue;
+              }
+              case 'invited': {
+                job.info(`${uid}: Skipped (already invited)`);
+                counts.alreadyInvited++;
+                continue;
+              }
+              case 'removed': {
+                job.info(`${uid}: Skipped (removed)`);
+                counts.alreadyRemoved++;
+                continue;
+              }
+              case 'blocked': {
+                job.info(`${uid}: Skipped (blocked)`);
+                counts.alreadyBlocked++;
+                continue;
+              }
+              case 'lti13_pending': {
+                // We don't currently have any `lti13_pending` enrollments, so we'll just
+                // ignore this for now. We should have this better once we support LTI 1.3
+                // roster syncing.
+                continue;
+              }
+              case 'left':
+              case 'rejected': {
+                // We can re-invite these users below.
+                break;
+              }
+              default: {
+                assertNever(existingEnrollment.status);
+              }
+            }
+          }
+
+          await inviteStudentByUid({
+            courseInstance,
+            uid,
+            requiredRole: ['Student Data Editor'],
+            authzData,
+          });
+          job.info(`${uid}: Invited`);
+          counts.success++;
         }
 
-        await inviteStudentByUid({
-          courseInstance,
-          uid,
-          requiredRole: ['Student Data Editor'],
-          authzData,
-        });
-        job.info(`${uid}: Invited`);
-        counts.success++;
-      }
+        job.info('\nSummary:');
+        job.info(`  Successfully invited: ${counts.success}`);
+        if (counts.alreadyEnrolled > 0) {
+          job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
+        }
+        if (counts.alreadyInvited > 0) {
+          job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
+        }
+        if (counts.alreadyRemoved > 0) {
+          job.info(`  Skipped (removed): ${counts.alreadyRemoved}`);
+        }
+        if (counts.alreadyBlocked > 0) {
+          job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
+        }
+        if (counts.instructor > 0) {
+          job.info(`  Skipped (instructor): ${counts.instructor}`);
+        }
+      });
 
-      // Log summary at the end
-      job.info('\nSummary:');
-      job.info(`  Successfully invited: ${counts.success}`);
-      if (counts.alreadyEnrolled > 0) {
-        job.info(`  Skipped (already enrolled): ${counts.alreadyEnrolled}`);
-      }
-      if (counts.alreadyInvited > 0) {
-        job.info(`  Skipped (already invited): ${counts.alreadyInvited}`);
-      }
-      if (counts.alreadyRemoved > 0) {
-        job.info(`  Skipped (removed): ${counts.alreadyRemoved}`);
-      }
-      if (counts.alreadyBlocked > 0) {
-        job.info(`  Skipped (blocked): ${counts.alreadyBlocked}`);
-      }
-      if (counts.instructor > 0) {
-        job.info(`  Skipped (instructor): ${counts.instructor}`);
-      }
-    });
-
-    res.json({ job_sequence_id: serverJob.jobSequenceId });
+      res.json({ job_sequence_id: serverJob.jobSequenceId });
+    } else {
+      throw new HttpStatusError(400, `Unknown action: ${req.body.__action}`);
+    }
   }),
 );
 
@@ -251,8 +310,8 @@ router.get(
           resLocals: res.locals,
           navContext: {
             type: 'instructor',
-            page: 'instance_admin',
-            subPage: 'students',
+            page: 'students',
+            subPage: 'overview',
           },
           courseOwners,
           pageTitle: 'Students',
@@ -262,11 +321,14 @@ router.get(
       return;
     }
 
-    const students = await queryRows(
-      sql.select_users_and_enrollments_for_course_instance,
-      { course_instance_id: courseInstance.id },
-      StudentRowSchema,
-    );
+    const [students, studentLabels] = await Promise.all([
+      queryRows(
+        sql.select_users_and_enrollments_for_course_instance,
+        { course_instance_id: courseInstance.id },
+        StudentRowSchema,
+      ),
+      selectStudentLabelsInCourseInstance(courseInstance),
+    ]);
 
     const host = getCanonicalHost(req);
     const selfEnrollLink = new URL(
@@ -279,14 +341,26 @@ router.get(
       host,
     ).href;
 
+    const courseInstancePath = path.join(course.path, 'courseInstances', courseInstance.short_name);
+    const courseInstanceJsonPath = path.join(courseInstancePath, 'infoCourseInstance.json');
+    const origHash = await computeCourseInstanceJsonHash(courseInstanceJsonPath);
+
+    const trpcCsrfToken = generatePrefixCsrfToken(
+      {
+        url: req.originalUrl.split('?')[0] + '/trpc',
+        authn_user_id: res.locals.authn_user.id,
+      },
+      config.secretKey,
+    );
+
     res.send(
       PageLayout({
         resLocals: res.locals,
         pageTitle: 'Students',
         navContext: {
           type: 'instructor',
-          page: 'instance_admin',
-          subPage: 'students',
+          page: 'students',
+          subPage: 'overview',
         },
         options: {
           fullWidth: true,
@@ -298,17 +372,29 @@ router.get(
               isDevMode={config.devMode}
               authzData={authz_data}
               students={students}
+              studentLabels={z.array(StaffStudentLabelSchema).parse(studentLabels)}
               search={search}
               timezone={course.display_timezone}
               courseInstance={courseInstance}
               course={course}
               csrfToken={csrfToken}
               selfEnrollLink={selfEnrollLink}
+              trpcCsrfToken={trpcCsrfToken}
+              origHash={origHash}
             />
           </Hydrate>
         ),
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: studentLabelsRouter,
+    createContext: createTRPCContext,
+    onError: handleTrpcError,
   }),
 );
 
