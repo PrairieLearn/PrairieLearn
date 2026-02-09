@@ -63,7 +63,7 @@ export async function insertCoursePermissionsByUserUid({
  * is not changed.
  *
  * When granting non-'None' permissions, also updates any existing enrollments
- * for this user in instances of this course to 'left' status.
+ * for this user in instances of this course to 'removed' status.
  */
 export async function insertCoursePermissionsByUserId({
   course_id,
@@ -104,7 +104,7 @@ export async function insertCoursePermissionsByUserId({
  * Throws a 404 error if no course permissions exist for the user.
  *
  * When updating to a non-'None' role, also updates any existing enrollments
- * for this user in instances of this course to 'left' status.
+ * for this user in instances of this course to 'removed' status.
  */
 export async function updateCoursePermissionsRole({
   course_id,
