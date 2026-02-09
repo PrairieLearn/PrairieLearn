@@ -1,12 +1,15 @@
-import { useState } from 'react';
+import { useCallback, useState } from 'react';
+import { z } from 'zod';
 
+import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
 import {
   type CourseInstance,
   QuestionsTable,
   type SafeQuestionsPageData,
-} from '../../components/QuestionsTableTanstack.js';
+} from '../../components/QuestionsTable.js';
 
 import { CreateQuestionModal, type TemplateQuestion } from './CreateQuestionModal.js';
+import { createInstructorQuestionsTrpcClient } from './trpc-client.js';
 
 export interface InstructorQuestionsTableProps {
   questions: SafeQuestionsPageData[];
@@ -38,6 +41,12 @@ export function InstructorQuestionsTable({
   csrfToken,
 }: InstructorQuestionsTableProps) {
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [trpcClient] = useState(() => createInstructorQuestionsTrpcClient());
+
+  const fetchQuestions = useCallback(async () => {
+    const data = await trpcClient.questions.query();
+    return z.array(SafeQuestionsPageDataSchema).parse(data);
+  }, [trpcClient]);
 
   return (
     <>
@@ -52,6 +61,7 @@ export function InstructorQuestionsTable({
         qidPrefix={qidPrefix}
         search={search}
         isDevMode={isDevMode}
+        fetchQuestions={fetchQuestions}
         onAddQuestion={() => setShowCreateModal(true)}
       />
       {showAddQuestionButton && (

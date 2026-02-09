@@ -15,7 +15,6 @@ import {
 import { parseAsArrayOf, parseAsString, useQueryState, useQueryStates } from 'nuqs';
 import { useCallback, useMemo, useState } from 'react';
 import { Alert, Button } from 'react-bootstrap';
-import { z } from 'zod';
 
 import {
   CategoricalColumnFilter,
@@ -33,11 +32,7 @@ import { getAiQuestionGenerationDraftsUrl } from '../lib/client/url.js';
 
 import { AssessmentBadgeList } from './AssessmentBadge.js';
 import { IssueBadge } from './IssueBadge.js';
-import {
-  type CourseInstance,
-  type SafeQuestionsPageData,
-  SafeQuestionsPageDataSchema,
-} from './QuestionsTable.shared.js';
+import { type CourseInstance, type SafeQuestionsPageData } from './QuestionsTable.shared.js';
 import { SyncProblemButton } from './SyncProblemButton.js';
 import { TagBadgeList } from './TagBadge.js';
 import { TopicBadge } from './TopicBadge.js';
@@ -110,6 +105,7 @@ interface QuestionsTableCardProps {
   qidPrefix?: string;
   /** Required when showAddQuestionButton is true */
   onAddQuestion?: () => void;
+  fetchQuestions: () => Promise<SafeQuestionsPageData[]>;
 }
 
 function QuestionsTableCard({
@@ -122,6 +118,7 @@ function QuestionsTableCard({
   urlPrefix,
   qidPrefix,
   onAddQuestion,
+  fetchQuestions,
 }: QuestionsTableCardProps) {
   const [globalFilter, setGlobalFilter] = useQueryState('search', parseAsString.withDefault(''));
   const [sorting, setSorting] = useQueryState<SortingState>(
@@ -368,24 +365,7 @@ function QuestionsTableCard({
     isError: isQuestionsError,
   } = useQuery<SafeQuestionsPageData[], Error>({
     queryKey: ['questions', urlPrefix],
-    queryFn: async () => {
-      const res = await fetch(`${window.location.pathname}/data.json`, {
-        headers: { Accept: 'application/json' },
-      });
-      if (!res.ok) {
-        throw new Error(`Failed to fetch questions: HTTP ${res.status} ${res.statusText}`);
-      }
-      const data = await res.json();
-      const parsedData = z.array(SafeQuestionsPageDataSchema).safeParse(data);
-      if (!parsedData.success) {
-        const errorDetails = parsedData.error.errors
-          .slice(0, 3)
-          .map((e) => `${e.path.join('.')}: ${e.message}`)
-          .join('; ');
-        throw new Error(`Failed to parse questions: ${errorDetails}`);
-      }
-      return parsedData.data;
-    },
+    queryFn: fetchQuestions,
     staleTime: Infinity,
     initialData: initialQuestions,
   });
@@ -900,6 +880,7 @@ export interface QuestionsTableProps {
   isDevMode: boolean;
   /** Required when showAddQuestionButton is true */
   onAddQuestion?: () => void;
+  fetchQuestions: () => Promise<SafeQuestionsPageData[]>;
 }
 
 export function QuestionsTable({
@@ -914,6 +895,7 @@ export function QuestionsTable({
   search,
   isDevMode,
   onAddQuestion,
+  fetchQuestions,
 }: QuestionsTableProps) {
   const [queryClient] = useState(() => new QueryClient());
 
@@ -929,6 +911,7 @@ export function QuestionsTable({
           showSharingSets={showSharingSets}
           urlPrefix={urlPrefix}
           qidPrefix={qidPrefix}
+          fetchQuestions={fetchQuestions}
           onAddQuestion={onAddQuestion}
         />
       </QueryClientProviderDebug>

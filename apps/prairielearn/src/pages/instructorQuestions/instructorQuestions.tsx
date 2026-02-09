@@ -1,7 +1,7 @@
 import * as url from 'node:url';
 
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
-import asyncHandler from 'express-async-handler';
 import fs from 'fs-extra';
 
 import * as error from '@prairielearn/error';
@@ -21,6 +21,7 @@ import { isEnterprise } from '../../lib/license.js';
 import { EXAMPLE_COURSE_PATH } from '../../lib/paths.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { validateShortName } from '../../lib/short-name.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { getSearchParams, getUrl } from '../../lib/url.js';
 import { createAuthzMiddleware } from '../../middlewares/authzHelper.js';
 import { selectCourseInstancesWithStaffAccess } from '../../models/course-instances.js';
@@ -30,6 +31,7 @@ import { type QuestionsPageData } from '../../models/questions.types.js';
 import { loadQuestions } from '../../sync/course-db.js';
 
 import { InstructorQuestionsTable } from './InstructorQuestionsTable.js';
+import { createContext, instructorQuestionsRouter } from './trpc.js';
 
 const router = Router();
 
@@ -96,34 +98,6 @@ async function getTemplateQuestions(questions: QuestionsPageData[]) {
     ...courseTemplateQuestions,
   ];
 }
-
-// Supports client-side table refresh
-router.get(
-  '/data.json',
-  createAuthzMiddleware({
-    oneOfPermissions: ['has_course_permission_preview'],
-    unauthorizedUsers: 'block',
-  }),
-  asyncHandler(async (_req, res) => {
-    const { authz_data: authzData, course } = extractPageContext(res.locals, {
-      pageType: 'course',
-      accessType: 'instructor',
-    });
-
-    const courseInstances = await selectCourseInstancesWithStaffAccess({
-      course,
-      authzData,
-      requiredRole: ['Previewer'],
-    });
-
-    const questions = await selectQuestionsForCourse(
-      course.id,
-      courseInstances.map((ci) => ci.id),
-    );
-
-    res.json(questions);
-  }),
-);
 
 router.get(
   '/',
@@ -334,6 +308,15 @@ router.post(
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: instructorQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 

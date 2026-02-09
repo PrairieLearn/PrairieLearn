@@ -1,25 +1,20 @@
+import * as trpcExpress from '@trpc/server/adapters/express';
 import { Router } from 'express';
 
 import { Hydrate } from '@prairielearn/react/server';
 
 import { PageLayout } from '../../components/PageLayout.js';
 import { SafeQuestionsPageDataSchema } from '../../components/QuestionsTable.shared.js';
-import { QuestionsTable } from '../../components/QuestionsTableTanstack.js';
 import { config } from '../../lib/config.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
+import { handleTrpcError } from '../../lib/trpc.js';
 import { getUrl } from '../../lib/url.js';
 import { selectPublicQuestionsForCourse } from '../../models/questions.js';
 
-const router = Router({ mergeParams: true });
+import { PublicQuestionsTable } from './PublicQuestionsTable.js';
+import { createContext, publicQuestionsRouter } from './trpc.js';
 
-// Supports client-side table refresh
-router.get(
-  '/data.json',
-  typedAsyncHandler<'public-course'>(async (_req, res) => {
-    const questions = await selectPublicQuestionsForCourse(res.locals.course.id);
-    res.json(questions);
-  }),
-);
+const router = Router({ mergeParams: true });
 
 router.get(
   '/',
@@ -47,7 +42,7 @@ router.get(
         },
         content: (
           <Hydrate fullHeight>
-            <QuestionsTable
+            <PublicQuestionsTable
               questions={questions}
               courseInstances={[]}
               showAddQuestionButton={false}
@@ -62,6 +57,15 @@ router.get(
         ),
       }),
     );
+  }),
+);
+
+router.use(
+  '/trpc',
+  trpcExpress.createExpressMiddleware({
+    router: publicQuestionsRouter,
+    createContext,
+    onError: handleTrpcError,
   }),
 );
 
