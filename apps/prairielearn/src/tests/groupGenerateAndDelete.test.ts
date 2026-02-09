@@ -4,8 +4,9 @@ import * as sqldb from '@prairielearn/postgres';
 import { IdSchema } from '@prairielearn/zod';
 
 import { dangerousFullSystemAuthz } from '../lib/authz-data-lib.js';
+import { AssessmentInstanceSchema } from '../lib/db-types.js';
 import * as groupUpdate from '../lib/group-update.js';
-import { deleteAllGroups } from '../lib/groups.js';
+import { createGroup, deleteAllGroups, deleteGroup } from '../lib/groups.js';
 import { selectAssessmentById } from '../models/assessment.js';
 import { selectCourseInstanceById } from '../models/course-instances.js';
 import { generateAndEnrollUsers } from '../models/enrollment.js';
@@ -66,5 +67,81 @@ describe('test random groups and delete groups', { timeout: 20_000 }, function (
 
     const groupUsersRowCount = await sqldb.execute('SELECT * FROM team_users');
     assert.equal(groupUsersRowCount, 0);
+  });
+});
+
+describe('deleting a group closes its assessment instances', { timeout: 20_000 }, function () {
+  beforeAll(helperServer.before());
+  afterAll(helperServer.after);
+
+  let assessmentId: string;
+  let courseInstance: Awaited<ReturnType<typeof selectCourseInstanceById>>;
+  let assessment: Awaited<ReturnType<typeof selectAssessmentById>>;
+  let userUids: string[];
+
+  test.sequential('setup', async () => {
+    const assessmentIds = await sqldb.queryRows(sql.select_group_work_assessment, IdSchema);
+    assessmentId = assessmentIds[0];
+    assessment = await selectAssessmentById(assessmentId);
+    courseInstance = await selectCourseInstanceById(assessment.course_instance_id);
+    const users = await generateAndEnrollUsers({ count: 3, course_instance_id: '1' });
+    userUids = users.map((u) => u.uid);
+  });
+
+  test.sequential('deleting a single group closes its assessment instance', async () => {
+    const group = await createGroup({
+      course_instance: courseInstance,
+      assessment,
+      group_name: 'testgroup1',
+      uids: [userUids[0]],
+      authn_user_id: '1',
+      authzData: dangerousFullSystemAuthz(),
+    });
+
+    // Create an open assessment instance for the group.
+    const ai = await sqldb.queryRow(
+      sql.insert_group_assessment_instance,
+      { assessment_id: assessmentId, team_id: group.id, authn_user_id: '1' },
+      AssessmentInstanceSchema,
+    );
+    assert.isTrue(ai.open);
+
+    await deleteGroup(assessmentId, group.id, '1');
+
+    const updated = await sqldb.queryRow(
+      sql.select_assessment_instance,
+      { assessment_instance_id: ai.id },
+      AssessmentInstanceSchema,
+    );
+    assert.isFalse(updated.open);
+    assert.isNotNull(updated.closed_at);
+  });
+
+  test.sequential('deleting all groups closes their assessment instances', async () => {
+    const group = await createGroup({
+      course_instance: courseInstance,
+      assessment,
+      group_name: 'testgroup2',
+      uids: [userUids[1]],
+      authn_user_id: '1',
+      authzData: dangerousFullSystemAuthz(),
+    });
+
+    const ai = await sqldb.queryRow(
+      sql.insert_group_assessment_instance,
+      { assessment_id: assessmentId, team_id: group.id, authn_user_id: '1' },
+      AssessmentInstanceSchema,
+    );
+    assert.isTrue(ai.open);
+
+    await deleteAllGroups(assessmentId, '1');
+
+    const updated = await sqldb.queryRow(
+      sql.select_assessment_instance,
+      { assessment_instance_id: ai.id },
+      AssessmentInstanceSchema,
+    );
+    assert.isFalse(updated.open);
+    assert.isNotNull(updated.closed_at);
   });
 });
