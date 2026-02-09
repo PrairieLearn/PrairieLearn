@@ -200,7 +200,11 @@ def process(
                     + "In the future, returning a different object will trigger a fatal error."
                 )
         except Exception as exc:
-            source = get_source_definition(element)
+            source = get_source_definition(
+                element,
+                # Only display attributes that are useful for locating the element in the source code.
+                attribute_filter=("answers-name", "file-name"),
+            )
             # We can't easily show the line number because
             # the line-number is in the post-mustache processed HTML.
             exc.add_note(f"Error occurred while processing element {source}")
