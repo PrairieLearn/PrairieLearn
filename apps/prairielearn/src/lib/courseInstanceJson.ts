@@ -1,6 +1,5 @@
 import * as path from 'path';
 
-import sha256 from 'crypto-js/sha256.js';
 import fs from 'fs-extra';
 
 import { b64EncodeUnicode } from './base64-util.js';
@@ -19,27 +18,6 @@ export async function readCourseInstanceJson(
   return JSON.parse(content);
 }
 
-type FileModifyEditorParams = ConstructorParameters<typeof FileModifyEditor>[0];
-type FileModifyEditorLocals = FileModifyEditorParams['locals'];
-
-interface SaveCourseInstanceJsonParams {
-  courseInstanceJson: Record<string, unknown>;
-  courseInstanceJsonPath: string;
-  paths: ReturnType<typeof getPaths>;
-  origHash: string;
-  locals: FileModifyEditorLocals;
-}
-
-interface SaveResult {
-  success: true;
-}
-
-interface SaveError {
-  success: false;
-  error: string;
-  jobSequenceId: string;
-}
-
 /**
  * Saves the course instance JSON using FileModifyEditor.
  * Returns a result object indicating success or failure with error details.
@@ -50,7 +28,22 @@ export async function saveCourseInstanceJson({
   paths,
   origHash,
   locals,
-}: SaveCourseInstanceJsonParams): Promise<SaveResult | SaveError> {
+}: {
+  courseInstanceJson: Record<string, unknown>;
+  courseInstanceJsonPath: string;
+  paths: ReturnType<typeof getPaths>;
+  origHash: string;
+  locals: ConstructorParameters<typeof FileModifyEditor>[0]['locals'];
+}): Promise<
+  | {
+      success: true;
+    }
+  | {
+      success: false;
+      error: string;
+      jobSequenceId: string;
+    }
+> {
   const formattedJson = await formatJsonWithPrettier(JSON.stringify(courseInstanceJson));
 
   const editor = new FileModifyEditor({
@@ -75,16 +68,4 @@ export async function saveCourseInstanceJson({
       jobSequenceId: serverJob.jobSequenceId,
     };
   }
-}
-
-/**
- * Computes the hash of the infoCourseInstance.json file for optimistic concurrency.
- * Returns null if the file does not exist.
- */
-export async function computeCourseInstanceJsonHash(
-  courseInstanceJsonPath: string,
-): Promise<string | null> {
-  if (!(await fs.pathExists(courseInstanceJsonPath))) return null;
-  const content = await fs.readFile(courseInstanceJsonPath, 'utf8');
-  return sha256(b64EncodeUnicode(content)).toString();
 }

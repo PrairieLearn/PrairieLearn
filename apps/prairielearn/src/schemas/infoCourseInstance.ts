@@ -56,7 +56,7 @@ export const StudentLabelJsonSchema = z
     color: ColorJsonSchema.describe('The color to display for this label.'),
   })
   .strict()
-  .describe('A student label definition.');
+  .describe('A single student label, can represent a collection of students (e.g. "Section A").');
 
 export type StudentLabelJson = z.infer<typeof StudentLabelJsonSchema>;
 
@@ -131,10 +131,7 @@ export const CourseInstanceJsonSchema = z
       )
       .optional()
       .default(false),
-    studentLabels: z
-      .array(StudentLabelJsonSchema)
-      .describe('Student label definitions for this course instance.')
-      .optional(),
+    studentLabels: z.array(StudentLabelJsonSchema).describe('Student labels.').optional(),
   })
   .strict()
   .describe('The specification file for a course instance.');
