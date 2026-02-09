@@ -43,6 +43,21 @@ const ExportedRubricDataSchema = z.object({
 type ExportedRubricData = z.infer<typeof ExportedRubricDataSchema>;
 
 /**
+ * Re-creates script elements so the browser executes them, since innerHTML
+ * does not execute scripts.
+ */
+function executeScripts(container: Element) {
+  container.querySelectorAll('script').forEach((oldScript) => {
+    const newScript = document.createElement('script');
+    Array.from(oldScript.attributes).forEach((attr) => {
+      newScript.setAttribute(attr.name, attr.value);
+    });
+    newScript.textContent = oldScript.textContent;
+    oldScript.replaceWith(newScript);
+  });
+}
+
+/**
  * Explicitly declaring these functions from the window of the instance question page
  * so they can be called in the component.
  */
@@ -493,6 +508,7 @@ export function RubricSettings({
           const newSubmission = temp.firstElementChild;
           if (newSubmission) {
             oldSubmission.replaceWith(newSubmission);
+            executeScripts(newSubmission);
             await window.mathjaxTypeset();
           }
         }
