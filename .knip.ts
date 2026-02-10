@@ -3,8 +3,10 @@ import { readFile } from 'fs/promises';
 import { globby } from 'globby';
 import type { KnipConfig } from 'knip';
 
-// These packages don't appear in info.json or nodeModulesAssetPath() calls but we still want them.
-const FALSE_POSITIVE_DEPS = [
+// These packages are used in our own code, outside of nodeModulesAssetPath() calls.
+// Thus, we want to track their usage instead of ignoring them.
+// TODO: We might want to re-evaluate this approach.
+const REFERENCED_NODE_MODULES_DEPS = [
   'd3',
   'marked',
   'clipboard',
@@ -20,6 +22,16 @@ const FALSE_POSITIVE_DEPS = [
   'highlight.js',
 ];
 
+// These packages aren't used in our own code, but we still want them installed
+// as they are used by elements in other courses.
+const FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
+
+// These packages are just used for their CLI tools, so we still want them installed.
+const FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli', 'pyright', 's3rver'];
+
+// We want extract all dependencies of our elements, and mark them as used.
+// See https://github.com/webpro-nl/knip/issues/641 and https://github.com/webpro-nl/knip/pull/1220
+// for why we need to manually extract dependencies and ignore them.
 const infoJsonPaths = await globby(
   '{exampleCourse,testCourse,apps/prairielearn/elements}/**/info.json',
 );
@@ -37,9 +49,11 @@ const infoJsonDependencies = infoJsonContents.flatMap((infoJson) => [
   ...Object.values(infoJson.dynamicDependencies?.nodeModulesScripts ?? {}),
 ]);
 
-const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
+// Since knip can't track these normally, we manually extract them from the source code.
+// For instance, this matches nodeModulesAssetPath('highlight.js/styles/default.css')
 const assetPathRegex = /nodeModulesAssetPath\(\s*'([^']*)'\s*\)/g;
 
+const sourceFiles = await globby('apps/prairielearn/**/*.{ts,tsx}');
 const sourceFileDependencies = (
   await Promise.all(
     sourceFiles.map(async (path) => {
@@ -60,7 +74,7 @@ const packageDependencies = new Set<string>(
   }),
 );
 
-for (const dep of FALSE_POSITIVE_DEPS) {
+for (const dep of REFERENCED_NODE_MODULES_DEPS) {
   packageDependencies.delete(dep);
 }
 
@@ -113,17 +127,11 @@ const config: KnipConfig = {
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
   },
+  // knip will not report these dependencies as unused.
   ignoreDependencies: [
     ...packageDependencies,
-    'backbone',
-    'mersenne',
-    'numeric',
-    'popper.js',
-    // Used as CLI tools
-    'htmlhint',
-    'markdownlint-cli',
-    'pyright',
-    's3rver',
+    ...FALSE_NEGATIVE_ELEMENT_DEPS,
+    ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
   exclude: ['binaries', 'dependencies', 'exports', 'types'],
