@@ -1,4 +1,4 @@
-import type { CachedNewsItem } from '../../../lib/db-types.js';
+import type { NewsItem } from '../../../lib/db-types.js';
 
 const dateFormatter = new Intl.DateTimeFormat('en-US', {
   month: 'short',
@@ -7,7 +7,7 @@ const dateFormatter = new Intl.DateTimeFormat('en-US', {
 });
 
 export interface NewsAlertProps {
-  newsItems: CachedNewsItem[];
+  newsItems: NewsItem[];
   csrfToken: string;
   blogUrl: string | null;
 }

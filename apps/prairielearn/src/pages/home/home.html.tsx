@@ -9,10 +9,7 @@ import {
   type StaffInstitution,
   StudentEnrollmentSchema,
 } from '../../lib/client/safe-db-types.js';
-import {
-  type CachedNewsItem,
-  CourseInstancePublishingExtensionSchema,
-} from '../../lib/db-types.js';
+import { CourseInstancePublishingExtensionSchema, type NewsItem } from '../../lib/db-types.js';
 import { computeStatus } from '../../lib/publishing.js';
 
 import { HomeCards } from './components/HomeCards.js';
@@ -64,7 +61,7 @@ export function Home({
   urlPrefix: string;
   isDevMode: boolean;
   search: string;
-  unreadNewsItems: CachedNewsItem[];
+  unreadNewsItems: NewsItem[];
   blogUrl: string | null;
 }) {
   const listedStudentCourses = studentCourses.filter((ci) => {

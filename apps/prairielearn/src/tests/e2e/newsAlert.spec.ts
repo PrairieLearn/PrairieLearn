@@ -1,6 +1,6 @@
 import type { Page } from '@playwright/test';
 
-import { upsertCachedNewsItem } from '../../models/news-items.js';
+import { upsertNewsItem } from '../../models/news-items.js';
 
 import { expect, test } from './fixtures.js';
 
@@ -15,7 +15,7 @@ test.describe.serial('News alert', () => {
     const page = await browser.newPage({ baseURL: `http://localhost:${workerPort}` });
     await syncAllCourses(page);
     await page.close();
-    await upsertCachedNewsItem({
+    await upsertNewsItem({
       title: 'Test News Item for E2E',
       link: 'https://example.com/news/test-e2e-item',
       pub_date: new Date(),

@@ -1,13 +1,14 @@
 -- BLOCK select_unread_news_items_for_user
 SELECT
-  cni.*
+  ni.*
 FROM
-  cached_news_items AS cni
+  news_items AS ni
   LEFT JOIN user_news_read_timestamps AS unrt ON unrt.user_id = $user_id
 WHERE
-  cni.pub_date > COALESCE(unrt.last_read_at, '-infinity'::timestamptz)
+  ni.pub_date > COALESCE(unrt.last_read_at, '-infinity'::timestamptz)
+  AND ni.hidden_at IS NULL
 ORDER BY
-  cni.pub_date DESC
+  ni.pub_date DESC
 LIMIT
   $limit;
 
@@ -22,9 +23,9 @@ SET
 RETURNING
   *;
 
--- BLOCK upsert_cached_news_item
+-- BLOCK upsert_news_item
 INSERT INTO
-  cached_news_items (title, link, pub_date, guid)
+  news_items (title, link, pub_date, guid)
 VALUES
   ($title, $link, $pub_date, $guid)
 ON CONFLICT (guid) DO UPDATE
@@ -33,5 +34,22 @@ SET
   link = EXCLUDED.link,
   pub_date = EXCLUDED.pub_date,
   fetched_at = now()
+RETURNING
+  *;
+
+-- BLOCK select_all_news_items
+SELECT
+  ni.*
+FROM
+  news_items AS ni
+ORDER BY
+  ni.pub_date DESC;
+
+-- BLOCK hide_news_item
+UPDATE news_items
+SET
+  hidden_at = now()
+WHERE
+  id = $id
 RETURNING
   *;

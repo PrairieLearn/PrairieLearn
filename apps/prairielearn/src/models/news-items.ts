@@ -1,8 +1,8 @@
 import { loadSqlEquiv, queryRow, queryRows } from '@prairielearn/postgres';
 
 import {
-  type CachedNewsItem,
-  CachedNewsItemSchema,
+  type NewsItem,
+  NewsItemSchema,
   type User,
   type UserNewsReadTimestamp,
   UserNewsReadTimestampSchema,
@@ -13,11 +13,11 @@ const sql = loadSqlEquiv(import.meta.url);
 export async function selectUnreadNewsItemsForUser(
   user: Pick<User, 'id'>,
   limit: number,
-): Promise<CachedNewsItem[]> {
+): Promise<NewsItem[]> {
   return await queryRows(
     sql.select_unread_news_items_for_user,
     { user_id: user.id, limit },
-    CachedNewsItemSchema,
+    NewsItemSchema,
   );
 }
 
@@ -38,23 +38,31 @@ export interface NewsItemInput {
   guid: string;
 }
 
-export async function upsertCachedNewsItem(item: NewsItemInput): Promise<CachedNewsItem> {
+export async function upsertNewsItem(item: NewsItemInput): Promise<NewsItem> {
   return await queryRow(
-    sql.upsert_cached_news_item,
+    sql.upsert_news_item,
     {
       title: item.title,
       link: item.link,
       pub_date: item.pub_date,
       guid: item.guid,
     },
-    CachedNewsItemSchema,
+    NewsItemSchema,
   );
 }
 
-export async function upsertCachedNewsItems(items: NewsItemInput[]): Promise<CachedNewsItem[]> {
-  const results: CachedNewsItem[] = [];
+export async function selectAllNewsItems(): Promise<NewsItem[]> {
+  return await queryRows(sql.select_all_news_items, NewsItemSchema);
+}
+
+export async function hideNewsItem(id: string): Promise<NewsItem> {
+  return await queryRow(sql.hide_news_item, { id }, NewsItemSchema);
+}
+
+export async function upsertNewsItems(items: NewsItemInput[]): Promise<NewsItem[]> {
+  const results: NewsItem[] = [];
   for (const item of items) {
-    const result = await upsertCachedNewsItem(item);
+    const result = await upsertNewsItem(item);
     results.push(result);
   }
   return results;
