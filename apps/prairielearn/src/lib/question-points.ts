@@ -245,44 +245,50 @@ export async function updateInstanceQuestionStats({
   const submissionScores = await queryRows(
     sql.select_submissions_for_stats,
     { instance_question_id: instanceQuestion.id },
-    z.number().nullable(),
+    z.number(),
   );
-  const nonNullSubmissionScores = submissionScores.filter((score) => score !== null);
+  if (submissionScores.length === 0) {
+    await execute(sql.update_instance_question_stats, {
+      instance_question_id: instanceQuestion.id,
+      some_submission: false,
+      some_perfect_submission: false,
+      some_nonzero_submission: false,
+      first_submission_score: null,
+      last_submission_score: null,
+      max_submission_score: null,
+      average_submission_score: null,
+      submission_score_array: [],
+      incremental_submission_score_array: null,
+      incremental_submission_points_array: null,
+    });
+    return;
+  }
 
-  let incrementalHighestScore = 0;
+  let max_submission_score = 0;
   const incremental_submission_score_array = submissionScores.map((score) => {
-    if (score === null) return null;
-    const increment = Math.max(score - incrementalHighestScore, 0);
-    if (score > incrementalHighestScore) {
-      incrementalHighestScore = score;
+    const increment = Math.max(score - max_submission_score, 0);
+    if (score > max_submission_score) {
+      max_submission_score = score;
     }
     return increment;
   });
-  const max_submission_score = nonNullSubmissionScores.length > 0 ? incrementalHighestScore : null;
 
-  let pointsListIndex = 0;
   const incremental_submission_points_array =
     instanceQuestion.points_list_original === null
       ? null // This stat is not available if there's no points list (i.e., homework assessments).
-      : incremental_submission_score_array.map((score) => {
-          if (score === null) return null;
-          const points = instanceQuestion.points_list_original?.at(pointsListIndex) ?? 0;
-          pointsListIndex += 1;
-          return points * score;
-        });
+      : incremental_submission_score_array.map(
+          (score, index) => (instanceQuestion.points_list_original?.at(index) ?? 0) * score,
+        );
 
   await execute(sql.update_instance_question_stats, {
     instance_question_id: instanceQuestion.id,
-    some_submission: submissionScores.length > 0,
-    some_perfect_submission: incrementalHighestScore >= 1,
-    some_nonzero_submission: incrementalHighestScore > 0,
-    first_submission_score: nonNullSubmissionScores.at(0) ?? null,
-    last_submission_score: nonNullSubmissionScores.at(-1) ?? null,
+    some_submission: true,
+    some_perfect_submission: max_submission_score >= 1,
+    some_nonzero_submission: max_submission_score > 0,
+    first_submission_score: submissionScores.at(0),
+    last_submission_score: submissionScores.at(-1),
     max_submission_score,
-    average_submission_score:
-      nonNullSubmissionScores.length > 0
-        ? nonNullSubmissionScores.reduce((a, b) => a + b, 0) / nonNullSubmissionScores.length
-        : null,
+    average_submission_score: submissionScores.reduce((a, b) => a + b, 0) / submissionScores.length,
     submission_score_array: submissionScores,
     incremental_submission_score_array,
     incremental_submission_points_array,
