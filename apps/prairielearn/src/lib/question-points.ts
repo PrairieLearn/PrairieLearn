@@ -259,8 +259,8 @@ export async function updateInstanceQuestionStats({
       max_submission_score: null,
       average_submission_score: null,
       submission_score_array: [],
-      incremental_submission_score_array: null,
-      incremental_submission_points_array: null,
+      incremental_submission_score_array: [],
+      incremental_submission_points_array: [],
     });
     return;
   }
