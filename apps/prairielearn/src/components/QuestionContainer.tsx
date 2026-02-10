@@ -3,6 +3,7 @@ import { escapeHtml, html, unsafeHtml } from '@prairielearn/html';
 import { run } from '@prairielearn/run';
 
 import type { InstanceQuestionAIGradingInfo } from '../ee/lib/ai-grading/types.js';
+import { ansiToHtml } from '../lib/chalk.js';
 import { config } from '../lib/config.js';
 import { type CopyTarget } from '../lib/copy-content.js';
 import type {
@@ -351,7 +352,7 @@ export function IssuePanel({
                 ? html`
                     <p><strong>Console log:</strong></p>
                     <pre class="bg-dark text-white rounded p-3">
-${issue.system_data.courseErrData.outputBoth}</pre
+${unsafeHtml(ansiToHtml(issue.system_data.courseErrData.outputBoth))}</pre
                     >
                   `
                 : ''}
