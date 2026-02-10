@@ -4,7 +4,7 @@
     "us.prairielearn.com/pl/api/v1",
     "github.com",
     "mediaspace.illinois.edu",
-    "prairielearn.readthedocs.io/en/latest"
+    "docs.prairielearn.com"
   ],
   "requireHttps": true,
   "recurse": true,

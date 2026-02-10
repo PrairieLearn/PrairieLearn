@@ -516,7 +516,7 @@ const minimalStaffZone: z.input<typeof StaffZoneSchema> = {
   json_comment: null,
   json_grade_rate_minutes: null,
   max_points: null,
-  number: null,
+  number: 1,
   number_choose: null,
   title: null,
 };
