@@ -1,8 +1,18 @@
 import clsx from 'clsx';
-import { useMemo, useRef, useState } from 'react';
+import { useCallback, useMemo, useRef, useState } from 'react';
 
 import { QuestionShortNameDescription } from '../../components/ShortNameDescriptions.js';
 import { SHORT_NAME_PATTERN } from '../../lib/short-name.js';
+import type {
+  TemplateQuestion,
+  TemplateQuestionZone,
+} from '../instructorQuestions/templateQuestions.js';
+
+import { EvocativePreview } from './EvocativePreview.js';
+
+// ---------------------------------------------------------------------------
+// SelectableCard + RadioCardGroup (reused for "Start from" selector)
+// ---------------------------------------------------------------------------
 
 interface SelectableCardProps {
   id: string;
@@ -70,14 +80,17 @@ function SelectableCard({
   );
 }
 
-interface RadioCardGroupProps {
+function RadioCardGroup({
+  label,
+  value,
+  options,
+  onChange,
+}: {
   label: string;
   value: string;
   options: { id: string; title: string; description: string }[];
   onChange: (value: string) => void;
-}
-
-function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps) {
+}) {
   const cardsRef = useRef<(HTMLElement | null)[]>([]);
 
   const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
@@ -147,42 +160,302 @@ function RadioCardGroup({ label, value, options, onChange }: RadioCardGroupProps
   );
 }
 
+// ---------------------------------------------------------------------------
+// Template card components
+// ---------------------------------------------------------------------------
+
+function TemplateCardRadioGroup({
+  label,
+  cards,
+  selectedQid,
+  onSelect,
+  showPreviews,
+}: {
+  label: string;
+  cards: TemplateQuestion[];
+  selectedQid: string;
+  onSelect: (qid: string) => void;
+  showPreviews: boolean;
+}) {
+  const cardsRef = useRef<(HTMLElement | null)[]>([]);
+  const [expandedQid, setExpandedQid] = useState<string | null>(null);
+
+  const handleKeyDown = (e: React.KeyboardEvent, currentIndex: number) => {
+    let newIndex = currentIndex;
+
+    switch (e.key) {
+      case 'ArrowDown':
+      case 'ArrowRight':
+        e.preventDefault();
+        newIndex = (currentIndex + 1) % cards.length;
+        break;
+      case 'ArrowUp':
+      case 'ArrowLeft':
+        e.preventDefault();
+        newIndex = currentIndex === 0 ? cards.length - 1 : currentIndex - 1;
+        break;
+      case 'Home':
+        e.preventDefault();
+        newIndex = 0;
+        break;
+      case 'End':
+        e.preventDefault();
+        newIndex = cards.length - 1;
+        break;
+      default:
+        return;
+    }
+
+    onSelect(cards[newIndex].qid);
+
+    setTimeout(() => {
+      cardsRef.current[newIndex]?.focus();
+    }, 0);
+  };
+
+  if (showPreviews) {
+    return (
+      <div
+        role="radiogroup"
+        aria-label={label}
+        style={{
+          display: 'grid',
+          gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+          gap: '1rem',
+        }}
+      >
+        {cards.map((card, index) => {
+          const isSelected = selectedQid === card.qid;
+          return (
+            <div
+              key={card.qid}
+              ref={(el) => {
+                cardsRef.current[index] = el;
+              }}
+              className={clsx('card', {
+                'border-primary': isSelected,
+                'border-secondary': !isSelected,
+              })}
+              style={{ cursor: 'pointer' }}
+              role="radio"
+              tabIndex={isSelected ? 0 : -1}
+              aria-checked={isSelected}
+              aria-label={card.title}
+              onClick={() => onSelect(card.qid)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter' || e.key === ' ') {
+                  e.preventDefault();
+                  onSelect(card.qid);
+                }
+                handleKeyDown(e, index);
+              }}
+            >
+              <EvocativePreview qid={card.qid} />
+              <div
+                className={clsx('card-body py-2 px-3', {
+                  'bg-primary bg-opacity-10': isSelected,
+                })}
+              >
+                <div
+                  className={clsx('card-title small mb-0', {
+                    'text-primary fw-bold': isSelected,
+                  })}
+                >
+                  {card.title}
+                </div>
+              </div>
+              {isSelected && (
+                <div className="position-absolute top-0 end-0 p-1">
+                  <i className="fa fa-check-circle text-primary" aria-hidden="true" />
+                </div>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    );
+  }
+
+  // Compact list for intermediate/advanced templates
+  return (
+    <div role="radiogroup" aria-label={label} className="d-flex flex-column gap-2">
+      {cards.map((card, index) => {
+        const isSelected = selectedQid === card.qid;
+        const isExpanded = expandedQid === card.qid;
+        return (
+          <div
+            key={card.qid}
+            ref={(el) => {
+              cardsRef.current[index] = el;
+            }}
+            className={clsx('card', {
+              'border-primary bg-primary bg-opacity-10': isSelected,
+              'border-secondary': !isSelected,
+            })}
+            style={{ cursor: 'pointer' }}
+            role="radio"
+            tabIndex={isSelected ? 0 : -1}
+            aria-checked={isSelected}
+            aria-label={card.title}
+            onClick={() => onSelect(card.qid)}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' || e.key === ' ') {
+                e.preventDefault();
+                onSelect(card.qid);
+              }
+              handleKeyDown(e, index);
+            }}
+          >
+            <div className="card-body py-2 px-3">
+              <div className="d-flex align-items-center justify-content-between">
+                <span
+                  className={clsx('small', {
+                    'text-primary fw-bold': isSelected,
+                  })}
+                >
+                  {card.title}
+                </span>
+                <div className="d-flex align-items-center gap-2">
+                  {isSelected && (
+                    <i className="fa fa-check-circle text-primary" aria-hidden="true" />
+                  )}
+                  {card.readme && (
+                    <button
+                      type="button"
+                      className="btn btn-sm btn-link p-0 text-muted"
+                      aria-label={`${isExpanded ? 'Hide' : 'Show'} details for ${card.title}`}
+                      aria-expanded={isExpanded}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setExpandedQid(isExpanded ? null : card.qid);
+                      }}
+                    >
+                      <i
+                        className={clsx('fa', {
+                          'fa-chevron-up': isExpanded,
+                          'fa-info-circle': !isExpanded,
+                        })}
+                        aria-hidden="true"
+                      />
+                    </button>
+                  )}
+                </div>
+              </div>
+              {isExpanded && card.readme && (
+                <p className="small text-muted mb-0 mt-1">{card.readme.trim()}</p>
+              )}
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// Search helper
+// ---------------------------------------------------------------------------
+
+function matchesSearch(query: string, question: TemplateQuestion): boolean {
+  const lowerQuery = query.toLowerCase();
+  if (question.title.toLowerCase().includes(lowerQuery)) return true;
+  if (question.readme?.toLowerCase().includes(lowerQuery)) return true;
+  return false;
+}
+
+// ---------------------------------------------------------------------------
+// Main form component
+// ---------------------------------------------------------------------------
+
 export function CreateQuestionForm({
-  templateQuestions,
+  exampleCourseZones,
+  courseTemplates,
   csrfToken,
   questionsUrl,
 }: {
-  templateQuestions: { example_course: boolean; qid: string; title: string }[];
+  exampleCourseZones: TemplateQuestionZone[];
+  courseTemplates: { qid: string; title: string }[];
   csrfToken: string;
   questionsUrl: string;
 }) {
-  const [startFrom, setStartFrom] = useState('example');
+  const [startFrom, setStartFrom] = useState(
+    exampleCourseZones.length > 0 ? 'example' : courseTemplates.length > 0 ? 'course' : 'empty',
+  );
   const [selectedTemplateQid, setSelectedTemplateQid] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
 
-  const hasCourseTemplates = templateQuestions.some(({ example_course }) => !example_course);
-  const hasExampleTemplates = templateQuestions.some(({ example_course }) => example_course);
+  const hasCourseTemplates = courseTemplates.length > 0;
+  const hasExampleTemplates = exampleCourseZones.length > 0;
   const hasAnyTemplates = hasExampleTemplates || hasCourseTemplates;
-
-  // Filter template questions based on the selected start_from value
-  const filteredTemplateQuestions = useMemo(() => {
-    return templateQuestions.filter((question) => {
-      if (startFrom === 'example') return question.example_course;
-      if (startFrom === 'course') return !question.example_course;
-      return false;
-    });
-  }, [startFrom, templateQuestions]);
-
-  const selectedTemplate = filteredTemplateQuestions.find(({ qid }) => qid === selectedTemplateQid);
   const isTemplateSelected = ['example', 'course'].includes(startFrom);
 
-  // Build start from options based on available templates
-  const startFromOptions = [
-    {
+  // Filter zones/templates by search query
+  const filteredZones = useMemo(() => {
+    if (!searchQuery) return exampleCourseZones;
+    return exampleCourseZones
+      .map((zone) => ({
+        ...zone,
+        questions: zone.questions.filter((q) => matchesSearch(searchQuery, q)),
+      }))
+      .filter((zone) => zone.questions.length > 0);
+  }, [searchQuery, exampleCourseZones]);
+
+  const filteredCourseTemplates = useMemo(() => {
+    if (!searchQuery) return courseTemplates;
+    const lowerQuery = searchQuery.toLowerCase();
+    return courseTemplates.filter((t) => t.title.toLowerCase().includes(lowerQuery));
+  }, [searchQuery, courseTemplates]);
+
+  const totalFilteredCount = useMemo(() => {
+    if (startFrom === 'example') {
+      return filteredZones.reduce((sum, z) => sum + z.questions.length, 0);
+    }
+    if (startFrom === 'course') {
+      return filteredCourseTemplates.length;
+    }
+    return 0;
+  }, [startFrom, filteredZones, filteredCourseTemplates]);
+
+  // Deselect template if it's been filtered out
+  const handleSearch = useCallback(
+    (query: string) => {
+      setSearchQuery(query);
+      if (query && selectedTemplateQid) {
+        // Check if the selected template is still visible
+        const isVisible =
+          startFrom === 'example'
+            ? exampleCourseZones.some((z) =>
+                z.questions.some((q) => q.qid === selectedTemplateQid && matchesSearch(query, q)),
+              )
+            : courseTemplates.some(
+                (t) =>
+                  t.qid === selectedTemplateQid &&
+                  t.title.toLowerCase().includes(query.toLowerCase()),
+              );
+        if (!isVisible) {
+          setSelectedTemplateQid('');
+        }
+      }
+    },
+    [startFrom, selectedTemplateQid, exampleCourseZones, courseTemplates],
+  );
+
+  const handleStartFromChange = useCallback((value: string) => {
+    setStartFrom(value);
+    setSelectedTemplateQid('');
+    setSearchQuery('');
+  }, []);
+
+  // Build start from options
+  const startFromOptions = [];
+
+  if (hasExampleTemplates) {
+    startFromOptions.push({
       id: 'example',
       title: 'PrairieLearn template',
       description: 'Start with a pre-built question template',
-    },
-  ];
+    });
+  }
 
   if (hasCourseTemplates) {
     startFromOptions.push({
@@ -199,7 +472,7 @@ export function CreateQuestionForm({
   });
 
   return (
-    <div style={{ maxWidth: 768, margin: '0 auto' }}>
+    <div style={{ maxWidth: 960, margin: '0 auto' }}>
       <nav aria-label="breadcrumb" className="mb-3">
         <ol className="breadcrumb mb-0">
           <li className="breadcrumb-item">
@@ -253,38 +526,89 @@ export function CreateQuestionForm({
             label="Start from"
             value={startFrom}
             options={startFromOptions}
-            onChange={setStartFrom}
+            onChange={handleStartFromChange}
           />
         )}
 
-        {/* Always include hidden input for form submission */}
+        {/* Hidden inputs for form submission */}
         <input type="hidden" name="start_from" value={startFrom} />
+        <input
+          type="hidden"
+          name="template_qid"
+          value={isTemplateSelected ? selectedTemplateQid : ''}
+        />
 
-        {isTemplateSelected && filteredTemplateQuestions.length > 0 && (
+        {/* Search + template gallery */}
+        {isTemplateSelected && (
           <div className="mb-3">
-            <label className="form-label" htmlFor="template_qid">
-              Template
+            <label className="form-label" htmlFor="template_search">
+              Search templates
             </label>
-            <select
-              className="form-select"
-              id="template_qid"
-              name="template_qid"
-              aria-describedby="template_help"
-              value={selectedTemplate?.qid ?? ''}
-              required
-              onChange={(e) => setSelectedTemplateQid(e.currentTarget.value)}
-            >
-              <option value="">Select a template...</option>
-              {filteredTemplateQuestions.map((question) => (
-                <option key={question.qid} value={question.qid}>
-                  {question.title}
-                </option>
-              ))}
-            </select>
-            <small id="template_help" className="form-text text-muted">
-              The question will be created from this template. To create your own template, create a
-              question with a QID starting with "<code>template/</code>".
-            </small>
+            <input
+              type="search"
+              className="form-control"
+              id="template_search"
+              placeholder="Search by name or description..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.currentTarget.value)}
+            />
+
+            {/* Live region for search result count */}
+            <div className="visually-hidden" aria-live="polite" aria-atomic="true">
+              {searchQuery
+                ? `${totalFilteredCount} template${totalFilteredCount !== 1 ? 's' : ''} found`
+                : ''}
+            </div>
+
+            {/* PrairieLearn templates */}
+            {startFrom === 'example' && (
+              <div className="mt-3">
+                {filteredZones.length > 0 ? (
+                  <div className="d-flex flex-column gap-4">
+                    {filteredZones.map((zone, zoneIndex) => (
+                      <section key={zone.title} aria-label={zone.title}>
+                        <h3 className="h6 text-muted mb-2">{zone.title}</h3>
+                        <TemplateCardRadioGroup
+                          label={zone.title}
+                          cards={zone.questions}
+                          selectedQid={selectedTemplateQid}
+                          showPreviews={zoneIndex === 0}
+                          onSelect={setSelectedTemplateQid}
+                        />
+                      </section>
+                    ))}
+                  </div>
+                ) : (
+                  <EmptySearchState
+                    query={searchQuery}
+                    onStartFromScratch={() => handleStartFromChange('empty')}
+                  />
+                )}
+              </div>
+            )}
+
+            {/* Course templates */}
+            {startFrom === 'course' && (
+              <div className="mt-3">
+                {filteredCourseTemplates.length > 0 ? (
+                  <TemplateCardRadioGroup
+                    label="Course templates"
+                    cards={filteredCourseTemplates.map((t) => ({
+                      ...t,
+                      readme: null,
+                    }))}
+                    selectedQid={selectedTemplateQid}
+                    showPreviews={false}
+                    onSelect={setSelectedTemplateQid}
+                  />
+                ) : (
+                  <EmptySearchState
+                    query={searchQuery}
+                    onStartFromScratch={() => handleStartFromChange('empty')}
+                  />
+                )}
+              </div>
+            )}
           </div>
         )}
 
@@ -301,3 +625,24 @@ export function CreateQuestionForm({
 }
 
 CreateQuestionForm.displayName = 'CreateQuestionForm';
+
+// ---------------------------------------------------------------------------
+// Empty search state
+// ---------------------------------------------------------------------------
+
+function EmptySearchState({
+  query,
+  onStartFromScratch,
+}: {
+  query: string;
+  onStartFromScratch: () => void;
+}) {
+  return (
+    <div className="text-center py-4">
+      <p className="text-muted mb-2">No templates match{query ? ` "${query}"` : ''}.</p>
+      <button type="button" className="btn btn-outline-primary btn-sm" onClick={onStartFromScratch}>
+        Start from scratch instead
+      </button>
+    </div>
+  );
+}

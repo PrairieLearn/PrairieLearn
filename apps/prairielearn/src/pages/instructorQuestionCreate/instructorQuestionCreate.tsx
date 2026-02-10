@@ -46,7 +46,7 @@ router.get(
       courseInstances.map((ci) => ci.id),
     );
 
-    const templateQuestions = await getTemplateQuestions(questions);
+    const { exampleCourseZones, courseTemplates } = await getTemplateQuestions(questions);
 
     res.send(
       PageLayout({
@@ -60,7 +60,8 @@ router.get(
         content: (
           <Hydrate>
             <CreateQuestionForm
-              templateQuestions={templateQuestions}
+              exampleCourseZones={exampleCourseZones}
+              courseTemplates={courseTemplates}
               csrfToken={res.locals.__csrf_token}
               questionsUrl={`${res.locals.urlPrefix}/course_admin/questions`}
             />
