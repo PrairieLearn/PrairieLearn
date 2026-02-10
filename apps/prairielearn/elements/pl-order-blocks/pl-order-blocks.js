@@ -385,19 +385,15 @@ window.PLOrderBlocks = function (uuid, options) {
     const measureElement = document.createElement('span');
     const computedStyle = window.getComputedStyle(sourceElement);
     
-    // Copy all font-related properties to ensure accurate measurement
-    measureElement.style.fontFamily = computedStyle.fontFamily;
-    measureElement.style.fontSize = computedStyle.fontSize;
-    measureElement.style.fontWeight = computedStyle.fontWeight;
-    measureElement.style.fontStyle = computedStyle.fontStyle;
+    // Copy font-related properties to ensure accurate measurement
+    measureElement.style.font = computedStyle.font;
     measureElement.style.letterSpacing = computedStyle.letterSpacing;
-    measureElement.style.lineHeight = computedStyle.lineHeight;
     
     // Set visiblity and content
     measureElement.style.position = 'absolute';
     measureElement.style.visibility = 'hidden';
     measureElement.style.whiteSpace = 'pre';
-    measureElement.textContent = ' '.repeat(TAB_SPACES);
+    measureElement.style.width = `${TAB_SPACES}ch`;
 
     //Create element, measure, and remove
     document.body.append(measureElement);
