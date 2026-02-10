@@ -24,10 +24,10 @@ const REFERENCED_NODE_MODULES_DEPS = [
 
 // These packages aren't used in our own code, but we still want them installed
 // as they are used by elements in other courses.
-const FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
+const _FALSE_NEGATIVE_ELEMENT_DEPS = ['backbone', 'mersenne', 'numeric', 'popper.js'];
 
 // These packages are just used for their CLI tools, so we still want them installed.
-const FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli', 'pyright', 's3rver'];
+const _FALSE_NEGATIVE_CLI_DEPS = ['htmlhint', 'markdownlint-cli', 'pyright', 's3rver'];
 
 // We want extract all dependencies of our elements, and mark them as used.
 // See https://github.com/webpro-nl/knip/issues/641 and https://github.com/webpro-nl/knip/pull/1220
@@ -89,7 +89,6 @@ const config: KnipConfig = {
     'apps/prairielearn': {
       // https://knip.dev/guides/handling-issues#dynamic-import-specifiers
       entry: [
-        'src/server.ts',
         'assets/scripts/**/*.{ts,tsx}',
         'src/{batched-migrations,migrations}/*.{ts,mts}',
         'src/admin_queries/*.ts',
@@ -99,7 +98,10 @@ const config: KnipConfig = {
       ignore: [
         'src/lib/no-deprecated-sql.d.ts',
         'src/ee/pages/instructorAiGenerateDraftEditor/RichTextEditor/extensions/react-rendered-component-sample.tsx',
+        // We have lots of aliases in this file
         'src/lib/client/safe-db-types.ts',
+        // We have team -> group aliases in this file
+        'src/lib/db-types.ts',
       ],
       project: ['**/*.{ts,cts,mts,tsx}'],
     },
@@ -129,9 +131,9 @@ const config: KnipConfig = {
   },
   // knip will not report these dependencies as unused.
   ignoreDependencies: [
-    ...packageDependencies,
-    ...FALSE_NEGATIVE_ELEMENT_DEPS,
-    ...FALSE_NEGATIVE_CLI_DEPS,
+    // ...packageDependencies,
+    // ...FALSE_NEGATIVE_ELEMENT_DEPS,
+    // ...FALSE_NEGATIVE_CLI_DEPS,
   ],
   // TODO: enable these features
   exclude: ['binaries', 'dependencies', 'exports', 'types'],
