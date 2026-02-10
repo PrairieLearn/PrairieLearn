@@ -9,19 +9,27 @@
       "title": "Basic questions: no randomization",
       "questions": [
         { "id": "template/multiple-choice/fixed", "points": 1 },
+        { "id": "template/multiple-choice/dropdown", "points": 1 },
         { "id": "template/checkbox/fixed", "points": 1 },
         { "id": "template/integer-input/fixed", "points": 1 },
         { "id": "template/number-input/fixed", "points": 1 },
         { "id": "template/string-input/fixed", "points": 1 },
         { "id": "template/symbolic-input/fixed", "points": 1 },
-        { "id": "template/rich-text-editor/basic", "points": 1 }
+        { "id": "template/matching/fixed", "points": 1 },
+        { "id": "template/order-blocks/fixed", "points": 1 },
+        { "id": "template/rich-text-editor/basic", "points": 1 },
+        { "id": "template/file-editor/fixed", "points": 1 },
+        { "id": "template/file-upload/fixed", "points": 1 }
       ]
     },
     {
       "title": "Intermediate questions: randomization without Python",
       "questions": [
         { "id": "template/multiple-choice/random", "points": 1, "maxPoints": 3 },
-        { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 3 }
+        { "id": "template/multiple-choice/distractor-pool", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/multi-correct-pool", "points": 1, "maxPoints": 3 },
+        { "id": "template/multiple-choice/images", "points": 1, "maxPoints": 3 },
+        { "id": "template/checkbox/random-subset", "points": 1, "maxPoints": 3 }
       ]
     },
     {
