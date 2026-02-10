@@ -350,8 +350,8 @@ function CourseRequestDenyForm({
   return html`
     <form method="POST">
       <input type="hidden" name="__csrf_token" value="${csrfToken}" />
-      <input type="hidden" name="__action" value="approve_deny_course_request" />
-      <input type="hidden" name="approve_deny_action" value="denied" />
+      <input type="hidden" name="__action" value="deny_course_request" />
+      <input type="hidden" name="approve_deny_action" value="deny" />
       <input type="hidden" name="request_id" value="${request.id}" />
       <button type="button" class="btn btn-secondary" data-bs-dismiss="popover">Cancel</button>
       <button type="submit" class="btn btn-danger">Deny</button>
@@ -389,11 +389,15 @@ function CourseRequestEditNoteForm({
       <input type="hidden" name="__action" value="update_course_request_note" />
       <input type="hidden" name="request_id" value="${request.id}" />
       <div class="d-flex gap-2 align-items-center py-2 px-2">
+        <label class="visually-hidden" for="course-request-note-${request.id}">
+          Note for course request ${request.short_name}
+        </label>
         <textarea
           class="form-control flex-grow-1"
           id="course-request-note-${request.id}"
           name="note"
           rows="1"
+          maxlength="10000"
           placeholder="Add a note about this course request..."
         >
 ${request.note ?? ''}</textarea

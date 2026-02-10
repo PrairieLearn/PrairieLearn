@@ -53,23 +53,17 @@ export async function selectPendingCourseRequests() {
   return await selectCourseRequests(false);
 }
 
-export async function updateCourseRequest({
-  approveDenyAction,
+export async function denyCourseRequest({
   courseRequestId,
   authnUser,
 }: {
-  approveDenyAction: string;
   courseRequestId: string;
   authnUser: User;
 }) {
-  if (approveDenyAction !== 'denied') {
-    throw new Error(`Unknown course request action "${approveDenyAction}"`);
-  }
-
   await execute(sql.update_course_request, {
     id: courseRequestId,
     user_id: authnUser.id,
-    action: approveDenyAction,
+    action: 'denied',
   });
 }
 

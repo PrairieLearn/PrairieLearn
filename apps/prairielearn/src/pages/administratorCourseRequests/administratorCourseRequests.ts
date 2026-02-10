@@ -6,7 +6,8 @@ import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
   selectAllCourseRequests,
-  updateCourseRequest,
+  denyCourseRequest,
+  updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
 import { selectAllInstitutions } from '../../models/institution.js';
@@ -34,13 +35,11 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    if (req.body.__action === 'approve_deny_course_request') {
-      await updateCourseRequest({
-        approveDenyAction: req.body.approve_deny_action,
+    if (req.body.__action === 'deny_course_request') {
+      await denyCourseRequest({
         courseRequestId: req.body.request_id,
         authnUser: res.locals.authn_user,
       });
-      res.redirect(req.originalUrl);
     } else if (req.body.__action === 'create_course_from_request') {
       const jobSequenceId = await createCourseFromRequest({
         courseRequestId: req.body.request_id,
@@ -53,10 +52,16 @@ router.post(
         githubUser: req.body.github_user.length > 0 ? req.body.github_user : null,
         authnUser: res.locals.authn_user,
       });
-      res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
+      return res.redirect(`/pl/administrator/jobSequence/${jobSequenceId}/`);
+    } else if (req.body.__action === 'update_course_request_note') {
+      await updateCourseRequestNote({
+        courseRequestId: req.body.request_id,
+        note: req.body.note,
+      });
     } else {
       throw new error.HttpStatusError(400, `unknown __action: ${req.body.__action}`);
     }
+    res.redirect(req.originalUrl);
   }),
 );
 
