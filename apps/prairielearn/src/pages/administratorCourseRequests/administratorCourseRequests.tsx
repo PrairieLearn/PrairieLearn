@@ -7,7 +7,7 @@ import { config } from '../../lib/config.js';
 import {
   createCourseFromRequest,
   selectAllCourseRequests,
-  updateCourseRequest,
+  denyCourseRequest,
   updateCourseRequestNote,
 } from '../../lib/course-request.js';
 import { typedAsyncHandler } from '../../lib/res-locals.js';
@@ -51,9 +51,8 @@ router.get(
 router.post(
   '/',
   typedAsyncHandler<'plain'>(async (req, res) => {
-    if (req.body.__action === 'approve_deny_course_request') {
-      await updateCourseRequest({
-        approveDenyAction: req.body.approve_deny_action,
+    if (req.body.__action === 'deny_course_request') {
+      await denyCourseRequest({
         courseRequestId: req.body.request_id,
         authnUser: res.locals.authn_user,
       });
