@@ -603,8 +603,13 @@ export function autoTestQuestion(locals: Record<string, any>, qid: string) {
         assert.equal(locals.question?.type, 'Freeform');
       });
       it('should have submission data', function () {
-        locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
-        locals.postAction = 'grade';
+        if (locals.question?.grading_method === 'Manual') {
+          locals.shouldHaveButtons = ['save', 'newVariant'];
+          locals.postAction = 'save';
+        } else {
+          locals.shouldHaveButtons = ['grade', 'save', 'newVariant'];
+          locals.postAction = 'grade';
+        }
       });
     });
     getInstanceQuestion(locals);
