@@ -6,7 +6,7 @@ columns
 
 indexes
     student_labels_pkey: PRIMARY KEY (id) USING btree (id)
-    student_labels_course_instance_id_name_key: UNIQUE (course_instance_id, name)
+    student_labels_course_instance_id_name_key: UNIQUE (course_instance_id, name) USING btree (course_instance_id, name)
 
 foreign-key constraints
     student_labels_course_instance_id_fkey: FOREIGN KEY (course_instance_id) REFERENCES course_instances(id) ON UPDATE CASCADE ON DELETE CASCADE
