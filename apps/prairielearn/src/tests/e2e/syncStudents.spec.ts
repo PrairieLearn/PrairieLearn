@@ -147,7 +147,9 @@ test.describe('Sync students', () => {
 
     // Modal should open with expected content
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog').getByText('Synchronize student list', { exact: true })).toBeVisible();
+    await expect(
+      page.getByRole('dialog').getByText('Synchronize student list', { exact: true }),
+    ).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
     // Enter student list with fresh_sync_new but NOT fresh_sync_remove or fresh_sync_cancel
@@ -176,7 +178,9 @@ test.describe('Sync students', () => {
     ]);
   });
 
-  test('re-invites blocked and removed students who reappear on the student list', async ({ page }) => {
+  test('re-invites blocked and removed students who reappear on the student list', async ({
+    page,
+  }) => {
     const blockedUser = await getOrCreateUser({
       uid: 'sync_blocked@test.com',
       name: 'Blocked Student',
