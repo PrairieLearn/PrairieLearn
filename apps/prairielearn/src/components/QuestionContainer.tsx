@@ -252,7 +252,7 @@ Counterclockwise rotation corrections, in degrees: ${rotationCorrectionDegrees}
   `;
 }
 
-export function IssuePanel({
+function IssuePanel({
   issue,
   course_instance,
   authz_data,
