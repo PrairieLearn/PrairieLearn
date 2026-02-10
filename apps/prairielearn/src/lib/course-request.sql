@@ -64,7 +64,9 @@ SET
   approved_by = $user_id,
   approved_status = $action
 WHERE
-  course_requests.id = $id;
+  course_requests.id = $id
+RETURNING
+  course_requests.id;
 
 -- BLOCK insert_course_request
 INSERT INTO
