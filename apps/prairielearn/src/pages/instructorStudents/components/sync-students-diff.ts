@@ -27,12 +27,12 @@ export interface SyncEnrollmentInfo {
 }
 
 /**
- * Computes the diff between the input roster and the current enrollments.
+ * Computes the diff between the input student list and the current enrollments.
  *
- * Sync logic (roster is the source of truth):
- * - Students on roster but not `joined`/`invited`/`lti13_pending`: invite or re-enroll.
- * - Students not on roster who are `joined`: remove.
- * - Students not on roster who are `invited`/`rejected`: cancel invitation.
+ * Sync logic (student list is the source of truth):
+ * - Students on list but not `joined`/`invited`/`lti13_pending`: invite or re-enroll.
+ * - Students not on list who are `joined`: remove.
+ * - Students not on list who are `invited`/`rejected`: cancel invitation.
  * - `lti13_pending` is intentionally non-actionable until LTI roster sync is supported.
  */
 export function computeSyncDiff(

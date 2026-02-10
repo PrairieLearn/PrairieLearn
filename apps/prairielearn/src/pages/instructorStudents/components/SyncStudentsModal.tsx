@@ -315,7 +315,7 @@ export function SyncStudentsModal({
   return (
     <Modal show={show} backdrop="static" size="lg" onHide={onHide} onExited={resetModalState}>
       <Modal.Header closeButton>
-        <Modal.Title>Sync roster</Modal.Title>
+        <Modal.Title>Synchronize student list</Modal.Title>
       </Modal.Header>
 
       <Modal.Body>
@@ -329,7 +329,7 @@ export function SyncStudentsModal({
           <div className="d-flex flex-column gap-3">
             <form onSubmit={onCompare}>
               <p>
-                Paste your student roster below. Students on this list will be added to the course.
+                Paste your student list below. Students on this list will be added to the course.
                 Students not on this list will be removed.
               </p>
               <div>
@@ -386,7 +386,7 @@ export function SyncStudentsModal({
                   aria-hidden="true"
                 />
                 <p className="h4 mb-2">All synced!</p>
-                <p className="text-muted mb-0">Your roster is already up to date.</p>
+                <p className="text-muted mb-0">Your student list is already up to date.</p>
               </div>
             ) : (
               <div className="d-flex flex-column gap-4">

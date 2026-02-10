@@ -89,7 +89,7 @@ test.describe('Sync students', () => {
     await expect(page).toHaveTitle(/Students/);
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Sync roster' }).click();
+    await page.getByRole('button', { name: 'Synchronize student list' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill(inviteOnlyUid);
@@ -141,16 +141,16 @@ test.describe('Sync students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
     await expect(page).toHaveTitle(/Students/);
 
-    // Open the manage enrollments dropdown and click sync roster
+    // Open the manage enrollments dropdown and click synchronize student list
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Sync roster' }).click();
+    await page.getByRole('button', { name: 'Synchronize student list' }).click();
 
     // Modal should open with expected content
     await expect(page.getByRole('dialog')).toBeVisible();
-    await expect(page.getByRole('dialog').getByText('Sync roster', { exact: true })).toBeVisible();
+    await expect(page.getByRole('dialog').getByText('Synchronize student list', { exact: true })).toBeVisible();
     await expect(page.getByRole('textbox', { name: 'Student UIDs' })).toBeVisible();
 
-    // Enter roster with fresh_sync_new but NOT fresh_sync_remove or fresh_sync_cancel
+    // Enter student list with fresh_sync_new but NOT fresh_sync_remove or fresh_sync_cancel
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill('fresh_sync_new@test.com');
 
     await page.getByRole('button', { name: 'Compare' }).click();
@@ -176,7 +176,7 @@ test.describe('Sync students', () => {
     ]);
   });
 
-  test('re-invites blocked and removed students who reappear on the roster', async ({ page }) => {
+  test('re-invites blocked and removed students who reappear on the student list', async ({ page }) => {
     const blockedUser = await getOrCreateUser({
       uid: 'sync_blocked@test.com',
       name: 'Blocked Student',
@@ -227,7 +227,7 @@ test.describe('Sync students', () => {
     await expect(page).toHaveTitle(/Students/);
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Sync roster' }).click();
+    await page.getByRole('button', { name: 'Synchronize student list' }).click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
     await page
@@ -253,7 +253,7 @@ test.describe('Sync students', () => {
     await page.goto(getCourseInstanceStudentsUrl(courseInstanceId));
 
     await page.getByRole('button', { name: 'Manage enrollments' }).click();
-    await page.getByRole('button', { name: 'Sync roster' }).click();
+    await page.getByRole('button', { name: 'Synchronize student list' }).click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     await page.getByRole('textbox', { name: 'Student UIDs' }).fill('not-an-email');

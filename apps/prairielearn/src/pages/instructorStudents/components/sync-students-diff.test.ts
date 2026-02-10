@@ -26,7 +26,7 @@ function makeEnrollment({
 }
 
 describe('computeSyncDiff', () => {
-  it('skips lti13_pending enrollments that are on the roster', () => {
+  it('skips lti13_pending enrollments that are on the student list', () => {
     const diff = computeSyncDiff(
       ['lti-student@example.com'],
       [makeEnrollment({ status: 'lti13_pending', uid: 'lti-student@example.com' })],
@@ -38,7 +38,7 @@ describe('computeSyncDiff', () => {
     expect(diff.unchangedCount).toBe(1);
   });
 
-  it('skips lti13_pending enrollments that are not on the roster', () => {
+  it('skips lti13_pending enrollments that are not on the student list', () => {
     const diff = computeSyncDiff(
       [],
       [makeEnrollment({ status: 'lti13_pending', uid: 'lti-student@example.com' })],
@@ -50,7 +50,7 @@ describe('computeSyncDiff', () => {
     expect(diff.unchangedCount).toBe(0);
   });
 
-  it('still invites blocked and removed enrollments that are on the roster', () => {
+  it('still invites blocked and removed enrollments that are on the student list', () => {
     const diff = computeSyncDiff(
       ['blocked@example.com', 'removed@example.com'],
       [

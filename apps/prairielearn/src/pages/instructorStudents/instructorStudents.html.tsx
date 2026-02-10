@@ -116,8 +116,8 @@ function ManageEnrollmentsDropdown({
         Invite students
       </Dropdown.Item>
       <Dropdown.Item as="button" type="button" disabled={!canEdit} onClick={onSync}>
-        <i className="bi bi-arrow-repeat me-2" aria-hidden="true" />
-        Sync roster
+        <i className="bi bi-arrow-left-right me-2" aria-hidden="true" />
+        Synchronize student list
       </Dropdown.Item>
 
       <Dropdown.Divider />

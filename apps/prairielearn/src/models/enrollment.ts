@@ -591,7 +591,7 @@ async function _selectAndLockEnrollment(id: string) {
  * - `joined` → `removed` (instructor removal)
  * - `invited` → `rejected` (student rejects invitation)
  *
- * For roster sync operations, use `removeEnrollmentFromSync` and
+ * For student list sync operations, use `removeEnrollmentFromSync` and
  * `reenrollEnrollmentFromSync` instead.
  */
 export async function setEnrollmentStatus({
@@ -700,13 +700,13 @@ export async function setEnrollmentStatus({
 }
 
 /**
- * Removes an enrollment as part of a roster sync operation.
+ * Removes an enrollment as part of a student list sync operation.
  *
  * Unlike `setEnrollmentStatus`, this function uses a sync-specific action detail.
- * Roster sync treats the provided roster as the source of truth and removes
+ * Student list sync treats the provided student list as the source of truth and removes
  * anyone not on it who is currently joined.
  *
- * LTI-managed enrollments (lti13_pending) cannot be removed via roster sync.
+ * LTI-managed enrollments (lti13_pending) cannot be removed via student list sync.
  */
 export async function removeEnrollmentFromSync({
   enrollment,
@@ -728,12 +728,12 @@ export async function removeEnrollmentFromSync({
       return lockedEnrollment;
     }
 
-    // LTI-managed enrollments cannot be removed via roster sync.
+    // LTI-managed enrollments cannot be removed via student list sync.
     if (lockedEnrollment.status === 'lti13_pending') {
       throw new error.HttpStatusError(400, 'Cannot remove LTI-managed enrollment');
     }
 
-    // Can only remove joined enrollments via roster sync.
+    // Can only remove joined enrollments via student list sync.
     if (lockedEnrollment.status !== 'joined') {
       throw new error.HttpStatusError(
         400,
@@ -765,10 +765,10 @@ export async function removeEnrollmentFromSync({
 }
 
 /**
- * Re-enrolls a blocked or removed enrollment as part of a roster sync operation.
+ * Re-enrolls a blocked or removed enrollment as part of a student list sync operation.
  *
- * This is used when the roster is the source of truth and a previously blocked or removed
- * student reappears on the roster.
+ * This is used when the student list is the source of truth and a previously blocked or removed
+ * student reappears on the student list.
  */
 export async function reenrollEnrollmentFromSync({
   enrollment,
@@ -790,7 +790,7 @@ export async function reenrollEnrollmentFromSync({
       return lockedEnrollment;
     }
 
-    // LTI-managed enrollments cannot be modified via roster sync.
+    // LTI-managed enrollments cannot be modified via student list sync.
     if (lockedEnrollment.status === 'lti13_pending') {
       throw new error.HttpStatusError(400, 'Cannot re-enroll LTI-managed enrollment');
     }
